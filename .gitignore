@@ -1,0 +1,9 @@
+#folders
+build/
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Database
+*.db-journal
