@@ -1,7 +1,13 @@
 
 file(GLOB_RECURSE CORE_SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+    ${CMAKE_SOURCE_DIR}/src/core/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/*.h
+    ${CMAKE_SOURCE_DIR}/src/database/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/database/*.h
+    ${CMAKE_SOURCE_DIR}/src/decompiler/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/decompiler/*.h
+    ${CMAKE_SOURCE_DIR}/src/ghidra_sync/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/ghidra_sync/*.h)
 
 add_library(
     core STATIC
@@ -16,11 +22,13 @@ target_include_directories(
 target_link_libraries(
     core PUBLIC
     utilities
+    nlohmann_json
+    magic_enum::magic_enum
+    SQLiteCpp
+    asmjit::asmjit
+    thrift::thrift
+    minhook::minhook
+    Zydis
 )
 
-foreach(_source IN ITEMS ${CORE_SRC})
-    get_filename_component(_source_path "${_source}" PATH)
-    string(REPLACE "${CMAKE_SOURCE_DIR}" "" _group_path "${_source_path}")
-    string(REPLACE "/" "\\" _group_path "${_group_path}")
-    source_group("${_group_path}" FILES "${_source}")
-endforeach()
+create_vs_filters("${CORE_SRC}")

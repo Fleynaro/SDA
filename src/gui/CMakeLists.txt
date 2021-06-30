@@ -11,4 +11,7 @@ add_library(
 target_link_libraries(
     gui PUBLIC
     core
+    imgui::imgui
 )
+
+create_vs_filters("${GUI_SRC}")

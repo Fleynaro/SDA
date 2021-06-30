@@ -1,9 +1,0 @@
-
-file(GLOB_RECURSE DATABASE_SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
-
-target_sources(
-    core PRIVATE
-    ${DATABASE_SRC}
-)
