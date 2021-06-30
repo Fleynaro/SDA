@@ -1,0 +1,9 @@
+
+file(GLOB_RECURSE DECOMPILER_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+
+target_sources(
+    core PRIVATE
+    ${DECOMPILER_SRC}
+)
