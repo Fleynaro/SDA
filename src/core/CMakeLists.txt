@@ -22,11 +22,11 @@ target_include_directories(
 target_link_libraries(
     core PUBLIC
     utilities
+    ghidra_sync_thrift
     nlohmann_json
     magic_enum::magic_enum
     SQLiteCpp
     asmjit::asmjit
-    thrift::thrift
     minhook::minhook
     Zydis
 )

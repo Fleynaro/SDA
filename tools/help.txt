@@ -1,5 +1,0 @@
- .\thrift-0.12.0.exe -r --gen cpp .\ghidra.thrift
-  .\thrift-0.12.0.exe -r --gen java .\ghidra.thrift
-
-
-  skeleton.cpp удалить!
