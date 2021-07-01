@@ -24,7 +24,7 @@ function(thrift_generate_cpp SRCS HDRS I_DIR O_DIR I_MAIN_FILE SERVICES)
             ${SRCS}
             ${HDRS}
         COMMAND
-            "${CMAKE_SOURCE_DIR}/tools/thrift-0.12.0.exe"
+            "${CMAKE_SOURCE_DIR}/tools/thrift.exe"
         ARGS
             --gen cpp:no_skeleton -r -out ${O_DIR} ${I_DIR}/${I_MAIN_FILE}
         DEPENDS
