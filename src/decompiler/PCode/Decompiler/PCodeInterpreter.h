@@ -1,5 +1,5 @@
 #pragma once
-#include <Decompiler/DecStorage.h>
+#include <decompiler/DecStorage.h>
 #include "DecExecContext.h"
 
 namespace CE::Decompiler

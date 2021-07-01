@@ -1,5 +1,5 @@
 #pragma once
-#include <Image/ImageDecorator.h>
+#include <ImageDecorator.h>
 
 namespace CE
 {

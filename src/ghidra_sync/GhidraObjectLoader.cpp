@@ -1,5 +1,5 @@
 #include "GhidraObjectLoader.h"
-#include <Manager/FunctionManager.h>
+#include <managers/FunctionManager.h>
 
 using namespace CE;
 using namespace CE::Ghidra;

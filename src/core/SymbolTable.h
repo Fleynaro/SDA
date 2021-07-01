@@ -1,5 +1,6 @@
 #pragma once
-#include <Code/Symbol/AbstractSymbol.h>
+#include <symbols/AbstractSymbol.h>
+#include <map>
 
 namespace CE {
 	class SymbolTableManager;

@@ -1,6 +1,6 @@
 #pragma once
 #include "GhidraStructureTypeMapper.h"
-#include <Code/Type/Class.h>
+#include <datatypes/Class.h>
 
 namespace CE::Ghidra
 {

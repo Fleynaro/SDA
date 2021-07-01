@@ -5,14 +5,14 @@ namespace CE
 {
 	class SimpleBufferImage : public IImage
 	{
-		byte* m_data;
+		int8_t* m_data;
 		int m_size;
 	public:
-		SimpleBufferImage(byte* data, int size)
+		SimpleBufferImage(int8_t* data, int size)
 			: m_data(data), m_size(size)
 		{}
 
-		byte* getData() override {
+		int8_t* getData() override {
 			return m_data;
 		}
 

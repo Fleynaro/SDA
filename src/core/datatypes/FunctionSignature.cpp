@@ -1,7 +1,7 @@
 #include "FunctionSignature.h"
-#include <Manager/TypeManager.h>
-#include <Manager/SymbolManager.h>
-#include <Decompiler/PCode/DecPCode.h>
+#include <managers/TypeManager.h>
+#include <managers/SymbolManager.h>
+#include <decompiler/PCode/DecPCode.h>
 
 using namespace CE;
 using namespace CE::DataType;

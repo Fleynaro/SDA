@@ -1,5 +1,6 @@
 #pragma once
 #include "AbstractMapper.h"
+#include <list>
 
 namespace DB
 {

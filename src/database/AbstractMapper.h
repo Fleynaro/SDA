@@ -1,6 +1,8 @@
 #pragma once
 #include "DomainObject.h"
 #include <SQLiteCpp/SQLiteCpp.h>
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 namespace DB
 {

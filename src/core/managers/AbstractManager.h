@@ -1,7 +1,7 @@
 #pragma once
-#include <DB/AbstractMapper.h>
 #include <Project.h>
-#include <Utils/Iterator.h>
+#include <database/AbstractMapper.h>
+#include <utilities/Iterator.h>
 
 namespace CE
 {

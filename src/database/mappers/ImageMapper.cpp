@@ -1,10 +1,10 @@
 #include "ImageMapper.h"
-#include <Manager/ImageManager.h>
-#include <Manager/AddressSpaceManager.h>
-#include <Manager/SymbolTableManager.h>
-#include <Manager/TypeManager.h>
-#include <Decompiler/PCode/Decoders/DecPCodeDecoderX86.h>
-#include <Decompiler/Graph/DecPCodeGraph.h>
+#include <managers/ImageManager.h>
+#include <managers/AddressSpaceManager.h>
+#include <managers/SymbolTableManager.h>
+#include <managers/TypeManager.h>
+#include <decompiler/PCode/Decoders/DecPCodeDecoderX86.h>
+#include <decompiler/Graph/DecPCodeGraph.h>
 
 using namespace DB;
 using namespace CE;

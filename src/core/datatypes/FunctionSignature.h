@@ -1,7 +1,8 @@
 #pragma once
 #include "UserType.h"
-#include "../Symbol/FuncParameterSymbol.h"
-#include <Decompiler/DecStorage.h>
+#include <symbols/FuncParameterSymbol.h>
+#include <decompiler/DecStorage.h>
+#include <vector>
 
 namespace CE::DataType
 {

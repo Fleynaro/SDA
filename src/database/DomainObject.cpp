@@ -1,4 +1,5 @@
 #include "DomainObject.h"
+#include <stdexcept>
 
 DB::DomainObject::DomainObject(Id id)
 	: m_id(id)

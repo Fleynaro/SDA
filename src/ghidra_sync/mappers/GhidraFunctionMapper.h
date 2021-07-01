@@ -1,6 +1,6 @@
 #pragma once
-#include <GhidraSync/GhidraAbstractMapper.h>
-#include <Code/Function/Function.h>
+#include <ghidra_sync/GhidraAbstractMapper.h>
+#include <Function.h>
 
 namespace CE {
 	class FunctionManager;

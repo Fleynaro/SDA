@@ -1,5 +1,5 @@
 #pragma once
-#include <Code/Type/Type.h>
+#include <datatypes/Type.h>
 #include "../../ExprTree/ExprTree.h"
 #include "../MemLocation.h"
 

@@ -1,6 +1,6 @@
 #include "AddressSpaceMapper.h"
-#include <Manager/AddressSpaceManager.h>
-#include <Manager/ImageManager.h>
+#include <managers/AddressSpaceManager.h>
+#include <managers/ImageManager.h>
 
 using namespace DB;
 using namespace CE;

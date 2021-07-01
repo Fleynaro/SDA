@@ -4,7 +4,7 @@ using namespace CE;
 
 bool Address::canBeRead() {
 	__try {
-		byte firstByte = *(byte*)m_addr;
+		int8_t firstByte = *(int8_t*)m_addr;
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER)
 	{

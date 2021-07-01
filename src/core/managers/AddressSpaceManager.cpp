@@ -1,5 +1,7 @@
 #include "AddressSpaceManager.h"
-#include <DB/Mappers/AddressSpaceMapper.h>
+#include <database/Mappers/AddressSpaceMapper.h>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 using namespace CE;
 

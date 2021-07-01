@@ -1,7 +1,7 @@
 #pragma once
 #include "DecGraphModification.h"
-#include <Decompiler/PCode/Decompiler/PrimaryDecompiler.h>
-#include <Decompiler/Optimization/ExprOptimization.h>
+#include <decompiler/PCode/Decompiler/PrimaryDecompiler.h>
+#include <decompiler/Optimization/ExprOptimization.h>
 
 namespace CE::Decompiler::Optimization
 {

@@ -1,6 +1,6 @@
 #pragma once
 #include "AbstractManager.h"
-#include <Image/ImageDecorator.h>
+#include <ImageDecorator.h>
 
 namespace DB {
 	class ImageMapper;

@@ -1,6 +1,6 @@
 #include "SymbolTableMapper.h"
-#include <Manager/SymbolTableManager.h>
-#include <Manager/SymbolManager.h>
+#include <managers/SymbolTableManager.h>
+#include <managers/SymbolManager.h>
 
 using namespace DB;
 using namespace CE;

@@ -2,7 +2,7 @@
 //SDA
 #include <Program.h>
 #include <Project.h>
-#include <Manager/Managers.h>
+#include <managers/Managers.h>
 
 //gtest
 #define _DEBUG
@@ -67,17 +67,17 @@ protected:
     }
 };
 
-#include <Decompiler/Decompiler.h>
-#include <Decompiler/LinearView/DecLinearView.h>
-#include <Decompiler/LinearView/DecLinearViewOptimization.h>
-#include <Decompiler/LinearView/DecLinearViewSimpleOutput.h>
-#include <Decompiler/SDA/Symbolization/DecGraphSymbolization.h>
-#include <Decompiler/SDA/Optimizaton/SdaGraphFinalOptimization.h>
-#include <Decompiler/PCode/Decoders/DecPCodeDecoderX86.h>
-#include <Decompiler/PCode/DecPCodeConstValueCalc.h>
-#include <Decompiler/PCode/ImageAnalyzer/DecImageAnalyzer.h>
-//#include <Decompiler/Graph/Analyzer/ImagePCodeGraphAnalyzer.h>
-#include <Decompiler/DecMisc.h>
+#include <decompiler/Decompiler.h>
+#include <decompiler/LinearView/DecLinearView.h>
+#include <decompiler/LinearView/DecLinearViewOptimization.h>
+#include <decompiler/LinearView/DecLinearViewSimpleOutput.h>
+#include <decompiler/SDA/Symbolization/DecGraphSymbolization.h>
+#include <decompiler/SDA/Optimizaton/SdaGraphFinalOptimization.h>
+#include <decompiler/PCode/Decoders/DecPCodeDecoderX86.h>
+#include <decompiler/PCode/DecPCodeConstValueCalc.h>
+#include <decompiler/PCode/ImageAnalyzer/DecImageAnalyzer.h>
+//#include <decompiler/Graph/Analyzer/ImagePCodeGraphAnalyzer.h>
+#include <decompiler/DecMisc.h>
 #include <Module/Image/SimpleBufferImage.h>
 #include <Module/Image/VectorBufferImage.h>
 

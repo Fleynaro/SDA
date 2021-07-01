@@ -1,6 +1,6 @@
 #pragma once
-#include <DB/AbstractMapper.h>
-#include <Address/AddressSpace.h>
+#include <database/AbstractMapper.h>
+#include <AddressSpace.h>
 
 namespace CE {
 	class AddressSpaceManager;

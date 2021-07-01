@@ -1,8 +1,8 @@
 #pragma once
-#include <Decompiler/SDA/SdaGraphModification.h>
-#include <Code/Function/Function.h>
-#include <Manager/SymbolManager.h>
-#include <Manager/TypeManager.h>
+#include <decompiler/SDA/SdaGraphModification.h>
+#include <Function.h>
+#include <managers/SymbolManager.h>
+#include <managers/TypeManager.h>
 
 namespace CE::Decompiler::Symbolization
 {

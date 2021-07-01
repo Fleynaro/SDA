@@ -1,6 +1,5 @@
 #pragma once
-#include <main.h>
-#include <Decompiler/DecMask.h>
+#include <decompiler/DecMask.h>
 
 //for debug x86
 #include <Zycore/Format.h>

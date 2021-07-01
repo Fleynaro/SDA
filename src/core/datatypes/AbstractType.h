@@ -1,7 +1,6 @@
 #pragma once
-#include <Utils/Description.h>
-#include <DB/DomainObject.h>
-#include <GhidraSync/GhidraObject.h>
+#include <utilities/Description.h>
+#include <database/DomainObject.h>
 
 namespace CE
 {

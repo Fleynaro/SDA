@@ -1,7 +1,7 @@
 #include "SymbolMapper.h"
-#include <Code/Symbol/Symbol.h>
-#include <Manager/TypeManager.h>
-#include <Manager/SymbolManager.h>
+#include <symbols/Symbol.h>
+#include <managers/TypeManager.h>
+#include <managers/SymbolManager.h>
 
 using namespace DB;
 using namespace CE;

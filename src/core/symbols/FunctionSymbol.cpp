@@ -1,5 +1,5 @@
 #include "FunctionSymbol.h"
-#include <Code/Function/Function.h>
+#include <Function.h>
 
 using namespace CE;
 

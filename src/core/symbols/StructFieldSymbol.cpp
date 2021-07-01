@@ -1,5 +1,5 @@
 #include "StructFieldSymbol.h"
-#include <Code/Type/Structure.h>
+#include <datatypes/Structure.h>
 
 CE::Symbol::Type CE::Symbol::StructFieldSymbol::getType() {
 	return STRUCT_FIELD;

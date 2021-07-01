@@ -1,6 +1,6 @@
 #pragma once
-#include <DB/AbstractMapper.h>
-#include <Code/Symbol/AbstractSymbol.h>
+#include <database/AbstractMapper.h>
+#include <symbols/AbstractSymbol.h>
 
 namespace CE {
 	class SymbolManager;

@@ -1,9 +1,11 @@
 #pragma once
-#include <Image/IImage.h>
-#include <DB/DomainObject.h>
-#include <Utils/Description.h>
-#include <Code/Type/FunctionSignature.h>
-#include <Code/Symbol/SymbolTable/SymbolTable.h>
+#include <images/IImage.h>
+#include <database/DomainObject.h>
+#include <utilities/Description.h>
+#include <datatypes/FunctionSignature.h>
+#include <SymbolTable.h>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 namespace CE
 {
@@ -76,7 +78,7 @@ namespace CE
 
 		fs::path getFile();
 
-		byte* getData() override;
+		int8_t* getData() override;
 
 		int getSize() override;
 

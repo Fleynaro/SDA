@@ -43,8 +43,7 @@ add_subdirectory(src)
 # for creating the gui app
 add_executable(
     sda_gui
-    src/main.cpp
-    src/main.h
+    src/gui/main.cpp
     )
 target_link_libraries(
     sda_gui PRIVATE

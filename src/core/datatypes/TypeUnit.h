@@ -1,5 +1,7 @@
 #pragma once
 #include "AbstractType.h"
+#include <list>
+#include <memory>
 
 namespace CE
 {

@@ -1,6 +1,6 @@
 #pragma once
-#include <Decompiler/PCode/Decompiler/PrimaryDecompiler.h>
-#include <Decompiler/Optimization/DecGraphOptimization.h>
+#include <decompiler/PCode/Decompiler/PrimaryDecompiler.h>
+#include <decompiler/Optimization/DecGraphOptimization.h>
 
 namespace CE::Decompiler
 {

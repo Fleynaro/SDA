@@ -1,6 +1,6 @@
 #include "Function.h"
-#include <Manager/FunctionManager.h>
-#include <Decompiler/Graph/DecPCodeGraph.h>
+#include <managers/FunctionManager.h>
+#include <decompiler/Graph/DecPCodeGraph.h>
 
 using namespace CE;
 

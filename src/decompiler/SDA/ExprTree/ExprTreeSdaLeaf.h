@@ -1,6 +1,6 @@
 #pragma once
 #include "ExprTreeSdaNode.h"
-#include <Code/Symbol/Symbol.h>
+#include <symbols/Symbols.h>
 
 namespace CE::Decompiler::ExprTree
 {

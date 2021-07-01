@@ -1,6 +1,6 @@
 #pragma once
-#include <DB/AbstractMapper.h>
-#include <Code/Function/Function.h>
+#include <database/AbstractMapper.h>
+#include <Function.h>
 
 namespace CE {
 	class FunctionManager;

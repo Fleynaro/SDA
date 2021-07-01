@@ -1,5 +1,6 @@
 #pragma once
 #include "UserType.h"
+#include <map>
 
 namespace CE
 {

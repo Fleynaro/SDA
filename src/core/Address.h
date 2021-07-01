@@ -1,7 +1,7 @@
 #pragma once
-#include <main.h>
-#include <Code/Type/TypeUnit.h>
-#include <Utils/Iterator.h>
+#include <Windows.h>
+#include <datatypes/TypeUnit.h>
+#include <utilities/Iterator.h>
 
 namespace CE
 {

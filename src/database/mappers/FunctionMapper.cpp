@@ -1,10 +1,10 @@
 #include "FunctionMapper.h"
-#include <Manager/FunctionManager.h>
-#include <Manager/SymbolTableManager.h>
-#include <Manager/TypeManager.h>
-#include <Manager/SymbolManager.h>
-#include <Manager/ImageManager.h>
-#include <GhidraSync/Mappers/GhidraFunctionMapper.h>
+#include <managers/FunctionManager.h>
+#include <managers/SymbolTableManager.h>
+#include <managers/TypeManager.h>
+#include <managers/SymbolManager.h>
+#include <managers/ImageManager.h>
+#include <ghidra_sync/Mappers/GhidraFunctionMapper.h>
 
 using namespace DB;
 using namespace CE;

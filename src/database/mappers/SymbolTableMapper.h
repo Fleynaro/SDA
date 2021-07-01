@@ -1,6 +1,6 @@
 #pragma once
-#include <DB/AbstractMapper.h>
-#include <Code/Symbol/SymbolTable/SymbolTable.h>
+#include <database/AbstractMapper.h>
+#include <SymbolTable.h>
 
 namespace CE {
 	class SymbolTableManager;

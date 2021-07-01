@@ -1,6 +1,7 @@
 #pragma once
 #include "AbstractManager.h"
-#include <Code/Function/Function.h>
+#include <Function.h>
+#include <ghidra_sync/DataSyncPacketManagerService.h>
 
 namespace DB {
 	class FunctionMapper;

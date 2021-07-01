@@ -1,6 +1,6 @@
 #pragma once
-#include <DB/AbstractMapper.h>
-#include <Code/Type/Type.h>
+#include <database/AbstractMapper.h>
+#include <datatypes/DataTypes.h>
 
 namespace CE {
 	class TypeManager;

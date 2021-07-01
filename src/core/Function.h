@@ -1,8 +1,8 @@
 #pragma once
-#include <GhidraSync/GhidraObject.h>
-#include <Code/Type/FunctionSignature.h>
-#include <Code/Symbol/Symbol.h>
-#include <Image/ImageDecorator.h>
+#include <ghidra_sync/GhidraObject.h>
+#include <datatypes/FunctionSignature.h>
+#include <symbols/FunctionSymbol.h>
+#include <ImageDecorator.h>
 
 namespace CE
 {

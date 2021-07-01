@@ -1,6 +1,8 @@
 #pragma once
 #include "UserType.h"
-#include <Code/Symbol/StructFieldSymbol.h>
+#include <symbols/StructFieldSymbol.h>
+#include <set>
+#include <map>
 
 namespace CE::DataType
 {

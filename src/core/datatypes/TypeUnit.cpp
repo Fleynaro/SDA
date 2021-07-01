@@ -1,6 +1,8 @@
 #include "TypeUnit.h"
 #include "SystemType.h"
 #include "Typedef.h"
+#include <utilities/Helper.h>
+#include <map>
 
 using namespace CE;
 using namespace CE::DataType;
@@ -83,7 +85,7 @@ bool Unit::equal(DataType::Unit* typeUnit) {
 
 int Unit::getPriority() {
 	auto baseType = getBaseType();
-	auto size = min(baseType->getSize(), 0x8);
+	auto size = std::min(baseType->getSize(), 0x8);
 	bool hasPointerLvl = getPointerLvl() != 0;
 	bool isSigned = baseType->isSigned();
 	bool isNotSimple = baseType->getGroup() != Simple;

@@ -1,6 +1,6 @@
 #pragma once
 #include "AbstractManager.h"
-#include <Address/AddressSpace.h>
+#include <AddressSpace.h>
 
 namespace DB {
 	class AddressSpaceMapper;

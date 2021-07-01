@@ -1,6 +1,7 @@
 #include "AbstractType.h"
-#include "Type.h"
-#include <Decompiler/DecMask.h>
+#include "TypeUnit.h"
+#include "Typedef.h"
+#include <decompiler/DecMask.h>
 
 using namespace CE;
 using namespace CE::DataType;

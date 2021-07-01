@@ -1,6 +1,6 @@
 #include "ImageManager.h"
-#include <DB/Mappers/ImageMapper.h>
-#include <Manager/SymbolTableManager.h>
+#include <database/Mappers/ImageMapper.h>
+#include <managers/SymbolTableManager.h>
 
 using namespace CE;
 

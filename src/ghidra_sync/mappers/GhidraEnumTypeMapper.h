@@ -1,6 +1,6 @@
 #pragma once
 #include "GhidraDataTypeMapper.h"
-#include <Code/Type/Enum.h>
+#include <datatypes/Enum.h>
 
 namespace CE::Ghidra
 {

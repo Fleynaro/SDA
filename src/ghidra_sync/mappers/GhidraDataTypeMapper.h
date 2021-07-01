@@ -1,6 +1,6 @@
 #pragma once
-#include <GhidraSync/GhidraAbstractMapper.h>
-#include <Code/Type/UserType.h>
+#include <ghidra_sync/GhidraAbstractMapper.h>
+#include <datatypes/UserType.h>
 
 namespace CE {
 	class TypeManager;

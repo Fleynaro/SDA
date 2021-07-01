@@ -1,6 +1,6 @@
 #pragma once
-#include <DB/Transaction.h>
-#include <GhidraSync/GhidraSync.h>
+#include <database/Transaction.h>
+#include <ghidra_sync/GhidraSync.h>
 
 using namespace SQLite;
 
@@ -116,26 +116,11 @@ namespace CE
 
 		const fs::path& getProjectsFile();
 
-		Project* loadProject(const fs::path& dir) {
-			return new Project(this, dir);
-		}
+		Project* loadProject(const fs::path& dir);
 
-		Project* createProject(const fs::path& dir) {
-			ProjectEntry projectEntry;
-			projectEntry.m_dir = dir;
-			m_projectEntries.push_back(projectEntry);
+		Project* createProject(const fs::path& dir);
 
-			auto project = new Project(this, dir);
-			if (!fs::exists(project->getDirectory()))
-				fs::create_directory(project->getDirectory());
-			if (!fs::exists(project->getImagesDirectory()))
-				fs::create_directory(project->getImagesDirectory());
-			return project;
-		}
-
-		const auto& getProjectEntries() {
-			return m_projectEntries;
-		}
+		const auto& getProjectEntries();
 
 		void load();
 

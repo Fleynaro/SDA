@@ -1,6 +1,6 @@
 #include "DataTypeMapper.h"
-#include <Manager/TypeManager.h>
-#include <Manager/SymbolManager.h>
+#include <managers/TypeManager.h>
+#include <managers/SymbolManager.h>
 
 using namespace DB;
 using namespace CE;

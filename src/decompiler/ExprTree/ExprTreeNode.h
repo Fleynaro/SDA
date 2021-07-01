@@ -1,7 +1,7 @@
 #pragma once
 #include "../DecMask.h"
 #include "../PCode/DecPCode.h"
-#include <Utils/HashSerialization.h>
+#include <utilities/HashSerialization.h>
 
 namespace CE::Decompiler::Symbol
 {

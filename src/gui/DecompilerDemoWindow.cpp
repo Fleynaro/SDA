@@ -73,9 +73,9 @@ void GUI::DecompilerDemoWindow::deassembly(const std::string& textCode) {
 
 
 // decompiler
-#include <Decompiler/DecMisc.h>
+#include <decompiler/DecMisc.h>
 #include <Module/Image/VectorBufferImage.h>
-#include <Manager/Managers.h>
+#include <managers/Managers.h>
 
 int hexToDec(char c) {
     if (c <= '9')

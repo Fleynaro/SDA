@@ -1,8 +1,8 @@
 #pragma once
 #include "Structure.h"
 #include "SystemType.h"
-#include "../Function/Function.h"
-#include <Utils/Iterator.h>
+#include <Function.h>
+#include <utilities/Iterator.h>
 
 namespace CE::DataType
 {

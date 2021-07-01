@@ -1,13 +1,13 @@
 #pragma once
-#include <Decompiler/Decompiler.h>
-#include <Decompiler/LinearView/DecLinearView.h>
-#include <Decompiler/LinearView/DecLinearViewOptimization.h>
-#include <Decompiler/LinearView/DecLinearViewSimpleOutput.h>
-#include <Decompiler/SDA/Symbolization/DecGraphSymbolization.h>
-#include <Decompiler/SDA/Optimizaton/SdaGraphFinalOptimization.h>
-#include <Decompiler/PCode/Decoders/DecPCodeDecoderX86.h>
-#include <Decompiler/PCode/DecPCodeConstValueCalc.h>
-#include <Decompiler/PCode/ImageAnalyzer/DecImageAnalyzer.h>
+#include <decompiler/Decompiler.h>
+#include <decompiler/LinearView/DecLinearView.h>
+#include <decompiler/LinearView/DecLinearViewOptimization.h>
+#include <decompiler/LinearView/DecLinearViewSimpleOutput.h>
+#include <decompiler/SDA/Symbolization/DecGraphSymbolization.h>
+#include <decompiler/SDA/Optimizaton/SdaGraphFinalOptimization.h>
+#include <decompiler/PCode/Decoders/DecPCodeDecoderX86.h>
+#include <decompiler/PCode/DecPCodeConstValueCalc.h>
+#include <decompiler/PCode/ImageAnalyzer/DecImageAnalyzer.h>
 
 using namespace CE::Decompiler;
 using namespace CE::Symbol;

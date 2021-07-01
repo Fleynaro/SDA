@@ -1,10 +1,14 @@
 #include "Project.h"
 #include <Program.h>
-#include <GhidraSync/GhidraSync.h>
-#include <Utils/Resource.h>
+#include <ghidra_sync/GhidraSync.h>
+#include <managers/Managers.h>
+#include <utilities/Resource.h>
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
-//managers
-#include <Manager/Managers.h>
+#include <fstream>
+#include <sstream>
+#include <iostream>
 
 using namespace CE;
 
@@ -146,6 +150,27 @@ Program* CE::ProjectManager::getProgram() {
 
 const fs::path& CE::ProjectManager::getProjectsFile() {
 	return m_program->getExecutableDirectory() / fs::path("projects.json");
+}
+
+Project* CE::ProjectManager::loadProject(const fs::path& dir) {
+	return new Project(this, dir);
+}
+
+Project* CE::ProjectManager::createProject(const fs::path& dir) {
+	ProjectEntry projectEntry;
+	projectEntry.m_dir = dir;
+	m_projectEntries.push_back(projectEntry);
+
+	auto project = new Project(this, dir);
+	if (!fs::exists(project->getDirectory()))
+		fs::create_directory(project->getDirectory());
+	if (!fs::exists(project->getImagesDirectory()))
+		fs::create_directory(project->getImagesDirectory());
+	return project;
+}
+
+const auto& CE::ProjectManager::getProjectEntries() {
+	return m_projectEntries;
 }
 
 void CE::ProjectManager::load() {

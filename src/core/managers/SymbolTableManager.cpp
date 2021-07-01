@@ -1,5 +1,5 @@
 #include "SymbolTableManager.h"
-#include <DB/Mappers/SymbolTableMapper.h>
+#include <database/Mappers/SymbolTableMapper.h>
 
 using namespace CE;
 using namespace Symbol;

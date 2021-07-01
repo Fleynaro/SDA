@@ -1,12 +1,13 @@
 #pragma once
 #include "TypeManager.h"
-#include <DB/Mappers/DataTypeMapper.h>
-#include <GhidraSync/Mappers/GhidraTypedefTypeMapper.h>
-#include <GhidraSync/Mappers/GhidraStructureTypeMapper.h>
-#include <GhidraSync/Mappers/GhidraClassTypeMapper.h>
-#include <GhidraSync/Mappers/GhidraEnumTypeMapper.h>
-#include <GhidraSync/Mappers/GhidraSignatureTypeMapper.h>
-#include <Utils/ObjectHash.h>
+#include <database/Mappers/DataTypeMapper.h>
+#include <ghidra_sync/Mappers/GhidraTypedefTypeMapper.h>
+#include <ghidra_sync/Mappers/GhidraStructureTypeMapper.h>
+#include <ghidra_sync/Mappers/GhidraClassTypeMapper.h>
+#include <ghidra_sync/Mappers/GhidraEnumTypeMapper.h>
+#include <ghidra_sync/Mappers/GhidraSignatureTypeMapper.h>
+#include <ghidra_sync/DataSyncPacketManagerService.h>
+#include <utilities/ObjectHash.h>
 
 using namespace CE;
 using namespace CE::DataType;

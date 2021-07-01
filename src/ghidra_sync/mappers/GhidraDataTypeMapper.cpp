@@ -4,7 +4,7 @@
 #include "GhidraClassTypeMapper.h"
 #include "GhidraTypedefTypeMapper.h"
 #include "GhidraSignatureTypeMapper.h"
-#include <Manager/TypeManager.h>
+#include <managers/TypeManager.h>
 
 using namespace CE;
 using namespace CE::Ghidra;

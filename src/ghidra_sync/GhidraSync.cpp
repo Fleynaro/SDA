@@ -1,6 +1,6 @@
 #include "GhidraSync.h"
-#include <Manager/FunctionManager.h>
-#include <Manager/TypeManager.h>
+#include <managers/FunctionManager.h>
+#include <managers/TypeManager.h>
 
 using namespace CE;
 using namespace CE::Ghidra;

@@ -1,5 +1,5 @@
 #pragma once
-#include "main.h"
+#include <stdexcept>
 
 namespace CE
 {
@@ -12,7 +12,7 @@ namespace CE
 			DATA_SEGMENT
 		};
 
-		virtual byte* getData() = 0;
+		virtual int8_t* getData() = 0;
 
 		virtual int getSize() = 0;
 

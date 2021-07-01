@@ -1,6 +1,6 @@
 #pragma once
 #include "AbstractSymbol.h"
-#include <Decompiler/DecStorage.h>
+#include <decompiler/DecStorage.h>
 
 namespace CE::Symbol
 {

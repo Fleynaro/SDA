@@ -1,7 +1,7 @@
 #include "GhidraFunctionMapper.h"
 #include "GhidraSignatureTypeMapper.h"
-#include <Manager/TypeManager.h>
-#include <Manager/FunctionManager.h>
+#include <managers/TypeManager.h>
+#include <managers/FunctionManager.h>
 
 using namespace CE;
 using namespace CE::Ghidra;

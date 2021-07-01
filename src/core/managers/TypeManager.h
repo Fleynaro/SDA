@@ -1,6 +1,6 @@
 #pragma once
 #include "AbstractManager.h"
-#include <Code/Type/Type.h>
+#include <datatypes/DataTypes.h>
 
 namespace DB {
 	class DataTypeMapper;

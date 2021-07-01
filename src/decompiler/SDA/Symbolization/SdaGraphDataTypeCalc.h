@@ -1,5 +1,5 @@
 #pragma once
-#include <Decompiler/SDA/SdaGraphModification.h>
+#include <decompiler/SDA/SdaGraphModification.h>
 #include "SdaGoarBuilder.h"
 
 namespace CE::Decompiler::Symbolization

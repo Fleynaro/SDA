@@ -1,6 +1,6 @@
 #pragma once
 #include "SdaCodeGraph.h"
-#include <Decompiler/Optimization/Graph/DecGraphModification.h>
+#include <decompiler/Optimization/Graph/DecGraphModification.h>
 
 namespace CE::Decompiler
 {

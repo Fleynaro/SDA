@@ -1,5 +1,6 @@
 #pragma once
-#include <main.h>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 namespace CE
 {
@@ -11,14 +12,8 @@ namespace CE
 	public:
 		Program();
 
-		fs::path getExecutableDirectory() {
-			char filename[MAX_PATH];
-			GetModuleFileName(NULL, filename, MAX_PATH);
-			return fs::path(filename).parent_path();
-		}
+		fs::path getExecutableDirectory();
 
-		ProjectManager* getProjectManager() {
-			return m_projectManager;
-		}
+		ProjectManager* getProjectManager();
 	};
 };

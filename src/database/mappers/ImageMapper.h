@@ -1,7 +1,7 @@
 #pragma once
-#include <DB/AbstractMapper.h>
-#include <Image/ImageDecorator.h>
-#include <Decompiler/Graph/DecPCodeGraph.h>
+#include <database/AbstractMapper.h>
+#include <ImageDecorator.h>
+#include <decompiler/Graph/DecPCodeGraph.h>
 
 namespace CE {
 	class ImageManager;

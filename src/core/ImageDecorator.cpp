@@ -1,8 +1,9 @@
 #include "ImageDecorator.h"
-#include <Manager/AddressSpaceManager.h>
-#include <Image/PEImage.h>
-#include <Decompiler/PCode/DecPCodeInstructionPool.h>
-#include <Decompiler/Graph/DecPCodeGraph.h>
+#include <managers/AddressSpaceManager.h>
+#include <images/PEImage.h>
+#include <decompiler/PCode/DecPCodeInstructionPool.h>
+#include <decompiler/Graph/DecPCodeGraph.h>
+#include <utilities/Helper.h>
 
 using namespace CE;
 
@@ -56,7 +57,7 @@ void CE::ImageDecorator::load() {
 	Helper::File::LoadFileIntoBuffer(getFile(), &buffer, &size);
 
 	if (m_type == IMAGE_PE) {
-		m_image = new PEImage((byte*)buffer, size);
+		m_image = new PEImage((int8_t*)buffer, size);
 	}
 }
 
@@ -104,7 +105,7 @@ fs::path CE::ImageDecorator::getFile() {
 	return m_addressSpace->getImagesDirectory() / fs::path(getName() + ".bin");
 }
 
-byte* CE::ImageDecorator::getData() {
+int8_t* CE::ImageDecorator::getData() {
 	return m_image->getData();
 }
 

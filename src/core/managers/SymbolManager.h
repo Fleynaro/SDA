@@ -1,7 +1,7 @@
 #pragma once
 #include "AbstractManager.h"
-#include <Code/Symbol/Symbol.h>
-#include <Manager/TypeManager.h>
+#include <symbols/Symbols.h>
+#include <managers/TypeManager.h>
 
 namespace DB {
 	class SymbolMapper;

@@ -2,8 +2,8 @@
 #include <Module/Image/PEImage.h>
 #include "../../Graph/DecPCodeGraph.h"
 #include "../Decoders/DecPCodeDecoderX86.h"
-#include <Manager/TypeManager.h>
-#include <Manager/SymbolTableManager.h>
+#include <managers/TypeManager.h>
+#include <managers/SymbolTableManager.h>
 
 namespace CE::Decompiler
 {

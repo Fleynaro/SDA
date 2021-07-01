@@ -1,5 +1,6 @@
 #pragma once
 #include "TypeUnit.h"
+#include <ghidra_sync/GhidraObject.h>
 
 namespace CE::DataType
 {
