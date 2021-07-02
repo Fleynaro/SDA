@@ -1,4 +1,9 @@
 #include "Helper.h"
+#include <fstream>
+#include <sstream>
+#include <regex>
+#include <stdarg.h>
+#include <stdarg.h>
 
 using namespace Helper;
 

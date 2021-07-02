@@ -1,4 +1,5 @@
 #include "PrimaryDecompiler.h"
+#include <decompiler/Graph/DecCodeGraph.h>
 
 using namespace CE;
 using namespace CE::Decompiler;

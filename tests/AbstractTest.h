@@ -73,13 +73,14 @@ protected:
 #include <decompiler/LinearView/DecLinearViewSimpleOutput.h>
 #include <decompiler/SDA/Symbolization/DecGraphSymbolization.h>
 #include <decompiler/SDA/Optimizaton/SdaGraphFinalOptimization.h>
+#include <decompiler/SDA/Optimizaton/SdaGraphMemoryOptimization.h>
 #include <decompiler/PCode/Decoders/DecPCodeDecoderX86.h>
 #include <decompiler/PCode/DecPCodeConstValueCalc.h>
 #include <decompiler/PCode/ImageAnalyzer/DecImageAnalyzer.h>
 //#include <decompiler/Graph/Analyzer/ImagePCodeGraphAnalyzer.h>
 #include <decompiler/DecMisc.h>
-#include <Module/Image/SimpleBufferImage.h>
-#include <Module/Image/VectorBufferImage.h>
+#include <images/SimpleBufferImage.h>
+#include <images/VectorBufferImage.h>
 
 class ProgramDecFixture : public ProgramFixture
 {

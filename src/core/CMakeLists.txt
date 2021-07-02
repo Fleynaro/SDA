@@ -26,7 +26,8 @@ target_link_libraries(
     nlohmann_json
     magic_enum::magic_enum
     SQLiteCpp
-    asmjit::asmjit
+    asmjit
+    asmtk
     minhook::minhook
     Zydis
 )

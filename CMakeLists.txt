@@ -14,10 +14,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
 find_package(SQLiteCpp CONFIG REQUIRED)
-find_package(asmjit CONFIG REQUIRED)
 find_package(Thrift CONFIG REQUIRED)
 find_package(minhook CONFIG REQUIRED)
-find_package(imgui CONFIG REQUIRED)
 if(WIN32)
     option(ZYDIS_FEATURE_KNC OFF)
     option(ZYDIS_BUILD_EXAMPLES OFF)
@@ -28,6 +26,9 @@ if(WIN32)
 else()
     find_package(zydis CONFIG REQUIRED)
 endif()
+add_subdirectory(external/asmtk)
+set_target_properties(asmjit PROPERTIES FOLDER "external")
+set_target_properties(asmtk PROPERTIES FOLDER "external")
 
 # all options
 option(USE_TESTS "Use unit tests" ON)
@@ -36,6 +37,8 @@ option(USE_TESTS "Use unit tests" ON)
 include(cmake/func_vs_filters.cmake)
 include(cmake/func_thrift_generator.cmake)
 
+add_subdirectory(libs/imgui_wrapper)
+set_target_properties(imgui_wrapper PROPERTIES FOLDER "libs")
 add_subdirectory(extras/ghidra_sync)
 include_directories(src)
 add_subdirectory(src)
@@ -54,6 +57,8 @@ target_link_libraries(
 # for creating the console app to test
 if(USE_TESTS)
     find_package(GTest CONFIG REQUIRED)
+    add_subdirectory(extras/decompiler_test_lib)
+    set_target_properties(decompiler_test_lib PROPERTIES FOLDER "extras")
 
     file(GLOB_RECURSE TEST_SRC
         tests/*.cpp
@@ -65,6 +70,7 @@ if(USE_TESTS)
     target_link_libraries(
         sda_tests PRIVATE
         core
+        decompiler_test_lib
         GTest::gtest
         )
     create_vs_filters("${TEST_SRC}")

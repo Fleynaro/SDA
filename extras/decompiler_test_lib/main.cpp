@@ -1,7 +1,6 @@
-#include "pch.h"
 #include <Windows.h>
 #include <iostream>
-#include "TestCodeToDecompile.h"
+#include "main.h"
 
 //functions
 int Func1(int a) {

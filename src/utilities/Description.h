@@ -16,25 +16,15 @@ public:
 class Description : virtual public IDescription
 {
 public:
-	Description(const std::string& name, const std::string& comment)
-		: m_name(name), m_comment(comment)
-	{}
+	Description(const std::string& name, const std::string& comment);
 
-	const std::string getName() override {
-		return m_name;
-	}
+	const std::string getName() override;
 
-	void setName(const std::string& name) override {
-		m_name = name;
-	}
+	void setName(const std::string& name) override;
 
-	const std::string getComment() override {
-		return m_comment;
-	}
+	const std::string getComment() override;
 
-	void setComment(const std::string& comment) override {
-		m_comment = comment;
-	}
+	void setComment(const std::string& comment) override;
 private:
 	std::string m_name;
 	std::string m_comment;

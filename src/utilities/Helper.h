@@ -1,5 +1,8 @@
 #pragma once
-#include <main.h>
+#include <string>
+#include <vector>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 
 namespace Helper

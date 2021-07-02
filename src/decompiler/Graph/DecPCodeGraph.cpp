@@ -27,7 +27,7 @@ const auto& CE::Decompiler::ImagePCodeGraph::getHeadFuncGraphs() {
 	return m_headFuncGraphs;
 }
 
-auto& CE::Decompiler::ImagePCodeGraph::getFunctionGraphList() {
+std::list<FunctionPCodeGraph>& CE::Decompiler::ImagePCodeGraph::getFunctionGraphList() {
 	return m_funcGraphList;
 }
 
@@ -197,7 +197,7 @@ void CE::Decompiler::FunctionPCodeGraph::addVirtFuncCall(FunctionPCodeGraph* fun
 	funcGraph->m_refFuncCalls.insert(this);
 }
 
-const auto& CE::Decompiler::FunctionPCodeGraph::getBlocks() {
+const std::set<PCodeBlock*>& CE::Decompiler::FunctionPCodeGraph::getBlocks() {
 	return m_blocks;
 }
 

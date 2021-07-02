@@ -1,6 +1,11 @@
-#include "main.h"
+
 #include <tchar.h>
-#include <GUI/Windows/DecompilerDemoWindow.h>
+#include <winsock2.h>
+#include <windows.h>
+#include <immintrin.h>
+#include <d3d11.h>
+
+#include <gui/DecompilerDemoWindow.h>
 
 // Data
 static ID3D11Device* g_pd3dDevice = NULL;
