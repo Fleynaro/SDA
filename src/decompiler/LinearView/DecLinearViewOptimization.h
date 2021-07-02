@@ -45,7 +45,7 @@ namespace CE::Decompiler::LinearView
 						blockList->m_backOrderId = orderId - 1;
 						CalculateBackOrderIdsForBlockList(blockList, orderId - 1);
 						if (!blockList->getBlocks().empty()) {
-							maxOrderId = max(maxOrderId, (*blockList->getBlocks().begin())->getBackOrderId());
+							maxOrderId = std::max(maxOrderId, (*blockList->getBlocks().begin())->getBackOrderId());
 						}
 					}
 					orderId = maxOrderId;

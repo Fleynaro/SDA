@@ -1,7 +1,7 @@
 #pragma once
-#include "../Graph/DecCodeGraph.h"
 #include "ExprTree/ExprTreeSda.h"
-#include "../ExprTree/ExprTree.h"
+#include <decompiler/Graph/DecCodeGraph.h>
+#include <decompiler/ExprTree/ExprTree.h>
 
 namespace CE::Decompiler
 {
@@ -9,16 +9,11 @@ namespace CE::Decompiler
 	class SdaCodeGraph
 	{
 	public:
-		SdaCodeGraph(DecompiledCodeGraph* decGraph)
-			: m_decGraph(decGraph)
-		{}
+		SdaCodeGraph(DecompiledCodeGraph* decGraph);
 
-		~SdaCodeGraph() {
-		}
+		~SdaCodeGraph();
 
-		DecompiledCodeGraph* getDecGraph() {
-			return m_decGraph;
-		}
+		DecompiledCodeGraph* getDecGraph();
 
 		/*CE::Symbol::AbstractSymbol* findSdaSymbolByName(std::string name) {
 			for (auto symbol : m_sdaSymbols) {
@@ -28,9 +23,7 @@ namespace CE::Decompiler
 			return nullptr;
 		}*/
 
-		std::list<CE::Symbol::ISymbol*>& getSdaSymbols() {
-			return m_sdaSymbols;
-		}
+		std::list<CE::Symbol::ISymbol*>& getSdaSymbols();
 	private:
 		DecompiledCodeGraph* m_decGraph;
 		std::list<CE::Symbol::ISymbol*> m_sdaSymbols;

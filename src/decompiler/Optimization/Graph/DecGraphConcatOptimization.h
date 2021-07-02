@@ -6,28 +6,10 @@ namespace CE::Decompiler::Optimization
 	class GraphConcatOptimization : public GraphModification
 	{
 	public:
-		GraphConcatOptimization(DecompiledCodeGraph* decGraph)
-			: GraphModification(decGraph)
-		{}
+		GraphConcatOptimization(DecompiledCodeGraph* decGraph);
 
-		void start() override {
-			passAllTopNodes([&](DecBlock::BlockTopNode* topNode) {
-				auto node = topNode->getNode();
-				INode::UpdateDebugInfo(node);
-				findConcat(node);
-				});
-		}
+		void start() override;
 	private:
-		void findConcat(INode* node) {
-			node->iterateChildNodes([&](INode* childNode) {
-				findConcat(childNode);
-				});
-
-			if (auto opNode = dynamic_cast<OperationalNode*>(node)) {
-				if (opNode->m_operation == Concat) {
-
-				}
-			}
-		}
+		void findConcat(INode* node);
 	};
 };

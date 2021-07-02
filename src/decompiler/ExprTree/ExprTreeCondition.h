@@ -8,21 +8,13 @@ namespace CE::Decompiler::ExprTree
 	public:
 		PCode::Instruction* m_instr;
 
-		AbstractCondition(PCode::Instruction* instr = nullptr)
-			: m_instr(instr)
-		{}
+		AbstractCondition(PCode::Instruction* instr = nullptr);
 
 		virtual void inverse() = 0;
 
-		int getSize() override {
-			return 1;
-		}
+		int getSize() override;
 
-		std::list<PCode::Instruction*> getInstructionsRelatedTo() override {
-			if (m_instr)
-				return { m_instr };
-			return {};
-		}
+		std::list<PCode::Instruction*> getInstructionsRelatedTo() override;
 	};
 
 	class BooleanValue : public AbstractCondition
@@ -30,25 +22,15 @@ namespace CE::Decompiler::ExprTree
 	public:
 		bool m_value;
 
-		BooleanValue(bool value, PCode::Instruction* instr = nullptr)
-			: m_value(value), AbstractCondition(instr)
-		{}
+		BooleanValue(bool value, PCode::Instruction* instr = nullptr);
 
-		void inverse() override {
-			m_value ^= true;
-		}
+		void inverse() override;
 
-		INode* clone(NodeCloneContext* ctx) override {
-			return new BooleanValue(m_value);
-		}
+		INode* clone(NodeCloneContext* ctx) override;
 
-		HS getHash() override {
-			return HS() << m_value;
-		}
+		HS getHash() override;
 
-		std::string printDebug() override {
-			return m_updateDebugInfo = (m_value ? "true" : "false");
-		}
+		std::string printDebug() override;
 	};
 
 	class Condition : public AbstractCondition, public INodeAgregator
@@ -82,72 +64,21 @@ namespace CE::Decompiler::ExprTree
 		INode* m_rightNode;
 		ConditionType m_cond;
 
-		Condition(INode* leftNode, INode* rightNode, ConditionType cond, PCode::Instruction* instr = nullptr)
-			: m_leftNode(leftNode), m_rightNode(rightNode), m_cond(cond), AbstractCondition(instr)
-		{
-			leftNode->addParentNode(this);
-			rightNode->addParentNode(this);
-		}
+		Condition(INode* leftNode, INode* rightNode, ConditionType cond, PCode::Instruction* instr = nullptr);
 
-		~Condition() {
-			if (m_leftNode != nullptr)
-				m_leftNode->removeBy(this);
-			if (m_rightNode != nullptr)
-				m_rightNode->removeBy(this);
-		}
+		~Condition();
 
-		void replaceNode(INode* node, INode* newNode) override {
-			if (m_leftNode == node) {
-				m_leftNode = newNode;
-			}
-			else if (m_rightNode == node) {
-				m_rightNode = newNode;
-			}
-		}
+		void replaceNode(INode* node, INode* newNode) override;
 
-		std::list<ExprTree::INode*> getNodesList() override {
-			return { m_leftNode, m_rightNode };
-		}
+		std::list<ExprTree::INode*> getNodesList() override;
 
-		INode* clone(NodeCloneContext* ctx) override {
-			return new Condition(m_leftNode->clone(ctx), m_rightNode->clone(ctx), m_cond);
-		}
+		INode* clone(NodeCloneContext* ctx) override;
 
-		HS getHash() override {
-			return HS()
-				<< (m_leftNode->getHash() + m_rightNode->getHash())
-				<< (int)m_cond;
-		}
+		HS getHash() override;
 
-		void inverse() override {
-			switch (m_cond)
-			{
-			case Eq:
-				m_cond = Ne;
-				break;
-			case Ne:
-				m_cond = Eq;
-				break;
-			case Lt:
-				m_cond = Ge;
-				break;
-			case Le:
-				m_cond = Gt;
-				break;
-			case Gt:
-				m_cond = Le;
-				break;
-			case Ge:
-				m_cond = Lt;
-				break;
-			}
-		}
+		void inverse() override;
 
-		std::string printDebug() override {
-			if (!m_leftNode || !m_rightNode)
-				return "";
-			return m_updateDebugInfo = ("(" + m_leftNode->printDebug() + " " + ShowConditionType(m_cond) + " " + m_rightNode->printDebug() + ")");
-		}
+		std::string printDebug() override;
 	};
 
 	class CompositeCondition : public AbstractCondition, public INodeAgregator
@@ -161,96 +92,26 @@ namespace CE::Decompiler::ExprTree
 			Or
 		};
 
-		static std::string ShowConditionType(CompositeConditionType condType) {
-			switch (condType)
-			{
-			case And: return "&&";
-			case Or: return "||";
-			}
-			return "_";
-		}
+		static std::string ShowConditionType(CompositeConditionType condType);
 
 		AbstractCondition* m_leftCond;
 		AbstractCondition* m_rightCond;
 		CompositeConditionType m_cond;
 
-		CompositeCondition(AbstractCondition* leftCond, AbstractCondition* rightCond = nullptr, CompositeConditionType cond = None, PCode::Instruction* instr = nullptr)
-			: m_leftCond(leftCond), m_rightCond(rightCond), m_cond(cond), AbstractCondition(instr)
-		{
-			leftCond->addParentNode(this);
-			if (rightCond != nullptr) {
-				rightCond->addParentNode(this);
-			}
-		}
+		CompositeCondition(AbstractCondition* leftCond, AbstractCondition* rightCond = nullptr, CompositeConditionType cond = None, PCode::Instruction* instr = nullptr);
 
-		~CompositeCondition() {
-			if (m_leftCond != nullptr)
-				m_leftCond->removeBy(this);
-			if (m_rightCond != nullptr)
-				m_rightCond->removeBy(this);
-		}
+		~CompositeCondition();
 
-		void replaceNode(INode* node, INode* newNode) override {
-			if (auto cond = dynamic_cast<AbstractCondition*>(node)) {
-				if (auto newCond = dynamic_cast<AbstractCondition*>(newNode)) {
-					if (m_leftCond == cond)
-						m_leftCond = newCond;
-					else if (m_rightCond == cond)
-						m_rightCond = newCond;
-				}
-			}
-		}
+		void replaceNode(INode* node, INode* newNode) override;
 
-		std::list<ExprTree::INode*> getNodesList() override {
-			return { m_leftCond, m_rightCond };
-		}
+		std::list<ExprTree::INode*> getNodesList() override;
 
-		INode* clone(NodeCloneContext* ctx) override {
-			return new CompositeCondition(dynamic_cast<AbstractCondition*>(m_leftCond->clone(ctx)), m_rightCond ? dynamic_cast<AbstractCondition*>(m_rightCond->clone(ctx)) : nullptr, m_cond);
-		}
+		INode* clone(NodeCloneContext* ctx) override;
 
-		HS getHash() override {
-			return HS()
-				<< (m_leftCond->getHash() + (m_rightCond ? m_rightCond->getHash() : 0x0))
-				<< (int)m_cond;
-		}
+		HS getHash() override;
 
-		void inverse() override {
-			if (m_cond == Not) {
-				m_cond = None;
-				return;
-			}
-			if (m_cond == None) {
-				m_cond = Not;
-				return;
-			}
+		void inverse() override;
 
-			switch (m_cond)
-			{
-			case And:
-				m_cond = Or;
-				break;
-			case Or:
-				m_cond = And;
-				break;
-			}
-
-			if (m_leftCond)
-				m_leftCond->inverse();
-			if (m_rightCond)
-				m_rightCond->inverse();
-		}
-
-		std::string printDebug() override {
-			if (!m_leftCond)
-				return "";
-			if (m_cond == None) {
-				return m_updateDebugInfo = m_leftCond->printDebug();
-			}
-			if (m_cond == Not) {
-				return m_updateDebugInfo = ("!(" + m_leftCond->printDebug() + ")");
-			}
-			return m_updateDebugInfo = ("(" + m_leftCond->printDebug() + " " + ShowConditionType(m_cond) + " " + m_rightCond->printDebug() + ")");
-		}
+		std::string printDebug() override;
 	};
 };

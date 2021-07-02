@@ -1,5 +1,6 @@
 #pragma once
-#include "main.h"
+#include <list>
+#include <string>
 
 namespace CE::Decompiler
 {
@@ -12,54 +13,21 @@ namespace CE::Decompiler
 		WarningContainer()
 		{}
 
-		auto& getNotices() {
-			return m_notices;
-		}
+		auto& getNotices();
 
-		auto& getWarnings() {
-			return m_warnings;
-		}
+		auto& getWarnings();
 
-		auto& getErrors() {
-			return m_errors;
-		}
+		auto& getErrors();
 
-		void addNotice(const std::string& message) {
-			m_notices.push_back(message);
-		}
+		void addNotice(const std::string& message);
 
-		void addWarning(const std::string& message) {
-			m_warnings.push_back(message);
-		}
+		void addWarning(const std::string& message);
 
-		void addError(const std::string& message) {
-			m_errors.push_back(message);
-		}
+		void addError(const std::string& message);
 
-		bool hasAnything() {
-			return !m_notices.empty() || !m_warnings.empty() || !m_errors.empty();
-		}
+		bool hasAnything();
 
-		std::string getAllMessages() {
-			std::string result;
-
-			result += "Notices:\n";
-			for (auto notice : m_notices) {
-				result += "- " + notice + "\n";
-			}
-
-			result += "Warnings:\n";
-			for (auto warning : m_warnings) {
-				result += "- " + warning + "\n";
-			}
-
-			result += "Errors:\n";
-			for (auto error : m_errors) {
-				result += "- " +  error + "\n";
-			}
-
-			return result;
-		}
+		std::string getAllMessages();
 	};
 
 	class IWarningGenerator {

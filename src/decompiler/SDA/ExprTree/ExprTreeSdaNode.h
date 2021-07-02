@@ -1,6 +1,7 @@
 #pragma once
-#include <datatypes/Type.h>
-#include "../../ExprTree/ExprTree.h"
+#include <datatypes/TypeUnit.h>
+#include <decompiler/ExprTree/ExprTree.h>
+#include <decompiler/DecTopNode.h>
 #include "../MemLocation.h"
 
 namespace CE::Decompiler::ExprTree
@@ -15,44 +16,29 @@ namespace CE::Decompiler::ExprTree
 	public:
 		DataTypeCast() = default;
 
-		DataTypePtr getCastDataType() {
-			return m_castDataType;
-		}
+		DataTypePtr getCastDataType();
 
-		bool hasExplicitCast() {
-			return m_explicitCast;
-		}
+		bool hasExplicitCast();
 
-		void setCastDataType(DataTypePtr dataType, bool isExplicit = false) {
-			m_castDataType = dataType;
-			m_explicitCast = isExplicit;
-		}
+		void setCastDataType(DataTypePtr dataType, bool isExplicit = false);
 
-		void clearCast() {
-			setCastDataType(nullptr, false);
-		}
+		void clearCast();
 	};
 
 	class ISdaNode : public virtual INode
 	{
 	public:
-		DataTypePtr getDataType() {
-			return hasCast() ? getCast()->getCastDataType() : getSrcDataType();
-		}
+		DataTypePtr getDataType();
 
 		virtual DataTypePtr getSrcDataType() = 0;
 
 		virtual void setDataType(DataTypePtr dataType) = 0;
 
-		bool hasCast() {
-			return getCast()->getCastDataType() != nullptr;
-		}
+		bool hasCast();
 
 		virtual DataTypeCast* getCast() = 0;
 
-		virtual std::string printSdaDebug() {
-			return "";
-		}
+		virtual std::string printSdaDebug();
 	};
 
 	// means that the class addresses some memory location (not give a value!)
@@ -78,28 +64,11 @@ namespace CE::Decompiler::ExprTree
 	{
 		DataTypeCast m_dataTypeCast;
 	public:
-		DataTypeCast* getCast() override sealed {
-			return &m_dataTypeCast;
-		}
+		DataTypeCast* getCast() override sealed;
 
-		INode* clone(NodeCloneContext* ctx) override sealed {
-			auto clonedSdaNode = cloneSdaNode(ctx);
-			clonedSdaNode->getCast()->setCastDataType(getCast()->getCastDataType(), getCast()->hasExplicitCast());
-			return clonedSdaNode;
-		}
+		INode* clone(NodeCloneContext* ctx) override sealed;
 
-		std::string printDebug() override sealed {
-			auto result = printSdaDebug();
-			if (auto addressGetting = dynamic_cast<IMappedToMemory*>(this))
-				if (addressGetting->isAddrGetting())
-					result = "&" + result;
-			if (hasCast() && getCast()->hasExplicitCast()) {
-				result = "(" + getCast()->getCastDataType()->getDisplayName() + ")" + result + "";
-			}
-			if (g_MARK_SDA_NODES)
-				result = "@" + result;
-			return m_updateDebugInfo = result;
-		}
+		std::string printDebug() override sealed;
 
 	protected:
 		virtual ISdaNode* cloneSdaNode(NodeCloneContext* ctx) = 0;
@@ -109,12 +78,8 @@ namespace CE::Decompiler::ExprTree
 	class SdaTopNode : public TopNode
 	{
 	public:
-		SdaTopNode(ISdaNode* node)
-			: TopNode(node)
-		{}
+		SdaTopNode(ISdaNode* node);
 
-		ISdaNode* getSdaNode() {
-			return dynamic_cast<ISdaNode*>(getNode());
-		}
+		ISdaNode* getSdaNode();
 	};
 };

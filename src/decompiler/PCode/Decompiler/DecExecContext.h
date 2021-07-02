@@ -1,5 +1,7 @@
 #pragma once
 #include <decompiler/Graph/DecCodeGraph.h>
+#include <map>
+#include <set>
 
 namespace CE::Decompiler
 {

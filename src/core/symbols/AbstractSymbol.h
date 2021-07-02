@@ -51,7 +51,7 @@ namespace CE
 		private:
 			DataTypePtr m_dataType;
 			SymbolManager* m_manager;
-			bool m_isAutoSymbol;
+			bool m_isAutoSymbol = false;
 		};
 	};
 };

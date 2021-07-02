@@ -1,6 +1,7 @@
 #pragma once
 #include "PCode/DecPCode.h"
 #include <utilities/HashSerialization.h>
+#include <utilities/Helper.h>
 
 namespace CE::Decompiler {
 	class DecompiledCodeGraph;

@@ -11,92 +11,30 @@ namespace CE::Decompiler::ExprTree
 		PCode::Instruction* m_instr;
 		Symbol::FunctionResultVar* m_functionResultVar = nullptr;
 		
-		FunctionCall(INode* destination, PCode::Instruction* instr)
-			: m_destination(destination), m_instr(instr)
-		{
-			m_destination->addParentNode(this);
-		}
+		FunctionCall(INode* destination, PCode::Instruction* instr);
 
-		~FunctionCall() {
-			if (m_destination)
-				m_destination->removeBy(this);
-			for (auto paramNode : m_paramNodes) {
-				paramNode->removeBy(this);
-			}
-		}
+		~FunctionCall();
 
-		void replaceNode(INode* node, INode* newNode) override {
-			if (m_destination == node) {
-				m_destination = newNode;
-			}
-			else {
-				for (auto it = m_paramNodes.begin(); it != m_paramNodes.end(); it ++) {
-					if (node == *it) {
-						*it = newNode;
-					}
-				}
-			}
-		}
+		void replaceNode(INode* node, INode* newNode) override;
 
-		std::list<ExprTree::INode*> getNodesList() override {
-			std::list<ExprTree::INode*> list = { m_destination };
-			for (auto paramNode : m_paramNodes) {
-				list.push_back(paramNode);
-			}
-			return list;
-		}
+		std::list<ExprTree::INode*> getNodesList() override;
 
-		INode* getDestination() {
-			return m_destination;
-		}
+		INode* getDestination();
 
-		std::vector<INode*>& getParamNodes() {
-			return m_paramNodes;
-		}
+		std::vector<INode*>& getParamNodes();
 
-		void addParamNode(INode* node) {
-			node->addParentNode(this);
-			m_paramNodes.push_back(node);
-		}
+		void addParamNode(INode* node);
 
-		int getSize() override {
-			return m_functionResultVar ? m_functionResultVar->getSize() : 0x0;
-		}
+		int getSize() override;
 
-		bool isFloatingPoint() override {
-			return false;
-		}
+		bool isFloatingPoint() override;
 
-		HS getHash() override {
-			return m_functionResultVar ? m_functionResultVar->getHash() : m_destination->getHash();
-		}
+		HS getHash() override;
 
-		std::list<PCode::Instruction*> getInstructionsRelatedTo() override {
-			if (m_instr)
-				return { m_instr };
-			return {};
-		}
+		std::list<PCode::Instruction*> getInstructionsRelatedTo() override;
 
-		INode* clone(NodeCloneContext* ctx) override {
-			auto funcVar = m_functionResultVar ? dynamic_cast<Symbol::FunctionResultVar*>(m_functionResultVar->clone(ctx)) : nullptr;
-			auto funcCallCtx = new FunctionCall(m_destination->clone(ctx), m_instr);
-			funcCallCtx->m_functionResultVar = funcVar;
-			for (auto paramNode : m_paramNodes) {
-				funcCallCtx->addParamNode(paramNode->clone(ctx));
-			}
-			return funcCallCtx;
-		}
+		INode* clone(NodeCloneContext* ctx) override;
 
-		std::string printDebug() override {
-			std::string str = "(" + getDestination()->printDebug() + ")(";
-			for (auto paramNode : m_paramNodes) {
-				str += paramNode->printDebug() + ", ";
-			}
-			if (!m_paramNodes.empty()) {
-				str.pop_back();
-				str.pop_back();
-			}
-			return (m_updateDebugInfo = (str + ")"));
-		}
+		std::string printDebug() override;
 	};
 };

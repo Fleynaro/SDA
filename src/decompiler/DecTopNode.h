@@ -13,34 +13,16 @@ namespace CE::Decompiler
 			}
 		}
 
-		virtual ~TopNode() {
-			clear();
-		}
+		virtual ~TopNode();
 
-		void replaceNode(ExprTree::INode* node, ExprTree::INode* newNode) override {
-			if (getNode() == node) {
-				m_node = newNode;
-			}
-		}
+		void replaceNode(ExprTree::INode* node, ExprTree::INode* newNode) override;
 
-		std::list<ExprTree::INode*> getNodesList() override {
-			return { getNode() };
-		}
+		std::list<ExprTree::INode*> getNodesList() override;
 
-		ExprTree::INode* getNode() {
-			return m_node;
-		}
+		ExprTree::INode* getNode();
 
-		void setNode(ExprTree::INode* node) {
-			m_node = node;
-			node->addParentNode(this);
-		}
+		void setNode(ExprTree::INode* node);
 
-		void clear() {
-			if (m_node) {
-				m_node->removeBy(this);
-				m_node = nullptr;
-			}
-		}
+		void clear();
 	};
 };

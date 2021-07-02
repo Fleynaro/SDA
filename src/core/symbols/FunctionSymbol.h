@@ -18,24 +18,14 @@ namespace CE::Symbol
 	public:
 		FunctionSymbol(SymbolManager* manager, int64_t offset, DataType::IFunctionSignature* funcSignature, const std::string& name, const std::string& comment = "");
 
-		Type getType() override {
-			return FUNCTION;
-		}
+		Type getType() override;
 
-		int getSize() override {
-			return 1;
-		}
+		int getSize() override;
 
-		Function* getFunction() {
-			return m_function;
-		}
+		Function* getFunction();
 
-		DataType::IFunctionSignature* getSignature() {
-			return m_funcSignature;
-		}
+		DataType::IFunctionSignature* getSignature();
 
-		void setFunction(Function* function) {
-			m_function = function;
-		}
+		void setFunction(Function* function);
 	};
 };

@@ -1,7 +1,6 @@
 #pragma once
-#include "../../SDA/Symbolization/DecGraphSdaBuilding.h"
-#include "../../SDA/Symbolization/SdaGraphDataTypeCalc.h"
-
+#include <decompiler/SDA/Symbolization/DecGraphSdaBuilding.h>
+#include <decompiler/SDA/Symbolization/SdaGraphDataTypeCalc.h>
 
 namespace CE::Decompiler
 {

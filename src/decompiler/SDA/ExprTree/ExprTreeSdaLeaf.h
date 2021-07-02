@@ -8,47 +8,25 @@ namespace CE::Decompiler::ExprTree
 	class SdaSymbolLeaf : public SdaNode, public ILeaf
 	{
 	public:
-		SdaSymbolLeaf(CE::Symbol::ISymbol* sdaSymbol, Symbol::Symbol* decSymbol)
-			: m_sdaSymbol(sdaSymbol), m_decSymbol(decSymbol)
-		{}
+		SdaSymbolLeaf(CE::Symbol::ISymbol* sdaSymbol, Symbol::Symbol* decSymbol);
 
-		Symbol::Symbol* getDecSymbol() {
-			return m_decSymbol;
-		}
+		Symbol::Symbol* getDecSymbol();
 
-		CE::Symbol::ISymbol* getSdaSymbol() {
-			return m_sdaSymbol;
-		}
+		CE::Symbol::ISymbol* getSdaSymbol();
 
-		int getSize() override {
-			return getDataType()->getSize();
-		}
+		int getSize() override;
 
-		HS getHash() override {
-			return m_decSymbol->getHash();
-		}
+		HS getHash() override;
 
-		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override {
-			return new SdaSymbolLeaf(m_sdaSymbol, m_decSymbol);
-		}
+		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override;
 
-		bool isFloatingPoint() override {
-			return false;
-		}
+		bool isFloatingPoint() override;
 
-		DataTypePtr getSrcDataType() override {
-			return m_sdaSymbol->getDataType();
-		}
+		DataTypePtr getSrcDataType() override;
 
-		void setDataType(DataTypePtr dataType) override {
-			if (m_sdaSymbol->isAutoSymbol()) {
-				m_sdaSymbol->setDataType(dataType);
-			}
-		}
+		void setDataType(DataTypePtr dataType) override;
 
-		std::string printSdaDebug() override {
-			return m_sdaSymbol->getName();
-		}
+		std::string printSdaDebug() override;
 	protected:
 		Symbol::Symbol* m_decSymbol;
 		CE::Symbol::ISymbol* m_sdaSymbol;
@@ -60,42 +38,21 @@ namespace CE::Decompiler::ExprTree
 		bool m_isAddrGetting;
 		int64_t m_offset;
 	public:
-		SdaMemSymbolLeaf(CE::Symbol::IMemorySymbol* sdaSymbol, Symbol::Symbol* decSymbol, int64_t offset, bool isAddrGetting = false)
-			: SdaSymbolLeaf(sdaSymbol, decSymbol), m_offset(offset), m_isAddrGetting(isAddrGetting)
-		{}
+		SdaMemSymbolLeaf(CE::Symbol::IMemorySymbol* sdaSymbol, Symbol::Symbol* decSymbol, int64_t offset, bool isAddrGetting = false);
 
-		CE::Symbol::IMemorySymbol* getSdaSymbol() {
-			return dynamic_cast<CE::Symbol::IMemorySymbol*>(m_sdaSymbol);
-		}
+		CE::Symbol::IMemorySymbol* getSdaSymbol();
 
-		DataTypePtr getSrcDataType() override {
-			if (m_isAddrGetting) {
-				return MakePointer(SdaSymbolLeaf::getSrcDataType());
-			}
-			return SdaSymbolLeaf::getSrcDataType();
-		}
+		DataTypePtr getSrcDataType() override;
 
-		HS getHash() override {
-			return SdaSymbolLeaf::getHash() << m_offset;
-		}
+		HS getHash() override;
 
-		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override {
-			return new SdaMemSymbolLeaf(getSdaSymbol(), m_decSymbol, m_offset, m_isAddrGetting);
-		}
+		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override;
 
-		bool isAddrGetting() override {
-			return m_isAddrGetting;
-		}
+		bool isAddrGetting() override;
 
-		void setAddrGetting(bool toggle) override {
-			m_isAddrGetting = toggle;
-		}
+		void setAddrGetting(bool toggle) override;
 
-		void getLocation(MemLocation& location) override {
-			location.m_type = (getSdaSymbol()->getType() == CE::Symbol::LOCAL_STACK_VAR ? MemLocation::STACK : MemLocation::GLOBAL);
-			location.m_offset = m_offset;
-			location.m_valueSize = m_sdaSymbol->getDataType()->getSize();
-		}
+		void getLocation(MemLocation& location) override;
 	};
 
 	// 0x1000, -12, ...
@@ -105,50 +62,20 @@ namespace CE::Decompiler::ExprTree
 	public:
 		uint64_t m_value;
 
-		SdaNumberLeaf(uint64_t value, DataTypePtr calcDataType = nullptr)
-			: m_value(value), m_calcDataType(calcDataType)
-		{}
+		SdaNumberLeaf(uint64_t value, DataTypePtr calcDataType = nullptr);
 
-		uint64_t getValue() override {
-			return m_value;
-		}
+		uint64_t getValue() override;
 
-		void setValue(uint64_t value) override {
-			m_value = value;
-		}
+		void setValue(uint64_t value) override;
 
-		int getSize() override {
-			return getDataType()->getSize();
-		}
+		int getSize() override;
 
-		DataTypePtr getSrcDataType() override {
-			return m_calcDataType;
-		}
+		DataTypePtr getSrcDataType() override;
 
-		void setDataType(DataTypePtr dataType) override {
-			m_calcDataType = dataType;
-		}
+		void setDataType(DataTypePtr dataType) override;
 
-		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override {
-			return new SdaNumberLeaf(m_value, m_calcDataType);
-		}
+		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override;
 
-		std::string printSdaDebug() override {
-			if (getSrcDataType()->isFloatingPoint()) {
-				if(getSrcDataType()->getSize() == 4)
-					return m_updateDebugInfo = std::to_string((float&)m_value);
-				else return m_updateDebugInfo = std::to_string((double&)m_value);
-			}
-			if (auto sysType = dynamic_cast<DataType::SystemType*>(getSrcDataType()->getBaseType())) {
-				if (sysType->isSigned()) {
-					auto size = getSrcDataType()->getSize();
-					if (size <= 4)
-						return m_updateDebugInfo = std::to_string((int32_t)m_value);
-					else
-						return m_updateDebugInfo = std::to_string((int64_t)m_value);
-				}
-			}
-			return "0x" + Helper::String::NumberToHex(m_value);
-		}
+		std::string printSdaDebug() override;
 	};
 };

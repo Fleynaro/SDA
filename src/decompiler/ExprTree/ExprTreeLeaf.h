@@ -1,6 +1,6 @@
 #pragma once
 #include "ExprTreeNode.h"
-#include "../DecSymbol.h"
+#include <decompiler/DecSymbol.h>
 
 namespace CE::Decompiler::ExprTree
 {
@@ -12,31 +12,17 @@ namespace CE::Decompiler::ExprTree
 	public:
 		Symbol::Symbol* m_symbol;
 
-		SymbolLeaf(Symbol::Symbol* symbol)
-			: m_symbol(symbol)
-		{}
+		SymbolLeaf(Symbol::Symbol* symbol);
 
-		int getSize() override {
-			return m_symbol->getSize();
-		}
+		int getSize() override;
 
-		HS getHash() override {
-			return m_symbol->getHash();
-		}
+		HS getHash() override;
 
-		std::list<PCode::Instruction*> getInstructionsRelatedTo() override {
-			if (auto symbolRelToInstr = dynamic_cast<PCode::IRelatedToInstruction*>(m_symbol))
-				return symbolRelToInstr->getInstructionsRelatedTo();
-			return {};
-		}
+		std::list<PCode::Instruction*> getInstructionsRelatedTo() override;
 
-		INode* clone(NodeCloneContext* ctx) override {
-			return new SymbolLeaf(m_symbol->clone(ctx));
-		}
+		INode* clone(NodeCloneContext* ctx) override;
 
-		std::string printDebug() override {
-			return m_updateDebugInfo = m_symbol->printDebug();
-		}
+		std::string printDebug() override;
 	};
 
 	class INumberLeaf : public ILeaf
@@ -46,9 +32,7 @@ namespace CE::Decompiler::ExprTree
 
 		virtual void setValue(uint64_t value) = 0;
 
-		HS getHash() override {
-			return HS() << getValue();
-		}
+		HS getHash() override;
 	};
 
 	class NumberLeaf : public Node, public INumberLeaf
@@ -57,63 +41,34 @@ namespace CE::Decompiler::ExprTree
 		int m_size;
 	public:
 
-		NumberLeaf(uint64_t value, int size)
-			: m_value(value & BitMask64(size).getValue()), m_size(size)
-		{}
+		NumberLeaf(uint64_t value, int size);
 
-		NumberLeaf(double value, int size)
-			: m_size(size)
-		{
-			if(m_size == 4)
-				(float&)m_value = (float)value;
-			else (double&)m_value = value;
-		}
+		NumberLeaf(double value, int size);
 
-		uint64_t getValue() override {
-			return m_value;
-		}
+		uint64_t getValue() override;
 
-		void setValue(uint64_t value) override {
-			m_value = value;
-		}
+		void setValue(uint64_t value) override;
 
-		int getSize() override {
-			return m_size;
-		}
+		int getSize() override;
 
-		INode* clone(NodeCloneContext* ctx) override {
-			return new NumberLeaf(m_value, m_size);
-		}
+		INode* clone(NodeCloneContext* ctx) override;
 
-		std::string printDebug() override {
-			return m_updateDebugInfo = ("0x" + Helper::String::NumberToHex(m_value) + "{"+ (std::to_string((int)m_value)) +"}");
-		}
+		std::string printDebug() override;
 	};
 
 	class FloatNanLeaf : public Node
 	{
 	public:
-		FloatNanLeaf()
-		{}
+		FloatNanLeaf();
 
-		int getSize() override {
-			return 8;
-		}
+		int getSize() override;
 
-		HS getHash() override {
-			return HS();
-		}
+		HS getHash() override;
 
-		INode* clone(NodeCloneContext* ctx) override {
-			return new FloatNanLeaf();
-		}
+		INode* clone(NodeCloneContext* ctx) override;
 
-		bool isFloatingPoint() override {
-			return true;
-		}
+		bool isFloatingPoint() override;
 
-		std::string printDebug() override {
-			return m_updateDebugInfo = ("NaN");
-		}
+		std::string printDebug() override;
 	};
 };

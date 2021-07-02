@@ -1,5 +1,4 @@
 #include "SymbolMapper.h"
-#include <symbols/Symbol.h>
 #include <managers/TypeManager.h>
 #include <managers/SymbolManager.h>
 

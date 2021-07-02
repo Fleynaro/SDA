@@ -9,9 +9,7 @@ namespace CE::Decompiler
 	class GraphModification
 	{
 	public:
-		GraphModification(DecompiledCodeGraph* decGraph)
-			: m_decGraph(decGraph)
-		{}
+		GraphModification(DecompiledCodeGraph* decGraph);
 
 		// here creating of modification logic
 		virtual void start() = 0;
@@ -20,12 +18,6 @@ namespace CE::Decompiler
 		DecompiledCodeGraph* m_decGraph;
 
 		// iterate over all top nodes of the dec. graph (allow to access all expressions)
-		void passAllTopNodes(std::function<void(DecBlock::BlockTopNode*)> func) {
-			for (const auto decBlock : m_decGraph->getDecompiledBlocks()) {
-				for (auto topNode : decBlock->getAllTopNodes()) {
-					func(topNode);
-				}
-			}
-		}
+		void passAllTopNodes(std::function<void(DecBlock::BlockTopNode*)> func);
 	};
 };

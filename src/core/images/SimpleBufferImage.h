@@ -8,24 +8,14 @@ namespace CE
 		int8_t* m_data;
 		int m_size;
 	public:
-		SimpleBufferImage(int8_t* data, int size)
-			: m_data(data), m_size(size)
-		{}
+		SimpleBufferImage(int8_t* data, int size);
 
-		int8_t* getData() override {
-			return m_data;
-		}
+		int8_t* getData() override;
 
-		int getSize() override {
-			return m_size;
-		}
+		int getSize() override;
 
-		int getOffsetOfEntryPoint() override {
-			return 0;
-		}
+		int getOffsetOfEntryPoint() override;
 
-		SegmentType defineSegment(int offset) override {
-			return CODE_SEGMENT;
-		}
+		SegmentType defineSegment(int offset) override;
 	};
 };

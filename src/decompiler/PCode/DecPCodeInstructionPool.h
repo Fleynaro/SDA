@@ -1,5 +1,7 @@
 #pragma once
 #include "DecPCode.h"
+#include <list>
+#include <map>
 
 namespace CE::Decompiler::PCode
 {
@@ -28,21 +30,9 @@ namespace CE::Decompiler::PCode
 
 		SymbolVarnode* createSymbolVarnode(int size);
 
-		Instruction::OriginalInstruction* createOrigInstruction(int64_t offset, int length) {
-			m_origInstructions[offset] = Instruction::OriginalInstruction(offset, length);
-			return &m_origInstructions[offset];
-		}
+		Instruction::OriginalInstruction* createOrigInstruction(int64_t offset, int length);
 
-		Instruction* createInstruction(InstructionId id, Varnode* input0, Varnode* input1, Varnode* output, Instruction::OriginalInstruction* origInstr, int orderId = 0) {
-			auto instr = Instruction(id, input0, input1, output, origInstr, orderId);
-			origInstr->m_pcodeInstructions[orderId] = instr;
-			// check if can modificate the instruction
-			auto it = m_modifiedInstructions.find(instr.getOffset());
-			if (it != m_modifiedInstructions.end()) {
-				modifyInstruction(&instr, it->second);
-			}
-			return &origInstr->m_pcodeInstructions[orderId];
-		}
+		Instruction* createInstruction(InstructionId id, Varnode* input0, Varnode* input1, Varnode* output, Instruction::OriginalInstruction* origInstr, int orderId = 0);
 
 		void modifyInstruction(Instruction* instr, MODIFICATOR mod);
 

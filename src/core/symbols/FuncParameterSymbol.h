@@ -17,18 +17,12 @@ namespace CE::Symbol
 			: m_paramIdx(paramIdx), m_signature(signature), AbstractSymbol(manager, type, name, comment)
 		{}
 
-		int getParamIdx() {
-			return m_paramIdx;
-		}
+		int getParamIdx();
 
-		Type getType() override {
-			return FUNC_PARAMETER;
-		}
+		Type getType() override;
 
 		Decompiler::Storage getStorage() override;
 
-		void setFuncSignature(DataType::IFunctionSignature* signature) {
-			m_signature = signature;
-		}
+		void setFuncSignature(DataType::IFunctionSignature* signature);
 	};
 };

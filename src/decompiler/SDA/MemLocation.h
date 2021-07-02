@@ -1,6 +1,6 @@
 #pragma once
-#include <main.h>
 #include <utilities/HashSerialization.h>
+#include <list>
 
 namespace CE::Decompiler
 {

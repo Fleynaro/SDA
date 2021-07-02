@@ -9,50 +9,24 @@ namespace CE::Decompiler::ExprTree
 		INode* m_node;
 		PCode::Instruction* m_instr;
 
-		MirrorNode(INode* node, PCode::Instruction* instr)
-			: m_node(node), m_instr(instr)
-		{
-			m_node->addParentNode(this);
-		}
+		MirrorNode(INode* node, PCode::Instruction* instr);
 
-		~MirrorNode() {
-			m_node->removeBy(this);
-		}
+		~MirrorNode();
 
-		void replaceNode(INode* node, INode* newNode) override {
-			if (m_node == node) {
-				m_node = newNode;
-			}
-		}
+		void replaceNode(INode* node, INode* newNode) override;
 
-		std::list<ExprTree::INode*> getNodesList() override {
-			return { m_node };
-		}
+		std::list<ExprTree::INode*> getNodesList() override;
 
-		std::list<PCode::Instruction*> getInstructionsRelatedTo() override {
-			if (m_instr)
-				return { m_instr };
-			return {};
-		}
+		std::list<PCode::Instruction*> getInstructionsRelatedTo() override;
 
-		int getSize() override {
-			return m_node->getSize();
-		}
+		int getSize() override;
 
-		bool isFloatingPoint() override {
-			return m_node->isFloatingPoint();
-		}
+		bool isFloatingPoint() override;
 
-		INode* clone(NodeCloneContext* ctx) override {
-			return new MirrorNode(m_node->clone(ctx), m_instr);
-		}
+		INode* clone(NodeCloneContext* ctx) override;
 
-		HS getHash() override {
-			return m_node->getHash();
-		}
+		HS getHash() override;
 
-		std::string printDebug() override {
-			return m_node->printDebug();
-		}
+		std::string printDebug() override;
 	};
 };

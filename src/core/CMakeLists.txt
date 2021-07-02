@@ -15,7 +15,7 @@ add_library(
 )
 
 target_include_directories(
-    core PRIVATE
+    core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     )
 

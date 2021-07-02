@@ -1,5 +1,6 @@
 #pragma once
-#include <main.h>
+#include <stdint.h>
+#include <string>
 
 // Hash (with encapsulated operations <<, +)
 class HS

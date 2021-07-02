@@ -1,7 +1,10 @@
 #pragma once
-#include "../DecMask.h"
-#include "../PCode/DecPCode.h"
+#include <decompiler/DecMask.h>
+#include <decompiler/PCode/DecPCode.h>
 #include <utilities/HashSerialization.h>
+#include <map>
+#include <functional>
+#include <stdexcept>
 
 namespace CE::Decompiler::Symbol
 {
@@ -48,40 +51,17 @@ namespace CE::Decompiler::ExprTree
 
 		virtual bool isFloatingPoint() = 0;
 
-		virtual INode* clone() {
-			NodeCloneContext ctx;
-			return clone(&ctx);
-		}
+		virtual INode* clone();
 
 		virtual INode* clone(NodeCloneContext* ctx) = 0;
 
-		void iterateChildNodes(std::function<void(INode*)> func) {
-			if (auto agregator = dynamic_cast<INodeAgregator*>(this)) {
-				auto list = agregator->getNodesList();
-				for (auto node : list) {
-					if (node) {
-						func(node);
-					}
-				}
-			}
-		}
+		void iterateChildNodes(std::function<void(INode*)> func);
 
 		virtual std::string printDebug() = 0;
 
-		void static UpdateDebugInfo(INode* node) {
-			if (!node) return;
-			node->printDebug();
-			//node->checkOnSingleParents();
-		}
+		void static UpdateDebugInfo(INode* node);
 
-		virtual void checkOnSingleParents() {
-			auto parentNode = getParentNode();
-			if (auto nodeAgregator = dynamic_cast<INodeAgregator*>(this)) {
-				for (auto childNode : nodeAgregator->getNodesList())
-					if(childNode)
-						childNode->checkOnSingleParents();
-			}
-		}
+		virtual void checkOnSingleParents();
 	};
 
 	class Node : public virtual INode
@@ -97,58 +77,23 @@ namespace CE::Decompiler::ExprTree
 		}
 
 		// replace this node with another, remove all associations and make this node independent from expression tree
-		void replaceWith(INode* newNode) override {
-			for (auto it = m_parentNodes.begin(); it != m_parentNodes.end(); it ++) {
-				auto parentNode = *it;
-				if (newNode == dynamic_cast<INode*>(parentNode))
-					continue;
-				parentNode->replaceNode(this, newNode);
-				if (newNode != nullptr) {
-					newNode->addParentNode(parentNode);
-				}
-				m_parentNodes.erase(it);
-			}
-		}
+		void replaceWith(INode* newNode) override;
 
-		void removeBy(INodeAgregator* node) override {
-			if (node != nullptr) {
-				node->replaceNode(this, nullptr);
-				removeParentNode(node);
-			}
-			if (m_parentNodes.size() == 0)
-				delete this;
-		}
+		void removeBy(INodeAgregator* node) override;
 
-		void addParentNode(INodeAgregator* node) override {
-			if (this == dynamic_cast<INode*>(node))
-				return;
-			m_parentNodes.push_back(node);
-		}
+		void addParentNode(INodeAgregator* node) override;
 
-		void removeParentNode(INodeAgregator* node) override {
-			m_parentNodes.remove(node);
-		}
+		void removeParentNode(INodeAgregator* node) override;
 
-		std::list<INodeAgregator*>& getParentNodes() override {
-			return m_parentNodes;
-		}
+		std::list<INodeAgregator*>& getParentNodes() override;
 
 		// get single parent (exception thrown because of multiple parents)
-		INodeAgregator* getParentNode() override {
-			if (m_parentNodes.size() != 1) {
-				throw std::logic_error("it is ambigious because of multiple parents");
-			}
-			return *m_parentNodes.begin();
-		}
+		INodeAgregator* getParentNode() override;
 
 		// not integer type
-		bool isFloatingPoint() override {
-			return false;
-		}
+		bool isFloatingPoint() override;
 
-		std::string printDebug() override {
-			return "";
-		}
+		std::string printDebug() override;
 
 	private:
 		std::list<INodeAgregator*> m_parentNodes;

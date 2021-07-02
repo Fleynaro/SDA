@@ -10,48 +10,30 @@ namespace CE::Symbol
 	{
 		int64_t m_offset;
 	public:
-		AbstractMemorySymbol(SymbolManager* manager, int64_t offset, DataTypePtr type, const std::string& name, const std::string& comment = "")
-			: AbstractSymbol(manager, type, name, comment), m_offset(offset)
-		{}
+		AbstractMemorySymbol(SymbolManager* manager, int64_t offset, DataTypePtr type, const std::string& name, const std::string& comment = "");
 
-		int64_t getOffset() {
-			return m_offset;
-		}
+		int64_t getOffset();
 
-		void setOffset(int64_t offset) {
-			m_offset = offset;
-		}
+		void setOffset(int64_t offset);
 	};
 
 	class GlobalVarSymbol : public AbstractMemorySymbol
 	{
 	public:
-		GlobalVarSymbol(SymbolManager* manager, int64_t offset, DataTypePtr type, const std::string& name, const std::string& comment = "")
-			: AbstractMemorySymbol(manager, offset, type, name, comment)
-		{}
+		GlobalVarSymbol(SymbolManager* manager, int64_t offset, DataTypePtr type, const std::string& name, const std::string& comment = "");
 
-		Type getType() override {
-			return GLOBAL_VAR;
-		}
+		Type getType() override;
 
-		Decompiler::Storage getStorage() override {
-			return Decompiler::Storage(Decompiler::Storage::STORAGE_GLOBAL, 0, getOffset());
-		}
+		Decompiler::Storage getStorage() override;
 	};
 
 	class LocalStackVarSymbol : public AbstractMemorySymbol
 	{
 	public:
-		LocalStackVarSymbol(SymbolManager* manager, int64_t offset, DataTypePtr type, const std::string& name, const std::string& comment = "")
-			: AbstractMemorySymbol(manager, offset, type, name, comment)
-		{}
+		LocalStackVarSymbol(SymbolManager* manager, int64_t offset, DataTypePtr type, const std::string& name, const std::string& comment = "");
 
-		Type getType() override {
-			return LOCAL_STACK_VAR;
-		}
+		Type getType() override;
 
-		Decompiler::Storage getStorage() override {
-			return Decompiler::Storage(Decompiler::Storage::STORAGE_STACK, 0, getOffset());
-		}
+		Decompiler::Storage getStorage() override;
 	};
 };

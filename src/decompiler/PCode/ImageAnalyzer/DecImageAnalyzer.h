@@ -1,7 +1,7 @@
 #pragma once
-#include <Module/Image/PEImage.h>
-#include "../../Graph/DecPCodeGraph.h"
-#include "../Decoders/DecPCodeDecoderX86.h"
+#include <images/PEImage.h>
+#include <decompiler/Graph/DecCodeGraph.h>
+#include <decompiler/PCode/Decoders/DecPCodeDecoderX86.h>
 #include <managers/TypeManager.h>
 #include <managers/SymbolTableManager.h>
 

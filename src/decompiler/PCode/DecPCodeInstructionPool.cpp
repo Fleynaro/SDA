@@ -43,3 +43,19 @@ SymbolVarnode* InstructionPool::createSymbolVarnode(int size) {
 	m_symbolVarnodes.push_back(SymbolVarnode(size));
 	return &*m_symbolVarnodes.rbegin();
 }
+
+Instruction::OriginalInstruction* CE::Decompiler::PCode::InstructionPool::createOrigInstruction(int64_t offset, int length) {
+	m_origInstructions[offset] = Instruction::OriginalInstruction(offset, length);
+	return &m_origInstructions[offset];
+}
+
+Instruction* CE::Decompiler::PCode::InstructionPool::createInstruction(InstructionId id, Varnode* input0, Varnode* input1, Varnode* output, Instruction::OriginalInstruction* origInstr, int orderId) {
+	auto instr = Instruction(id, input0, input1, output, origInstr, orderId);
+	origInstr->m_pcodeInstructions[orderId] = instr;
+	// check if can modificate the instruction
+	auto it = m_modifiedInstructions.find(instr.getOffset());
+	if (it != m_modifiedInstructions.end()) {
+		modifyInstruction(&instr, it->second);
+	}
+	return &origInstr->m_pcodeInstructions[orderId];
+}

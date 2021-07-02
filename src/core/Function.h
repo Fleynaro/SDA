@@ -24,20 +24,9 @@ namespace CE
 	class Function : public DB::DomainObject, public Ghidra::Object, public IDescription
 	{
 	public:
-		Function(FunctionManager* manager, Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::SymbolTable* stackSymbolTable)
-			: m_manager(manager), m_functionSymbol(functionSymbol), m_imageDec(imageDec), m_stackSymbolTable(stackSymbolTable)
-		{
-			functionSymbol->setFunction(this);
-		}
+		Function(FunctionManager* manager, Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::SymbolTable* stackSymbolTable);
 
-		SymbolContext getSymbolContext() {
-			SymbolContext symbolCtx;
-			symbolCtx.m_signature = getSignature();
-			symbolCtx.m_globalSymbolTable = m_imageDec->getGlobalSymbolTable();
-			symbolCtx.m_funcBodySymbolTable = m_imageDec->getFuncBodySymbolTable();
-			symbolCtx.m_stackSymbolTable = m_stackSymbolTable;
-			return symbolCtx;
-		}
+		SymbolContext getSymbolContext();
 
 		Symbol::FunctionSymbol* getFunctionSymbol();
 

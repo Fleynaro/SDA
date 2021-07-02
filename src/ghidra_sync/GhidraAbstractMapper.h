@@ -1,7 +1,10 @@
 #pragma once
 #include "GhidraObject.h"
-#include "DataSyncPacketManagerService.h"
-#include <SQLiteCpp/SQLiteCpp.h>
+#include <ghidra_sync/DataSyncPacketManagerService.h>
+
+namespace SQLite {
+	class Database;
+};
 
 namespace CE::Ghidra
 {

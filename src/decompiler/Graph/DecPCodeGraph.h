@@ -1,6 +1,7 @@
 #pragma once
-#include "../PCode/DecPCode.h"
-#include "../PCode/DecPCodeConstValueCalc.h"
+#include <decompiler/PCode/DecPCode.h>
+#include <decompiler/PCode/DecPCodeConstValueCalc.h>
+#include <set>
 
 namespace CE::Decompiler
 {
@@ -23,104 +24,35 @@ namespace CE::Decompiler
 
 		PCodeBlock() = default;
 
-		PCodeBlock(int64_t minOffset, int64_t maxOffset)
-			: m_minOffset(minOffset), m_maxOffset(maxOffset), ID((int)(minOffset >> 8))
-		{}
+		PCodeBlock(int64_t minOffset, int64_t maxOffset);
 
-		void removeRefBlock(PCodeBlock* block) {
-			m_blocksReferencedTo.remove(block);
-		}
+		void removeRefBlock(PCodeBlock* block);
 
-		void disconnect() {
-			for (auto nextBlock : getNextBlocks()) {
-				nextBlock->removeRefBlock(this);
-			}
-			m_nextNearBlock = m_nextFarBlock = nullptr;
-		}
+		void disconnect();
 
-		std::list<PCode::Instruction*>& getInstructions() {
-			return m_instructions;
-		}
+		std::list<PCode::Instruction*>& getInstructions();
 
-		int64_t getMinOffset() {
-			return m_minOffset;
-		}
+		int64_t getMinOffset();
 
-		int64_t getMaxOffset() { // todo: auto-calculated?
-			return m_maxOffset;
-		}
+		int64_t getMaxOffset();
 
-		void setMaxOffset(int64_t offset) {
-			m_maxOffset = offset;
-		}
+		void setMaxOffset(int64_t offset);
 
-		void removeNextBlock(PCodeBlock* nextBlock) {
-			if (nextBlock == m_nextNearBlock)
-				m_nextNearBlock = nullptr;
-			if (nextBlock == m_nextFarBlock)
-				m_nextFarBlock = nullptr;
-		}
+		void removeNextBlock(PCodeBlock* nextBlock);
 
-		void setNextNearBlock(PCodeBlock* nextBlock) {
-			m_nextNearBlock = nextBlock;
-			nextBlock->m_blocksReferencedTo.push_back(this);
-		}
+		void setNextNearBlock(PCodeBlock* nextBlock);
 
-		void setNextFarBlock(PCodeBlock* nextBlock) {
-			m_nextFarBlock = nextBlock;
-			nextBlock->m_blocksReferencedTo.push_back(this);
-		}
+		void setNextFarBlock(PCodeBlock* nextBlock);
 
-		PCodeBlock* getNextNearBlock() {
-			return m_nextNearBlock;
-		}
+		PCodeBlock* getNextNearBlock();
 
-		PCodeBlock* getNextFarBlock() {
-			return m_nextFarBlock;
-		}
+		PCodeBlock* getNextFarBlock();
 
-		std::list<PCodeBlock*> getNextBlocks() {
-			std::list<PCodeBlock*> nextBlocks;
-			if (m_nextFarBlock) {
-				nextBlocks.push_back(m_nextFarBlock);
-			}
-			if (m_nextNearBlock) {
-				nextBlocks.push_back(m_nextNearBlock);
-			}
-			return nextBlocks;
-		}
+		std::list<PCodeBlock*> getNextBlocks();
 
-		PCode::Instruction* getLastInstruction() {
-			return *std::prev(m_instructions.end());
-		}
+		PCode::Instruction* getLastInstruction();
 
-		std::string printDebug(void* addr, const std::string& tabStr, bool extraInfo, bool pcode) {
-			std::string result;
-
-			ZyanU64 runtime_address = (ZyanU64)addr;
-			for (auto instr : m_instructions) {
-				std::string prefix = tabStr + "0x" + Helper::String::NumberToHex(runtime_address + instr->m_origInstruction->m_offset);
-				if (!instr->m_origInstruction->m_originalView.empty())
-					result += prefix + " " + instr->m_origInstruction->m_originalView + "\n";
-				if (pcode) {
-					prefix += ":" + std::to_string(instr->m_orderId) + "(" + Helper::String::NumberToHex(instr->getOffset()) + ")";
-					result += "\t" + prefix + " " + instr->printDebug();
-					if (instr->m_id == PCode::InstructionId::UNKNOWN)
-						result += " <------------------------------------------------ ";
-					result += "\n";
-				}
-			}
-
-			if (extraInfo) {
-				result += "Level: "+ std::to_string(m_level) +"\n";
-				if (m_nextNearBlock != nullptr)
-					result += "Next near: "+ Helper::String::NumberToHex(m_nextNearBlock->getMinOffset()) +"\n";
-				if (m_nextFarBlock != nullptr)
-					result += "Next far: " + Helper::String::NumberToHex(m_nextFarBlock->getMinOffset()) + "\n";
-			}
-
-			return result;
-		}
+		std::string printDebug(void* addr, const std::string& tabStr, bool extraInfo, bool pcode);
 	};
 
 	// pcode graph (consisted of PCode connected blocks) for a function
@@ -134,75 +66,34 @@ namespace CE::Decompiler
 		std::set<FunctionPCodeGraph*> m_virtFuncCalls;
 		std::map<PCode::Instruction*, DataValue> m_constValues;
 	public:
-		FunctionPCodeGraph(ImagePCodeGraph* imagePCodeGraph)
-			: m_imagePCodeGraph(imagePCodeGraph)
-		{}
+		FunctionPCodeGraph(ImagePCodeGraph* imagePCodeGraph);
 
-		ImagePCodeGraph* getImagePCodeGraph() {
-			return m_imagePCodeGraph;
-		}
+		ImagePCodeGraph* getImagePCodeGraph();
 
-		void setStartBlock(PCodeBlock* block) {
-			m_startBlock = block;
-		}
+		void setStartBlock(PCodeBlock* block);
 
 		// head is a function that has not parents (main/all virtual functions)
-		bool isHead() {
-			return m_refFuncCalls.empty();
-		}
+		bool isHead();
 
-		auto getRefFuncCalls() {
-			return m_refFuncCalls;
-		}
+		auto getRefFuncCalls();
 
-		auto getNonVirtFuncCalls() {
-			return m_nonVirtFuncCalls;
-		}
+		auto getNonVirtFuncCalls();
 
-		auto getVirtFuncCalls() {
-			return m_virtFuncCalls;
-		}
+		auto getVirtFuncCalls();
 
-		void addNonVirtFuncCall(FunctionPCodeGraph* funcGraph) {
-			m_nonVirtFuncCalls.insert(funcGraph);
-			funcGraph->m_refFuncCalls.insert(this);
-		}
+		void addNonVirtFuncCall(FunctionPCodeGraph* funcGraph);
 
-		void addVirtFuncCall(FunctionPCodeGraph* funcGraph) {
-			m_virtFuncCalls.insert(funcGraph);
-			funcGraph->m_refFuncCalls.insert(this);
-		}
+		void addVirtFuncCall(FunctionPCodeGraph* funcGraph);
 
-		const auto& getBlocks() {
-			return m_blocks;
-		}
+		const auto& getBlocks();
 
-		void addBlock(PCodeBlock* block) {
-			m_blocks.insert(block);
-			block->m_funcPCodeGraph = this;
-		}
+		void addBlock(PCodeBlock* block);
 
-		PCodeBlock* getStartBlock() {
-			return m_startBlock;
-		}
+		PCodeBlock* getStartBlock();
 
-		std::map<PCode::Instruction*, PCode::DataValue>& getConstValues() {
-			return m_constValues;
-		}
+		std::map<PCode::Instruction*, PCode::DataValue>& getConstValues();
 
-		void printDebug(void* addr) {
-			std::list<PCodeBlock*> blocks;
-			for (auto block : m_blocks)
-				blocks.push_back(block);
-			blocks.sort([](PCodeBlock* a, PCodeBlock* b) {
-				return a->getMinOffset() < b->getMinOffset();
-				});
-
-			for (auto block : blocks) {
-				puts(block->printDebug(addr, "", true, true).c_str());
-				puts("==================");
-			}
-		}
+		void printDebug(void* addr);
 	};
 
 	// pcode graph (consisted of NON-connected function graphs in final state) for a whole program
@@ -215,58 +106,25 @@ namespace CE::Decompiler
 		// exceptions
 		class BlockNotFoundException : public std::exception {};
 
-		ImagePCodeGraph()
-		{}
+		ImagePCodeGraph();
 
-		FunctionPCodeGraph* createFunctionGraph() {
-			m_funcGraphList.push_back(FunctionPCodeGraph(this));
-			return &*m_funcGraphList.rbegin();
-		}
+		FunctionPCodeGraph* createFunctionGraph();
 
-		PCodeBlock* createBlock(int64_t minOffset, int64_t maxOffset) {
-			m_blocks.insert(std::make_pair(minOffset, PCodeBlock(minOffset, maxOffset)));
-			auto newBlock = &m_blocks[minOffset];
-			return newBlock;
-		}
+		PCodeBlock* createBlock(int64_t minOffset, int64_t maxOffset);
 
-		PCodeBlock* createBlock(int64_t offset) {
-			return createBlock(offset, offset);
-		}
+		PCodeBlock* createBlock(int64_t offset);
 
-		const auto& getHeadFuncGraphs() {
-			return m_headFuncGraphs;
-		}
+		const auto& getHeadFuncGraphs();
 
-		auto& getFunctionGraphList() {
-			return m_funcGraphList;
-		}
+		auto& getFunctionGraphList();
 
-		FunctionPCodeGraph* getEntryFunctionGraph() {
-			return &*m_funcGraphList.begin();
-		}
+		FunctionPCodeGraph* getEntryFunctionGraph();
 
-		PCodeBlock* getBlockAtOffset(int64_t offset, bool halfInterval = true) {
-			auto it = std::prev(m_blocks.upper_bound(offset));
-			if (it != m_blocks.end()) {
-				bool boundUp = halfInterval ? (offset < it->second.getMaxOffset()) : (offset <= it->second.getMaxOffset());
-				if (boundUp && offset >= it->second.getMinOffset()) {
-					return &it->second;
-				}
-			}
-			throw BlockNotFoundException();
-		}
+		PCodeBlock* getBlockAtOffset(int64_t offset, bool halfInterval = true);
 
-		FunctionPCodeGraph* getFuncGraphAt(int64_t offset, bool halfInterval = true) {
-			auto block = getBlockAtOffset(offset, halfInterval);
-			return block->m_funcPCodeGraph;
-		}
+		FunctionPCodeGraph* getFuncGraphAt(int64_t offset, bool halfInterval = true);
 
 		// add all head functions into the list HeadFuncGraphs
-		void fillHeadFuncGraphs() {
-			for (auto& funcGraph : getFunctionGraphList()) {
-				if (funcGraph.isHead())
-					m_headFuncGraphs.push_back(&funcGraph);
-			}
-		}
+		void fillHeadFuncGraphs();
 	};
 };

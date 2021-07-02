@@ -1,7 +1,7 @@
 #pragma once
 #include "ExprTreeSdaNode.h"
 #include <datatypes/FunctionSignature.h>
-#include "../../ExprTree/ExprTreeFunctionCall.h"
+#include <decompiler/ExprTree/ExprTreeFunctionCall.h>
 
 namespace CE::Decompiler::ExprTree
 {
@@ -10,78 +10,36 @@ namespace CE::Decompiler::ExprTree
 		FunctionCall* m_funcCall;
 
 	public:
-		SdaFunctionNode(FunctionCall* funcCallCtx)
-			: m_funcCall(funcCallCtx)
-		{}
+		SdaFunctionNode(FunctionCall* funcCallCtx);
 
-		~SdaFunctionNode() {
-			m_funcCall->removeBy(this);
-		}
+		~SdaFunctionNode();
 
-		void replaceNode(INode* node, INode* newNode) override {
-			m_funcCall->replaceNode(node, newNode);
-		}
+		void replaceNode(INode* node, INode* newNode) override;
 
-		std::list<ExprTree::INode*> getNodesList() override {
-			return m_funcCall->getNodesList();
-		}
+		std::list<ExprTree::INode*> getNodesList() override;
 
 		// means the address of the function that can be any expr. value, not only an offset or a symbol
-		INode* getDestination() {
-			return m_funcCall->getDestination();
-		}
+		INode* getDestination();
 
-		std::vector<ExprTree::INode*>& getParamNodes() {
-			return m_funcCall->getParamNodes();
-		}
+		std::vector<ExprTree::INode*>& getParamNodes();
 
-		DataTypePtr getSrcDataType() override {
-			auto sig = getSignature();
-			if (!sig)
-				return DataType::GetUnit(new DataType::Byte);
-			return getSignature()->getReturnType();
-		}
+		DataTypePtr getSrcDataType() override;
 
-		void setDataType(DataTypePtr dataType) override {
-			auto sig = getSignature();
-			if (!sig || !sig->isAuto())
-				return;
-			sig->setReturnType(dataType);
-		}
+		void setDataType(DataTypePtr dataType) override;
 
-		int getSize() override {
-			return m_funcCall->getSize();
-		}
+		int getSize() override;
 
-		bool isFloatingPoint() override {
-			return m_funcCall->isFloatingPoint();
-		}
+		bool isFloatingPoint() override;
 
-		HS getHash() override {
-			return m_funcCall->getHash();
-		}
+		HS getHash() override;
 
-		int64_t getCallInstrOffset() {
-			return m_funcCall->m_instr->getOffset();
-		}
+		int64_t getCallInstrOffset();
 
-		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override {
-			auto clonedFuncCall = dynamic_cast<FunctionCall*>(m_funcCall->clone(ctx));
-			auto sdaFunctionNode = new SdaFunctionNode(clonedFuncCall);
-			clonedFuncCall->addParentNode(sdaFunctionNode);
-			return sdaFunctionNode;
-		}
+		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override;
 
 		// example: (world->vtable->func_get_player)(player_id) where {world->vtable->func_get_player} has a signature type calculated through the step of goar building
-		DataType::IFunctionSignature* getSignature() {
-			if (auto dstCastNode = dynamic_cast<ISdaNode*>(getDestination()))
-				if (auto signature = dynamic_cast<DataType::IFunctionSignature*>(dstCastNode->getDataType()->getType()))
-					return signature;
-			return nullptr;
-		}
+		DataType::IFunctionSignature* getSignature();
 
-		std::string printSdaDebug() override {
-			return m_funcCall->printDebug();
-		}
+		std::string printSdaDebug() override;
 	};
 };

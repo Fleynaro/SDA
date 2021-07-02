@@ -1,7 +1,7 @@
 #pragma once
 #include "../DecRegisterFactory.h"
 #include "../DecPCodeInstructionPool.h"
-#include "../../DecWarningContainer.h"
+#include <decompiler/DecWarningContainer.h>
 
 namespace CE::Decompiler::PCode
 {
@@ -14,41 +14,22 @@ namespace CE::Decompiler::PCode
 			: m_instrPool(instrPool), m_warningContainer(warningContainer)
 		{}
 
-		void decode(void* addr, int offset, int maxSize = 0x0) {
-			m_addr = addr;
-			m_curOrigInstr = nullptr;
-			m_curOrderId = 0x0;
-			m_maxSize = maxSize;
-			clear();
-			tryDecode(addr, offset);
-		}
+		void decode(void* addr, int offset, int maxSize = 0x0);
 
-		void clear() {
-			m_result.clear();
-		}
+		void clear();
 
-		std::list<Instruction*>& getDecodedPCodeInstructions() {
-			return m_result;
-		}
+		std::list<Instruction*>& getDecodedPCodeInstructions();
 
-		void deleteDecodedPCodeInstructions() {
-			for (auto instr : getDecodedPCodeInstructions()) {
-				delete instr;
-			}
-		}
+		void deleteDecodedPCodeInstructions();
 
-		Instruction::OriginalInstruction* getOrigInstruction() {
-			return m_curOrigInstr;
-		}
+		Instruction::OriginalInstruction* getOrigInstruction();
 
-		WarningContainer* getWarningContainer() override {
-			return m_warningContainer;
-		}
+		WarningContainer* getWarningContainer() override;
 	protected:
 		WarningContainer* m_warningContainer;
 		std::list<Instruction*> m_result;
 		void* m_addr = nullptr;
-		Instruction::OriginalInstruction* m_curOrigInstr;
+		Instruction::OriginalInstruction* m_curOrigInstr = nullptr;
 		int m_curOrderId = 0;
 		int m_maxSize = 0x0;
 

@@ -1,5 +1,7 @@
 #pragma once
 #include "DecLinearViewBlocks.h"
+#include <set>
+#include <map>
 
 namespace CE::Decompiler::LinearView
 {
@@ -252,7 +254,7 @@ namespace CE::Decompiler::LinearView
 						m_cycles.insert(std::make_pair(startCycleBlock, cycle));
 					}
 					auto& cycle = m_cycles[startCycleBlock];
-					cycle.m_endBlock = max(cycle.m_endBlock, block);
+					cycle.m_endBlock = std::max(cycle.m_endBlock, block);
 					bool isBlockInCycle = false;
 					for (auto passedBlock : passedBlocks) {
 						if (passedBlock == cycle.m_startBlock)

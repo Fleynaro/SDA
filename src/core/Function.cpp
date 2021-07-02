@@ -4,6 +4,21 @@
 
 using namespace CE;
 
+CE::Function::Function(FunctionManager* manager, Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::SymbolTable* stackSymbolTable)
+	: m_manager(manager), m_functionSymbol(functionSymbol), m_imageDec(imageDec), m_stackSymbolTable(stackSymbolTable)
+{
+	functionSymbol->setFunction(this);
+}
+
+SymbolContext CE::Function::getSymbolContext() {
+	SymbolContext symbolCtx;
+	symbolCtx.m_signature = getSignature();
+	symbolCtx.m_globalSymbolTable = m_imageDec->getGlobalSymbolTable();
+	symbolCtx.m_funcBodySymbolTable = m_imageDec->getFuncBodySymbolTable();
+	symbolCtx.m_stackSymbolTable = m_stackSymbolTable;
+	return symbolCtx;
+}
+
 Symbol::FunctionSymbol* Function::getFunctionSymbol() {
 	return m_functionSymbol;
 }

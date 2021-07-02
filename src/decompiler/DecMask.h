@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 
 namespace CE::Decompiler
 {
@@ -16,63 +17,26 @@ namespace CE::Decompiler
 			: BitMask64(GetBitMask64BySize(size) << uint64_t((offset % 8) * 8))
 		{}
 
-		bool isZero() {
-			return m_bitMask == 0x0;
-		}
+		bool isZero();
 
 		// get mask as integer value
-		uint64_t getValue() const {
-			return m_bitMask;
-		}
+		uint64_t getValue() const;
 
-		BitMask64 withoutOffset() {
-			return m_bitMask >> getOffset();
-		}
+		BitMask64 withoutOffset();
 
 		// calculate count of 1-bits
-		int getBitsCount() const {
-			int bitCount = 0;
-			for (auto m = m_bitMask; m != 0; m = m >> 1) {
-				if (m & 0b1) {
-					bitCount++;
-				}
-			}
-			return bitCount;
-		}
+		int getBitsCount() const;
 
-		int getMaxSizeInBits() const {
-			return sizeof(m_bitMask) * 0x8;
-		}
+		int getMaxSizeInBits() const;
 
 		// calculate offset from begin to mask
-		int getOffset() const {
-			int offset = 0;
-			auto mask = m_bitMask;
-			auto maxSizeInBits = getMaxSizeInBits() - 1;
-			while (offset <= maxSizeInBits && bool(mask & 0b1) == 0) {
-				offset += 1;
-				mask = mask >> 1;
-			}
-			return offset;
-		}
+		int getOffset() const;
 
 		// calculate offset from the end
-		int getOffsetFromTheEnd() const {
-			int offset = 0;
-			auto mask = m_bitMask;
-			auto maxSizeInBits = getMaxSizeInBits() - 1; // usually it is 63
-			while (offset <= maxSizeInBits && bool((mask >> maxSizeInBits) & 0b1) == 0) {
-				offset += 1;
-				mask = mask << 1;
-			}
-			return offset;
-		}
+		int getOffsetFromTheEnd() const;
 
 		// get size of continious mask (in bytes)
-		int getSize() const {
-			auto bitsCount = getBitsCount();
-			return (bitsCount / 8) + ((bitsCount % 8) ? 1 : 0);
-		}
+		int getSize() const;
 
 		BitMask64 operator&(const BitMask64& b) const {
 			return m_bitMask & b.m_bitMask;
@@ -111,15 +75,9 @@ namespace CE::Decompiler
 			return m_bitMask <= b.m_bitMask;
 		}
 
-		static uint64_t GetBitMask64BySizeInBits(int sizeInBits) {
-			if (sizeInBits >= 64) // todo: increase from 8 to 16 bytes (it requires 128-bit arithmetic implementation)
-				return -1;
-			return ((uint64_t)1 << sizeInBits) - 1;
-		}
+		static uint64_t GetBitMask64BySizeInBits(int sizeInBits);
 		
-		static uint64_t GetBitMask64BySize(int size) {
-			return GetBitMask64BySizeInBits(size * 8);
-		}
+		static uint64_t GetBitMask64BySize(int size);
 	};
 
 	// non-continious version of bitmask
@@ -132,23 +90,9 @@ namespace CE::Decompiler
 
 		using BitMask64::BitMask64;
 
-		int getSizeInBits() const {
-			return getMaxSizeInBits() - getOffsetFromTheEnd();
-		}
+		int getSizeInBits() const;
 
 		// calculate min count of bytes (1, 2, 4, 8) that covers the mask
-		int getSize() const {
-			auto sizeInBits = getSizeInBits();
-			if (sizeInBits <= 16) {
-				if (sizeInBits <= 8)
-					return 1;
-				return 2;
-			}
-			else {
-				if (sizeInBits <= 32)
-					return 4;
-				return 8;
-			}
-		}
+		int getSize() const;
 	};
 };

@@ -1,10 +1,10 @@
 #pragma once
 #include <decompiler/DecMask.h>
-
-//for debug x86
-#include <Zycore/Format.h>
-#include <Zycore/LibC.h>
 #include <Zydis/Zydis.h>
+#include <magic_enum.hpp>
+#include <string>
+#include <list>
+#include <map>
 
 namespace CE::Decompiler::PCode
 {
@@ -37,91 +37,37 @@ namespace CE::Decompiler::PCode
 			m_debugInfo = printDebug();
 		}
 
-		Type getType() const {
-			return m_type;
-		}
+		Type getType() const;
 
-		int getId() const {
-			return (m_genericId << 8) | m_index;
-		}
+		int getId() const;
 
-		RegisterId getGenericId() const {
-			return m_genericId;
-		}
+		RegisterId getGenericId() const;
 
-		int getIndex() const {
-			return m_index;
-		}
+		int getIndex() const;
 
-		bool isValid() const {
-			return m_genericId != 0;
-		}
+		bool isValid() const;
 
-		bool isPointer() const {
-			return m_type == Type::StackPointer || m_type == Type::InstructionPointer;
-		}
+		bool isPointer() const;
 
-		bool isVector() const {
-			return m_type == Type::Vector;
-		}
+		bool isVector() const;
 
 		// get size (in bytes) of values range
-		int getSize() const {
-			return m_valueRangeMask.getSize();
-		}
+		int getSize() const;
 
-		int getOffset() const {
-			return m_valueRangeMask.getOffset() + m_index * 64;
-		}
+		int getOffset() const;
 
 		// check if memory area of two registers intersected
-		bool intersect(const Register& reg) const {
-			//if the masks intersected
-			return getId() == reg.getId() && !(m_valueRangeMask & reg.m_valueRangeMask).isZero();
-		}
+		bool intersect(const Register& reg) const;
 
 		bool operator ==(const Register& reg) const {
 			return getId() == reg.getId() && m_valueRangeMask == reg.m_valueRangeMask;
 		}
 
-		std::string printDebug() {
-			auto regId = (ZydisRegister)m_genericId;
-
-			auto size = getSize();
-			std::string maskStr = std::to_string(size);
-			if (isVector()) {
-				if (size == 4 || size == 8) {
-					maskStr = std::string(size == 4 ? "D" : "Q") + (char)('a' + (char)(getOffset() / (size * 8)));
-				}
-			}
-
-			if (regId != ZYDIS_REGISTER_RFLAGS)
-				return std::string(ZydisRegisterGetString(regId)) + ":" + maskStr;
-
-			std::string flagName = "flag";
-			auto flag = (ZydisCPUFlag)m_valueRangeMask.getOffset();
-			if (flag == ZYDIS_CPUFLAG_CF)
-				flagName = "CF";
-			else if (flag == ZYDIS_CPUFLAG_OF)
-				flagName = "OF";
-			else if (flag == ZYDIS_CPUFLAG_SF)
-				flagName = "SF";
-			else if (flag == ZYDIS_CPUFLAG_ZF)
-				flagName = "ZF";
-			else if (flag == ZYDIS_CPUFLAG_AF)
-				flagName = "AF";
-			else if (flag == ZYDIS_CPUFLAG_PF)
-				flagName = "PF";
-			return flagName + ":1";
-		}
+		std::string printDebug();
 	};
 
 	// that is the feature of x86: setting value to EAX cleans fully RAX
-	static BitMask64 GetValueRangeMaskWithException(const PCode::Register& reg) {
-		if (reg.getType() == Register::Type::Helper && reg.m_valueRangeMask == BitMask64(4))
-			return BitMask64(8);
-		return reg.m_valueRangeMask;
-	}
+	static BitMask64 GetValueRangeMaskWithException(const PCode::Register& reg);
 
 	// Register, variable(symbol) or constant (used as input or output for pCode instructions)
 	class Varnode
@@ -150,17 +96,11 @@ namespace CE::Decompiler::PCode
 			: m_register(reg)
 		{}
 
-		int getSize() override {
-			return m_register.getSize();
-		}
+		int getSize() override;
 
-		BitMask64 getMask() override {
-			return m_register.m_valueRangeMask;
-		}
+		BitMask64 getMask() override;
 
-		std::string printDebug() override {
-			return m_register.printDebug();
-		}
+		std::string printDebug() override;
 	};
 
 	// e.g. 100
@@ -176,13 +116,9 @@ namespace CE::Decompiler::PCode
 			: m_value(value), m_size(size)
 		{}
 
-		int getSize() override {
-			return m_size;
-		}
+		int getSize() override;
 
-		std::string printDebug() override {
-			return std::to_string((int64_t&)m_value) + ":" + std::to_string(getSize());
-		}
+		std::string printDebug() override;
 	};
 
 	// e.g. $U9680
@@ -197,13 +133,9 @@ namespace CE::Decompiler::PCode
 			: m_size(size)
 		{}
 
-		int getSize() override {
-			return m_size;
-		}
+		int getSize() override;
 
-		std::string printDebug() override {
-			return "$U" + std::to_string((uint64_t)this % 10000) + ":" + std::to_string(getSize());
-		}
+		std::string printDebug() override;
 	};
 
 	// PCode instruction id
@@ -316,36 +248,18 @@ namespace CE::Decompiler::PCode
 		{}
 
 		// get long offset which consist of original offset and pCode instruction order number: origOffset{24} | order{8}
-		int64_t getOffset() {
-			return (m_origInstruction->m_offset << 8) | m_orderId;
-		}
+		int64_t getOffset();
 
 		// get long offset of the next instruction following this
-		int64_t getFirstInstrOffsetInNextOrigInstr() {
-			return (m_origInstruction->m_offset + m_origInstruction->m_length) << 8;
-		}
+		int64_t getFirstInstrOffsetInNextOrigInstr();
 
-		std::string printDebug() {
-			std::string result;
-			if (m_output)
-				result += m_output->printDebug() + " = ";
-			result += magic_enum::enum_name(m_id);
-			if (m_input0)
-				result += " " + m_input0->printDebug();
-			if (m_input1)
-				result += ", " + m_input1->printDebug();
-			return result;
-		}
+		std::string printDebug();
 
 		// BRANCH, CBRANCH, BRANCHIND
-		static bool IsBranching(InstructionId id) {
-			return id >= InstructionId::BRANCH && id <= InstructionId::BRANCHIND;
-		}
+		static bool IsBranching(InstructionId id);
 
 		// check if the instruction is some kind of jump (BRANCH/CALL/RETURN)
-		static bool IsAnyJmup(InstructionId id) {
-			return id >= InstructionId::BRANCH && id <= InstructionId::RETURN;
-		}
+		static bool IsAnyJmup(InstructionId id);
 	};
 
 	class IRelatedToInstruction
