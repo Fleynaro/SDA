@@ -1,6 +1,5 @@
-#include <Program.h>
-#include <Project.h>
 #include "DecompilerDemoWindow.h"
+#include <Project.h>
 #include <asmtk/asmtk.h>
 
 using namespace CE;
@@ -74,7 +73,7 @@ void GUI::DecompilerDemoWindow::deassembly(const std::string& textCode) {
 
 // decompiler
 #include <decompiler/DecMisc.h>
-#include <Module/Image/VectorBufferImage.h>
+#include <images/VectorBufferImage.h>
 #include <managers/Managers.h>
 
 int hexToDec(char c) {
@@ -85,8 +84,8 @@ int hexToDec(char c) {
     return c - 'A' + 10;
 }
 
-bool parseHexBytesStr(const std::string& hexBytesStr, std::vector<byte>& bytes) {
-    byte b;
+bool parseHexBytesStr(const std::string& hexBytesStr, std::vector<int8_t>& bytes) {
+    int8_t b;
     for (int i = 0; i < hexBytesStr.length(); i ++) {
         if (i % 3 == 0)
             b = hexToDec(hexBytesStr[i]) << 4;
@@ -98,7 +97,7 @@ bool parseHexBytesStr(const std::string& hexBytesStr, std::vector<byte>& bytes) 
     return true;
 }
 
-std::string getAsmListing(uint8_t* data, ZyanUSize length) {
+std::string getAsmListing(int8_t* data, ZyanUSize length) {
     std::string result;
 
     ZydisDecoder decoder;
@@ -131,7 +130,7 @@ std::string getAsmListing(uint8_t* data, ZyanUSize length) {
 
 void GUI::DecompilerDemoWindow::assembly(const std::string& hexBytesStr)
 {
-    std::vector<byte> bytes;
+    std::vector<int8_t> bytes;
     if (!parseHexBytesStr(hexBytesStr, bytes)) {
         m_bytesParsingErrorText.setDisplay(true);
         m_bytesParsingErrorText.setText("parsing error");
@@ -149,7 +148,7 @@ void GUI::DecompilerDemoWindow::decompile(const std::string& hexBytesStr)
     using namespace CE::Symbol;
     using namespace CE::DataType;
 
-    std::vector<byte> bytes;
+    std::vector<int8_t> bytes;
     if (!parseHexBytesStr(hexBytesStr, bytes)) {
         m_bytesParsingErrorText.setDisplay(true);
         m_bytesParsingErrorText.setText("parsing error");

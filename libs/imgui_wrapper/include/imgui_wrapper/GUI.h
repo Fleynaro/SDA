@@ -14,7 +14,8 @@
 #include <functional>
 #include <windows.h>
 
-#include "../imgui_include.h"
+#include <imgui.h>
+#include <misc/cpp/imgui_stdlib.h>
 
 #include "Attribute.h"
 #include "StyleThemes.h"

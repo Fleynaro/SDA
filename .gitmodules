@@ -7,3 +7,7 @@
 [submodule "external/asmjit"]
 	path = external/asmjit
 	url = https://github.com/asmjit/asmjit
+[submodule "external/imgui"]
+	path = external/imgui
+	url = https://github.com/ocornut/imgui
+	branch = docking

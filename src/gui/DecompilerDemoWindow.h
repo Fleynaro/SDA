@@ -1,6 +1,6 @@
 #pragma once
-#include <GUI.h>
-#include <Widgets/CodeEditor/CodeEditor.h>
+#include <imgui_wrapper/GUI.h>
+#include <imgui_wrapper/widgets/code_editor/CodeEditor.h>
 #include <Program.h>
 
 namespace CE {
