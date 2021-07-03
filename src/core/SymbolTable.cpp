@@ -7,11 +7,13 @@ CE::Symbol::SymbolTable::SymbolTable(SymbolTableManager* manager, SymbolTableTyp
 	: m_manager(manager), m_type(type)
 {}
 
-SymbolTableManager* SymbolTable::getManager() {
+SymbolTableManager* SymbolTable::getManager() const
+{
 	return m_manager;
 }
 
-SymbolTable::SymbolTableType SymbolTable::getType() {
+SymbolTable::SymbolTableType SymbolTable::getType() const
+{
 	return m_type;
 }
 

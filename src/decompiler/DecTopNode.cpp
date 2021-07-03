@@ -24,7 +24,8 @@ std::list<ExprTree::INode*> CE::Decompiler::TopNode::getNodesList() {
 	return { getNode() };
 }
 
-ExprTree::INode* CE::Decompiler::TopNode::getNode() {
+ExprTree::INode* CE::Decompiler::TopNode::getNode() const
+{
 	return m_node;
 }
 

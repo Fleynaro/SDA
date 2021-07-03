@@ -156,7 +156,8 @@ Structure::FieldMapType::iterator Structure::getFieldIterator(int bitOffset) {
 	return m_fields.end();
 }
 
-Structure::Field* Structure::getDefaultField() {
+Structure::Field* Structure::getDefaultField() const
+{
 	return m_defaultField;
 }
 

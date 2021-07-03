@@ -51,7 +51,8 @@ bool CE::Decompiler::PCode::Register::intersect(const Register& reg) const {
 	return getId() == reg.getId() && !(m_valueRangeMask & reg.m_valueRangeMask).isZero();
 }
 
-std::string CE::Decompiler::PCode::Register::printDebug() {
+std::string CE::Decompiler::PCode::Register::printDebug() const
+{
 	auto regId = (ZydisRegister)m_genericId;
 
 	auto size = getSize();
@@ -91,17 +92,20 @@ BitMask64 CE::Decompiler::PCode::GetValueRangeMaskWithException(const PCode::Reg
 
 // get long offset which consist of original offset and pCode instruction order number: origOffset{24} | order{8}
 
-int64_t CE::Decompiler::PCode::Instruction::getOffset() {
+int64_t CE::Decompiler::PCode::Instruction::getOffset() const
+{
 	return (m_origInstruction->m_offset << 8) | m_orderId;
 }
 
 // get long offset of the next instruction following this
 
-int64_t CE::Decompiler::PCode::Instruction::getFirstInstrOffsetInNextOrigInstr() {
+int64_t CE::Decompiler::PCode::Instruction::getFirstInstrOffsetInNextOrigInstr() const
+{
 	return (m_origInstruction->m_offset + m_origInstruction->m_length) << 8;
 }
 
-std::string CE::Decompiler::PCode::Instruction::printDebug() {
+std::string CE::Decompiler::PCode::Instruction::printDebug() const
+{
 	std::string result;
 	if (m_output)
 		result += m_output->printDebug() + " = ";

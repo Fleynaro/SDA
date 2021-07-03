@@ -47,7 +47,8 @@ ISdaNode* CE::Decompiler::Symbolization::SdaGoarBuilding::create() {
 	return nullptr;
 }
 
-bool CE::Decompiler::Symbolization::SdaGoarBuilding::buildSingleGoar(ISdaNode*& sdaNode, int64_t& bitOffset, std::list<ISdaNode*>& terms) {
+bool CE::Decompiler::Symbolization::SdaGoarBuilding::buildSingleGoar(ISdaNode*& sdaNode, int64_t& bitOffset, std::list<ISdaNode*>& terms) const
+{
 	auto dataType = sdaNode->getSrcDataType(); // getting a type without a cast (a pointer inside uint64_t)
 	auto ptrLevels = dataType->getPointerLevels();
 	auto baseDataType = dataType->getBaseType();

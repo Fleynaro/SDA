@@ -24,7 +24,8 @@ Id FunctionMapper::getNextId() {
 	return GenerateNextId(&db, "sda_functions");
 }
 
-CE::FunctionManager* FunctionMapper::getManager() {
+CE::FunctionManager* FunctionMapper::getManager() const
+{
 	return static_cast<CE::FunctionManager*>(m_repository);
 }
 

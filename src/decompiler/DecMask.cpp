@@ -21,7 +21,8 @@ int CE::Decompiler::ExprBitMask::getSize() const {
 	}
 }
 
-bool CE::Decompiler::BitMask64::isZero() {
+bool CE::Decompiler::BitMask64::isZero() const
+{
 	return m_bitMask == 0x0;
 }
 
@@ -29,7 +30,8 @@ uint64_t CE::Decompiler::BitMask64::getValue() const {
 	return m_bitMask;
 }
 
-BitMask64 CE::Decompiler::BitMask64::withoutOffset() {
+BitMask64 CE::Decompiler::BitMask64::withoutOffset() const
+{
 	return m_bitMask >> getOffset();
 }
 

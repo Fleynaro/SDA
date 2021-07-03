@@ -160,7 +160,8 @@ MemLocation* CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryCon
 	return &(*m_usedMemLocations.rbegin()); //dangerous: important no to copy the mem ctx anywhere
 }
 
-int CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContext::getLastUsedMemLocIdx() {
+int CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContext::getLastUsedMemLocIdx() const
+{
 	return (int)m_usedMemLocations.size() - 1;
 }
 

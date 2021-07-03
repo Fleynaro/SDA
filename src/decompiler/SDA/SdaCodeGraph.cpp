@@ -10,7 +10,8 @@ CE::Decompiler::SdaCodeGraph::SdaCodeGraph(DecompiledCodeGraph* decGraph)
 CE::Decompiler::SdaCodeGraph::~SdaCodeGraph() {
 }
 
-DecompiledCodeGraph* CE::Decompiler::SdaCodeGraph::getDecGraph() {
+DecompiledCodeGraph* CE::Decompiler::SdaCodeGraph::getDecGraph() const
+{
 	return m_decGraph;
 }
 

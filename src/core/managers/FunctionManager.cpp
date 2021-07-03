@@ -22,11 +22,13 @@ FunctionManager::Factory FunctionManager::getFactory(bool markAsNew) {
 	return Factory(this, m_ghidraFunctionMapper, m_funcMapper, markAsNew);
 }
 
-void FunctionManager::loadFunctions() {
+void FunctionManager::loadFunctions() const
+{
 	m_funcMapper->loadAll();
 }
 
-void FunctionManager::loadFunctionsFrom(ghidra::packet::SDataFullSyncPacket* dataPacket) {
+void FunctionManager::loadFunctionsFrom(ghidra::packet::SDataFullSyncPacket* dataPacket) const
+{
 	m_ghidraFunctionMapper->load(dataPacket);
 }
 
@@ -46,7 +48,8 @@ Function* CE::FunctionManager::findFunctionByGhidraId(Ghidra::Id id)
 	return nullptr;
 }
 
-Function* CE::FunctionManager::Factory::createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::SymbolTable* stackSymbolTable) {
+Function* CE::FunctionManager::Factory::createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::SymbolTable* stackSymbolTable) const
+{
 	auto func = new Function(m_functionManager, functionSymbol, imageDec, stackSymbolTable);
 	func->setMapper(m_funcMapper);
 	func->setGhidraMapper(m_ghidraFunctionMapper);
@@ -55,7 +58,8 @@ Function* CE::FunctionManager::Factory::createFunction(Symbol::FunctionSymbol* f
 	return func;
 }
 
-Function* CE::FunctionManager::Factory::createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec) {
+Function* CE::FunctionManager::Factory::createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec) const
+{
 	auto factory = m_functionManager->getProject()->getSymTableManager()->getFactory();
 	auto stackSymbolTable = factory.createSymbolTable(Symbol::SymbolTable::STACK_SPACE);
 	return createFunction(functionSymbol, imageDec, stackSymbolTable);

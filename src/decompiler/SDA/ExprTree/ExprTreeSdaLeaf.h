@@ -10,9 +10,9 @@ namespace CE::Decompiler::ExprTree
 	public:
 		SdaSymbolLeaf(CE::Symbol::ISymbol* sdaSymbol, Symbol::Symbol* decSymbol);
 
-		Symbol::Symbol* getDecSymbol();
+		Symbol::Symbol* getDecSymbol() const;
 
-		CE::Symbol::ISymbol* getSdaSymbol();
+		CE::Symbol::ISymbol* getSdaSymbol() const;
 
 		int getSize() override;
 
@@ -40,7 +40,7 @@ namespace CE::Decompiler::ExprTree
 	public:
 		SdaMemSymbolLeaf(CE::Symbol::IMemorySymbol* sdaSymbol, Symbol::Symbol* decSymbol, int64_t offset, bool isAddrGetting = false);
 
-		CE::Symbol::IMemorySymbol* getSdaSymbol();
+		CE::Symbol::IMemorySymbol* getSdaSymbol() const;
 
 		DataTypePtr getSrcDataType() override;
 

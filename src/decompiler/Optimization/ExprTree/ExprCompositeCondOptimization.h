@@ -17,7 +17,7 @@ namespace CE::Decompiler::Optimization
 		bool inverseConditions(CompositeCondition* compCond);
 
 		//x > 2 && x == 3 -> x == 3 && x > 2
-		void makeOrderInCompositeCondition(CompositeCondition* compCond);
+		void makeOrderInCompositeCondition(CompositeCondition* compCond) const;
 
 		//(x < 2 || x == 2)		->		(x <= 2)
 		void optimizeCompositeCondition(CompositeCondition* compCond);

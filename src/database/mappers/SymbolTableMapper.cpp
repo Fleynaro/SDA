@@ -21,7 +21,8 @@ Id SymbolTableMapper::getNextId() {
 	return GenerateNextId(&db, "sda_symbol_tables");
 }
 
-SymbolTableManager* SymbolTableMapper::getManager() {
+SymbolTableManager* SymbolTableMapper::getManager() const
+{
 	return static_cast<SymbolTableManager*>(m_repository);
 }
 

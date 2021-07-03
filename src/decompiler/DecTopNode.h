@@ -15,7 +15,7 @@ namespace CE::Decompiler
 
 		std::list<ExprTree::INode*> getNodesList() override;
 
-		ExprTree::INode* getNode();
+		ExprTree::INode* getNode() const;
 
 		void setNode(ExprTree::INode* node);
 

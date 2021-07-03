@@ -22,7 +22,8 @@ namespace CE::Decompiler::Symbol
 
 		virtual ~Symbol() {}
 
-		int getSize() {
+		int getSize() const
+		{
 			return m_size;
 		}
 

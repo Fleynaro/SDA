@@ -39,7 +39,8 @@ bool CE::Decompiler::Optimization::ExprCompositeConditionOptimization::inverseCo
 
 //x > 2 && x == 3 -> x == 3 && x > 2
 
-void CE::Decompiler::Optimization::ExprCompositeConditionOptimization::makeOrderInCompositeCondition(CompositeCondition* compCond) {
+void CE::Decompiler::Optimization::ExprCompositeConditionOptimization::makeOrderInCompositeCondition(CompositeCondition* compCond) const
+{
 	if (!compCond->m_rightCond)
 		return;
 

@@ -14,7 +14,8 @@ CE::Decompiler::ExprTree::SdaReadValueNode::~SdaReadValueNode() {
 	m_readValueNode->removeBy(this);
 }
 
-ISdaNode* CE::Decompiler::ExprTree::SdaReadValueNode::getAddress() {
+ISdaNode* CE::Decompiler::ExprTree::SdaReadValueNode::getAddress() const
+{
 	return dynamic_cast<ISdaNode*>(m_readValueNode->getAddress());
 }
 

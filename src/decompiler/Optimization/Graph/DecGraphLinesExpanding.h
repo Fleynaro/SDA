@@ -21,6 +21,6 @@ namespace CE::Decompiler::Optimization
 
 		void start() override;
 	private:
-		void processBlock(DecBlock* block);
+		void processBlock(DecBlock* block) const;
 	};
 };

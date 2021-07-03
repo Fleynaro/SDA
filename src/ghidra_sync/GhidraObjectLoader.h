@@ -10,7 +10,7 @@ namespace CE::Ghidra
 
 		~GhidraObjectLoader();
 
-		void analyse();
+		void analyse() const;
 
 		std::list<IObject*>& getObjectsToUpsert();
 

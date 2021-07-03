@@ -10,7 +10,7 @@ namespace CE
 	public:
 		AbstractManager(Project* project);
 		
-		Project* getProject();
+		Project* getProject() const;
 	private:
 		Project* m_project;
 	};
@@ -66,7 +66,7 @@ namespace CE
 		
 		DB::IDomainObject* find(DB::Id id) override;
 
-		int getItemsCount();
+		int getItemsCount() const;
 	protected:
 		ItemMapType m_items;
 	};

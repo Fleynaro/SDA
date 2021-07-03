@@ -21,11 +21,13 @@ void CE::Decompiler::ExprTree::LinearExpr::addTerm(ExprTree::INode* term) {
 	m_terms.push_back(term);
 }
 
-void CE::Decompiler::ExprTree::LinearExpr::setConstTermValue(int64_t constTerm) {
+void CE::Decompiler::ExprTree::LinearExpr::setConstTermValue(int64_t constTerm) const
+{
 	m_constTerm->setValue((uint64_t)constTerm);
 }
 
-int64_t CE::Decompiler::ExprTree::LinearExpr::getConstTermValue() {
+int64_t CE::Decompiler::ExprTree::LinearExpr::getConstTermValue() const
+{
 	return (int64_t)m_constTerm->getValue();
 }
 
@@ -33,7 +35,8 @@ std::list<ExprTree::INode*>& CE::Decompiler::ExprTree::LinearExpr::getTerms() {
 	return m_terms;
 }
 
-INumberLeaf* CE::Decompiler::ExprTree::LinearExpr::getConstTerm() {
+INumberLeaf* CE::Decompiler::ExprTree::LinearExpr::getConstTerm() const
+{
 	return m_constTerm;
 }
 

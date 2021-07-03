@@ -35,6 +35,7 @@ void Typedef::setRefType(DataTypePtr refType) {
 	m_refType = refType;
 }
 
-DataTypePtr Typedef::getRefType() {
+DataTypePtr Typedef::getRefType() const
+{
 	return m_refType;
 }

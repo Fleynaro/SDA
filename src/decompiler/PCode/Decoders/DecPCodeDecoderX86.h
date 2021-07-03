@@ -55,7 +55,7 @@ namespace CE::Decompiler::PCode
 
 		Varnode* getJumpOffsetByOperand(const ZydisDecodedOperand& operand);
 
-		uint64_t getJumpOffset(int jmpOffset);
+		uint64_t getJumpOffset(int jmpOffset) const;
 
 		void GenerateVectorOperation(const VectorOperationGeneratorInfo& info);
 
@@ -71,10 +71,10 @@ namespace CE::Decompiler::PCode
 
 		Varnode* GetFlagCondition(FlagCond flagCond);
 
-		int getFirstExplicitOperandsCount();
+		int getFirstExplicitOperandsCount() const;
 
-		RegisterVarnode* CreateVarnode(ZydisRegister regId, int size, int offset = 0x0);
+		RegisterVarnode* CreateVarnode(ZydisRegister regId, int size, int offset = 0x0) const;
 
-		RegisterVarnode* CreateVarnode(ZydisCPUFlag flag);
+		RegisterVarnode* CreateVarnode(ZydisCPUFlag flag) const;
 	};
 };

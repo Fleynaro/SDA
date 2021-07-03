@@ -42,7 +42,8 @@ std::uintptr_t CE::PEImage::getAddress() {
 	return m_pImgNtHeaders->OptionalHeader.ImageBase;
 }
 
-PIMAGE_SECTION_HEADER CE::PEImage::defineSection(DWORD rva) {
+PIMAGE_SECTION_HEADER CE::PEImage::defineSection(DWORD rva) const
+{
 	size_t i = 0;
 	PIMAGE_SECTION_HEADER pSeh = m_pImgSecHeader;
 	for (i = 0; i < m_pImgNtHeaders->FileHeader.NumberOfSections; i++) {

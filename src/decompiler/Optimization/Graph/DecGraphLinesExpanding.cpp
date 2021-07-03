@@ -12,7 +12,8 @@ void CE::Decompiler::Optimization::GraphLinesExpanding::start() {
 	}
 }
 
-void CE::Decompiler::Optimization::GraphLinesExpanding::processBlock(DecBlock* block) {
+void CE::Decompiler::Optimization::GraphLinesExpanding::processBlock(DecBlock* block) const
+{
 	auto newSeqLines = block->getSymbolParallelAssignmentLines();
 	block->getSymbolParallelAssignmentLines().clear();
 

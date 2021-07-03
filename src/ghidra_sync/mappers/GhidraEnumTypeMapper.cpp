@@ -29,7 +29,8 @@ void EnumTypeMapper::remove(SyncContext* ctx, IObject* obj) {
 	m_dataTypeMapper->remove(ctx, obj);
 }
 
-datatype::SDataTypeEnum EnumTypeMapper::buildDesc(DataType::Enum* Enum) {
+datatype::SDataTypeEnum EnumTypeMapper::buildDesc(DataType::Enum* Enum) const
+{
 	datatype::SDataTypeEnum enumDesc;
 	enumDesc.__set_type(m_dataTypeMapper->buildDesc(Enum));
 	for (auto& field : Enum->getFields()) {
@@ -41,7 +42,8 @@ datatype::SDataTypeEnum EnumTypeMapper::buildDesc(DataType::Enum* Enum) {
 	return enumDesc;
 }
 
-void EnumTypeMapper::changeEnumByDesc(DataType::Enum* Enum, const datatype::SDataTypeEnum& enumDesc) {
+void EnumTypeMapper::changeEnumByDesc(DataType::Enum* Enum, const datatype::SDataTypeEnum& enumDesc) const
+{
 	m_dataTypeMapper->changeUserTypeByDesc(Enum, enumDesc.type);
 	Enum->setSize(enumDesc.type.size);
 	Enum->deleteAll();

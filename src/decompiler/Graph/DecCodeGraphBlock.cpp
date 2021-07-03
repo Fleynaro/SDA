@@ -20,11 +20,13 @@ std::list<EndDecBlock::BlockTopNode*> CE::Decompiler::EndDecBlock::getAllTopNode
 	return list;
 }
 
-ExprTree::INode* CE::Decompiler::EndDecBlock::getReturnNode() {
+ExprTree::INode* CE::Decompiler::EndDecBlock::getReturnNode() const
+{
 	return m_returnNode->getNode();
 }
 
-void CE::Decompiler::EndDecBlock::setReturnNode(ExprTree::INode* returnNode) {
+void CE::Decompiler::EndDecBlock::setReturnNode(ExprTree::INode* returnNode) const
+{
 	if (getReturnNode()) {
 		m_returnNode->clear();
 	}
@@ -171,11 +173,13 @@ void CE::Decompiler::DecBlock::setNextFarBlock(DecBlock* nextBlock) {
 	m_nextFarBlock = nextBlock;
 }
 
-DecBlock* CE::Decompiler::DecBlock::getNextNearBlock() {
+DecBlock* CE::Decompiler::DecBlock::getNextNearBlock() const
+{
 	return m_nextNearBlock;
 }
 
-DecBlock* CE::Decompiler::DecBlock::getNextFarBlock() {
+DecBlock* CE::Decompiler::DecBlock::getNextFarBlock() const
+{
 	return m_nextFarBlock;
 }
 
@@ -183,7 +187,8 @@ std::list<DecBlock*>& CE::Decompiler::DecBlock::getBlocksReferencedTo() {
 	return m_blocksReferencedTo;
 }
 
-std::list<DecBlock*> CE::Decompiler::DecBlock::getNextBlocks() {
+std::list<DecBlock*> CE::Decompiler::DecBlock::getNextBlocks() const
+{
 	std::list<DecBlock*> nextBlocks;
 	if (m_nextFarBlock) {
 		nextBlocks.push_back(m_nextFarBlock);
@@ -194,7 +199,8 @@ std::list<DecBlock*> CE::Decompiler::DecBlock::getNextBlocks() {
 	return nextBlocks;
 }
 
-DecBlock* CE::Decompiler::DecBlock::getNextBlock() {
+DecBlock* CE::Decompiler::DecBlock::getNextBlock() const
+{
 	if (m_nextFarBlock) {
 		return m_nextFarBlock;
 	}
@@ -208,7 +214,8 @@ void CE::Decompiler::DecBlock::swapNextBlocks() {
 	std::swap(m_nextNearBlock, m_nextFarBlock);
 }
 
-bool CE::Decompiler::DecBlock::isCondition() {
+bool CE::Decompiler::DecBlock::isCondition() const
+{
 	return m_nextNearBlock != nullptr && m_nextFarBlock != nullptr;
 }
 
@@ -218,7 +225,8 @@ bool CE::Decompiler::DecBlock::isCycle() {
 
 // get count of blocks which reference to this block
 
-int CE::Decompiler::DecBlock::getRefBlocksCount() {
+int CE::Decompiler::DecBlock::getRefBlocksCount() const
+{
 	return (int)m_blocksReferencedTo.size();
 }
 
@@ -251,11 +259,13 @@ std::list<DecBlock::BlockTopNode*> CE::Decompiler::DecBlock::getAllTopNodes() {
 
 // condition top node which contains boolean expression to jump to another block
 
-ExprTree::AbstractCondition* CE::Decompiler::DecBlock::getNoJumpCondition() {
+ExprTree::AbstractCondition* CE::Decompiler::DecBlock::getNoJumpCondition() const
+{
 	return m_noJmpCond->getCond();
 }
 
-void CE::Decompiler::DecBlock::setNoJumpCondition(ExprTree::AbstractCondition* noJmpCond) {
+void CE::Decompiler::DecBlock::setNoJumpCondition(ExprTree::AbstractCondition* noJmpCond) const
+{
 	if (getNoJumpCondition()) {
 		m_noJmpCond->clear();
 	}
@@ -282,7 +292,8 @@ std::list<DecBlock::SymbolParallelAssignmentLine*>& CE::Decompiler::DecBlock::ge
 
 // check if this block is empty
 
-bool CE::Decompiler::DecBlock::hasNoCode() {
+bool CE::Decompiler::DecBlock::hasNoCode() const
+{
 	return m_seqLines.empty() && m_symbolParallelAssignmentLines.empty();
 }
 

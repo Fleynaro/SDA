@@ -19,7 +19,7 @@ namespace CE::Decompiler::ExprTree
 
 		std::list<ExprTree::INode*> getNodesList() override;
 
-		INode* getDestination();
+		INode* getDestination() const;
 
 		std::vector<INode*>& getParamNodes();
 

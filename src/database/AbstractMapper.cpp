@@ -39,7 +39,8 @@ DB::IRepository* DB::AbstractMapper::getRepository() {
 	return m_repository;
 }
 
-DB::IDomainObject* DB::AbstractMapper::find(Id id) {
+DB::IDomainObject* DB::AbstractMapper::find(Id id) const
+{
 	return m_repository->find(id);
 }
 

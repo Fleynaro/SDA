@@ -1,7 +1,5 @@
 #pragma once
 #include <Windows.h>
-#include <datatypes/TypeUnit.h>
-#include <utilities/Iterator.h>
 
 namespace CE
 {
@@ -14,15 +12,13 @@ namespace CE
 			: m_addr(addr)
 		{}
 
-		bool canBeRead();
+		[[nodiscard]] bool canBeRead() const;
 
-		HMODULE getModuleHandle();
+		[[nodiscard]] HMODULE getModuleHandle() const;
 
-		MEMORY_BASIC_INFORMATION getInfo();
+		[[nodiscard]] MEMORY_BASIC_INFORMATION getInfo() const;
 
-		void* getAddress() {
-			return m_addr;
-		}
+		[[nodiscard]] void* getAddress() const;
 
 		template<typename T>
 		T& get();
@@ -34,9 +30,9 @@ namespace CE
 			Execute		= 4
 		};
 
-		void setProtect(ProtectFlags flags, int size = 1);
+		void setProtect(ProtectFlags flags, int size = 1) const;
 
-		ProtectFlags getProtect();
+		[[nodiscard]] ProtectFlags getProtect() const;
 	};
 
 	template<typename T>

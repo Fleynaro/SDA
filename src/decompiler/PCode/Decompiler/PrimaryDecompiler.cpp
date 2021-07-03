@@ -53,7 +53,8 @@ void CE::Decompiler::AbstractPrimaryDecompiler::start() {
 	onFinal();
 }
 
-AbstractRegisterFactory* CE::Decompiler::AbstractPrimaryDecompiler::getRegisterFactory() {
+AbstractRegisterFactory* CE::Decompiler::AbstractPrimaryDecompiler::getRegisterFactory() const
+{
 	return m_registerFactory;
 }
 

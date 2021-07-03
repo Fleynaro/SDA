@@ -19,7 +19,8 @@ CE::Symbol::AbstractMemorySymbol::AbstractMemorySymbol(SymbolManager* manager, i
 	: AbstractSymbol(manager, type, name, comment), m_offset(offset)
 {}
 
-int64_t CE::Symbol::AbstractMemorySymbol::getOffset() {
+int64_t CE::Symbol::AbstractMemorySymbol::getOffset() const
+{
 	return m_offset;
 }
 

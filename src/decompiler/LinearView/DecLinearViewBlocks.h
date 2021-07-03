@@ -38,11 +38,13 @@ namespace CE::Decompiler::LinearView
 
 		virtual ~Block() {}
 
-		int getBackOrderId() {
+		int getBackOrderId() const
+		{
 			return m_backOrderId;
 		}
 
-		int getLinearLevel() {
+		int getLinearLevel() const
+		{
 			return m_linearLevel;
 		}
 
@@ -94,21 +96,24 @@ namespace CE::Decompiler::LinearView
 
 		GotoType getGotoType();
 
-		WhileCycle* getWhileCycle();
+		WhileCycle* getWhileCycle() const;
 
 		bool isEmpty() {
 			return getBlocks().size() == 0 && getGotoType() == GotoType::None;
 		}
 
-		int getBackOrderId() {
+		int getBackOrderId() const
+		{
 			return m_backOrderId;
 		}
 
-		int getMinLinearLevel() {
+		int getMinLinearLevel() const
+		{
 			return m_minLinearLevel;
 		}
 
-		int getMaxLinearLevel() {
+		int getMaxLinearLevel() const
+		{
 			return m_maxLinearLevel;
 		}
 	private:

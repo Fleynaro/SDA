@@ -75,7 +75,8 @@ void CE::Decompiler::ImageAnalyzer::start(int startOffset, bool onceFunc) {
 
 // reconnect all blocks that are referenced by function calls
 
-void CE::Decompiler::ImageAnalyzer::reconnectBlocksAndReplaceJmpByCall(std::list<PCodeBlock*> blocks) {
+void CE::Decompiler::ImageAnalyzer::reconnectBlocksAndReplaceJmpByCall(std::list<PCodeBlock*> blocks) const
+{
 	for (auto block : blocks) {
 		for (auto refBlock : block->m_blocksReferencedTo) {
 			auto lastInstr = refBlock->getLastInstruction();
@@ -93,7 +94,8 @@ void CE::Decompiler::ImageAnalyzer::reconnectBlocksAndReplaceJmpByCall(std::list
 
 // calculate levels and gather PCode blocks for each function graph
 
-void CE::Decompiler::ImageAnalyzer::prepareFuncGraphs() {
+void CE::Decompiler::ImageAnalyzer::prepareFuncGraphs() const
+{
 	for (auto& funcGraph : m_imageGraph->getFunctionGraphList()) {
 		PrepareFuncGraph(&funcGraph);
 	}
@@ -101,7 +103,8 @@ void CE::Decompiler::ImageAnalyzer::prepareFuncGraphs() {
 
 // fill {funcGraph} with PCode blocks
 
-void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(int64_t startInstrOffset, FunctionPCodeGraph* funcGraph) {
+void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(int64_t startInstrOffset, FunctionPCodeGraph* funcGraph) const
+{
 	std::set<int64_t> visitedOffsets;
 	std::list<int64_t> nextOffsetsToVisitLater;
 

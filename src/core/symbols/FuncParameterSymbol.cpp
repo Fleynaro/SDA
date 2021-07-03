@@ -4,7 +4,8 @@
 using namespace CE;
 using namespace CE::Symbol;
 
-int CE::Symbol::FuncParameterSymbol::getParamIdx() {
+int CE::Symbol::FuncParameterSymbol::getParamIdx() const
+{
 	return m_paramIdx;
 }
 

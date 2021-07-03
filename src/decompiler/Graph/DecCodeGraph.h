@@ -11,7 +11,7 @@ namespace CE::Decompiler
 
 		~DecompiledCodeGraph();
 
-		FunctionPCodeGraph* getFuncGraph();
+		FunctionPCodeGraph* getFuncGraph() const;
 
 		DecBlock* getStartBlock();
 

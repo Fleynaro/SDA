@@ -13,7 +13,7 @@ namespace CE::Decompiler
 
 		~SdaCodeGraph();
 
-		DecompiledCodeGraph* getDecGraph();
+		DecompiledCodeGraph* getDecGraph() const;
 
 		/*CE::Symbol::AbstractSymbol* findSdaSymbolByName(std::string name) {
 			for (auto symbol : m_sdaSymbols) {

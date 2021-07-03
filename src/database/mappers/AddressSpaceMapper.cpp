@@ -20,7 +20,8 @@ Id DB::AddressSpaceMapper::getNextId() {
 	return GenerateNextId(&db, "sda_address_spaces");
 }
 
-CE::AddressSpaceManager* DB::AddressSpaceMapper::getManager() {
+CE::AddressSpaceManager* DB::AddressSpaceMapper::getManager() const
+{
 	return static_cast<AddressSpaceManager*>(m_repository);
 }
 

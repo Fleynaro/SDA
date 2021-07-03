@@ -62,7 +62,8 @@ void DB::Transaction::commit() {
 	transaction.commit();
 }
 
-DB::Id DB::Transaction::createSaveRecord() {
+DB::Id DB::Transaction::createSaveRecord() const
+{
 	using namespace std::chrono;
 	SQLite::Statement query(*m_db, "INSERT INTO sda_saves (date, insertsCount, updatesCount, deletesCount) VALUES(?1, ?2, ?3, ?4)");
 	query.bind(1, duration_cast<seconds>(system_clock::now().time_since_epoch()).count());

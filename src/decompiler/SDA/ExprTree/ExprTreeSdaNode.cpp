@@ -12,11 +12,13 @@ ISdaNode* CE::Decompiler::ExprTree::SdaTopNode::getSdaNode() {
 	return dynamic_cast<ISdaNode*>(getNode());
 }
 
-DataTypePtr CE::Decompiler::ExprTree::DataTypeCast::getCastDataType() {
+DataTypePtr CE::Decompiler::ExprTree::DataTypeCast::getCastDataType() const
+{
 	return m_castDataType;
 }
 
-bool CE::Decompiler::ExprTree::DataTypeCast::hasExplicitCast() {
+bool CE::Decompiler::ExprTree::DataTypeCast::hasExplicitCast() const
+{
 	return m_explicitCast;
 }
 

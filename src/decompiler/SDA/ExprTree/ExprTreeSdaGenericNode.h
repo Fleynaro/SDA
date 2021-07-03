@@ -16,7 +16,7 @@ namespace CE::Decompiler::ExprTree
 
 		std::list<ExprTree::INode*> getNodesList() override;
 
-		INode* getNode();
+		INode* getNode() const;
 
 		DataTypePtr getSrcDataType() override;
 

@@ -16,7 +16,7 @@ namespace CE::Symbol
 
 		Type getType() override;
 
-		int getBitSize();
+		int getBitSize() const;
 
 		int& getAbsBitOffset();
 
@@ -24,11 +24,11 @@ namespace CE::Symbol
 
 		int getOffset();
 
-		bool isBitField();
+		bool isBitField() const;
 
 		void setStructure(DataType::IStructure* structure);
 
-		bool isDefault();
+		bool isDefault() const;
 	private:
 		int m_bitSize;
 		int m_absBitOffset;

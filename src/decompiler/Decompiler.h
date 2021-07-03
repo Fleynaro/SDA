@@ -19,6 +19,6 @@ namespace CE::Decompiler
 
 		void start();
 
-		DecompiledCodeGraph* getDecGraph();
+		DecompiledCodeGraph* getDecGraph() const;
 	};
 };

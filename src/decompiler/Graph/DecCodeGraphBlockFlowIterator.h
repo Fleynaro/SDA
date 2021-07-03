@@ -17,7 +17,8 @@ namespace CE::Decompiler
 				: m_block(block), m_pressure(pressure), m_notNeedToReadMask(notNeedToReadMask)
 			{}
 
-			bool hasMaxPressure() {
+			bool hasMaxPressure() const
+			{
 				return m_pressure == MaxPressure;
 			}
 		};
@@ -33,7 +34,7 @@ namespace CE::Decompiler
 
 		BlockFlowIterator(DecBlock* startBlock, BitMask64 notNeedToReadMask = BitMask64(0));
 
-		bool isStartBlock();
+		bool isStartBlock() const;
 
 		bool hasNext();
 

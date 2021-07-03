@@ -26,7 +26,8 @@ void CE::Decompiler::PCode::AbstractDecoder::deleteDecodedPCodeInstructions() {
 	}
 }
 
-Instruction::OriginalInstruction* CE::Decompiler::PCode::AbstractDecoder::getOrigInstruction() {
+Instruction::OriginalInstruction* CE::Decompiler::PCode::AbstractDecoder::getOrigInstruction() const
+{
 	return m_curOrigInstr;
 }
 

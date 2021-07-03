@@ -17,11 +17,11 @@ namespace CE::Ghidra
 
 		~Sync();
 
-		Project* getProject();
+		Project* getProject() const;
 
-		Client* getClient();
+		Client* getClient() const;
 
-		packet::DataSyncPacketManagerServiceClient* getDataSyncPacketManagerServiceClient();
+		packet::DataSyncPacketManagerServiceClient* getDataSyncPacketManagerServiceClient() const;
 	private:
 		CE::Project* m_project;
 		Client* m_client;

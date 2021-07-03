@@ -159,7 +159,8 @@ std::string DataType::Unit::getViewValue(uint64_t value) {
 	return "(" + getDisplayName() + ")0x" + Helper::String::NumberToHex(value);
 }
 
-DataType::IType* Unit::getType() {
+DataType::IType* Unit::getType() const
+{
 	return m_type;
 }
 

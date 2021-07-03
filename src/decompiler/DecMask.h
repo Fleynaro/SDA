@@ -17,12 +17,12 @@ namespace CE::Decompiler
 			: BitMask64(GetBitMask64BySize(size) << uint64_t((offset % 8) * 8))
 		{}
 
-		bool isZero();
+		bool isZero() const;
 
 		// get mask as integer value
 		uint64_t getValue() const;
 
-		BitMask64 withoutOffset();
+		BitMask64 withoutOffset() const;
 
 		// calculate count of 1-bits
 		int getBitsCount() const;

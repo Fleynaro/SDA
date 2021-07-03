@@ -44,7 +44,7 @@ namespace CE::Decompiler::Optimization
 
 			MemLocation* createNewLocation(const MemLocation& location);
 
-			int getLastUsedMemLocIdx();
+			int getLastUsedMemLocIdx() const;
 
 			// check intersecting {location} with locations created from {firstUsedMemLocIdx} to {lastUsedMemLocIdx} state indexes
 			bool hasUsed(const MemLocation& location, int firstUsedMemLocIdx = -1, int lastUsedMemLocIdx = -1);

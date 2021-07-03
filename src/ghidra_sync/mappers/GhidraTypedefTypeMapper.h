@@ -18,8 +18,8 @@ namespace CE::Ghidra
 	private:
 		DataTypeMapper* m_dataTypeMapper;
 
-		datatype::SDataTypeTypedef buildDesc(DataType::Typedef* Typedef);
+		datatype::SDataTypeTypedef buildDesc(DataType::Typedef* Typedef) const;
 
-		void changeTypedefByDesc(DataType::Typedef* Typedef, const datatype::SDataTypeTypedef& typedefDesc);
+		void changeTypedefByDesc(DataType::Typedef* Typedef, const datatype::SDataTypeTypedef& typedefDesc) const;
 	};
 };

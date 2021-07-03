@@ -65,39 +65,48 @@ void CE::ImageDecorator::save() {
 	Helper::File::SaveBufferIntoFile((char*)m_image->getData(), m_image->getSize(), getFile());
 }
 
-ImageManager* CE::ImageDecorator::getImageManager() {
+ImageManager* CE::ImageDecorator::getImageManager() const
+{
 	return m_imageManager;
 }
 
-AddressSpace* CE::ImageDecorator::getAddressSpace() {
+AddressSpace* CE::ImageDecorator::getAddressSpace() const
+{
 	return m_addressSpace;
 }
 
-ImageDecorator::IMAGE_TYPE CE::ImageDecorator::getType() {
+ImageDecorator::IMAGE_TYPE CE::ImageDecorator::getType() const
+{
 	return m_type;
 }
 
-Symbol::SymbolTable* CE::ImageDecorator::getGlobalSymbolTable() {
+Symbol::SymbolTable* CE::ImageDecorator::getGlobalSymbolTable() const
+{
 	return m_globalSymbolTable;
 }
 
-Symbol::SymbolTable* CE::ImageDecorator::getFuncBodySymbolTable() {
+Symbol::SymbolTable* CE::ImageDecorator::getFuncBodySymbolTable() const
+{
 	return m_funcBodySymbolTable;
 }
 
-Decompiler::PCode::InstructionPool* CE::ImageDecorator::getInstrPool() {
+Decompiler::PCode::InstructionPool* CE::ImageDecorator::getInstrPool() const
+{
 	return m_instrPool;
 }
 
-Decompiler::ImagePCodeGraph* CE::ImageDecorator::getPCodeGraph() {
+Decompiler::ImagePCodeGraph* CE::ImageDecorator::getPCodeGraph() const
+{
 	return m_imagePCodeGraph;
 }
 
-std::map<int64_t, CE::DataType::IFunctionSignature*>& CE::ImageDecorator::getVirtFuncCalls() {
+std::map<int64_t, CE::DataType::IFunctionSignature*>& CE::ImageDecorator::getVirtFuncCalls() const
+{
 	return *m_vfunc_calls;
 }
 
-ImageDecorator* CE::ImageDecorator::getParentImage() {
+ImageDecorator* CE::ImageDecorator::getParentImage() const
+{
 	return m_parentImageDec;
 }
 

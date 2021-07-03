@@ -12,7 +12,7 @@ namespace CE::Symbol
 	public:
 		AbstractMemorySymbol(SymbolManager* manager, int64_t offset, DataTypePtr type, const std::string& name, const std::string& comment = "");
 
-		int64_t getOffset();
+		int64_t getOffset() const;
 
 		void setOffset(int64_t offset);
 	};

@@ -47,13 +47,13 @@ namespace CE::Decompiler
 
 	private:
 		// reconnect all blocks that are referenced by function calls
-		void reconnectBlocksAndReplaceJmpByCall(std::list<PCodeBlock*> blocks);
+		void reconnectBlocksAndReplaceJmpByCall(std::list<PCodeBlock*> blocks) const;
 
 		// calculate levels and gather PCode blocks for each function graph
-		void prepareFuncGraphs();
+		void prepareFuncGraphs() const;
 
 		// fill {funcGraph} with PCode blocks
-		void createPCodeBlocksAtOffset(int64_t startInstrOffset, FunctionPCodeGraph* funcGraph);
+		void createPCodeBlocksAtOffset(int64_t startInstrOffset, FunctionPCodeGraph* funcGraph) const;
 
 		// prepare a function graph
 		static void PrepareFuncGraph(FunctionPCodeGraph* funcGraph);

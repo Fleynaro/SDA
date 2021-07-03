@@ -54,7 +54,8 @@ GotoType BlockList::getGotoType() {
 	return GotoType::Normal;
 }
 
-WhileCycle* BlockList::getWhileCycle() {
+WhileCycle* BlockList::getWhileCycle() const
+{
 	if (auto block = dynamic_cast<Block*>(m_parent)) {
 		return block->getWhileCycle();
 	}

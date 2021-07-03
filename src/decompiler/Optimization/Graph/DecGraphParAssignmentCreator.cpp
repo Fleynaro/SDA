@@ -106,7 +106,8 @@ void CE::Decompiler::Optimization::GraphParAssignmentCreator::createParAssignmen
 	}
 }
 
-void CE::Decompiler::Optimization::GraphParAssignmentCreator::optimizeAllParAssignments() {
+void CE::Decompiler::Optimization::GraphParAssignmentCreator::optimizeAllParAssignments() const
+{
 	for (const auto decBlock : m_decGraph->getDecompiledBlocks()) {
 		for (auto parAssignmentLine : decBlock->getSymbolParallelAssignmentLines()) {
 			auto assignmentNode = parAssignmentLine->getAssignmentNode();

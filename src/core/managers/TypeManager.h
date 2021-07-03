@@ -30,21 +30,21 @@ namespace CE
 				: m_typeManager(typeManager), m_ghidraDataTypeMapper(ghidraDataTypeMapper), m_dataTypeMapper(dataTypeMapper), AbstractFactory(markAsNew)
 			{}
 
-			DataType::Typedef* createTypedef(const std::string& name, const std::string& desc = "");
+			DataType::Typedef* createTypedef(const std::string& name, const std::string& desc = "") const;
 
-			DataType::Enum* createEnum(const std::string& name, const std::string& desc = "");
+			DataType::Enum* createEnum(const std::string& name, const std::string& desc = "") const;
 
-			DataType::Structure* createStructure(const std::string& name, const std::string& desc);
+			DataType::Structure* createStructure(const std::string& name, const std::string& desc) const;
 
-			DataType::Class* createClass(const std::string& name, const std::string& desc = "");
+			DataType::Class* createClass(const std::string& name, const std::string& desc = "") const;
 
-			DataType::FunctionSignature* createSignature(DataType::FunctionSignature::CallingConvetion callingConvetion, const std::string& name, const std::string& desc = "");
+			DataType::FunctionSignature* createSignature(DataType::FunctionSignature::CallingConvetion callingConvetion, const std::string& name, const std::string& desc = "") const;
 
-			DataType::FunctionSignature* createSignature(const std::string& name, const std::string& desc = "");
+			DataType::FunctionSignature* createSignature(const std::string& name, const std::string& desc = "") const;
 
-			DataType::IType* getDefaultType();
+			DataType::IType* getDefaultType() const;
 
-			DataType::IType* getDefaultReturnType();
+			DataType::IType* getDefaultReturnType() const;
 		};
 
 		using Iterator = AbstractIterator<DataType::AbstractType>;
@@ -60,11 +60,11 @@ namespace CE
 
 		void addGhidraTypedefs();
 
-		void loadBefore();
+		void loadBefore() const;
 
-		void loadAfter();
+		void loadAfter() const;
 
-		void loadTypesFrom(ghidra::packet::SDataFullSyncPacket* dataPacket);
+		void loadTypesFrom(ghidra::packet::SDataFullSyncPacket* dataPacket) const;
 
 		DataTypePtr getType(DB::Id id);
 

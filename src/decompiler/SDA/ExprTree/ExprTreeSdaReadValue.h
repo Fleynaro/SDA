@@ -14,7 +14,7 @@ namespace CE::Decompiler::ExprTree
 
 		~SdaReadValueNode();
 
-		ISdaNode* getAddress();
+		ISdaNode* getAddress() const;
 
 		void replaceNode(ExprTree::INode* node, ExprTree::INode* newNode) override;
 

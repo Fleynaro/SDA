@@ -19,9 +19,9 @@ namespace CE::Decompiler::ExprTree
 		std::list<ExprTree::INode*> getNodesList() override;
 
 		// means the address of the function that can be any expr. value, not only an offset or a symbol
-		INode* getDestination();
+		INode* getDestination() const;
 
-		std::vector<ExprTree::INode*>& getParamNodes();
+		std::vector<ExprTree::INode*>& getParamNodes() const;
 
 		DataTypePtr getSrcDataType() override;
 
@@ -33,12 +33,12 @@ namespace CE::Decompiler::ExprTree
 
 		HS getHash() override;
 
-		int64_t getCallInstrOffset();
+		int64_t getCallInstrOffset() const;
 
 		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override;
 
 		// example: (world->vtable->func_get_player)(player_id) where {world->vtable->func_get_player} has a signature type calculated through the step of goar building
-		DataType::IFunctionSignature* getSignature();
+		DataType::IFunctionSignature* getSignature() const;
 
 		std::string printSdaDebug() override;
 	};

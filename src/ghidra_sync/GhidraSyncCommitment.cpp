@@ -40,7 +40,8 @@ void SyncCommitment::commit() {
 	m_sync->getDataSyncPacketManagerServiceClient()->sendFullSyncPacket(dataPacket);
 }
 
-int SyncCommitment::createSyncRecord() {
+int SyncCommitment::createSyncRecord() const
+{
 	using namespace std::chrono;
 	auto& db = m_sync->getProject()->getDB();
 	SQLite::Statement query(db, "INSERT INTO sda_ghidra_sync (date, type, comment, objectsCount) VALUES(?1, ?2, ?3, ?4)");

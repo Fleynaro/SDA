@@ -16,7 +16,7 @@ namespace CE::DataType
 
 		void setRefType(DataTypePtr refType);
 
-		DataTypePtr getRefType();
+		DataTypePtr getRefType() const;
 	private:
 		DataTypePtr m_refType;
 	};

@@ -42,6 +42,6 @@ namespace CE::Decompiler::Symbolization
 		bool isExplicitCast(DataTypePtr fromType, DataTypePtr toType);
 
 		// calculate result data type for two operands
-		DataTypePtr calcDataTypeForOperands(DataTypePtr opType1, DataTypePtr opType2);
+		DataTypePtr calcDataTypeForOperands(DataTypePtr opType1, DataTypePtr opType2) const;
 	};
 };

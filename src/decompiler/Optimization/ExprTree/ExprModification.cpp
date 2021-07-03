@@ -10,11 +10,13 @@ CE::Decompiler::ExprModification::ExprModification(INode* node)
 	INode::UpdateDebugInfo(m_node);
 }
 
-INode* CE::Decompiler::ExprModification::getNode() {
+INode* CE::Decompiler::ExprModification::getNode() const
+{
 	return m_node;
 }
 
-bool CE::Decompiler::ExprModification::isChanged() {
+bool CE::Decompiler::ExprModification::isChanged() const
+{
 	return m_isChanged;
 }
 

@@ -41,7 +41,8 @@ namespace CE
 			throw ImageNotFound();
 		}
 
-		AddressSpaceManager* getAddrSpaceManager() {
+		AddressSpaceManager* getAddrSpaceManager() const
+		{
 			return m_addrSpaceManager;
 		}
 	};

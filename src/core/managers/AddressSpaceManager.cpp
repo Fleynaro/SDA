@@ -23,7 +23,8 @@ AddressSpace* CE::AddressSpaceManager::createAddressSpace(const std::string& nam
 	return addressSpace;
 }
 
-void CE::AddressSpaceManager::loadAddressSpaces() {
+void CE::AddressSpaceManager::loadAddressSpaces() const
+{
 	m_imageMapper->loadAll();
 }
 

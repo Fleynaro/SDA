@@ -36,7 +36,8 @@ ImageDecorator* CE::ImageManager::createImageFromParent(AddressSpace* addressSpa
 	return imageDec;
 }
 
-void CE::ImageManager::loadImages() {
+void CE::ImageManager::loadImages() const
+{
 	m_imageMapper->loadAll();
 }
 

@@ -37,11 +37,13 @@ std::list<PCode::Instruction*> CE::Decompiler::ExprTree::AssignmentNode::getInst
 	return list;
 }
 
-INode* CE::Decompiler::ExprTree::AssignmentNode::getDstNode() {
+INode* CE::Decompiler::ExprTree::AssignmentNode::getDstNode() const
+{
 	return m_dstNode;
 }
 
-INode* CE::Decompiler::ExprTree::AssignmentNode::getSrcNode() {
+INode* CE::Decompiler::ExprTree::AssignmentNode::getSrcNode() const
+{
 	return m_srcNode;
 }
 

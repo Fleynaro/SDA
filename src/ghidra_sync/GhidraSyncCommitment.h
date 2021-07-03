@@ -19,6 +19,6 @@ namespace CE::Ghidra
 		std::list<IObject*> m_upsertedObjs;
 		std::list<IObject*> m_removedObjs;
 
-		int createSyncRecord();
+		int createSyncRecord() const;
 	};
 };

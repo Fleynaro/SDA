@@ -15,7 +15,8 @@ void CE::Decompiler::Optimization::ExprSimpleConditionOptimization::start() {
 	}
 }
 
-Condition* CE::Decompiler::Optimization::ExprSimpleConditionOptimization::getCondition() {
+Condition* CE::Decompiler::Optimization::ExprSimpleConditionOptimization::getCondition() const
+{
 	return dynamic_cast<Condition*>(getNode());
 }
 

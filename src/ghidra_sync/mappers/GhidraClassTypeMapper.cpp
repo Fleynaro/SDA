@@ -29,12 +29,14 @@ void ClassTypeMapper::remove(SyncContext* ctx, IObject* obj) {
 	m_structTypeMapper->remove(ctx, obj);
 }
 
-datatype::SDataTypeClass ClassTypeMapper::buildDesc(DataType::Class* Class) {
+datatype::SDataTypeClass ClassTypeMapper::buildDesc(DataType::Class* Class) const
+{
 	datatype::SDataTypeClass classDesc;
 	classDesc.__set_structType(m_structTypeMapper->buildDesc(Class));
 	return classDesc;
 }
 
-void ClassTypeMapper::changeClassByDesc(DataType::Class* Class, const datatype::SDataTypeClass& classDesc) {
+void ClassTypeMapper::changeClassByDesc(DataType::Class* Class, const datatype::SDataTypeClass& classDesc) const
+{
 	m_structTypeMapper->changeStructureByDesc(Class, classDesc.structType);
 }

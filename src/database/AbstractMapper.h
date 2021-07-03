@@ -57,7 +57,7 @@ namespace DB
 
 		IRepository* getRepository() override;
 		
-		IDomainObject* find(Id id);
+		IDomainObject* find(Id id) const;
 	protected:
 		virtual IDomainObject* doLoad(Database* db, Statement& query) = 0;
 		virtual void doInsert(TransactionContext* ctx, IDomainObject* obj) = 0;

@@ -14,7 +14,8 @@ GhidraObjectLoader::~GhidraObjectLoader() {
 	}
 }
 
-void GhidraObjectLoader::analyse() {
+void GhidraObjectLoader::analyse() const
+{
 	std::string query_text = "\
 		SELECT id,deleted,sync_id,type FROM (\
 			SELECT def_id,deleted,ghidra_sync_id,1 FROM sda_func_defs\

@@ -21,7 +21,8 @@ Id SymbolMapper::getNextId() {
 	return GenerateNextId(&db, "sda_symbols");
 }
 
-SymbolManager* SymbolMapper::getManager() {
+SymbolManager* SymbolMapper::getManager() const
+{
 	return static_cast<SymbolManager*>(m_repository);
 }
 

@@ -58,23 +58,23 @@ namespace CE
 
 		void save();
 
-		ImageManager* getImageManager();
+		ImageManager* getImageManager() const;
 
-		AddressSpace* getAddressSpace();
+		AddressSpace* getAddressSpace() const;
 
-		IMAGE_TYPE getType();
+		IMAGE_TYPE getType() const;
 
-		Symbol::SymbolTable* getGlobalSymbolTable();
+		Symbol::SymbolTable* getGlobalSymbolTable() const;
 
-		Symbol::SymbolTable* getFuncBodySymbolTable();
+		Symbol::SymbolTable* getFuncBodySymbolTable() const;
 
-		Decompiler::PCode::InstructionPool* getInstrPool();
+		Decompiler::PCode::InstructionPool* getInstrPool() const;
 
-		Decompiler::ImagePCodeGraph* getPCodeGraph();
+		Decompiler::ImagePCodeGraph* getPCodeGraph() const;
 
-		std::map<int64_t, CE::DataType::IFunctionSignature*>& getVirtFuncCalls();
+		std::map<int64_t, CE::DataType::IFunctionSignature*>& getVirtFuncCalls() const;
 
-		ImageDecorator* getParentImage();
+		ImageDecorator* getParentImage() const;
 
 		fs::path getFile();
 

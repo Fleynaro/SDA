@@ -384,7 +384,8 @@ ExprTree::INode* InstructionInterpreter::buildParameterInfoExpr(ParameterInfo& p
 	return regSymbol;
 }
 
-ExprTree::INode* InstructionInterpreter::requestVarnode(PCode::Varnode* varnode) {
+ExprTree::INode* InstructionInterpreter::requestVarnode(PCode::Varnode* varnode) const
+{
 	return m_ctx->requestVarnode(varnode);
 }
 
@@ -398,7 +399,8 @@ ExprTree::AbstractCondition* InstructionInterpreter::toBoolean(ExprTree::INode* 
 	return new ExprTree::Condition(node, new ExprTree::NumberLeaf((uint64_t)0x0, 1), ExprTree::Condition::Ne);
 }
 
-ExprTree::SymbolLeaf* PCode::InstructionInterpreter::createMemSymbol(ExprTree::ReadValueNode* readValueNode, PCode::Instruction* instr) {
+ExprTree::SymbolLeaf* PCode::InstructionInterpreter::createMemSymbol(ExprTree::ReadValueNode* readValueNode, PCode::Instruction* instr) const
+{
 	auto memVar = new Symbol::MemoryVariable(instr, readValueNode->getSize());
 	readValueNode->m_memVar = memVar;
 	m_block->m_decompiledGraph->addSymbol(memVar);

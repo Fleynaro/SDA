@@ -63,7 +63,7 @@ namespace CE::Decompiler::PCode
 			return getId() == reg.getId() && m_valueRangeMask == reg.m_valueRangeMask;
 		}
 
-		std::string printDebug();
+		std::string printDebug() const;
 	};
 
 	// that is the feature of x86: setting value to EAX cleans fully RAX
@@ -248,12 +248,12 @@ namespace CE::Decompiler::PCode
 		{}
 
 		// get long offset which consist of original offset and pCode instruction order number: origOffset{24} | order{8}
-		int64_t getOffset();
+		int64_t getOffset() const;
 
 		// get long offset of the next instruction following this
-		int64_t getFirstInstrOffsetInNextOrigInstr();
+		int64_t getFirstInstrOffsetInNextOrigInstr() const;
 
-		std::string printDebug();
+		std::string printDebug() const;
 
 		// BRANCH, CBRANCH, BRANCHIND
 		static bool IsBranching(InstructionId id);

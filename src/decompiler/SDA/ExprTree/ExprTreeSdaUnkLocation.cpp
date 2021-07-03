@@ -12,7 +12,8 @@ CE::Decompiler::ExprTree::UnknownLocation::~UnknownLocation() {
 	m_linearExpr->removeBy(this);
 }
 
-ISdaNode* CE::Decompiler::ExprTree::UnknownLocation::getBaseSdaNode() {
+ISdaNode* CE::Decompiler::ExprTree::UnknownLocation::getBaseSdaNode() const
+{
 	int idx = 0;
 	for (auto termNode : m_linearExpr->getTerms()) {
 		if (idx++ == m_baseNodeIdx)
@@ -21,19 +22,23 @@ ISdaNode* CE::Decompiler::ExprTree::UnknownLocation::getBaseSdaNode() {
 	return nullptr;
 }
 
-LinearExpr* CE::Decompiler::ExprTree::UnknownLocation::getLinearExpr() {
+LinearExpr* CE::Decompiler::ExprTree::UnknownLocation::getLinearExpr() const
+{
 	return m_linearExpr;
 }
 
-void CE::Decompiler::ExprTree::UnknownLocation::setConstTermValue(int64_t constTerm) {
+void CE::Decompiler::ExprTree::UnknownLocation::setConstTermValue(int64_t constTerm) const
+{
 	m_linearExpr->setConstTermValue(constTerm);
 }
 
-int64_t CE::Decompiler::ExprTree::UnknownLocation::getConstTermValue() {
+int64_t CE::Decompiler::ExprTree::UnknownLocation::getConstTermValue() const
+{
 	return m_linearExpr->getConstTermValue();
 }
 
-std::list<UnknownLocation::Term> CE::Decompiler::ExprTree::UnknownLocation::getArrTerms() {
+std::list<UnknownLocation::Term> CE::Decompiler::ExprTree::UnknownLocation::getArrTerms() const
+{
 	std::list<Term> terms;
 	int idx = 0;
 	for (auto termNode : m_linearExpr->getTerms()) {

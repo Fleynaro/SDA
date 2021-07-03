@@ -43,7 +43,7 @@ namespace CE
 
 			bool isAutoSymbol() override;
 
-			SymbolManager* getManager();
+			SymbolManager* getManager() const;
 
 			DataTypePtr getDataType() override;
 

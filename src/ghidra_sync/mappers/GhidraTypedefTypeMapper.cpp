@@ -29,14 +29,15 @@ void TypedefTypeMapper::remove(SyncContext* ctx, IObject* obj) {
 	m_dataTypeMapper->remove(ctx, obj);
 }
 
-datatype::SDataTypeTypedef TypedefTypeMapper::buildDesc(DataType::Typedef* Typedef) {
+datatype::SDataTypeTypedef TypedefTypeMapper::buildDesc(DataType::Typedef* Typedef) const
+{
 	datatype::SDataTypeTypedef typedefDesc;
 	typedefDesc.__set_type(m_dataTypeMapper->buildDesc(Typedef));
 	typedefDesc.__set_refType(m_dataTypeMapper->buildTypeUnitDesc(Typedef->getRefType()));
 	return typedefDesc;
 }
 
-void TypedefTypeMapper::changeTypedefByDesc(DataType::Typedef* Typedef, const datatype::SDataTypeTypedef& typedefDesc)
+void TypedefTypeMapper::changeTypedefByDesc(DataType::Typedef* Typedef, const datatype::SDataTypeTypedef& typedefDesc) const
 {
 	m_dataTypeMapper->changeUserTypeByDesc(Typedef, typedefDesc.type);
 	Typedef->setRefType(m_dataTypeMapper->getTypeByDesc(typedefDesc.refType));

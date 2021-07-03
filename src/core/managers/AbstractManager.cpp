@@ -33,7 +33,8 @@ DB::IDomainObject* AbstractItemManager::find(DB::Id id) {
 	return m_items[id];
 }
 
-int AbstractItemManager::getItemsCount() {
+int AbstractItemManager::getItemsCount() const
+{
 	return (int)m_items.size();
 }
 
@@ -41,6 +42,7 @@ AbstractManager::AbstractManager(Project* project)
 	: m_project(project)
 {}
 
-Project* AbstractManager::getProject() {
+Project* AbstractManager::getProject() const
+{
 	return m_project;
 }

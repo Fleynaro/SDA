@@ -26,13 +26,13 @@ namespace CE
 	public:
 		Function(FunctionManager* manager, Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::SymbolTable* stackSymbolTable);
 
-		SymbolContext getSymbolContext();
+		SymbolContext getSymbolContext() const;
 
-		Symbol::FunctionSymbol* getFunctionSymbol();
+		Symbol::FunctionSymbol* getFunctionSymbol() const;
 
-		ImageDecorator* getImage();
+		ImageDecorator* getImage() const;
 
-		Decompiler::FunctionPCodeGraph* getFuncGraph();
+		Decompiler::FunctionPCodeGraph* getFuncGraph() const;
 
 		const std::string getName() override;
 
@@ -42,15 +42,15 @@ namespace CE
 
 		void setComment(const std::string& comment) override;
 
-		DataType::IFunctionSignature* getSignature();
+		DataType::IFunctionSignature* getSignature() const;
 
-		int64_t getOffset();
+		int64_t getOffset() const;
 
-		Symbol::SymbolTable* getStackSymbolTable();
+		Symbol::SymbolTable* getStackSymbolTable() const;
 
 		Ghidra::Id getGhidraId() override;
 
-		FunctionManager* getManager();
+		FunctionManager* getManager() const;
 	private:
 		ImageDecorator* m_imageDec;
 		Symbol::FunctionSymbol* m_functionSymbol;

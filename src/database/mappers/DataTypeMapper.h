@@ -20,7 +20,7 @@ namespace DB
 
 		Id getNextId() override;
 
-		CE::TypeManager* getManager();
+		CE::TypeManager* getManager() const;
 	protected:
 		IDomainObject* doLoad(Database* db, SQLite::Statement& query) override;
 

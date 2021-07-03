@@ -29,7 +29,8 @@ void StructureTypeMapper::remove(SyncContext* ctx, IObject* obj) {
 	m_dataTypeMapper->remove(ctx, obj);
 }
 
-datatype::SDataTypeStructure StructureTypeMapper::buildDesc(DataType::Structure* Struct) {
+datatype::SDataTypeStructure StructureTypeMapper::buildDesc(DataType::Structure* Struct) const
+{
 	datatype::SDataTypeStructure structDesc;
 	structDesc.__set_type(m_dataTypeMapper->buildDesc(Struct));
 	for (auto it : Struct->getFields()) {
@@ -44,7 +45,8 @@ datatype::SDataTypeStructure StructureTypeMapper::buildDesc(DataType::Structure*
 	return structDesc;
 }
 
-void StructureTypeMapper::changeStructureByDesc(DataType::Structure* Struct, const datatype::SDataTypeStructure& structDesc) {
+void StructureTypeMapper::changeStructureByDesc(DataType::Structure* Struct, const datatype::SDataTypeStructure& structDesc) const
+{
 	m_dataTypeMapper->changeUserTypeByDesc(Struct, structDesc.type);
 	Struct->getFields().clear();
 	for (auto fieldDesc : structDesc.fields) {

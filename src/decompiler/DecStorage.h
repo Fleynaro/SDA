@@ -14,11 +14,11 @@ namespace CE::Decompiler
 
 		Storage(StorageType storageType = STORAGE_NONE, int registerId = 0, int64_t offset = 0);
 
-		StorageType getType();
+		StorageType getType() const;
 
-		int getRegisterId();
+		int getRegisterId() const;
 
-		int64_t getOffset();
+		int64_t getOffset() const;
 	private:
 		StorageType m_storageType;
 		int m_registerId;
@@ -40,7 +40,7 @@ namespace CE::Decompiler
 			: m_size(size), m_storage(storage)
 		{}
 
-		int getIndex();
+		int getIndex() const;
 	};
 	using ReturnInfo = ParameterInfo;
 
@@ -55,8 +55,8 @@ namespace CE::Decompiler
 
 		ReturnInfo getReturnInfo();
 
-		int findIndex(PCode::Register reg, int64_t offset);
+		int findIndex(const PCode::Register& reg, int64_t offset);
 	};
 
-	extern int GetIndex_FASTCALL(PCode::Register reg, int64_t offset);
+	extern int GetIndex_FASTCALL(const PCode::Register& reg, int64_t offset);
 };

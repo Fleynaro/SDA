@@ -390,7 +390,8 @@ bool CE::Decompiler::Symbolization::SdaDataTypesCalculater::isExplicitCast(DataT
 	return !DataType::Unit::EqualPointerLvls(ptrList1, ptrList2);
 }
 
-DataTypePtr CE::Decompiler::Symbolization::SdaDataTypesCalculater::calcDataTypeForOperands(DataTypePtr opType1, DataTypePtr opType2) {
+DataTypePtr CE::Decompiler::Symbolization::SdaDataTypesCalculater::calcDataTypeForOperands(DataTypePtr opType1, DataTypePtr opType2) const
+{
 	auto priority1 = opType1->getConversionPriority();
 	auto priority2 = opType2->getConversionPriority();
 	if (priority1 == 0 && priority2 == 0)

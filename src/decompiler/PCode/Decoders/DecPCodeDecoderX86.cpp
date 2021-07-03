@@ -1221,9 +1221,10 @@ Varnode* CE::Decompiler::PCode::DecoderX86::getJumpOffsetByOperand(const ZydisDe
 	return m_instrPool->createConstantVarnode(getJumpOffset(jmpOffset), 0x8);
 }
 
-uint64_t CE::Decompiler::PCode::DecoderX86::getJumpOffset(int jmpOffset) {
+uint64_t CE::Decompiler::PCode::DecoderX86::getJumpOffset(int jmpOffset) const
+{
 	auto offset = m_curOrigInstr->m_offset + m_curOrigInstr->m_length + jmpOffset;
-	return (int64_t)offset << 8;
+	return offset << 8;
 }
 
 void CE::Decompiler::PCode::DecoderX86::GenerateVectorOperation(const VectorOperationGeneratorInfo& info)
@@ -1315,10 +1316,12 @@ Varnode* CE::Decompiler::PCode::DecoderX86::requestOperandValue(const ZydisDecod
 	if (operand.type == ZYDIS_OPERAND_TYPE_REGISTER) {
 		return CreateVarnode(operand.reg.value, size, offset);
 	}
-	else if (operand.type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
+
+	if (operand.type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
 		return m_instrPool->createConstantVarnode(operand.imm.value.u & BitMask64(size).getValue(), size);
 	}
-	else if (operand.type == ZYDIS_OPERAND_TYPE_MEMORY) {
+
+	if (operand.type == ZYDIS_OPERAND_TYPE_MEMORY) {
 		Varnode* resultVarnode = nullptr;
 		RegisterVarnode* baseRegVarnode = nullptr;
 		RegisterVarnode* indexRegVarnode = nullptr;
@@ -1477,7 +1480,8 @@ Varnode* CE::Decompiler::PCode::DecoderX86::GetFlagCondition(FlagCond flagCond) 
 	return varnodeCond;
 }
 
-int CE::Decompiler::PCode::DecoderX86::getFirstExplicitOperandsCount() {
+int CE::Decompiler::PCode::DecoderX86::getFirstExplicitOperandsCount() const
+{
 	int result = 0;
 	for (int i = 0; i < m_curInstr->operand_count; i++) {
 		if (m_curInstr->operands[result].visibility != ZYDIS_OPERAND_VISIBILITY_HIDDEN)
@@ -1486,11 +1490,13 @@ int CE::Decompiler::PCode::DecoderX86::getFirstExplicitOperandsCount() {
 	return result;
 }
 
-RegisterVarnode* CE::Decompiler::PCode::DecoderX86::CreateVarnode(ZydisRegister regId, int size, int offset) {
+RegisterVarnode* CE::Decompiler::PCode::DecoderX86::CreateVarnode(ZydisRegister regId, int size, int offset) const
+{
 	auto reg = m_registerFactoryX86->createRegister(regId, size, offset);
 	return m_instrPool->createRegisterVarnode(reg);
 }
 
-RegisterVarnode* CE::Decompiler::PCode::DecoderX86::CreateVarnode(ZydisCPUFlag flag) {
+RegisterVarnode* CE::Decompiler::PCode::DecoderX86::CreateVarnode(ZydisCPUFlag flag) const
+{
 	return m_instrPool->createRegisterVarnode(m_registerFactoryX86->createFlagRegister(flag));
 }

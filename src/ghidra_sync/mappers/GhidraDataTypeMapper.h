@@ -37,9 +37,9 @@ namespace CE::Ghidra
 
 		datatype::SDataType buildDesc(DataType::UserDefinedType* type);
 
-		shared::STypeUnit buildTypeUnitDesc(DataTypePtr type);
+		shared::STypeUnit buildTypeUnitDesc(DataTypePtr type) const;
 
-		DataTypePtr getTypeByDesc(const shared::STypeUnit& typeUnitDesc);
+		DataTypePtr getTypeByDesc(const shared::STypeUnit& typeUnitDesc) const;
 
 		void changeUserTypeByDesc(DataType::UserDefinedType* type, const datatype::SDataType& typeDesc);
 

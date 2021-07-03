@@ -25,7 +25,8 @@ Id DB::ImageMapper::getNextId() {
 	return GenerateNextId(&db, "sda_images");
 }
 
-CE::ImageManager* DB::ImageMapper::getManager() {
+CE::ImageManager* DB::ImageMapper::getManager() const
+{
 	return static_cast<ImageManager*>(m_repository);
 }
 

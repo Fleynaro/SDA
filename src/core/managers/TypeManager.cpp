@@ -103,15 +103,18 @@ void TypeManager::addGhidraTypedefs() {
 	}
 }
 
-void TypeManager::loadBefore() {
+void TypeManager::loadBefore() const
+{
 	m_dataTypeMapper->loadBefore();
 }
 
-void TypeManager::loadAfter() {
+void TypeManager::loadAfter() const
+{
 	m_dataTypeMapper->loadAfter();
 }
 
-void TypeManager::loadTypesFrom(ghidra::packet::SDataFullSyncPacket* dataPacket) {
+void TypeManager::loadTypesFrom(ghidra::packet::SDataFullSyncPacket* dataPacket) const
+{
 	m_ghidraDataTypeMapper->load(dataPacket);
 }
 
@@ -182,7 +185,8 @@ Ghidra::Id TypeManager::getGhidraId(DataType::IType* type) {
 	return objHash.getHash();
 }
 
-DataType::Typedef* CE::TypeManager::Factory::createTypedef(const std::string& name, const std::string& desc) {
+DataType::Typedef* CE::TypeManager::Factory::createTypedef(const std::string& name, const std::string& desc) const
+{
 	auto type = new DataType::Typedef(m_typeManager, name, desc);
 	type->setMapper(m_dataTypeMapper);
 	type->setGhidraMapper(m_ghidraDataTypeMapper->m_typedefTypeMapper);
@@ -191,7 +195,8 @@ DataType::Typedef* CE::TypeManager::Factory::createTypedef(const std::string& na
 	return type;
 }
 
-DataType::Enum* CE::TypeManager::Factory::createEnum(const std::string& name, const std::string& desc) {
+DataType::Enum* CE::TypeManager::Factory::createEnum(const std::string& name, const std::string& desc) const
+{
 	auto type = new DataType::Enum(m_typeManager, name, desc);
 	type->setMapper(m_dataTypeMapper);
 	type->setGhidraMapper(m_ghidraDataTypeMapper->m_enumTypeMapper);
@@ -200,7 +205,8 @@ DataType::Enum* CE::TypeManager::Factory::createEnum(const std::string& name, co
 	return type;
 }
 
-DataType::Structure* CE::TypeManager::Factory::createStructure(const std::string& name, const std::string& desc) {
+DataType::Structure* CE::TypeManager::Factory::createStructure(const std::string& name, const std::string& desc) const
+{
 	auto type = new DataType::Structure(m_typeManager, name, desc);
 	type->setMapper(m_dataTypeMapper);
 	type->setGhidraMapper(m_ghidraDataTypeMapper->m_structureTypeMapper);
@@ -209,7 +215,8 @@ DataType::Structure* CE::TypeManager::Factory::createStructure(const std::string
 	return type;
 }
 
-DataType::Class* CE::TypeManager::Factory::createClass(const std::string& name, const std::string& desc) {
+DataType::Class* CE::TypeManager::Factory::createClass(const std::string& name, const std::string& desc) const
+{
 	auto type = new DataType::Class(m_typeManager, name, desc);
 	type->setMapper(m_dataTypeMapper);
 	type->setGhidraMapper(m_ghidraDataTypeMapper->m_classTypeMapper);
@@ -218,7 +225,8 @@ DataType::Class* CE::TypeManager::Factory::createClass(const std::string& name, 
 	return type;
 }
 
-DataType::FunctionSignature* CE::TypeManager::Factory::createSignature(DataType::FunctionSignature::CallingConvetion callingConvetion, const std::string& name, const std::string& desc) {
+DataType::FunctionSignature* CE::TypeManager::Factory::createSignature(DataType::FunctionSignature::CallingConvetion callingConvetion, const std::string& name, const std::string& desc) const
+{
 	auto type = new DataType::FunctionSignature(m_typeManager, name, desc, callingConvetion);
 	type->setMapper(m_typeManager->m_dataTypeMapper);
 	type->setGhidraMapper(m_ghidraDataTypeMapper->m_signatureTypeMapper);
@@ -227,15 +235,18 @@ DataType::FunctionSignature* CE::TypeManager::Factory::createSignature(DataType:
 	return type;
 }
 
-DataType::FunctionSignature* CE::TypeManager::Factory::createSignature(const std::string& name, const std::string& desc) {
+DataType::FunctionSignature* CE::TypeManager::Factory::createSignature(const std::string& name, const std::string& desc) const
+{
 	return createSignature(DataType::FunctionSignature::FASTCALL, name, desc);
 }
 
-DataType::IType* CE::TypeManager::Factory::getDefaultType() {
+DataType::IType* CE::TypeManager::Factory::getDefaultType() const
+{
 	return m_typeManager->findTypeById(DataType::SystemType::Byte);
 }
 
-DataType::IType* CE::TypeManager::Factory::getDefaultReturnType() {
+DataType::IType* CE::TypeManager::Factory::getDefaultReturnType() const
+{
 	return m_typeManager->findTypeById(DataType::SystemType::Void);
 }
 

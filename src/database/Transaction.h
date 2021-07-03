@@ -34,6 +34,6 @@ namespace DB
 		std::list<IDomainObject*> m_updatedObjs;
 		std::list<IDomainObject*> m_removedObjs;
 
-		Id createSaveRecord();
+		Id createSaveRecord() const;
 	};
 };

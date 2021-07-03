@@ -16,9 +16,9 @@ namespace CE::Decompiler::ExprTree
 	public:
 		DataTypeCast() = default;
 
-		DataTypePtr getCastDataType();
+		DataTypePtr getCastDataType() const;
 
-		bool hasExplicitCast();
+		bool hasExplicitCast() const;
 
 		void setCastDataType(DataTypePtr dataType, bool isExplicit = false);
 

@@ -21,7 +21,8 @@ namespace CE::Decompiler
 			: m_imageGraph(imageGraph)
 		{}
 
-		ImagePCodeGraph* getImagePCodeGraph() {
+		ImagePCodeGraph* getImagePCodeGraph() const
+		{
 			return m_imageGraph;
 		}
 
@@ -95,7 +96,8 @@ namespace CE::Decompiler
 			}
 
 			// if there's an empty space or there's a field with the same size
-			bool canFieldBeAddedAtOffset(int64_t bitOffset, int size) {
+			bool canFieldBeAddedAtOffset(int64_t bitOffset, int size) const
+			{
 				auto it = m_rawStructure->m_fields.find(bitOffset);
 				if (it != m_rawStructure->m_fields.end())
 					return it->second.m_dataType->getSize() == size;
@@ -144,11 +146,12 @@ namespace CE::Decompiler
 				delete rawStructure;
 			}
 
-			void addField(RawStructure::Field field) {
+			void addField(RawStructure::Field field) const
+			{
 				m_rawStructure->m_fields[field.m_offset] = field;
 			}
 
-			DB::Id getId() override {
+			DB::Id getId() const override {
 				return m_id;
 			}
 
@@ -208,7 +211,8 @@ namespace CE::Decompiler
 			~RawSignatureOwner() {
 			}
 
-			void merge(RawSignatureOwner* rawSigOwner) {
+			void merge(RawSignatureOwner* rawSigOwner) const
+			{
 				auto rawSignature = rawSigOwner->m_rawSignature;
 				m_rawSignature->m_functions.insert(m_rawSignature->m_functions.begin(), rawSignature->m_functions.begin(), rawSignature->m_functions.end());
 				m_rawSignature->m_owners.insert(m_rawSignature->m_owners.begin(), rawSignature->m_owners.begin(), rawSignature->m_owners.end());

@@ -55,11 +55,13 @@ CE::Decompiler::ExprTree::SdaSymbolLeaf::SdaSymbolLeaf(CE::Symbol::ISymbol* sdaS
 	: m_sdaSymbol(sdaSymbol), m_decSymbol(decSymbol)
 {}
 
-Decompiler::Symbol::Symbol* CE::Decompiler::ExprTree::SdaSymbolLeaf::getDecSymbol() {
+Decompiler::Symbol::Symbol* CE::Decompiler::ExprTree::SdaSymbolLeaf::getDecSymbol() const
+{
 	return m_decSymbol;
 }
 
-CE::Symbol::ISymbol* CE::Decompiler::ExprTree::SdaSymbolLeaf::getSdaSymbol() {
+CE::Symbol::ISymbol* CE::Decompiler::ExprTree::SdaSymbolLeaf::getSdaSymbol() const
+{
 	return m_sdaSymbol;
 }
 
@@ -97,7 +99,8 @@ CE::Decompiler::ExprTree::SdaMemSymbolLeaf::SdaMemSymbolLeaf(CE::Symbol::IMemory
 	: SdaSymbolLeaf(sdaSymbol, decSymbol), m_offset(offset), m_isAddrGetting(isAddrGetting)
 {}
 
-CE::Symbol::IMemorySymbol* CE::Decompiler::ExprTree::SdaMemSymbolLeaf::getSdaSymbol() {
+CE::Symbol::IMemorySymbol* CE::Decompiler::ExprTree::SdaMemSymbolLeaf::getSdaSymbol() const
+{
 	return dynamic_cast<CE::Symbol::IMemorySymbol*>(m_sdaSymbol);
 }
 

@@ -47,7 +47,7 @@ namespace CE::DataType
 
 		std::list<Class*> getClassesInHierarchy();
 
-		Class* getBaseClass();
+		Class* getBaseClass() const;
 
 		void setBaseClass(Class* base, bool createBaseClassField = true);
 	private:

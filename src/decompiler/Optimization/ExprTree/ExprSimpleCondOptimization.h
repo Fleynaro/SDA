@@ -12,7 +12,7 @@ namespace CE::Decompiler::Optimization
 
 		void start() override;
 
-		Condition* getCondition();
+		Condition* getCondition() const;
 	private:
 		//replace SBORROW condition with normal
 		//SBORROW(*(uint_32t*)([reg_rsp_64]), 0x4{4}) == ((*(uint_32t*)([reg_rsp_64]) + 0x3fffffffc{-4}) < 0x0{0}))

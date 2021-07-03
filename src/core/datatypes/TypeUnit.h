@@ -68,7 +68,7 @@ namespace CE
 
 			std::string getViewValue(uint64_t value) override;
 
-			DataType::IType* getType();
+			DataType::IType* getType() const;
 
 			static bool EqualPointerLvls(const std::list<int>& ptrList1, const std::list<int>& ptrList2);
 		private:

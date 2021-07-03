@@ -22,7 +22,7 @@ namespace CE::Decompiler::PCode
 
 		void deleteDecodedPCodeInstructions();
 
-		Instruction::OriginalInstruction* getOrigInstruction();
+		Instruction::OriginalInstruction* getOrigInstruction() const;
 
 		WarningContainer* getWarningContainer() override;
 	protected:

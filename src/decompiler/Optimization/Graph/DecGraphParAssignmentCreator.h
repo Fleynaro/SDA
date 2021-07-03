@@ -26,6 +26,6 @@ namespace CE::Decompiler::Optimization
 		void createParAssignmentsForLocalVars();
 
 		// optimize: localVar = ((5 << 32) | 10) & 0xFFFFFFFF -> localVar = 10
-		void optimizeAllParAssignments();
+		void optimizeAllParAssignments() const;
 	};
 };

@@ -46,55 +46,48 @@ namespace CE
 		ImageManager* m_imageManager = nullptr;
 		Ghidra::Sync* m_ghidraSync;
 	public:
-		Project(ProjectManager* projectManager, const fs::path& dir)
-			: m_projectManager(projectManager), m_directory(dir)
-		{
-			m_ghidraSync = new Ghidra::Sync(this);
-		}
+		Project(ProjectManager* projectManager, const fs::path& dir);
 
 		~Project();
 
-		ProjectManager* getProjectManager();
+		ProjectManager* getProjectManager() const;
 
-		Program* getProgram();
+		Program* getProgram() const;
 
-		void load();
+		void load() const;
 
-		void save() {
-			// save data into database
-			m_transaction->commit();
-		}
+		void save() const;
 
 		void initManagers();
 
 		void initDataBase(const fs::path& file);
 
-		SQLite::Database& getDB();
+		SQLite::Database& getDB() const;
 
-		TypeManager* getTypeManager();
+		TypeManager* getTypeManager() const;
 
-		SymbolManager* getSymbolManager();
+		SymbolManager* getSymbolManager() const;
 
-		SymbolTableManager* getSymTableManager();
+		SymbolTableManager* getSymTableManager() const;
 
-		FunctionManager* getFunctionManager();
+		FunctionManager* getFunctionManager() const;
 
-		AddressSpaceManager* getAddrSpaceManager();
+		AddressSpaceManager* getAddrSpaceManager() const;
 
-		ImageManager* getImageManager();
+		ImageManager* getImageManager() const;
 
-		DB::ITransaction* getTransaction();
+		DB::ITransaction* getTransaction() const;
 
-		const fs::path& getDirectory();
+		const fs::path& getDirectory() const;
 
-		fs::path getImagesDirectory();
+		fs::path getImagesDirectory() const;
 
-		Ghidra::Sync* getGhidraSync();
+		Ghidra::Sync* getGhidraSync() const;
 
 	private:
 		void initTransaction();
 
-		void createTablesInDatabase();
+		void createTablesInDatabase() const;
 	};
 
 	class ProjectManager
@@ -114,15 +107,15 @@ namespace CE
 			: m_program(program)
 		{}
 
-		Program* getProgram();
+		Program* getProgram() const;
 
-		fs::path getProjectsFile();
+		fs::path getProjectsFile() const;
 
 		Project* loadProject(const fs::path& dir);
 
 		Project* createProject(const fs::path& dir);
 
-		const auto& getProjectEntries();
+		const auto& getProjectEntries() const;
 
 		void load();
 

@@ -36,7 +36,8 @@ Id DataTypeMapper::getNextId() {
 	return GenerateNextId(&db, "sda_types");
 }
 
-CE::TypeManager* DataTypeMapper::getManager() {
+CE::TypeManager* DataTypeMapper::getManager() const
+{
 	return static_cast<CE::TypeManager*>(m_repository);
 }
 
@@ -225,7 +226,7 @@ json DB::DataTypeMapper::createExtraJson(CE::DataType::UserDefinedType* userDefT
 void DataTypeMapper::bind(SQLite::Statement& query, CE::DataType::UserDefinedType* userDefType)
 {
 	auto json_extra = createExtraJson(userDefType);
-	query.bind(2, (int)userDefType->getGroup());
+	query.bind(2, userDefType->getGroup());
 	query.bind(3, userDefType->getName());
 	query.bind(4, userDefType->getComment());
 	query.bind(5, json_extra.dump());

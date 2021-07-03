@@ -108,24 +108,24 @@ namespace CE::Decompiler
 
 		void setNextFarBlock(DecBlock* nextBlock);
 
-		DecBlock* getNextNearBlock();
+		DecBlock* getNextNearBlock() const;
 
-		DecBlock* getNextFarBlock();
+		DecBlock* getNextFarBlock() const;
 
 		std::list<DecBlock*>& getBlocksReferencedTo();
 
-		std::list<DecBlock*> getNextBlocks();
+		std::list<DecBlock*> getNextBlocks() const;
 
-		DecBlock* getNextBlock();
+		DecBlock* getNextBlock() const;
 
 		void swapNextBlocks();
 
-		bool isCondition();
+		bool isCondition() const;
 
 		bool isCycle();
 
 		// get count of blocks which reference to this block
-		int getRefBlocksCount();
+		int getRefBlocksCount() const;
 
 		// get count of blocks which reference to this block without loops
 		int getRefHighBlocksCount();
@@ -134,9 +134,9 @@ namespace CE::Decompiler
 		virtual std::list<BlockTopNode*> getAllTopNodes();
 
 		// condition top node which contains boolean expression to jump to another block
-		ExprTree::AbstractCondition* getNoJumpCondition();
+		ExprTree::AbstractCondition* getNoJumpCondition() const;
 
-		void setNoJumpCondition(ExprTree::AbstractCondition* noJmpCond);
+		void setNoJumpCondition(ExprTree::AbstractCondition* noJmpCond) const;
 
 		void addSeqLine(ExprTree::INode* destAddr, ExprTree::INode* srcValue, PCode::Instruction* instr = nullptr);
 
@@ -147,7 +147,7 @@ namespace CE::Decompiler
 		std::list<SymbolParallelAssignmentLine*>& getSymbolParallelAssignmentLines();
 
 		// check if this block is empty
-		bool hasNoCode();
+		bool hasNoCode() const;
 
 		// clone all expr.
 		virtual void cloneAllExpr();
@@ -166,9 +166,9 @@ namespace CE::Decompiler
 
 		std::list<BlockTopNode*> getAllTopNodes() override;
 
-		ExprTree::INode* getReturnNode();
+		ExprTree::INode* getReturnNode() const;
 
-		void setReturnNode(ExprTree::INode* returnNode);
+		void setReturnNode(ExprTree::INode* returnNode) const;
 
 		void cloneAllExpr() override;
 	};

@@ -14,6 +14,6 @@ namespace CE
 
 		fs::path getExecutableDirectory();
 
-		ProjectManager* getProjectManager();
+		ProjectManager* getProjectManager() const;
 	};
 };

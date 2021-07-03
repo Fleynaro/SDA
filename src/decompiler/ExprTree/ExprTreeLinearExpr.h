@@ -16,13 +16,13 @@ namespace CE::Decompiler::ExprTree
 
 		void addTerm(ExprTree::INode* term);
 
-		void setConstTermValue(int64_t constTerm);
+		void setConstTermValue(int64_t constTerm) const;
 
-		int64_t getConstTermValue();
+		int64_t getConstTermValue() const;
 
 		std::list<ExprTree::INode*>& getTerms();
 
-		INumberLeaf* getConstTerm();
+		INumberLeaf* getConstTerm() const;
 
 		void replaceNode(ExprTree::INode* node, ExprTree::INode* newNode) override;
 

@@ -8,7 +8,8 @@ CE::Decompiler::GraphModification::GraphModification(DecompiledCodeGraph* decGra
 	: m_decGraph(decGraph)
 {}
 
-void CE::Decompiler::GraphModification::passAllTopNodes(std::function<void(DecBlock::BlockTopNode*)> func) {
+void CE::Decompiler::GraphModification::passAllTopNodes(std::function<void(DecBlock::BlockTopNode*)> func) const
+{
 	for (const auto decBlock : m_decGraph->getDecompiledBlocks()) {
 		for (auto topNode : decBlock->getAllTopNodes()) {
 			func(topNode);

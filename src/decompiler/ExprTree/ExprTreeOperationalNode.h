@@ -125,7 +125,7 @@ namespace CE::Decompiler::ExprTree
 			: OperationalNode(node, nullptr, ReadValue, instr), m_size(size)
 		{}
 
-		INode* getAddress();
+		INode* getAddress() const;
 
 		int getSize() override;
 
@@ -146,11 +146,11 @@ namespace CE::Decompiler::ExprTree
 
 		HS getHash() override;
 
-		INode* getNode();
+		INode* getNode() const;
 
 		int getSize() override;
 
-		bool isSigned();
+		bool isSigned() const;
 
 		INode* clone(NodeCloneContext* ctx) override;
 

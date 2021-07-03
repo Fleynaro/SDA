@@ -36,10 +36,10 @@ namespace CE::Decompiler::Symbolization
 		SdaFunctionNode* buildSdaFunctionNode(FunctionCall* funcCall);
 
 		// build high-level sda analog of low-level number leaf
-		SdaNumberLeaf* buildSdaNumberLeaf(NumberLeaf* numberLeaf);
+		SdaNumberLeaf* buildSdaNumberLeaf(NumberLeaf* numberLeaf) const;
 
 		// build high-level sda analog of low-level read value node
-		SdaReadValueNode* buildReadValueNode(ReadValueNode* readValueNode);
+		SdaReadValueNode* buildReadValueNode(ReadValueNode* readValueNode) const;
 
 		// replace {node} and its childs with high-level sda analog
 		void buildSdaNodesAndReplace(INode* node);
@@ -52,8 +52,8 @@ namespace CE::Decompiler::Symbolization
 		// store stack or global memory symbol by decompiler symbol (RSP/RIP) and offset
 		void storeSdaSymbolIfMem(CE::Symbol::ISymbol* sdaSymbol, Symbol::Symbol* symbol, int64_t& offset);
 
-		int64_t toGlobalOffset(int64_t offset);
+		int64_t toGlobalOffset(int64_t offset) const;
 
-		int64_t toLocalOffset(int64_t offset);
+		int64_t toLocalOffset(int64_t offset) const;
 	};
 };

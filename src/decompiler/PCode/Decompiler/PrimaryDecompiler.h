@@ -42,7 +42,7 @@ namespace CE::Decompiler
 
 		void start();
 
-		AbstractRegisterFactory* getRegisterFactory();
+		AbstractRegisterFactory* getRegisterFactory() const;
 
 		// called when a function call appears during decompiling
 		FunctionCallInfo requestFunctionCallInfo(ExecContext* ctx, PCode::Instruction* instr);

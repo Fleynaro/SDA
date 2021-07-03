@@ -18,9 +18,9 @@ namespace CE::Symbol
 
 		SymbolTable(SymbolTableManager* manager, SymbolTableType type);
 
-		SymbolTableManager* getManager();
+		SymbolTableManager* getManager() const;
 
-		SymbolTableType getType();
+		SymbolTableType getType() const;
 
 		void addSymbol(AbstractSymbol* symbol, int64_t offset);
 

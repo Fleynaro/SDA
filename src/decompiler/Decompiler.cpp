@@ -10,6 +10,7 @@ void CE::Decompiler::Decompiler::start() {
 	m_decompiledCodeGraph->checkOnSingleParents();
 }
 
-DecompiledCodeGraph* CE::Decompiler::Decompiler::getDecGraph() {
+DecompiledCodeGraph* CE::Decompiler::Decompiler::getDecGraph() const
+{
 	return m_decompiledCodeGraph;
 }

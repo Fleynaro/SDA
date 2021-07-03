@@ -14,9 +14,9 @@ namespace CE::Decompiler
 
 		virtual void start() = 0;
 
-		INode* getNode();
+		INode* getNode() const;
 
-		bool isChanged();
+		bool isChanged() const;
 
 	protected:
 		bool m_isChanged = false;

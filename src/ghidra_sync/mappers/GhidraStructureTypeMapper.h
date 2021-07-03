@@ -17,8 +17,8 @@ namespace CE::Ghidra
 
 		void remove(SyncContext* ctx, IObject* obj) override;
 
-		datatype::SDataTypeStructure buildDesc(DataType::Structure* Struct);
+		datatype::SDataTypeStructure buildDesc(DataType::Structure* Struct) const;
 
-		void changeStructureByDesc(DataType::Structure* Struct, const datatype::SDataTypeStructure& structDesc);
+		void changeStructureByDesc(DataType::Structure* Struct, const datatype::SDataTypeStructure& structDesc) const;
 	};
 };

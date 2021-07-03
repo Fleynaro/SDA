@@ -38,7 +38,8 @@ std::list<ExprTree::INode*> CE::Decompiler::ExprTree::FunctionCall::getNodesList
 	return list;
 }
 
-INode* CE::Decompiler::ExprTree::FunctionCall::getDestination() {
+INode* CE::Decompiler::ExprTree::FunctionCall::getDestination() const
+{
 	return m_destination;
 }
 

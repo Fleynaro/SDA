@@ -19,7 +19,8 @@ namespace CE::Decompiler
 			: m_blockList(blockList), m_decGraph(decGraph)
 		{}
 
-		std::string getTextCode() {
+		std::string getTextCode() const
+		{
 			return m_textCode;
 		}
 

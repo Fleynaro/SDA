@@ -21,19 +21,19 @@ namespace CE
 				: m_symbolManager(symbolManager), m_symbolMapper(symbolMapper), AbstractFactory(markAsNew)
 			{}
 
-			Symbol::FuncParameterSymbol* createFuncParameterSymbol(int paramIdx, DataType::IFunctionSignature* signature, DataTypePtr type, const std::string& name, const std::string& comment = "");
+			Symbol::FuncParameterSymbol* createFuncParameterSymbol(int paramIdx, DataType::IFunctionSignature* signature, DataTypePtr type, const std::string& name, const std::string& comment = "") const;
 
-			Symbol::StructFieldSymbol* createStructFieldSymbol(int absBitOffset, int bitSize, DataType::IStructure* structure, DataTypePtr type, const std::string& name, const std::string& comment = "");
+			Symbol::StructFieldSymbol* createStructFieldSymbol(int absBitOffset, int bitSize, DataType::IStructure* structure, DataTypePtr type, const std::string& name, const std::string& comment = "") const;
 
-			Symbol::FunctionSymbol* createFunctionSymbol(int64_t offset, DataType::IFunctionSignature* funcSignature, const std::string& name, const std::string& comment = "");
+			Symbol::FunctionSymbol* createFunctionSymbol(int64_t offset, DataType::IFunctionSignature* funcSignature, const std::string& name, const std::string& comment = "") const;
 
-			Symbol::LocalInstrVarSymbol* createLocalInstrVarSymbol(DataTypePtr type, const std::string& name, const std::string& comment = "");
+			Symbol::LocalInstrVarSymbol* createLocalInstrVarSymbol(DataTypePtr type, const std::string& name, const std::string& comment = "") const;
 
-			Symbol::GlobalVarSymbol* createGlobalVarSymbol(int64_t offset, DataTypePtr type, const std::string& name, const std::string& comment = "");
+			Symbol::GlobalVarSymbol* createGlobalVarSymbol(int64_t offset, DataTypePtr type, const std::string& name, const std::string& comment = "") const;
 
-			Symbol::LocalStackVarSymbol* createLocalStackVarSymbol(int64_t offset, DataTypePtr type, const std::string& name, const std::string& comment = "");
+			Symbol::LocalStackVarSymbol* createLocalStackVarSymbol(int64_t offset, DataTypePtr type, const std::string& name, const std::string& comment = "") const;
 		private:
-			void bind(Symbol::AbstractSymbol* symbol);
+			void bind(Symbol::AbstractSymbol* symbol) const;
 		};
 
 		using Iterator = AbstractIterator<Symbol::AbstractSymbol>;
@@ -42,7 +42,7 @@ namespace CE
 
 		Factory getFactory(bool markAsNew = true);
 
-		void loadSymbols();
+		void loadSymbols() const;
 
 		Symbol::AbstractSymbol* findSymbolById(DB::Id id);
 

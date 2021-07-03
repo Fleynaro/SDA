@@ -22,9 +22,9 @@ namespace CE::Symbol
 
 		int getSize() override;
 
-		Function* getFunction();
+		Function* getFunction() const;
 
-		DataType::IFunctionSignature* getSignature();
+		DataType::IFunctionSignature* getSignature() const;
 
 		void setFunction(Function* function);
 	};

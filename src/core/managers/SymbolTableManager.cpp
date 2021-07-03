@@ -10,7 +10,8 @@ SymbolTableManager::SymbolTableManager(Project* module)
 	m_symbolTableMapper = new DB::SymbolTableMapper(this);
 }
 
-void SymbolTableManager::loadSymTables() {
+void SymbolTableManager::loadSymTables() const
+{
 	m_symbolTableMapper->loadAll();
 }
 
@@ -22,7 +23,8 @@ SymbolTable* SymbolTableManager::findSymbolTableById(DB::Id id) {
 	return dynamic_cast<SymbolTable*>(find(id));
 }
 
-Symbol::SymbolTable* CE::SymbolTableManager::Factory::createSymbolTable(Symbol::SymbolTable::SymbolTableType type) {
+Symbol::SymbolTable* CE::SymbolTableManager::Factory::createSymbolTable(Symbol::SymbolTable::SymbolTableType type) const
+{
 	auto symbol = new SymbolTable(m_symbolTableManager, type);
 	symbol->setMapper(m_symbolTableMapper);
 	if (m_markAsNew)

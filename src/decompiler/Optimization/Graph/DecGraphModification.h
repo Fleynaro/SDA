@@ -18,6 +18,6 @@ namespace CE::Decompiler
 		DecompiledCodeGraph* m_decGraph;
 
 		// iterate over all top nodes of the dec. graph (allow to access all expressions)
-		void passAllTopNodes(std::function<void(DecBlock::BlockTopNode*)> func);
+		void passAllTopNodes(std::function<void(DecBlock::BlockTopNode*)> func) const;
 	};
 };

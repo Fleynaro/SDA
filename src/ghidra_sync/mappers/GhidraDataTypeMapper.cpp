@@ -107,7 +107,8 @@ datatype::SDataType DataTypeMapper::buildDesc(DataType::UserDefinedType* type) {
 	return typeDesc;
 }
 
-shared::STypeUnit DataTypeMapper::buildTypeUnitDesc(DataTypePtr dataType) {
+shared::STypeUnit DataTypeMapper::buildTypeUnitDesc(DataTypePtr dataType) const
+{
 	shared::STypeUnit typeUnitDesc;
 	typeUnitDesc.__set_typeId(m_typeManager->getGhidraId(dataType->getType()));
 	for (auto lvl : dataType->getPointerLevels()) {
@@ -116,10 +117,11 @@ shared::STypeUnit DataTypeMapper::buildTypeUnitDesc(DataTypePtr dataType) {
 	return typeUnitDesc;
 }
 
-DataTypePtr DataTypeMapper::getTypeByDesc(const shared::STypeUnit& desc) {
+DataTypePtr DataTypeMapper::getTypeByDesc(const shared::STypeUnit& desc) const
+{
 	std::list<int> ptr_levels;
 	for (auto lvl : desc.pointerLvls) {
-		ptr_levels.push_back((int)lvl);
+		ptr_levels.push_back(lvl);
 	}
 	
 	auto type = m_typeManager->findTypeByGhidraId(desc.typeId);

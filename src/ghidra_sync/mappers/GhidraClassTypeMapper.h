@@ -18,8 +18,8 @@ namespace CE::Ghidra
 	private:
 		StructureTypeMapper* m_structTypeMapper;
 
-		datatype::SDataTypeClass buildDesc(DataType::Class* Class);
+		datatype::SDataTypeClass buildDesc(DataType::Class* Class) const;
 
-		void changeClassByDesc(DataType::Class* Class, const datatype::SDataTypeClass& classDesc);
+		void changeClassByDesc(DataType::Class* Class, const datatype::SDataTypeClass& classDesc) const;
 	};
 };

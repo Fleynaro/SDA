@@ -34,7 +34,7 @@ namespace CE
 		std::uintptr_t getAddress() override;
 
 	private:
-		PIMAGE_SECTION_HEADER defineSection(DWORD rva);
+		PIMAGE_SECTION_HEADER defineSection(DWORD rva) const;
 
 		void parse();
 	};

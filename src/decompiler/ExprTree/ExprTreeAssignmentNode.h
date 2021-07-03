@@ -25,9 +25,9 @@ namespace CE::Decompiler::ExprTree
 
 		std::list<PCode::Instruction*> getInstructionsRelatedTo() override;
 
-		INode* getDstNode();
+		INode* getDstNode() const;
 
-		INode* getSrcNode();
+		INode* getSrcNode() const;
 
 		void setDstNode(INode* node);
 

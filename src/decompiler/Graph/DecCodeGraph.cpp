@@ -22,7 +22,8 @@ CE::Decompiler::DecompiledCodeGraph::~DecompiledCodeGraph() {
 	}
 }
 
-FunctionPCodeGraph* CE::Decompiler::DecompiledCodeGraph::getFuncGraph() {
+FunctionPCodeGraph* CE::Decompiler::DecompiledCodeGraph::getFuncGraph() const
+{
 	return m_funcGraph;
 }
 

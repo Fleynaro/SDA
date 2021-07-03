@@ -24,7 +24,8 @@ std::list<Class*> Class::getClassesInHierarchy() {
 	return { this };
 }
 
-Class* Class::getBaseClass() {
+Class* Class::getBaseClass() const
+{
 	return m_base;
 }
 

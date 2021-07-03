@@ -19,6 +19,6 @@ namespace CE::Decompiler::Symbolization
 		ISdaNode* create();
 
 	private:
-		bool buildSingleGoar(ISdaNode*& sdaNode, int64_t& bitOffset, std::list<ISdaNode*>& terms);
+		bool buildSingleGoar(ISdaNode*& sdaNode, int64_t& bitOffset, std::list<ISdaNode*>& terms) const;
 	};
 };

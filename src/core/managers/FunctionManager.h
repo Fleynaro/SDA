@@ -26,9 +26,9 @@ namespace CE
 				: m_functionManager(functionManager), m_ghidraFunctionMapper(ghidraFunctionMapper), m_funcMapper(funcMapper), AbstractFactory(markAsNew)
 			{}
 
-			Function* createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::SymbolTable* stackSymbolTable);
+			Function* createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::SymbolTable* stackSymbolTable) const;
 
-			Function* createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec);
+			Function* createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec) const;
 
 			Function* createFunction(int64_t offset, DataType::IFunctionSignature* funcSignature, ImageDecorator* imageDec, const std::string& name, const std::string& comment = "");
 		};
@@ -42,9 +42,9 @@ namespace CE
 
 		Factory getFactory(bool markAsNew = true);
 
-		void loadFunctions();
+		void loadFunctions() const;
 
-		void loadFunctionsFrom(ghidra::packet::SDataFullSyncPacket* dataPacket);
+		void loadFunctionsFrom(ghidra::packet::SDataFullSyncPacket* dataPacket) const;
 
 		Function* findFunctionById(DB::Id id);
 

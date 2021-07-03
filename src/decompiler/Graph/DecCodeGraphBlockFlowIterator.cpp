@@ -9,7 +9,8 @@ CE::Decompiler::BlockFlowIterator::BlockFlowIterator(DecBlock* startBlock, BitMa
 	addBlockInfo(startBlock, MaxPressure, notNeedToReadMask); //set the start block (with max pressure that have to be distributed)
 }
 
-bool CE::Decompiler::BlockFlowIterator::isStartBlock() {
+bool CE::Decompiler::BlockFlowIterator::isStartBlock() const
+{
 	return m_iterCount == 1;
 }
 

@@ -22,7 +22,8 @@ std::list<ExprTree::INode*> CE::Decompiler::ExprTree::SdaGenericNode::getNodesLi
 	return { m_node };
 }
 
-INode* CE::Decompiler::ExprTree::SdaGenericNode::getNode() {
+INode* CE::Decompiler::ExprTree::SdaGenericNode::getNode() const
+{
 	return m_node;
 }
 

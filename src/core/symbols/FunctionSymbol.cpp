@@ -15,11 +15,13 @@ int CE::Symbol::FunctionSymbol::getSize() {
 	return 1;
 }
 
-Function* CE::Symbol::FunctionSymbol::getFunction() {
+Function* CE::Symbol::FunctionSymbol::getFunction() const
+{
 	return m_function;
 }
 
-DataType::IFunctionSignature* CE::Symbol::FunctionSymbol::getSignature() {
+DataType::IFunctionSignature* CE::Symbol::FunctionSymbol::getSignature() const
+{
 	return m_funcSignature;
 }
 

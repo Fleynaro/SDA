@@ -12,7 +12,8 @@ namespace CE::Decompiler::ExprTree
 		struct Term {
 			ISdaNode* m_node;
 			
-			INumberLeaf* getMultiplier() {
+			INumberLeaf* getMultiplier() const
+			{
 				if (auto sdaTermGenNode = dynamic_cast<SdaGenericNode*>(m_node)) {
 					if (auto opNode = dynamic_cast<OperationalNode*>(sdaTermGenNode->getNode())) {
 						if (opNode->m_operation == Mul) {
@@ -31,15 +32,15 @@ namespace CE::Decompiler::ExprTree
 
 		~UnknownLocation();
 
-		ISdaNode* getBaseSdaNode();
+		ISdaNode* getBaseSdaNode() const;
 
-		LinearExpr* getLinearExpr();
+		LinearExpr* getLinearExpr() const;
 
-		void setConstTermValue(int64_t constTerm);
+		void setConstTermValue(int64_t constTerm) const;
 
-		int64_t getConstTermValue();
+		int64_t getConstTermValue() const;
 
-		std::list<Term> getArrTerms();
+		std::list<Term> getArrTerms() const;
 
 		void replaceNode(ExprTree::INode* node, ExprTree::INode* newNode) override;
 

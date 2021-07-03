@@ -17,7 +17,7 @@ namespace CE
 
 		AddressSpace* createAddressSpace(const std::string& name, const std::string& desc = "", bool markAsNew = true);
 
-		void loadAddressSpaces();
+		void loadAddressSpaces() const;
 
 		AddressSpace* findAddressSpaceById(DB::Id id);
 

@@ -52,7 +52,8 @@ SdaFunctionNode* CE::Decompiler::Symbolization::SdaBuilding::buildSdaFunctionNod
 
 // build high-level sda analog of low-level number leaf
 
-SdaNumberLeaf* CE::Decompiler::Symbolization::SdaBuilding::buildSdaNumberLeaf(NumberLeaf* numberLeaf) {
+SdaNumberLeaf* CE::Decompiler::Symbolization::SdaBuilding::buildSdaNumberLeaf(NumberLeaf* numberLeaf) const
+{
 	auto dataType = m_project->getTypeManager()->calcDataTypeForNumber(numberLeaf->getValue());
 	auto sdaNumberLeaf = new SdaNumberLeaf(numberLeaf->getValue(), dataType);
 	return sdaNumberLeaf;
@@ -60,7 +61,8 @@ SdaNumberLeaf* CE::Decompiler::Symbolization::SdaBuilding::buildSdaNumberLeaf(Nu
 
 // build high-level sda analog of low-level read value node
 
-SdaReadValueNode* CE::Decompiler::Symbolization::SdaBuilding::buildReadValueNode(ReadValueNode* readValueNode) {
+SdaReadValueNode* CE::Decompiler::Symbolization::SdaBuilding::buildReadValueNode(ReadValueNode* readValueNode) const
+{
 	auto dataType = m_project->getTypeManager()->getDefaultType(readValueNode->getSize());
 	return new SdaReadValueNode(readValueNode, dataType);
 }
@@ -373,10 +375,12 @@ void CE::Decompiler::Symbolization::SdaBuilding::storeSdaSymbolIfMem(CE::Symbol:
 	}
 }
 
-int64_t CE::Decompiler::Symbolization::SdaBuilding::toGlobalOffset(int64_t offset) {
+int64_t CE::Decompiler::Symbolization::SdaBuilding::toGlobalOffset(int64_t offset) const
+{
 	return m_symbolCtx->m_startOffset + offset;
 }
 
-int64_t CE::Decompiler::Symbolization::SdaBuilding::toLocalOffset(int64_t offset) {
+int64_t CE::Decompiler::Symbolization::SdaBuilding::toLocalOffset(int64_t offset) const
+{
 	return offset - m_symbolCtx->m_startOffset;
 }

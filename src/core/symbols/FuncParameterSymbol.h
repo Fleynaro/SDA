@@ -17,7 +17,7 @@ namespace CE::Symbol
 			: m_paramIdx(paramIdx), m_signature(signature), AbstractSymbol(manager, type, name, comment)
 		{}
 
-		int getParamIdx();
+		int getParamIdx() const;
 
 		Type getType() override;
 

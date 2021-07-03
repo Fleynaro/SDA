@@ -83,7 +83,7 @@ namespace CE::DataType
 	private:
 		FieldMapType::iterator getFieldIterator(int bitOffset);
 
-		Field* getDefaultField();
+		Field* getDefaultField() const;
 
 		void moveField_(int bitOffset, int bitsCount);
 

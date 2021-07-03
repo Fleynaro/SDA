@@ -20,14 +20,14 @@ namespace CE
 				: m_symbolTableManager(symbolTableManager), m_symbolTableMapper(symbolTableMapper), AbstractFactory(markAsNew)
 			{}
 
-			Symbol::SymbolTable* createSymbolTable(Symbol::SymbolTable::SymbolTableType type);
+			Symbol::SymbolTable* createSymbolTable(Symbol::SymbolTable::SymbolTableType type) const;
 		};
 
 		using Iterator = AbstractIterator<Symbol::SymbolTable>;
 
 		SymbolTableManager(Project* module);
 
-		void loadSymTables();
+		void loadSymTables() const;
 
 		Factory getFactory(bool markAsNew = true);
 

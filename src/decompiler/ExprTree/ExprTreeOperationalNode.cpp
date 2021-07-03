@@ -159,7 +159,8 @@ std::string CE::Decompiler::ExprTree::OperationalNode::getOpSize(int size, bool 
 	return opSize;
 }
 
-INode* CE::Decompiler::ExprTree::ReadValueNode::getAddress() {
+INode* CE::Decompiler::ExprTree::ReadValueNode::getAddress() const
+{
 	return m_leftNode;
 }
 
@@ -184,7 +185,8 @@ HS CE::Decompiler::ExprTree::CastNode::getHash() {
 	return OperationalNode::getHash() << m_size << m_isSigned;
 }
 
-INode* CE::Decompiler::ExprTree::CastNode::getNode() {
+INode* CE::Decompiler::ExprTree::CastNode::getNode() const
+{
 	return m_leftNode;
 }
 
@@ -192,7 +194,8 @@ int CE::Decompiler::ExprTree::CastNode::getSize() {
 	return m_size;
 }
 
-bool CE::Decompiler::ExprTree::CastNode::isSigned() {
+bool CE::Decompiler::ExprTree::CastNode::isSigned() const
+{
 	return m_isSigned;
 }
 

@@ -18,14 +18,17 @@ Sync::~Sync() {
 	delete m_dataSyncPacketManagerServiceClient;
 }
 
-Project* Sync::getProject() {
+Project* Sync::getProject() const
+{
 	return m_project;
 }
 
-Client* Sync::getClient() {
+Client* Sync::getClient() const
+{
 	return m_client;
 }
 
-packet::DataSyncPacketManagerServiceClient* Sync::getDataSyncPacketManagerServiceClient() {
+packet::DataSyncPacketManagerServiceClient* Sync::getDataSyncPacketManagerServiceClient() const
+{
 	return m_dataSyncPacketManagerServiceClient;
 }

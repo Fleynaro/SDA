@@ -72,7 +72,7 @@ namespace CE::Decompiler::PCode
 			: m_virtualMachineCtx(virtualMachineContext)
 		{}
 
-		void execute(Instruction* instr)
+		void execute(Instruction* instr) const
 		{
 			switch (instr->m_id)
 			{

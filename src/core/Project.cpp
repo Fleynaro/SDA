@@ -13,6 +13,12 @@ using json = nlohmann::json;
 CMRC_DECLARE(resources);
 using namespace CE;
 
+Project::Project(ProjectManager* projectManager, const fs::path& dir)
+	: m_projectManager(projectManager), m_directory(dir)
+{
+	m_ghidraSync = new Ghidra::Sync(this);
+}
+
 Project::~Project() {
 	if (m_allManagersHaveBeenLoaded) {
 		delete m_addrSpaceManager;
@@ -31,11 +37,13 @@ Project::~Project() {
 		delete m_db;
 }
 
-ProjectManager* CE::Project::getProjectManager() {
+ProjectManager* CE::Project::getProjectManager() const
+{
 	return m_projectManager;
 }
 
-Program* CE::Project::getProgram() {
+Program* CE::Project::getProgram() const
+{
 	return m_projectManager->getProgram();
 }
 
@@ -43,7 +51,7 @@ void Project::initTransaction() {
 	m_transaction = new DB::Transaction(m_db);
 }
 
-void Project::load()
+void Project::load() const
 {
 	getTypeManager()->loadBefore();
 	getSymbolManager()->loadSymbols();
@@ -52,6 +60,12 @@ void Project::load()
 	getImageManager()->loadImages();
 	getFunctionManager()->loadFunctions();
 	getTypeManager()->loadAfter();
+}
+
+void Project::save() const
+{
+	// save data into database
+	m_transaction->commit();
 }
 
 void Project::initManagers()
@@ -65,7 +79,7 @@ void Project::initManagers()
 	m_allManagersHaveBeenLoaded = true;
 }
 
-void CE::Project::createTablesInDatabase()
+void CE::Project::createTablesInDatabase() const
 {
 	using namespace SQLite;
 
@@ -98,55 +112,68 @@ void CE::Project::initDataBase(const fs::path& file)
 	initTransaction();
 }
 
-SQLite::Database& Project::getDB() {
+SQLite::Database& Project::getDB() const
+{
 	return *m_db;
 }
 
-TypeManager* Project::getTypeManager() {
+TypeManager* Project::getTypeManager() const
+{
 	return m_typeManager;
 }
 
-SymbolManager* Project::getSymbolManager() {
+SymbolManager* Project::getSymbolManager() const
+{
 	return m_symbolManager;
 }
 
-SymbolTableManager* Project::getSymTableManager() {
+SymbolTableManager* Project::getSymTableManager() const
+{
 	return m_symbolTableManager;
 }
 
-FunctionManager* Project::getFunctionManager() {
+FunctionManager* Project::getFunctionManager() const
+{
 	return m_functionManager;
 }
 
-AddressSpaceManager* CE::Project::getAddrSpaceManager() {
+AddressSpaceManager* CE::Project::getAddrSpaceManager() const
+{
 	return m_addrSpaceManager;
 }
 
-ImageManager* CE::Project::getImageManager() {
+ImageManager* CE::Project::getImageManager() const
+{
 	return m_imageManager;
 }
 
-DB::ITransaction* Project::getTransaction() {
+DB::ITransaction* Project::getTransaction() const
+{
 	return m_transaction;
 }
 
-const fs::path& CE::Project::getDirectory() {
+const fs::path& CE::Project::getDirectory() const
+{
 	return m_directory;
 }
 
-fs::path CE::Project::getImagesDirectory() {
+fs::path CE::Project::getImagesDirectory() const
+{
 	return m_directory / fs::path("images");
 }
 
-Ghidra::Sync* Project::getGhidraSync() {
+Ghidra::Sync* Project::getGhidraSync() const
+{
 	return m_ghidraSync;
 }
 
-Program* CE::ProjectManager::getProgram() {
+Program* CE::ProjectManager::getProgram() const
+{
 	return m_program;
 }
 
-fs::path CE::ProjectManager::getProjectsFile() {
+fs::path CE::ProjectManager::getProjectsFile() const
+{
 	return m_program->getExecutableDirectory() / fs::path("projects.json");
 }
 
@@ -167,7 +194,8 @@ Project* CE::ProjectManager::createProject(const fs::path& dir) {
 	return project;
 }
 
-const auto& CE::ProjectManager::getProjectEntries() {
+const auto& CE::ProjectManager::getProjectEntries() const
+{
 	return m_projectEntries;
 }
 

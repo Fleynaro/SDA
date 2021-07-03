@@ -24,7 +24,8 @@ void CE::Decompiler::WarningContainer::addError(const std::string& message) {
 	m_errors.push_back(message);
 }
 
-bool CE::Decompiler::WarningContainer::hasAnything() {
+bool CE::Decompiler::WarningContainer::hasAnything() const
+{
 	return !m_notices.empty() || !m_warnings.empty() || !m_errors.empty();
 }
 

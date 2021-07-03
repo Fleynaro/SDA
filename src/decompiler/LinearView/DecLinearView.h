@@ -63,7 +63,8 @@ namespace CE::Decompiler::LinearView
 			}
 		}
 
-		BlockList* getBlockList() {
+		BlockList* getBlockList() const
+		{
 			return m_blockList;
 		}
 	private:

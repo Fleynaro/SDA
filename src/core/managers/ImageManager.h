@@ -21,7 +21,7 @@ namespace CE
 
 		ImageDecorator* createImageFromParent(AddressSpace* addressSpace, ImageDecorator* parentImageDec, const std::string& name, const std::string& comment = "", bool markAsNew = true);
 
-		void loadImages();
+		void loadImages() const;
 
 		ImageDecorator* findImageById(DB::Id id);
 

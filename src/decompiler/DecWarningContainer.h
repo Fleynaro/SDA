@@ -25,7 +25,7 @@ namespace CE::Decompiler
 
 		void addError(const std::string& message);
 
-		bool hasAnything();
+		bool hasAnything() const;
 
 		std::string getAllMessages();
 	};

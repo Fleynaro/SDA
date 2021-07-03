@@ -12,6 +12,7 @@ fs::path CE::Program::getExecutableDirectory() {
 	return fs::path(filename).parent_path();
 }
 
-CE::ProjectManager* CE::Program::getProjectManager() {
+CE::ProjectManager* CE::Program::getProjectManager() const
+{
 	return m_projectManager;
 }

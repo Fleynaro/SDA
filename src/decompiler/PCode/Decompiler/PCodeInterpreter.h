@@ -22,13 +22,13 @@ namespace CE::Decompiler::PCode
 		ExprTree::INode* buildParameterInfoExpr(ParameterInfo& paramInfo);
 
 		// get expr. value from varnode (register/symbol/constant)
-		ExprTree::INode* requestVarnode(PCode::Varnode* varnode);
+		ExprTree::INode* requestVarnode(PCode::Varnode* varnode) const;
 
 		// make expression return boolean value: x -> x != 0
 		ExprTree::AbstractCondition* toBoolean(ExprTree::INode* node);
 
 		// create assignment line: memVar1 = read([memory location])
-		ExprTree::SymbolLeaf* createMemSymbol(ExprTree::ReadValueNode* readValueNode, PCode::Instruction* instr = nullptr);
+		ExprTree::SymbolLeaf* createMemSymbol(ExprTree::ReadValueNode* readValueNode, PCode::Instruction* instr = nullptr) const;
 	private:
 		AbstractPrimaryDecompiler* m_decompiler;
 		DecBlock* m_block;
