@@ -5,8 +5,6 @@
 #include <managers/Managers.h>
 
 //gtest
-#define _DEBUG
-#undef NDEBUG
 #include "gtest/gtest.h"
 
 using namespace CE;

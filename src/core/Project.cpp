@@ -2,7 +2,7 @@
 #include <Program.h>
 #include <ghidra_sync/GhidraSync.h>
 #include <managers/Managers.h>
-#include <utilities/Resource.h>
+#include <cmrc/cmrc.hpp>
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
@@ -10,6 +10,7 @@ using json = nlohmann::json;
 #include <sstream>
 #include <iostream>
 
+CMRC_DECLARE(resources);
 using namespace CE;
 
 Project::~Project() {
@@ -68,16 +69,13 @@ void CE::Project::createTablesInDatabase()
 {
 	using namespace SQLite;
 
-	SQL_Res res("SQL_CREATE_GEN_DB", GetModuleHandle(NULL));
-	res.load();
-	if (!res.isLoaded()) {
-		//throw ex
-		return;
-	}
-	auto query = res.getData();
+	// open the embedded file system and find the required resource
+	auto fs = cmrc::resources::get_filesystem();
+	auto create_general_db_res = fs.open("create_general_db.sql");
+	auto sql_query = std::string(create_general_db_res.begin(), create_general_db_res.end());
 
 	try {
-		m_db->exec(query);
+		m_db->exec(sql_query);
 	}
 	catch (SQLite::Exception e) {
 		std::cout << "!!! createTablesInDatabase error: " << std::string(e.what());
@@ -148,7 +146,7 @@ Program* CE::ProjectManager::getProgram() {
 	return m_program;
 }
 
-const fs::path& CE::ProjectManager::getProjectsFile() {
+fs::path CE::ProjectManager::getProjectsFile() {
 	return m_program->getExecutableDirectory() / fs::path("projects.json");
 }
 

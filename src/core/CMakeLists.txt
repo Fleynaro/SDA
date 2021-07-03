@@ -19,6 +19,8 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
+target_compile_definitions(core PUBLIC NOMINMAX=1)
+
 target_link_libraries(
     core PUBLIC
     utilities
@@ -30,6 +32,8 @@ target_link_libraries(
     asmtk
     minhook::minhook
     Zydis
+    resources
 )
 
+get_filename_component(REMOVED_FILTER_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
 create_vs_filters("${CORE_SRC}")

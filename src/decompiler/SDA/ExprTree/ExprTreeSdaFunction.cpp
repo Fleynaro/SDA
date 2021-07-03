@@ -34,7 +34,8 @@ std::vector<ExprTree::INode*>& CE::Decompiler::ExprTree::SdaFunctionNode::getPar
 DataTypePtr CE::Decompiler::ExprTree::SdaFunctionNode::getSrcDataType() {
 	auto sig = getSignature();
 	if (!sig)
-		return DataType::GetUnit(sig->getTypeManager()->findTypeById(DataType::SystemType::Byte));
+		// todo: return DataType::GetUnit(sig->getTypeManager()->findTypeById(DataType::SystemType::Byte));
+		return DataType::GetUnit(new DataType::Byte);
 	return getSignature()->getReturnType();
 }
 

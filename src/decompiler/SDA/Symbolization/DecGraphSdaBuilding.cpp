@@ -22,11 +22,13 @@ void CE::Decompiler::Symbolization::SdaBuilding::start() {
 	addSdaSymbols();
 }
 
-auto& CE::Decompiler::Symbolization::SdaBuilding::getNewAutoSymbols() {
+std::set<CE::Symbol::ISymbol*>& SdaBuilding::getNewAutoSymbols()
+{
 	return m_newAutoSymbols;
 }
 
-auto& CE::Decompiler::Symbolization::SdaBuilding::getUserDefinedSymbols() {
+std::set<CE::Symbol::ISymbol*>& SdaBuilding::getUserDefinedSymbols()
+{
 	return m_userDefinedSymbols;
 }
 

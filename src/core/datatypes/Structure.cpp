@@ -131,16 +131,16 @@ bool Structure::moveFields(int bitOffset, int bitsCount) {
 	auto it = getFieldIterator(firstBitOffset);
 	auto end = m_fields.end();
 	if (bitsCount > 0) {
-		end--;
-		it--;
+		--end;
+		++it;
 		std::swap(it, end);
 	}
 	while (it != end) {
 		auto field = it->second;
+		if (bitsCount > 0)
+			--it; else ++it;
 		moveField_(field->getAbsBitOffset(), bitsCount);
 		field->getAbsBitOffset() += bitsCount;
-		if (bitsCount > 0)
-			it--; else it++;
 	}
 	return true;
 }

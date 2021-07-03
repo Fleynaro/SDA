@@ -7,6 +7,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+# import cmake files
+include(cmake/func_vs_filters.cmake)
+include(cmake/func_thrift_generator.cmake)
+include(cmake/compiler_flags.cmake)
+include(cmake/CMakeRC.cmake)
+
 # Using vcpkg you should install the required libraries.
 # Command: vcpkg install nlohmann-json magic-enum sqlitecpp gtest zydis asmjit thrift minhook imgui --triplet x64-windows
 # Build command: cmake .. -G "Visual Studio 16 2019" -A x64 "-DCMAKE_TOOLCHAIN_FILE=C:\src\vcpkg\scripts\buildsystems\vcpkg.cmake"
@@ -33,13 +39,10 @@ set_target_properties(asmtk PROPERTIES FOLDER "external")
 # all options
 option(USE_TESTS "Use unit tests" ON)
 
-# import functions
-include(cmake/func_vs_filters.cmake)
-include(cmake/func_thrift_generator.cmake)
-
 add_subdirectory(libs/imgui_wrapper)
 set_target_properties(imgui_wrapper PROPERTIES FOLDER "libs")
 add_subdirectory(extras/ghidra_sync)
+add_subdirectory(data)
 include_directories(src)
 add_subdirectory(src)
 
@@ -73,5 +76,7 @@ if(USE_TESTS)
         decompiler_test_lib
         GTest::gtest
         )
+    target_compile_definitions(
+        sda_tests PRIVATE TEST_DATA_PATH="${CMAKE_SOURCE_DIR}/data/test")
     create_vs_filters("${TEST_SRC}")
 endif()

@@ -67,7 +67,7 @@ namespace CE::Decompiler::PCode
 	};
 
 	// that is the feature of x86: setting value to EAX cleans fully RAX
-	static BitMask64 GetValueRangeMaskWithException(const PCode::Register& reg);
+	extern BitMask64 GetValueRangeMaskWithException(const PCode::Register& reg);
 
 	// Register, variable(symbol) or constant (used as input or output for pCode instructions)
 	class Varnode

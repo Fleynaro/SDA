@@ -35,10 +35,14 @@ void CE::Decompiler::RegisterExecContext::setRegister(const PCode::Register& reg
 	if (it != m_registers.end()) {
 		auto& registers = it->second;
 		// write rax -> remove eax/ax/ah/al
-		for (auto it2 = registers.begin(); it2 != registers.end(); it2++) {
+		auto it2 = registers.begin();
+		while(it2 != registers.end()) {
 			if (reg.intersect(it2->m_register)) {
 				oldTopNodes.push_back(it2->m_expr);
-				registers.erase(it2);
+				it2 = registers.erase(it2);
+			} else
+			{
+				++it2;
 			}
 		}
 	}
@@ -89,14 +93,18 @@ void RegisterExecContext::join(RegisterExecContext* ctx) {
 
 			// find equal registers with equal top nodes (expr), they are mutual
 			for (auto it1 = regs1.begin(); it1 != regs1.end(); it1++) {
+				bool hasFound = false;
 				for (auto it2 = regs2.begin(); it2 != regs2.end(); it2++) {
 					if (it1->m_register == it2->m_register && it1->m_expr->getNode() == it2->m_expr->getNode()) {
 						neededRegs.push_back(*it2);
 						regs1.erase(it1);
 						regs2.erase(it2);
+						hasFound = true;
 						break;
 					}
 				}
+				if (hasFound)
+					break;
 			}
 
 			// if there are registers which come from different blocks

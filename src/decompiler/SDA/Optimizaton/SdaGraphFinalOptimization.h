@@ -3,5 +3,5 @@
 
 namespace CE::Decompiler::Optimization
 {
-	static void MakeFinalGraphOptimization(SdaCodeGraph* sdaCodeGraph);
+	extern void MakeFinalGraphOptimization(SdaCodeGraph* sdaCodeGraph);
 };

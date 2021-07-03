@@ -27,12 +27,14 @@ std::pair<int64_t, AbstractSymbol*> SymbolTable::getSymbolAt(int64_t offset) {
 }
 
 std::map<int64_t, AbstractSymbol*>::iterator SymbolTable::getSymbolIterator(int64_t offset) {
-	auto it = std::prev(m_symbols.upper_bound(offset));
-	if (it != m_symbols.end()) {
-		auto symbolOffset = it->first;
-		auto symbol = it->second;
-		if (offset < symbolOffset + symbol->getSize()) {
-			return it;
+	if (!m_symbols.empty()) {
+		auto it = std::prev(m_symbols.upper_bound(offset));
+		if (it != m_symbols.end()) {
+			auto symbolOffset = it->first;
+			auto symbol = it->second;
+			if (offset < symbolOffset + symbol->getSize()) {
+				return it;
+			}
 		}
 	}
 	return m_symbols.end();

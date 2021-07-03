@@ -10,5 +10,5 @@
 namespace CE::Decompiler::Optimization
 {
 	// make full optimization of decompiled graph
-	static void ProcessDecompiledGraph(DecompiledCodeGraph* decGraph, PrimaryDecompiler* decompiler);
+	extern void ProcessDecompiledGraph(DecompiledCodeGraph* decGraph, PrimaryDecompiler* decompiler);
 };

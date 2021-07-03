@@ -23,7 +23,7 @@ TEST_F(ProgramFixture, Test_Common_DataBaseCreatedAndFilled)
 
     // create the image decorator
     auto testImageDec = m_project->getImageManager()->createImage(testAddrSpace, ImageDecorator::IMAGE_PE, "testImage");
-    fs::copy_file(m_program->getExecutableDirectory() / "test_images" / "img1.exe", testImageDec->getFile());
+    fs::copy_file(fs::path(TEST_DATA_PATH) / "images" / "img1.exe", testImageDec->getFile());
     testImageDec->load();
 
     // check raw-image
@@ -228,15 +228,3 @@ TEST_F(ProgramFixture, Test_Common_DataBaseLoaded)
         }
     }
 }
-
-#ifdef UNIT_TEST
-int main(int argc, char** argv) {
-	::testing::InitGoogleTest(&argc, argv);
-    
-    SetConsoleCP(1251);
-    SetConsoleOutputCP(1251);
-
-    //::testing::GTEST_FLAG(filter) = "Test_Dec_*";
-	return RUN_ALL_TESTS();
-}
-#endif

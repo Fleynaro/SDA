@@ -24,9 +24,9 @@ namespace CE::Decompiler::Symbolization
 
 		void start() override;
 
-		auto& getNewAutoSymbols();
+		std::set<CE::Symbol::ISymbol*>& getNewAutoSymbols();
 
-		auto& getUserDefinedSymbols();
+		std::set<CE::Symbol::ISymbol*>& getUserDefinedSymbols();
 	private:
 
 		// join auto symbols and user symbols together

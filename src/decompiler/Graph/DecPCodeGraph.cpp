@@ -23,7 +23,8 @@ PCodeBlock* CE::Decompiler::ImagePCodeGraph::createBlock(int64_t offset) {
 	return createBlock(offset, offset);
 }
 
-const auto& CE::Decompiler::ImagePCodeGraph::getHeadFuncGraphs() {
+const auto& CE::Decompiler::ImagePCodeGraph::getHeadFuncGraphs() const
+{
 	return m_headFuncGraphs;
 }
 
@@ -36,11 +37,13 @@ FunctionPCodeGraph* CE::Decompiler::ImagePCodeGraph::getEntryFunctionGraph() {
 }
 
 PCodeBlock* CE::Decompiler::ImagePCodeGraph::getBlockAtOffset(int64_t offset, bool halfInterval) {
-	auto it = std::prev(m_blocks.upper_bound(offset));
-	if (it != m_blocks.end()) {
-		bool boundUp = halfInterval ? (offset < it->second.getMaxOffset()) : (offset <= it->second.getMaxOffset());
-		if (boundUp && offset >= it->second.getMinOffset()) {
-			return &it->second;
+	if (!m_blocks.empty()) {
+		auto it = std::prev(m_blocks.upper_bound(offset));
+		if (it != m_blocks.end()) {
+			bool boundUp = halfInterval ? (offset < it->second.getMaxOffset()) : (offset <= it->second.getMaxOffset());
+			if (boundUp && offset >= it->second.getMinOffset()) {
+				return &it->second;
+			}
 		}
 	}
 	throw BlockNotFoundException();
@@ -77,11 +80,13 @@ std::list<PCode::Instruction*>& CE::Decompiler::PCodeBlock::getInstructions() {
 	return m_instructions;
 }
 
-int64_t CE::Decompiler::PCodeBlock::getMinOffset() {
+int64_t CE::Decompiler::PCodeBlock::getMinOffset() const
+{
 	return m_minOffset;
 }
 
-int64_t CE::Decompiler::PCodeBlock::getMaxOffset() { // todo: auto-calculated?
+int64_t CE::Decompiler::PCodeBlock::getMaxOffset() const
+{ // todo: auto-calculated?
 	return m_maxOffset;
 }
 
@@ -106,15 +111,18 @@ void CE::Decompiler::PCodeBlock::setNextFarBlock(PCodeBlock* nextBlock) {
 	nextBlock->m_blocksReferencedTo.push_back(this);
 }
 
-PCodeBlock* CE::Decompiler::PCodeBlock::getNextNearBlock() {
+PCodeBlock* CE::Decompiler::PCodeBlock::getNextNearBlock() const
+{
 	return m_nextNearBlock;
 }
 
-PCodeBlock* CE::Decompiler::PCodeBlock::getNextFarBlock() {
+PCodeBlock* CE::Decompiler::PCodeBlock::getNextFarBlock() const
+{
 	return m_nextFarBlock;
 }
 
-std::list<PCodeBlock*> CE::Decompiler::PCodeBlock::getNextBlocks() {
+std::list<PCodeBlock*> CE::Decompiler::PCodeBlock::getNextBlocks() const
+{
 	std::list<PCodeBlock*> nextBlocks;
 	if (m_nextFarBlock) {
 		nextBlocks.push_back(m_nextFarBlock);
@@ -161,7 +169,8 @@ CE::Decompiler::FunctionPCodeGraph::FunctionPCodeGraph(ImagePCodeGraph* imagePCo
 	: m_imagePCodeGraph(imagePCodeGraph)
 {}
 
-ImagePCodeGraph* CE::Decompiler::FunctionPCodeGraph::getImagePCodeGraph() {
+ImagePCodeGraph* CE::Decompiler::FunctionPCodeGraph::getImagePCodeGraph() const
+{
 	return m_imagePCodeGraph;
 }
 
@@ -171,19 +180,23 @@ void CE::Decompiler::FunctionPCodeGraph::setStartBlock(PCodeBlock* block) {
 
 // head is a function that has not parents (main/all virtual functions)
 
-bool CE::Decompiler::FunctionPCodeGraph::isHead() {
+bool CE::Decompiler::FunctionPCodeGraph::isHead() const
+{
 	return m_refFuncCalls.empty();
 }
 
-auto CE::Decompiler::FunctionPCodeGraph::getRefFuncCalls() {
+const std::set<FunctionPCodeGraph*>& FunctionPCodeGraph::getRefFuncCalls() const
+{
 	return m_refFuncCalls;
 }
 
-auto CE::Decompiler::FunctionPCodeGraph::getNonVirtFuncCalls() {
+const std::set<FunctionPCodeGraph*>& FunctionPCodeGraph::getNonVirtFuncCalls() const
+{
 	return m_nonVirtFuncCalls;
 }
 
-auto CE::Decompiler::FunctionPCodeGraph::getVirtFuncCalls() {
+const std::set<FunctionPCodeGraph*>& FunctionPCodeGraph::getVirtFuncCalls() const
+{
 	return m_virtFuncCalls;
 }
 
@@ -197,7 +210,8 @@ void CE::Decompiler::FunctionPCodeGraph::addVirtFuncCall(FunctionPCodeGraph* fun
 	funcGraph->m_refFuncCalls.insert(this);
 }
 
-const std::set<PCodeBlock*>& CE::Decompiler::FunctionPCodeGraph::getBlocks() {
+const std::set<PCodeBlock*>& CE::Decompiler::FunctionPCodeGraph::getBlocks() const
+{
 	return m_blocks;
 }
 
@@ -206,7 +220,8 @@ void CE::Decompiler::FunctionPCodeGraph::addBlock(PCodeBlock* block) {
 	block->m_funcPCodeGraph = this;
 }
 
-PCodeBlock* CE::Decompiler::FunctionPCodeGraph::getStartBlock() {
+PCodeBlock* CE::Decompiler::FunctionPCodeGraph::getStartBlock() const
+{
 	return m_startBlock;
 }
 

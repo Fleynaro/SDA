@@ -1,11 +1,6 @@
 #pragma once
 
 
-#include "main.h"
-#include "resource.h"
-
-
-
 
 using ResourceName = std::string;
 enum ResourceType : int

@@ -7,7 +7,7 @@ BufferIterator::BufferIterator(Buffer* buffer)
 }
 
 bool BufferIterator::hasNext() {//MYTODO: check offset
-	return m_curSize > 0 && getOffset() + static_cast<UINT>(m_curSize) <= static_cast<UINT>(m_buffer->getContentOffset());
+	return m_curSize > 0 && getOffset() + m_curSize <= m_buffer->getContentOffset();
 }
 
 Buffer::Stream BufferIterator::getStream() {

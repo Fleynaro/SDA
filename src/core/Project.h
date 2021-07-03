@@ -1,6 +1,8 @@
 #pragma once
 #include <database/Transaction.h>
 #include <ghidra_sync/GhidraSync.h>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 using namespace SQLite;
 
@@ -114,7 +116,7 @@ namespace CE
 
 		Program* getProgram();
 
-		const fs::path& getProjectsFile();
+		fs::path getProjectsFile();
 
 		Project* loadProject(const fs::path& dir);
 

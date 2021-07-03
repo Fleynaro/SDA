@@ -1,5 +1,6 @@
 #pragma once
-#include <main.h>
+#include <stdint.h>
+#include <stdexcept>
 
 class BufferOverflowException : public std::exception
 {};
@@ -21,9 +22,9 @@ public:
 
     static void Destroy(Buffer* buffer);
 
-    BYTE* getData();
+    int8_t* getData();
 
-    BYTE* getContent();
+    int8_t* getContent();
 
     int getSize();
 
@@ -41,32 +42,32 @@ public:
 
         Stream(Stream* bufferStream);
 
-        template<typename T = BYTE>
+        template<typename T = int8_t>
         inline Stream& write(const T& data);
 
         Stream& writeFrom(void* addr, int size);
 
-        template<typename T = BYTE>
+        template<typename T = int8_t>
         inline T& read();
 
-        template<typename T = BYTE>
+        template<typename T = int8_t>
         inline T* readPtr(int size = sizeof(T));
 
         bool isFree(int size);
 
         void move(int bytes, bool write = false);
 
-        template<typename T = BYTE>
+        template<typename T = int8_t>
         inline T* getNext();
 
-        template<typename T = BYTE>
+        template<typename T = int8_t>
         inline void setNext(T* ptr);
 
         int getOffset();
     private:
         Buffer* m_buffer;
-        BYTE* m_data;
-        BYTE* m_curData;
+        int8_t* m_data;
+        int8_t* m_curData;
 
         Stream* m_bufferStream = nullptr;
     };
@@ -109,5 +110,5 @@ inline T* Buffer::Stream::getNext() {
 
 template<typename T>
 inline void Buffer::Stream::setNext(T* ptr) {
-    m_curData = (BYTE*)ptr;
+    m_curData = (int8_t*)ptr;
 }

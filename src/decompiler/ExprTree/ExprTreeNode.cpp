@@ -5,7 +5,9 @@ using namespace CE::Decompiler::ExprTree;
 // replace this node with another, remove all associations and make this node independent from expression tree
 
 void CE::Decompiler::ExprTree::Node::replaceWith(INode* newNode) {
-	for (auto it = m_parentNodes.begin(); it != m_parentNodes.end(); it++) {
+	auto it = m_parentNodes.begin();
+	while(it != m_parentNodes.end())
+	{
 		auto parentNode = *it;
 		if (newNode == dynamic_cast<INode*>(parentNode))
 			continue;
@@ -13,7 +15,7 @@ void CE::Decompiler::ExprTree::Node::replaceWith(INode* newNode) {
 		if (newNode != nullptr) {
 			newNode->addParentNode(parentNode);
 		}
-		m_parentNodes.erase(it);
+		it = m_parentNodes.erase(it);
 	}
 }
 

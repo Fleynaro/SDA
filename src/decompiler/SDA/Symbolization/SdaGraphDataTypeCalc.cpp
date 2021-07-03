@@ -288,7 +288,7 @@ void CE::Decompiler::Symbolization::SdaDataTypesCalculater::handleFunctionNode(S
 	if (funcSignature)
 	{
 		// iterate over all params of the signature
-		auto paramsCount = (int)min(funcSignature->getParameters().size(), sdaFunctionNode->getParamNodes().size());
+		auto paramsCount = (int)std::min(funcSignature->getParameters().size(), sdaFunctionNode->getParamNodes().size());
 		for (int paramIdx = 0; paramIdx < paramsCount; paramIdx++) {
 			auto paramNode = sdaFunctionNode->getParamNodes()[paramIdx];
 			if (auto paramSdaNode = dynamic_cast<ISdaNode*>(paramNode)) {

@@ -38,7 +38,7 @@ void CE::Decompiler::EndDecBlock::cloneAllExpr() {
 }
 
 CE::Decompiler::DecBlock::BlockTopNode::BlockTopNode(DecBlock* block, ExprTree::INode* node)
-	: m_block(block), TopNode(node)
+	: TopNode(node), m_block(block)
 {}
 
 CE::Decompiler::DecBlock::JumpTopNode::JumpTopNode(DecBlock* block)
@@ -110,7 +110,7 @@ DecBlock::SymbolParallelAssignmentLine* CE::Decompiler::DecBlock::SymbolParallel
 }
 
 CE::Decompiler::DecBlock::DecBlock(DecompiledCodeGraph* decompiledGraph, PCodeBlock* pcodeBlock, int level)
-	: m_decompiledGraph(decompiledGraph), m_pcodeBlock(pcodeBlock), m_level(level)
+	: m_level(level), m_pcodeBlock(pcodeBlock), m_decompiledGraph(decompiledGraph)
 {
 	m_noJmpCond = new JumpTopNode(this);
 }

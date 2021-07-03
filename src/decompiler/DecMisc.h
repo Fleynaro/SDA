@@ -16,9 +16,9 @@ using namespace CE::DataType;
 namespace CE::Decompiler::Misc
 {
     // show all symbols
-    static std::string ShowAllSymbols(SdaCodeGraph* sdaCodeGraph);
+    extern std::string ShowAllSymbols(SdaCodeGraph* sdaCodeGraph);
 
-    static LinearView::BlockList* BuildBlockList(DecompiledCodeGraph* graph);
+    extern LinearView::BlockList* BuildBlockList(DecompiledCodeGraph* graph);
 
     /*static Symbolization::SymbolContext CreateUserSymbolDef(Project* programModule) {
         auto userSymbolDef = Symbolization::SymbolContext(programModule);

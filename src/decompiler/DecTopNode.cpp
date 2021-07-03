@@ -2,6 +2,14 @@
 
 using namespace CE::Decompiler;
 
+TopNode::TopNode(ExprTree::INode* node)
+{
+	if (node)
+	{
+		setNode(node);
+	}
+}
+
 CE::Decompiler::TopNode::~TopNode() {
 	clear();
 }

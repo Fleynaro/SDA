@@ -79,7 +79,6 @@ namespace CE::Decompiler
 			SymbolParallelAssignmentLine* clone(DecBlock* block, ExprTree::NodeCloneContext* ctx);
 		};
 
-	public:
 		std::string m_name;
 		int m_level = 0;
 		PCodeBlock* m_pcodeBlock;

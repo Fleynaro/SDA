@@ -308,7 +308,7 @@ void CE::Decompiler::ImageAnalyzer::CalculateLevelsForPCodeBlocks(PCodeBlock* bl
 	}
 
 	path.push_back(block);
-	block->m_level = max(block->m_level, (int)path.size());
+	block->m_level = std::max(block->m_level, (int)path.size());
 	CalculateLevelsForPCodeBlocks(block->getNextNearBlock(), path);
 	CalculateLevelsForPCodeBlocks(block->getNextFarBlock(), path);
 	path.pop_back();

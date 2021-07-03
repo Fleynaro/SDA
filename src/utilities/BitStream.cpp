@@ -7,7 +7,7 @@ void BitStream::writeBit(bool bit)
 }
 
 void BitStream::write(const void* src, int size) {
-	BYTE* data = (BYTE*)src;
+	int8_t* data = (int8_t*)src;
 	for (int i = 0; i < size; i++)
 		write(data[i]);
 }
@@ -20,18 +20,18 @@ bool BitStream::readBit()
 }
 
 void BitStream::read(void* dst, int size) {
-	BYTE* data = (BYTE*)dst;
+	int8_t* data = (int8_t*)dst;
 	for (int i = 0; i < size; i++)
-		data[i] = read<BYTE>();
+		data[i] = read<int8_t>();
 }
 
-void BitStream::setData(BYTE* data, int size) {
+void BitStream::setData(int8_t* data, int size) {
 	for (int i = 0; i < size; i++) {
 		m_bytes.push_back(data[i]);
 	}
 }
 
-BYTE* BitStream::getData() {
+int8_t* BitStream::getData() {
 	return m_bytes.data();
 }
 
@@ -45,7 +45,7 @@ void BitStream::resetPointer() {
 }
 
 void BitStream::inc() {
-	if (++m_curBit == 0x8 * sizeof(BYTE)) {
+	if (++m_curBit == 0x8 * sizeof(int8_t)) {
 		m_curByte++;
 		m_curBit = 0;
 		if (m_curByte == m_bytes.size())

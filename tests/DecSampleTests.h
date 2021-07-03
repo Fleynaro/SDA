@@ -1,6 +1,6 @@
 #pragma once
 #include "AbstractTest.h"
-#include <TestCodeToDecompile.h>
+#include <decompiler_test_lib.h>
 
 using namespace CE::Decompiler;
 using namespace CE::Symbol;
@@ -52,8 +52,9 @@ public:
 
 	bool checkHash(int type, std::list<std::pair<int, HS::Value>>& sampleTestHashes, HS::Value hash, SampleTest* sampleTest);
 
-	SampleTest* createSampleTest(int testId, std::vector<byte> content) {
-		return createSampleTest(testId, new VectorBufferImage(content));
+	SampleTest* createSampleTest(int testId, std::vector<uint8_t> content) {
+		return createSampleTest(testId, new VectorBufferImage(
+			std::vector<int8_t>(content.begin(), content.end())));
 	}
 
 	SampleTest* createSampleTest(int testId, IImage* image, int offset = 0) {

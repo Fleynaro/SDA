@@ -6,21 +6,21 @@ void Buffer::init(int size) {
 }
 
 Buffer* Buffer::Create(int size) {
-    auto buffer = (Buffer*)(new BYTE[size]);
+    auto buffer = (Buffer*)(new int8_t[size]);
     buffer->init(size);
     return buffer;
 }
 
 void Buffer::Destroy(Buffer* buffer) {
-    delete[](BYTE*)buffer;
+    delete[](int8_t*)buffer;
 }
 
-BYTE* Buffer::getData() {
-    return (BYTE*)&m_header;
+int8_t* Buffer::getData() {
+    return (int8_t*)&m_header;
 }
 
-BYTE* Buffer::getContent() {
-    return (BYTE*)((std::uintptr_t) & m_header + sizeof(m_header));
+int8_t* Buffer::getContent() {
+    return (int8_t*)((std::uintptr_t) & m_header + sizeof(m_header));
 }
 
 int Buffer::getSize() {

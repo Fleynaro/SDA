@@ -1,5 +1,6 @@
 #pragma once
-#include <main.h>
+#include <stdint.h>
+#include <vector>
 
 class BitStream
 {
@@ -7,7 +8,8 @@ public:
 	BitStream() {
 		m_bytes.push_back(0);
 	}
-	BitStream(BYTE* data, int size) {
+
+	BitStream(int8_t* data, int size) {
 		setData(data, size);
 	}
 
@@ -25,9 +27,9 @@ public:
 
 	void read(void* dst, int size);
 
-	void setData(BYTE* data, int size);
+	void setData(int8_t* data, int size);
 
-	BYTE* getData();
+	int8_t* getData();
 
 	int getSize();
 
@@ -35,9 +37,9 @@ public:
 private:
 	inline void inc();
 
-	int m_curByte;
-	int m_curBit;
-	std::vector<BYTE> m_bytes;
+	int m_curByte = 0;
+	int m_curBit = 0;
+	std::vector<int8_t> m_bytes;
 };
 
 template<typename T>

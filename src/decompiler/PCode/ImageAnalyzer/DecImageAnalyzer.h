@@ -1,4 +1,6 @@
 #pragma once
+#include <Project.h>
+#include <Function.h>
 #include <images/PEImage.h>
 #include <decompiler/Graph/DecCodeGraph.h>
 #include <decompiler/PCode/Decoders/DecPCodeDecoderX86.h>
@@ -7,7 +9,7 @@ namespace CE::Decompiler
 {
 	class PCodeGraphReferenceSearch
 	{
-		CE::Project* m_project;
+		Project* m_project;
 		AbstractRegisterFactory* m_registerFactory;
 		IImage* m_image;
 		SymbolContext m_symbolCtx;

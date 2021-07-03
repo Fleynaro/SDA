@@ -32,9 +32,9 @@ namespace CE::Decompiler
 
 		std::list<PCode::Instruction*>& getInstructions();
 
-		int64_t getMinOffset();
+		int64_t getMinOffset() const;
 
-		int64_t getMaxOffset();
+		int64_t getMaxOffset() const;
 
 		void setMaxOffset(int64_t offset);
 
@@ -44,11 +44,11 @@ namespace CE::Decompiler
 
 		void setNextFarBlock(PCodeBlock* nextBlock);
 
-		PCodeBlock* getNextNearBlock();
+		PCodeBlock* getNextNearBlock() const;
 
-		PCodeBlock* getNextFarBlock();
+		PCodeBlock* getNextFarBlock() const;
 
-		std::list<PCodeBlock*> getNextBlocks();
+		std::list<PCodeBlock*> getNextBlocks() const;
 
 		PCode::Instruction* getLastInstruction();
 
@@ -68,28 +68,28 @@ namespace CE::Decompiler
 	public:
 		FunctionPCodeGraph(ImagePCodeGraph* imagePCodeGraph);
 
-		ImagePCodeGraph* getImagePCodeGraph();
+		ImagePCodeGraph* getImagePCodeGraph() const;
 
 		void setStartBlock(PCodeBlock* block);
 
 		// head is a function that has not parents (main/all virtual functions)
-		bool isHead();
+		bool isHead() const;
 
-		auto getRefFuncCalls();
+		const std::set<FunctionPCodeGraph*>& getRefFuncCalls() const;
 
-		auto getNonVirtFuncCalls();
+		const std::set<FunctionPCodeGraph*>& getNonVirtFuncCalls() const;
 
-		auto getVirtFuncCalls();
+		const std::set<FunctionPCodeGraph*>& getVirtFuncCalls() const;
 
 		void addNonVirtFuncCall(FunctionPCodeGraph* funcGraph);
 
 		void addVirtFuncCall(FunctionPCodeGraph* funcGraph);
 
-		const std::set<PCodeBlock*>& getBlocks();
+		const std::set<PCodeBlock*>& getBlocks() const;
 
 		void addBlock(PCodeBlock* block);
 
-		PCodeBlock* getStartBlock();
+		PCodeBlock* getStartBlock() const;
 
 		std::map<PCode::Instruction*, PCode::DataValue>& getConstValues();
 
@@ -114,7 +114,7 @@ namespace CE::Decompiler
 
 		PCodeBlock* createBlock(int64_t offset);
 
-		const auto& getHeadFuncGraphs();
+		const auto& getHeadFuncGraphs() const;
 
 		std::list<FunctionPCodeGraph>& getFunctionGraphList();
 

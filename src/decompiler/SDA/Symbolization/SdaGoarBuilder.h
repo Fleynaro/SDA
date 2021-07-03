@@ -4,6 +4,7 @@
 
 namespace CE::Decompiler::Symbolization
 {
+	using namespace ExprTree;
 	//Creating complex memory data structures based on given location that is linearly calculated, or based on raw bytes(when class fields packed in a register) sized up to 8.
 	//Fields of class objects or Array
 	class SdaGoarBuilding

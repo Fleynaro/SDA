@@ -5,13 +5,9 @@ namespace CE::Decompiler
 {
 	class TopNode : public ExprTree::INodeAgregator
 	{
-		ExprTree::INode* m_node;
+		ExprTree::INode* m_node = nullptr;
 	public:
-		TopNode(ExprTree::INode* node) {
-			if (node) {
-				setNode(node);
-			}
-		}
+		TopNode(ExprTree::INode* node);
 
 		virtual ~TopNode();
 

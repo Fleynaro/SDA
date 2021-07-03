@@ -45,30 +45,30 @@ namespace CE::Decompiler::ExprTree
 	};
 
 	// groups: Arithmetic, Logic, Memory
-	static OperationGroup GetOperationGroup(OperationType opType);
+	extern OperationGroup GetOperationGroup(OperationType opType);
 
 	// unsupported to calculate: ReadValue, Cast, ...
-	static bool IsOperationUnsupportedToCalculate(OperationType operation);
+	extern bool IsOperationUnsupportedToCalculate(OperationType operation);
 
-	static bool IsOperationFloatingPoint(OperationType operation);
+	extern bool IsOperationFloatingPoint(OperationType operation);
 
 	// e.g. ReadValue, Cast, ...
-	static bool IsOperationWithSingleOperand(OperationType operation);
+	extern bool IsOperationWithSingleOperand(OperationType operation);
 
 	// Add, Mul, Shl
-	static bool IsOperationOverflow(OperationType opType);
+	extern bool IsOperationOverflow(OperationType opType);
 
 	// in these operations their operands can be swaped (Add, Mul, ...)
-	static bool IsOperationMoving(OperationType opType);
+	extern bool IsOperationMoving(OperationType opType);
 
 	// Add, Mul, ...
-	static bool IsOperationSigned(OperationType opType);
+	extern bool IsOperationSigned(OperationType opType);
 
 	// in these operations bits of operands can be viewed separately: And, Or, Xor
-	static bool IsOperationManipulatedWithBitVector(OperationType opType);
+	extern bool IsOperationManipulatedWithBitVector(OperationType opType);
 
 	// print operation sign
-	static std::string ShowOperation(OperationType opType);
+	extern std::string ShowOperation(OperationType opType);
 
 	// Arithmetic, logic, floating or other operation
 	class OperationalNode : public Node, public INodeAgregator, public PCode::IRelatedToInstruction
