@@ -1,5 +1,4 @@
 #include <tchar.h>
-#include <winsock2.h>
 #include <Windows.h>
 #include <d3d11.h>
 #include <backends/imgui_impl_dx11.h>
@@ -18,6 +17,63 @@ void CleanupDeviceD3D();
 void CreateRenderTarget();
 void CleanupRenderTarget();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+// main class for rendering GUI in d3d11 & winapi scope
+class GuiApplication
+{
+    GUI::Window* m_mainWindow;
+public:
+    GuiApplication()
+    {}
+
+    void setMainWindow(GUI::Window* mainWindow) {
+        m_mainWindow = mainWindow;
+    }
+
+    void init(HWND hwnd, ID3D11Device* device, ID3D11DeviceContext* ctx)
+    {
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+
+        ImGuiIO& io = ImGui::GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
+        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport / Platform Windows
+
+        ImGui_ImplWin32_Init(hwnd);
+        ImGui_ImplDX11_Init(device, ctx);
+        ImGui::StyleColorsDark();
+    }
+
+    void cleanup() {
+        // Cleanup
+        ImGui_ImplDX11_Shutdown();
+        ImGui_ImplWin32_Shutdown();
+        ImGui::DestroyContext();
+    }
+
+    void render()
+    {
+        ImGui_ImplDX11_NewFrame();
+        ImGui_ImplWin32_NewFrame();
+        ImGui::NewFrame();
+
+        //ImGui::PushFont(GUI::Font::Tahoma);
+        m_mainWindow->show();
+        //ImGui::PopFont();
+
+        // Render
+        ImGui::Render();
+        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+        // Update and Render additional Platform Windows
+        if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+        }
+    }
+};
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     _In_opt_ HINSTANCE hPrevInstance,
@@ -54,9 +110,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     ::UpdateWindow(hwnd);
 
     // Init GUI
-    GUI::GUI gui;
-    gui.init(hwnd, g_pd3dDevice, g_pd3dDeviceContext);
-    gui.setMainWindow(new GUI::DecompilerDemoWindow);
+    GuiApplication app;
+    app.init(hwnd, g_pd3dDevice, g_pd3dDeviceContext);
+    app.setMainWindow(new GUI::DecompilerDemoWindow);
 
     // Main loop
     bool done = false;
@@ -77,12 +133,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         float ClearColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
         g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
         g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, ClearColor);
-        gui.render();
+        app.render();
         g_pSwapChain->Present(1, 0);
     }
 
     // Clean all
-    gui.cleanup();
+    app.cleanup();
     CleanupDeviceD3D();
     ::DestroyWindow(hwnd);
     ::UnregisterClass(wc.lpszClassName, wc.hInstance);

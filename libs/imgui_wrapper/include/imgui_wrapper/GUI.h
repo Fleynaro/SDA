@@ -12,7 +12,6 @@
 #include <random>
 #include <string>
 #include <functional>
-#include <windows.h>
 
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
@@ -329,7 +328,7 @@ namespace GUI
 			>
 		{
 			ColorRGBA m_borderColor = 0x0;
-			ULONGLONG m_borderHideTime = 0;
+			uint64_t m_borderHideTime = 0;
 		public:
 			AbstractInput(const std::string& name)
 				: Attribute::Name(name)
@@ -342,7 +341,7 @@ namespace GUI
 			void showBorder(ColorRGBA color, int ms = 0) {
 				m_borderColor = color;
 				if (ms) {
-					m_borderHideTime = GetTickCount64() + ms;
+					m_borderHideTime = GetTimeInMs() + ms;
 				}
 				else {
 					m_borderHideTime = 0;
@@ -358,7 +357,9 @@ namespace GUI
 			}*/
 		protected:
 			void drawInputBorder() {
-				if (m_borderColor != 0x0 && (m_borderHideTime == 0 || GetTickCount64() < m_borderHideTime)) {
+				auto time_since_epoch = std::chrono::system_clock::now().time_since_epoch();
+				
+				if (m_borderColor != 0x0 && (m_borderHideTime == 0 || GetTimeInMs() < m_borderHideTime)) {
 					DrawBorder(m_borderColor);
 				}
 			}
@@ -371,6 +372,13 @@ namespace GUI
 			}
 
 			virtual void renderInput() = 0;
+
+		private:
+			static uint64_t GetTimeInMs()
+			{
+				auto time_since_epoch = std::chrono::system_clock::now().time_since_epoch();
+				return std::chrono::duration_cast<std::chrono::milliseconds>(time_since_epoch).count();
+			}
 		};
 
 		class TextInput
@@ -785,7 +793,6 @@ namespace GUI
 			pushParams();
 			pushIdParam();
 			bool isOpen = ImGui::Begin(getName().c_str(), &m_isOpened, getFlags());
-			popIdParam();
 
 			m_pos = ImGui::GetWindowPos();
 			m_size = ImGui::GetWindowSize();
@@ -795,6 +802,8 @@ namespace GUI
 				renderWindow();
 				ImGui::End();
 			}
+
+			popIdParam();
 		}
 
 		virtual void renderWindow() = 0;
@@ -815,62 +824,6 @@ namespace GUI
 				if (isFlags(ImGuiWindowFlags_NoResize)) {
 					ImGui::SetNextWindowSize(m_size);
 				}
-			}
-		}
-	};
-
-	class GUI
-	{
-		Window* m_mainWindow;
-	public:
-		GUI()
-		{}
-
-		void setMainWindow(Window* mainWindow) {
-			m_mainWindow = mainWindow;
-		}
-
-		void init(HWND hwnd, ID3D11Device* device, ID3D11DeviceContext* ctx)
-		{
-			IMGUI_CHECKVERSION();
-			ImGui::CreateContext();
-
-			ImGuiIO& io = ImGui::GetIO();
-			io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-			io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
-			io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport / Platform Windows
-
-			ImGui_ImplWin32_Init(hwnd);
-			ImGui_ImplDX11_Init(device, ctx);
-			ImGui::StyleColorsDark();
-		}
-
-		void cleanup() {
-			// Cleanup
-			ImGui_ImplDX11_Shutdown();
-			ImGui_ImplWin32_Shutdown();
-			ImGui::DestroyContext();
-		}
-
-		void render()
-		{
-			ImGui_ImplDX11_NewFrame();
-			ImGui_ImplWin32_NewFrame();
-			ImGui::NewFrame();
-
-			//ImGui::PushFont(GUI::Font::Tahoma);
-			m_mainWindow->show();
-			//ImGui::PopFont();
-
-			// Render
-			ImGui::Render();
-			ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
-			// Update and Render additional Platform Windows
-			if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-			{
-				ImGui::UpdatePlatformWindows();
-				ImGui::RenderPlatformWindowsDefault();
 			}
 		}
 	};

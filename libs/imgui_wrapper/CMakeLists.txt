@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.1)
 project(imgui_wrapper)
 
 set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/external/imgui")
+set(IMGUI_TEXT_EDITOR_DIR "${CMAKE_SOURCE_DIR}/external/ImGuiColorTextEdit")
 
 # imgui
 file(GLOB IMGUI_SRC
@@ -15,6 +16,10 @@ set(IMGUI_BACKEND_SRC
 set(IMGUI_MISC_SRC
     ${IMGUI_DIR}/misc/cpp/imgui_stdlib.cpp
     ${IMGUI_DIR}/misc/cpp/imgui_stdlib.h)
+# imgui text editor
+file(GLOB IMGUI_TEXT_EDITOR_SRC
+    ${IMGUI_TEXT_EDITOR_DIR}/*.cpp
+    ${IMGUI_TEXT_EDITOR_DIR}/*.h)
 # imgui wrapper
 file(GLOB_RECURSE IMGUI_WRAPPER_SRC
     "include/*.h"
@@ -25,11 +30,13 @@ add_library(
     ${IMGUI_WRAPPER_SRC}
     ${IMGUI_SRC}
     ${IMGUI_BACKEND_SRC}
-    ${IMGUI_MISC_SRC})
+    ${IMGUI_MISC_SRC}
+    ${IMGUI_TEXT_EDITOR_SRC})
 
 target_include_directories(
     imgui_wrapper PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${IMGUI_DIR})
+    ${IMGUI_DIR}
+    ${IMGUI_TEXT_EDITOR_DIR})
 
 create_vs_filters("${IMGUI_WRAPPER_SRC}")

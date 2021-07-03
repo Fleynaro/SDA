@@ -48,13 +48,14 @@ add_subdirectory(src)
 
 # for creating the gui app
 add_executable(
-    sda_gui
+    sda_gui WIN32
     src/gui/main.cpp
     )
 target_link_libraries(
     sda_gui PRIVATE
     core
     gui
+    d3d11.lib
     )
 
 # for creating the console app to test
