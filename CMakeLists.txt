@@ -42,7 +42,7 @@ option(USE_TESTS "Use unit tests" ON)
 add_subdirectory(libs/imgui_wrapper)
 set_target_properties(imgui_wrapper PROPERTIES FOLDER "libs")
 add_subdirectory(extras/ghidra_sync)
-add_subdirectory(data)
+add_subdirectory(data/resources)
 include_directories(src)
 add_subdirectory(src)
 

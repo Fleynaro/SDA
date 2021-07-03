@@ -11,15 +11,17 @@ file(GLOB_RECURSE CORE_SRC
 
 add_library(
     core STATIC
-    ${CORE_SRC}
-)
+    ${CORE_SRC})
 
 target_include_directories(
     core PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    )
+    ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_compile_definitions(core PUBLIC NOMINMAX=1)
+target_compile_definitions(
+    core PUBLIC NOMINMAX=1)
+
+target_sources(
+    core PUBLIC ${CMAKE_SOURCE_DIR}/src/sda_core.natvis)
 
 target_link_libraries(
     core PUBLIC
@@ -32,8 +34,7 @@ target_link_libraries(
     asmtk
     minhook::minhook
     Zydis
-    resources
-)
+    resources)
 
 get_filename_component(REMOVED_FILTER_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
 create_vs_filters("${CORE_SRC}")

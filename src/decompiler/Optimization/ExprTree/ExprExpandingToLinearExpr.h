@@ -15,7 +15,7 @@ namespace CE::Decompiler::Optimization
 
 		// terms
 		std::map<HS::Value, std::pair<INode*, int64_t>> m_terms;
-		int64_t m_constTerm;
+		int64_t m_constTerm = 0;
 		int m_constTermSize = 1;
 
 		// is there a sense to build LinearExpr? (yes for {(5x + 2) * 2}, but no for {5x + 2})
