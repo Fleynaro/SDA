@@ -1,7 +1,11 @@
 #pragma once
-#include <imgui_wrapper/GUI.h>
+#include <imgui_wrapper/Window.h>
 #include <imgui_wrapper/widgets/code_editor/CodeEditor.h>
 #include <Program.h>
+
+#include "imgui_wrapper/controls/Button.h"
+#include "imgui_wrapper/controls/Input.h"
+#include "imgui_wrapper/controls/Text.h"
 
 namespace CE {
 	class Project;
@@ -67,9 +71,10 @@ namespace GUI {
 
 			if (ImGui::BeginTabBar("#tabs"))
 			{
-				ImGuiTabItemFlags_ tabFlag = ImGuiTabItemFlags_None;
+				ImGuiTabItemFlags_ tabFlag_disassembler = ImGuiTabItemFlags_None;
+				ImGuiTabItemFlags_ tabFlag_decompiler = ImGuiTabItemFlags_None;
 
-				if (ImGui::BeginTabItem("disassembler", nullptr, tabFlag))
+				if (ImGui::BeginTabItem("disassembler", nullptr, tabFlag_disassembler))
 				{
 					{
 						Text::Text("Here write your assembler code:").show();
@@ -106,7 +111,7 @@ namespace GUI {
 							m_bytesParsingErrorText.setDisplay(false);
 
 							if (!m_bytes_input.getInputText().empty()) {
-								tabFlag = ImGuiTabItemFlags_SetSelected;
+								tabFlag_decompiler = ImGuiTabItemFlags_SetSelected;
 								decompile(m_bytes_input.getInputText());
 							}
 							else {
@@ -118,7 +123,7 @@ namespace GUI {
 					ImGui::EndTabItem();
 				}
 
-				if (ImGui::BeginTabItem("decompiler", nullptr, tabFlag))
+				if (ImGui::BeginTabItem("decompiler", nullptr, tabFlag_decompiler))
 				{
 					{
 						NewLine();

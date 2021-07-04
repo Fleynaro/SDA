@@ -142,6 +142,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     CleanupDeviceD3D();
     ::DestroyWindow(hwnd);
     ::UnregisterClass(wc.lpszClassName, wc.hInstance);
+    return 0;
 }
 
 // Helper functions

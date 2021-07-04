@@ -1,5 +1,5 @@
 #pragma once
-#include "../../GUI.h"
+#include "imgui_wrapper/controls/Control.h"
 #include "TextEditor.h"
 
 namespace GUI::Widget
