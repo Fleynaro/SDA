@@ -1,6 +1,8 @@
 #include "DecompilerDemoWindow.h"
 #include <Project.h>
 #include <asmtk/asmtk.h>
+#include "windows/FunctionManagerWindow.h"
+#include "managers/Managers.h"
 
 using namespace CE;
 using namespace asmjit;
@@ -35,13 +37,171 @@ std::string dumpCode(const uint8_t* buf, size_t size) {
     return result;
 }
 
+GUI::DecompilerDemoWindow::DecompilerDemoWindow()
+	: Window("Decompiler")
+{
+	// Window params
+	setFlags(
+		ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_MenuBar);
+	setFullscreen(true);
+
+	// Controls
+	m_asmCodeEditor = new Widget::CodeEditor("assembler code", ImVec2(200.0f, 300.0f));
+	m_asmCodeEditor->getEditor().SetLanguageDefinition(TextEditor::LanguageDefinition::C());
+	m_asmCodeEditor->getEditor().SetText(
+		"mov eax, 0x10\n"
+		"mov ebx, 0x20\n"
+		"add eax, ebx\n"
+		"mov [rsp], eax"
+	);
+
+	m_decCodeEditor = new Widget::CodeEditor("decompiled code", ImVec2(200.0f, 400.0f));
+	m_decCodeEditor->getEditor().SetLanguageDefinition(TextEditor::LanguageDefinition::C());
+	m_decCodeEditor->getEditor().SetReadOnly(true);
+
+	m_asmParsingErrorText.setColor(ColorRGBA(0xFF0000FF));
+	m_asmParsingErrorText.setDisplay(false);
+	m_bytesParsingErrorText.setColor(ColorRGBA(0xFF0000FF));
+	m_bytesParsingErrorText.setDisplay(false);
+	m_decInfoText.setColor(ColorRGBA(0xFF0000FF));
+	m_decInfoText.setDisplay(false);
+	m_bytes_input = Input::TextInput();
+	m_deassembly_btn = Button::StdButton("deassembly");
+	m_assembly_btn = Button::StdButton("assembly");
+	m_decompile_btn = Button::StdButton("decompile");
+
+	m_tabBar = TabBar();
+
+	m_testListModel.addItem("item 1", 1);
+	m_testListModel.addItem("item 2", 2);
+	m_testListModel.addItem("item 3", 3);
+
+	initProgram();
+}
+
+void GUI::DecompilerDemoWindow::renderWindow()
+{
+	m_asmCodeEditor->getSize() = getSize();
+	m_asmCodeEditor->getSize().y *= 0.6f;
+	m_decCodeEditor->getSize() = getSize();
+
+	m_tabBar.present({
+		TabItem("disassembler", [&]()
+		{
+			{
+				Text::Text("Here write your assembler code:").show();
+				m_asmCodeEditor->show();
+				m_asmParsingErrorText.show();
+
+				NewLine();
+				if (m_deassembly_btn.present())
+				{
+					m_asmParsingErrorText.setDisplay(false);
+
+					auto textCode = m_asmCodeEditor->getEditor().GetText();
+					if (!textCode.empty())
+					{
+						deassembly(textCode);
+					}
+				}
+
+				SameLine();
+				if (m_assembly_btn.present())
+				{
+					m_bytesParsingErrorText.setDisplay(false);
+					if (!m_bytes_input.getInputText().empty())
+					{
+						assembly(m_bytes_input.getInputText());
+					}
+				}
+			}
+
+			{
+				NewLine();
+				Separator();
+				Text::Text("The machine code is presented as bytes in hexadecimal format:").show();
+				m_bytes_input.show();
+				m_bytesParsingErrorText.show();
+				NewLine();
+				if (m_decompile_btn.present())
+				{
+					m_bytesParsingErrorText.setDisplay(false);
+
+					if (!m_bytes_input.getInputText().empty())
+					{
+						m_tabBar.selectTabItem("decompiler");
+						decompile(m_bytes_input.getInputText());
+					}
+					else
+					{
+						m_bytesParsingErrorText.setDisplay(true);
+						m_bytesParsingErrorText.setText("Please, enter hex bytes (format: 66 89 51 02)");
+					}
+				}
+			}
+
+			if (Button::StdButton("open manager").present())
+			{
+				m_functionManagerWindow = new FunctionManagerWindow(m_project->getFunctionManager());
+			}
+		}),
+
+		TabItem("decompiler", [&]()
+		{
+			NewLine();
+			Separator();
+			Text::Text("Here the decompiled code is presented:").show();
+			m_decCodeEditor->show();
+			m_decInfoText.show();
+		}),
+
+		TabItem("extra", [&]()
+		{
+			StdListView listView(&m_testListModel);
+			listView.present([&](int value)
+			{
+				m_testListModel.addItem("added item", 10);
+			});
+
+			NewLine();
+			Separator();
+			NewLine();
+
+			TableListView tableListView(&m_testListModel, "table");
+			tableListView.present([&](int value)
+			{
+				m_testListModel.addItem("added item", 10);
+			});
+		})
+	});
+
+	if (m_functionManagerWindow)
+	{
+		m_functionManagerWindow->show();
+	}
+}
+
 void GUI::DecompilerDemoWindow::initProgram() {
+	auto prj_dir = m_program->getExecutableDirectory() / "demo";
+	fs::remove_all(prj_dir);
+	
     m_program = new Program;
-    m_project = m_program->getProjectManager()->createProject("demo");
+    m_project = m_program->getProjectManager()->createProject(prj_dir);
 
     m_project->initDataBase("database.db");
     m_project->initManagers();
     m_project->load();
+
+	auto testAddrSpace = m_project->getAddrSpaceManager()->createAddressSpace("testAddrSpace");
+	auto testImageDec = m_project->getImageManager()->createImage(testAddrSpace, ImageDecorator::IMAGE_PE, "testImage");
+	auto sig = m_project->getTypeManager()->getFactory().createSignature(DataType::IFunctionSignature::FASTCALL, "sig");
+	
+	auto factory = m_project->getFunctionManager()->getFactory();
+	factory.createFunction(0, sig, testImageDec, "createPlayer");
+	factory.createFunction(10, sig, testImageDec, "createVehicle");
+	factory.createFunction(20, sig, testImageDec, "setPlayerSpeed");
+	m_project->getTransaction()->commit();
 }
 
 void GUI::DecompilerDemoWindow::deassembly(const std::string& textCode) {

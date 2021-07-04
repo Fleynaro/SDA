@@ -1,94 +1,58 @@
 #pragma once
+#include <functional>
+#include <list>
 #include "Control.h"
 
 namespace GUI
 {
-	/*class TabBar
+	struct TabItem
 	{
-		std::string* m_selectedTabItemName;
-		bool m_isOpen;
-	public:
-		TabBar(std::string* selectedTabItemName, const char* tabBarName = "#tabs")
-			: m_selectedTabItemName(selectedTabItemName)
-		{
-			m_isOpen = ImGui::BeginTabBar(tabBarName);
-		}
-
-		~TabBar()
-		{
-			ImGui::EndTabBar();
-		}
-
-		bool isOpen()
-		{
-			return m_isOpen;
-		}
+		std::string m_name;
+		std::function<void()> m_drawCall;
+		
+		TabItem(const std::string& name, std::function<void()> drawCall)
+			: m_name(name), m_drawCall(drawCall)
+		{}
 	};
-
-	class TabItem
-	{
-		TabBar* m_tabBar;
-		ImGuiTabItemFlags_ m_flags = ImGuiTabItemFlags_None;
-		bool m_isOpen;
-	public:
-		TabItem(TabBar* tabBar, const std::string& name)
-			: m_tabBar(tabBar)
-		{
-			m_isOpen = ImGui::BeginTabItem(name.c_str(), nullptr, m_flags);
-		}
-
-		~TabItem()
-		{
-			ImGui::EndTabItem();
-		}
-
-		bool isOpen()
-		{
-			return m_isOpen;
-		}
-	};*/
 	
-	class TabItem2 :
-		public Control,
-		public Attribute::Id,
-		public Attribute::Name,
-		public Attribute::Flags<
-		ImGuiTabItemFlags,
-		ImGuiTabItemFlags_None
-		>
+	class TabBar
+		: public Control,
+		public Attribute::Name
 	{
-		bool m_isOpened = false;
-		bool m_isSelected = false;
+		std::list<TabItem> m_tabItems;
+		std::string m_selectedTabItemName;
 	public:
-		TabItem2(const std::string& name, ImGuiTabItemFlags flags = ImGuiTabItemFlags_None)
-			: Attribute::Name(name), Attribute::Flags<ImGuiTabItemFlags, ImGuiTabItemFlags_None>(flags)
+		TabBar(const std::string& name = "#tabs")
+			: Attribute::Name(name)
 		{}
 
-		bool present() {
-			Control::show();
-			return isOpened();
+		void selectTabItem(const std::string& name)
+		{
+			m_selectedTabItemName = name;
 		}
 
-		void select() {
-			addFlags(ImGuiTabItemFlags_SetSelected, true);
-			m_isSelected = true;
+		void present(const std::list<TabItem>& tabItems)
+		{
+			m_tabItems = tabItems;
+			show();
 		}
-
-		bool isOpened() {
-			return m_isOpened;
-		}
-
 	protected:
-		void renderControl() override {
-			pushIdParam();
-
-			m_isOpened = ImGui::BeginTabItem(getName().c_str(), nullptr, getFlags());
-			if (m_isSelected) {
-				addFlags(ImGuiTabItemFlags_SetSelected, false);
-				m_isSelected = false;
+		void renderControl() override
+		{
+			if (ImGui::BeginTabBar(getName().c_str())) {
+				for (auto tabItem : m_tabItems)
+				{
+					ImGuiTabItemFlags_ flags = ImGuiTabItemFlags_None;
+					if (tabItem.m_name == m_selectedTabItemName)
+						flags = ImGuiTabItemFlags_SetSelected;
+					if (ImGui::BeginTabItem(tabItem.m_name.c_str(), nullptr, flags)) {
+						tabItem.m_drawCall();
+						ImGui::EndTabItem();
+					}
+				}
+				m_selectedTabItemName = "";
+				ImGui::EndTabBar();
 			}
-
-			popIdParam();
 		}
 	};
 };
