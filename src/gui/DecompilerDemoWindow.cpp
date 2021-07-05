@@ -73,9 +73,27 @@ GUI::DecompilerDemoWindow::DecompilerDemoWindow()
 
 	m_tabBar = TabBar();
 
+	// test models
 	m_testListModel.addItem("item 1", 1);
 	m_testListModel.addItem("item 2", 2);
 	m_testListModel.addItem("item 3", 3);
+
+	{
+		auto rootNode = m_testTreeModel.getRootNode();
+		rootNode->m_childNodes.push_back(m_testTreeModel.createNode("node 1", 1));
+		{
+			auto node2 = m_testTreeModel.createNode("node 2", 2);
+			node2->m_childNodes.push_back(m_testTreeModel.createNode("node 21", 21));
+			node2->m_childNodes.push_back(m_testTreeModel.createNode("node 22", 22));
+			{
+				auto node23 = m_testTreeModel.createNode("node 23", 23);
+				node23->m_childNodes.push_back(m_testTreeModel.createNode("node 231", 231));
+				node2->m_childNodes.push_back(node23);
+			}
+			rootNode->m_childNodes.push_back(node2);
+		}
+		rootNode->m_childNodes.push_back(m_testTreeModel.createNode("node 3", 3));
+	}
 
 	initProgram();
 }
@@ -160,9 +178,9 @@ void GUI::DecompilerDemoWindow::renderWindow()
 		{
 			StdListView listView(&m_testListModel);
 			listView.present([&](int value)
-			{
-				m_testListModel.addItem("added item", 10);
-			});
+				{
+					m_testListModel.addItem("added item", 10);
+				});
 
 			NewLine();
 			Separator();
@@ -170,9 +188,19 @@ void GUI::DecompilerDemoWindow::renderWindow()
 
 			TableListView tableListView(&m_testListModel, "table");
 			tableListView.present([&](int value)
-			{
-				m_testListModel.addItem("added item", 10);
-			});
+				{
+					m_testListModel.addItem("added item", 10);
+				});
+
+			NewLine();
+			Separator();
+			NewLine();
+
+			StdTreeView treeView(&m_testTreeModel);
+			treeView.present([&](int value)
+				{
+					m_testListModel.addItem("added item", value);
+				});
 		})
 	});
 

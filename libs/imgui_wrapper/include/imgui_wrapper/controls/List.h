@@ -5,10 +5,15 @@
 
 namespace GUI
 {
+	// used for mapping lists to the list model format that can be drawn
 	template<typename T>
 	class IListModel
 	{
 	public:
+		class Iterator;
+		using IteratorCallback = std::function<void(Iterator*)>;
+
+		// iterator interface
 		class Iterator
 		{
 		public:
@@ -17,10 +22,10 @@ namespace GUI
 			virtual bool hasNextItem() = 0;
 		};
 
-		using IteratorCallback = std::function<void(Iterator*)>;
 		virtual void newIterator(const IteratorCallback& callback) = 0;
 	};
 
+	// standard list model that uses internally std::list
 	template<typename T>
 	class StdListModel : public IListModel<T>
 	{
@@ -34,10 +39,10 @@ namespace GUI
 		class StdIterator : public IListModel<T>::Iterator
 		{
 			typename std::list<ListItem>::iterator m_it;
-			typename std::list<ListItem>::iterator m_end;
+			std::list<ListItem>* m_list;
 		public:
-			StdIterator(typename std::list<ListItem>::iterator it, typename std::list<ListItem>::iterator end)
-				: m_it(it), m_end(end)
+			StdIterator(std::list<ListItem>* list)
+				: m_list(list), m_it(list->begin())
 			{}
 
 			void getNextItem(std::string* text, T* data) override
@@ -49,12 +54,11 @@ namespace GUI
 
 			bool hasNextItem() override
 			{
-				return m_it != m_end;
+				return m_it != m_list->end();
 			}
 		};
 		
-		StdListModel()
-		{}
+		StdListModel() {}
 
 		void addItem(std::string text, T data)
 		{
@@ -71,22 +75,57 @@ namespace GUI
 
 		void newIterator(const IteratorCallback& callback) override
 		{
-			StdIterator iterator(m_listItems.begin(), m_listItems.end());
+			StdIterator iterator(&m_listItems);
 			callback(&iterator);
 		}
 	};
 
+	// used to draw a list based on a list model
 	template<typename T>
-	class StdListView
+	class AbstractListView
 		: public Control
 	{
-	protected:
 		IListModel<T>* m_listModel;
-		std::function<void(T)> m_clickItemEventHandler;
+	public:
+		AbstractListView(IListModel<T>* listModel = nullptr)
+			: m_listModel(listModel)
+		{}
 	
+	private:
+		void renderControl() override
+		{
+			m_listModel->newIterator([&](typename IListModel<T>::Iterator* iter)
+				{
+					renderList(iter);
+				});
+		}
+
+	protected:
+		using Iterator = typename IListModel<T>::Iterator;
+		
+		virtual void renderList(Iterator* iter)
+		{
+			while (iter->hasNextItem())
+			{
+				std::string text;
+				T data;
+				iter->getNextItem(&text, &data);
+				renderItem(text, data);
+			}
+		}
+
+		// render a list item
+		virtual void renderItem(const std::string& text, const T& data) = 0;
+	};
+
+	template<typename T>
+	class StdListView
+		: public AbstractListView<T>
+	{
+		std::function<void(T)> m_clickItemEventHandler;
 	public:
 		StdListView(IListModel<T>* listModel = nullptr)
-			: m_listModel(listModel)
+			: AbstractListView<T>(listModel)
 		{}
 
 		void present(const std::function<void(T)>& clickItemEventHandler)
@@ -96,20 +135,11 @@ namespace GUI
 		}
 	
 	protected:
-		void renderControl() override
+		void renderItem(const std::string& text, const T& data) override
 		{
-			m_listModel->newIterator([&](typename IListModel<T>::Iterator* iter)
-				{
-					while(iter->hasNextItem())
-					{
-						std::string text;
-						T data;
-						iter->getNextItem(&text, &data);
-						if (ImGui::Selectable(text.c_str())) {
-							m_clickItemEventHandler(data);
-						}
-					}
-				});
+			if (ImGui::Selectable(text.c_str())) {
+				m_clickItemEventHandler(data);
+			}
 		}
 	};
 
@@ -124,25 +154,20 @@ namespace GUI
 		{}
 
 	protected:
-		void renderControl() override
+		void renderList(Iterator* iter) override
 		{
-			m_listModel->newIterator([&](typename IListModel<T>::Iterator* iter)
-				{
-					if (ImGui::BeginTable(getName().c_str(), 2, ImGuiTableFlags_Borders)) {
-						while (iter->hasNextItem())
-						{
-							std::string text;
-							T data;
-							iter->getNextItem(&text, &data);
-
-							ImGui::TableNextColumn();
-							Text::Text("1").show();
-							ImGui::TableNextColumn();
-							Text::Text(text).show();
-						}
-						ImGui::EndTable();
-					}
-				});
+			if (ImGui::BeginTable(getName().c_str(), 2, ImGuiTableFlags_Borders)) {
+				AbstractListView<T>::renderList(iter);
+				ImGui::EndTable();
+			}
+		}
+		
+		void renderItem(const std::string& text, const T& data) override
+		{
+			ImGui::TableNextColumn();
+			Text::Text("1").show();
+			ImGui::TableNextColumn();
+			Text::Text(text).show();
 		}
 	};
 };

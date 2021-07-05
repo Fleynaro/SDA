@@ -9,6 +9,7 @@
 #include <imgui_wrapper/controls/TabBar.h>
 
 #include "imgui_wrapper/controls/List.h"
+#include "imgui_wrapper/controls/Tree.h"
 
 namespace CE {
 	class Project;
@@ -31,6 +32,7 @@ namespace GUI {
 		TabBar m_tabBar;
 		
 		StdListModel<int> m_testListModel;
+		StdTreeModel<int> m_testTreeModel;
 
 		FunctionManagerWindow* m_functionManagerWindow = nullptr;
 
