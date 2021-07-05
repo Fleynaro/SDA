@@ -117,26 +117,24 @@ namespace GUI
 
 		class Id
 		{
+			std::string m_id;
 		public:
-			Id(int id = 0)
+			Id(const std::string& id = "")
 				: m_id(id)
 			{};
 
-			int getId() {
+			std::string getId() {
 				return m_id;
 			}
 
-			std::string getStrId() {
-				return std::to_string(getId());
-			}
-
-			void setId(int id) {
-				m_id = id;
+			template<typename T>
+			void setId(T id) {
+				m_id = std::to_string(uint64_t(id));
 			}
 
 			void pushIdParam() {
-				if (isDefined()) {
-					ImGui::PushID(m_id);
+				if (!m_id.empty()) {
+					ImGui::PushID(m_id.c_str());
 				}
 				else {
 					ImGui::PushID(this);
@@ -145,11 +143,6 @@ namespace GUI
 
 			void popIdParam() {
 				ImGui::PopID();
-			}
-		private:
-			int m_id;
-			bool isDefined() {
-				return m_id != 0;
 			}
 		};
 

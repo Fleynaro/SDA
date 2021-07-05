@@ -122,6 +122,12 @@ namespace GUI::Input
 			: AbstractInput(name), m_value(value)
 		{}
 
+		bool present()
+		{
+			show();
+			return isClicked();
+		}
+
 		bool isClicked() {
 			return CheckEventFlag(m_isClicked);
 		}

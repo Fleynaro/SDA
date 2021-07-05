@@ -10,13 +10,16 @@ namespace GUI
 	{
 		FunctionManagerController m_controller;
 		Input::TextInput m_search_input;
-		TableListView<CE::Function*> m_tableListView;
+		TableListViewMultiSelector<CE::Function*> m_tableListView;
 	
 	public:
 		FunctionManagerWindow(CE::FunctionManager* functionManager)
 			: Window("Function manager"), m_controller(functionManager)
 		{
-			m_tableListView = TableListView(&m_controller.m_model, "listView");
+			m_tableListView = TableListViewMultiSelector(&m_controller.m_listModel, "listView", {
+				ColInfo("Function"),
+				ColInfo("Select", ImGuiTableColumnFlags_WidthFixed, 50.0f)
+			});
 		}
 
 	protected:
@@ -27,6 +30,7 @@ namespace GUI
 			}
 
 			m_search_input.show();
+			
 			m_tableListView.present([&](CE::Function* function)
 				{
 					

@@ -1,7 +1,10 @@
 #pragma once
 #include <functional>
 #include <list>
+#include <set>
+
 #include "Control.h"
+#include "utilities/Helper.h"
 
 namespace GUI
 {
@@ -105,17 +108,18 @@ namespace GUI
 		
 		virtual void renderList(Iterator* iter)
 		{
+			int n = 0;
 			while (iter->hasNextItem())
 			{
 				std::string text;
 				T data;
 				iter->getNextItem(&text, &data);
-				renderItem(text, data);
+				renderItem(text, data, n++);
 			}
 		}
 
 		// render a list item
-		virtual void renderItem(const std::string& text, const T& data) = 0;
+		virtual void renderItem(const std::string& text, const T& data, int n) = 0;
 	};
 
 	template<typename T>
@@ -135,7 +139,7 @@ namespace GUI
 		}
 	
 	protected:
-		void renderItem(const std::string& text, const T& data) override
+		void renderItem(const std::string& text, const T& data, int n) override
 		{
 			if (ImGui::Selectable(text.c_str())) {
 				m_clickItemEventHandler(data);
@@ -143,31 +147,109 @@ namespace GUI
 		}
 	};
 
+	struct ColInfo
+	{
+		std::string m_name;
+		ImGuiTableColumnFlags m_flags;
+		float m_width;
+
+		ColInfo(std::string name = "", ImGuiTableColumnFlags flags = ImGuiTableColumnFlags_None, float width = 0.0f)
+			: m_name(name), m_flags(flags), m_width(width)
+		{}
+	};
+	
 	template<typename T>
 	class TableListView
-		: public StdListView<T>,
+		: public AbstractListView<T>,
 		public Attribute::Name
 	{
 	public:
-		TableListView(IListModel<T>* listModel = nullptr, const std::string& name = "")
-			: StdListView<T>(listModel), Attribute::Name(name)
+		std::list<ColInfo> m_colsInfo;
+		
+		TableListView(IListModel<T>* listModel = nullptr, const std::string& name = "", const std::list<ColInfo>& colsInfo = {})
+			: AbstractListView<T>(listModel), Attribute::Name(name), m_colsInfo(colsInfo)
 		{}
 
 	protected:
 		void renderList(Iterator* iter) override
 		{
-			if (ImGui::BeginTable(getName().c_str(), 2, ImGuiTableFlags_Borders)) {
+			if (ImGui::BeginTable(getName().c_str(), std::max(1, (int)m_colsInfo.size()), ImGuiTableFlags_Borders)) {
+				for(const auto& colInfo : m_colsInfo)
+					ImGui::TableSetupColumn(colInfo.m_name.c_str(), colInfo.m_flags, colInfo.m_width);
 				AbstractListView<T>::renderList(iter);
 				ImGui::EndTable();
 			}
 		}
 		
-		void renderItem(const std::string& text, const T& data) override
+		void renderItem(const std::string& text, const T& data, int n) override
 		{
+			auto columns = Helper::String::Split(text, ",");
+			for(const auto& col : columns)
+			{
+				ImGui::TableNextColumn();
+				Text::Text(col).show();
+			}
+		}
+	};
+
+	template<typename T>
+	class TableListViewSelector
+		: public TableListView<T>
+	{
+		std::function<void(T)> m_clickItemEventHandler;
+	public:
+		using TableListView<T>::TableListView;
+
+		void present(const std::function<void(T)>& clickItemEventHandler)
+		{
+			m_clickItemEventHandler = clickItemEventHandler;
+			show();
+		}
+	
+	protected:
+		void renderItem(const std::string& text, const T& data, int n) override
+		{
+			TableListView<T>::renderItem(text, data, n);
 			ImGui::TableNextColumn();
-			Text::Text("1").show();
+			auto btn = Button::ButtonSmall("select");
+			btn.setId(this + n);
+			if (btn.present())
+			{
+				m_clickItemEventHandler(data);
+			}
+		}
+	};
+
+	template<typename T>
+	class TableListViewMultiSelector
+		: public TableListViewSelector<T>
+	{
+	public:
+		std::set<T> m_selectedItems;
+		
+		using TableListViewSelector<T>::TableListViewSelector;
+
+	protected:
+		void renderList(Iterator* iter) override
+		{
+			if(auto selItemsCount = m_selectedItems.size())
+				Text::Text("Selected " + std::to_string(selItemsCount) + " items.").show();
+			TableListViewSelector<T>::renderList(iter);
+		}
+		
+		void renderItem(const std::string& text, const T& data, int n) override
+		{
+			TableListView<T>::renderItem(text, data, n);
 			ImGui::TableNextColumn();
-			Text::Text(text).show();
+			
+			Input::BoolInput checkbox("", m_selectedItems.find(data) != m_selectedItems.end());
+			checkbox.setId(this + n);
+			if(checkbox.present())
+			{
+				if (checkbox.isSelected())
+					m_selectedItems.insert(data);
+				else m_selectedItems.erase(data);
+			}
 		}
 	};
 };

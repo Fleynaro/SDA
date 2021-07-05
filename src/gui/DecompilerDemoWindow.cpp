@@ -186,11 +186,11 @@ void GUI::DecompilerDemoWindow::renderWindow()
 			Separator();
 			NewLine();
 
-			TableListView tableListView(&m_testListModel, "table");
+			/*TableListView tableListView(&m_testListModel, "table");
 			tableListView.present([&](int value)
 				{
 					m_testListModel.addItem("added item", 10);
-				});
+				});*/
 
 			NewLine();
 			Separator();
