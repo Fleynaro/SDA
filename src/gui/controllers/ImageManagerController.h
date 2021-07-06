@@ -1,5 +1,6 @@
 #pragma once
 #include "AbstractManagerController.h"
+#include "AddressSpace.h"
 #include "managers/ImageManager.h"
 
 
@@ -16,7 +17,10 @@ namespace GUI
 		class ImageListModel : public ListModel
 		{
 		public:
-			using ListModel::ListModel;
+			bool m_isTable;
+			ImageListModel(ImageManagerController* controller, bool isTable)
+				: ListModel(controller), m_isTable(isTable)
+			{}
 
 		private:
 			class ImageIterator : public Iterator
@@ -27,22 +31,25 @@ namespace GUI
 			private:
 				std::string getText(CE::ImageDecorator* item) override
 				{
+					if(static_cast<ImageListModel*>(m_listModel)->m_isTable)
+						return item->getAddressSpace()->getName() + "," + item->getName();
 					return item->getName();
 				}
 			};
 
 			void newIterator(const IteratorCallback& callback) override
 			{
-				ImageIterator iterator(m_controller);
+				ImageIterator iterator(this);
 				callback(&iterator);
 			}
 		};
 
 		ImageFilter m_filter;
+		ImageListModel m_tableListModel;
 		ImageListModel m_listModel;
 
 		ImageManagerController(CE::ImageManager* manager)
-			: AbstractManagerController<CE::ImageDecorator>(manager), m_listModel(this)
+			: AbstractManagerController<CE::ImageDecorator>(manager), m_tableListModel(this, true), m_listModel(this, false)
 		{}
 
 	private:

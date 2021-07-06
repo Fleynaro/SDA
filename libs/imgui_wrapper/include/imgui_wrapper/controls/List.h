@@ -98,13 +98,24 @@ namespace GUI
 	
 		void renderControl() override
 		{
+			renderHeader();
 			m_listModel->newIterator([&](Iterator* iter)
 				{
-					renderList(iter);
+					if (renderTop()) {
+						renderContent(iter);
+						renderBottom();
+					}
 				});
 		}
+
+		virtual void renderHeader() {}
 		
-		virtual void renderList(Iterator* iter)
+		virtual bool renderTop()
+		{
+			return true;
+		}
+		
+		virtual void renderContent(Iterator* iter)
 		{
 			int n = 0;
 			while (iter->hasNextItem())
@@ -116,8 +127,102 @@ namespace GUI
 			}
 		}
 
+		virtual void renderBottom() {}
+
 		// render a list item
 		virtual void renderItem(const std::string& text, const T& data, int n) = 0;
+	};
+
+	// used to group the list by some condition
+	template<typename T>
+	class ListViewGrouping
+		: public AbstractListView<T>
+	{
+		struct Item
+		{
+			std::string text;
+			T data;
+			int n;
+		};
+		
+		AbstractListView<T>* m_listView;
+	public:
+		ListViewGrouping(AbstractListView<T>* listView)
+			: AbstractListView<T>(listView->m_listModel), m_listView(listView)
+		{}
+
+	protected:
+		virtual bool groupBy(T& data1, T& data2) = 0;
+		
+		virtual bool renderGroupTop(T& firstItemData, int group_n)
+		{
+			return ImGui::TreeNode("Group");
+		}
+
+		virtual void renderGroupBottom()
+		{
+			ImGui::TreePop();
+		}
+
+		void renderHeader() override
+		{
+			m_listView->renderHeader();
+		}
+		
+		void renderContent(Iterator* iter) override
+		{
+			int n = 0;
+			std::list<Item> items;
+
+			// get items
+			while (iter->hasNextItem())
+			{
+				Item item;
+				item.n = n++;
+				iter->getNextItem(&item.text, &item.data);
+				items.push_back(item);
+			}
+
+			// sort the items
+			items.sort([&](Item& item1, Item& item2)
+				{
+					return groupBy(item1.data, item2.data);
+				});
+
+			// render the items inside groups
+			int group_n = 0;
+			std::list<Item> itemsInOneGroup;
+			for (auto it = items.begin(); it != items.end(); ++it)
+			{
+				itemsInOneGroup.push_back(*it);
+				if(it != items.begin() && groupBy(std::prev(it)->data, it->data))
+				{
+					renderGroupWithItems(itemsInOneGroup, group_n++);
+					itemsInOneGroup.clear();
+				}
+			}
+			if(!itemsInOneGroup.empty())
+				renderGroupWithItems(itemsInOneGroup, group_n);
+		}
+
+		void renderItem(const std::string& text, const T& data, int n) override
+		{
+			m_listView->renderItem(text, data, n);
+		}
+
+	private:
+		void renderGroupWithItems(std::list<Item>& items, int group_n)
+		{
+			if (renderGroupTop(items.begin()->data, group_n)) {
+				m_listView->renderTop();
+				for (auto& item : items)
+				{
+					renderItem(item.text, item.data, item.n);
+				}
+				m_listView->renderBottom();
+				renderGroupBottom();
+			}
+		}
 	};
 
 	template<typename T>
@@ -144,18 +249,6 @@ namespace GUI
 		}
 	};
 
-	template<typename T>
-	class AbstractTableListView
-		: public AbstractListView<T>
-	{
-	public:
-		using AbstractListView<T>::AbstractListView;
-
-		virtual void renderTable(const std::function<void()>& func, int newColsCount) = 0;
-				
-		virtual void setupColumns() = 0;
-	};
-
 	struct ColInfo
 	{
 		std::string m_name;
@@ -165,6 +258,16 @@ namespace GUI
 		ColInfo(std::string name = "", ImGuiTableColumnFlags flags = ImGuiTableColumnFlags_None, float width = 0.0f)
 			: m_name(name), m_flags(flags), m_width(width)
 		{}
+	};
+
+	template<typename T>
+	class AbstractTableListView
+		: public AbstractListView<T>
+	{
+	public:
+		using AbstractListView<T>::AbstractListView;
+
+		virtual std::list<ColInfo>& getColumnSetups() = 0;
 	};
 	
 	template<typename T>
@@ -179,38 +282,36 @@ namespace GUI
 			: AbstractTableListView<T>(listModel), Attribute::Name(name), m_colsInfo(colsInfo)
 		{}
 
-	protected:
-		void renderTable(const std::function<void()>& content, int newColsCount) override
+	private:
+		std::list<ColInfo>& getColumnSetups() override
 		{
-			if (ImGui::BeginTable(getName().c_str(), static_cast<int>(m_colsInfo.size()) + newColsCount, ImGuiTableFlags_Borders)) {
-				content();
-				ImGui::EndTable();
-			}
+			return m_colsInfo;
 		}
 		
-		void renderList(Iterator* iter) override
+		bool renderTop() override
 		{
-			renderTable([&]()
+			if (ImGui::BeginTable(getName().c_str(), static_cast<int>(m_colsInfo.size()), ImGuiTableFlags_Borders))
 			{
-				setupColumns();
-				AbstractListView<T>::renderList(iter);
-			}, 0);
+				for (const auto& colInfo : m_colsInfo)
+					ImGui::TableSetupColumn(colInfo.m_name.c_str(), colInfo.m_flags, colInfo.m_width);
+				return true;
+			}
+			return false;
 		}
-		
+
+		void renderBottom() override
+		{
+			ImGui::EndTable();
+		}
+
 		void renderItem(const std::string& text, const T& data, int n) override
 		{
 			auto columns = Helper::String::Split(text, ",");
-			for(const auto& col : columns)
+			for (const auto& col : columns)
 			{
 				ImGui::TableNextColumn();
 				Text::Text(col).show();
 			}
-		}
-
-		void setupColumns() override
-		{
-			for (const auto& colInfo : m_colsInfo)
-				ImGui::TableSetupColumn(colInfo.m_name.c_str(), colInfo.m_flags, colInfo.m_width);
 		}
 	};
 
@@ -224,7 +325,9 @@ namespace GUI
 	public:
 		TableListViewSelector(AbstractTableListView<T>* tableListView, Button::AbstractButton* btn = new Button::ButtonSmall("select"))
 			: AbstractTableListView<T>(tableListView->m_listModel), m_tableListView(tableListView), m_btn(btn)
-		{}
+		{
+			m_tableListView->getColumnSetups().push_back(ColInfo("", ImGuiTableColumnFlags_WidthFixed, 50.0f));
+		}
 
 		~TableListViewSelector() override
 		{
@@ -238,18 +341,19 @@ namespace GUI
 		}
 	
 	protected:
-		void renderTable(const std::function<void()>& content, int newColsCount) override
+		std::list<ColInfo>& getColumnSetups() override
 		{
-			m_tableListView->renderTable(content, newColsCount + 1);
+			return m_tableListView->getColumnSetups();
 		}
 		
-		void renderList(Iterator* iter) override
+		bool renderTop() override
 		{
-			renderTable([&]()
-				{
-					setupColumns();
-					AbstractTableListView<T>::renderList(iter);
-				}, 0);
+			return m_tableListView->renderTop();
+		}
+		
+		void renderBottom() override
+		{
+			return m_tableListView->renderBottom();
 		}
 		
 		void renderItem(const std::string& text, const T& data, int n) override
@@ -261,12 +365,6 @@ namespace GUI
 			{
 				m_selectEventHandler(data);
 			}
-		}
-
-		void setupColumns() override
-		{
-			m_tableListView->setupColumns();
-			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 50.0f);
 		}
 	};
 
@@ -281,7 +379,9 @@ namespace GUI
 		
 		TableListViewMultiSelector(AbstractTableListView<T>* tableListView)
 			: AbstractTableListView<T>(tableListView->m_listModel), m_tableListView(tableListView)
-		{}
+		{
+			m_tableListView->getColumnSetups().push_back(ColInfo("", ImGuiTableColumnFlags_WidthFixed, 25.0f));
+		}
 
 		~TableListViewMultiSelector() override
 		{
@@ -294,43 +394,42 @@ namespace GUI
 		}
 	
 	protected:
-		void renderTable(const std::function<void()>& content, int newColsCount) override
+		std::list<ColInfo>& getColumnSetups() override
 		{
-			m_tableListView->renderTable(content, newColsCount + 1);
+			return m_tableListView->getColumnSetups();
 		}
-		
-		void renderList(Iterator* iter) override
+
+		void renderHeader() override
 		{
 			if (!m_selectedItems.empty()) {
 				if (Button::StdButton("Select " + std::to_string(m_selectedItems.size()) + " items.").present())
 					m_selectEventHandler();
 			}
-			renderTable([&]()
-			{
-				setupColumns();
-				AbstractTableListView<T>::renderList(iter);
-			}, 0);
 		}
 		
+		bool renderTop() override
+		{
+			return m_tableListView->renderTop();
+		}
+
+		void renderBottom() override
+		{
+			return m_tableListView->renderBottom();
+		}
+
 		void renderItem(const std::string& text, const T& data, int n) override
 		{
 			m_tableListView->renderItem(text, data, n);
 			ImGui::TableNextColumn();
-			
+
 			Input::BoolInput checkbox("", m_selectedItems.find(data) != m_selectedItems.end());
 			checkbox.setId(this + n);
-			if(checkbox.present())
+			if (checkbox.present())
 			{
 				if (checkbox.isSelected())
 					m_selectedItems.insert(data);
 				else m_selectedItems.erase(data);
 			}
-		}
-
-		void setupColumns() override
-		{
-			m_tableListView->setupColumns();
-			ImGui::TableSetupColumn("Select", ImGuiTableColumnFlags_WidthFixed, 50.0f);
 		}
 	};
 };

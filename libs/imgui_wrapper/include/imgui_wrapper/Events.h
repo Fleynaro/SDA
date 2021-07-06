@@ -28,6 +28,12 @@ namespace GUI
 		bool m_isVisibleOn = false;
 		bool m_isVisibleOff = false;
 	public:
+		GenericEvents(bool processEvents = false)
+		{
+			if(processEvents)
+				processGenericEvents();
+		}
+		
 		bool isClickedByLeftMouseBtn() {
 			return CheckEventFlag(m_isClickedByLeftMouseBtn);
 		}

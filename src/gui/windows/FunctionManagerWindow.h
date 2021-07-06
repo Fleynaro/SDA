@@ -2,8 +2,6 @@
 #include "imgui_wrapper/Window.h"
 #include "imgui_wrapper/controls/Input.h"
 #include "controllers/FunctionManagerController.h"
-#include "controllers/AddressSpaceManagerController.h"
-
 
 namespace GUI
 {

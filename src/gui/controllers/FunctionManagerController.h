@@ -33,7 +33,7 @@ namespace GUI
 
 			void newIterator(const IteratorCallback& callback) override
 			{
-				FunctionIterator iterator(m_controller);
+				FunctionIterator iterator(this);
 				callback(&iterator);
 			}
 		};

@@ -1,5 +1,6 @@
 #pragma once
 #include "imgui_wrapper/controls/List.h"
+#include "managers/AbstractManager.h"
 
 namespace GUI
 {
@@ -15,10 +16,11 @@ namespace GUI
 			class Iterator : public IListModel<T*>::Iterator
 			{
 				typename std::list<T*>::iterator m_it;
-				AbstractManagerController* m_controller;
+			protected:
+				ListModel* m_listModel;
 			public:
-				Iterator(AbstractManagerController* controller)
-					: m_controller(controller), m_it(controller->m_items.begin())
+				Iterator(ListModel* listModel)
+					: m_listModel(listModel), m_it(listModel->m_controller->m_items.begin())
 				{}
 
 				void getNextItem(std::string* text, T** data) override
@@ -30,7 +32,7 @@ namespace GUI
 
 				bool hasNextItem() override
 				{
-					return m_it != m_controller->m_items.end();
+					return m_it != m_listModel->m_controller->m_items.end();
 				}
 
 			protected:
@@ -50,6 +52,10 @@ namespace GUI
 
 		virtual bool filter(T* item) = 0;
 
+		virtual void sort()
+		{
+		}
+
 		void update()
 		{
 			m_items.clear();
@@ -61,6 +67,7 @@ namespace GUI
 					m_items.push_back(item);
 				}
 			}
+			sort();
 		}
 	};
 };

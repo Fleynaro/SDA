@@ -17,6 +17,7 @@ namespace CE {
 
 namespace GUI {
 	class FunctionManagerWindow;
+	class ImageViewerWindow;
 	
 	class DecompilerDemoWindow : public Window
 	{
@@ -35,6 +36,7 @@ namespace GUI {
 		StdTreeModel<int> m_testTreeModel;
 
 		FunctionManagerWindow* m_functionManagerWindow = nullptr;
+		ImageViewerWindow* m_imageViewerWindow = nullptr;
 
 		CE::Program* m_program;
 		CE::Project* m_project;

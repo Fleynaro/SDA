@@ -2,6 +2,7 @@
 #include <Project.h>
 #include <asmtk/asmtk.h>
 #include "windows/FunctionManagerWindow.h"
+#include "windows/ImageViewerWindow.h"
 #include "managers/Managers.h"
 
 using namespace CE;
@@ -159,11 +160,16 @@ void GUI::DecompilerDemoWindow::renderWindow()
 				}
 			}
 
-			if (Button::StdButton("open manager").present())
+			if (Button::StdButton("open func. manager").present())
 			{
 				m_functionManagerWindow = new FunctionManagerWindow(m_project->getFunctionManager());
 				m_functionManagerWindow->m_listView = new TableListViewSelector(m_functionManagerWindow->m_listView);
 				m_functionManagerWindow->m_listView = new TableListViewMultiSelector(m_functionManagerWindow->m_listView);
+			}
+
+			if (Button::StdButton("open item manager").present())
+			{
+				m_imageViewerWindow = new ImageViewerWindow(m_project->getImageManager());
 			}
 		}),
 
@@ -214,6 +220,11 @@ void GUI::DecompilerDemoWindow::renderWindow()
 			m_functionManagerWindow = nullptr;
 		}
 	}
+
+	if (m_imageViewerWindow)
+	{
+		m_imageViewerWindow->show();
+	}
 }
 
 void GUI::DecompilerDemoWindow::initProgram() {
@@ -227,8 +238,12 @@ void GUI::DecompilerDemoWindow::initProgram() {
     m_project->initManagers();
     m_project->load();
 
-	auto testAddrSpace = m_project->getAddrSpaceManager()->createAddressSpace("testAddrSpace");
-	auto testImageDec = m_project->getImageManager()->createImage(testAddrSpace, ImageDecorator::IMAGE_PE, "testImage");
+	auto testAddrSpace = m_project->getAddrSpaceManager()->createAddressSpace("testAddrSpace1");
+	auto testAddrSpace2 = m_project->getAddrSpaceManager()->createAddressSpace("testAddrSpace2");
+	auto testImageDec = m_project->getImageManager()->createImage(testAddrSpace, ImageDecorator::IMAGE_PE, "testImage11");
+	m_project->getImageManager()->createImage(testAddrSpace, ImageDecorator::IMAGE_PE, "testImage12");
+	m_project->getImageManager()->createImage(testAddrSpace2, ImageDecorator::IMAGE_PE, "testImage21");
+	
 	auto sig = m_project->getTypeManager()->getFactory().createSignature(DataType::IFunctionSignature::FASTCALL, "sig");
 	
 	auto factory = m_project->getFunctionManager()->getFactory();

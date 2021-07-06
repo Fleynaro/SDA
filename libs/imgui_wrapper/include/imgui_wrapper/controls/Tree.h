@@ -39,8 +39,8 @@ namespace GUI
 	public:
 		class StdIterator : public ITreeModel<T>::Iterator
 		{
-			typename std::list<Node*>::iterator m_it;
 			Node* m_node;
+			typename std::list<Node*>::iterator m_it;
 		public:
 			StdIterator(Node* node)
 				: m_node(node), m_it(node->m_childNodes.begin())
