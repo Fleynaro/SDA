@@ -1,31 +1,31 @@
 #pragma once
 #include "AbstractManagerController.h"
-#include "managers/FunctionManager.h"
+#include "managers/ImageManager.h"
 
 
 namespace GUI
 {
-	class FunctionManagerController : public AbstractManagerController<CE::Function>
+	class ImageManagerController : public AbstractManagerController<CE::ImageDecorator>
 	{
 	public:
-		struct FunctionFilter
+		struct ImageFilter
 		{
 			std::string m_name;
 		};
 
-		class FunctionListModel : public ListModel
+		class ImageListModel : public ListModel
 		{
 		public:
 			using ListModel::ListModel;
 
 		private:
-			class FunctionIterator : public Iterator
+			class ImageIterator : public Iterator
 			{
 			public:
 				using Iterator::Iterator;
 
 			private:
-				std::string getText(CE::Function* item) override
+				std::string getText(CE::ImageDecorator* item) override
 				{
 					return item->getName();
 				}
@@ -33,20 +33,20 @@ namespace GUI
 
 			void newIterator(const IteratorCallback& callback) override
 			{
-				FunctionIterator iterator(m_controller);
+				ImageIterator iterator(m_controller);
 				callback(&iterator);
 			}
 		};
 
-		FunctionFilter m_filter;
-		FunctionListModel m_listModel;
+		ImageFilter m_filter;
+		ImageListModel m_listModel;
 
-		FunctionManagerController(CE::FunctionManager* manager)
-			: AbstractManagerController<CE::Function>(manager), m_listModel(this)
+		ImageManagerController(CE::ImageManager* manager)
+			: AbstractManagerController<CE::ImageDecorator>(manager), m_listModel(this)
 		{}
 
 	private:
-		bool filter(CE::Function* item) override
+		bool filter(CE::ImageDecorator* item) override
 		{
 			using namespace Helper::String;
 			if (!m_filter.m_name.empty() && ToLower(item->getName()).find(ToLower(m_filter.m_name)) == std::string::npos)

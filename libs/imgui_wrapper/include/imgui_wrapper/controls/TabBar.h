@@ -2,13 +2,14 @@
 #include <functional>
 #include <list>
 #include "Control.h"
+#include "imgui_wrapper/Events.h"
 
 namespace GUI
 {
 	struct TabItem
 	{
 		std::string m_name;
-		std::function<void()> m_drawCall;
+		EventHandler<> m_drawCall;
 		
 		TabItem(const std::string& name, std::function<void()> drawCall)
 			: m_name(name), m_drawCall(drawCall)
@@ -31,10 +32,9 @@ namespace GUI
 			m_selectedTabItemName = name;
 		}
 
-		void present(const std::list<TabItem>& tabItems)
+		void handler(const std::list<TabItem>& tabItems)
 		{
 			m_tabItems = tabItems;
-			show();
 		}
 	protected:
 		void renderControl() override

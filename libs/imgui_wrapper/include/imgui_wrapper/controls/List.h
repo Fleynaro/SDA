@@ -88,23 +88,21 @@ namespace GUI
 	class AbstractListView
 		: public Control
 	{
-		IListModel<T>* m_listModel;
 	public:
+		IListModel<T>* m_listModel;
+		using Iterator = typename IListModel<T>::Iterator;
+		
 		AbstractListView(IListModel<T>* listModel = nullptr)
 			: m_listModel(listModel)
 		{}
 	
-	private:
 		void renderControl() override
 		{
-			m_listModel->newIterator([&](typename IListModel<T>::Iterator* iter)
+			m_listModel->newIterator([&](Iterator* iter)
 				{
 					renderList(iter);
 				});
 		}
-
-	protected:
-		using Iterator = typename IListModel<T>::Iterator;
 		
 		virtual void renderList(Iterator* iter)
 		{
@@ -126,16 +124,15 @@ namespace GUI
 	class StdListView
 		: public AbstractListView<T>
 	{
-		std::function<void(T)> m_clickItemEventHandler;
+		EventHandler<T> m_clickItemEventHandler;
 	public:
 		StdListView(IListModel<T>* listModel = nullptr)
 			: AbstractListView<T>(listModel)
 		{}
 
-		void present(const std::function<void(T)>& clickItemEventHandler)
+		void handler(const std::function<void(T)>& clickItemEventHandler)
 		{
 			m_clickItemEventHandler = clickItemEventHandler;
-			show();
 		}
 	
 	protected:
@@ -145,6 +142,18 @@ namespace GUI
 				m_clickItemEventHandler(data);
 			}
 		}
+	};
+
+	template<typename T>
+	class AbstractTableListView
+		: public AbstractListView<T>
+	{
+	public:
+		using AbstractListView<T>::AbstractListView;
+
+		virtual void renderTable(const std::function<void()>& func, int newColsCount) = 0;
+				
+		virtual void setupColumns() = 0;
 	};
 
 	struct ColInfo
@@ -160,25 +169,32 @@ namespace GUI
 	
 	template<typename T>
 	class TableListView
-		: public AbstractListView<T>,
+		: public AbstractTableListView<T>,
 		public Attribute::Name
 	{
 	public:
 		std::list<ColInfo> m_colsInfo;
 		
 		TableListView(IListModel<T>* listModel = nullptr, const std::string& name = "", const std::list<ColInfo>& colsInfo = {})
-			: AbstractListView<T>(listModel), Attribute::Name(name), m_colsInfo(colsInfo)
+			: AbstractTableListView<T>(listModel), Attribute::Name(name), m_colsInfo(colsInfo)
 		{}
 
 	protected:
-		void renderList(Iterator* iter) override
+		void renderTable(const std::function<void()>& content, int newColsCount) override
 		{
-			if (ImGui::BeginTable(getName().c_str(), std::max(1, (int)m_colsInfo.size()), ImGuiTableFlags_Borders)) {
-				for(const auto& colInfo : m_colsInfo)
-					ImGui::TableSetupColumn(colInfo.m_name.c_str(), colInfo.m_flags, colInfo.m_width);
-				AbstractListView<T>::renderList(iter);
+			if (ImGui::BeginTable(getName().c_str(), static_cast<int>(m_colsInfo.size()) + newColsCount, ImGuiTableFlags_Borders)) {
+				content();
 				ImGui::EndTable();
 			}
+		}
+		
+		void renderList(Iterator* iter) override
+		{
+			renderTable([&]()
+			{
+				setupColumns();
+				AbstractListView<T>::renderList(iter);
+			}, 0);
 		}
 		
 		void renderItem(const std::string& text, const T& data, int n) override
@@ -190,56 +206,115 @@ namespace GUI
 				Text::Text(col).show();
 			}
 		}
+
+		void setupColumns() override
+		{
+			for (const auto& colInfo : m_colsInfo)
+				ImGui::TableSetupColumn(colInfo.m_name.c_str(), colInfo.m_flags, colInfo.m_width);
+		}
 	};
 
 	template<typename T>
 	class TableListViewSelector
-		: public TableListView<T>
+		: public AbstractTableListView<T>
 	{
-		std::function<void(T)> m_clickItemEventHandler;
+		AbstractTableListView<T>* m_tableListView;
+		EventHandler<T> m_selectEventHandler;
+		Button::AbstractButton* m_btn;
 	public:
-		using TableListView<T>::TableListView;
+		TableListViewSelector(AbstractTableListView<T>* tableListView, Button::AbstractButton* btn = new Button::ButtonSmall("select"))
+			: AbstractTableListView<T>(tableListView->m_listModel), m_tableListView(tableListView), m_btn(btn)
+		{}
 
-		void present(const std::function<void(T)>& clickItemEventHandler)
+		~TableListViewSelector() override
 		{
-			m_clickItemEventHandler = clickItemEventHandler;
-			show();
+			delete m_tableListView;
+			delete m_btn;
+		}
+
+		void handler(const std::function<void(T)>& selectEventHandler)
+		{
+			m_selectEventHandler = selectEventHandler;
 		}
 	
 	protected:
+		void renderTable(const std::function<void()>& content, int newColsCount) override
+		{
+			m_tableListView->renderTable(content, newColsCount + 1);
+		}
+		
+		void renderList(Iterator* iter) override
+		{
+			renderTable([&]()
+				{
+					setupColumns();
+					AbstractTableListView<T>::renderList(iter);
+				}, 0);
+		}
+		
 		void renderItem(const std::string& text, const T& data, int n) override
 		{
-			TableListView<T>::renderItem(text, data, n);
+			m_tableListView->renderItem(text, data, n);
 			ImGui::TableNextColumn();
-			auto btn = Button::ButtonSmall("select");
-			btn.setId(this + n);
-			if (btn.present())
+			m_btn->setId(this + n);
+			if (m_btn->present())
 			{
-				m_clickItemEventHandler(data);
+				m_selectEventHandler(data);
 			}
+		}
+
+		void setupColumns() override
+		{
+			m_tableListView->setupColumns();
+			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 50.0f);
 		}
 	};
 
 	template<typename T>
 	class TableListViewMultiSelector
-		: public TableListViewSelector<T>
+		: public AbstractTableListView<T>
 	{
+		AbstractTableListView<T>* m_tableListView;
+		EventHandler<> m_selectEventHandler;
 	public:
 		std::set<T> m_selectedItems;
 		
-		using TableListViewSelector<T>::TableListViewSelector;
+		TableListViewMultiSelector(AbstractTableListView<T>* tableListView)
+			: AbstractTableListView<T>(tableListView->m_listModel), m_tableListView(tableListView)
+		{}
 
+		~TableListViewMultiSelector() override
+		{
+			delete m_tableListView;
+		}
+
+		void handler(const std::function<void()>& selectEventHandler)
+		{
+			m_selectEventHandler = selectEventHandler;
+		}
+	
 	protected:
+		void renderTable(const std::function<void()>& content, int newColsCount) override
+		{
+			m_tableListView->renderTable(content, newColsCount + 1);
+		}
+		
 		void renderList(Iterator* iter) override
 		{
-			if(auto selItemsCount = m_selectedItems.size())
-				Text::Text("Selected " + std::to_string(selItemsCount) + " items.").show();
-			TableListViewSelector<T>::renderList(iter);
+			if (!m_selectedItems.empty()) {
+				if (Button::StdButton("Select " + std::to_string(m_selectedItems.size()) + " items.").present())
+					m_selectEventHandler();
+			}
+			renderTable([&]()
+			{
+				setupColumns();
+				AbstractTableListView<T>::renderList(iter);
+			}, 0);
 		}
 		
 		void renderItem(const std::string& text, const T& data, int n) override
 		{
-			TableListView<T>::renderItem(text, data, n);
+			m_tableListView->renderItem(text, data, n);
 			ImGui::TableNextColumn();
 			
 			Input::BoolInput checkbox("", m_selectedItems.find(data) != m_selectedItems.end());
@@ -250,6 +325,12 @@ namespace GUI
 					m_selectedItems.insert(data);
 				else m_selectedItems.erase(data);
 			}
+		}
+
+		void setupColumns() override
+		{
+			m_tableListView->setupColumns();
+			ImGui::TableSetupColumn("Select", ImGuiTableColumnFlags_WidthFixed, 50.0f);
 		}
 	};
 };

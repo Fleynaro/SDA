@@ -25,25 +25,10 @@ namespace CE
 
 		fs::path getImagesDirectory();
 
-		auto& getImages() {
-			return m_images;
-		}
-		
-		ImageDecorator* getImageAt(std::uintptr_t addr) {
-			auto it = std::prev(m_images.upper_bound(addr));
-			if (it != m_images.end()) {
-				auto offset = it->first;
-				auto image = it->second;
-				if (addr < offset + image->getSize()) {
-					return image;
-				}
-			}
-			throw ImageNotFound();
-		}
+		std::map<std::uintptr_t, ImageDecorator*>& getImages();
 
-		AddressSpaceManager* getAddrSpaceManager() const
-		{
-			return m_addrSpaceManager;
-		}
+		ImageDecorator* getImageAt(std::uintptr_t addr);
+
+		AddressSpaceManager* getAddrSpaceManager() const;
 	};
 };

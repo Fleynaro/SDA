@@ -139,16 +139,15 @@ namespace GUI
 	class StdTreeView
 		: public AbstractTreeView<T>
 	{
-		std::function<void(T)> m_clickItemEventHandler;
+		EventHandler<T> m_clickItemEventHandler;
 	public:
 		StdTreeView(ITreeModel<T>* treeModel = nullptr)
 			: AbstractTreeView<T>(treeModel)
 		{}
 
-		void present(const std::function<void(T)>& clickItemEventHandler)
+		void handler(const std::function<void(T)>& clickItemEventHandler)
 		{
 			m_clickItemEventHandler = clickItemEventHandler;
-			show();
 		}
 
 	protected:

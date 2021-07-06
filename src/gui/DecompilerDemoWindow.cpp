@@ -104,7 +104,7 @@ void GUI::DecompilerDemoWindow::renderWindow()
 	m_asmCodeEditor->getSize().y *= 0.6f;
 	m_decCodeEditor->getSize() = getSize();
 
-	m_tabBar.present({
+	m_tabBar.handler({
 		TabItem("disassembler", [&]()
 		{
 			{
@@ -162,6 +162,8 @@ void GUI::DecompilerDemoWindow::renderWindow()
 			if (Button::StdButton("open manager").present())
 			{
 				m_functionManagerWindow = new FunctionManagerWindow(m_project->getFunctionManager());
+				m_functionManagerWindow->m_listView = new TableListViewSelector(m_functionManagerWindow->m_listView);
+				m_functionManagerWindow->m_listView = new TableListViewMultiSelector(m_functionManagerWindow->m_listView);
 			}
 		}),
 
@@ -177,36 +179,40 @@ void GUI::DecompilerDemoWindow::renderWindow()
 		TabItem("extra", [&]()
 		{
 			StdListView listView(&m_testListModel);
-			listView.present([&](int value)
+			listView.handler([&](int value)
 				{
 					m_testListModel.addItem("added item", 10);
 				});
+			listView.show();
 
 			NewLine();
 			Separator();
 			NewLine();
 
-			/*TableListView tableListView(&m_testListModel, "table");
-			tableListView.present([&](int value)
-				{
-					m_testListModel.addItem("added item", 10);
-				});*/
+			TableListView tableListView(&m_testListModel, "table");
+			tableListView.show();
 
 			NewLine();
 			Separator();
 			NewLine();
 
 			StdTreeView treeView(&m_testTreeModel);
-			treeView.present([&](int value)
+			treeView.handler([&](int value)
 				{
 					m_testListModel.addItem("added item", value);
 				});
+			treeView.show();
 		})
 	});
+	m_tabBar.show();
 
 	if (m_functionManagerWindow)
 	{
 		m_functionManagerWindow->show();
+		if (m_functionManagerWindow->isClosed()) {
+			delete m_functionManagerWindow;
+			m_functionManagerWindow = nullptr;
+		}
 	}
 }
 

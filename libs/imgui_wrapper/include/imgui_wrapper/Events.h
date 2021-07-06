@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <imgui.h>
 
 namespace GUI
@@ -134,6 +135,25 @@ namespace GUI
 					m_isVisibleOff = true;
 				}
 			}
+		}
+	};
+
+	template<typename ...Args>
+	class EventHandler
+	{
+		bool m_isInit = false;
+		std::function<void(Args...)> m_function;
+	public:
+		EventHandler() = default;
+		
+		EventHandler(const std::function<void(Args...)>& function)
+			: m_function(function), m_isInit(true)
+		{}
+
+		void operator()(Args... args)
+		{
+			if(m_isInit)
+				m_function(args...);
 		}
 	};
 };
