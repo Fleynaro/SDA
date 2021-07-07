@@ -59,7 +59,7 @@ namespace GUI
 		void renderControl() override {
 			pushParams();
 			pushIdParam();
-			bool isOpen = ImGui::Begin(getName().c_str(), &m_isOpened, getFlags());
+			bool isOpen = renderTop();
 
 			m_pos = ImGui::GetWindowPos();
 			m_size = ImGui::GetWindowSize();
@@ -67,9 +67,19 @@ namespace GUI
 			if (isOpen)
 			{
 				renderWindow();
-				ImGui::End();
+				renderBottom();
 			}
 			popIdParam();
+		}
+
+		virtual bool renderTop()
+		{
+			return ImGui::Begin(getName().c_str(), &m_isOpened, getFlags());
+		}
+
+		virtual void renderBottom()
+		{
+			ImGui::End();
 		}
 
 		virtual void renderWindow() = 0;
@@ -93,60 +103,6 @@ namespace GUI
 			}
 		}
 	};
-
-	/*class AbstractPopupContextWindow
-		: public Window
-	{
-		bool m_isOpened = false;
-		bool m_isFirstOpened = false;
-	public:
-		AbstractPopupContextWindow()
-			: Window("popup", ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking)
-		{}
-
-		void open()
-		{
-			setPos(GetMousePos());
-			m_isFirstOpened = m_isOpened = true;
-		}
-
-		void close()
-		{
-			m_isOpened = false;
-		}
-
-	protected:
-		virtual void renderMenu() = 0;
-
-	private:
-		void renderControl() override {
-			if (m_isOpened) {
-				ImGui::SetNextWindowFocus();
-				Window::renderControl();
-			}
-		}
-		
-		void renderWindow() override {
-			if (!m_isFirstOpened) {
-				if (!ImGui::IsWindowHovered())
-					if (ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1) || ImGui::IsMouseClicked(2)) {
-						m_isOpened = false;
-					}
-			} else
-			{
-				m_isFirstOpened = false;
-			}
-			renderMenu();
-		}
-
-		static ImVec2 GetMousePos()
-		{
-			ImGuiContext& g = *GImGui;
-			if (ImGui::IsMousePosValid(&g.IO.MousePos))
-				return g.IO.MousePos;
-			return g.LastValidMousePos;
-		}
-	};*/
 
 	/*class AbstractPopupContextWindow
 		: public Window,
@@ -184,51 +140,92 @@ namespace GUI
 		}
 	};*/
 
-	class AbstractPopupContextWindow
-		: public Control,
-		public Attribute::Id
+	class AbstractPopupWindow
+		: public Window
 	{
 	public:
-		/*void openOnItemClick(ImGuiPopupFlags flags = ImGuiPopupFlags_MouseButtonRight)
+		using Window::Window;
+		
+		void openOnItemClick(ImGuiPopupFlags flags = ImGuiPopupFlags_MouseButtonRight)
 		{
 			ImGui::OpenPopupOnItemClick(getId().c_str(), flags);
-		}*/
-		
-		void openPopup()
+		}
+
+		void open()
 		{
 			ImGui::OpenPopup(getId().c_str());
 		}
-	
-	protected:
-		virtual void renderMenu() = 0;
+	};
+
+	class AbstractPopupContextWindow
+		: public AbstractPopupWindow
+	{
+	public:
+		AbstractPopupContextWindow()
+			: AbstractPopupWindow("")
+		{}
 	
 	private:
 		void renderControl() override {
-			if (ImGui::BeginPopupContextItem(getId().c_str()))
+			if(ImGui::BeginPopupContextItem(getId().c_str()))
 			{
-				renderMenu();
+				renderWindow();
 				ImGui::EndPopup();
 			}
 		}
 	};
 
-	//class PopupContextWindow
-	//	: public AbstractPopupContextWindow
-	//{
-	//	EventHandler<> m_drawCall;
-	//public:
-	//	PopupContextWindow()
-	//	{}
+	class PopupContextWindow
+		: public AbstractPopupContextWindow
+	{
+		EventHandler<> m_drawCall;
+	public:
+		using AbstractPopupContextWindow::AbstractPopupContextWindow;
 
-	//	void handler(std::function<void()> drawCall)
-	//	{
-	//		m_drawCall = drawCall;
-	//	}
-	//
-	//private:
-	//	void renderMenu() override
-	//	{
-	//		m_drawCall();
-	//	}
-	//};
+		void handler(std::function<void()> drawCall)
+		{
+			m_drawCall = drawCall;
+		}
+	
+	private:
+		void renderWindow() override
+		{
+			m_drawCall();
+		}
+	};
+
+	class AbstractPopupModalWindow
+		: public AbstractPopupWindow
+	{
+	public:
+		using AbstractPopupWindow::AbstractPopupWindow;
+
+	private:
+		void renderControl() override {
+			if (ImGui::BeginPopupModal(getName().c_str()))
+			{
+				renderWindow();
+				ImGui::EndPopup();
+			}
+		}
+	};
+
+	class PopupModalWindow
+		: public AbstractPopupModalWindow
+	{
+		EventHandler<> m_drawCall;
+	public:
+		using AbstractPopupModalWindow::AbstractPopupModalWindow;
+
+		void handler(std::function<void()> drawCall)
+		{
+			m_drawCall = drawCall;
+		}
+
+	private:
+		void renderWindow() override
+		{
+			m_drawCall();
+		}
+	};
 };

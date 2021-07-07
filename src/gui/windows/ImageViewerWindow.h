@@ -17,23 +17,41 @@ namespace GUI
 			{
 				CE::AddressSpace* m_addrSpace;
 			public:
-				void open(CE::AddressSpace* addrSpace)
-				{
-					m_addrSpace = addrSpace;
-					openPopup();
-				}
+				AddrSpaceContextWindow(CE::AddressSpace* addrSpace)
+					: m_addrSpace(addrSpace)
+				{}
 			
-			private:
-				void renderMenu() override
+			private:		
+				void renderWindow() override
 				{
 					if (ImGui::MenuItem(m_addrSpace->getName().c_str(), nullptr))
 					{
-						int a = 5;
+						
 					}
 				}
 			};
 
-			AddrSpaceContextWindow m_addrSpaceContextWindow;
+			class ImageContextWindow : public AbstractPopupContextWindow
+			{
+				CE::ImageDecorator* m_imageDec;
+			public:
+				ImageContextWindow(CE::ImageDecorator* imageDec)
+					: m_imageDec(imageDec)
+				{}
+
+			private:
+				void renderWindow() override
+				{
+					if (ImGui::MenuItem(m_imageDec->getName().c_str(), nullptr))
+					{
+						
+					}
+				}
+			};
+
+			AddrSpaceContextWindow* m_addrSpaceContextWindow = nullptr;
+			ImageContextWindow* m_imageContextWindow = nullptr;
+			PopupModalWindow* m_popupModalWin = nullptr;
 		public:
 			using ListViewGrouping<CE::ImageDecorator*>::ListViewGrouping;
 
@@ -41,7 +59,9 @@ namespace GUI
 			void renderControl() override
 			{
 				ListViewGrouping<CE::ImageDecorator*>::renderControl();
-				m_addrSpaceContextWindow.show();
+				Show(m_addrSpaceContextWindow);
+				Show(m_imageContextWindow);
+				Show(m_popupModalWin);
 			}
 			
 			bool groupBy(CE::ImageDecorator* const& img1, CE::ImageDecorator* const& img2) override
@@ -54,43 +74,30 @@ namespace GUI
 				auto addrSpace = img->getAddressSpace();
 				auto isOpen = ImGui::CollapsingHeader(addrSpace->getName().c_str(), ImGuiTreeNodeFlags_DefaultOpen);
 				if (GenericEvents(true).isClickedByRightMouseBtn()) {
-					m_addrSpaceContextWindow.open(addrSpace);
+					if (m_addrSpaceContextWindow)
+						delete m_addrSpaceContextWindow;
+					m_addrSpaceContextWindow = new AddrSpaceContextWindow(addrSpace);
+					m_addrSpaceContextWindow->open();
+					
+					m_popupModalWin = new PopupModalWindow("popup modal win");
+					m_popupModalWin->open();
+					m_popupModalWin->handler([&]()
+						{
+							Text::Text("opened!").show();
+						});
 				}
 				return isOpen;
 			}
 
 			void renderItem(const std::string& text, CE::ImageDecorator* const& imageDec, int n) override
 			{
-				//renderContextMenuForImage(imageDec);
 				ListViewGrouping<CE::ImageDecorator*>::renderItem(text, imageDec, n);
 				if (GenericEvents(true).isClickedByRightMouseBtn())
 				{
-					//ImGui::OpenPopup("ctx_menu_image");
-					//ImGui::CloseCurrentPopup();
-				}
-			}
-
-			void renderContextMenuForAddrSpace(CE::AddressSpace* addrSpace) const
-			{
-				if (ImGui::BeginPopupContextWindow("ctx_menu_addr_space"))
-				{
-					if (ImGui::MenuItem("AddrSpace", nullptr))
-					{
-						int a = 5;
-					}
-					ImGui::EndPopup();
-				}
-			}
-
-			void renderContextMenuForImage(CE::ImageDecorator* imageDec) const
-			{
-				if (ImGui::BeginPopupContextWindow("ctx_menu_image"))
-				{
-					if (ImGui::MenuItem("Image", nullptr))
-					{
-						int a = 5;
-					}
-					ImGui::EndPopup();
+					if (m_imageContextWindow)
+						delete m_imageContextWindow;
+					m_imageContextWindow = new ImageContextWindow(imageDec);
+					m_imageContextWindow->open();
 				}
 			}
 		};
