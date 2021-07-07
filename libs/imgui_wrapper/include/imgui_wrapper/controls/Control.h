@@ -9,7 +9,7 @@ namespace GUI
 	using Color = uint32_t;
 	using ColorRGBA = Color;
 	using ColorComponent = int;
-
+	
 	class Control
 	{
 		bool m_display = true;
@@ -31,6 +31,24 @@ namespace GUI
 
 		virtual bool isShown() {
 			return m_display;
+		}
+
+		virtual bool isRemoved()
+		{
+			return false;
+		}
+
+		template<typename T = Control>
+		static void Show(T*& control)
+		{
+			if (control)
+			{
+				control->show();
+				if (control->isRemoved()) {
+					delete control;
+					control = nullptr;
+				}
+			}
 		}
 	};
 };

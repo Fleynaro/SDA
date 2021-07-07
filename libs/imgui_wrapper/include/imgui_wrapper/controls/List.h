@@ -152,17 +152,11 @@ namespace GUI
 		{}
 
 	protected:
-		virtual bool groupBy(T& data1, T& data2) = 0;
+		virtual bool groupBy(const T& data1, const T& data2) = 0;
 		
-		virtual bool renderGroupTop(T& firstItemData, int group_n)
-		{
-			return ImGui::TreeNode("Group");
-		}
+		virtual bool renderGroupTop(const T& firstItemData, int group_n) = 0;
 
-		virtual void renderGroupBottom()
-		{
-			ImGui::TreePop();
-		}
+		virtual void renderGroupBottom() {}
 
 		void renderHeader() override
 		{
@@ -184,7 +178,7 @@ namespace GUI
 			}
 
 			// sort the items
-			items.sort([&](Item& item1, Item& item2)
+			items.sort([&](const Item& item1, const Item& item2)
 				{
 					return groupBy(item1.data, item2.data);
 				});
@@ -211,7 +205,7 @@ namespace GUI
 		}
 
 	private:
-		void renderGroupWithItems(std::list<Item>& items, int group_n)
+		void renderGroupWithItems(const std::list<Item>& items, int group_n)
 		{
 			if (renderGroupTop(items.begin()->data, group_n)) {
 				m_listView->renderTop();

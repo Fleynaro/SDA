@@ -121,7 +121,9 @@ namespace GUI
 		public:
 			Id(const std::string& id = "")
 				: m_id(id)
-			{};
+			{
+				setId(this);
+			};
 
 			std::string getId() {
 				return m_id;
@@ -133,12 +135,7 @@ namespace GUI
 			}
 
 			void pushIdParam() {
-				if (!m_id.empty()) {
-					ImGui::PushID(m_id.c_str());
-				}
-				else {
-					ImGui::PushID(this);
-				}
+				ImGui::PushID(m_id.c_str());
 			}
 
 			void popIdParam() {

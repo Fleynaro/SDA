@@ -225,6 +225,8 @@ void GUI::DecompilerDemoWindow::renderWindow()
 	{
 		m_imageViewerWindow->show();
 	}
+
+	ImGui::ShowDemoWindow();
 }
 
 void GUI::DecompilerDemoWindow::initProgram() {
