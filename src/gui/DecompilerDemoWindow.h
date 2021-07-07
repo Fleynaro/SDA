@@ -37,6 +37,7 @@ namespace GUI {
 
 		FunctionManagerWindow* m_functionManagerWindow = nullptr;
 		ImageViewerWindow* m_imageViewerWindow = nullptr;
+		PopupModalWindow* m_popupModalWin = nullptr;
 
 		CE::Program* m_program;
 		CE::Project* m_project;

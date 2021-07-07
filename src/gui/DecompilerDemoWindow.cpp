@@ -171,6 +171,15 @@ void GUI::DecompilerDemoWindow::renderWindow()
 			{
 				m_imageViewerWindow = new ImageViewerWindow(m_project->getImageManager());
 			}
+
+			if (Button::StdButton("open popup").present()) {
+				m_popupModalWin = new PopupModalWindow("Popup");
+				m_popupModalWin->open();
+				m_popupModalWin->handler([&]()
+					{
+						Text::Text("opened!").show();
+					});
+			}
 		}),
 
 		TabItem("decompiler", [&]()
@@ -212,20 +221,9 @@ void GUI::DecompilerDemoWindow::renderWindow()
 	});
 	m_tabBar.show();
 
-	if (m_functionManagerWindow)
-	{
-		m_functionManagerWindow->show();
-		if (m_functionManagerWindow->isClosed()) {
-			delete m_functionManagerWindow;
-			m_functionManagerWindow = nullptr;
-		}
-	}
-
-	if (m_imageViewerWindow)
-	{
-		m_imageViewerWindow->show();
-	}
-
+	Show(m_functionManagerWindow);
+	Show(m_imageViewerWindow);
+	Show(m_popupModalWin);
 	ImGui::ShowDemoWindow();
 }
 
@@ -384,3 +382,12 @@ void GUI::DecompilerDemoWindow::decompile(const std::string& hexBytesStr)
 
     // continue...
 }
+
+/*
+	TODO
+	1) Менеджер проектов
+	2) Создание/редактирование функций, типов, образов (в менеджерах)
+	3) Обозреватель ассемблерного кода (таблица)
+	4) Декомпиляция функций (создание генератора)
+	5) 
+ */

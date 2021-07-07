@@ -156,6 +156,11 @@ namespace GUI
 			: m_function(function), m_isInit(true)
 		{}
 
+		bool isInit()
+		{
+			return m_isInit;
+		}
+
 		void operator()(Args... args)
 		{
 			if(m_isInit)

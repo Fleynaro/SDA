@@ -51,7 +51,6 @@ namespace GUI
 
 			AddrSpaceContextWindow* m_addrSpaceContextWindow = nullptr;
 			ImageContextWindow* m_imageContextWindow = nullptr;
-			PopupModalWindow* m_popupModalWin = nullptr;
 		public:
 			using ListViewGrouping<CE::ImageDecorator*>::ListViewGrouping;
 
@@ -61,7 +60,6 @@ namespace GUI
 				ListViewGrouping<CE::ImageDecorator*>::renderControl();
 				Show(m_addrSpaceContextWindow);
 				Show(m_imageContextWindow);
-				Show(m_popupModalWin);
 			}
 			
 			bool groupBy(CE::ImageDecorator* const& img1, CE::ImageDecorator* const& img2) override
@@ -78,13 +76,6 @@ namespace GUI
 						delete m_addrSpaceContextWindow;
 					m_addrSpaceContextWindow = new AddrSpaceContextWindow(addrSpace);
 					m_addrSpaceContextWindow->open();
-					
-					m_popupModalWin = new PopupModalWindow("popup modal win");
-					m_popupModalWin->open();
-					m_popupModalWin->handler([&]()
-						{
-							Text::Text("opened!").show();
-						});
 				}
 				return isOpen;
 			}

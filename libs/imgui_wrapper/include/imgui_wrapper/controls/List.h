@@ -395,9 +395,11 @@ namespace GUI
 
 		void renderHeader() override
 		{
-			if (!m_selectedItems.empty()) {
-				if (Button::StdButton("Select " + std::to_string(m_selectedItems.size()) + " items.").present())
-					m_selectEventHandler();
+			if (m_selectEventHandler.isInit()) {
+				if (!m_selectedItems.empty()) {
+					if (Button::StdButton("Select " + std::to_string(m_selectedItems.size()) + " items.").present())
+						m_selectEventHandler();
+				}
 			}
 		}
 		

@@ -14,6 +14,7 @@ namespace GUI
 		ImGuiWindowFlags_None
 		>
 	{
+	protected:
 		bool m_isOpened = true;
 		bool m_isFocused = false;
 
@@ -46,10 +47,8 @@ namespace GUI
 			return m_isFocused;
 		}
 
-		bool isClosed() {
-			auto isOpened = m_isOpened;
-			m_isOpened = true;
-			return !isOpened;
+		bool isRemoved() override {
+			return !m_isOpened;
 		}
 
 		void setFullscreen(bool toggle) {
@@ -59,7 +58,7 @@ namespace GUI
 		void renderControl() override {
 			pushParams();
 			pushIdParam();
-			bool isOpen = renderTop();
+			bool isOpen = ImGui::Begin(getName().c_str(), &m_isOpened, getFlags());
 
 			m_pos = ImGui::GetWindowPos();
 			m_size = ImGui::GetWindowSize();
@@ -67,24 +66,13 @@ namespace GUI
 			if (isOpen)
 			{
 				renderWindow();
-				renderBottom();
+				ImGui::End();
 			}
 			popIdParam();
 		}
 
-		virtual bool renderTop()
-		{
-			return ImGui::Begin(getName().c_str(), &m_isOpened, getFlags());
-		}
-
-		virtual void renderBottom()
-		{
-			ImGui::End();
-		}
-
 		virtual void renderWindow() = 0;
 
-	private:
 		void pushParams() {
 			if (m_fullscreen) {
 				const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -140,34 +128,27 @@ namespace GUI
 		}
 	};*/
 
-	class AbstractPopupWindow
-		: public Window
+	class AbstractPopupContextWindow
+		: public Control,
+		public Attribute::Id
 	{
+		bool m_isOpenPopup = false;
 	public:
-		using Window::Window;
-		
-		void openOnItemClick(ImGuiPopupFlags flags = ImGuiPopupFlags_MouseButtonRight)
-		{
-			ImGui::OpenPopupOnItemClick(getId().c_str(), flags);
-		}
-
 		void open()
 		{
-			ImGui::OpenPopup(getId().c_str());
+			m_isOpenPopup = true;
 		}
-	};
-
-	class AbstractPopupContextWindow
-		: public AbstractPopupWindow
-	{
-	public:
-		AbstractPopupContextWindow()
-			: AbstractPopupWindow("")
-		{}
+	
+	protected:
+		virtual void renderWindow() = 0;
 	
 	private:
 		void renderControl() override {
-			if(ImGui::BeginPopupContextItem(getId().c_str()))
+			if (m_isOpenPopup) {
+				ImGui::OpenPopup(getId().c_str());
+				m_isOpenPopup = false;
+			}
+			if (ImGui::BeginPopupContextItem(getId().c_str()))
 			{
 				renderWindow();
 				ImGui::EndPopup();
@@ -195,14 +176,30 @@ namespace GUI
 	};
 
 	class AbstractPopupModalWindow
-		: public AbstractPopupWindow
+		: public Window
 	{
+		bool m_isOpenPopup = false;
 	public:
-		using AbstractPopupWindow::AbstractPopupWindow;
+		using Window::Window;
+
+		void open()
+		{
+			m_isOpenPopup = true;
+		}
 
 	private:
 		void renderControl() override {
-			if (ImGui::BeginPopupModal(getName().c_str()))
+			if (m_isOpenPopup) {
+				ImGui::OpenPopup(getName().c_str());
+				m_isOpenPopup = false;
+			}
+			pushParams();
+			bool isOpen = ImGui::BeginPopupModal(getName().c_str(), &m_isOpened, getFlags());
+			
+			m_pos = ImGui::GetWindowPos();
+			m_size = ImGui::GetWindowSize();
+			
+			if (isOpen)
 			{
 				renderWindow();
 				ImGui::EndPopup();
