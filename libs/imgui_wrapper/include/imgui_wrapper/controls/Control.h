@@ -1,8 +1,10 @@
 #pragma once
+#include <chrono>
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include "../Attribute.h"
 #include <string>
+
 
 namespace GUI
 {
@@ -51,4 +53,10 @@ namespace GUI
 			}
 		}
 	};
+
+	static uint64_t GetTimeInMs()
+	{
+		auto time_since_epoch = std::chrono::system_clock::now().time_since_epoch();
+		return std::chrono::duration_cast<std::chrono::milliseconds>(time_since_epoch).count();
+	}
 };

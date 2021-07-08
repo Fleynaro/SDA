@@ -1,6 +1,4 @@
 #pragma once
-#include <chrono>
-
 #include "Control.h"
 #include "imgui_wrapper/Events.h"
 #include "imgui_wrapper/Utilities.h"
@@ -60,13 +58,6 @@ namespace GUI::Input
 		}
 
 		virtual void renderInput() = 0;
-
-	private:
-		static uint64_t GetTimeInMs()
-		{
-			auto time_since_epoch = std::chrono::system_clock::now().time_since_epoch();
-			return std::chrono::duration_cast<std::chrono::milliseconds>(time_since_epoch).count();
-		}
 	};
 
 	class TextInput

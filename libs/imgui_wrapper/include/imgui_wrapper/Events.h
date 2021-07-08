@@ -46,8 +46,9 @@ namespace GUI
 			return CheckEventFlag(m_isClickedByMiddleMouseBtn);
 		}
 
-		bool isHovered() {
-			return ImGui::IsItemHovered();
+		bool isHovered() const
+		{
+			return m_isHovered;
 		}
 
 		bool isHoveredIn() {
@@ -58,8 +59,9 @@ namespace GUI
 			return CheckEventFlag(m_isHoveredOut);
 		}
 
-		bool isFocused() {
-			return ImGui::IsItemFocused();
+		bool isFocused() const
+		{
+			return m_isFocused;
 		}
 
 		bool isFocusedIn() {
@@ -70,8 +72,9 @@ namespace GUI
 			return CheckEventFlag(m_isFocusedOut);
 		}
 
-		bool isVisible() {
-			return ImGui::IsItemVisible();
+		bool isVisible() const
+		{
+			return m_isVisible;
 		}
 
 		bool isVisibleOn() {
@@ -83,19 +86,31 @@ namespace GUI
 		}
 
 	protected:
+		virtual bool isImGuiHovered() {
+			return ImGui::IsItemHovered();
+		}
+
+		virtual bool isImGuiFocused() {
+			return ImGui::IsItemFocused();
+		}
+		
+		virtual bool isImGuiVisible() {
+			return ImGui::IsItemVisible();
+		}
+		
 		void processGenericEvents() {
 			// mouse
-			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+			if (isImGuiHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 				m_isClickedByLeftMouseBtn = true;
 
-			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+			if (isImGuiHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
 				m_isClickedByRightMouseBtn = true;
 
-			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
+			if (isImGuiHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
 				m_isClickedByMiddleMouseBtn = true;
 
 			// hover
-			if (isHovered()) {
+			if (isImGuiHovered()) {
 				if (!m_isHovered) {
 					m_isHovered = true;
 					m_isHoveredIn = true;
@@ -111,7 +126,7 @@ namespace GUI
 			}
 
 			// focus
-			if (isFocused()) {
+			if (isImGuiFocused()) {
 				if (!m_isFocused) {
 					m_isFocused = true;
 					m_isFocusedIn = true;
@@ -127,7 +142,7 @@ namespace GUI
 			}
 
 			// visibility
-			if (isVisible()) {
+			if (isImGuiVisible()) {
 				if (!m_isVisible) {
 					m_isVisible = true;
 					m_isVisibleOn = true;
@@ -156,7 +171,7 @@ namespace GUI
 			: m_function(function), m_isInit(true)
 		{}
 
-		bool isInit()
+		bool isInit() const
 		{
 			return m_isInit;
 		}

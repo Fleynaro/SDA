@@ -15,12 +15,10 @@ namespace GUI
 		>
 	{
 	protected:
-		bool m_isOpened = true;
-		bool m_isFocused = false;
-
 		ImVec2 m_pos;
 		ImVec2 m_size;
 
+		bool m_isOpened = true;
 		bool m_fullscreen = false;
 	public:
 		Window(const std::string& name, ImGuiWindowFlags flags = ImGuiWindowFlags_None)
@@ -43,12 +41,18 @@ namespace GUI
 			return m_size;
 		}
 
-		bool isFocused() {
-			return m_isFocused;
-		}
-
 		bool isRemoved() override {
 			return !m_isOpened;
+		}
+
+		virtual void open()
+		{
+			m_isOpened = true;
+		}
+
+		void close()
+		{
+			m_isOpened = false;
 		}
 
 		void setFullscreen(bool toggle) {
@@ -92,41 +96,81 @@ namespace GUI
 		}
 	};
 
-	/*class AbstractPopupContextWindow
+	class AbstractBuiltinPopupWindow
 		: public Window,
-		public Attribute::Id
+		public GenericEvents
 	{
+		bool m_closeByClickOutside;
+		bool m_closeByTimer;
+		uint64_t m_lastHoveredOutTime = 0;
 	public:
-		bool m_hideByClick = false;
-		
-	protected:
-		virtual void renderMenu() = 0;
+		AbstractBuiltinPopupWindow(bool closeByClickOutside = true, bool closeByTimer = false)
+			: Window(""), m_closeByClickOutside(closeByClickOutside), m_closeByTimer(closeByTimer)
+		{
+			setFlags(ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+		}
+
+		void placeAfterItem()
+		{
+			setPos({ ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y });
+		}
 
 	private:
 		void renderControl() override {
-			bool isOpen = true;
-			ImGui::SetNextWindowPos({ ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y });
-			ImGui::SetNextWindowSize(getSize());
-			if (ImGui::Begin(getId().c_str(), &isOpen, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings))
-			{
-				if (m_hideByClick) {
-					if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_RectOnly | ImGuiHoveredFlags_ChildWindows)) {
-						if (GetTickCount64() - m_active > 500) {
+			if (m_isOpened) {
+				pushParams();
+				if (ImGui::Begin(getId().c_str(), nullptr, getFlags()))
+				{
+					processGenericEvents();
+					if (m_closeByClickOutside)
+					{
+						if (!isHovered()) {
 							if (ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1)) {
-								setInvisible();
+								close();
 							}
 						}
 					}
+					if(m_closeByTimer)
+					{
+						if ((!m_lastHoveredOutTime && !isHovered()) || isHoveredOut()) {
+							m_lastHoveredOutTime = GetTimeInMs();
+						}
+						if (!isHovered()) {
+							if (GetTimeInMs() - m_lastHoveredOutTime > 2000)
+								close();
+						}
+					}
+					
+					renderWindow();
+					ImGui::End();
 				}
-				else {
-					sendHoveredEvent();
-				}
-
-				renderMenu();
-				ImGui::End();
 			}
 		}
-	};*/
+
+		bool isImGuiHovered() override
+		{
+			return ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
+		}
+	};
+
+	class PopupBuiltinWindow
+		: public AbstractBuiltinPopupWindow
+	{
+		EventHandler<> m_drawCall;
+	public:
+		using AbstractBuiltinPopupWindow::AbstractBuiltinPopupWindow;
+
+		void handler(std::function<void()> drawCall)
+		{
+			m_drawCall = drawCall;
+		}
+
+	private:
+		void renderWindow() override
+		{
+			m_drawCall();
+		}
+	};
 
 	class AbstractPopupContextWindow
 		: public Control,
@@ -182,8 +226,9 @@ namespace GUI
 	public:
 		using Window::Window;
 
-		void open()
+		void open() override
 		{
+			Window::open();
 			m_isOpenPopup = true;
 		}
 

@@ -171,6 +171,17 @@ void GUI::DecompilerDemoWindow::renderWindow()
 			{
 				m_imageViewerWindow = new ImageViewerWindow(m_project->getImageManager());
 			}
+			if(m_popupBuiltinWindow)
+				m_popupBuiltinWindow->placeAfterItem();
+
+			if (Button::StdButton("open builtin popup").present()) {
+				m_popupBuiltinWindow = new PopupBuiltinWindow(true, true);
+				m_popupBuiltinWindow->open();
+				m_popupBuiltinWindow->handler([&]()
+					{
+						Text::Text("opened!").show();
+					});
+			}
 
 			if (Button::StdButton("open popup").present()) {
 				m_popupModalWin = new PopupModalWindow("Popup");
@@ -224,6 +235,7 @@ void GUI::DecompilerDemoWindow::renderWindow()
 	Show(m_functionManagerWindow);
 	Show(m_imageViewerWindow);
 	Show(m_popupModalWin);
+	Show(m_popupBuiltinWindow);
 	ImGui::ShowDemoWindow();
 }
 
