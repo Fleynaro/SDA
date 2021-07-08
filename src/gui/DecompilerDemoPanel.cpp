@@ -258,6 +258,8 @@ void GUI::DecompilerDemoPanel::renderPanel()
 	Show(m_imageViewerWindow);
 	Show(m_popupModalWin);
 	Show(m_popupBuiltinWindow);
+	/*if(m_functionManagerWindow)
+		dynamic_cast<FunctionManagerPanel*>(m_functionManagerWindow->getPanel())->m_filterControl.m_imageSelector.m_popupBuiltinWindow->show();*/
 	ImGui::ShowDemoWindow();
 }
 

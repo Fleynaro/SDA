@@ -11,7 +11,8 @@ namespace GUI
 		public Attribute::Flags<
 		ImGuiWindowFlags,
 		ImGuiWindowFlags_None
-		>
+		>,
+		public GenericEvents
 	{
 	protected:
 		AbstractPanel* m_panel;
@@ -29,6 +30,11 @@ namespace GUI
 		~StdWindow() override
 		{
 			delete m_panel;
+		}
+
+		AbstractPanel* getPanel() const
+		{
+			return m_panel;
 		}
 
 		void setPos(ImVec2 pos) {
@@ -74,7 +80,8 @@ namespace GUI
 			pushParams();
 			pushIdParam();
 			bool isOpen = ImGui::Begin(m_panel->getName().c_str(), &m_isOpened, getFlags());
-
+			//processGenericEvents();
+			
 			m_pos = ImGui::GetWindowPos();
 			m_size = ImGui::GetWindowSize();
 
@@ -106,8 +113,7 @@ namespace GUI
 	};
 
 	class PopupBuiltinWindow
-		: public StdWindow,
-		public GenericEvents
+		: public StdWindow
 	{
 		bool m_closeByClickOutside;
 		bool m_closeByTimer;
@@ -182,19 +188,23 @@ namespace GUI
 		
 		void open() override
 		{
+			StdWindow::open();
 			m_isOpenPopup = true;
 		}
 	
 	private:
 		void renderControl() override {
-			if (m_isOpenPopup) {
-				ImGui::OpenPopup(getId().c_str());
-				m_isOpenPopup = false;
-			}
-			if (ImGui::BeginPopupContextItem(getId().c_str()))
-			{
-				m_panel->show();
-				ImGui::EndPopup();
+			if (m_isOpened) {
+				if (m_isOpenPopup) {
+					ImGui::OpenPopup(getId().c_str());
+					m_isOpenPopup = false;
+				}
+				ImGui::SetNextWindowFocus();
+				if (ImGui::BeginPopupContextItem(getId().c_str()))
+				{
+					m_panel->show();
+					ImGui::EndPopup();
+				}
 			}
 		}
 	};

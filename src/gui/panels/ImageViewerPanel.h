@@ -33,6 +33,7 @@ namespace GUI
 		Input::TextInput m_search_input;
 		PopupBuiltinWindow* m_popupBuiltinWindow;
 		ImageListViewGrouping* m_imageListViewGrouping;
+		bool m_focusOnSearchInput = false;
 	public:
 		std::set<CE::ImageDecorator*>* m_selectedImages;
 		
@@ -60,15 +61,18 @@ namespace GUI
 
 		void renderControl() override {
 			m_popupBuiltinWindow->show();
-
+			
 			Text::Text("Select images:").show();
 			SameLine();
-			if(m_popupBuiltinWindow->isOpened())
+			if (m_focusOnSearchInput && m_popupBuiltinWindow->isOpened()) {
 				ImGui::SetKeyboardFocusHere();
+				m_focusOnSearchInput = false;
+			}
 			m_search_input.show();
 			m_popupBuiltinWindow->placeAfterItem();
 
-			if (m_search_input.isTextEntering()) {
+			if (m_search_input.isTextEntering() || m_search_input.isClickedByLeftMouseBtn()) {
+				m_focusOnSearchInput = true;
 				m_controller.m_filter.m_name = m_search_input.getInputText();
 				m_controller.update();
 				m_popupBuiltinWindow->open();
@@ -114,7 +118,7 @@ namespace GUI
 				{
 					if (ImGui::MenuItem(m_imageDec->getName().c_str(), nullptr))
 					{
-						
+						int a = 5;
 					}
 				}
 			};
@@ -136,7 +140,8 @@ namespace GUI
 			{
 				auto isOpen = ImageListViewGrouping::renderGroupTop(img, group_n);
 				if (GenericEvents(true).isClickedByRightMouseBtn()) {
-					delete m_addrSpaceContextWindow;
+					if(m_addrSpaceContextWindow)
+						delete m_addrSpaceContextWindow;
 					m_addrSpaceContextWindow = new PopupContextWindow(new AddrSpaceContextPanel(img->getAddressSpace()));
 					m_addrSpaceContextWindow->open();
 				}
@@ -148,7 +153,8 @@ namespace GUI
 				ImageListViewGrouping::renderItem(text, imageDec, n);
 				if (GenericEvents(true).isClickedByRightMouseBtn())
 				{
-					delete m_imageContextWindow;
+					if(m_imageContextWindow)
+						delete m_imageContextWindow;
 					m_imageContextWindow = new PopupContextWindow(new ImageContextPanel(imageDec));
 					m_imageContextWindow->open();
 				}

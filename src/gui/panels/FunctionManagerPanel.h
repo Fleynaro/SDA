@@ -14,8 +14,8 @@ namespace GUI
 		{
 			FunctionManagerPanel* m_panel;
 			Input::TextInput m_search_input;
-			ImageSelector m_imageSelector;
 		public:
+			ImageSelector m_imageSelector;
 			bool m_isFilterUpdated = false;
 			
 			FunctionFilter(FunctionManagerPanel* panel)

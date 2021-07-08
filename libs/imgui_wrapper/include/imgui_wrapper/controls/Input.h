@@ -96,9 +96,8 @@ namespace GUI::Input
 		}
 
 		virtual void renderTextInput() {
-			if (ImGui::InputText(getName().c_str(), &m_inputValue, getFlags())) {
-				m_isTextEntering = true;
-			}
+			m_isTextEntering = ImGui::InputText(getName().c_str(), &m_inputValue, getFlags());
+			processGenericEvents();
 		}
 	};
 
@@ -133,6 +132,7 @@ namespace GUI::Input
 	protected:
 		void renderInput() override {
 			m_isClicked = ImGui::Checkbox(getName().c_str(), &m_value);
+			processGenericEvents();
 		}
 	};
 
@@ -161,9 +161,8 @@ namespace GUI::Input
 		void renderControl() override {
 			pushWidthParam();
 
-			if (ImGui::InputInt(getName().c_str(), &m_value, m_step, m_fastStep, getFlags())) {
-				m_isValueEntering = true;
-			}
+			m_isValueEntering = ImGui::InputInt(getName().c_str(), &m_value, m_step, m_fastStep, getFlags());
+			processGenericEvents();
 
 			popWidthParam();
 		}
@@ -194,9 +193,8 @@ namespace GUI::Input
 		void renderControl() override {
 			pushWidthParam();
 
-			if (ImGui::InputFloat(getName().c_str(), &m_value, m_step, m_fastStep, "%.3f", getFlags())) {
-				m_isValueEntering = true;
-			}
+			m_isValueEntering = ImGui::InputFloat(getName().c_str(), &m_value, m_step, m_fastStep, "%.3f", getFlags());
+			processGenericEvents();
 
 			popWidthParam();
 		}
@@ -227,9 +225,8 @@ namespace GUI::Input
 		void renderControl() override {
 			pushWidthParam();
 
-			if (ImGui::InputDouble(getName().c_str(), &m_value, m_step, m_fastStep, "%.6f", getFlags())) {
-				m_isValueEntering = true;
-			}
+			m_isValueEntering = ImGui::InputDouble(getName().c_str(), &m_value, m_step, m_fastStep, "%.6f", getFlags());
+			processGenericEvents();
 
 			popWidthParam();
 		}
