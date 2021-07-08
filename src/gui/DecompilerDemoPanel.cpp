@@ -1,8 +1,8 @@
-#include "DecompilerDemoWindow.h"
+#include "DecompilerDemoPanel.h"
 #include <Project.h>
 #include <asmtk/asmtk.h>
-#include "windows/FunctionManagerWindow.h"
-#include "windows/ImageViewerWindow.h"
+#include "panels/FunctionManagerPanel.h"
+#include "panels/ImageViewerPanel.h"
 #include "managers/Managers.h"
 
 using namespace CE;
@@ -38,15 +38,9 @@ std::string dumpCode(const uint8_t* buf, size_t size) {
     return result;
 }
 
-GUI::DecompilerDemoWindow::DecompilerDemoWindow()
-	: Window("Decompiler")
+GUI::DecompilerDemoPanel::DecompilerDemoPanel()
+	: AbstractPanel("Decompiler")
 {
-	// Window params
-	setFlags(
-		ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove |
-		ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_MenuBar);
-	setFullscreen(true);
-
 	// Controls
 	m_asmCodeEditor = new Widget::CodeEditor("assembler code", ImVec2(200.0f, 300.0f));
 	m_asmCodeEditor->getEditor().SetLanguageDefinition(TextEditor::LanguageDefinition::C());
@@ -99,12 +93,37 @@ GUI::DecompilerDemoWindow::DecompilerDemoWindow()
 	initProgram();
 }
 
-void GUI::DecompilerDemoWindow::renderWindow()
+GUI::StdWindow* GUI::DecompilerDemoPanel::GetStdWindow()
 {
-	m_asmCodeEditor->getSize() = getSize();
-	m_asmCodeEditor->getSize().y *= 0.6f;
-	m_decCodeEditor->getSize() = getSize();
+	class Window : public StdWindow
+	{
+	public:
+		friend class DecompilerDemoPanel;
+		Window()
+			: StdWindow(new DecompilerDemoPanel)
+		{
+			// Window params
+			setFlags(
+				ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove |
+				ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_MenuBar);
+			setFullscreen(true);
+		}
 
+	private:
+		void renderControl() override
+		{
+			auto panel = dynamic_cast<DecompilerDemoPanel*>(m_panel);
+			panel->m_asmCodeEditor->getSize() = getSize();
+			panel->m_asmCodeEditor->getSize().y *= 0.6f;
+			panel->m_decCodeEditor->getSize() = getSize();
+			StdWindow::renderControl();
+		}
+	};
+	return new Window;
+}
+
+void GUI::DecompilerDemoPanel::renderPanel()
+{
 	m_tabBar.handler({
 		TabItem("disassembler", [&]()
 		{
@@ -162,34 +181,37 @@ void GUI::DecompilerDemoWindow::renderWindow()
 
 			if (Button::StdButton("open func. manager").present())
 			{
-				m_functionManagerWindow = new FunctionManagerWindow(m_project->getFunctionManager());
-				m_functionManagerWindow->m_listView = new TableListViewSelector(m_functionManagerWindow->m_listView);
-				m_functionManagerWindow->m_listView = new TableListViewMultiSelector(m_functionManagerWindow->m_listView);
+				auto panel = new FunctionManagerPanel(m_project->getFunctionManager());
+				panel->m_listView = new TableListViewSelector(panel->m_listView);
+				panel->m_listView = new TableListViewMultiSelector(panel->m_listView);
+				m_functionManagerWindow = new StdWindow(panel);
 			}
 
 			if (Button::StdButton("open item manager").present())
 			{
-				m_imageViewerWindow = new ImageViewerWindow(m_project->getImageManager());
+				m_imageViewerWindow = new StdWindow(new ImageViewerPanel(m_project->getImageManager()));
 			}
 			if(m_popupBuiltinWindow)
 				m_popupBuiltinWindow->placeAfterItem();
 
 			if (Button::StdButton("open builtin popup").present()) {
-				m_popupBuiltinWindow = new PopupBuiltinWindow(true, true);
-				m_popupBuiltinWindow->open();
-				m_popupBuiltinWindow->handler([&]()
+				auto panel = new StdPanel();
+				panel->handler([&]()
 					{
 						Text::Text("opened!").show();
 					});
+				m_popupBuiltinWindow = new PopupBuiltinWindow(panel, true, true);
+				m_popupBuiltinWindow->open();
 			}
 
 			if (Button::StdButton("open popup").present()) {
-				m_popupModalWin = new PopupModalWindow("Popup");
-				m_popupModalWin->open();
-				m_popupModalWin->handler([&]()
+				auto panel = new StdPanel("Popup");
+				panel->handler([&]()
 					{
 						Text::Text("opened!").show();
 					});
+				m_popupModalWin = new PopupModalWindow(panel);
+				m_popupModalWin->open();
 			}
 		}),
 
@@ -239,7 +261,7 @@ void GUI::DecompilerDemoWindow::renderWindow()
 	ImGui::ShowDemoWindow();
 }
 
-void GUI::DecompilerDemoWindow::initProgram() {
+void GUI::DecompilerDemoPanel::initProgram() {
 	auto prj_dir = m_program->getExecutableDirectory() / "demo";
 	fs::remove_all(prj_dir);
 	
@@ -265,7 +287,7 @@ void GUI::DecompilerDemoWindow::initProgram() {
 	m_project->getTransaction()->commit();
 }
 
-void GUI::DecompilerDemoWindow::deassembly(const std::string& textCode) {
+void GUI::DecompilerDemoPanel::deassembly(const std::string& textCode) {
     CodeHolder code;
     code.init(Environment(Environment::kArchX64));
 
@@ -349,7 +371,7 @@ std::string getAsmListing(int8_t* data, ZyanUSize length) {
     return result;
 }
 
-void GUI::DecompilerDemoWindow::assembly(const std::string& hexBytesStr)
+void GUI::DecompilerDemoPanel::assembly(const std::string& hexBytesStr)
 {
     std::vector<int8_t> bytes;
     if (!parseHexBytesStr(hexBytesStr, bytes)) {
@@ -363,7 +385,7 @@ void GUI::DecompilerDemoWindow::assembly(const std::string& hexBytesStr)
     );
 }
 
-void GUI::DecompilerDemoWindow::decompile(const std::string& hexBytesStr)
+void GUI::DecompilerDemoPanel::decompile(const std::string& hexBytesStr)
 {
     using namespace CE::Decompiler;
     using namespace CE::Symbol;

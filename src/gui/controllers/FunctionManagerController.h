@@ -11,6 +11,7 @@ namespace GUI
 		struct FunctionFilter
 		{
 			std::string m_name;
+			std::set<CE::ImageDecorator*> m_images;
 		};
 
 		class FunctionListModel : public ListModel
@@ -49,6 +50,8 @@ namespace GUI
 		bool filter(CE::Function* item) override
 		{
 			using namespace Helper::String;
+			if(!m_filter.m_images.empty() && m_filter.m_images.find(item->getImage()) == m_filter.m_images.end())
+				return false;
 			if (!m_filter.m_name.empty() && ToLower(item->getName()).find(ToLower(m_filter.m_name)) == std::string::npos)
 				return false;
 

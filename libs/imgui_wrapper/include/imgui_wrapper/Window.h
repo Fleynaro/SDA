@@ -1,29 +1,35 @@
 #pragma once
 #include "Events.h"
-#include "imgui_internal.h"
 #include "controls/Control.h"
+#include "controls/AbstractPanel.h"
 
 namespace GUI
 {
-	class Window :
+	class StdWindow :
 		public Control,
 		public Attribute::Id,
-		public Attribute::Name,
 		public Attribute::Flags<
 		ImGuiWindowFlags,
 		ImGuiWindowFlags_None
 		>
 	{
 	protected:
+		AbstractPanel* m_panel;
+		
 		ImVec2 m_pos;
 		ImVec2 m_size;
 
 		bool m_isOpened = true;
 		bool m_fullscreen = false;
 	public:
-		Window(const std::string& name, ImGuiWindowFlags flags = ImGuiWindowFlags_None)
-			: Attribute::Name(name), Attribute::Flags<ImGuiWindowFlags, ImGuiWindowFlags_None>(flags)
+		StdWindow(AbstractPanel* panel, ImGuiWindowFlags flags = ImGuiWindowFlags_None)
+			: m_panel(panel), Attribute::Flags<ImGuiWindowFlags, ImGuiWindowFlags_None>(flags)
 		{}
+
+		~StdWindow() override
+		{
+			delete m_panel;
+		}
 
 		void setPos(ImVec2 pos) {
 			m_pos = pos;
@@ -39,6 +45,11 @@ namespace GUI
 
 		ImVec2& getSize() {
 			return m_size;
+		}
+
+		bool isOpened()
+		{
+			return m_isOpened;
 		}
 
 		bool isRemoved() override {
@@ -62,20 +73,18 @@ namespace GUI
 		void renderControl() override {
 			pushParams();
 			pushIdParam();
-			bool isOpen = ImGui::Begin(getName().c_str(), &m_isOpened, getFlags());
+			bool isOpen = ImGui::Begin(m_panel->getName().c_str(), &m_isOpened, getFlags());
 
 			m_pos = ImGui::GetWindowPos();
 			m_size = ImGui::GetWindowSize();
 
 			if (isOpen)
 			{
-				renderWindow();
+				m_panel->show();
 				ImGui::End();
 			}
 			popIdParam();
 		}
-
-		virtual void renderWindow() = 0;
 
 		void pushParams() {
 			if (m_fullscreen) {
@@ -96,18 +105,25 @@ namespace GUI
 		}
 	};
 
-	class AbstractBuiltinPopupWindow
-		: public Window,
+	class PopupBuiltinWindow
+		: public StdWindow,
 		public GenericEvents
 	{
 		bool m_closeByClickOutside;
 		bool m_closeByTimer;
 		uint64_t m_lastHoveredOutTime = 0;
 	public:
-		AbstractBuiltinPopupWindow(bool closeByClickOutside = true, bool closeByTimer = false)
-			: Window(""), m_closeByClickOutside(closeByClickOutside), m_closeByTimer(closeByTimer)
+		PopupBuiltinWindow(AbstractPanel* panel, bool closeByClickOutside = true, bool closeByTimer = false)
+			: StdWindow(panel), m_closeByClickOutside(closeByClickOutside), m_closeByTimer(closeByTimer)
 		{
+			m_isOpened = false;
 			setFlags(ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+		}
+
+		void open() override
+		{
+			StdWindow::open();
+			m_lastHoveredOutTime = 0;
 		}
 
 		void placeAfterItem()
@@ -141,7 +157,7 @@ namespace GUI
 						}
 					}
 					
-					renderWindow();
+					m_panel->show();
 					ImGui::End();
 				}
 			}
@@ -153,38 +169,21 @@ namespace GUI
 		}
 	};
 
-	class PopupBuiltinWindow
-		: public AbstractBuiltinPopupWindow
-	{
-		EventHandler<> m_drawCall;
-	public:
-		using AbstractBuiltinPopupWindow::AbstractBuiltinPopupWindow;
-
-		void handler(std::function<void()> drawCall)
-		{
-			m_drawCall = drawCall;
-		}
-
-	private:
-		void renderWindow() override
-		{
-			m_drawCall();
-		}
-	};
-
-	class AbstractPopupContextWindow
-		: public Control,
-		public Attribute::Id
+	class PopupContextWindow
+		: public StdWindow
 	{
 		bool m_isOpenPopup = false;
 	public:
-		void open()
+		PopupContextWindow(AbstractPanel* panel)
+			: StdWindow(panel)
+		{
+			m_isOpened = false;
+		}
+		
+		void open() override
 		{
 			m_isOpenPopup = true;
 		}
-	
-	protected:
-		virtual void renderWindow() = 0;
 	
 	private:
 		void renderControl() override {
@@ -194,80 +193,44 @@ namespace GUI
 			}
 			if (ImGui::BeginPopupContextItem(getId().c_str()))
 			{
-				renderWindow();
-				ImGui::EndPopup();
-			}
-		}
-	};
-
-	class PopupContextWindow
-		: public AbstractPopupContextWindow
-	{
-		EventHandler<> m_drawCall;
-	public:
-		using AbstractPopupContextWindow::AbstractPopupContextWindow;
-
-		void handler(std::function<void()> drawCall)
-		{
-			m_drawCall = drawCall;
-		}
-	
-	private:
-		void renderWindow() override
-		{
-			m_drawCall();
-		}
-	};
-
-	class AbstractPopupModalWindow
-		: public Window
-	{
-		bool m_isOpenPopup = false;
-	public:
-		using Window::Window;
-
-		void open() override
-		{
-			Window::open();
-			m_isOpenPopup = true;
-		}
-
-	private:
-		void renderControl() override {
-			if (m_isOpenPopup) {
-				ImGui::OpenPopup(getName().c_str());
-				m_isOpenPopup = false;
-			}
-			pushParams();
-			bool isOpen = ImGui::BeginPopupModal(getName().c_str(), &m_isOpened, getFlags());
-			
-			m_pos = ImGui::GetWindowPos();
-			m_size = ImGui::GetWindowSize();
-			
-			if (isOpen)
-			{
-				renderWindow();
+				m_panel->show();
 				ImGui::EndPopup();
 			}
 		}
 	};
 
 	class PopupModalWindow
-		: public AbstractPopupModalWindow
+		: public StdWindow
 	{
-		EventHandler<> m_drawCall;
+		bool m_isOpenPopup = false;
 	public:
-		using AbstractPopupModalWindow::AbstractPopupModalWindow;
+		PopupModalWindow(AbstractPanel* panel)
+			: StdWindow(panel)
+		{}
 
-		void handler(std::function<void()> drawCall)
+		void open() override
 		{
-			m_drawCall = drawCall;
+			StdWindow::open();
+			m_isOpenPopup = true;
 		}
 
 	private:
-		void renderWindow() override
-		{
-			m_drawCall();
+		void renderControl() override {
+			if (m_isOpenPopup) {
+				ImGui::OpenPopup(m_panel->getName().c_str());
+				m_isOpenPopup = false;
+			}
+			pushParams();
+			bool isOpen = ImGui::BeginPopupModal(m_panel->getName().c_str(), &m_isOpened, getFlags());
+			
+			m_pos = ImGui::GetWindowPos();
+			m_size = ImGui::GetWindowSize();
+			
+			if (isOpen)
+			{
+				m_panel->show();
+				ImGui::EndPopup();
+			}
 		}
 	};
 };

@@ -16,12 +16,11 @@ namespace CE {
 };
 
 namespace GUI {
-	class FunctionManagerWindow;
-	class ImageViewerWindow;
+	class FunctionManagerPanel;
+	class ImageViewerPanel;
 	
-	class DecompilerDemoWindow : public Window
+	class DecompilerDemoPanel : public AbstractPanel
 	{
-		Widget::CodeEditor* m_asmCodeEditor;
 		Widget::CodeEditor* m_decCodeEditor;
 		Text::ColoredText m_asmParsingErrorText;
 		Input::TextInput m_bytes_input;
@@ -35,18 +34,21 @@ namespace GUI {
 		StdListModel<int> m_testListModel;
 		StdTreeModel<int> m_testTreeModel;
 
-		FunctionManagerWindow* m_functionManagerWindow = nullptr;
-		ImageViewerWindow* m_imageViewerWindow = nullptr;
+		StdWindow* m_functionManagerWindow = nullptr;
+		StdWindow* m_imageViewerWindow = nullptr;
 		PopupModalWindow* m_popupModalWin = nullptr;
 		PopupBuiltinWindow* m_popupBuiltinWindow = nullptr;
 
 		CE::Program* m_program;
 		CE::Project* m_project;
 	public:
-		DecompilerDemoWindow();
+		Widget::CodeEditor* m_asmCodeEditor;
+		
+		DecompilerDemoPanel();
 
+		static StdWindow* GetStdWindow();
 	protected:
-		void renderWindow() override;
+		void renderPanel() override;
 
 	private:
 

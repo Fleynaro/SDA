@@ -107,7 +107,6 @@ namespace GUI::Input
 	{
 		bool m_isClicked = false;
 		bool m_value = false;
-		bool m_tooltip = false;
 	public:
 		BoolInput(const std::string& name = "##", bool value = false)
 			: AbstractInput(name), m_value(value)
@@ -127,23 +126,13 @@ namespace GUI::Input
 			m_value = value;
 		}
 
-		bool getInputValue() {
-			return m_value;
-		}
-
 		bool isSelected() {
 			return m_value;
 		}
 
-		void setToolTip(bool toggle) {
-			m_tooltip = toggle;
-		}
-
 	protected:
 		void renderInput() override {
-			m_isClicked = ImGui::Checkbox(m_tooltip ? "##tooltip" : getName().c_str(), &m_value);
-			if (m_tooltip && ImGui::IsItemHovered())
-				ImGui::SetTooltip(getName().c_str());
+			m_isClicked = ImGui::Checkbox(getName().c_str(), &m_value);
 		}
 	};
 

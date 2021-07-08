@@ -3,7 +3,7 @@
 #include <d3d11.h>
 #include <backends/imgui_impl_dx11.h>
 #include <backends//imgui_impl_win32.h>
-#include <gui/DecompilerDemoWindow.h>
+#include <gui/DecompilerDemoPanel.h>
 
 // Data
 static ID3D11Device* g_pd3dDevice = NULL;
@@ -21,12 +21,12 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 // main class for rendering GUI in d3d11 & winapi scope
 class GuiApplication
 {
-    GUI::Window* m_mainWindow;
+    GUI::StdWindow* m_mainWindow;
 public:
     GuiApplication()
     {}
 
-    void setMainWindow(GUI::Window* mainWindow) {
+    void setMainWindow(GUI::StdWindow* mainWindow) {
         m_mainWindow = mainWindow;
     }
 
@@ -112,7 +112,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // Init GUI
     GuiApplication app;
     app.init(hwnd, g_pd3dDevice, g_pd3dDeviceContext);
-    app.setMainWindow(new GUI::DecompilerDemoWindow);
+    app.setMainWindow(GUI::DecompilerDemoPanel::GetStdWindow());
 
     // Main loop
     bool done = false;
