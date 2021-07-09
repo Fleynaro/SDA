@@ -14,7 +14,7 @@ Type CE::Symbol::FuncParameterSymbol::getType() {
 }
 
 Decompiler::Storage CE::Symbol::FuncParameterSymbol::getStorage() {
-	auto paramIdx = getParamIdx();
+	const auto paramIdx = getParamIdx();
 	auto callInfo = m_signature->getCallInfo();
 	for (auto& paramInfo : callInfo.getParamInfos()) {
 		if (paramIdx == paramInfo.getIndex()) {

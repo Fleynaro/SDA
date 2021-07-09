@@ -28,7 +28,7 @@ std::string DataType::Typedef::getViewValue(uint64_t value) {
 
 void Typedef::setRefType(DataTypePtr refType) {
 	
-	if (auto refTypeDef = dynamic_cast<Typedef*>(refType->getType())) {
+	if (const auto refTypeDef = dynamic_cast<Typedef*>(refType->getType())) {
 		if (refTypeDef == this)
 			return;
 	}

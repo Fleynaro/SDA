@@ -5,7 +5,7 @@ using namespace CE::Decompiler;
 using namespace CE::Decompiler::PCode;
 
 void CE::Decompiler::PCode::DecoderX86::tryDecode(void* addr, int offset) {
-	auto size = m_maxSize > 0 ? (m_maxSize - offset) : 0x1000;
+	const auto size = m_maxSize > 0 ? (m_maxSize - offset) : 0x1000;
 	ZydisDecodedInstruction curInstruction;
 	if (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&m_decoder, addr, size,
 		&curInstruction))) {
@@ -405,15 +405,15 @@ void CE::Decompiler::PCode::DecoderX86::translateCurInstruction() {
 
 		if (ZYDIS_MNEMONIC_MOVUPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_MOVUPS) {
 			info.instrId1 = InstructionId::COPY;
-			operationSize = OperationSize(mnemonic - ZYDIS_MNEMONIC_MOVUPD);
+			operationSize = static_cast<OperationSize>(mnemonic - ZYDIS_MNEMONIC_MOVUPD);
 		}
 		else if (ZYDIS_MNEMONIC_MOVAPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_MOVAPS) {
 			info.instrId1 = InstructionId::COPY;
-			operationSize = OperationSize(mnemonic - ZYDIS_MNEMONIC_MOVAPD);
+			operationSize = static_cast<OperationSize>(mnemonic - ZYDIS_MNEMONIC_MOVAPD);
 		}
 		else if (ZYDIS_MNEMONIC_BLENDPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_BLENDPS) {
 			info.instrId1 = InstructionId::COPY;
-			operationSize = OperationSize(mnemonic - ZYDIS_MNEMONIC_BLENDPD);
+			operationSize = static_cast<OperationSize>(mnemonic - ZYDIS_MNEMONIC_BLENDPD);
 			auto& infoOperand = m_curInstr->operands[2];
 			for (int i = 0; i < 4; i++) {
 				info.shuffOp2[i] = ((infoOperand.imm.value.u >> i) & 0b1) ? info.shuffOp2[i] : -1;
@@ -421,7 +421,7 @@ void CE::Decompiler::PCode::DecoderX86::translateCurInstruction() {
 		}
 		else if (ZYDIS_MNEMONIC_SHUFPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_SHUFPS) {
 			info.instrId1 = InstructionId::COPY;
-			operationSize = OperationSize(mnemonic - ZYDIS_MNEMONIC_SHUFPD);
+			operationSize = static_cast<OperationSize>(mnemonic - ZYDIS_MNEMONIC_SHUFPD);
 			info.isOperationWithSingleOperand = true;
 			auto& infoOperand = m_curInstr->operands[2];
 			if (operationSize == OperationSize::PS) {
@@ -438,16 +438,16 @@ void CE::Decompiler::PCode::DecoderX86::translateCurInstruction() {
 		else if (ZYDIS_MNEMONIC_ADDSUBPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_ADDSUBPS) {
 			info.instrId1 = InstructionId::FLOAT_SUB;
 			info.instrId2 = InstructionId::FLOAT_ADD;
-			operationSize = OperationSize(mnemonic - ZYDIS_MNEMONIC_ADDSUBPD);
+			operationSize = static_cast<OperationSize>(mnemonic - ZYDIS_MNEMONIC_ADDSUBPD);
 		}
 		else if (ZYDIS_MNEMONIC_HADDPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_HADDPS || ZYDIS_MNEMONIC_HSUBPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_HSUBPS) {
 			if (ZYDIS_MNEMONIC_HADDPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_HADDPS) {
 				info.instrId1 = InstructionId::INT_ADD;
-				operationSize = OperationSize(mnemonic - ZYDIS_MNEMONIC_HADDPD);
+				operationSize = static_cast<OperationSize>(mnemonic - ZYDIS_MNEMONIC_HADDPD);
 			}
 			else {
 				info.instrId1 = InstructionId::INT_SUB;
-				operationSize = OperationSize(mnemonic - ZYDIS_MNEMONIC_HSUBPD);
+				operationSize = static_cast<OperationSize>(mnemonic - ZYDIS_MNEMONIC_HSUBPD);
 			}
 
 			if (operationSize == OperationSize::PS) {
@@ -463,44 +463,44 @@ void CE::Decompiler::PCode::DecoderX86::translateCurInstruction() {
 		}
 		else if (ZYDIS_MNEMONIC_HSUBPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_HSUBPS) {
 			info.instrId1 = InstructionId::INT_ADD;
-			operationSize = OperationSize(mnemonic - ZYDIS_MNEMONIC_HSUBPD);
+			operationSize = static_cast<OperationSize>(mnemonic - ZYDIS_MNEMONIC_HSUBPD);
 		}
 		else if (ZYDIS_MNEMONIC_ADDPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_ADDSS) {
 			info.instrId1 = InstructionId::FLOAT_ADD;
-			operationSize = OperationSize(mnemonic - ZYDIS_MNEMONIC_ADDPD);
+			operationSize = static_cast<OperationSize>(mnemonic - ZYDIS_MNEMONIC_ADDPD);
 		}
 		else if (ZYDIS_MNEMONIC_SUBPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_SUBSS) {
 			info.instrId1 = InstructionId::FLOAT_SUB;
-			operationSize = OperationSize(mnemonic - ZYDIS_MNEMONIC_SUBPD);
+			operationSize = static_cast<OperationSize>(mnemonic - ZYDIS_MNEMONIC_SUBPD);
 		}
 		else if (ZYDIS_MNEMONIC_MULPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_MULSS) {
 			info.instrId1 = InstructionId::FLOAT_MULT;
-			operationSize = OperationSize(mnemonic - ZYDIS_MNEMONIC_MULPD);
+			operationSize = static_cast<OperationSize>(mnemonic - ZYDIS_MNEMONIC_MULPD);
 		}
 		else if (ZYDIS_MNEMONIC_DIVPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_DIVSS) {
 			info.instrId1 = InstructionId::FLOAT_DIV;
-			operationSize = OperationSize(mnemonic - ZYDIS_MNEMONIC_DIVPD);
+			operationSize = static_cast<OperationSize>(mnemonic - ZYDIS_MNEMONIC_DIVPD);
 		}
 		else if (ZYDIS_MNEMONIC_ANDPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_ANDPS) {
 			info.instrId1 = InstructionId::INT_AND;
-			operationSize = OperationSize(mnemonic - ZYDIS_MNEMONIC_ANDPD);
+			operationSize = static_cast<OperationSize>(mnemonic - ZYDIS_MNEMONIC_ANDPD);
 		}
 		else if (ZYDIS_MNEMONIC_ANDNPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_ANDNPS) {
 			info.instrId1 = InstructionId::INT_AND;
-			operationSize = OperationSize(mnemonic - ZYDIS_MNEMONIC_ANDNPD);
+			operationSize = static_cast<OperationSize>(mnemonic - ZYDIS_MNEMONIC_ANDNPD);
 			info.isNegate = true;
 		}
 		else if (ZYDIS_MNEMONIC_ORPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_ORPS) {
 			info.instrId1 = InstructionId::INT_OR;
-			operationSize = OperationSize(mnemonic - ZYDIS_MNEMONIC_ORPD);
+			operationSize = static_cast<OperationSize>(mnemonic - ZYDIS_MNEMONIC_ORPD);
 		}
 		else if (ZYDIS_MNEMONIC_XORPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_XORPS) {
 			info.instrId1 = InstructionId::INT_XOR;
-			operationSize = OperationSize(mnemonic - ZYDIS_MNEMONIC_XORPD);
+			operationSize = static_cast<OperationSize>(mnemonic - ZYDIS_MNEMONIC_XORPD);
 		}
 		else if (ZYDIS_MNEMONIC_SQRTPD <= mnemonic && mnemonic <= ZYDIS_MNEMONIC_SQRTSS) {
 			info.instrId1 = InstructionId::FLOAT_SQRT;
-			operationSize = OperationSize(mnemonic - ZYDIS_MNEMONIC_SQRTPD);
+			operationSize = static_cast<OperationSize>(mnemonic - ZYDIS_MNEMONIC_SQRTPD);
 		}
 
 		switch (operationSize)
@@ -962,7 +962,7 @@ void CE::Decompiler::PCode::DecoderX86::translateCurInstruction() {
 			addMicroInstruction(InstructionId::STORE, varnodeRsp, m_instrPool->createConstantVarnode((uint64_t&)offset, 0x8));
 			}*/
 			if (auto varnodeConst = dynamic_cast<ConstantVarnode*>(varnodeInput0)) {
-				varnodeConst->m_value = (int64_t)(int)(varnodeConst->m_value >> 8);
+				varnodeConst->m_value = static_cast<int64_t>((int)(varnodeConst->m_value >> 8));
 				auto varnodeRip = CreateVarnode(ZYDIS_REGISTER_RIP, 0x8);
 				auto varnodeDst = m_instrPool->createSymbolVarnode(0x8);
 				addMicroInstruction(InstructionId::INT_ADD, varnodeRip, varnodeConst, varnodeDst);
@@ -1217,19 +1217,19 @@ void CE::Decompiler::PCode::DecoderX86::translateCurInstruction() {
 Varnode* CE::Decompiler::PCode::DecoderX86::getJumpOffsetByOperand(const ZydisDecodedOperand& operand) {
 	if (operand.type != ZYDIS_OPERAND_TYPE_IMMEDIATE)
 		return requestOperandValue(operand, operand.size / 0x8);
-	auto jmpOffset = (int)operand.imm.value.s;
+	const auto jmpOffset = static_cast<int>(operand.imm.value.s);
 	return m_instrPool->createConstantVarnode(getJumpOffset(jmpOffset), 0x8);
 }
 
 uint64_t CE::Decompiler::PCode::DecoderX86::getJumpOffset(int jmpOffset) const
 {
-	auto offset = m_curOrigInstr->m_offset + m_curOrigInstr->m_length + jmpOffset;
+	const auto offset = m_curOrigInstr->m_offset + m_curOrigInstr->m_length + jmpOffset;
 	return offset << 8;
 }
 
 void CE::Decompiler::PCode::DecoderX86::GenerateVectorOperation(const VectorOperationGeneratorInfo& info)
 {
-	int operationsCount = info.maxSize / info.size;
+	const int operationsCount = info.maxSize / info.size;
 	auto instrId2 = info.instrId2;
 	if (instrId2 == InstructionId::NONE) {
 		instrId2 = info.instrId1;
@@ -1288,7 +1288,7 @@ Varnode* CE::Decompiler::PCode::DecoderX86::addGenericOperation(InstructionId in
 }
 
 Instruction* CE::Decompiler::PCode::DecoderX86::addMicroInstruction(InstructionId id, Varnode* input0, Varnode* input1, Varnode* output, bool zext) {
-	auto instr = m_instrPool->createInstruction(id, input0, input1, output, m_curOrigInstr, m_curOrderId++);
+	const auto instr = m_instrPool->createInstruction(id, input0, input1, output, m_curOrigInstr, m_curOrderId++);
 	if (m_curOrderId == 1) { //for debug info
 		ZydisFormatter formatter;
 		ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
@@ -1336,12 +1336,12 @@ Varnode* CE::Decompiler::PCode::DecoderX86::requestOperandValue(const ZydisDecod
 		if (operand.mem.index != ZYDIS_REGISTER_NONE) {
 			resultVarnode = indexRegVarnode = CreateVarnode(operand.mem.index, memLocExprSize);
 			if (operand.mem.scale != 1) {
-				auto symbolVarnode = m_instrPool->createSymbolVarnode(memLocExprSize);
+				const auto symbolVarnode = m_instrPool->createSymbolVarnode(memLocExprSize);
 				addMicroInstruction(InstructionId::INT_MULT, resultVarnode, m_instrPool->createConstantVarnode(operand.mem.scale & resultVarnode->getMask().getValue(), memLocExprSize), symbolVarnode);
 				resultVarnode = symbolVarnode;
 			}
 			if (baseRegVarnode != nullptr) {
-				auto symbolVarnode = m_instrPool->createSymbolVarnode(memLocExprSize);
+				const auto symbolVarnode = m_instrPool->createSymbolVarnode(memLocExprSize);
 				addMicroInstruction(InstructionId::INT_ADD, baseRegVarnode, resultVarnode, symbolVarnode);
 				resultVarnode = symbolVarnode;
 			}
@@ -1351,10 +1351,10 @@ Varnode* CE::Decompiler::PCode::DecoderX86::requestOperandValue(const ZydisDecod
 		}
 
 		if (operand.mem.disp.has_displacement) {
-			auto constValue = (uint64_t&)operand.mem.disp.value & resultVarnode->getMask().getValue();
-			auto dispVarnode = m_instrPool->createConstantVarnode(constValue, memLocExprSize);
+			const auto constValue = (uint64_t&)operand.mem.disp.value & resultVarnode->getMask().getValue();
+			const auto dispVarnode = m_instrPool->createConstantVarnode(constValue, memLocExprSize);
 			if (resultVarnode != nullptr) {
-				auto symbolVarnode = m_instrPool->createSymbolVarnode(memLocExprSize);
+				const auto symbolVarnode = m_instrPool->createSymbolVarnode(memLocExprSize);
 				addMicroInstruction(InstructionId::INT_ADD, resultVarnode, dispVarnode, symbolVarnode);
 				resultVarnode = symbolVarnode;
 			}
@@ -1364,7 +1364,7 @@ Varnode* CE::Decompiler::PCode::DecoderX86::requestOperandValue(const ZydisDecod
 		}
 
 		if (offset > 0) {
-			auto symbolVarnode = m_instrPool->createSymbolVarnode(memLocExprSize);
+			const auto symbolVarnode = m_instrPool->createSymbolVarnode(memLocExprSize);
 			addMicroInstruction(InstructionId::INT_ADD, resultVarnode, m_instrPool->createConstantVarnode(offset, memLocExprSize), symbolVarnode);
 			resultVarnode = symbolVarnode;
 		}
@@ -1374,7 +1374,7 @@ Varnode* CE::Decompiler::PCode::DecoderX86::requestOperandValue(const ZydisDecod
 		}
 
 		if (isMemLocLoaded) { //check for LEA instruction
-			auto symbolVarnode = m_instrPool->createSymbolVarnode(size);
+			const auto symbolVarnode = m_instrPool->createSymbolVarnode(size);
 			addMicroInstruction(InstructionId::LOAD, resultVarnode, nullptr, symbolVarnode);
 			resultVarnode = symbolVarnode;
 		}
@@ -1422,7 +1422,7 @@ Varnode* CE::Decompiler::PCode::DecoderX86::GetFlagCondition(FlagCond flagCond) 
 
 		varnodeCond = CreateVarnode(flag);
 		if (flagCond == FlagCond::NZ || flagCond == FlagCond::NC || flagCond == FlagCond::NP || flagCond == FlagCond::NO) {
-			auto varnodeNeg = m_instrPool->createSymbolVarnode(1);
+			const auto varnodeNeg = m_instrPool->createSymbolVarnode(1);
 			addMicroInstruction(InstructionId::BOOL_NEGATE, varnodeCond, nullptr, varnodeNeg);
 			varnodeCond = varnodeNeg;
 		}
@@ -1431,10 +1431,10 @@ Varnode* CE::Decompiler::PCode::DecoderX86::GetFlagCondition(FlagCond flagCond) 
 	case FlagCond::L:
 	case FlagCond::LE:
 	{
-		auto varnodeNe = m_instrPool->createSymbolVarnode(1);
+		const auto varnodeNe = m_instrPool->createSymbolVarnode(1);
 		addMicroInstruction(InstructionId::INT_NOTEQUAL, CreateVarnode(ZYDIS_CPUFLAG_OF), CreateVarnode(ZYDIS_CPUFLAG_SF), varnodeNe);
 		if (flagCond == FlagCond::LE) {
-			auto varnodeOr = m_instrPool->createSymbolVarnode(1);
+			const auto varnodeOr = m_instrPool->createSymbolVarnode(1);
 			addMicroInstruction(InstructionId::BOOL_OR, CreateVarnode(ZYDIS_CPUFLAG_ZF), varnodeNe, varnodeOr);
 			varnodeCond = varnodeOr;
 		}
@@ -1446,12 +1446,12 @@ Varnode* CE::Decompiler::PCode::DecoderX86::GetFlagCondition(FlagCond flagCond) 
 	case FlagCond::NL:
 	case FlagCond::NLE:
 	{
-		auto varnodeEq = m_instrPool->createSymbolVarnode(1);
+		const auto varnodeEq = m_instrPool->createSymbolVarnode(1);
 		addMicroInstruction(InstructionId::INT_EQUAL, CreateVarnode(ZYDIS_CPUFLAG_OF), CreateVarnode(ZYDIS_CPUFLAG_SF), varnodeEq);
 		if (flagCond == FlagCond::NLE) {
-			auto varnodeNeg = m_instrPool->createSymbolVarnode(1);
+			const auto varnodeNeg = m_instrPool->createSymbolVarnode(1);
 			addMicroInstruction(InstructionId::BOOL_NEGATE, CreateVarnode(ZYDIS_CPUFLAG_ZF), nullptr, varnodeNeg);
-			auto varnodeAnd = m_instrPool->createSymbolVarnode(1);
+			const auto varnodeAnd = m_instrPool->createSymbolVarnode(1);
 			addMicroInstruction(InstructionId::BOOL_AND, varnodeEq, varnodeNeg, varnodeAnd);
 			varnodeCond = varnodeAnd;
 		}
@@ -1463,10 +1463,10 @@ Varnode* CE::Decompiler::PCode::DecoderX86::GetFlagCondition(FlagCond flagCond) 
 	case FlagCond::A:
 	case FlagCond::NA:
 	{
-		auto varnodeOr = m_instrPool->createSymbolVarnode(1);
+		const auto varnodeOr = m_instrPool->createSymbolVarnode(1);
 		addMicroInstruction(InstructionId::BOOL_OR, CreateVarnode(ZYDIS_CPUFLAG_CF), CreateVarnode(ZYDIS_CPUFLAG_ZF), varnodeOr);
 		if (flagCond == FlagCond::A) {
-			auto varnodeNe = m_instrPool->createSymbolVarnode(1);
+			const auto varnodeNe = m_instrPool->createSymbolVarnode(1);
 			addMicroInstruction(InstructionId::BOOL_NEGATE, varnodeOr, nullptr, varnodeNe);
 			varnodeCond = varnodeNe;
 		}
@@ -1492,7 +1492,7 @@ int CE::Decompiler::PCode::DecoderX86::getFirstExplicitOperandsCount() const
 
 RegisterVarnode* CE::Decompiler::PCode::DecoderX86::CreateVarnode(ZydisRegister regId, int size, int offset) const
 {
-	auto reg = m_registerFactoryX86->createRegister(regId, size, offset);
+	const auto reg = m_registerFactoryX86->createRegister(regId, size, offset);
 	return m_instrPool->createRegisterVarnode(reg);
 }
 

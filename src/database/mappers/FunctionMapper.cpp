@@ -30,14 +30,14 @@ CE::FunctionManager* FunctionMapper::getManager() const
 }
 
 IDomainObject* FunctionMapper::doLoad(Database* db, SQLite::Statement& query) {
-	int func_id = query.getColumn("func_id");
-	int func_symbol_id = query.getColumn("func_symbol_id");
-	int stack_sym_table_id = query.getColumn("stack_sym_table_id");
-	int image_id = query.getColumn("image_id");
+	const int func_id = query.getColumn("func_id");
+	const int func_symbol_id = query.getColumn("func_symbol_id");
+	const int stack_sym_table_id = query.getColumn("stack_sym_table_id");
+	const int image_id = query.getColumn("image_id");
 
 	auto funcSymbol = dynamic_cast<Symbol::FunctionSymbol*>(getManager()->getProject()->getSymbolManager()->findSymbolById(func_symbol_id));
-	auto stackSymTable = getManager()->getProject()->getSymTableManager()->findSymbolTableById(stack_sym_table_id);
-	auto image = getManager()->getProject()->getImageManager()->findImageById(image_id);
+	const auto stackSymTable = getManager()->getProject()->getSymTableManager()->findSymbolTableById(stack_sym_table_id);
+	const auto image = getManager()->getProject()->getImageManager()->findImageById(image_id);
 
 	auto function = getManager()->getFactory(false).createFunction(funcSymbol, image, stackSymTable);
 	
@@ -63,7 +63,7 @@ void FunctionMapper::doUpdate(TransactionContext* ctx, IDomainObject* obj) {
 }
 
 void FunctionMapper::doRemove(TransactionContext* ctx, IDomainObject* obj) {
-	std::string action_query_text =
+	const std::string action_query_text =
 		ctx->m_notDelete ? "UPDATE sda_functions SET deleted=1" : "DELETE FROM sda_functions";
 	Statement query(*ctx->m_db, action_query_text + " WHERE func_id=?1");
 	query.bind(1, obj->getId());

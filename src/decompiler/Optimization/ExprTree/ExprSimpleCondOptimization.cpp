@@ -24,14 +24,14 @@ Condition* CE::Decompiler::Optimization::ExprSimpleConditionOptimization::getCon
 //SBORROW(*(uint_32t*)([reg_rsp_64]), 0x4{4}) == ((*(uint_32t*)([reg_rsp_64]) + 0x3fffffffc{-4}) < 0x0{0}))
 
 bool CE::Decompiler::Optimization::ExprSimpleConditionOptimization::processSBORROW(Condition* cond) {
-	if (auto func = dynamic_cast<FunctionalNode*>(cond->m_leftNode)) {
+	if (const auto func = dynamic_cast<FunctionalNode*>(cond->m_leftNode)) {
 		if (func->m_funcId == FunctionalNode::Id::SBORROW && (cond->m_cond == Condition::Eq || cond->m_cond == Condition::Ne)) {
-			if (auto mainCond = dynamic_cast<Condition*>(cond->m_rightNode)) {
+			if (const auto mainCond = dynamic_cast<Condition*>(cond->m_rightNode)) {
 				if (mainCond->m_cond == Condition::Lt) {
 					auto newCondType = Condition::Ge;
 					if (cond->m_cond == Condition::Ne)
 						newCondType = Condition::Lt;
-					auto newCond = new Condition(func->m_leftNode, func->m_rightNode, newCondType, cond->m_instr);
+					const auto newCond = new Condition(func->m_leftNode, func->m_rightNode, newCondType, cond->m_instr);
 					replace(newCond);
 					return true;
 				}
@@ -60,9 +60,9 @@ bool CE::Decompiler::Optimization::ExprSimpleConditionOptimization::moveTermToRi
 
 			if (isTermMoving) {
 				//move expr from left node of the condition to the right node being multiplied -1
-				auto newPartOfRightExpr = new OperationalNode(rightNode, new NumberLeaf((uint64_t)(int64_t)-1, addOpNode->getSize()), Mul);
-				auto newRightExpr = new OperationalNode(cond->m_rightNode, newPartOfRightExpr, Add);
-				auto newCond = new Condition(leftNode, newRightExpr, cond->m_cond, cond->m_instr);
+				const auto newPartOfRightExpr = new OperationalNode(rightNode, new NumberLeaf(static_cast<uint64_t>((int64_t)-1), addOpNode->getSize()), Mul);
+				const auto newRightExpr = new OperationalNode(cond->m_rightNode, newPartOfRightExpr, Add);
+				const auto newCond = new Condition(leftNode, newRightExpr, cond->m_cond, cond->m_instr);
 				replace(newCond);
 				return true;
 			}
@@ -73,7 +73,7 @@ bool CE::Decompiler::Optimization::ExprSimpleConditionOptimization::moveTermToRi
 
 void CE::Decompiler::Optimization::ExprSimpleConditionOptimization::OptimizeNode(INode* node) {
 	node->iterateChildNodes(OptimizeNode);
-	if (auto opNode = dynamic_cast<OperationalNode*>(node)) {
+	if (const auto opNode = dynamic_cast<OperationalNode*>(node)) {
 		ExprConstCalculating exprConstCalculating(opNode);
 		exprConstCalculating.start();
 	}
@@ -84,7 +84,7 @@ bool CE::Decompiler::Optimization::ExprSimpleConditionOptimization::IsNegative(I
 		if ((numberLeaf->getValue() >> (size * 0x8 - 1)) & 0b1)
 			return true;
 	}
-	else if (auto opNode = dynamic_cast<OperationalNode*>(node)) {
+	else if (const auto opNode = dynamic_cast<OperationalNode*>(node)) {
 		if (opNode->m_operation == Mul)
 			return IsNegative(opNode->m_rightNode, size);
 	}

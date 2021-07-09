@@ -55,20 +55,20 @@ std::string CE::Decompiler::ExprTree::GoarTopNode::printSdaDebug() {
 // players[2][10] -> dims: 10, 2
 
 void CE::Decompiler::ExprTree::GoarTopNode::gatherArrDims(ISdaNode* node, MemLocation& location) {
-	if (auto goarNode = dynamic_cast<GoarNode*>(node)) {
+	if (const auto goarNode = dynamic_cast<GoarNode*>(node)) {
 		gatherArrDims(goarNode->m_base, location);
 		if (auto goarArrayNode = dynamic_cast<GoarArrayNode*>(node)) {
 			if (dynamic_cast<INumberLeaf*>(goarArrayNode->m_indexNode))
 				return;
-			auto itemSize = goarArrayNode->getDataType()->getSize();
-			auto itemsMaxCount = (goarArrayNode->m_itemsMaxCount > 1 ? goarArrayNode->m_itemsMaxCount : -1);
+			const auto itemSize = goarArrayNode->getDataType()->getSize();
+			const auto itemsMaxCount = (goarArrayNode->m_itemsMaxCount > 1 ? goarArrayNode->m_itemsMaxCount : -1);
 			location.addArrayDim(itemSize, itemsMaxCount);
 		}
 	}
 }
 
 ISdaNode* CE::Decompiler::ExprTree::GoarTopNode::getBaseNode(ISdaNode* node) {
-	if (auto goarNode = dynamic_cast<GoarNode*>(node)) {
+	if (const auto goarNode = dynamic_cast<GoarNode*>(node)) {
 		return getBaseNode(goarNode->m_base);
 	}
 	return node;
@@ -85,7 +85,7 @@ CE::Decompiler::ExprTree::GoarNode::~GoarNode() {
 }
 
 void CE::Decompiler::ExprTree::GoarNode::replaceNode(INode* node, INode* newNode) {
-	auto newSdaNode = dynamic_cast<ISdaNode*>(newNode);
+	const auto newSdaNode = dynamic_cast<ISdaNode*>(newNode);
 	if (node == m_base) {
 		m_base = newSdaNode;
 	}
@@ -122,7 +122,7 @@ CE::Decompiler::ExprTree::GoarArrayNode::~GoarArrayNode() {
 
 void CE::Decompiler::ExprTree::GoarArrayNode::replaceNode(INode* node, INode* newNode) {
 	GoarNode::replaceNode(node, newNode);
-	auto newSdaNode = dynamic_cast<ISdaNode*>(newNode);
+	const auto newSdaNode = dynamic_cast<ISdaNode*>(newNode);
 	if (node == m_indexNode) {
 		m_indexNode = newSdaNode;
 	}

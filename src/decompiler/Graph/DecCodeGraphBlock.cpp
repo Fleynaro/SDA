@@ -220,14 +220,14 @@ bool CE::Decompiler::DecBlock::isCondition() const
 }
 
 bool CE::Decompiler::DecBlock::isCycle() {
-	return (int)m_blocksReferencedTo.size() != getRefHighBlocksCount();
+	return static_cast<int>(m_blocksReferencedTo.size()) != getRefHighBlocksCount();
 }
 
 // get count of blocks which reference to this block
 
 int CE::Decompiler::DecBlock::getRefBlocksCount() const
 {
-	return (int)m_blocksReferencedTo.size();
+	return static_cast<int>(m_blocksReferencedTo.size());
 }
 
 // get count of blocks which reference to this block without loops

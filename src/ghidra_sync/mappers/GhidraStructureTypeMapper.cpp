@@ -10,17 +10,17 @@ StructureTypeMapper::StructureTypeMapper(DataTypeMapper* dataTypeMapper)
 
 void StructureTypeMapper::load(packet::SDataFullSyncPacket* dataPacket) {
 	for (auto structDesc : dataPacket->structures) {
-		auto type = m_dataTypeMapper->m_typeManager->findTypeByGhidraId(structDesc.type.id);
+		const auto type = m_dataTypeMapper->m_typeManager->findTypeByGhidraId(structDesc.type.id);
 		if (type == nullptr)
 			throw std::exception("item not found");
-		if (auto structure = dynamic_cast<DataType::Structure*>(type)) {
+		if (const auto structure = dynamic_cast<DataType::Structure*>(type)) {
 			changeStructureByDesc(structure, structDesc);
 		}
 	}
 }
 
 void StructureTypeMapper::upsert(SyncContext* ctx, IObject* obj) {
-	auto type = dynamic_cast<DataType::Structure*>(obj);
+	const auto type = dynamic_cast<DataType::Structure*>(obj);
 	ctx->m_dataPacket->structures.push_back(buildDesc(type));
 	m_dataTypeMapper->upsert(ctx, obj);
 }
@@ -33,7 +33,7 @@ datatype::SDataTypeStructure StructureTypeMapper::buildDesc(DataType::Structure*
 {
 	datatype::SDataTypeStructure structDesc;
 	structDesc.__set_type(m_dataTypeMapper->buildDesc(Struct));
-	for (auto it : Struct->getFields()) {
+	for (const auto it : Struct->getFields()) {
 		auto field = it.second;
 		datatype::SDataTypeStructureField structFieldDesc;
 		structFieldDesc.__set_name(field->getName());

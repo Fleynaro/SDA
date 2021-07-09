@@ -22,7 +22,7 @@ void CE::Decompiler::ImageAnalyzer::start(int startOffset, bool onceFunc) {
 
 	// generate an image graph
 	while (!nextOffsetsToVisitLater.empty()) {
-		auto startInstrOffset = (int64_t)nextOffsetsToVisitLater.back() << 8;
+		auto startInstrOffset = static_cast<int64_t>(nextOffsetsToVisitLater.back()) << 8;
 		if (visitedOffsets.find(startInstrOffset) != visitedOffsets.end())
 			continue;
 		visitedOffsets.insert(startInstrOffset);
@@ -33,14 +33,14 @@ void CE::Decompiler::ImageAnalyzer::start(int startOffset, bool onceFunc) {
 			auto block = m_imageGraph->getBlockAtOffset(startInstrOffset);
 			// if the function call references to a block of the existing graph
 			funcGraph->setStartBlock(block);
-			offsetsToFuncGraphs[(int)(startInstrOffset >> 8)] = funcGraph;
+			offsetsToFuncGraphs[static_cast<int>(startInstrOffset >> 8)] = funcGraph;
 			blocksToReconnect.push_back(block);
 		}
 		catch (ImagePCodeGraph::BlockNotFoundException ex) {
 			const auto startBlock = m_imageGraph->createBlock(startInstrOffset);
 			funcGraph->setStartBlock(startBlock);
 			createPCodeBlocksAtOffset(startInstrOffset, funcGraph);
-			offsetsToFuncGraphs[(int)(startInstrOffset >> 8)] = funcGraph;
+			offsetsToFuncGraphs[static_cast<int>(startInstrOffset >> 8)] = funcGraph;
 
 			if (!onceFunc) {
 				std::list<int> nonVirtFuncOffsets;
@@ -110,7 +110,7 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(int64_t startInstr
 
 	auto offset = startInstrOffset;
 	while (true) {
-		const auto byteOffset = (int)(offset >> 8);
+		const auto byteOffset = static_cast<int>(offset >> 8);
 		auto instrOrder = offset & 0xFF;
 		PCode::Instruction* instr = nullptr;
 		PCodeBlock* curBlock = nullptr;
@@ -195,7 +195,7 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(int64_t startInstr
 					targetOffset = it->second << 8;
 			}
 
-			if (targetOffset == -1 || m_image->getSectionByRva((uint64_t)(targetOffset >> 8))->m_type != ImageSection::CODE_SEGMENT) {
+			if (targetOffset == -1 || m_image->getSectionByRva(static_cast<uint64_t>(targetOffset >> 8))->m_type != ImageSection::CODE_SEGMENT) {
 				offset = -1;
 				m_decoder->getWarningContainer()->addWarning("rva " + std::to_string(targetOffset >> 8) + " is not correct in the jump instruction " + instr->m_origInstruction->m_originalView + " (at 0x" + Helper::String::NumberToHex(instr->m_origInstruction->m_offset) + ")");
 				continue;
@@ -311,7 +311,7 @@ void CE::Decompiler::ImageAnalyzer::CalculateLevelsForPCodeBlocks(PCodeBlock* bl
 	}
 
 	path.push_back(block);
-	block->m_level = std::max(block->m_level, (int)path.size());
+	block->m_level = std::max(block->m_level, static_cast<int>(path.size()));
 	CalculateLevelsForPCodeBlocks(block->getNextNearBlock(), path);
 	CalculateLevelsForPCodeBlocks(block->getNextFarBlock(), path);
 	path.pop_back();
@@ -354,7 +354,7 @@ void CE::Decompiler::PCodeGraphReferenceSearch::findNewFunctionOffsets(FunctionP
 	for (auto symbol : sdaBuilding.getNewAutoSymbols()) {
 		if (auto memSymbol = dynamic_cast<CE::Symbol::IMemorySymbol*>(symbol)) {
 			auto storage = memSymbol->getStorage();
-			const auto rva = (uint64_t)storage.getOffset();
+			const auto rva = static_cast<uint64_t>(storage.getOffset());
 			if (storage.getType() == Storage::STORAGE_GLOBAL) {
 				const auto segmentType = m_image->getSectionByRva(rva)->m_type;
 				if (segmentType == ImageSection::CODE_SEGMENT) {

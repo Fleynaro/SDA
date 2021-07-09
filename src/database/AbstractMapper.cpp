@@ -9,7 +9,7 @@ DB::AbstractMapper::AbstractMapper(IRepository* repository)
 void DB::AbstractMapper::load(Database* db, Statement& query) {
 	while (query.executeStep())
 	{
-		auto obj = doLoad(db, query);
+		const auto obj = doLoad(db, query);
 		if (obj != nullptr) {
 			if (m_repository != nullptr)
 				m_repository->onLoaded(obj);
@@ -51,7 +51,7 @@ DB::Id DB::GenerateNextId(Database* db, const std::string& tableName) {
 		SQLite::Statement query_update(*db, "UPDATE SQLITE_SEQUENCE SET seq=seq+1 WHERE name=?1");
 		query_update.bind(1, tableName);
 		query_update.exec();
-		return (DB::Id)query.getColumn("seq") + 1;
+		return static_cast<DB::Id>(query.getColumn("seq")) + 1;
 	}
 	else {
 		SQLite::Statement query(*db, "INSERT INTO SQLITE_SEQUENCE (name, seq) VALUES (?1, 1)");

@@ -19,7 +19,7 @@ int CE::Symbol::StructFieldSymbol::getBitOffset() {
 }
 
 int CE::Symbol::StructFieldSymbol::getOffset() {
-	auto byteOffset = m_absBitOffset / 0x8;
+	const auto byteOffset = m_absBitOffset / 0x8;
 	return byteOffset - (isBitField() ? (byteOffset % getSize()) : 0);
 }
 

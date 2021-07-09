@@ -33,14 +33,14 @@ void Class::setBaseClass(Class* base, bool createBaseClassField) {
 	m_base = base;
 
 	if (createBaseClassField) {
-		int baseClassOffset = 0x0;
+		const int baseClassOffset = 0x0;
 		/*if (m_vtable != nullptr) {
 			if (m_base != nullptr && m_base->m_vtable == nullptr) {
 				baseClassOffset = 0x8;
 			}
 		}*/
-		
-		auto oldSize = getSize();
+
+		const auto oldSize = getSize();
 		if (oldSize < base->getSize()) {
 			resize(base->getSize());
 		}
@@ -78,7 +78,7 @@ Function* Class::MethodIterator::next() {
 		updateIterator();
 	}
 
-	auto method = *m_iterator;
+	const auto method = *m_iterator;
 	m_iterator++;
 	m_signatures.insert(method->getSignature()->getSigName());
 	return method;

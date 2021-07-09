@@ -74,7 +74,7 @@ HS CE::Decompiler::ExprTree::UnknownLocation::getHash() {
 
 ISdaNode* CE::Decompiler::ExprTree::UnknownLocation::cloneSdaNode(NodeCloneContext* ctx) {
 	auto clonedLinearExpr = dynamic_cast<LinearExpr*>(m_linearExpr->clone(ctx));
-	auto newUnknownLocation = new UnknownLocation(clonedLinearExpr, m_baseNodeIdx);
+	const auto newUnknownLocation = new UnknownLocation(clonedLinearExpr, m_baseNodeIdx);
 	clonedLinearExpr->addParentNode(newUnknownLocation);
 	return newUnknownLocation;
 }
@@ -103,7 +103,7 @@ void CE::Decompiler::ExprTree::UnknownLocation::getLocation(MemLocation& locatio
 	location.m_valueSize = valueDataType->getSize();
 	for (auto term : getArrTerms()) {
 		auto multiplier = term.getMultiplier();
-		auto itemSize = multiplier ? (int)multiplier->getValue() : 1;
+		const auto itemSize = multiplier ? static_cast<int>(multiplier->getValue()) : 1;
 		location.addArrayDim(itemSize);
 	}
 }

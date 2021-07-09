@@ -28,7 +28,7 @@ namespace CE::Decompiler::LinearView
 			orderId++;
 
 		for (auto it = blockList->getBlocks().rbegin(); it != blockList->getBlocks().rend(); it++) {
-			auto block = *it;
+			const auto block = *it;
 			orderId++;
 			if (auto blockListAgregator = dynamic_cast<IBlockListAgregator*>(block)) {
 				if (blockListAgregator->isInversed()) {

@@ -16,12 +16,12 @@ bool MemLocation::intersect(const MemLocation& location) const {
 		return false;
 	if (m_baseAddrHash.getHashValue() != location.m_baseAddrHash.getHashValue())
 		return false;
-	auto Size1 = getLocSize();
-	auto Size2 = location.getLocSize();
-	auto C = (location.m_offset - m_offset) + Size2;
-	auto minBoundary = -C;
-	auto maxBoundary = minBoundary + (Size1 + Size2);
-	auto Delta = 0;
+	const auto Size1 = getLocSize();
+	const auto Size2 = location.getLocSize();
+	const auto C = (location.m_offset - m_offset) + Size2;
+	const auto minBoundary = -C;
+	const auto maxBoundary = minBoundary + (Size1 + Size2);
+	const auto Delta = 0;
 	return Delta > minBoundary && Delta < maxBoundary;
 }
 

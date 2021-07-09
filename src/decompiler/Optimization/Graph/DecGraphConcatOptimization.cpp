@@ -6,7 +6,7 @@ CE::Decompiler::Optimization::GraphConcatOptimization::GraphConcatOptimization(D
 
 void CE::Decompiler::Optimization::GraphConcatOptimization::start() {
 	passAllTopNodes([&](DecBlock::BlockTopNode* topNode) {
-		auto node = topNode->getNode();
+		const auto node = topNode->getNode();
 		INode::UpdateDebugInfo(node);
 		findConcat(node);
 		});
@@ -17,7 +17,7 @@ void CE::Decompiler::Optimization::GraphConcatOptimization::findConcat(INode* no
 		findConcat(childNode);
 		});
 
-	if (auto opNode = dynamic_cast<OperationalNode*>(node)) {
+	if (const auto opNode = dynamic_cast<OperationalNode*>(node)) {
 		if (opNode->m_operation == Concat) {
 
 		}

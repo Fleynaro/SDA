@@ -68,8 +68,8 @@ void FunctionSignature::addParameter(Symbol::FuncParameterSymbol* symbol) {
 
 void FunctionSignature::addParameter(const std::string& name, DataTypePtr dataType, const std::string& comment) {
 	auto symbolManager = getTypeManager()->getProject()->getSymbolManager();
-	auto paramIdx = (int)m_parameters.size();
-	auto paramSymbol = symbolManager->getFactory().createFuncParameterSymbol(paramIdx, this, dataType, name, comment);
+	const auto paramIdx = static_cast<int>(m_parameters.size());
+	const auto paramSymbol = symbolManager->getFactory().createFuncParameterSymbol(paramIdx, this, dataType, name, comment);
 	addParameter(paramSymbol);
 }
 
@@ -93,11 +93,11 @@ FunctionCallInfo FunctionSignature::getCallInfo() {
 }
 
 void FunctionSignature::updateParameterStorages() {
-	for (auto pair : getCustomStorages()) {
-		auto paramIdx = pair.first;
-		auto storage = pair.second;
+	for (const auto pair : getCustomStorages()) {
+		const auto paramIdx = pair.first;
+		const auto storage = pair.second;
 		if (paramIdx >= 1 && paramIdx <= getParameters().size()) {
-			auto paramSize = getParameters()[paramIdx - 1]->getDataType()->getSize();
+			const auto paramSize = getParameters()[paramIdx - 1]->getDataType()->getSize();
 			m_paramInfos.push_back(ParameterInfo(paramIdx, paramSize, storage));
 		}
 		else if (paramIdx == 0) {
@@ -122,13 +122,13 @@ void FunctionSignature::updateParameterStorages() {
 				auto it = paramToReg.find(paramIdx);
 				if (it != paramToReg.end()) {
 					auto& reg = it->second;
-					auto regId = !paramType->isFloatingPoint() ? reg.first : reg.second;
-					auto storage = Storage(Storage::STORAGE_REGISTER, regId, 0x0);
+					const auto regId = !paramType->isFloatingPoint() ? reg.first : reg.second;
+					const auto storage = Storage(Storage::STORAGE_REGISTER, regId, 0x0);
 					m_paramInfos.push_back(ParameterInfo(paramIdx, paramType->getSize(), storage));
 				}
 			}
 			else {
-				auto storage = Storage(Storage::STORAGE_STACK, ZYDIS_REGISTER_RSP, paramIdx * 0x8);
+				const auto storage = Storage(Storage::STORAGE_STACK, ZYDIS_REGISTER_RSP, paramIdx * 0x8);
 				m_paramInfos.push_back(ParameterInfo(paramIdx, paramType->getSize(), storage));
 			}
 
@@ -138,8 +138,8 @@ void FunctionSignature::updateParameterStorages() {
 		//return
 		auto retType = getReturnType();
 		if (retType->getSize() != 0x0) {
-			auto regId = !retType->isFloatingPoint() ? ZYDIS_REGISTER_RAX : ZYDIS_REGISTER_ZMM0;
-			auto storage = Storage(Storage::STORAGE_REGISTER, regId, 0x0);
+			const auto regId = !retType->isFloatingPoint() ? ZYDIS_REGISTER_RAX : ZYDIS_REGISTER_ZMM0;
+			const auto storage = Storage(Storage::STORAGE_REGISTER, regId, 0x0);
 			m_paramInfos.push_back(ReturnInfo(retType->getSize(), storage));
 		}
 	}

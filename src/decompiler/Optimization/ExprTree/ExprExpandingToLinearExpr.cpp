@@ -14,7 +14,7 @@ void CE::Decompiler::Optimization::ExprExpandingToLinearExpr::start() {
 	// find all terms and know if m_doBuilding is true
 	defineTerms(getOpNode(), m_invisibleMultiplier);
 	if (m_doBuilding) {
-		auto linearExpr = buildLinearExpr();
+		const auto linearExpr = buildLinearExpr();
 		replace(linearExpr);
 		/*if (m_terms.size() == 1 && m_constTerm == 0x0) {
 		auto baseTerm = m_terms.begin()->second.first;
@@ -31,20 +31,20 @@ OperationalNode* CE::Decompiler::Optimization::ExprExpandingToLinearExpr::getOpN
 // using terms (including constant term) build linear expression
 
 LinearExpr* CE::Decompiler::Optimization::ExprExpandingToLinearExpr::buildLinearExpr() {
-	auto constTerm = new NumberLeaf((uint64_t&)m_constTerm, m_constTermSize);
+	const auto constTerm = new NumberLeaf((uint64_t&)m_constTerm, m_constTermSize);
 	auto linearExpr = new LinearExpr(constTerm, m_operationAdd); // todo: change size for number
 																 // iterate over all terms
 	for (auto termInfo : m_terms) {
 		auto node = termInfo.second.first;
 		auto mask = CalculateMask(node);
-		auto multiplier = (uint64_t&)termInfo.second.second;
+		const auto multiplier = (uint64_t&)termInfo.second.second;
 
 		INode* term;
 		if ((multiplier & mask.getValue()) == (m_invisibleMultiplier & mask.getValue())) {
 			term = termInfo.second.first;
 		}
 		else {
-			auto multiplierLeaf = new NumberLeaf(multiplier, node->getSize());
+			const auto multiplierLeaf = new NumberLeaf(multiplier, node->getSize());
 			term = new OperationalNode(node, multiplierLeaf, m_operationMul);
 		}
 		linearExpr->addTerm(term);
@@ -55,11 +55,11 @@ LinearExpr* CE::Decompiler::Optimization::ExprExpandingToLinearExpr::buildLinear
 //(5x - 10y) * 2 + 5 ->	{x: 10, y: -20, constTerm: 5}
 
 void CE::Decompiler::Optimization::ExprExpandingToLinearExpr::defineTerms(INode* node, int64_t k, int level) {
-	auto size = node->getSize();
+	const auto size = node->getSize();
 
 	// called for add operation (e.g. x + 5)
 	if (auto numberLeaf = dynamic_cast<INumberLeaf*>(node)) {
-		auto constTerm = ExprConstCalculating::Calculate(
+		const auto constTerm = ExprConstCalculating::Calculate(
 			numberLeaf->getValue(),
 			k,
 			m_operationMul,
@@ -83,7 +83,7 @@ void CE::Decompiler::Optimization::ExprExpandingToLinearExpr::defineTerms(INode*
 	}
 
 	//(x * 2) * 3 => x * 6
-	if (auto opNode = dynamic_cast<OperationalNode*>(node)) {
+	if (const auto opNode = dynamic_cast<OperationalNode*>(node)) {
 		if (opNode->m_operation == m_operationAdd) {
 			defineTerms(opNode->m_leftNode, k, level + 1);
 			defineTerms(opNode->m_rightNode, k, level + 1);
@@ -91,7 +91,7 @@ void CE::Decompiler::Optimization::ExprExpandingToLinearExpr::defineTerms(INode*
 		}
 		else if (opNode->m_operation == m_operationMul) {
 			if (auto rightNumberLeaf = dynamic_cast<INumberLeaf*>(opNode->m_rightNode)) {
-				auto newK = ExprConstCalculating::Calculate( // e.g. 5x * 5 -> 25x
+				const auto newK = ExprConstCalculating::Calculate( // e.g. 5x * 5 -> 25x
 					rightNumberLeaf->getValue(),
 					k,
 					m_operationMul,
@@ -104,7 +104,7 @@ void CE::Decompiler::Optimization::ExprExpandingToLinearExpr::defineTerms(INode*
 	}
 
 	// if {node} is not OperationalNode then it is a term
-	auto hashVal = node->getHash().getHashValue();
+	const auto hashVal = node->getHash().getHashValue();
 	if (m_terms.find(hashVal) == m_terms.end()) {
 		m_terms[hashVal] = std::make_pair(node, 0);
 	}
@@ -127,7 +127,7 @@ bool CE::Decompiler::Optimization::ExprExpandingToLinearExpr::defineOperationSta
 	if (op == Or || op == And) {
 		m_operationAdd = Or;
 		m_operationMul = And;
-		m_invisibleMultiplier = (int64_t)-1;
+		m_invisibleMultiplier = static_cast<int64_t>(-1);
 		return true;
 	}
 

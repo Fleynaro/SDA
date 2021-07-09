@@ -51,9 +51,9 @@ void CE::Decompiler::BlockFlowIterator::addBlockInfo(DecBlock* block, uint64_t p
 // add the bottommost blocks to the batch
 
 void CE::Decompiler::BlockFlowIterator::defineBlocksOnOneLevel() {
-	auto biggestLevel = getBiggestLevel();
+	const auto biggestLevel = getBiggestLevel();
 	for (auto it : m_blockInfos) {
-		auto block = it.first;
+		const auto block = it.first;
 		auto& blockInfo = it.second;
 		if (block->m_level == biggestLevel) { //find blocks with the highest level down
 			m_blocksOnOneLevel.push_back(blockInfo);
@@ -65,8 +65,8 @@ void CE::Decompiler::BlockFlowIterator::defineBlocksOnOneLevel() {
 
 int CE::Decompiler::BlockFlowIterator::getBiggestLevel() {
 	int biggestLevel = 0;
-	for (auto it : m_blockInfos) {
-		auto block = it.first;
+	for (const auto it : m_blockInfos) {
+		const auto block = it.first;
 		if (block->m_level > biggestLevel) {
 			biggestLevel = it.first->m_level;
 		}
@@ -79,11 +79,11 @@ void CE::Decompiler::BlockFlowIterator::distributePressure(BlockInfo blockInfo, 
 	m_blockInfos.erase(block); // block without pressure have to be removed (this pressure distributed for others)
 
 							   //if the start block is cycle then distribute the pressure for all referenced blocks. Next time don't it.
-	auto parentsCount = considerLoop ? block->getRefBlocksCount() : block->getRefHighBlocksCount();
+	const auto parentsCount = considerLoop ? block->getRefBlocksCount() : block->getRefHighBlocksCount();
 	if (parentsCount > 0) {
 		//calculate pressure for next blocks
-		auto bits = (int)ceil(log2((double)parentsCount));
-		auto addPressure = blockInfo.m_pressure >> bits;
+		const auto bits = static_cast<int>(ceil(log2((double)parentsCount)));
+		const auto addPressure = blockInfo.m_pressure >> bits;
 		auto restAddPressure = addPressure * ((1 << bits) % parentsCount);
 
 		//distribute the calculated pressure for each parent block

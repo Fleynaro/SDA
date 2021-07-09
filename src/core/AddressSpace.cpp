@@ -12,11 +12,11 @@ std::map<std::uintptr_t, CE::ImageDecorator*>& CE::AddressSpace::getImages()
 
 CE::ImageDecorator* CE::AddressSpace::getImageAt(std::uintptr_t addr)
 {
-	auto it = std::prev(m_images.upper_bound(addr));
+	const auto it = std::prev(m_images.upper_bound(addr));
 	if (it != m_images.end())
 	{
-		auto offset = it->first;
-		auto imageDec = it->second;
+		const auto offset = it->first;
+		const auto imageDec = it->second;
 		if (addr < offset + imageDec->getImage()->getSize())
 		{
 			return imageDec;

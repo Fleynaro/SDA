@@ -15,8 +15,8 @@ ConstantVarnode* InstructionPool::createConstantVarnode(uint64_t value, int size
 }
 
 Instruction* InstructionPool::getInstructionAt(int64_t instrOffset) {
-	auto byteOffset = instrOffset >> 8;
-	auto instrOrder = instrOffset & 0xFF;
+	const auto byteOffset = instrOffset >> 8;
+	const auto instrOrder = instrOffset & 0xFF;
 	auto it = m_origInstructions.find(byteOffset);
 	if (it == m_origInstructions.end())
 		throw InstructionNotFoundException();
@@ -53,7 +53,7 @@ Instruction* CE::Decompiler::PCode::InstructionPool::createInstruction(Instructi
 	auto instr = Instruction(id, input0, input1, output, origInstr, orderId);
 	origInstr->m_pcodeInstructions[orderId] = instr;
 	// check if can modificate the instruction
-	auto it = m_modifiedInstructions.find(instr.getOffset());
+	const auto it = m_modifiedInstructions.find(instr.getOffset());
 	if (it != m_modifiedInstructions.end()) {
 		modifyInstruction(&instr, it->second);
 	}

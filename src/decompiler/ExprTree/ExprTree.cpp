@@ -9,7 +9,7 @@ void CE::Decompiler::ExprTree::GatherSymbolLeafsFromNode(INode* node, std::list<
 		GatherSymbolLeafsFromNode(childNode, symbolLeafs, symbol);
 		});
 
-	if (auto symbolLeaf = dynamic_cast<SymbolLeaf*>(node)) {
+	if (const auto symbolLeaf = dynamic_cast<SymbolLeaf*>(node)) {
 		if (!symbol || symbolLeaf->m_symbol == symbol) {
 			symbolLeafs.push_back(symbolLeaf);
 		}
@@ -28,7 +28,7 @@ ExprBitMask CE::Decompiler::ExprTree::CalculateFullMask(INode* node) {
 	if (auto numberLeaf = dynamic_cast<INumberLeaf*>(node))
 		return numberLeaf->getValue();
 
-	if (auto opNode = dynamic_cast<OperationalNode*>(node))
+	if (const auto opNode = dynamic_cast<OperationalNode*>(node))
 	{
 		if (opNode->m_rightNode)
 		{
@@ -38,12 +38,12 @@ ExprBitMask CE::Decompiler::ExprTree::CalculateFullMask(INode* node) {
 			if (opNode->m_operation == Shl || opNode->m_operation == Shr) {
 				if (auto numberLeaf = dynamic_cast<INumberLeaf*>(opNode->m_rightNode)) {
 					if (opNode->m_operation == Shl) {
-						return CalculateFullMask(opNode->m_leftNode) << (int)numberLeaf->getValue();
+						return CalculateFullMask(opNode->m_leftNode) << static_cast<int>(numberLeaf->getValue());
 					}
 					else {
 						if (numberLeaf->getValue() == 64)
-							return uint64_t(0);
-						return CalculateFullMask(opNode->m_leftNode) >> (int)numberLeaf->getValue();
+							return static_cast<uint64_t>(0);
+						return CalculateFullMask(opNode->m_leftNode) >> static_cast<int>(numberLeaf->getValue());
 					}
 				}
 
@@ -63,15 +63,15 @@ ExprBitMask CE::Decompiler::ExprTree::CalculateFullMask(INode* node) {
 			case Add:
 			case Mul:
 			{
-				auto m1 = CalculateFullMask(opNode->m_leftNode).getValue();
-				auto m2 = CalculateFullMask(opNode->m_rightNode).getValue();
+				const auto m1 = CalculateFullMask(opNode->m_leftNode).getValue();
+				const auto m2 = CalculateFullMask(opNode->m_rightNode).getValue();
 				if (opNode->m_operation == Add) {
 					maxValue = m1 | m2 | (m1 + m2);
 				}
 				else {
 					maxValue = m1 * m2;
 					if (m1 != 0 && maxValue / m1 != m2) {
-						maxValue = (int64_t)-1;
+						maxValue = static_cast<int64_t>(-1);
 					}
 				}
 				break;

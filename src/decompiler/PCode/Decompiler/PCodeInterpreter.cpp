@@ -63,7 +63,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 		case InstructionId::INT_SUB:
 			opType = ExprTree::Add;
 			if (m_instr->m_id == InstructionId::INT_SUB) {
-				auto numberLeaf = new ExprTree::NumberLeaf((uint64_t)(int64_t)-1, m_instr->m_input1->getMask().getSize());
+				auto numberLeaf = new ExprTree::NumberLeaf(static_cast<uint64_t>((int64_t)-1), m_instr->m_input1->getMask().getSize());
 				op2 = new ExprTree::OperationalNode(op2, numberLeaf, ExprTree::Mul);
 			}
 			break;
@@ -119,7 +119,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 	case InstructionId::INT_2COMP:
 	{
 		auto expr = requestVarnode(m_instr->m_input0);
-		auto nodeMask = new ExprTree::NumberLeaf((uint64_t)(int64_t)-1, m_instr->m_input0->getMask().getSize());
+		auto nodeMask = new ExprTree::NumberLeaf(static_cast<uint64_t>((int64_t)-1), m_instr->m_input0->getMask().getSize());
 		auto opType = (m_instr->m_id == InstructionId::INT_2COMP) ? ExprTree::Mul : ExprTree::Xor;
 		m_ctx->setVarnode(m_instr->m_output, new ExprTree::OperationalNode(expr, nodeMask, opType, m_instr));
 		break;
@@ -141,9 +141,9 @@ void InstructionInterpreter::execute(Instruction* instr) {
 	{
 		auto expr = requestVarnode(m_instr->m_input0);
 		auto shiftExpr = requestVarnode(m_instr->m_input1);
-		shiftExpr = new ExprTree::OperationalNode(shiftExpr, new ExprTree::NumberLeaf((uint64_t)0x8, shiftExpr->getSize()), ExprTree::Mul);
+		shiftExpr = new ExprTree::OperationalNode(shiftExpr, new ExprTree::NumberLeaf(static_cast<uint64_t>(0x8), shiftExpr->getSize()), ExprTree::Mul);
 		expr = new ExprTree::OperationalNode(expr, shiftExpr, ExprTree::Shr);
-		auto numberLeaf = new ExprTree::NumberLeaf((uint64_t)-1, m_instr->m_output->getMask().getSize());
+		auto numberLeaf = new ExprTree::NumberLeaf(static_cast<uint64_t>(-1), m_instr->m_output->getMask().getSize());
 		expr = new ExprTree::OperationalNode(expr, numberLeaf, ExprTree::And, m_instr);
 		m_ctx->setVarnode(m_instr->m_output, expr);
 		break;
@@ -370,17 +370,17 @@ ExprTree::INode* InstructionInterpreter::buildParameterInfoExpr(ParameterInfo& p
 
 	// memory
 	if (storage.getType() == Storage::STORAGE_STACK || storage.getType() == Storage::STORAGE_GLOBAL) {
-		auto reg = m_decompiler->getRegisterFactory()->createRegister(storage.getRegisterId(), 0x8); // RIP or RSP (8 bytes = size of pointer)
+		const auto reg = m_decompiler->getRegisterFactory()->createRegister(storage.getRegisterId(), 0x8); // RIP or RSP (8 bytes = size of pointer)
 		auto regSymbol = m_ctx->m_registerExecCtx.requestRegister(reg);
-		auto offsetNumber = new ExprTree::NumberLeaf((uint64_t)storage.getOffset() - 0x8, regSymbol->getSize());
-		auto opAddNode = new ExprTree::OperationalNode(regSymbol, offsetNumber, ExprTree::Add);
-		auto readValueNode = new ExprTree::ReadValueNode(opAddNode, paramInfo.m_size);
+		const auto offsetNumber = new ExprTree::NumberLeaf(static_cast<uint64_t>(storage.getOffset()) - 0x8, regSymbol->getSize());
+		const auto opAddNode = new ExprTree::OperationalNode(regSymbol, offsetNumber, ExprTree::Add);
+		const auto readValueNode = new ExprTree::ReadValueNode(opAddNode, paramInfo.m_size);
 		return createMemSymbol(readValueNode);
 	}
 
 	// register
-	auto reg = m_decompiler->getRegisterFactory()->createRegister(storage.getRegisterId(), paramInfo.m_size, storage.getOffset());
-	auto regSymbol = m_ctx->m_registerExecCtx.requestRegister(reg);
+	const auto reg = m_decompiler->getRegisterFactory()->createRegister(storage.getRegisterId(), paramInfo.m_size, storage.getOffset());
+	const auto regSymbol = m_ctx->m_registerExecCtx.requestRegister(reg);
 	return regSymbol;
 }
 
@@ -392,19 +392,19 @@ ExprTree::INode* InstructionInterpreter::requestVarnode(PCode::Varnode* varnode)
 ExprTree::AbstractCondition* InstructionInterpreter::toBoolean(ExprTree::INode* node) {
 	if (!node)
 		return nullptr;
-	if (auto cond = dynamic_cast<ExprTree::AbstractCondition*>(node)) { // condition always returns boolean value
+	if (const auto cond = dynamic_cast<ExprTree::AbstractCondition*>(node)) { // condition always returns boolean value
 		return cond;
 	}
 	// otherwise make condition yourself: x != 0
-	return new ExprTree::Condition(node, new ExprTree::NumberLeaf((uint64_t)0x0, 1), ExprTree::Condition::Ne);
+	return new ExprTree::Condition(node, new ExprTree::NumberLeaf(static_cast<uint64_t>(0x0), 1), ExprTree::Condition::Ne);
 }
 
 ExprTree::SymbolLeaf* PCode::InstructionInterpreter::createMemSymbol(ExprTree::ReadValueNode* readValueNode, PCode::Instruction* instr) const
 {
-	auto memVar = new Symbol::MemoryVariable(instr, readValueNode->getSize());
+	const auto memVar = new Symbol::MemoryVariable(instr, readValueNode->getSize());
 	readValueNode->m_memVar = memVar;
 	m_block->m_decompiledGraph->addSymbol(memVar);
-	auto memSymbolLeaf = new ExprTree::SymbolLeaf(memVar);
+	const auto memSymbolLeaf = new ExprTree::SymbolLeaf(memVar);
 	m_block->addSeqLine(memSymbolLeaf, readValueNode, instr);
 	return memSymbolLeaf;
 }

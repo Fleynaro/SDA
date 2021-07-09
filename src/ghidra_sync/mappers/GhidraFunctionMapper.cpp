@@ -12,7 +12,7 @@ FunctionMapper::FunctionMapper(CE::FunctionManager* functionManager, DataTypeMap
 
 void FunctionMapper::load(packet::SDataFullSyncPacket* dataPacket) {
 	for (auto funcDesc : dataPacket->functions) {
-		auto function = m_functionManager->findFunctionByGhidraId(funcDesc.id);
+		const auto function = m_functionManager->findFunctionByGhidraId(funcDesc.id);
 		/*if (function == nullptr) {
 			auto mainModule = m_functionManager->getProject()->getProcessModuleManager()->getMainModule();
 			auto signatureType = m_functionManager->getProject()->getTypeManager()->createSignature("", "");
@@ -30,7 +30,7 @@ void markObjectAsSynced(SyncContext* ctx, Function* func) {
 }
 
 void FunctionMapper::upsert(SyncContext* ctx, IObject* obj) {
-	auto func = dynamic_cast<Function*>(obj);
+	const auto func = dynamic_cast<Function*>(obj);
 	ctx->m_dataPacket->functions.push_back(buildDesc(func));
 	markObjectAsSynced(ctx, func);
 }
@@ -53,7 +53,7 @@ function::SFunction FunctionMapper::buildDesc(Function* function) {
 	function::SFunction funcDesc;
 	funcDesc.__set_id(function->getGhidraId());
 
-	auto spliter = function->getName().find("::");
+	const auto spliter = function->getName().find("::");
 	if (spliter != std::string::npos) {
 		std::string funcName = function->getName();
 		funcName[spliter] = '_';

@@ -37,7 +37,7 @@ void CE::Decompiler::Optimization::GraphLastLineAndConditionOrderFixing::gatherL
 }
 
 bool CE::Decompiler::Optimization::GraphLastLineAndConditionOrderFixing::doSingleFix(INode* node, std::map<HS::Value, Symbol::LocalVariable*>& localVars) {
-	auto it = localVars.find(node->getHash().getHashValue());
+	const auto it = localVars.find(node->getHash().getHashValue());
 	if (it != localVars.end()) {
 		node->replaceWith(new SymbolLeaf(it->second));
 		delete node;

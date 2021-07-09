@@ -16,7 +16,7 @@ int CE::PEImage::getSize() {
 }
 
 int CE::PEImage::getOffsetOfEntryPoint() {
-	return (int)m_pImgNtHeaders->OptionalHeader.AddressOfEntryPoint;
+	return static_cast<int>(m_pImgNtHeaders->OptionalHeader.AddressOfEntryPoint);
 }
 
 std::uintptr_t CE::PEImage::getAddress() {

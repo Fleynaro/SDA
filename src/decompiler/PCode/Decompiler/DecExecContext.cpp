@@ -16,7 +16,7 @@ ExprTree::INode* RegisterExecContext::requestRegister(const PCode::Register& reg
 	BitMask64 needReadMask = reg.m_valueRangeMask;
 	auto regParts = findRegisterParts(reg.getId(), needReadMask);
 	if (!needReadMask.isZero()) {
-		auto symbol = new Symbol::RegisterVariable(reg);
+		const auto symbol = new Symbol::RegisterVariable(reg);
 		m_decompiler->m_decompiledGraph->addSymbol(symbol);
 		RegisterPart part;
 		part.m_regMask = reg.m_valueRangeMask;
@@ -66,8 +66,8 @@ void CE::Decompiler::RegisterExecContext::setRegister(const PCode::Register& reg
 void RegisterExecContext::copyFrom(RegisterExecContext* ctx) {
 	clear();
 
-	auto decompiler = m_decompiler;
-	auto execCtx = m_execContext;
+	const auto decompiler = m_decompiler;
+	const auto execCtx = m_execContext;
 	*this = *ctx;
 	m_decompiler = decompiler;
 	m_execContext = execCtx;
@@ -303,11 +303,11 @@ ExprTree::INode* CE::Decompiler::RegisterExecContext::CreateExprFromRegisterPart
 		});
 
 	//in most cases bitRightShift = 0
-	int bitRightShift = requestRegMask.getOffset();
+	const int bitRightShift = requestRegMask.getOffset();
 	for (auto& regPart : regParts) {
 		auto regExpr = regPart.m_expr;
-		int bitLeftShift = regPart.m_regMask.getOffset(); //e.g. if we requiest only AH,CH... registers.
-		auto bitShift = bitRightShift - bitLeftShift;
+		const int bitLeftShift = regPart.m_regMask.getOffset(); //e.g. if we requiest only AH,CH... registers.
+		const auto bitShift = bitRightShift - bitLeftShift;
 
 		//regMask = 0xFFFFFFFF, maskToChange = 0xFFFF0000: expr(eax) | expr(ax) => (expr1 & 0xFFFF0000) | expr2
 		if ((regPart.m_regMask & regPart.m_maskToChange) != regPart.m_regMask) {
@@ -316,7 +316,7 @@ ExprTree::INode* CE::Decompiler::RegisterExecContext::CreateExprFromRegisterPart
 		}
 
 		if (bitShift != 0) {
-			regExpr = new ExprTree::OperationalNode(regExpr, new ExprTree::NumberLeaf((uint64_t)abs(bitShift), regExpr->getSize()), bitShift > 0 ? ExprTree::Shr : ExprTree::Shl);
+			regExpr = new ExprTree::OperationalNode(regExpr, new ExprTree::NumberLeaf(static_cast<uint64_t>(abs(bitShift)), regExpr->getSize()), bitShift > 0 ? ExprTree::Shr : ExprTree::Shl);
 		}
 
 		if (resultExpr) {
@@ -334,19 +334,19 @@ CE::Decompiler::ExecContext::~ExecContext() {
 	m_registerExecCtx.clear();
 
 	for (auto& pair : m_symbolVarnodes) {
-		auto topNode = pair.second;
+		const auto topNode = pair.second;
 		delete topNode;
 	}
 }
 
 ExprTree::INode* CE::Decompiler::ExecContext::requestVarnode(PCode::Varnode* varnode) {
-	if (auto registerVarnode = dynamic_cast<PCode::RegisterVarnode*>(varnode)) {
+	if (const auto registerVarnode = dynamic_cast<PCode::RegisterVarnode*>(varnode)) {
 		return m_registerExecCtx.requestRegister(registerVarnode->m_register);
 	}
-	if (auto symbolVarnode = dynamic_cast<PCode::SymbolVarnode*>(varnode)) {
-		auto it = m_symbolVarnodes.find(symbolVarnode);
+	if (const auto symbolVarnode = dynamic_cast<PCode::SymbolVarnode*>(varnode)) {
+		const auto it = m_symbolVarnodes.find(symbolVarnode);
 		if (it != m_symbolVarnodes.end()) {
-			auto topNode = it->second;
+			const auto topNode = it->second;
 			return topNode->getNode();
 		}
 	}
@@ -357,12 +357,12 @@ ExprTree::INode* CE::Decompiler::ExecContext::requestVarnode(PCode::Varnode* var
 }
 
 void CE::Decompiler::ExecContext::setVarnode(PCode::Varnode* varnode, ExprTree::INode* newExpr) {
-	if (auto registerVarnode = dynamic_cast<PCode::RegisterVarnode*>(varnode)) {
+	if (const auto registerVarnode = dynamic_cast<PCode::RegisterVarnode*>(varnode)) {
 		m_registerExecCtx.setRegister(registerVarnode->m_register, newExpr);
 	}
-	if (auto symbolVarnode = dynamic_cast<PCode::SymbolVarnode*>(varnode)) {
+	if (const auto symbolVarnode = dynamic_cast<PCode::SymbolVarnode*>(varnode)) {
 		TopNode* topNode = nullptr;
-		auto it = m_symbolVarnodes.find(symbolVarnode);
+		const auto it = m_symbolVarnodes.find(symbolVarnode);
 		if (it != m_symbolVarnodes.end()) {
 			topNode = it->second;
 		}

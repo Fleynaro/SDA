@@ -14,8 +14,8 @@ namespace CE::Decompiler::ExprTree
 			
 			INumberLeaf* getMultiplier() const
 			{
-				if (auto sdaTermGenNode = dynamic_cast<SdaGenericNode*>(m_node)) {
-					if (auto opNode = dynamic_cast<OperationalNode*>(sdaTermGenNode->getNode())) {
+				if (const auto sdaTermGenNode = dynamic_cast<SdaGenericNode*>(m_node)) {
+					if (const auto opNode = dynamic_cast<OperationalNode*>(sdaTermGenNode->getNode())) {
 						if (opNode->m_operation == Mul) {
 							return dynamic_cast<INumberLeaf*>(opNode->m_rightNode);
 						}

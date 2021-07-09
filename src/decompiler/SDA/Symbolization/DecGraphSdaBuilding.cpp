@@ -54,8 +54,8 @@ SdaFunctionNode* CE::Decompiler::Symbolization::SdaBuilding::buildSdaFunctionNod
 
 SdaNumberLeaf* CE::Decompiler::Symbolization::SdaBuilding::buildSdaNumberLeaf(NumberLeaf* numberLeaf) const
 {
-	auto dataType = m_project->getTypeManager()->calcDataTypeForNumber(numberLeaf->getValue());
-	auto sdaNumberLeaf = new SdaNumberLeaf(numberLeaf->getValue(), dataType);
+	const auto dataType = m_project->getTypeManager()->calcDataTypeForNumber(numberLeaf->getValue());
+	const auto sdaNumberLeaf = new SdaNumberLeaf(numberLeaf->getValue(), dataType);
 	return sdaNumberLeaf;
 }
 
@@ -63,7 +63,7 @@ SdaNumberLeaf* CE::Decompiler::Symbolization::SdaBuilding::buildSdaNumberLeaf(Nu
 
 SdaReadValueNode* CE::Decompiler::Symbolization::SdaBuilding::buildReadValueNode(ReadValueNode* readValueNode) const
 {
-	auto dataType = m_project->getTypeManager()->getDefaultType(readValueNode->getSize());
+	const auto dataType = m_project->getTypeManager()->getDefaultType(readValueNode->getSize());
 	return new SdaReadValueNode(readValueNode, dataType);
 }
 
@@ -79,28 +79,28 @@ void CE::Decompiler::Symbolization::SdaBuilding::buildSdaNodesAndReplace(INode* 
 		return;
 
 	if (auto readValueNode = dynamic_cast<ReadValueNode*>(node)) {
-		auto sdaReadValueNode = buildReadValueNode(readValueNode);
+		const auto sdaReadValueNode = buildReadValueNode(readValueNode);
 		readValueNode->replaceWith(sdaReadValueNode);
 		readValueNode->addParentNode(sdaReadValueNode);
 		return;
 	}
 
 	if (auto funcCall = dynamic_cast<FunctionCall*>(node)) {
-		auto functionNode = buildSdaFunctionNode(funcCall);
+		const auto functionNode = buildSdaFunctionNode(funcCall);
 		funcCall->replaceWith(functionNode);
 		funcCall->addParentNode(functionNode);
 		return;
 	}
 
 	if (auto numberLeaf = dynamic_cast<NumberLeaf*>(node)) {
-		auto sdaNumberLeaf = buildSdaNumberLeaf(numberLeaf);
+		const auto sdaNumberLeaf = buildSdaNumberLeaf(numberLeaf);
 		numberLeaf->replaceWith(sdaNumberLeaf);
 		delete numberLeaf;
 		return;
 	}
 
 	// linear expr. or some symbol leaf
-	auto symbolLeaf = dynamic_cast<SymbolLeaf*>(node);
+	const auto symbolLeaf = dynamic_cast<SymbolLeaf*>(node);
 	auto linearExpr = dynamic_cast<LinearExpr*>(node);
 	if (symbolLeaf || linearExpr) {
 		//find symbol and offset
@@ -113,8 +113,8 @@ void CE::Decompiler::Symbolization::SdaBuilding::buildSdaNodesAndReplace(INode* 
 		}
 		else if (linearExpr) {
 			for (auto term : linearExpr->getTerms()) { // finding symbol among terms
-				if (auto termSymbolLeaf = dynamic_cast<SymbolLeaf*>(term)) {
-					if (auto regSymbol = dynamic_cast<Symbol::RegisterVariable*>(termSymbolLeaf->m_symbol)) {
+				if (const auto termSymbolLeaf = dynamic_cast<SymbolLeaf*>(term)) {
+					if (const auto regSymbol = dynamic_cast<Symbol::RegisterVariable*>(termSymbolLeaf->m_symbol)) {
 						if (regSymbol->m_register.isPointer()) {
 							sdaSymbolLeafToReplace = termSymbolLeaf;
 							offset = linearExpr->getConstTermValue();
@@ -131,7 +131,7 @@ void CE::Decompiler::Symbolization::SdaBuilding::buildSdaNodesAndReplace(INode* 
 			bool transformToGlobalOffset = false;
 			bool isStackOrGlobal = false;
 			//check to see if this symbol is register
-			if (auto regSymbol = dynamic_cast<Symbol::RegisterVariable*>(sdaSymbolLeafToReplace->m_symbol)) {
+			if (const auto regSymbol = dynamic_cast<Symbol::RegisterVariable*>(sdaSymbolLeafToReplace->m_symbol)) {
 				//if [rip] or [rsp] register
 				if (regSymbol->m_register.isPointer()) {
 					//transform to global offset
@@ -171,7 +171,7 @@ void CE::Decompiler::Symbolization::SdaBuilding::buildSdaNodesAndReplace(INode* 
 				offset = toGlobalOffset(offset);
 
 			//find symbol or create it
-			auto sdaSymbol = findOrCreateSymbol(sdaSymbolLeafToReplace->m_symbol, size, offset);
+			const auto sdaSymbol = findOrCreateSymbol(sdaSymbolLeafToReplace->m_symbol, size, offset);
 
 			//after findOrCreateSymbol
 			if (transformToGlobalOffset)
@@ -180,7 +180,7 @@ void CE::Decompiler::Symbolization::SdaBuilding::buildSdaNodesAndReplace(INode* 
 			// creating sda symbol leaf (memory or normal)
 			SdaSymbolLeaf* newSdaSymbolLeaf = nullptr;
 			if (auto memSymbol = dynamic_cast<CE::Symbol::IMemorySymbol*>(sdaSymbol)) {
-				auto storage = memSymbol->getStorage();
+				const auto storage = memSymbol->getStorage();
 				if (storage.getType() == Storage::STORAGE_STACK || storage.getType() == Storage::STORAGE_GLOBAL) {
 					// stackVar or globalVar
 					newSdaSymbolLeaf = new SdaMemSymbolLeaf(memSymbol, sdaSymbolLeafToReplace->m_symbol, storage.getOffset(), true);
@@ -216,13 +216,13 @@ void CE::Decompiler::Symbolization::SdaBuilding::buildSdaNodesAndReplace(INode* 
 		return;
 
 	//otherwise create generic sda node
-	auto sdaNode = new SdaGenericNode(node, m_project->getTypeManager()->getDefaultType(node->getSize(), false, node->isFloatingPoint()));
+	const auto sdaNode = new SdaGenericNode(node, m_project->getTypeManager()->getDefaultType(node->getSize(), false, node->isFloatingPoint()));
 	node->replaceWith(sdaNode);
 	node->addParentNode(sdaNode);
 }
 
 CE::Symbol::ISymbol* CE::Decompiler::Symbolization::SdaBuilding::findOrCreateSymbol(Symbol::Symbol* symbol, int size, int64_t& offset) {
-	if (auto sdaSymbol = loadSdaSymbolIfMem(symbol, offset))
+	if (const auto sdaSymbol = loadSdaSymbolIfMem(symbol, offset))
 		return sdaSymbol;
 
 	//try to find corresponding function parameter if {symbol} is register (RCX -> param1, RDX -> param2)
@@ -236,7 +236,7 @@ CE::Symbol::ISymbol* CE::Decompiler::Symbolization::SdaBuilding::findOrCreateSym
 				auto& funcParams = m_symbolCtx->m_signature->getParameters();
 				if (paramIdx <= funcParams.size()) {
 					//USER-DEFINED func. parameter
-					auto sdaSymbol = funcParams[paramIdx - 1];
+					const auto sdaSymbol = funcParams[paramIdx - 1];
 					storeSdaSymbolIfMem(sdaSymbol, symbol, offset);
 					m_userDefinedSymbols.insert(sdaSymbol);
 					return sdaSymbol;
@@ -251,7 +251,7 @@ CE::Symbol::ISymbol* CE::Decompiler::Symbolization::SdaBuilding::findOrCreateSym
 
 		if (paramIdx > 0) {
 			//auto func. parameter
-			auto defType = m_project->getTypeManager()->getDefaultType(size);
+			const auto defType = m_project->getTypeManager()->getDefaultType(size);
 			auto funcParamSymbol = m_symbolFactory.createFuncParameterSymbol(paramIdx, m_symbolCtx->m_signature, defType, "param" + std::to_string(paramIdx));
 			funcParamSymbol->setAutoSymbol(true);
 			storeSdaSymbolIfMem(funcParamSymbol, symbol, offset);
@@ -259,26 +259,26 @@ CE::Symbol::ISymbol* CE::Decompiler::Symbolization::SdaBuilding::findOrCreateSym
 		}
 
 		//MEMORY symbol with offset (e.g. globalVar1)
-		bool isStackPointer = (reg.getType() == Register::Type::StackPointer);
+		const bool isStackPointer = (reg.getType() == Register::Type::StackPointer);
 		if (isStackPointer || reg.getType() == Register::Type::InstructionPointer) {
 			//try to find USER-DEFINED symbol in mem. area
 			auto symTable = isStackPointer ? m_symbolCtx->m_stackSymbolTable : m_symbolCtx->m_globalSymbolTable;
-			auto symbolPair = symTable->getSymbolAt(offset);
+			const auto symbolPair = symTable->getSymbolAt(offset);
 			if (symbolPair.second != nullptr) {
 				offset -= symbolPair.first;
-				auto sdaSymbol = symbolPair.second;
+				const auto sdaSymbol = symbolPair.second;
 				m_userDefinedSymbols.insert(sdaSymbol);
 				return sdaSymbol;
 			}
 
 			CE::Symbol::AbstractSymbol* sdaSymbol = nullptr;
-			auto dataType = m_project->getTypeManager()->getDefaultType(size);
+			const auto dataType = m_project->getTypeManager()->getDefaultType(size);
 			if (isStackPointer) {
-				auto name = "stack_0x" + Helper::String::NumberToHex((uint32_t)-offset);
+				const auto name = "stack_0x" + Helper::String::NumberToHex(static_cast<uint32_t>(-offset));
 				sdaSymbol = m_symbolFactory.createLocalStackVarSymbol(offset, dataType, name);
 			}
 			else {
-				auto name = "global_0x" + Helper::String::NumberToHex(offset);
+				const auto name = "global_0x" + Helper::String::NumberToHex(offset);
 				sdaSymbol = m_symbolFactory.createGlobalVarSymbol(offset, dataType, name);
 			}
 			m_newAutoSymbols.insert(sdaSymbol);
@@ -287,7 +287,7 @@ CE::Symbol::ISymbol* CE::Decompiler::Symbolization::SdaBuilding::findOrCreateSym
 		}
 
 		//NOT-MEMORY symbol (unknown registers)
-		auto defType = m_project->getTypeManager()->getDefaultType(size);
+		const auto defType = m_project->getTypeManager()->getDefaultType(size);
 		auto sdaSymbol = m_symbolFactory.createLocalInstrVarSymbol(defType, "in_" + reg.printDebug());
 		sdaSymbol->setAutoSymbol(true);
 		m_newAutoSymbols.insert(sdaSymbol);
@@ -303,9 +303,9 @@ CE::Symbol::ISymbol* CE::Decompiler::Symbolization::SdaBuilding::findOrCreateSym
 
 		if (!instrOffsets.empty()) {
 			for (auto instrOffset : instrOffsets) {
-				auto symbolPair = m_symbolCtx->m_funcBodySymbolTable->getSymbolAt(instrOffset);
+				const auto symbolPair = m_symbolCtx->m_funcBodySymbolTable->getSymbolAt(instrOffset);
 				if (symbolPair.second != nullptr) {
-					auto sdaSymbol = symbolPair.second;
+					const auto sdaSymbol = symbolPair.second;
 					m_userDefinedSymbols.insert(sdaSymbol);
 					return sdaSymbol;
 				}
@@ -321,8 +321,8 @@ CE::Symbol::ISymbol* CE::Decompiler::Symbolization::SdaBuilding::findOrCreateSym
 		else if (dynamic_cast<Symbol::FunctionResultVar*>(symbol))
 			suffix = "func";
 
-		auto defType = m_project->getTypeManager()->getDefaultType(size);
-		auto name = suffix + "Var" + Helper::String::NumberToHex(symbolWithId->getId());
+		const auto defType = m_project->getTypeManager()->getDefaultType(size);
+		const auto name = suffix + "Var" + Helper::String::NumberToHex(symbolWithId->getId());
 
 		auto sdaSymbol = m_symbolFactory.createLocalInstrVarSymbol(defType, name);
 		sdaSymbol->setAutoSymbol(true);
@@ -339,14 +339,14 @@ CE::Symbol::ISymbol* CE::Decompiler::Symbolization::SdaBuilding::loadSdaSymbolIf
 	if (auto regSymbol = dynamic_cast<Symbol::RegisterVariable*>(symbol)) {
 		auto& reg = regSymbol->m_register;
 		if (reg.getType() == Register::Type::StackPointer) {
-			auto it = m_stackToSymbols.find(offset);
+			const auto it = m_stackToSymbols.find(offset);
 			if (it != m_stackToSymbols.end()) {
 				offset = 0x0;
 				return it->second;
 			}
 		}
 		else if (reg.getType() == Register::Type::InstructionPointer) {
-			auto it = m_globalToSymbols.find(offset);
+			const auto it = m_globalToSymbols.find(offset);
 			if (it != m_globalToSymbols.end()) {
 				offset = toGlobalOffset(0x0);
 				return it->second;

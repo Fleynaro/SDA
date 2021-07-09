@@ -98,12 +98,12 @@ std::list<PCode::Instruction*> CE::Decompiler::ExprTree::OperationalNode::getIns
 
 HS CE::Decompiler::ExprTree::OperationalNode::getHash() {
 	auto hs = HS()
-		<< (int)m_operation
+		<< static_cast<int>(m_operation)
 		<< getSize()
 		<< isFloatingPoint();
 
-	auto leftNodeHash = m_leftNode->getHash();
-	auto rightNodeHash = m_rightNode ? m_rightNode->getHash() : 0x0;
+	const auto leftNodeHash = m_leftNode->getHash();
+	const auto rightNodeHash = m_rightNode ? m_rightNode->getHash() : 0x0;
 	if (IsOperationMoving(m_operation)) {
 		hs = hs << (leftNodeHash + rightNodeHash);
 	}
@@ -132,7 +132,7 @@ std::string CE::Decompiler::ExprTree::OperationalNode::printDebug() {
 	if (!m_leftNode || !m_rightNode)
 		return "";
 	std::string result = "";
-	auto opSizeStr = getOpSize(getSize(), isFloatingPoint());
+	const auto opSizeStr = getOpSize(getSize(), isFloatingPoint());
 	if (m_operation == Xor) {
 		auto numLeaf = dynamic_cast<INumberLeaf*>(m_rightNode);
 		if (numLeaf && numLeaf->getValue() == -1) {
@@ -169,8 +169,8 @@ int CE::Decompiler::ExprTree::ReadValueNode::getSize() {
 }
 
 INode* CE::Decompiler::ExprTree::ReadValueNode::clone(NodeCloneContext* ctx) {
-	auto memVar = m_memVar ? dynamic_cast<Symbol::MemoryVariable*>(m_memVar->clone(ctx)) : nullptr;
-	auto readValueNode = new ReadValueNode(m_leftNode->clone(ctx), m_size, m_instr);
+	const auto memVar = m_memVar ? dynamic_cast<Symbol::MemoryVariable*>(m_memVar->clone(ctx)) : nullptr;
+	const auto readValueNode = new ReadValueNode(m_leftNode->clone(ctx), m_size, m_instr);
 	readValueNode->m_memVar = memVar;
 	return readValueNode;
 }
@@ -214,7 +214,7 @@ int CE::Decompiler::ExprTree::FunctionalNode::getSize() {
 }
 
 HS CE::Decompiler::ExprTree::FunctionalNode::getHash() {
-	return OperationalNode::getHash() << (int)m_funcId;
+	return OperationalNode::getHash() << static_cast<int>(m_funcId);
 }
 
 INode* CE::Decompiler::ExprTree::FunctionalNode::clone(NodeCloneContext* ctx) {
@@ -232,7 +232,7 @@ int CE::Decompiler::ExprTree::FloatFunctionalNode::getSize() {
 }
 
 HS CE::Decompiler::ExprTree::FloatFunctionalNode::getHash() {
-	return OperationalNode::getHash() << (int)m_funcId;
+	return OperationalNode::getHash() << static_cast<int>(m_funcId);
 }
 
 bool CE::Decompiler::ExprTree::FloatFunctionalNode::isFloatingPoint() {

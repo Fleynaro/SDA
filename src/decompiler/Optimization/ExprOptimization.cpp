@@ -36,7 +36,7 @@ void CE::Decompiler::Optimization::ExprOptimization::optimizeGenerally(INode* no
 	node = exprUnification.getNode();
 	m_isChanged |= exprUnification.isChanged();
 
-	if (auto opNode = dynamic_cast<OperationalNode*>(node)) {
+	if (const auto opNode = dynamic_cast<OperationalNode*>(node)) {
 		ExprConstCalculating exprConstCalculating(opNode);
 		exprConstCalculating.start();
 		node = exprConstCalculating.getNode();
@@ -49,19 +49,19 @@ void CE::Decompiler::Optimization::ExprOptimization::optimizeGenerally(INode* no
 	m_isChanged |= exprConcatAndSubpieceBuilding.isChanged();
 
 	// condition
-	if (auto cond = dynamic_cast<AbstractCondition*>(node)) {
+	if (const auto cond = dynamic_cast<AbstractCondition*>(node)) {
 		ExprConstConditionCalculating exprConstConditionCalculating(cond);
 		exprConstConditionCalculating.start();
 		node = exprConstConditionCalculating.getNode();
 		m_isChanged |= exprConstConditionCalculating.isChanged();
 	}
-	if (auto cond = dynamic_cast<Condition*>(node)) {
+	if (const auto cond = dynamic_cast<Condition*>(node)) {
 		ExprSimpleConditionOptimization exprSimpleConditionOptimization(cond);
 		exprSimpleConditionOptimization.start();
 		node = exprSimpleConditionOptimization.getNode();
 		m_isChanged |= exprSimpleConditionOptimization.isChanged();
 	}
-	else if (auto compCond = dynamic_cast<CompositeCondition*>(node)) {
+	else if (const auto compCond = dynamic_cast<CompositeCondition*>(node)) {
 		ExprCompositeConditionOptimization exprCompositeConditionOptimization(compCond);
 		exprCompositeConditionOptimization.start();
 		node = exprCompositeConditionOptimization.getNode();
@@ -85,7 +85,7 @@ void CE::Decompiler::Optimization::ExprOptimization::linearExprToOpNodes(INode* 
 }
 
 void CE::Decompiler::Optimization::ExprOptimization::opNodesToLinearExpr(INode* node) {
-	if (auto opNode = dynamic_cast<OperationalNode*>(node)) {
+	if (const auto opNode = dynamic_cast<OperationalNode*>(node)) {
 		ExprExpandingToLinearExpr exprExpandingToLinearExpr(opNode);
 		exprExpandingToLinearExpr.start();
 		node = exprExpandingToLinearExpr.getNode();

@@ -16,8 +16,8 @@ void CE::Decompiler::Optimization::GraphCondBlockOptimization::start() {
 void CE::Decompiler::Optimization::GraphCondBlockOptimization::doBlockJoining() {
 	//join conditions and remove useless blocks
 	for (auto it = m_decGraph->getDecompiledBlocks().rbegin(); it != m_decGraph->getDecompiledBlocks().rend(); it++) {
-		auto block = *it;
-		while (auto removedBlock = joinCondition(block)) {
+		const auto block = *it;
+		while (const auto removedBlock = joinCondition(block)) {
 			optimizeConditionDecBlock(block);
 			m_decGraph->removeDecompiledBlock(removedBlock);
 			it = m_decGraph->getDecompiledBlocks().rbegin();
@@ -28,7 +28,7 @@ void CE::Decompiler::Optimization::GraphCondBlockOptimization::doBlockJoining() 
 void CE::Decompiler::Optimization::GraphCondBlockOptimization::optimizeConditionDecBlock(DecBlock* block) {
 	if (!block->isCondition())
 		return;
-	auto delta = block->getNextNearBlock()->m_level - block->m_level;
+	const auto delta = block->getNextNearBlock()->m_level - block->m_level;
 	if (delta >= 1 && delta < block->getNextFarBlock()->m_level - block->m_level)
 		return;
 	block->swapNextBlocks();
@@ -40,7 +40,7 @@ DecBlock* CE::Decompiler::Optimization::GraphCondBlockOptimization::joinConditio
 		return nullptr;
 
 	auto removedBlock = block->getNextNearBlock();
-	auto mutualBlock = block->getNextFarBlock();
+	const auto mutualBlock = block->getNextFarBlock();
 	if (!removedBlock->hasNoCode() || !removedBlock->isCondition() || removedBlock->getRefBlocksCount() != 1)
 		return nullptr;
 

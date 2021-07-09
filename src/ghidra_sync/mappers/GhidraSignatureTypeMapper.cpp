@@ -10,17 +10,17 @@ SignatureTypeMapper::SignatureTypeMapper(DataTypeMapper* dataTypeMapper)
 
 void SignatureTypeMapper::load(packet::SDataFullSyncPacket* dataPacket) {
 	for (auto sigDesc : dataPacket->signatures) {
-		auto type = m_dataTypeMapper->m_typeManager->findTypeByGhidraId(sigDesc.type.id);
+		const auto type = m_dataTypeMapper->m_typeManager->findTypeByGhidraId(sigDesc.type.id);
 		if (type == nullptr)
 			throw std::exception("item not found");
-		if (auto sigDef = dynamic_cast<DataType::FunctionSignature*>(type)) {
+		if (const auto sigDef = dynamic_cast<DataType::FunctionSignature*>(type)) {
 			changeSignatureByDesc(sigDef, sigDesc);
 		}
 	}
 }
 
 void SignatureTypeMapper::upsert(SyncContext* ctx, IObject* obj) {
-	auto type = dynamic_cast<DataType::FunctionSignature*>(obj);
+	const auto type = dynamic_cast<DataType::FunctionSignature*>(obj);
 	ctx->m_dataPacket->signatures.push_back(buildDesc(type));
 	m_dataTypeMapper->upsert(ctx, obj);
 }

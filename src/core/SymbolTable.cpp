@@ -32,7 +32,7 @@ std::map<int64_t, AbstractSymbol*>::iterator SymbolTable::getSymbolIterator(int6
 	if (!m_symbols.empty()) {
 		auto it = std::prev(m_symbols.upper_bound(offset));
 		if (it != m_symbols.end()) {
-			auto symbolOffset = it->first;
+			const auto symbolOffset = it->first;
 			auto symbol = it->second;
 			if (offset < symbolOffset + symbol->getSize()) {
 				return it;

@@ -32,7 +32,7 @@ std::string CE::Decompiler::Misc::ShowAllSymbols(SdaCodeGraph* sdaCodeGraph) {
 LinearView::BlockList* CE::Decompiler::Misc::BuildBlockList(DecompiledCodeGraph* graph) {
     auto converter = LinearView::Converter(graph);
     converter.start();
-    auto blockList = converter.getBlockList();
+    const auto blockList = converter.getBlockList();
     OptimizeBlockList(blockList);
     return blockList;
 }

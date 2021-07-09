@@ -8,7 +8,7 @@ using namespace CE::DataType;
 CE::DataType::Structure::Structure(TypeManager* typeManager, const std::string& name, const std::string& comment)
 	: UserDefinedType(typeManager, name, comment)
 {
-	auto factory = typeManager->getProject()->getSymbolManager()->getFactory(false);
+	const auto factory = typeManager->getProject()->getSymbolManager()->getFactory(false);
 	m_defaultField = factory.createStructFieldSymbol(-1, -1, this, GetUnit(typeManager->getFactory().getDefaultType()), "undefined");
 }
 
@@ -42,7 +42,7 @@ Structure::FieldMapType& Structure::getFields() {
 }
 
 int Structure::getNextEmptyBitsCount(int bitOffset) {
-	auto it = m_fields.upper_bound(bitOffset);
+	const auto it = m_fields.upper_bound(bitOffset);
 	if (it != m_fields.end()) {
 		return it->first - bitOffset;
 	}
@@ -66,7 +66,7 @@ bool Structure::areEmptyFieldsInBytes(int offset, int size) {
 }
 
 Structure::Field* Structure::getField(int bitOffset) {
-	auto it = getFieldIterator(bitOffset);
+	const auto it = getFieldIterator(bitOffset);
 	if (it != m_fields.end()) {
 		return it->second;
 	}
@@ -78,8 +78,8 @@ void Structure::addField(int offset, const std::string& name, DataTypePtr type, 
 }
 
 void Structure::addField(int bitOffset, int bitSize, const std::string& name, DataTypePtr type, const std::string& comment) {
-	auto factory = getTypeManager()->getProject()->getSymbolManager()->getFactory();
-	auto field = factory.createStructFieldSymbol(bitOffset, bitSize, this, type, name, comment);
+	const auto factory = getTypeManager()->getProject()->getSymbolManager()->getFactory();
+	const auto field = factory.createStructFieldSymbol(bitOffset, bitSize, this, type, name, comment);
 	addField(field);
 }
 
@@ -94,7 +94,7 @@ bool Structure::removeField(Field* field) {
 }
 
 bool Structure::removeField(int bitOffset) {
-	auto it = getFieldIterator(bitOffset);
+	const auto it = getFieldIterator(bitOffset);
 	if (it != m_fields.end()) {
 		m_fields.erase(it);
 		return true;
@@ -103,7 +103,7 @@ bool Structure::removeField(int bitOffset) {
 }
 
 bool Structure::moveField(int bitOffset, int bitsCount) {
-	auto it = getFieldIterator(bitOffset);
+	const auto it = getFieldIterator(bitOffset);
 	if (it == m_fields.end())
 		return false;
 	auto field = it->second;

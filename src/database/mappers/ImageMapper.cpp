@@ -33,7 +33,7 @@ CE::ImageManager* DB::ImageMapper::getManager() const
 IDomainObject* DB::ImageMapper::doLoad(Database* db, SQLite::Statement& query) {
 	int image_id = query.getColumn("image_id");
 	int parent_image_id = query.getColumn("parent_image_id");
-	auto type = (CE::ImageDecorator::IMAGE_TYPE)(int)query.getColumn("type");
+	auto type = static_cast<CE::ImageDecorator::IMAGE_TYPE>((int)query.getColumn("type"));
 	//std::uintptr_t addr = (int64_t)query.getColumn("addr");
 	std::string name = query.getColumn("name");
 	std::string comment = query.getColumn("comment");
@@ -125,7 +125,7 @@ void DB::ImageMapper::doUpdate(TransactionContext* ctx, IDomainObject* obj) {
 }
 
 void DB::ImageMapper::doRemove(TransactionContext* ctx, IDomainObject* obj) {
-	std::string action_query_text =
+	const std::string action_query_text =
 		ctx->m_notDelete ? "UPDATE sda_images SET deleted=1" : "DELETE FROM sda_images";
 	Statement query(*ctx->m_db, action_query_text + " WHERE image_id=?1");
 	query.bind(1, obj->getId());
@@ -153,34 +153,34 @@ void DB::ImageMapper::loadFuncPCodeGraphJson(const json& json_func_graph, CE::De
 
 	// load blocks
 	for (const auto& json_pcode_block : json_func_graph["blocks"]) {
-		auto level = json_pcode_block["level"].get<int>();
-		auto min_offset = json_pcode_block["min_offset"].get<int64_t>();
-		auto max_offset = json_pcode_block["max_offset"].get<int64_t>();
+		const auto level = json_pcode_block["level"].get<int>();
+		const auto min_offset = json_pcode_block["min_offset"].get<int64_t>();
+		const auto max_offset = json_pcode_block["max_offset"].get<int64_t>();
 
-		auto block = imgPCodeGraph->createBlock(min_offset, max_offset);
+		const auto block = imgPCodeGraph->createBlock(min_offset, max_offset);
 		block->m_level = level;
 		funcGraph->addBlock(block);
 		decodePCodeBlock(block, imageDec);
 	}
 	// load block connections
 	for (const auto& json_pcode_block : json_func_graph["blocks"]) {
-		auto min_offset = json_pcode_block["min_offset"].get<int64_t>();
+		const auto min_offset = json_pcode_block["min_offset"].get<int64_t>();
 		auto block = imgPCodeGraph->getBlockAtOffset(min_offset);
 
 		if (json_pcode_block.contains("next_near_block")) {
-			auto next_near_block = json_pcode_block["next_near_block"].get<int64_t>();
-			auto nextNearBlock = imgPCodeGraph->getBlockAtOffset(next_near_block);
+			const auto next_near_block = json_pcode_block["next_near_block"].get<int64_t>();
+			const auto nextNearBlock = imgPCodeGraph->getBlockAtOffset(next_near_block);
 			block->setNextNearBlock(nextNearBlock);
 		}
 		if (json_pcode_block.contains("next_far_block")) {
-			auto next_far_block = json_pcode_block["next_far_block"].get<int64_t>();
-			auto nextFarBlock = imgPCodeGraph->getBlockAtOffset(next_far_block);
+			const auto next_far_block = json_pcode_block["next_far_block"].get<int64_t>();
+			const auto nextFarBlock = imgPCodeGraph->getBlockAtOffset(next_far_block);
 			block->setNextNearBlock(nextFarBlock);
 		}
 	}
 	// load start block
-	auto start_block = json_func_graph["start_block"].get<int64_t>();
-	auto startBlock = imgPCodeGraph->getBlockAtOffset(start_block);
+	const auto start_block = json_func_graph["start_block"].get<int64_t>();
+	const auto startBlock = imgPCodeGraph->getBlockAtOffset(start_block);
 	funcGraph->setStartBlock(startBlock);
 }
 

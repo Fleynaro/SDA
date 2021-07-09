@@ -53,13 +53,13 @@ bool CE::Decompiler::PCode::Register::intersect(const Register& reg) const {
 
 std::string CE::Decompiler::PCode::Register::printDebug() const
 {
-	auto regId = (ZydisRegister)m_genericId;
+	const auto regId = static_cast<ZydisRegister>(m_genericId);
 
-	auto size = getSize();
+	const auto size = getSize();
 	std::string maskStr = std::to_string(size);
 	if (isVector()) {
 		if (size == 4 || size == 8) {
-			maskStr = std::string(size == 4 ? "D" : "Q") + (char)('a' + (char)(getOffset() / (size * 8)));
+			maskStr = std::string(size == 4 ? "D" : "Q") + static_cast<char>('a' + (char)(getOffset() / (size * 8)));
 		}
 	}
 
@@ -67,7 +67,7 @@ std::string CE::Decompiler::PCode::Register::printDebug() const
 		return std::string(ZydisRegisterGetString(regId)) + ":" + maskStr;
 
 	std::string flagName = "flag";
-	auto flag = (ZydisCPUFlag)m_valueRangeMask.getOffset();
+	const auto flag = static_cast<ZydisCPUFlag>(m_valueRangeMask.getOffset());
 	if (flag == ZYDIS_CPUFLAG_CF)
 		flagName = "CF";
 	else if (flag == ZYDIS_CPUFLAG_OF)

@@ -11,7 +11,7 @@ CE::Decompiler::AbstractPrimaryDecompiler::~AbstractPrimaryDecompiler() {
 	}
 
 	for (auto& pair : m_localVars) {
-		auto localVar = pair.first;
+		const auto localVar = pair.first;
 		auto& localVarInfo = pair.second;
 		if (!localVarInfo.m_used)
 			delete localVar;
@@ -63,9 +63,9 @@ AbstractRegisterFactory* CE::Decompiler::AbstractPrimaryDecompiler::getRegisterF
 FunctionCallInfo CE::Decompiler::AbstractPrimaryDecompiler::requestFunctionCallInfo(ExecContext* ctx, PCode::Instruction* instr) {
 	int funcOffset = 0;
 	auto& constValues = m_decompiledGraph->getFuncGraph()->getConstValues();
-	auto it = constValues.find(instr);
+	const auto it = constValues.find(instr);
 	if (it != constValues.end())
-		funcOffset = (int)it->second;
+		funcOffset = static_cast<int>(it->second);
 	return requestFunctionCallInfo(ctx, instr, funcOffset);
 }
 
@@ -75,7 +75,7 @@ void CE::Decompiler::AbstractPrimaryDecompiler::interpreteGraph(PCodeBlock* pcod
 	// todo: redecompile block because of loops
 
 	blockInfo.m_enterCount++;
-	auto refHighBlocksCount = blockInfo.m_decBlock->getRefHighBlocksCount();
+	const auto refHighBlocksCount = blockInfo.m_decBlock->getRefHighBlocksCount();
 	if (blockInfo.m_enterCount >= refHighBlocksCount) {
 		// save the register context in the begining
 		blockInfo.m_execCtx->m_startRegisterExecCtx.copyFrom(&blockInfo.m_execCtx->m_registerExecCtx);
@@ -87,7 +87,7 @@ void CE::Decompiler::AbstractPrimaryDecompiler::interpreteGraph(PCodeBlock* pcod
 			instructionInterpreter.execute(instr);
 		}
 
-		auto hasAlreadyDecompiled = blockInfo.m_isDecompiled;
+		const auto hasAlreadyDecompiled = blockInfo.m_isDecompiled;
 		blockInfo.m_isDecompiled = true;
 		blockInfo.m_versionOfDecompiling = versionOfDecompiling;
 

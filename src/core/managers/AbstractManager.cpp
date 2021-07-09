@@ -35,7 +35,7 @@ DB::IDomainObject* AbstractItemManager::find(DB::Id id) {
 
 int AbstractItemManager::getItemsCount() const
 {
-	return (int)m_items.size();
+	return static_cast<int>(m_items.size());
 }
 
 AbstractManager::AbstractManager(Project* project)

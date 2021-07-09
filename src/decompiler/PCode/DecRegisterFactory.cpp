@@ -3,11 +3,11 @@
 using namespace CE::Decompiler;
 
 Register CE::Decompiler::RegisterFactoryX86::createRegister(int regId, int size, int64_t offset) {
-	return CreateRegister(ZydisRegister(regId), size, offset);
+	return CreateRegister(static_cast<ZydisRegister>(regId), size, offset);
 }
 
 Register CE::Decompiler::RegisterFactoryX86::createFlagRegister(int flag) {
-	return CreateFlagRegister(ZydisCPUFlag(flag));
+	return CreateFlagRegister(static_cast<ZydisCPUFlag>(flag));
 }
 
 Register CE::Decompiler::RegisterFactoryX86::createInstructionPointerRegister() {
@@ -19,8 +19,8 @@ Register CE::Decompiler::RegisterFactoryX86::createStackPointerRegister() {
 }
 
 Register CE::Decompiler::RegisterFactoryX86::CreateRegister(ZydisRegister reg, int size, int64_t offset) {
-	auto mask = BitMask64(size) << int((offset % 8) * 8);
-	auto index = (int)offset / 8;
+	const auto mask = BitMask64(size) << static_cast<int>((offset % 8) * 8);
+	const auto index = static_cast<int>(offset) / 8;
 
 	if (reg == ZYDIS_REGISTER_RIP)
 		return Register(reg, 0, mask, Register::Type::InstructionPointer);
@@ -63,6 +63,6 @@ Register CE::Decompiler::RegisterFactoryX86::CreateRegister(ZydisRegister reg, i
 }
 
 Register CE::Decompiler::RegisterFactoryX86::CreateFlagRegister(ZydisCPUFlag flag) {
-	BitMask64 mask = (uint64_t)1 << flag;
+	const BitMask64 mask = static_cast<uint64_t>(1) << flag;
 	return Register(ZYDIS_REGISTER_RFLAGS, 0, mask, Register::Type::Flag);
 }

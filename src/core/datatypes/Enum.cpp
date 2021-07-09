@@ -16,7 +16,7 @@ Enum::Group Enum::getGroup() {
 }
 
 std::string Enum::getViewValue(uint64_t value) {
-	auto it = m_fields.find(value);
+	const auto it = m_fields.find(value);
 	if (it == m_fields.end())
 		return UserDefinedType::getViewValue(value);
 	return it->second + " (" + UserDefinedType::getViewValue(value) + ")";
@@ -27,7 +27,7 @@ Enum::FieldMapType& Enum::getFields() {
 }
 
 bool Enum::removeField(int value) {
-	auto it = m_fields.find(value);
+	const auto it = m_fields.find(value);
 	if (it != m_fields.end()) {
 		m_fields.erase(it);
 		return true;

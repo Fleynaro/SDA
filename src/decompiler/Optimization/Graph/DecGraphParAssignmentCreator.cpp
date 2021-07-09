@@ -32,7 +32,7 @@ void CE::Decompiler::Optimization::GraphParAssignmentCreator::findAllLocalVarsAn
 				m_localVars[localVar] = LocalVarInfo();
 
 			// ignore localVars in dst node of assignments: localVar = 5
-			auto parentAssignmentNode = dynamic_cast<ExprTree::AssignmentNode*>(symbolLeaf->getParentNode());
+			const auto parentAssignmentNode = dynamic_cast<ExprTree::AssignmentNode*>(symbolLeaf->getParentNode());
 			if (parentAssignmentNode && parentAssignmentNode->getDstNode() == symbolLeaf)
 				continue;
 
@@ -62,19 +62,19 @@ void CE::Decompiler::Optimization::GraphParAssignmentCreator::createParAssignmen
 			ExprBitMask mask;
 			for (auto& pair : info.m_opNodes) {
 				auto opNode = pair.first;
-				auto isSymbolInLeftNode = pair.second;
-				auto anotherOperand = (isSymbolInLeftNode ? opNode->m_rightNode : opNode->m_leftNode);
+				const auto isSymbolInLeftNode = pair.second;
+				const auto anotherOperand = (isSymbolInLeftNode ? opNode->m_rightNode : opNode->m_leftNode);
 				mask = mask | CalculateMask(anotherOperand);
 			}
 
 			// change the size of local var
-			auto newLocalVarSize = mask.getSize();
+			const auto newLocalVarSize = mask.getSize();
 			if (newLocalVarSize != 0 && newLocalVarSize != localVar->getSize()) {
 				localVar->setSize(newLocalVarSize);
 				localVarInfo.m_register.m_valueRangeMask = BitMask64(newLocalVarSize);
 				// optimize all parent operational AND nodes
 				for (auto& pair : info.m_opNodes) {
-					auto opNode = pair.first;
+					const auto opNode = pair.first;
 					auto topNode = TopNode(opNode);
 					ExprOptimization exprOptimization(&topNode);
 					exprOptimization.start();
@@ -84,10 +84,10 @@ void CE::Decompiler::Optimization::GraphParAssignmentCreator::createParAssignmen
 
 		// iterate over all ctxs and create assignments: localVar1 = 0x5
 		for (auto execCtx : localVarInfo.m_execCtxs) {
-			auto expr = execCtx->m_registerExecCtx.requestRegister(localVarInfo.m_register);
+			const auto expr = execCtx->m_registerExecCtx.requestRegister(localVarInfo.m_register);
 
 			// to avoide: localVar1 = localVar1
-			if (auto symbolLeaf = dynamic_cast<ExprTree::SymbolLeaf*>(expr))
+			if (const auto symbolLeaf = dynamic_cast<ExprTree::SymbolLeaf*>(expr))
 				if (symbolLeaf->m_symbol == localVar)
 					continue;
 
@@ -113,7 +113,7 @@ void CE::Decompiler::Optimization::GraphParAssignmentCreator::optimizeAllParAssi
 			auto assignmentNode = parAssignmentLine->getAssignmentNode();
 
 			// clone and optimize expr
-			auto clonedExpr = assignmentNode->getSrcNode()->clone();
+			const auto clonedExpr = assignmentNode->getSrcNode()->clone();
 			auto topNode = TopNode(clonedExpr);
 			ExprOptimization exprOptimization(&topNode);
 			exprOptimization.start();

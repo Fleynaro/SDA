@@ -20,7 +20,7 @@ void CE::Decompiler::Optimization::GraphLinesExpanding::processBlock(DecBlock* b
 	for (auto it = newSeqLines.begin(); it != newSeqLines.end(); it++) {
 		auto symbolAssignmentLine = *it;
 		//let it be {localVar1 = 1}
-		auto localVar = symbolAssignmentLine->getDstSymbolLeaf()->m_symbol;
+		const auto localVar = symbolAssignmentLine->getDstSymbolLeaf()->m_symbol;
 
 		//determine whether does it need a temp symbol to store value for next lines, and if yes then create it
 		Symbol::LocalVariable* localTempVar = nullptr;

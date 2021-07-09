@@ -23,12 +23,12 @@ void CE::Decompiler::ExprTree::LinearExpr::addTerm(ExprTree::INode* term) {
 
 void CE::Decompiler::ExprTree::LinearExpr::setConstTermValue(int64_t constTerm) const
 {
-	m_constTerm->setValue((uint64_t)constTerm);
+	m_constTerm->setValue(static_cast<uint64_t>(constTerm));
 }
 
 int64_t CE::Decompiler::ExprTree::LinearExpr::getConstTermValue() const
 {
-	return (int64_t)m_constTerm->getValue();
+	return static_cast<int64_t>(m_constTerm->getValue());
 }
 
 std::list<ExprTree::INode*>& CE::Decompiler::ExprTree::LinearExpr::getTerms() {
@@ -73,7 +73,7 @@ bool CE::Decompiler::ExprTree::LinearExpr::isFloatingPoint() {
 }
 
 INode* CE::Decompiler::ExprTree::LinearExpr::clone(NodeCloneContext* ctx) {
-	auto clonedConstTerm = dynamic_cast<INumberLeaf*>(m_constTerm->clone());
+	const auto clonedConstTerm = dynamic_cast<INumberLeaf*>(m_constTerm->clone());
 	auto newLinearExpr = new LinearExpr(clonedConstTerm, m_operation);
 	for (auto term : m_terms) {
 		newLinearExpr->addTerm(term->clone(ctx));
@@ -95,7 +95,7 @@ HS CE::Decompiler::ExprTree::LinearExpr::getHash() {
 	}
 	return hs
 		<< m_constTerm->getHash()
-		<< (int)m_operation;
+		<< static_cast<int>(m_operation);
 }
 
 std::string CE::Decompiler::ExprTree::LinearExpr::printDebug() {

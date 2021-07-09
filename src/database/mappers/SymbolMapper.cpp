@@ -27,10 +27,10 @@ SymbolManager* SymbolMapper::getManager() const
 }
 
 IDomainObject* SymbolMapper::doLoad(Database* db, SQLite::Statement& query) {
-	int symbol_id = query.getColumn("symbol_id");
-	auto type = (Symbol::Type)(int)query.getColumn("type");
-	std::string name = query.getColumn("name");
-	std::string comment = query.getColumn("comment");
+	const int symbol_id = query.getColumn("symbol_id");
+	const auto type = static_cast<Symbol::Type>((int)query.getColumn("type"));
+	const std::string name = query.getColumn("name");
+	const std::string comment = query.getColumn("comment");
 	std::string json_extra_str = query.getColumn("json_extra");
 	auto json_extra = json::parse(json_extra_str);
 
@@ -41,20 +41,20 @@ IDomainObject* SymbolMapper::doLoad(Database* db, SQLite::Statement& query) {
 	catch (AbstractItemManager::ItemNotFoundException ex) {
 		dataType = getManager()->getProject()->getTypeManager()->getFactory().getDefaultType();
 	}
-	auto dataTypeUnit = DataType::GetUnit(dataType, query.getColumn("pointer_lvl"));
+	const auto dataTypeUnit = DataType::GetUnit(dataType, query.getColumn("pointer_lvl"));
 
 	AbstractSymbol* symbol = nullptr;
-	auto factory = getManager()->getFactory(false);
+	const auto factory = getManager()->getFactory(false);
 	switch (type)
 	{
 	case FUNCTION: {
-		auto offset = json_extra["offset"].get<int64_t>();
-		auto funcSig = dynamic_cast<DataType::IFunctionSignature*>(dataType);
+		const auto offset = json_extra["offset"].get<int64_t>();
+		const auto funcSig = dynamic_cast<DataType::IFunctionSignature*>(dataType);
 		symbol = factory.createFunctionSymbol(offset, funcSig, name, comment);
 		break;
 	}
 	case GLOBAL_VAR: {
-		auto offset = json_extra["offset"].get<int64_t>();
+		const auto offset = json_extra["offset"].get<int64_t>();
 		symbol = factory.createGlobalVarSymbol(offset, dataTypeUnit, name, comment);
 		break;
 	}
@@ -63,18 +63,18 @@ IDomainObject* SymbolMapper::doLoad(Database* db, SQLite::Statement& query) {
 		break;
 	}
 	case LOCAL_STACK_VAR: {
-		auto offset = json_extra["offset"].get<int64_t>();
+		const auto offset = json_extra["offset"].get<int64_t>();
 		symbol = factory.createLocalStackVarSymbol(offset, dataTypeUnit, name, comment);
 		break;
 	}
 	case FUNC_PARAMETER: {
-		auto paramIdx = json_extra["param_idx"].get<int>();
+		const auto paramIdx = json_extra["param_idx"].get<int>();
 		symbol = factory.createFuncParameterSymbol(paramIdx, nullptr, dataTypeUnit, name, comment);
 		break;
 	}
 	case STRUCT_FIELD: {
-		auto absBitOffset = json_extra["abs_bit_offset"].get<int>();
-		auto bitSize = json_extra["bit_size"].get<int>();
+		const auto absBitOffset = json_extra["abs_bit_offset"].get<int>();
+		const auto bitSize = json_extra["bit_size"].get<int>();
 		symbol = factory.createStructFieldSymbol(absBitOffset, bitSize, nullptr, dataTypeUnit, name, comment);
 		break;
 	}
@@ -98,7 +98,7 @@ void SymbolMapper::doUpdate(TransactionContext* ctx, IDomainObject* obj) {
 }
 
 void SymbolMapper::doRemove(TransactionContext* ctx, IDomainObject* obj) {
-	std::string action_query_text =
+	const std::string action_query_text =
 		ctx->m_notDelete ? "UPDATE sda_symbols SET deleted=1" : "DELETE FROM sda_symbols";
 	Statement query(*ctx->m_db, action_query_text + " WHERE symbol_id=?1");
 	query.bind(1, obj->getId());
@@ -114,10 +114,10 @@ void SymbolMapper::bind(SQLite::Statement& query, AbstractSymbol& symbol) {
 	query.bind(6, symbol.getComment());
 
 	json json_extra;
-	if (auto memSymbol = dynamic_cast<AbstractMemorySymbol*>(&symbol)) {
+	if (const auto memSymbol = dynamic_cast<AbstractMemorySymbol*>(&symbol)) {
 		json_extra["offset"] = memSymbol->getOffset();
 	}
-	else if (auto funcParamSymbol = dynamic_cast<FuncParameterSymbol*>(&symbol)) {
+	else if (const auto funcParamSymbol = dynamic_cast<FuncParameterSymbol*>(&symbol)) {
 		json_extra["param_idx"] = funcParamSymbol->getParamIdx();
 	} 
 	else if(auto structFieldSymbol = dynamic_cast<StructFieldSymbol*>(&symbol)) {

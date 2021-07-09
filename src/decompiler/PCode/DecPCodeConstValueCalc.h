@@ -16,7 +16,7 @@ namespace CE::Decompiler::PCode
 		{}
 
 		void start(std::map<PCode::Instruction*, DataValue>& constValues) {
-			PCode::VirtualMachine vm(m_vmCtx);
+			const PCode::VirtualMachine vm(m_vmCtx);
 			//SP, IP registers to zero
 			m_vmCtx->setConstantValue(m_registerFactory->createInstructionPointerRegister(), 0);
 			m_vmCtx->setConstantValue(m_registerFactory->createStackPointerRegister(), 0);

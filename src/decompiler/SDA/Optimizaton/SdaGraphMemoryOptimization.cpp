@@ -11,14 +11,14 @@ CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContextInitializ
 void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContextInitializer::start() {
 	// iterate over all lines of the code as if executing it
 	for (auto topNode : m_block->getAllTopNodes()) {
-		auto node = topNode->getNode();
+		const auto node = topNode->getNode();
 		INode::UpdateDebugInfo(node);
 		passNode(node);
 	}
 }
 
 void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContextInitializer::passNode(INode* node) {
-	if (auto assignmentNode = dynamic_cast<AssignmentNode*>(node)) {
+	if (const auto assignmentNode = dynamic_cast<AssignmentNode*>(node)) {
 		if (dynamic_cast<SdaSymbolLeaf*>(assignmentNode->getDstNode())) {
 			passNode(assignmentNode->getSrcNode());
 			return;
@@ -28,10 +28,10 @@ void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContextInit
 		passNode(childNode);
 		});
 
-	if (auto sdaGenNode = dynamic_cast<SdaGenericNode*>(node)) {
-		if (auto assignmentNode = dynamic_cast<AssignmentNode*>(sdaGenNode->getNode())) {
-			auto dstSdaNode = dynamic_cast<ISdaNode*>(assignmentNode->getDstNode());
-			auto srcSdaNode = dynamic_cast<ISdaNode*>(assignmentNode->getSrcNode());
+	if (const auto sdaGenNode = dynamic_cast<SdaGenericNode*>(node)) {
+		if (const auto assignmentNode = dynamic_cast<AssignmentNode*>(sdaGenNode->getNode())) {
+			const auto dstSdaNode = dynamic_cast<ISdaNode*>(assignmentNode->getDstNode());
+			const auto srcSdaNode = dynamic_cast<ISdaNode*>(assignmentNode->getSrcNode());
 
 			if (dstSdaNode && srcSdaNode) {
 				//when writing some stuff into a memory location (entity2.vec.x = memVar1488 + 0.5)
@@ -44,8 +44,8 @@ void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContextInit
 					catch (std::exception&) {}
 				}
 				else {
-					if (auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(assignmentNode->getDstNode())) {
-						if (auto memVar = dynamic_cast<Symbol::MemoryVariable*>(sdaSymbolLeaf->getDecSymbol())) {
+					if (const auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(assignmentNode->getDstNode())) {
+						if (const auto memVar = dynamic_cast<Symbol::MemoryVariable*>(sdaSymbolLeaf->getDecSymbol())) {
 							//when reading from a memory location into the memory symbol (memVar1488 = entity1.vec.x)
 							if (auto srcSdaLocNode = dynamic_cast<ILocatable*>(srcSdaNode)) {
 								try {
@@ -72,8 +72,8 @@ void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContextInit
 	}
 
 	//replace the internal memVar with a node value stored on some location for this memVar (return memVar1488; -> return entity1.vec.x;)
-	if (auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(node)) {
-		if (auto memVar = dynamic_cast<Symbol::MemoryVariable*>(sdaSymbolLeaf->getDecSymbol())) {
+	if (const auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(node)) {
+		if (const auto memVar = dynamic_cast<Symbol::MemoryVariable*>(sdaSymbolLeaf->getDecSymbol())) {
 			MemoryContext::MemVarInfo memVarInfo;
 			memVarInfo.m_symbolLeaf = sdaSymbolLeaf;
 			memVarInfo.m_memVar = memVar;
@@ -82,7 +82,7 @@ void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContextInit
 			//if the symbol not found within block then it means to be declared in the blocks above
 			auto it = m_memCtx->m_memVarSnapshots.find(memVar);
 			if (it != m_memCtx->m_memVarSnapshots.end()) {
-				auto memSnapshot = &it->second;
+				const auto memSnapshot = &it->second;
 				memVarInfo.m_memSnapshot = memSnapshot;
 			}
 			m_memCtx->m_memVars.push_back(memVarInfo);
@@ -118,7 +118,7 @@ SdaTopNode* CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryCont
 }
 
 void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContext::addMemValue(const MemLocation& location, ISdaNode* sdaNode) {
-	auto newLocation = createNewLocation(location);
+	const auto newLocation = createNewLocation(location);
 	MemoryValue memoryValue;
 	memoryValue.m_location = newLocation;
 	memoryValue.m_topNode = new SdaTopNode(sdaNode);
@@ -162,7 +162,7 @@ MemLocation* CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryCon
 
 int CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContext::getLastUsedMemLocIdx() const
 {
-	return (int)m_usedMemLocations.size() - 1;
+	return static_cast<int>(m_usedMemLocations.size()) - 1;
 }
 
 // check intersecting {location} with locations created from {firstUsedMemLocIdx} to {lastUsedMemLocIdx} state indexes
@@ -221,7 +221,7 @@ void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::optimizeAllBlocks
 void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::optimizeBlock(DecBlock* block, MemoryContext* memCtx) {
 	for (auto& memVarInfo : memCtx->m_memVars) {
 		ISdaNode* newNode = nullptr;
-		auto memSnapshot = memVarInfo.m_memSnapshot;
+		const auto memSnapshot = memVarInfo.m_memSnapshot;
 		//if memSnapshot is in the current block
 		if (memSnapshot) {
 			newNode = getSnapshotValue(block, memCtx, memSnapshot, memVarInfo.m_lastUsedMemLocIdx);
@@ -231,12 +231,12 @@ void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::optimizeBlock(Dec
 		}
 		else {
 			//find memSnapshot in blocks above
-			auto pair = findBlockAndMemSnapshotByMemVar(memVarInfo.m_memVar);
+			const auto pair = findBlockAndMemSnapshotByMemVar(memVarInfo.m_memVar);
 			auto blockAbove = pair.first;
 			auto memSnapshot = pair.second;
 			if (blockAbove) {
-				auto memCtx = &m_memoryContexts[blockAbove];
-				auto lastUsedMemLocIdx = memCtx->getLastUsedMemLocIdx();
+				const auto memCtx = &m_memoryContexts[blockAbove];
+				const auto lastUsedMemLocIdx = memCtx->getLastUsedMemLocIdx();
 				auto newPossibleNode = getSnapshotValue(blockAbove, memCtx, memSnapshot, lastUsedMemLocIdx);
 				if (auto locNewPossibleNode = dynamic_cast<ILocatable*>(newPossibleNode)) {
 					try {
@@ -260,7 +260,7 @@ void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::optimizeBlock(Dec
 
 		if (newNode) {
 			//replace the symbol with the concrete value (e.g. reading some memory location)
-			auto newClonedNode = newNode->clone();
+			const auto newClonedNode = newNode->clone();
 			memVarInfo.m_symbolLeaf->replaceWith(newClonedNode);
 			m_removedSymbolLeafs.push_back(memVarInfo.m_symbolLeaf);
 		}
@@ -288,7 +288,7 @@ ISdaNode* CE::Decompiler::Optimization::SdaGraphMemoryOptimization::getSnapshotV
 		return memSnapshot->m_snapshotValue->getSdaNode();
 	}
 	else {
-		if (auto foundNode = findValueNodeInBlocksAbove(block, &memSnapshot->m_location)) {
+		if (const auto foundNode = findValueNodeInBlocksAbove(block, &memSnapshot->m_location)) {
 			return foundNode;
 		}
 	}

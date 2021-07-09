@@ -38,7 +38,7 @@ void CE::Decompiler::Optimization::GraphViewOptimization::gatherLocalVarsDepende
 
 void CE::Decompiler::Optimization::GraphViewOptimization::replaceConfusedNodesWithGatheredLocalVars(INode* node, std::map<HS::Value, Symbol::LocalVariable*>& nodeHashTolocalVar) {
 	if (!filter(node)) {
-		auto it = nodeHashTolocalVar.find(node->getHash().getHashValue());
+		const auto it = nodeHashTolocalVar.find(node->getHash().getHashValue());
 		if (it != nodeHashTolocalVar.end()) {
 			node->replaceWith(new SymbolLeaf(it->second));
 			delete node;

@@ -8,7 +8,7 @@ int CE::Decompiler::ExprBitMask::getSizeInBits() const {
 }
 
 int CE::Decompiler::ExprBitMask::getSize() const {
-	auto sizeInBits = getSizeInBits();
+	const auto sizeInBits = getSizeInBits();
 	if (sizeInBits <= 16) {
 		if (sizeInBits <= 8)
 			return 1;
@@ -52,8 +52,8 @@ int CE::Decompiler::BitMask64::getMaxSizeInBits() const {
 int CE::Decompiler::BitMask64::getOffset() const {
 	int offset = 0;
 	auto mask = m_bitMask;
-	auto maxSizeInBits = getMaxSizeInBits() - 1;
-	while (offset <= maxSizeInBits && bool(mask & 0b1) == 0) {
+	const auto maxSizeInBits = getMaxSizeInBits() - 1;
+	while (offset <= maxSizeInBits && static_cast<bool>(mask & 0b1) == 0) {
 		offset += 1;
 		mask = mask >> 1;
 	}
@@ -63,8 +63,8 @@ int CE::Decompiler::BitMask64::getOffset() const {
 int CE::Decompiler::BitMask64::getOffsetFromTheEnd() const {
 	int offset = 0;
 	auto mask = m_bitMask;
-	auto maxSizeInBits = getMaxSizeInBits() - 1; // usually it is 63
-	while (offset <= maxSizeInBits && bool((mask >> maxSizeInBits) & 0b1) == 0) {
+	const auto maxSizeInBits = getMaxSizeInBits() - 1; // usually it is 63
+	while (offset <= maxSizeInBits && static_cast<bool>((mask >> maxSizeInBits) & 0b1) == 0) {
 		offset += 1;
 		mask = mask << 1;
 	}
@@ -72,14 +72,14 @@ int CE::Decompiler::BitMask64::getOffsetFromTheEnd() const {
 }
 
 int CE::Decompiler::BitMask64::getSize() const {
-	auto bitsCount = getBitsCount();
+	const auto bitsCount = getBitsCount();
 	return (bitsCount / 8) + ((bitsCount % 8) ? 1 : 0);
 }
 
 uint64_t CE::Decompiler::BitMask64::GetBitMask64BySizeInBits(int sizeInBits) {
 	if (sizeInBits >= 64) // todo: increase from 8 to 16 bytes (it requires 128-bit arithmetic implementation)
 		return -1;
-	return ((uint64_t)1 << sizeInBits) - 1;
+	return (static_cast<uint64_t>(1) << sizeInBits) - 1;
 }
 
 uint64_t CE::Decompiler::BitMask64::GetBitMask64BySize(int size) {

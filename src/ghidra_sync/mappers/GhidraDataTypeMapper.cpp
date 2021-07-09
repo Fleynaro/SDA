@@ -21,7 +21,7 @@ DataTypeMapper::DataTypeMapper(CE::TypeManager* typeManager)
 
 void DataTypeMapper::createTypeByDescIfNotExists(const datatype::SDataType& typeDesc)
 {
-	auto type = m_typeManager->findTypeByGhidraId(typeDesc.id);
+	const auto type = m_typeManager->findTypeByGhidraId(typeDesc.id);
 	if (type == nullptr) {
 		createTypeByDesc(typeDesc);
 	}
@@ -87,7 +87,7 @@ void markObjectAsSynced(SyncContext* ctx, DataType::UserDefinedType* type) {
 }
 
 void DataTypeMapper::upsert(SyncContext* ctx, IObject* obj) {
-	auto type = dynamic_cast<DataType::UserDefinedType*>(obj);
+	const auto type = dynamic_cast<DataType::UserDefinedType*>(obj);
 	markObjectAsSynced(ctx, type);
 }
 
@@ -100,7 +100,7 @@ void DataTypeMapper::remove(SyncContext* ctx, IObject* obj) {
 datatype::SDataType DataTypeMapper::buildDesc(DataType::UserDefinedType* type) {
 	datatype::SDataType typeDesc;
 	typeDesc.__set_id(type->getGhidraId());
-	typeDesc.__set_group((datatype::DataTypeGroup::type)type->getGroup());
+	typeDesc.__set_group(static_cast<datatype::DataTypeGroup::type>(type->getGroup()));
 	typeDesc.__set_size(type->getSize());
 	typeDesc.__set_name(type->getName());
 	typeDesc.__set_comment(type->getComment());
@@ -112,7 +112,7 @@ shared::STypeUnit DataTypeMapper::buildTypeUnitDesc(DataTypePtr dataType) const
 	shared::STypeUnit typeUnitDesc;
 	typeUnitDesc.__set_typeId(m_typeManager->getGhidraId(dataType->getType()));
 	for (auto lvl : dataType->getPointerLevels()) {
-		typeUnitDesc.pointerLvls.push_back((int16_t)lvl);
+		typeUnitDesc.pointerLvls.push_back(static_cast<int16_t>(lvl));
 	}
 	return typeUnitDesc;
 }

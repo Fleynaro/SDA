@@ -38,7 +38,7 @@ namespace CE::Decompiler::LinearView
 		{}
 
 		void start() {
-			auto startBlock = m_decCodeGraph->getStartBlock();
+			const auto startBlock = m_decCodeGraph->getStartBlock();
 			std::map<DecBlock*, VisitedBlockInfo> visitedBlocks;
 			std::list<DecBlock*> passedBlocks;
 			findAllLoops(startBlock, visitedBlocks, passedBlocks);
@@ -48,15 +48,15 @@ namespace CE::Decompiler::LinearView
 			std::set<DecBlock*> createdCycleBlocks;
 			convert(m_blockList, startBlock, usedBlocks, createdCycleBlocks);
 
-			for (auto it : m_goto) {
+			for (const auto it : m_goto) {
 				auto blockList = it.first;
-				auto nextBlock = it.second;
+				const auto nextBlock = it.second;
 				//if a condition block is above then not set goto as it is excess
 				if (!blockList->getBlocks().empty())
 					if (dynamic_cast<Condition*>(*std::prev(blockList->getBlocks().end())))
 						continue;
 
-				auto block = m_blockList->findBlock(nextBlock);
+				const auto block = m_blockList->findBlock(nextBlock);
 				if (block != nullptr) {
 					blockList->setGoto(block);
 				}
@@ -91,7 +91,7 @@ namespace CE::Decompiler::LinearView
 					if (it != m_cycles.end()) {
 						auto& cycle = it->second;
 						auto startCycleBlock = cycle.m_startBlock;
-						auto endCycleBlock = cycle.m_endBlock;
+						const auto endCycleBlock = cycle.m_endBlock;
 
 						bool isDoWhileCycleBetter = true;
 						if (startCycleBlock->isCondition() && startCycleBlock->hasNoCode()) {
@@ -100,7 +100,7 @@ namespace CE::Decompiler::LinearView
 								isDoWhileCycleBetter = false;
 
 								if (endCycleBlock->isCondition()) {
-									auto nextBlockAfterCycle2 = endCycleBlock->getNextNearBlock();
+									const auto nextBlockAfterCycle2 = endCycleBlock->getNextNearBlock();
 									if (nextBlockAfterCycle1->m_maxHeight < nextBlockAfterCycle2->m_maxHeight) {
 										isDoWhileCycleBetter = true;
 									}
@@ -182,14 +182,14 @@ namespace CE::Decompiler::LinearView
 				curDecBlock = nextBlock;
 			}
 
-			for (auto block : nextBlocksToFill) {
+			for (const auto block : nextBlocksToFill) {
 				convert(block.first, block.second, usedBlocks, createdCycleBlocks);
 			}
 		}
 
 		void findAllLoops(DecBlock* block, std::map<DecBlock*, VisitedBlockInfo>& visitedBlocks, std::list<DecBlock*>& passedBlocks) {	
 			bool goNext = true;
-			auto refHighBlocksCount = block->getRefHighBlocksCount();
+			const auto refHighBlocksCount = block->getRefHighBlocksCount();
 			if (refHighBlocksCount >= 2) {
 				if (visitedBlocks.find(block) == visitedBlocks.end()) {
 					visitedBlocks.insert(std::make_pair(block, VisitedBlockInfo()));

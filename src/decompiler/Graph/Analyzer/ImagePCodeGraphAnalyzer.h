@@ -78,9 +78,9 @@ namespace CE::Decompiler
 
 			private:
 				int getNextEmptyBitsCount(int64_t bitOffset) {
-					auto it = m_fields.upper_bound(bitOffset);
+					const auto it = m_fields.upper_bound(bitOffset);
 					if (it != m_fields.end()) {
-						return int(it->first - bitOffset);
+						return static_cast<int>(it->first - bitOffset);
 					}
 					return 0x1000;
 				}
@@ -112,7 +112,7 @@ namespace CE::Decompiler
 				// copy fields to other raw-structures
 				for (auto& pair : m_rawStructure->m_fields) {
 					auto fieldOffset = pair.first;
-					auto fieldDataType = pair.second;
+					const auto fieldDataType = pair.second;
 					if (fieldOffset < bitOffset) {
 						parentRawStructure->m_fields[fieldOffset] = fieldDataType;
 						m_rawStructure->m_fields.erase(fieldOffset);
@@ -306,8 +306,8 @@ namespace CE::Decompiler
 		private:
 			// check if it is [rcx] * 0x4
 			static bool IsArrayIndexNode(ISdaNode* sdaNode) {
-				if (auto sdaGenTermNode = dynamic_cast<SdaGenericNode*>(sdaNode)) {
-					if (auto opNode = dynamic_cast<OperationalNode*>(sdaGenTermNode->getNode())) {
+				if (const auto sdaGenTermNode = dynamic_cast<SdaGenericNode*>(sdaNode)) {
+					if (const auto opNode = dynamic_cast<OperationalNode*>(sdaGenTermNode->getNode())) {
 						if (auto sdaNumberLeaf = dynamic_cast<SdaNumberLeaf*>(opNode->m_rightNode)) {
 							if (opNode->m_operation == Mul) {
 								return true;
@@ -322,12 +322,12 @@ namespace CE::Decompiler
 				Symbolization::SdaDataTypesCalculater::calculateDataTypes(node);
 
 				// only reading from memory is a trigger to define structures
-				if (auto sdaReadValueNode = dynamic_cast<SdaReadValueNode*>(node)) {
-					auto addrSdaNode = sdaReadValueNode->getAddress();
+				if (const auto sdaReadValueNode = dynamic_cast<SdaReadValueNode*>(node)) {
+					const auto addrSdaNode = sdaReadValueNode->getAddress();
 
 					// for {[rcx] + [rdx] * 0x5 + 0x10} the {sdaPointerNode} is [rcx] with the size of 8, no [rdx] * 0x5 (ambigious in the case of [rcx] + [rdx])
 					ISdaNode* sdaPointerNode = nullptr;
-					if (auto sdaGenNode = dynamic_cast<SdaGenericNode*>(addrSdaNode)) {
+					if (const auto sdaGenNode = dynamic_cast<SdaGenericNode*>(addrSdaNode)) {
 						if (auto linearExpr = dynamic_cast<LinearExpr*>(sdaGenNode)) {
 							for (auto term : linearExpr->getTerms()) {
 								if (auto sdaTermNode = dynamic_cast<ISdaNode*>(term)) {
@@ -343,14 +343,14 @@ namespace CE::Decompiler
 						}
 						
 					}
-					else if (auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(addrSdaNode)) {
+					else if (const auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(addrSdaNode)) {
 						// for *param1
 						sdaPointerNode = sdaSymbolLeaf;
 					}
 
 					// create a raw structure
 					if (sdaPointerNode) {
-						auto rawStructOwner = m_imagePCodeGraphAnalyzer->createRawStructureOwner();
+						const auto rawStructOwner = m_imagePCodeGraphAnalyzer->createRawStructureOwner();
 						sdaPointerNode->setDataType(DataType::GetUnit(rawStructOwner, "[1]"));
 						m_nextPassRequired = true;
 					}
@@ -361,7 +361,7 @@ namespace CE::Decompiler
 				Symbolization::SdaDataTypesCalculater::handleFunctionNode(sdaFunctionNode);
 
 				if (auto dstCastNode = dynamic_cast<ISdaNode*>(sdaFunctionNode->getDestination())) {
-					if (auto sdaMemSymbolLeaf = dynamic_cast<SdaMemSymbolLeaf*>(dstCastNode)) {
+					if (const auto sdaMemSymbolLeaf = dynamic_cast<SdaMemSymbolLeaf*>(dstCastNode)) {
 						if (auto funcSymbol = dynamic_cast<CE::Symbol::FunctionSymbol*>(sdaMemSymbolLeaf->getSdaSymbol())) {
 							// if it is a non-virtual function call
 							return;
@@ -383,7 +383,7 @@ namespace CE::Decompiler
 					{
 						auto baseSdaNode = unknownLoc->getBaseSdaNode();
 						if (auto rawStructOwner = dynamic_cast<RawStructureOwner*>(baseSdaNode->getSrcDataType()->getType())) {
-							auto fieldOffset = unknownLoc->getConstTermValue();
+							const auto fieldOffset = unknownLoc->getConstTermValue();
 							auto newFieldDataType = sdaReadValueNode->getDataType();
 
 							if (!rawStructOwner->canFieldBeAddedAtOffset(fieldOffset, newFieldDataType->getSize()))
@@ -408,17 +408,17 @@ namespace CE::Decompiler
 			}
 
 			void onDataTypeCasting(DataTypePtr fromDataType, DataTypePtr toDataType) override {
-				auto dataType1 = fromDataType->getType();
-				auto dataType2 = toDataType->getType();
+				const auto dataType1 = fromDataType->getType();
+				const auto dataType2 = toDataType->getType();
 
-				if (auto rawSigOwner1 = dynamic_cast<RawSignatureOwner*>(dataType1)) {
-					if (auto rawSigOwner2 = dynamic_cast<RawSignatureOwner*>(dataType2)) {
+				if (const auto rawSigOwner1 = dynamic_cast<RawSignatureOwner*>(dataType1)) {
+					if (const auto rawSigOwner2 = dynamic_cast<RawSignatureOwner*>(dataType2)) {
 						rawSigOwner1->merge(rawSigOwner2);
 					}
 				}
 
 				if (auto rawStructOwner1 = dynamic_cast<RawStructureOwner*>(dataType1)) {
-					if (auto rawStructOwner2 = dynamic_cast<RawStructureOwner*>(dataType2)) {
+					if (const auto rawStructOwner2 = dynamic_cast<RawStructureOwner*>(dataType2)) {
 						rawStructOwner1->merge(rawStructOwner2);
 					}
 				}
@@ -576,8 +576,8 @@ namespace CE::Decompiler
 				if(visitedGraphs.find(nextFuncGraph) == visitedGraphs.end())
 					doPassToDefineReturnValues(nextFuncGraph, visitedGraphs);
 
-			auto funcOffset = funcGraph->getStartBlock()->getMinOffset() >> 8;
-			auto it = m_funcOffsetToSig.find(funcOffset);
+			const auto funcOffset = funcGraph->getStartBlock()->getMinOffset() >> 8;
+			const auto it = m_funcOffsetToSig.find(funcOffset);
 			if (it == m_funcOffsetToSig.end())
 				throw std::logic_error("no signature");
 			auto funcSigOwner = it->second;
@@ -736,13 +736,13 @@ namespace CE::Decompiler
 		RawSignatureOwner* getRawSignatureOwner(PCode::Instruction* instr, int funcOffset) {
 			if (funcOffset != 0) {
 				// if it is a non-virt. call
-				auto it = m_funcOffsetToSig.find(funcOffset);
+				const auto it = m_funcOffsetToSig.find(funcOffset);
 				if (it != m_funcOffsetToSig.end())
 					return it->second;
 				return nullptr;
 			}
 			// if it is a virt. call
-			auto it = m_virtFuncCallOffsetToSig.find(instr->getOffset());
+			const auto it = m_virtFuncCallOffsetToSig.find(instr->getOffset());
 			if (it != m_virtFuncCallOffsetToSig.end())
 				return it->second;
 			return nullptr;
@@ -765,7 +765,7 @@ namespace CE::Decompiler
 		// create vtables that have been found during reference search
 		void createVTables() {
 			for (const auto& vtable : m_graphReferenceSearch->m_vtables) {
-				auto rawStructOwner = createRawStructureOwner();
+				const auto rawStructOwner = createRawStructureOwner();
 				// fill the structure with virtual functions
 				int offset = 0;
 				for (auto funcOffset : vtable.m_funcOffsets) {
@@ -785,8 +785,8 @@ namespace CE::Decompiler
 		}
 
 		RawStructureOwner* createRawStructureOwner() {
-			auto newId = (int)m_rawStructOwners.size() + 1;
-			auto rawStructOwner = new RawStructureOwner(newId);
+			const auto newId = static_cast<int>(m_rawStructOwners.size()) + 1;
+			const auto rawStructOwner = new RawStructureOwner(newId);
 			m_rawStructOwners.push_back(rawStructOwner);
 		}
 	};

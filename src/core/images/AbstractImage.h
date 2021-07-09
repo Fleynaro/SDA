@@ -46,7 +46,7 @@ namespace CE
 
 		// rva to file offset (ghidra makes this transform automatically)
 		uint64_t toImageOffset(uint64_t rva) {
-			auto section = getSectionByRva(rva);
+			const auto section = getSectionByRva(rva);
 			if (!section)
 				return rva;
 			return rva - section->m_relVirtualAddress + section->m_pointerToRawData;

@@ -49,14 +49,14 @@ HS CE::Decompiler::ExprTree::SdaGenericNode::getHash() {
 
 ISdaNode* CE::Decompiler::ExprTree::SdaGenericNode::cloneSdaNode(NodeCloneContext* ctx) {
 	auto clonedNode = m_node->clone(ctx);
-	auto sdaNode = new SdaGenericNode(clonedNode, CloneUnit(m_calcDataType));
+	const auto sdaNode = new SdaGenericNode(clonedNode, CloneUnit(m_calcDataType));
 	clonedNode->addParentNode(sdaNode);
 	return sdaNode;
 }
 
 std::string CE::Decompiler::ExprTree::SdaGenericNode::printSdaDebug() {
 	auto result = m_node->printDebug();
-	if (auto readValueNode = dynamic_cast<ReadValueNode*>(m_node))
+	if (const auto readValueNode = dynamic_cast<ReadValueNode*>(m_node))
 		result = "*" + readValueNode->getAddress()->printDebug();
 	return result;
 }

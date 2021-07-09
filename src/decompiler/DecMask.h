@@ -14,7 +14,7 @@ namespace CE::Decompiler
 		{}
 
 		BitMask64(int size, int offset = 0x0)
-			: BitMask64(GetBitMask64BySize(size) << uint64_t((offset % 8) * 8))
+			: BitMask64(GetBitMask64BySize(size) << static_cast<uint64_t>((offset % 8) * 8))
 		{}
 
 		bool isZero() const;
@@ -51,7 +51,7 @@ namespace CE::Decompiler
 		}
 
 		BitMask64 operator>>(int offset) const {
-			auto val = m_bitMask >> offset;
+			const auto val = m_bitMask >> offset;
 			return val;
 		}
 

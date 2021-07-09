@@ -42,7 +42,7 @@ HS CE::Decompiler::ExprTree::SdaReadValueNode::getHash() {
 
 ISdaNode* CE::Decompiler::ExprTree::SdaReadValueNode::cloneSdaNode(NodeCloneContext* ctx) {
 	auto clonedReadValueNode = dynamic_cast<ReadValueNode*>(m_readValueNode->clone(ctx));
-	auto sdaReadValueNode = new SdaReadValueNode(clonedReadValueNode, CloneUnit(m_outDataType));
+	const auto sdaReadValueNode = new SdaReadValueNode(clonedReadValueNode, CloneUnit(m_outDataType));
 	clonedReadValueNode->addParentNode(sdaReadValueNode);
 	return sdaReadValueNode;
 }
@@ -71,10 +71,10 @@ void CE::Decompiler::ExprTree::SdaReadValueNode::getLocation(MemLocation& locati
 	else {
 		ISdaNode* sdaAddrNode = nullptr;
 		int64_t offset = 0x0;
-		if (auto symbolLeaf = dynamic_cast<SdaSymbolLeaf*>(getAddress())) {
+		if (const auto symbolLeaf = dynamic_cast<SdaSymbolLeaf*>(getAddress())) {
 			sdaAddrNode = symbolLeaf;
 		}
-		else if (auto sdaGenNode = dynamic_cast<SdaGenericNode*>(getAddress())) {
+		else if (const auto sdaGenNode = dynamic_cast<SdaGenericNode*>(getAddress())) {
 			if (auto linearExpr = dynamic_cast<LinearExpr*>(sdaGenNode->getNode())) {
 				if (linearExpr->getTerms().size() == 1) {
 					if (sdaAddrNode = dynamic_cast<ISdaNode*>(*linearExpr->getTerms().begin())) {

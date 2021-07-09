@@ -10,17 +10,17 @@ ClassTypeMapper::ClassTypeMapper(StructureTypeMapper* structTypeMapper)
 
 void ClassTypeMapper::load(packet::SDataFullSyncPacket* dataPacket) {
 	for (auto classDesc : dataPacket->classes) {
-		auto type = m_structTypeMapper->m_dataTypeMapper->m_typeManager->findTypeByGhidraId(classDesc.structType.type.id);
+		const auto type = m_structTypeMapper->m_dataTypeMapper->m_typeManager->findTypeByGhidraId(classDesc.structType.type.id);
 		if (type == nullptr)
 			throw std::exception("item not found");
-		if (auto Class = dynamic_cast<DataType::Class*>(type)) {
+		if (const auto Class = dynamic_cast<DataType::Class*>(type)) {
 			changeClassByDesc(Class, classDesc);
 		}
 	}
 }
 
 void ClassTypeMapper::upsert(SyncContext* ctx, IObject* obj) {
-	auto type = dynamic_cast<DataType::Class*>(obj);
+	const auto type = dynamic_cast<DataType::Class*>(obj);
 	ctx->m_dataPacket->classes.push_back(buildDesc(type));
 	m_structTypeMapper->m_dataTypeMapper->upsert(ctx, obj);
 }

@@ -15,7 +15,7 @@ void CE::Decompiler::Optimization::SdaGraphUselessLineOptimization::start() {
 			m_usedSdaSymbols.clear();
 		}
 		passAllTopNodes([&](DecBlock::BlockTopNode* topNode) {
-			auto curSeqLine = dynamic_cast<DecBlock::SeqAssignmentLine*>(topNode);
+			const auto curSeqLine = dynamic_cast<DecBlock::SeqAssignmentLine*>(topNode);
 			defineUsedSdaSymbols(topNode->getNode(), curSeqLine);
 			});
 		m_isFirstPass = false;
@@ -23,7 +23,7 @@ void CE::Decompiler::Optimization::SdaGraphUselessLineOptimization::start() {
 
 	//try deleting all lines that contains unused symbol as a destination (localVar1 = 10, but "localVar1" is unused)
 	passAllTopNodes([&](DecBlock::BlockTopNode* topNode) {
-		if (auto seqLine = dynamic_cast<DecBlock::SeqAssignmentLine*>(topNode)) {
+		if (const auto seqLine = dynamic_cast<DecBlock::SeqAssignmentLine*>(topNode)) {
 			if (isSeqLineUseless(seqLine))
 				delete seqLine;
 		}
@@ -36,7 +36,7 @@ void CE::Decompiler::Optimization::SdaGraphUselessLineOptimization::defineUsedSd
 		});
 
 	//we need sda symbol leafs only
-	auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(node);
+	const auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(node);
 	if (!sdaSymbolLeaf)
 		return;
 	//memVar, funcVar, localVar
@@ -69,8 +69,8 @@ bool CE::Decompiler::Optimization::SdaGraphUselessLineOptimization::isSeqLineUse
 }
 
 bool CE::Decompiler::Optimization::SdaGraphUselessLineOptimization::isSeqLineSuit(DecBlock::SeqAssignmentLine* seqLine, SdaSymbolLeaf*& sdaDstSymbolLeaf) {
-	if (auto sdaGenericNode = dynamic_cast<SdaGenericNode*>(seqLine->getNode())) {
-		if (auto assignmentNode = dynamic_cast<AssignmentNode*>(sdaGenericNode->getNode())) {
+	if (const auto sdaGenericNode = dynamic_cast<SdaGenericNode*>(seqLine->getNode())) {
+		if (const auto assignmentNode = dynamic_cast<AssignmentNode*>(sdaGenericNode->getNode())) {
 			if (sdaDstSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(assignmentNode->getDstNode())) {
 				if (!dynamic_cast<SdaFunctionNode*>(assignmentNode->getSrcNode()) && //we dont touch a function call
 					sdaDstSymbolLeaf->getSdaSymbol()->getType() == CE::Symbol::LOCAL_INSTR_VAR) { //memVar, funcVar, localVar

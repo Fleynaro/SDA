@@ -34,7 +34,7 @@ std::vector<ExprTree::INode*>& CE::Decompiler::ExprTree::SdaFunctionNode::getPar
 }
 
 DataTypePtr CE::Decompiler::ExprTree::SdaFunctionNode::getSrcDataType() {
-	auto sig = getSignature();
+	const auto sig = getSignature();
 	if (!sig)
 		// todo: return DataType::GetUnit(sig->getTypeManager()->findTypeById(DataType::SystemType::Byte));
 		return DataType::GetUnit(new DataType::Byte);
@@ -67,7 +67,7 @@ int64_t CE::Decompiler::ExprTree::SdaFunctionNode::getCallInstrOffset() const
 
 ISdaNode* CE::Decompiler::ExprTree::SdaFunctionNode::cloneSdaNode(NodeCloneContext* ctx) {
 	auto clonedFuncCall = dynamic_cast<FunctionCall*>(m_funcCall->clone(ctx));
-	auto sdaFunctionNode = new SdaFunctionNode(clonedFuncCall);
+	const auto sdaFunctionNode = new SdaFunctionNode(clonedFuncCall);
 	clonedFuncCall->addParentNode(sdaFunctionNode);
 	return sdaFunctionNode;
 }
@@ -78,7 +78,7 @@ ISdaNode* CE::Decompiler::ExprTree::SdaFunctionNode::cloneSdaNode(NodeCloneConte
 DataType::IFunctionSignature* CE::Decompiler::ExprTree::SdaFunctionNode::getSignature() const
 {
 	if (auto dstCastNode = dynamic_cast<ISdaNode*>(getDestination()))
-		if (auto signature = dynamic_cast<DataType::IFunctionSignature*>(dstCastNode->getDataType()->getType()))
+		if (const auto signature = dynamic_cast<DataType::IFunctionSignature*>(dstCastNode->getDataType()->getType()))
 			return signature;
 	return nullptr;
 }

@@ -84,9 +84,9 @@ void CE::Project::createTablesInDatabase() const
 	using namespace SQLite;
 
 	// open the embedded file system and find the required resource
-	auto fs = cmrc::resources::get_filesystem();
-	auto create_general_db_res = fs.open("create_general_db.sql");
-	auto sql_query = std::string(create_general_db_res.begin(), create_general_db_res.end());
+	const auto fs = cmrc::resources::get_filesystem();
+	const auto create_general_db_res = fs.open("create_general_db.sql");
+	const auto sql_query = std::string(create_general_db_res.begin(), create_general_db_res.end());
 
 	try {
 		m_db->exec(sql_query);
@@ -98,8 +98,8 @@ void CE::Project::createTablesInDatabase() const
 
 void CE::Project::initDataBase(const fs::path& file)
 {
-	auto filedb = m_directory / file;
-	bool filedbExisting = fs::exists(filedb);
+	const auto filedb = m_directory / file;
+	const bool filedbExisting = fs::exists(filedb);
 
 	// init database
 	m_db = new SQLite::Database(filedb.string(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
@@ -186,7 +186,7 @@ Project* CE::ProjectManager::createProject(const fs::path& dir) {
 	projectEntry.m_dir = dir;
 	m_projectEntries.push_back(projectEntry);
 
-	auto project = new Project(this, dir);
+	const auto project = new Project(this, dir);
 	if (!fs::exists(project->getDirectory()))
 		fs::create_directory(project->getDirectory());
 	if (!fs::exists(project->getImagesDirectory()))
@@ -223,6 +223,6 @@ void CE::ProjectManager::save() {
 	std::ofstream file(getProjectsFile());
 	if (!file.is_open())
 		throw std::logic_error("");
-	auto content = json_project_entries.dump();
+	const auto content = json_project_entries.dump();
 	file << content;
 }

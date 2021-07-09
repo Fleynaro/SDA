@@ -41,11 +41,11 @@ std::string CE::Decompiler::ExprTree::SdaNumberLeaf::printSdaDebug() {
 	}
 	if (auto sysType = dynamic_cast<DataType::SystemType*>(getSrcDataType()->getBaseType())) {
 		if (sysType->isSigned()) {
-			auto size = getSrcDataType()->getSize();
+			const auto size = getSrcDataType()->getSize();
 			if (size <= 4)
-				return m_updateDebugInfo = std::to_string((int32_t)m_value);
+				return m_updateDebugInfo = std::to_string(static_cast<int32_t>(m_value));
 			else
-				return m_updateDebugInfo = std::to_string((int64_t)m_value);
+				return m_updateDebugInfo = std::to_string(static_cast<int64_t>(m_value));
 		}
 	}
 	return "0x" + Helper::String::NumberToHex(m_value);

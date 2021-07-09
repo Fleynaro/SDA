@@ -48,7 +48,7 @@ int SyncCommitment::createSyncRecord() const
 	query.bind(1, duration_cast<seconds>(system_clock::now().time_since_epoch()).count());
 	query.bind(2, 1);
 	query.bind(3, "");
-	query.bind(4, (int)m_upsertedObjs.size() + (int)m_removedObjs.size());
+	query.bind(4, static_cast<int>(m_upsertedObjs.size()) + static_cast<int>(m_removedObjs.size()));
 	query.exec();
-	return (int)db.getLastInsertRowid();
+	return static_cast<int>(db.getLastInsertRowid());
 }

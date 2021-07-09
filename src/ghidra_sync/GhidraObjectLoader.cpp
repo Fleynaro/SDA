@@ -16,7 +16,7 @@ GhidraObjectLoader::~GhidraObjectLoader() {
 
 void GhidraObjectLoader::analyse() const
 {
-	std::string query_text = "\
+	const std::string query_text = "\
 		SELECT id,deleted,sync_id,type FROM (\
 			SELECT def_id,deleted,ghidra_sync_id,1 FROM sda_func_defs\
 		) AS t1 INNER JOIN sda_ghidra_sync AS t2 ON t1.sync_id = t2.sync_id INNER JOIN sda_saves AS t3 ON t2.date < t3.date";
@@ -25,8 +25,8 @@ void GhidraObjectLoader::analyse() const
 	while (query.executeStep())
 	{
 		DB::Id obj_id = query.getColumn("id");
-		int isDeleted = query.getColumn("deleted");
-		switch ((int)query.getColumn("type"))
+		const int isDeleted = query.getColumn("deleted");
+		switch (static_cast<int>(query.getColumn("type")))
 		{
 		case 1:
 			if (isDeleted) {

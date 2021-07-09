@@ -12,7 +12,7 @@ void CE::Decompiler::Optimization::GraphUselessLineDeleting::start() {
 
 void CE::Decompiler::Optimization::GraphUselessLineDeleting::processBlock(DecBlock* block) {
 	for (auto seqLine : block->getSeqAssignmentLines()) {
-		if (auto symbolLeaf = dynamic_cast<SymbolLeaf*>(seqLine->getDstNode()))
+		if (const auto symbolLeaf = dynamic_cast<SymbolLeaf*>(seqLine->getDstNode()))
 			if (dynamic_cast<Symbol::AbstractVariable*>(symbolLeaf->m_symbol))
 				continue;
 
@@ -34,7 +34,7 @@ bool CE::Decompiler::Optimization::GraphUselessLineDeleting::hasUnknownRegister(
 	if (result)
 		return true;
 
-	if (auto symbolLeaf = dynamic_cast<SymbolLeaf*>(node)) {
+	if (const auto symbolLeaf = dynamic_cast<SymbolLeaf*>(node)) {
 		if (auto regVar = dynamic_cast<Symbol::RegisterVariable*>(symbolLeaf->m_symbol)) {
 			if (regVar->m_register.isPointer())
 				return false;
@@ -45,7 +45,7 @@ bool CE::Decompiler::Optimization::GraphUselessLineDeleting::hasUnknownRegister(
 }
 
 bool CE::Decompiler::Optimization::GraphUselessLineDeleting::isUnknownRegister(PCode::Register& reg) {
-	bool isFound = false;
+	const bool isFound = false;
 	/*for (auto paramInfo : m_decGraph->getFunctionCallInfo().getParamInfos()) {
 	if (reg.getId() == paramInfo.m_storage.getRegisterId()) {
 	isFound = true;

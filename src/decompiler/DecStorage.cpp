@@ -30,7 +30,7 @@ ReturnInfo FunctionCallInfo::getReturnInfo() {
 int FunctionCallInfo::findIndex(const Register& reg, int64_t offset) {
 	for (auto paramInfo : m_paramInfos) {
 		auto& storage = paramInfo.m_storage;
-		auto storageRegIndex = (int)storage.getOffset() / 8;
+		const auto storageRegIndex = static_cast<int>(storage.getOffset()) / 8;
 		if (storage.getType() == Storage::STORAGE_REGISTER && (reg.getGenericId() == storage.getRegisterId() && reg.getIndex() == storageRegIndex) ||
 			(offset == storage.getOffset() && (storage.getType() == Storage::STORAGE_STACK && reg.getType() == Register::Type::StackPointer ||
 				storage.getType() == Storage::STORAGE_GLOBAL && reg.getType() == Register::Type::InstructionPointer))) {
@@ -66,7 +66,7 @@ int ParameterInfo::getIndex() const
 
 int CE::Decompiler::GetIndex_FASTCALL(const PCode::Register& reg, int64_t offset) {
 	if (reg.getType() == PCode::Register::Type::StackPointer) {
-		return (int)offset / 0x8 - 5 + 1;
+		return static_cast<int>(offset) / 0x8 - 5 + 1;
 	}
 	std::map<PCode::RegisterId, int> regToParamId = {
 		std::pair(ZYDIS_REGISTER_RCX, 1),
@@ -78,7 +78,7 @@ int CE::Decompiler::GetIndex_FASTCALL(const PCode::Register& reg, int64_t offset
 		std::pair(ZYDIS_REGISTER_R9, 4),
 		std::pair(ZYDIS_REGISTER_ZMM3, 4),
 	};
-	auto it = regToParamId.find(reg.getId());
+	const auto it = regToParamId.find(reg.getId());
 	if (it != regToParamId.end()) {
 		return it->second;
 	}

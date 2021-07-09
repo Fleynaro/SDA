@@ -20,9 +20,9 @@ ImageDecorator* CE::ImageManager::createImage(AddressSpace* addressSpace, ImageD
 }
 
 ImageDecorator* CE::ImageManager::createImage(AddressSpace* addressSpace, ImageDecorator::IMAGE_TYPE type, const std::string& name, const std::string& comment, bool markAsNew) {
-	auto factory = getProject()->getSymTableManager()->getFactory();
-	auto globalSymbolTable = factory.createSymbolTable(Symbol::SymbolTable::GLOBAL_SPACE);
-	auto funcBodySymbolTable = factory.createSymbolTable(Symbol::SymbolTable::GLOBAL_SPACE);
+	const auto factory = getProject()->getSymTableManager()->getFactory();
+	const auto globalSymbolTable = factory.createSymbolTable(Symbol::SymbolTable::GLOBAL_SPACE);
+	const auto funcBodySymbolTable = factory.createSymbolTable(Symbol::SymbolTable::GLOBAL_SPACE);
 	return createImage(addressSpace, type, globalSymbolTable, funcBodySymbolTable, name, comment, markAsNew);
 }
 

@@ -45,8 +45,8 @@ void CE::Decompiler::Optimization::ExprCompositeConditionOptimization::makeOrder
 		return;
 
 	bool isSwap = false;
-	if (auto cond1 = dynamic_cast<Condition*>(compCond->m_leftCond)) {
-		if (auto cond2 = dynamic_cast<Condition*>(compCond->m_rightCond)) {
+	if (const auto cond1 = dynamic_cast<Condition*>(compCond->m_leftCond)) {
+		if (const auto cond2 = dynamic_cast<Condition*>(compCond->m_rightCond)) {
 			if (cond1->m_cond > cond2->m_cond) { //sorting condition
 				isSwap = true;
 			}
@@ -61,7 +61,7 @@ void CE::Decompiler::Optimization::ExprCompositeConditionOptimization::makeOrder
 	}
 
 	for (auto it : { compCond->m_leftCond, compCond->m_rightCond }) {
-		if (auto compCond = dynamic_cast<CompositeCondition*>(it)) {
+		if (const auto compCond = dynamic_cast<CompositeCondition*>(it)) {
 			makeOrderInCompositeCondition(compCond);
 		}
 	}
@@ -95,7 +95,7 @@ void CE::Decompiler::Optimization::ExprCompositeConditionOptimization::optimizeC
 				}
 
 				if (newCondType != Condition::None) {
-					auto newSimpleCond = new Condition(leftSimpleCond->m_leftNode, leftSimpleCond->m_rightNode, newCondType);
+					const auto newSimpleCond = new Condition(leftSimpleCond->m_leftNode, leftSimpleCond->m_rightNode, newCondType);
 					replace(newSimpleCond);
 				}
 			}

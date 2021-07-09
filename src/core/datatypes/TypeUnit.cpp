@@ -29,7 +29,7 @@ bool Unit::isFloatingPoint() {
 }
 
 int Unit::getPointerLvl() {
-	return (int)getPointerLevels().size();
+	return static_cast<int>(getPointerLevels().size());
 }
 
 bool Unit::isArray() {
@@ -47,7 +47,7 @@ bool Unit::isPointer() {
 }
 
 std::list<int> Unit::getPointerLevels() {
-	if (auto Typedef = dynamic_cast<DataType::Typedef*>(m_type)) {
+	if (const auto Typedef = dynamic_cast<DataType::Typedef*>(m_type)) {
 		std::list<int> result = Typedef->getRefType()->getPointerLevels();
 		result.insert(result.begin(), m_levels.begin(), m_levels.end());
 		return result;
@@ -66,13 +66,13 @@ void Unit::removePointerLevelOutOfFront() {
 bool Unit::isString() {
 	if (!isPointer())
 		return false;
-	auto baseType = getBaseType();
+	const auto baseType = getBaseType();
 	return dynamic_cast<Char*>(baseType) || dynamic_cast<WChar*>(baseType);
 }
 
 bool Unit::equal(DataType::Unit* typeUnit) {
-	auto baseType1 = getBaseType();
-	auto baseType2 = typeUnit->getBaseType();
+	const auto baseType1 = getBaseType();
+	const auto baseType2 = typeUnit->getBaseType();
 	auto sysType1 = dynamic_cast<SystemType*>(baseType1);
 	auto sysType2 = dynamic_cast<SystemType*>(baseType2);
 	if (sysType1 && sysType2) {
@@ -85,10 +85,10 @@ bool Unit::equal(DataType::Unit* typeUnit) {
 
 int Unit::getPriority() {
 	auto baseType = getBaseType();
-	auto size = std::min(baseType->getSize(), 0x8);
-	bool hasPointerLvl = getPointerLvl() != 0;
-	bool isSigned = baseType->isSigned();
-	bool isNotSimple = baseType->getGroup() != Simple;
+	const auto size = std::min(baseType->getSize(), 0x8);
+	const bool hasPointerLvl = getPointerLvl() != 0;
+	const bool isSigned = baseType->isSigned();
+	const bool isNotSimple = baseType->getGroup() != Simple;
 	bool isFloatingPoint = false;
 	if (auto sysType = dynamic_cast<SystemType*>(baseType))
 		isFloatingPoint = (sysType->getSet() == SystemType::Real);
@@ -98,7 +98,7 @@ int Unit::getPriority() {
 int Unit::getConversionPriority() {
 	if (isPointer())
 		return 10;
-	auto baseType = getBaseType();
+	const auto baseType = getBaseType();
 	if (auto systemType = dynamic_cast<SystemType*>(baseType)) {
 		static std::map<SystemType::Types, int> typesInOrder = {
 			std::pair(SystemType::Double, 5),
@@ -108,7 +108,7 @@ int Unit::getConversionPriority() {
 			std::pair(SystemType::UInt32, 1)
 		};
 
-		auto it = typesInOrder.find(systemType->getTypeId());
+		const auto it = typesInOrder.find(systemType->getTypeId());
 		if (it != typesInOrder.end())
 			return it->second;
 		return 0;
@@ -191,9 +191,9 @@ std::list<int> CE::DataType::ParsePointerLevelsStr(const std::string& str) {
 	std::list<int> seq;
 
 	int lastClosedSquareBracketIdx = 0;
-	int idx = (int)str.length() - 1;
+	int idx = static_cast<int>(str.length()) - 1;
 	while (idx >= 0) {
-		auto ch = str[idx];
+		const auto ch = str[idx];
 
 		if (lastClosedSquareBracketIdx != 0) {
 			if (ch == '[') {
@@ -244,7 +244,7 @@ std::string CE::DataType::GetPointerLevelStr(DataTypePtr type) {
 }
 
 DataTypePtr CE::DataType::GetUnit(DataType::IType* type, const std::string& levels) {
-	auto levels_list = ParsePointerLevelsStr(levels);
+	const auto levels_list = ParsePointerLevelsStr(levels);
 	return GetUnit(type, levels_list);
 }
 

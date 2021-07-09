@@ -29,8 +29,8 @@ CE::Decompiler::ExprTree::CompositeCondition::~CompositeCondition() {
 }
 
 void CE::Decompiler::ExprTree::CompositeCondition::replaceNode(INode* node, INode* newNode) {
-	if (auto cond = dynamic_cast<AbstractCondition*>(node)) {
-		if (auto newCond = dynamic_cast<AbstractCondition*>(newNode)) {
+	if (const auto cond = dynamic_cast<AbstractCondition*>(node)) {
+		if (const auto newCond = dynamic_cast<AbstractCondition*>(newNode)) {
 			if (m_leftCond == cond)
 				m_leftCond = newCond;
 			else if (m_rightCond == cond)
@@ -50,7 +50,7 @@ INode* CE::Decompiler::ExprTree::CompositeCondition::clone(NodeCloneContext* ctx
 HS CE::Decompiler::ExprTree::CompositeCondition::getHash() {
 	return HS()
 		<< (m_leftCond->getHash() + (m_rightCond ? m_rightCond->getHash() : 0x0))
-		<< (int)m_cond;
+		<< static_cast<int>(m_cond);
 }
 
 void CE::Decompiler::ExprTree::CompositeCondition::inverse() {
@@ -125,7 +125,7 @@ INode* CE::Decompiler::ExprTree::Condition::clone(NodeCloneContext* ctx) {
 HS CE::Decompiler::ExprTree::Condition::getHash() {
 	return HS()
 		<< (m_leftNode->getHash() + m_rightNode->getHash())
-		<< (int)m_cond;
+		<< static_cast<int>(m_cond);
 }
 
 void CE::Decompiler::ExprTree::Condition::inverse() {

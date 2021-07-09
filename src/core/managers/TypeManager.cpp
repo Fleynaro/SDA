@@ -143,7 +143,7 @@ DataTypePtr CE::TypeManager::getDefaultType(int size, bool sign, bool floating) 
 }
 
 DataTypePtr CE::TypeManager::calcDataTypeForNumber(uint64_t value) {
-	if ((value & ~uint64_t(0xFFFFFFFF)) == (uint64_t)0x0)
+	if ((value & ~static_cast<uint64_t>(0xFFFFFFFF)) == static_cast<uint64_t>(0x0))
 		return getType(SystemType::Int32);
 	return getType(SystemType::Int64);
 }
@@ -167,7 +167,7 @@ DataType::IType* CE::TypeManager::findTypeByName(const std::string& typeName)
 DataType::IType* CE::TypeManager::findTypeByGhidraId(Ghidra::Id id) {
 	Iterator it(this);
 	while (it.hasNext()) {
-		auto type = it.next();
+		const auto type = it.next();
 		if (getGhidraId(type) == id) {
 			return type;
 		}

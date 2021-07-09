@@ -27,8 +27,8 @@ SymbolTableManager* SymbolTableMapper::getManager() const
 }
 
 IDomainObject* SymbolTableMapper::doLoad(Database* db, SQLite::Statement& query) {
-	int sym_table_id = query.getColumn("sym_table_id");
-	auto type = (SymbolTable::SymbolTableType)(int)query.getColumn("type");
+	const int sym_table_id = query.getColumn("sym_table_id");
+	const auto type = static_cast<SymbolTable::SymbolTableType>((int)query.getColumn("type"));
 	std::string json_symbols_str = query.getColumn("json_symbols");
 	auto json_symbols = json::parse(json_symbols_str);
 
@@ -37,10 +37,10 @@ IDomainObject* SymbolTableMapper::doLoad(Database* db, SQLite::Statement& query)
 
 	// load symbols for the symbol table
 	for (const auto& json_symbol : json_symbols) {
-		auto symbol_id = json_symbol["sym_id"].get<DB::Id>();
-		auto offset = json_symbol["offset"].get<int64_t>();
+		const auto symbol_id = json_symbol["sym_id"].get<DB::Id>();
+		const auto offset = json_symbol["offset"].get<int64_t>();
 
-		auto symbol = getManager()->getProject()->getSymbolManager()->findSymbolById(symbol_id);
+		const auto symbol = getManager()->getProject()->getSymbolManager()->findSymbolById(symbol_id);
 		symTable->addSymbol(symbol, offset);
 	}
 
@@ -62,7 +62,7 @@ void SymbolTableMapper::doUpdate(TransactionContext* ctx, IDomainObject* obj) {
 }
 
 void SymbolTableMapper::doRemove(TransactionContext* ctx, IDomainObject* obj) {
-	std::string action_query_text =
+	const std::string action_query_text =
 		ctx->m_notDelete ? "UPDATE sda_symbol_tables SET deleted=1" : "DELETE FROM sda_symbol_tables";
 	Statement query(*ctx->m_db, action_query_text + " WHERE sym_table_id=?1");
 	query.bind(1, obj->getId());

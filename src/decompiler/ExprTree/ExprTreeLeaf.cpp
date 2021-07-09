@@ -64,7 +64,7 @@ CE::Decompiler::ExprTree::NumberLeaf::NumberLeaf(double value, int size)
 	: m_size(size)
 {
 	if (m_size == 4)
-		(float&)m_value = (float)value;
+		(float&)m_value = static_cast<float>(value);
 	else (double&)m_value = value;
 }
 
@@ -85,5 +85,5 @@ INode* CE::Decompiler::ExprTree::NumberLeaf::clone(NodeCloneContext* ctx) {
 }
 
 std::string CE::Decompiler::ExprTree::NumberLeaf::printDebug() {
-	return m_updateDebugInfo = ("0x" + Helper::String::NumberToHex(m_value) + "{" + (std::to_string((int)m_value)) + "}");
+	return m_updateDebugInfo = ("0x" + Helper::String::NumberToHex(m_value) + "{" + (std::to_string(static_cast<int>(m_value))) + "}");
 }

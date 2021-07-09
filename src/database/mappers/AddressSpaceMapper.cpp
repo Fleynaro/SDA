@@ -26,9 +26,9 @@ CE::AddressSpaceManager* DB::AddressSpaceMapper::getManager() const
 }
 
 IDomainObject* DB::AddressSpaceMapper::doLoad(Database* db, SQLite::Statement& query) {
-	int as_id = query.getColumn("as_id");
-	std::string name = query.getColumn("name");
-	std::string comment = query.getColumn("comment");
+	const int as_id = query.getColumn("as_id");
+	const std::string name = query.getColumn("name");
+	const std::string comment = query.getColumn("comment");
 
 	auto addressSpace = getManager()->createAddressSpace(name, comment, false);
 
@@ -50,7 +50,7 @@ void DB::AddressSpaceMapper::doUpdate(TransactionContext* ctx, IDomainObject* ob
 }
 
 void DB::AddressSpaceMapper::doRemove(TransactionContext* ctx, IDomainObject* obj) {
-	std::string action_query_text =
+	const std::string action_query_text =
 		ctx->m_notDelete ? "UPDATE sda_address_spaces SET deleted=1" : "DELETE FROM sda_address_spaces";
 	Statement query(*ctx->m_db, action_query_text + " WHERE as_id=?1");
 	query.bind(1, obj->getId());

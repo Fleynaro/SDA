@@ -11,11 +11,11 @@ std::string AbstractType::getViewValue(uint64_t value) {
 }
 
 IType* AbstractType::getBaseType(bool refType, bool dereferencedType) {
-	if (auto unit = dynamic_cast<DataType::Unit*>(this)) {
+	if (const auto unit = dynamic_cast<DataType::Unit*>(this)) {
 		return unit->getType()->getBaseType();
 	}
 	if (refType) {
-		if (auto typeDef = dynamic_cast<DataType::Typedef*>(this)) {
+		if (const auto typeDef = dynamic_cast<DataType::Typedef*>(this)) {
 			return typeDef->getRefType()->getBaseType();
 		}
 	}

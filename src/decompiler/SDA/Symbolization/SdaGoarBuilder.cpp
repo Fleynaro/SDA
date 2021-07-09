@@ -21,20 +21,20 @@ ISdaNode* CE::Decompiler::Symbolization::SdaGoarBuilding::create() {
 	while (buildSingleGoar(resultSdaNode, resultBitOffset, m_sdaTerms));
 
 	if (dynamic_cast<GoarNode*>(resultSdaNode)) {
-		bool isPointer = m_baseSdaNode->getSrcDataType()->isPointer(); // getting a type without a cast (a pointer inside uint64_t)
+		const bool isPointer = m_baseSdaNode->getSrcDataType()->isPointer(); // getting a type without a cast (a pointer inside uint64_t)
 		if (isPointer) {
 			//if the base is a kind of pointer then remove & operation (and set it up later in the top of the built GOAR)
 			if (auto addrGetting = dynamic_cast<IMappedToMemory*>(m_baseSdaNode)) {
 				addrGetting->setAddrGetting(false); // (&player) + 0x10 -> &(player.pos.x)
 			}
 		}
-		auto usedOffset = m_bitOffset - resultBitOffset;
+		const auto usedOffset = m_bitOffset - resultBitOffset;
 		resultSdaNode = new GoarTopNode(resultSdaNode, usedOffset, isPointer);
 
 		//if we have remaining either the offset or the array index terms
 		if (resultBitOffset != 0x0 || !m_sdaTerms.empty()) {
 			//remaining offset and terms (maybe only in case of node being as LinearExpr)
-			auto numberType = m_project->getTypeManager()->getDefaultType(0x8);
+			const auto numberType = m_project->getTypeManager()->getDefaultType(0x8);
 			auto linearExpr = new LinearExpr(new SdaNumberLeaf(resultBitOffset / 0x8, numberType));
 			linearExpr->addTerm(resultSdaNode);
 			for (auto castTerm : m_sdaTerms) {
@@ -51,13 +51,13 @@ bool CE::Decompiler::Symbolization::SdaGoarBuilding::buildSingleGoar(ISdaNode*& 
 {
 	auto dataType = sdaNode->getSrcDataType(); // getting a type without a cast (a pointer inside uint64_t)
 	auto ptrLevels = dataType->getPointerLevels();
-	auto baseDataType = dataType->getBaseType();
+	const auto baseDataType = dataType->getBaseType();
 
 	//if it is a structure(Player, ...) or one-level pointer(Player*, float*, ...)
 	if (ptrLevels.empty() || ptrLevels.size() == 1 && *ptrLevels.begin() == 1) {
 		//try making a field
 		if (auto structure = dynamic_cast<DataType::Structure*>(baseDataType)) {
-			auto field = structure->getField((int)bitOffset);
+			auto field = structure->getField(static_cast<int>(bitOffset));
 			if (field->isDefault())
 				return false;
 			sdaNode = new GoarFieldNode(sdaNode, field);
@@ -76,14 +76,14 @@ bool CE::Decompiler::Symbolization::SdaGoarBuilding::buildSingleGoar(ISdaNode*& 
 		//in C++ NO declaration statements like this: int*[2][3] pArr;	(pointer to an array)
 		ptrLevels.pop_front();
 	}
-	int arrItemsMaxCount = *ptrLevels.begin();
+	const int arrItemsMaxCount = *ptrLevels.begin();
 	ptrLevels.pop_front();
 	auto arrItemDataType = DataType::GetUnit(baseDataType, ptrLevels);
-	auto arrItemSize = arrItemDataType->getSize();
+	const auto arrItemSize = arrItemDataType->getSize();
 
 	// iterate over all {terms}
 	ISdaNode* indexNode = nullptr;
-	int indexSize = 0x4; //todo: long long(8 bytes) index?
+	const int indexSize = 0x4; //todo: long long(8 bytes) index?
 	for (auto it = terms.begin(); it != terms.end(); it++) {
 		auto sdaNode = *it;
 		int64_t defMultiplier = 1;
@@ -91,8 +91,8 @@ bool CE::Decompiler::Symbolization::SdaGoarBuilding::buildSingleGoar(ISdaNode*& 
 		bool hasMultiplier = false;
 
 		// try to get a multiplier 0x1000: players + idx * 0x1000 (arrItemSize = 0x1000)
-		if (auto sdaGenTermNode = dynamic_cast<SdaGenericNode*>(sdaNode)) {
-			if (auto opNode = dynamic_cast<OperationalNode*>(sdaGenTermNode->getNode())) {
+		if (const auto sdaGenTermNode = dynamic_cast<SdaGenericNode*>(sdaNode)) {
+			if (const auto opNode = dynamic_cast<OperationalNode*>(sdaGenTermNode->getNode())) {
 				if (auto sdaNumberLeaf = dynamic_cast<SdaNumberLeaf*>(opNode->m_rightNode)) {
 					if (opNode->m_operation == Mul) {
 						multiplier = (int64_t*)&sdaNumberLeaf->m_value;
@@ -108,8 +108,8 @@ bool CE::Decompiler::Symbolization::SdaGoarBuilding::buildSingleGoar(ISdaNode*& 
 			//optimization: remove operational node (add) (e.g. idx * 0x1 -> idx)
 			if (*multiplier == 1 && hasMultiplier) {
 				if (auto sdaGenTermNode = dynamic_cast<SdaGenericNode*>(sdaNode)) {
-					if (auto opNode = dynamic_cast<OperationalNode*>(sdaGenTermNode->getNode())) {
-						if (auto leftSdaNode = dynamic_cast<ISdaNode*>(opNode->m_leftNode)) {
+					if (const auto opNode = dynamic_cast<OperationalNode*>(sdaGenTermNode->getNode())) {
+						if (const auto leftSdaNode = dynamic_cast<ISdaNode*>(opNode->m_leftNode)) {
 							sdaGenTermNode->replaceWith(sdaNode = leftSdaNode);
 							delete sdaGenTermNode;
 						}
@@ -119,7 +119,7 @@ bool CE::Decompiler::Symbolization::SdaGoarBuilding::buildSingleGoar(ISdaNode*& 
 
 			//players + idx * 0x1000 + idx2 * 0x2000 -> players[idx + idx2 * 2]
 			if (indexNode) {
-				auto indexNodeDataType = indexNode->getDataType();
+				const auto indexNodeDataType = indexNode->getDataType();
 				indexNode = new SdaGenericNode(new OperationalNode(indexNode, sdaNode, Add), indexNodeDataType); //todo: linear expr, another type
 			}
 			else {
@@ -133,16 +133,16 @@ bool CE::Decompiler::Symbolization::SdaGoarBuilding::buildSingleGoar(ISdaNode*& 
 
 	//if we have some constant offset then try to insert it into the array indexer as index
 	if (bitOffset != 0x0) {
-		auto arrItemBitSize = arrItemSize * 0x8;
-		auto constIndex = bitOffset / arrItemBitSize;
+		const auto arrItemBitSize = arrItemSize * 0x8;
+		const auto constIndex = bitOffset / arrItemBitSize;
 		if (constIndex != 0x0 || !indexNode) {
 			bitOffset = bitOffset % arrItemBitSize;
-			auto numberType = m_project->getTypeManager()->getDefaultType(indexSize); //need?
-			auto constIndexNode = new SdaNumberLeaf(uint64_t(constIndex), numberType);
+			const auto numberType = m_project->getTypeManager()->getDefaultType(indexSize); //need?
+			const auto constIndexNode = new SdaNumberLeaf(static_cast<uint64_t>(constIndex), numberType);
 
 			//players[idx + idx2 * 2] -> players[idx + idx2 * 2 + 0x1000]
 			if (indexNode) {
-				auto indexNodeDataType = indexNode->getDataType();
+				const auto indexNodeDataType = indexNode->getDataType();
 				indexNode = new SdaGenericNode(new OperationalNode(indexNode, constIndexNode, Add), indexNodeDataType);
 			}
 			else {

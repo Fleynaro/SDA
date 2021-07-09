@@ -11,7 +11,7 @@ Block* BlockList::findBlock(DecBlock* decBlock) {
 
 		if (auto blockListAgregator = dynamic_cast<IBlockListAgregator*>(it)) {
 			for (auto blockList : blockListAgregator->getBlockLists()) {
-				auto block = blockList->findBlock(decBlock);
+				const auto block = blockList->findBlock(decBlock);
 				if (block != nullptr) {
 					return block;
 				}

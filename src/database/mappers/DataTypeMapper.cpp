@@ -22,11 +22,11 @@ void DataTypeMapper::loadAfter() {
 	Statement query(db, "SELECT type_id, json_extra FROM sda_types WHERE type_id >= 1000 AND deleted = 0");
 	while (query.executeStep())
 	{
-		int type_id = query.getColumn("type_id");
+		const int type_id = query.getColumn("type_id");
 		std::string json_extra_str = query.getColumn("json_extra");
-		auto json_extra = json::parse(json_extra_str);
+		const auto json_extra = json::parse(json_extra_str);
 
-		auto userDefType = dynamic_cast<DataType::UserDefinedType*>(getManager()->findTypeById(type_id));
+		const auto userDefType = dynamic_cast<DataType::UserDefinedType*>(getManager()->findTypeById(type_id));
 		loadExtraJson(userDefType, json_extra);
 	}
 }
@@ -42,14 +42,14 @@ CE::TypeManager* DataTypeMapper::getManager() const
 }
 
 IDomainObject* DataTypeMapper::doLoad(Database* db, SQLite::Statement& query) {
-	std::string name = query.getColumn("name");
-	std::string comment = query.getColumn("comment");
-	int group = query.getColumn("group");
+	const std::string name = query.getColumn("name");
+	const std::string comment = query.getColumn("comment");
+	const int group = query.getColumn("group");
 	std::string json_extra_str = query.getColumn("json_extra");
 	auto json_extra = json::parse(json_extra_str);
 
 	IDomainObject* obj = nullptr;
-	auto factory = getManager()->getFactory(false);
+	const auto factory = getManager()->getFactory(false);
 	switch (group)
 	{
 	case DataType::AbstractType::Group::Typedef:
@@ -62,7 +62,7 @@ IDomainObject* DataTypeMapper::doLoad(Database* db, SQLite::Statement& query) {
 		obj = factory.createStructure(name, comment);
 		break;
 	case DataType::AbstractType::Group::FunctionSignature:
-		auto calling_convention = json_extra["calling_convention"].get<DataType::FunctionSignature::CallingConvetion>();
+		const auto calling_convention = json_extra["calling_convention"].get<DataType::FunctionSignature::CallingConvetion>();
 		obj = factory.createSignature(calling_convention, name, comment);
 		break;
 	}
@@ -86,7 +86,7 @@ void DataTypeMapper::doUpdate(TransactionContext* ctx, IDomainObject* obj) {
 }
 
 void DataTypeMapper::doRemove(TransactionContext* ctx, IDomainObject* obj) {
-	std::string action_query_text =
+	const std::string action_query_text =
 		ctx->m_notDelete ? "UPDATE sda_types SET deleted=1" : "DELETE FROM sda_types";
 	Statement query(*ctx->m_db, action_query_text + " WHERE type_id=?1");
 	query.bind(1, obj->getId());
@@ -94,9 +94,9 @@ void DataTypeMapper::doRemove(TransactionContext* ctx, IDomainObject* obj) {
 }
 
 DataTypePtr DB::DataTypeMapper::loadDataTypeJson(json json_dataType) {
-	auto id = json_dataType["id"].get<DB::Id>();
-	auto ptr_lvl = json_dataType["ptr_lvl"].get<std::string>();
-	auto type = getManager()->findTypeById(id);
+	const auto id = json_dataType["id"].get<DB::Id>();
+	const auto ptr_lvl = json_dataType["ptr_lvl"].get<std::string>();
+	const auto type = getManager()->findTypeById(id);
 	return DataType::GetUnit(type, ptr_lvl);
 }
 
@@ -111,14 +111,14 @@ json DB::DataTypeMapper::createDataTypeJson(DataTypePtr dataType) {
 void DB::DataTypeMapper::loadExtraJson(CE::DataType::UserDefinedType* userDefType, json json_extra) {
 	if (auto Typedef = dynamic_cast<DataType::Typedef*>(userDefType))
 	{
-		auto refDataType = loadDataTypeJson(json_extra["ref_type"]);
+		const auto refDataType = loadDataTypeJson(json_extra["ref_type"]);
 		Typedef->setRefType(refDataType);
 	}
 	else if (auto Enum = dynamic_cast<DataType::Enum*>(userDefType))
 	{
 		for (const auto& json_field : json_extra["fields"]) {
-			auto name = json_field["name"].get<std::string>();
-			auto value = json_field["value"].get<int>();
+			const auto name = json_field["name"].get<std::string>();
+			const auto value = json_field["value"].get<int>();
 			Enum->addField(name, value);
 		}
 	}
@@ -127,13 +127,13 @@ void DB::DataTypeMapper::loadExtraJson(CE::DataType::UserDefinedType* userDefTyp
 		// load fields
 		auto symbolManager = getManager()->getProject()->getSymbolManager();
 		for (const auto& json_field_symbol : json_extra["field_symbols"]) {
-			auto fieldSymbolId = json_field_symbol.get<DB::Id>();
-			auto fieldSymbol = dynamic_cast<CE::Symbol::StructFieldSymbol*>(symbolManager->findSymbolById(fieldSymbolId));
+			const auto fieldSymbolId = json_field_symbol.get<DB::Id>();
+			const auto fieldSymbol = dynamic_cast<CE::Symbol::StructFieldSymbol*>(symbolManager->findSymbolById(fieldSymbolId));
 			Structure->addField(fieldSymbol);
 		}
 
 		// load other
-		auto size = json_extra["size"].get<int>();
+		const auto size = json_extra["size"].get<int>();
 		Structure->resize(size);
 	}
 	else if (auto FunctionSignature = dynamic_cast<DataType::FunctionSignature*>(userDefType))
@@ -141,9 +141,9 @@ void DB::DataTypeMapper::loadExtraJson(CE::DataType::UserDefinedType* userDefTyp
 		// load storages
 		for (const auto& json_storage : json_extra["storages"]) {
 			auto idx = json_storage["idx"].get<int>();
-			auto storage_type = json_storage["type"].get<Decompiler::Storage::StorageType>();
-			auto register_id = json_storage["reg_id"].get<int>();
-			auto offset = json_storage["offset"].get<int64_t>();
+			const auto storage_type = json_storage["type"].get<Decompiler::Storage::StorageType>();
+			const auto register_id = json_storage["reg_id"].get<int>();
+			const auto offset = json_storage["offset"].get<int64_t>();
 			auto storage = Decompiler::Storage(storage_type, register_id, offset);
 			FunctionSignature->getCustomStorages().push_back(std::pair(idx, storage));
 		}
@@ -151,13 +151,13 @@ void DB::DataTypeMapper::loadExtraJson(CE::DataType::UserDefinedType* userDefTyp
 		// load parameters
 		auto symbolManager = getManager()->getProject()->getSymbolManager();
 		for (const auto& json_param_symbol : json_extra["param_symbols"]) {
-			auto paramSymbolId = json_param_symbol.get<DB::Id>();
-			auto paramSymbol = dynamic_cast<CE::Symbol::FuncParameterSymbol*>(symbolManager->findSymbolById(paramSymbolId));
+			const auto paramSymbolId = json_param_symbol.get<DB::Id>();
+			const auto paramSymbol = dynamic_cast<CE::Symbol::FuncParameterSymbol*>(symbolManager->findSymbolById(paramSymbolId));
 			FunctionSignature->addParameter(paramSymbol);
 		}
 
 		// load other
-		auto retDataType = loadDataTypeJson(json_extra["ret_type"]);
+		const auto retDataType = loadDataTypeJson(json_extra["ret_type"]);
 		FunctionSignature->setReturnType(retDataType);
 	}
 }
@@ -165,7 +165,7 @@ void DB::DataTypeMapper::loadExtraJson(CE::DataType::UserDefinedType* userDefTyp
 json DB::DataTypeMapper::createExtraJson(CE::DataType::UserDefinedType* userDefType) {
 	json json_extra;
 
-	if (auto Typedef = dynamic_cast<DataType::Typedef*>(userDefType))
+	if (const auto Typedef = dynamic_cast<DataType::Typedef*>(userDefType))
 	{
 		json_extra["ref_type"] = createDataTypeJson(Typedef->getRefType());
 	}
@@ -225,7 +225,7 @@ json DB::DataTypeMapper::createExtraJson(CE::DataType::UserDefinedType* userDefT
 
 void DataTypeMapper::bind(SQLite::Statement& query, CE::DataType::UserDefinedType* userDefType)
 {
-	auto json_extra = createExtraJson(userDefType);
+	const auto json_extra = createExtraJson(userDefType);
 	query.bind(2, userDefType->getGroup());
 	query.bind(3, userDefType->getName());
 	query.bind(4, userDefType->getComment());

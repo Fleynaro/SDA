@@ -66,7 +66,7 @@ uint64_t CE::Decompiler::Optimization::ExprConstCalculating::Calculate(uint64_t 
 }
 
 void CE::Decompiler::Optimization::ExprConstCalculating::start() {
-	auto opNode = getOpNode();
+	const auto opNode = getOpNode();
 	if (IsOperationUnsupportedToCalculate(opNode->m_operation))
 		return;
 	// try to apply different kinds of operations
@@ -87,7 +87,7 @@ OperationalNode* CE::Decompiler::Optimization::ExprConstCalculating::getOpNode()
 bool CE::Decompiler::Optimization::ExprConstCalculating::processConstOperands(OperationalNode* opNode) {
 	if (auto leftNumberLeaf = dynamic_cast<INumberLeaf*>(opNode->m_leftNode)) {
 		if (auto rightNumberLeaf = dynamic_cast<INumberLeaf*>(opNode->m_rightNode)) {
-			auto result = Calculate(leftNumberLeaf->getValue(), rightNumberLeaf->getValue(), opNode->m_operation);
+			const auto result = Calculate(leftNumberLeaf->getValue(), rightNumberLeaf->getValue(), opNode->m_operation);
 			replace(new NumberLeaf(result, opNode->getSize()));
 			return true;
 		}
@@ -105,15 +105,15 @@ bool CE::Decompiler::Optimization::ExprConstCalculating::processConstOperands(Op
 bool CE::Decompiler::Optimization::ExprConstCalculating::processConstRightOperand(OperationalNode* opNode) {
 	if (auto rightNumberLeaf = dynamic_cast<INumberLeaf*>(opNode->m_rightNode)) {
 		if (opNode->m_operation != Div && opNode->m_operation != Mod) {
-			auto opNodeMask = CalculateMask(opNode);
+			const auto opNodeMask = CalculateMask(opNode);
 			if (opNodeMask.isZero()) {
-				replace(new NumberLeaf((uint64_t)0, opNode->getSize()));
+				replace(new NumberLeaf(static_cast<uint64_t>(0), opNode->getSize()));
 				return true;
 			}
 
 			if (rightNumberLeaf->getValue() == 0) {
 				if (opNode->m_operation == Mul || opNode->m_operation == And) {
-					replace(new NumberLeaf((uint64_t)0, opNode->getSize()));
+					replace(new NumberLeaf(static_cast<uint64_t>(0), opNode->getSize()));
 					return true;
 				}
 				else {
@@ -130,9 +130,9 @@ bool CE::Decompiler::Optimization::ExprConstCalculating::processConstRightOperan
 					}
 				}
 				else if (opNode->m_operation == And) {
-					auto leftNodeMask = CalculateMask(opNode->m_leftNode);
+					const auto leftNodeMask = CalculateMask(opNode->m_leftNode);
 					if ((leftNodeMask.getValue() & rightNumberLeaf->getValue()) == leftNodeMask.getValue()) {
-						auto newExpr = opNode->m_leftNode;
+						const auto newExpr = opNode->m_leftNode;
 						replace(newExpr);
 						return true;
 					}
@@ -141,7 +141,7 @@ bool CE::Decompiler::Optimization::ExprConstCalculating::processConstRightOperan
 		}
 		else {
 			if (rightNumberLeaf->getValue() == 1) {
-				auto newExpr = opNode->m_leftNode;
+				const auto newExpr = opNode->m_leftNode;
 				replace(newExpr);
 				return true;
 			}
@@ -159,11 +159,11 @@ bool CE::Decompiler::Optimization::ExprConstCalculating::processEqualOperands(Op
 	if (opNode->m_operation == Xor || opNode->m_operation == And || opNode->m_operation == Or) {
 		if (opNode->m_leftNode->getHash().getHashValue() == opNode->m_rightNode->getHash().getHashValue()) {
 			if (opNode->m_operation == Xor) {
-				replace(new NumberLeaf((uint64_t)0, opNode->getSize()));
+				replace(new NumberLeaf(static_cast<uint64_t>(0), opNode->getSize()));
 				return true;
 			}
 			else {
-				auto newExpr = opNode->m_leftNode;
+				const auto newExpr = opNode->m_leftNode;
 				replace(newExpr);
 				return true;
 			}
@@ -175,10 +175,10 @@ bool CE::Decompiler::Optimization::ExprConstCalculating::processEqualOperands(Op
 bool CE::Decompiler::Optimization::ExprConstCalculating::processShl(OperationalNode* opNode) {
 	if (opNode->m_operation == Shl) {
 		if (auto numberLeaf = dynamic_cast<INumberLeaf*>(opNode->m_rightNode)) {
-			auto value = numberLeaf->getValue();
+			const auto value = numberLeaf->getValue();
 			if (value >= 1 && value <= 3) {
 				opNode->m_operation = Mul;
-				numberLeaf->setValue((uint64_t)1 << value);
+				numberLeaf->setValue(static_cast<uint64_t>(1) << value);
 				return true;
 			}
 		}

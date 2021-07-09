@@ -37,6 +37,6 @@ namespace CE
 
 	template<typename T>
 	inline T& Address::get() {
-		return *(T*)m_addr;
+		return *static_cast<T*>(m_addr);
 	}
 };

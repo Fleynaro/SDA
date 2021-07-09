@@ -5,10 +5,10 @@ CE::Decompiler::Optimization::ExprUnification::ExprUnification(INode* node)
 {}
 
 void CE::Decompiler::Optimization::ExprUnification::start() {
-	if (auto opNode = dynamic_cast<OperationalNode*>(getNode())) {
+	if (const auto opNode = dynamic_cast<OperationalNode*>(getNode())) {
 		processOpNode(opNode);
 	}
-	else if (auto mirrorNode = dynamic_cast<MirrorNode*>(getNode())) {
+	else if (const auto mirrorNode = dynamic_cast<MirrorNode*>(getNode())) {
 		processMirrorNodes(mirrorNode);
 	}
 }
@@ -36,7 +36,7 @@ void CE::Decompiler::Optimization::ExprUnification::processOpNode(OperationalNod
 bool CE::Decompiler::Optimization::ExprUnification::IsLeaf(INode* node) {
 	if (dynamic_cast<ILeaf*>(node))
 		return true;
-	if (auto opNode = dynamic_cast<OperationalNode*>(node)) {
+	if (const auto opNode = dynamic_cast<OperationalNode*>(node)) {
 		if (opNode->m_operation == Mul) {
 			if (dynamic_cast<INumberLeaf*>(opNode->m_rightNode) && IsLeaf(opNode->m_leftNode))
 				return true;

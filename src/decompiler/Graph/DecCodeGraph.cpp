@@ -104,7 +104,7 @@ int CE::Decompiler::DecompiledCodeGraph::CalculateHeightForDecBlocks(DecBlock* b
 			height = std::max(height, h);
 		}
 	}
-	block->m_maxHeight = height + (int)block->getSeqAssignmentLines().size();
+	block->m_maxHeight = height + static_cast<int>(block->getSeqAssignmentLines().size());
 	return block->m_maxHeight;
 }
 
@@ -120,7 +120,7 @@ void CE::Decompiler::DecompiledCodeGraph::CalculateLevelsForDecBlocks(DecBlock* 
 	}
 
 	path.push_back(block);
-	block->m_level = std::max(block->m_level, (int)path.size());
+	block->m_level = std::max(block->m_level, static_cast<int>(path.size()));
 	CalculateLevelsForDecBlocks(block->getNextNearBlock(), path);
 	CalculateLevelsForDecBlocks(block->getNextFarBlock(), path);
 	path.pop_back();

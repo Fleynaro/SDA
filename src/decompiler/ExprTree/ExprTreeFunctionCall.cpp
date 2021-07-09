@@ -71,7 +71,7 @@ std::list<PCode::Instruction*> CE::Decompiler::ExprTree::FunctionCall::getInstru
 }
 
 INode* CE::Decompiler::ExprTree::FunctionCall::clone(NodeCloneContext* ctx) {
-	auto funcVar = m_functionResultVar ? dynamic_cast<Symbol::FunctionResultVar*>(m_functionResultVar->clone(ctx)) : nullptr;
+	const auto funcVar = m_functionResultVar ? dynamic_cast<Symbol::FunctionResultVar*>(m_functionResultVar->clone(ctx)) : nullptr;
 	auto funcCallCtx = new FunctionCall(m_destination->clone(ctx), m_instr);
 	funcCallCtx->m_functionResultVar = funcVar;
 	for (auto paramNode : m_paramNodes) {

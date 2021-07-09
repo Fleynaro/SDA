@@ -15,7 +15,7 @@ FunctionPCodeGraph* CE::Decompiler::ImagePCodeGraph::createFunctionGraph() {
 
 PCodeBlock* CE::Decompiler::ImagePCodeGraph::createBlock(int64_t minOffset, int64_t maxOffset) {
 	m_blocks.insert(std::make_pair(minOffset, PCodeBlock(minOffset, maxOffset)));
-	auto newBlock = &m_blocks[minOffset];
+	const auto newBlock = &m_blocks[minOffset];
 	return newBlock;
 }
 
@@ -40,7 +40,7 @@ PCodeBlock* CE::Decompiler::ImagePCodeGraph::getBlockAtOffset(int64_t offset, bo
 	if (!m_blocks.empty()) {
 		auto it = std::prev(m_blocks.upper_bound(offset));
 		if (it != m_blocks.end()) {
-			bool boundUp = halfInterval ? (offset < it->second.getMaxOffset()) : (offset <= it->second.getMaxOffset());
+			const bool boundUp = halfInterval ? (offset < it->second.getMaxOffset()) : (offset <= it->second.getMaxOffset());
 			if (boundUp && offset >= it->second.getMinOffset()) {
 				return &it->second;
 			}
@@ -50,7 +50,7 @@ PCodeBlock* CE::Decompiler::ImagePCodeGraph::getBlockAtOffset(int64_t offset, bo
 }
 
 FunctionPCodeGraph* CE::Decompiler::ImagePCodeGraph::getFuncGraphAt(int64_t offset, bool halfInterval) {
-	auto block = getBlockAtOffset(offset, halfInterval);
+	const auto block = getBlockAtOffset(offset, halfInterval);
 	return block->m_funcPCodeGraph;
 }
 
@@ -62,7 +62,7 @@ void CE::Decompiler::ImagePCodeGraph::fillHeadFuncGraphs() {
 }
 
 CE::Decompiler::PCodeBlock::PCodeBlock(int64_t minOffset, int64_t maxOffset)
-	: m_minOffset(minOffset), m_maxOffset(maxOffset), ID((int)(minOffset >> 8))
+	: m_minOffset(minOffset), m_maxOffset(maxOffset), ID(static_cast<int>(minOffset >> 8))
 {}
 
 void CE::Decompiler::PCodeBlock::removeRefBlock(PCodeBlock * block) {
@@ -140,7 +140,7 @@ PCode::Instruction* CE::Decompiler::PCodeBlock::getLastInstruction() {
 std::string CE::Decompiler::PCodeBlock::printDebug(void* addr, const std::string& tabStr, bool extraInfo, bool pcode) {
 	std::string result;
 
-	ZyanU64 runtime_address = (ZyanU64)addr;
+	const ZyanU64 runtime_address = (ZyanU64)addr;
 	for (auto instr : m_instructions) {
 		std::string prefix = tabStr + "0x" + Helper::String::NumberToHex(runtime_address + instr->m_origInstruction->m_offset);
 		if (!instr->m_origInstruction->m_originalView.empty())

@@ -67,9 +67,9 @@ DB::Id DB::Transaction::createSaveRecord() const
 	using namespace std::chrono;
 	SQLite::Statement query(*m_db, "INSERT INTO sda_saves (date, insertsCount, updatesCount, deletesCount) VALUES(?1, ?2, ?3, ?4)");
 	query.bind(1, duration_cast<seconds>(system_clock::now().time_since_epoch()).count());
-	query.bind(2, (int)m_insertedObjs.size());
-	query.bind(3, (int)m_updatedObjs.size());
-	query.bind(4, (int)m_removedObjs.size());
+	query.bind(2, static_cast<int>(m_insertedObjs.size()));
+	query.bind(3, static_cast<int>(m_updatedObjs.size()));
+	query.bind(4, static_cast<int>(m_removedObjs.size()));
 	query.exec();
-	return (DB::Id)m_db->getLastInsertRowid();
+	return static_cast<DB::Id>(m_db->getLastInsertRowid());
 }
