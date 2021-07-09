@@ -2,8 +2,9 @@
 #include <Project.h>
 #include <asmtk/asmtk.h>
 #include "panels/FunctionManagerPanel.h"
-#include "panels/ImageViewerPanel.h"
+#include "panels/ImageManagerPanel.h"
 #include "managers/Managers.h"
+#include "panels/ImageContentViewerPanel.h"
 
 using namespace CE;
 using namespace asmjit;
@@ -189,10 +190,15 @@ void GUI::DecompilerDemoPanel::renderPanel()
 
 			if (Button::StdButton("open item manager").present())
 			{
-				m_imageViewerWindow = new StdWindow(new ImageViewerPanel(m_project->getImageManager()));
+				m_imageViewerWindow = new StdWindow(new ImageManagerPanel(m_project->getImageManager()));
 			}
 			if(m_popupBuiltinWindow)
 				m_popupBuiltinWindow->placeAfterItem();
+
+			if (Button::StdButton("open image content viewer").present())
+			{
+				m_imageContentViewerWindow = new StdWindow(new ImageContentViewerPanel(m_project->getImageManager()->findImageByName("testImage11")));
+			}
 
 			if (Button::StdButton("open builtin popup").present()) {
 				auto panel = new StdPanel();
@@ -256,6 +262,7 @@ void GUI::DecompilerDemoPanel::renderPanel()
 
 	Show(m_functionManagerWindow);
 	Show(m_imageViewerWindow);
+	Show(m_imageContentViewerWindow);
 	Show(m_popupModalWin);
 	Show(m_popupBuiltinWindow);
 	/*if(m_functionManagerWindow)
@@ -277,6 +284,8 @@ void GUI::DecompilerDemoPanel::initProgram() {
 	auto testAddrSpace = m_project->getAddrSpaceManager()->createAddressSpace("testAddrSpace1");
 	auto testAddrSpace2 = m_project->getAddrSpaceManager()->createAddressSpace("testAddrSpace2");
 	auto testImageDec = m_project->getImageManager()->createImage(testAddrSpace, ImageDecorator::IMAGE_PE, "testImage11");
+	fs::copy_file(fs::path(TEST_DATA_PATH) / "images" / "img1.exe", testImageDec->getFile());
+	testImageDec->load();
 	m_project->getImageManager()->createImage(testAddrSpace, ImageDecorator::IMAGE_PE, "testImage12");
 	m_project->getImageManager()->createImage(testAddrSpace2, ImageDecorator::IMAGE_PE, "testImage21");
 	

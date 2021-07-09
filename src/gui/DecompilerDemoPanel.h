@@ -17,7 +17,7 @@ namespace CE {
 
 namespace GUI {
 	class FunctionManagerPanel;
-	class ImageViewerPanel;
+	class ImageManagerPanel;
 	
 	class DecompilerDemoPanel : public AbstractPanel
 	{
@@ -36,6 +36,7 @@ namespace GUI {
 
 		StdWindow* m_functionManagerWindow = nullptr;
 		StdWindow* m_imageViewerWindow = nullptr;
+		StdWindow* m_imageContentViewerWindow = nullptr;
 		PopupModalWindow* m_popupModalWin = nullptr;
 		PopupBuiltinWindow* m_popupBuiltinWindow = nullptr;
 

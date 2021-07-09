@@ -1,5 +1,5 @@
 #pragma once
-#include "ImageViewerPanel.h"
+#include "ImageManagerPanel.h"
 #include "imgui_wrapper/controls/AbstractPanel.h"
 #include "imgui_wrapper/controls/Input.h"
 #include "controllers/FunctionManagerController.h"

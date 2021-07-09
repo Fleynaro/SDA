@@ -39,4 +39,8 @@ target_include_directories(
     ${IMGUI_DIR}
     ${IMGUI_TEXT_EDITOR_DIR})
 
+target_compile_definitions(
+    imgui_wrapper PRIVATE
+    IMGUI_DISABLE_OBSOLETE_FUNCTIONS=1)
+
 create_vs_filters("${IMGUI_WRAPPER_SRC}")
