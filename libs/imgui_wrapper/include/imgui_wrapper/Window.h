@@ -12,7 +12,7 @@ namespace GUI
 		ImGuiWindowFlags,
 		ImGuiWindowFlags_None
 		>,
-		public GenericEvents
+		public WindowsGenericEvents
 	{
 	protected:
 		AbstractPanel* m_panel;
@@ -80,7 +80,7 @@ namespace GUI
 			pushParams();
 			pushIdParam();
 			bool isOpen = ImGui::Begin(m_panel->getName().c_str(), &m_isOpened, getFlags());
-			//processGenericEvents();
+			processGenericEvents();
 			
 			m_pos = ImGui::GetWindowPos();
 			m_size = ImGui::GetWindowSize();
@@ -109,6 +109,14 @@ namespace GUI
 					ImGui::SetNextWindowSize(m_size);
 				}
 			}
+		}
+
+		bool isImGuiHovered() override {
+			return ImGui::IsWindowHovered();
+		}
+
+		bool isImGuiFocused() override {
+			return ImGui::IsWindowFocused();
 		}
 	};
 
@@ -202,6 +210,7 @@ namespace GUI
 				ImGui::SetNextWindowFocus();
 				if (ImGui::BeginPopupContextItem(getId().c_str()))
 				{
+					processGenericEvents();
 					m_panel->show();
 					ImGui::EndPopup();
 				}
@@ -232,6 +241,7 @@ namespace GUI
 			}
 			pushParams();
 			bool isOpen = ImGui::BeginPopupModal(m_panel->getName().c_str(), &m_isOpened, getFlags());
+			processGenericEvents();
 			
 			m_pos = ImGui::GetWindowPos();
 			m_size = ImGui::GetWindowSize();

@@ -20,8 +20,8 @@ namespace GUI::Button
 			return isClicked();
 		}
 
-		bool isClicked() {
-			return CheckEventFlag(m_isClicked);
+		bool isClicked() const {
+			return m_isClicked;
 		}
 	protected:
 		bool m_isClicked = false;
@@ -51,9 +51,7 @@ namespace GUI::Button
 		void renderButton() override {
 			pushFontParam();
 
-			if (ImGui::Button(getName().c_str(), ImVec2(getWidth(), getHeight()))) {
-				m_isClicked = true;
-			}
+			m_isClicked = ImGui::Button(getName().c_str(), ImVec2(getWidth(), getHeight()));
 
 			popFontParam();
 		}

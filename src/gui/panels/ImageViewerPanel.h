@@ -1,4 +1,5 @@
 #pragma once
+#include "ItemSelector.h"
 #include "controllers/ImageManagerController.h"
 #include "imgui_wrapper/Window.h"
 #include "imgui_wrapper/controls/AbstractPanel.h"
@@ -27,15 +28,11 @@ namespace GUI
 		}
 	};
 
-	class ImageSelector : public Control
+	class ImageSelector : public ItemSelector<CE::ImageDecorator>
 	{
 		ImageManagerController m_controller;
-		Input::TextInput m_search_input;
-		PopupBuiltinWindow* m_popupBuiltinWindow;
 		ImageListViewGrouping* m_imageListViewGrouping;
-		bool m_focusOnSearchInput = false;
 	public:
-		std::set<CE::ImageDecorator*>* m_selectedImages;
 		
 		ImageSelector(CE::ImageManager* manager)
 			: m_controller(manager)
@@ -44,39 +41,37 @@ namespace GUI
 				ColInfo("Image")
 				});
 			auto tableListViewMultiselector = new TableListViewMultiSelector(tableListView);
-			m_selectedImages = &tableListViewMultiselector->m_selectedItems;
+			m_selectedItems = &tableListViewMultiselector->m_selectedItems;
 			m_imageListViewGrouping = new ImageListViewGrouping(tableListViewMultiselector);
-			m_popupBuiltinWindow = new PopupBuiltinWindow(new StdPanel([&]()
-				{
-					m_imageListViewGrouping->show();
-				}));
 			m_controller.update();
 		}
 
 		~ImageSelector() override
 		{
-			delete m_popupBuiltinWindow;
 			delete m_imageListViewGrouping;
 		}
 
-		void renderControl() override {
-			m_popupBuiltinWindow->show();
-			
-			Text::Text("Select images:").show();
-			SameLine();
-			if (m_focusOnSearchInput && m_popupBuiltinWindow->isOpened()) {
-				ImGui::SetKeyboardFocusHere();
-				m_focusOnSearchInput = false;
+	private:
+		void renderPopupBuiltinWindow() override
+		{
+			if(!m_controller.hasItems())
+			{
+				Text::Text("No images.").show();
 			}
-			m_search_input.show();
-			m_popupBuiltinWindow->placeAfterItem();
+			m_imageListViewGrouping->show();
+		}
 
-			if (m_search_input.isTextEntering() || m_search_input.isClickedByLeftMouseBtn()) {
-				m_focusOnSearchInput = true;
-				m_controller.m_filter.m_name = m_search_input.getInputText();
-				m_controller.update();
-				m_popupBuiltinWindow->open();
-			}
+		void textEntering(const std::string& text) override
+		{
+			m_controller.m_filter.m_name = text;
+			m_controller.update();
+		}
+		
+		void renderControl() override {
+			ItemSelector<CE::ImageDecorator>::renderControl();
+			if(m_selectedItems->empty())
+				m_search_input.setPlaceHolderText("Click here to select image(-s)");
+			else m_search_input.setPlaceHolderText("Selected "+ std::to_string(m_selectedItems->size()) +" image(-s)");
 		}
 	};
 	

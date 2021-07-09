@@ -66,11 +66,18 @@ namespace GUI::Input
 		public Attribute::Font
 	{
 		std::string m_inputValue;
+		std::string m_placeHolderText;
 		bool m_isTextEntering = false;
+		bool m_wasActive = false;
 	public:
 		TextInput(const std::string& name = "")
 			: AbstractInput(name)
 		{}
+
+		void setPlaceHolderText(const std::string& text)
+		{
+			m_placeHolderText = text;
+		}
 
 		void setInputText(const std::string& inputText) {
 			m_inputValue = inputText;
@@ -81,7 +88,7 @@ namespace GUI::Input
 		}
 
 		bool isTextEntering() {
-			return CheckEventFlag(m_isTextEntering);
+			return m_isTextEntering;
 		}
 
 	protected:
@@ -96,8 +103,12 @@ namespace GUI::Input
 		}
 
 		virtual void renderTextInput() {
-			m_isTextEntering = ImGui::InputText(getName().c_str(), &m_inputValue, getFlags());
+			auto pText = &m_inputValue;
+			if (!m_placeHolderText.empty() && !m_wasActive)
+				pText = &m_placeHolderText;
+			m_isTextEntering = ImGui::InputText(getName().c_str(), pText, getFlags());
 			processGenericEvents();
+			m_wasActive = isActive() || isHovered();
 		}
 	};
 
@@ -118,7 +129,7 @@ namespace GUI::Input
 		}
 
 		bool isClicked() {
-			return CheckEventFlag(m_isClicked);
+			return m_isClicked;
 		}
 
 		void setInputValue(bool value) {

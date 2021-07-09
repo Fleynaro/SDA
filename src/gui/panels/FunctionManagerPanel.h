@@ -16,25 +16,27 @@ namespace GUI
 			Input::TextInput m_search_input;
 		public:
 			ImageSelector m_imageSelector;
-			bool m_isFilterUpdated = false;
+			bool m_isUpdated = false;
 			
 			FunctionFilter(FunctionManagerPanel* panel)
 				: m_panel(panel), m_imageSelector(panel->m_manager->getProject()->getImageManager())
 			{}
-
 		protected:
 			void renderControl() override {
 				auto& filter = m_panel->m_controller.m_filter;
 				
-				m_isFilterUpdated = false;
+				m_isUpdated = false;
 				if (m_search_input.isTextEntering()) {
 					filter.m_name = m_search_input.getInputText();
-					m_isFilterUpdated = true;
+					m_isUpdated = true;
 				}
 
 				m_search_input.show();
 				m_imageSelector.show();
-				filter.m_images = *m_imageSelector.m_selectedImages;
+				if (m_imageSelector.m_isUpdated) {
+					filter.m_images = *m_imageSelector.m_selectedItems;
+					m_isUpdated = true;
+				}
 			}
 		};
 
@@ -48,6 +50,7 @@ namespace GUI
 			m_listView = new TableListView(&m_controller.m_listModel, "table", {
 				ColInfo("Function")
 			});
+			m_controller.update();
 		}
 
 		~FunctionManagerPanel() override
@@ -58,7 +61,7 @@ namespace GUI
 	protected:
 		void renderPanel() override {
 			m_filterControl.show();
-			if(m_filterControl.m_isFilterUpdated)
+			if(m_filterControl.m_isUpdated)
 			{
 				m_controller.update();
 			}

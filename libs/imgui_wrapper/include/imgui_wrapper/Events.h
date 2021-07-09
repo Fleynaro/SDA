@@ -4,18 +4,8 @@
 
 namespace GUI
 {
-	static bool CheckEventFlag(bool& value) {
-		auto result = value;
-		value = false;
-		return result;
-	}
-	
-	class GenericEvents
+	class AbstractGenericEvents
 	{
-		bool m_isClickedByLeftMouseBtn = false;
-		bool m_isClickedByRightMouseBtn = false;
-		bool m_isClickedByMiddleMouseBtn = false;
-
 		bool m_isHovered = false;
 		bool m_isHoveredIn = false;
 		bool m_isHoveredOut = false;
@@ -23,6 +13,89 @@ namespace GUI
 		bool m_isFocused = false;
 		bool m_isFocusedIn = false;
 		bool m_isFocusedOut = false;
+
+	public:
+		bool isHovered() const
+		{
+			return m_isHovered;
+		}
+
+		bool isHoveredIn() const
+		{
+			return m_isHoveredIn;
+		}
+
+		bool isHoveredOut() const
+		{
+			return m_isHoveredOut;
+		}
+
+		bool isFocused() const
+		{
+			return m_isFocused;
+		}
+
+		bool isFocusedIn() const
+		{
+			return m_isFocusedIn;
+		}
+
+		bool isFocusedOut() const
+		{
+			return m_isFocusedOut;
+		}
+
+	protected:
+		virtual bool isImGuiHovered() = 0;
+
+		virtual bool isImGuiFocused() = 0;
+
+		virtual void processGenericEvents() {
+			m_isHoveredIn = false;
+			m_isHoveredOut = false;
+			m_isFocusedIn = false;
+			m_isFocusedOut = false;
+			
+			// hover
+			if (isImGuiHovered()) {
+				if (!m_isHovered) {
+					m_isHovered = true;
+					m_isHoveredIn = true;
+				}
+			}
+			else {
+				if (m_isHovered) {
+					m_isHovered = false;
+					m_isHoveredOut = true;
+				}
+			}
+
+			// focus
+			if (isImGuiFocused()) {
+				if (!m_isFocused) {
+					m_isFocused = true;
+					m_isFocusedIn = true;
+				}
+			}
+			else {
+				if (m_isFocused) {
+					m_isFocused = false;
+					m_isFocusedOut = true;
+				}
+			}
+
+		}
+	};
+	
+	class GenericEvents : public AbstractGenericEvents
+	{
+		bool m_isClickedByLeftMouseBtn = false;
+		bool m_isClickedByRightMouseBtn = false;
+		bool m_isClickedByMiddleMouseBtn = false;
+
+		bool m_isActive = false;
+		bool m_isActiveOn = false;
+		bool m_isActiveOff = false;
 
 		bool m_isVisible = false;
 		bool m_isVisibleOn = false;
@@ -34,42 +107,24 @@ namespace GUI
 				processGenericEvents();
 		}
 		
-		bool isClickedByLeftMouseBtn() {
-			return CheckEventFlag(m_isClickedByLeftMouseBtn);
-		}
-
-		bool isClickedByRightMouseBtn() {
-			return CheckEventFlag(m_isClickedByRightMouseBtn);
-		}
-
-		bool isClickedByMiddleMouseBtn() {
-			return CheckEventFlag(m_isClickedByMiddleMouseBtn);
-		}
-
-		bool isHovered() const
+		bool isClickedByLeftMouseBtn() const
 		{
-			return m_isHovered;
+			return m_isClickedByLeftMouseBtn;
 		}
 
-		bool isHoveredIn() {
-			return CheckEventFlag(m_isHoveredIn);
-		}
-
-		bool isHoveredOut() {
-			return CheckEventFlag(m_isHoveredOut);
-		}
-
-		bool isFocused() const
+		bool isClickedByRightMouseBtn() const
 		{
-			return m_isFocused;
+			return m_isClickedByRightMouseBtn;
 		}
 
-		bool isFocusedIn() {
-			return CheckEventFlag(m_isFocusedIn);
+		bool isClickedByMiddleMouseBtn() const
+		{
+			return m_isClickedByMiddleMouseBtn;
 		}
 
-		bool isFocusedOut() {
-			return CheckEventFlag(m_isFocusedOut);
+		bool isActive() const
+		{
+			return m_isActive;
 		}
 
 		bool isVisible() const
@@ -77,20 +132,26 @@ namespace GUI
 			return m_isVisible;
 		}
 
-		bool isVisibleOn() {
-			return CheckEventFlag(m_isVisibleOn);
+		bool isVisibleOn() const
+		{
+			return m_isVisibleOn;
 		}
 
-		bool isVisibleOff() {
-			return CheckEventFlag(m_isVisibleOff);
+		bool isVisibleOff() const
+		{
+			return m_isVisibleOff;
 		}
 
 	protected:
-		virtual bool isImGuiHovered() {
+		virtual bool isImGuiActive() {
+			return ImGui::IsItemActive();
+		}
+		
+		bool isImGuiHovered() override {
 			return ImGui::IsItemHovered();
 		}
 
-		virtual bool isImGuiFocused() {
+		bool isImGuiFocused() override {
 			return ImGui::IsItemFocused();
 		}
 		
@@ -99,6 +160,15 @@ namespace GUI
 		}
 		
 		void processGenericEvents() {
+			AbstractGenericEvents::processGenericEvents();
+			m_isClickedByLeftMouseBtn = false;
+			m_isClickedByRightMouseBtn = false;
+			m_isClickedByMiddleMouseBtn = false;
+			m_isActiveOn = false;
+			m_isActiveOff = false;
+			m_isVisibleOn = false;
+			m_isVisibleOff = false;
+			
 			// mouse
 			if (isImGuiHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 				m_isClickedByLeftMouseBtn = true;
@@ -109,35 +179,18 @@ namespace GUI
 			if (isImGuiHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
 				m_isClickedByMiddleMouseBtn = true;
 
-			// hover
-			if (isImGuiHovered()) {
-				if (!m_isHovered) {
-					m_isHovered = true;
-					m_isHoveredIn = true;
-					m_isHoveredOut = false;
+			// active
+			if(isImGuiActive())
+			{
+				if (!m_isActive) {
+					m_isActive = true;
+					m_isActiveOn = true;
 				}
-			}
-			else {
-				if (m_isHovered) {
-					m_isHovered = false;
-					m_isHoveredIn = false;
-					m_isHoveredOut = true;
-				}
-			}
-
-			// focus
-			if (isImGuiFocused()) {
-				if (!m_isFocused) {
-					m_isFocused = true;
-					m_isFocusedIn = true;
-					m_isFocusedOut = false;
-				}
-			}
-			else {
-				if (m_isFocused) {
-					m_isFocused = false;
-					m_isFocusedIn = false;
-					m_isFocusedOut = true;
+			} else
+			{
+				if (m_isActive) {
+					m_isActive = false;
+					m_isActiveOff = true;
 				}
 			}
 
@@ -146,16 +199,26 @@ namespace GUI
 				if (!m_isVisible) {
 					m_isVisible = true;
 					m_isVisibleOn = true;
-					m_isVisibleOff = false;
 				}
 			}
 			else {
 				if (m_isVisible) {
 					m_isVisible = false;
-					m_isVisibleOn = false;
 					m_isVisibleOff = true;
 				}
 			}
+		}
+	};
+
+	class WindowsGenericEvents : public AbstractGenericEvents
+	{
+	protected:
+		bool isImGuiHovered() override {
+			return ImGui::IsWindowHovered();
+		}
+
+		bool isImGuiFocused() override {
+			return ImGui::IsWindowFocused();
 		}
 	};
 

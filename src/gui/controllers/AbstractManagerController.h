@@ -50,6 +50,11 @@ namespace GUI
 			: m_manager(manager)
 		{}
 
+		bool hasItems() const
+		{
+			return !m_items.empty();
+		}
+
 		virtual bool filter(T* item) = 0;
 
 		virtual void sort()
