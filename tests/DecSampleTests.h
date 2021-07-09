@@ -12,7 +12,7 @@ public:
 	struct SampleTest
 	{
 		int m_testId;
-		IImage* m_image;
+		AbstractImage* m_image;
 		int m_imageOffset = 0;
 		SymbolContext m_symbolCtx;
 		std::map<int64_t, IFunctionSignature*> m_functions;
@@ -57,7 +57,7 @@ public:
 			std::vector<int8_t>(content.begin(), content.end())));
 	}
 
-	SampleTest* createSampleTest(int testId, IImage* image, int offset = 0) {
+	SampleTest* createSampleTest(int testId, AbstractImage* image, int offset = 0) {
 		auto test = new SampleTest;
 		test->m_testId = testId;
 		test->m_image = image;

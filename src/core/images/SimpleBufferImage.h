@@ -1,9 +1,9 @@
 #pragma once
-#include "IImage.h"
+#include "AbstractImage.h"
 
 namespace CE
 {
-	class SimpleBufferImage : public IImage
+	class SimpleBufferImage : public AbstractImage
 	{
 		int8_t* m_data;
 		int m_size;
@@ -15,7 +15,5 @@ namespace CE
 		int getSize() override;
 
 		int getOffsetOfEntryPoint() override;
-
-		SegmentType defineSegment(int offset) override;
 	};
 };

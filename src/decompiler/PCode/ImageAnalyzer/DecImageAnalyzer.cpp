@@ -9,7 +9,7 @@ using namespace CE::Decompiler::PCode;
 
 // pass pcode graph and gather its blocks
 
-CE::Decompiler::ImageAnalyzer::ImageAnalyzer(IImage* image, ImagePCodeGraph* imageGraph, PCode::AbstractDecoder* decoder, AbstractRegisterFactory* registerFactory, PCodeGraphReferenceSearch* graphReferenceSearch)
+CE::Decompiler::ImageAnalyzer::ImageAnalyzer(AbstractImage* image, ImagePCodeGraph* imageGraph, PCode::AbstractDecoder* decoder, AbstractRegisterFactory* registerFactory, PCodeGraphReferenceSearch* graphReferenceSearch)
 	: m_image(image), m_imageGraph(imageGraph), m_decoder(decoder), m_registerFactory(registerFactory), m_graphReferenceSearch(graphReferenceSearch)
 {}
 
@@ -37,7 +37,7 @@ void CE::Decompiler::ImageAnalyzer::start(int startOffset, bool onceFunc) {
 			blocksToReconnect.push_back(block);
 		}
 		catch (ImagePCodeGraph::BlockNotFoundException ex) {
-			auto startBlock = m_imageGraph->createBlock(startInstrOffset);
+			const auto startBlock = m_imageGraph->createBlock(startInstrOffset);
 			funcGraph->setStartBlock(startBlock);
 			createPCodeBlocksAtOffset(startInstrOffset, funcGraph);
 			offsetsToFuncGraphs[(int)(startInstrOffset >> 8)] = funcGraph;
@@ -55,13 +55,13 @@ void CE::Decompiler::ImageAnalyzer::start(int startOffset, bool onceFunc) {
 	}
 
 	// associate function graphs with other function graphs through non-virtual calls
-	for (auto pair : nonVirtFuncOffsetsForGraphs) {
+	for (const auto pair : nonVirtFuncOffsetsForGraphs) {
 		auto graph = pair.first;
 		auto offsets = pair.second;
 		for (auto offset : offsets) {
 			auto it = offsetsToFuncGraphs.find(offset);
 			if (it != offsetsToFuncGraphs.end()) {
-				auto otherGraph = it->second;
+				const auto otherGraph = it->second;
 				graph->addNonVirtFuncCall(otherGraph);
 			}
 		}
@@ -110,7 +110,7 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(int64_t startInstr
 
 	auto offset = startInstrOffset;
 	while (true) {
-		auto byteOffset = (int)(offset >> 8);
+		const auto byteOffset = (int)(offset >> 8);
 		auto instrOrder = offset & 0xFF;
 		PCode::Instruction* instr = nullptr;
 		PCodeBlock* curBlock = nullptr;
@@ -165,7 +165,7 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(int64_t startInstr
 		auto nextInstrOffset = instr->getOffset() + 1;
 		bool needChangeNextInstrOffset = false;
 		try {
-			auto instr = m_decoder->m_instrPool->getInstructionAt(nextInstrOffset);
+			const auto instr = m_decoder->m_instrPool->getInstructionAt(nextInstrOffset);
 			if (byteOffset != instr->m_origInstruction->m_offset)
 				needChangeNextInstrOffset = true;
 		}
@@ -184,7 +184,7 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(int64_t startInstr
 			constValueCalculating.start(funcGraph->getConstValues());
 
 			int64_t targetOffset = -1;
-			if (auto varnodeConst = dynamic_cast<PCode::ConstantVarnode*>(instr->m_input0)) {
+			if (const auto varnodeConst = dynamic_cast<PCode::ConstantVarnode*>(instr->m_input0)) {
 				// if this input contains hardcoded constant
 				targetOffset = varnodeConst->m_value;
 			}
@@ -195,7 +195,7 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(int64_t startInstr
 					targetOffset = it->second << 8;
 			}
 
-			if (targetOffset == -1 || m_image->defineSegment((int)(targetOffset >> 8)) != IImage::CODE_SEGMENT) {
+			if (targetOffset == -1 || m_image->getSectionByRva((uint64_t)(targetOffset >> 8))->m_type != ImageSection::CODE_SEGMENT) {
 				offset = -1;
 				m_decoder->getWarningContainer()->addWarning("rva " + std::to_string(targetOffset >> 8) + " is not correct in the jump instruction " + instr->m_origInstruction->m_originalView + " (at 0x" + Helper::String::NumberToHex(instr->m_origInstruction->m_offset) + ")");
 				continue;
@@ -270,7 +270,7 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(int64_t startInstr
 			// calculate the next offset
 			if (instr->m_id != PCode::InstructionId::RETURN) {
 				try {
-					auto nextBlock = m_imageGraph->getBlockAtOffset(nextInstrOffset, false);
+					const auto nextBlock = m_imageGraph->getBlockAtOffset(nextInstrOffset, false);
 					if (curBlock != nextBlock)
 						curBlock->setNextNearBlock(nextBlock);
 				}
@@ -325,10 +325,10 @@ void CE::Decompiler::ImageAnalyzer::GatherPCodeBlocks(PCodeBlock* block, std::se
 	GatherPCodeBlocks(block->getNextFarBlock(), gatheredBlocks);
 }
 
-CE::Decompiler::PCodeGraphReferenceSearch::PCodeGraphReferenceSearch(CE::Project* project, AbstractRegisterFactory* registerFactory, IImage* image)
+CE::Decompiler::PCodeGraphReferenceSearch::PCodeGraphReferenceSearch(CE::Project* project, AbstractRegisterFactory* registerFactory, AbstractImage* image)
 	: m_project(project), m_registerFactory(registerFactory), m_image(image)
 {
-	auto factory = m_project->getSymTableManager()->getFactory(false);
+	const auto factory = m_project->getSymTableManager()->getFactory(false);
 	m_symbolCtx.m_signature = nullptr;
 	m_symbolCtx.m_globalSymbolTable = factory.createSymbolTable(CE::Symbol::SymbolTable::GLOBAL_SPACE);
 	m_symbolCtx.m_stackSymbolTable = factory.createSymbolTable(CE::Symbol::SymbolTable::STACK_SPACE);
@@ -346,22 +346,22 @@ void CE::Decompiler::PCodeGraphReferenceSearch::findNewFunctionOffsets(FunctionP
 	auto decompiler = CE::Decompiler::Decompiler(funcGraph, funcCallInfoCallback, ReturnInfo(), m_registerFactory);
 	decompiler.start();
 
-	auto decCodeGraph = decompiler.getDecGraph();
-	auto sdaCodeGraph = new SdaCodeGraph(decCodeGraph);
+	const auto decCodeGraph = decompiler.getDecGraph();
+	const auto sdaCodeGraph = new SdaCodeGraph(decCodeGraph);
 	Symbolization::SdaBuilding sdaBuilding(sdaCodeGraph, &m_symbolCtx, m_project);
 	sdaBuilding.start();
 
 	for (auto symbol : sdaBuilding.getNewAutoSymbols()) {
 		if (auto memSymbol = dynamic_cast<CE::Symbol::IMemorySymbol*>(symbol)) {
 			auto storage = memSymbol->getStorage();
-			auto offset = (int)storage.getOffset();
+			const auto rva = (uint64_t)storage.getOffset();
 			if (storage.getType() == Storage::STORAGE_GLOBAL) {
-				auto segmentType = m_image->defineSegment(offset);
-				if (segmentType == IImage::CODE_SEGMENT) {
-					nonVirtFuncOffsets.push_back(offset);
+				const auto segmentType = m_image->getSectionByRva(rva)->m_type;
+				if (segmentType == ImageSection::CODE_SEGMENT) {
+					nonVirtFuncOffsets.push_back(rva);
 				}
-				else if (segmentType == IImage::DATA_SEGMENT) {
-					auto imageOffset = m_image->toImageOffset(offset);
+				else if (segmentType == ImageSection::DATA_SEGMENT) {
+					const auto imageOffset = m_image->toImageOffset(rva);
 					VTable* pVtable = nullptr;
 					checkOnVTable(imageOffset, pVtable);
 					if (pVtable) {
@@ -382,16 +382,16 @@ void CE::Decompiler::PCodeGraphReferenceSearch::findNewFunctionOffsets(FunctionP
 
 void CE::Decompiler::PCodeGraphReferenceSearch::checkOnVTable(int startOffset, VTable* pVtable) {
 	std::list<int64_t> funcOffsets;
-	auto data = m_image->getData();
+	const auto data = m_image->getData();
 	for (int offset = startOffset; offset < m_image->getSize(); offset += sizeof(uint64_t)) {
-		auto funcAddr = (uint64_t&)data[offset];
+		const auto funcAddr = reinterpret_cast<uint64_t&>(data[offset]);
 		// all vtables ends with zero address
 		if (funcAddr == 0x0)
 			break;
-		auto funcOffset = m_image->addrToImageOffset(funcAddr);
-		if (m_image->defineSegment(funcOffset) != IImage::CODE_SEGMENT)
+		const auto funcRva = m_image->addrToRva(funcAddr);
+		if (m_image->getSectionByRva(funcRva)->m_type != ImageSection::CODE_SEGMENT)
 			break;
-		funcOffsets.push_back(funcOffset);
+		funcOffsets.push_back(funcRva);
 	}
 
 	if (funcOffsets.empty())

@@ -75,6 +75,11 @@ AddressSpace* CE::ImageDecorator::getAddressSpace() const
 	return m_addressSpace;
 }
 
+AbstractImage* ImageDecorator::getImage() const
+{
+	return m_image;
+}
+
 ImageDecorator::IMAGE_TYPE CE::ImageDecorator::getType() const
 {
 	return m_type;
@@ -113,32 +118,3 @@ ImageDecorator* CE::ImageDecorator::getParentImage() const
 fs::path CE::ImageDecorator::getFile() {
 	return m_addressSpace->getImagesDirectory() / fs::path(getName() + ".bin");
 }
-
-int8_t* CE::ImageDecorator::getData() {
-	return m_image->getData();
-}
-
-int CE::ImageDecorator::getSize() {
-	return m_image->getSize();
-}
-
-int CE::ImageDecorator::getOffsetOfEntryPoint() {
-	return m_image->getOffsetOfEntryPoint();
-}
-
-IImage::SegmentType CE::ImageDecorator::defineSegment(int offset) {
-	return m_image->defineSegment(offset);
-}
-
-int CE::ImageDecorator::toImageOffset(int offset) {
-	return m_image->toImageOffset(offset);
-}
-
-int CE::ImageDecorator::addrToImageOffset(uint64_t addr) {
-	return m_image->addrToImageOffset(addr);
-}
-
-std::uintptr_t CE::ImageDecorator::getAddress() {
-	return m_image->getAddress();
-}
-

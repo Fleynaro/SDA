@@ -27,7 +27,7 @@ TEST_F(ProgramFixture, Test_Common_DataBaseCreatedAndFilled)
     testImageDec->load();
 
     // check raw-image
-    ASSERT_EQ(testImageDec->getAddress(), 0x140000000);
+    ASSERT_EQ(testImageDec->getImage()->getAddress(), 0x140000000);
 
     // create data types
     {
@@ -153,7 +153,7 @@ TEST_F(ProgramFixture, Test_Common_DataBaseLoaded)
     auto testImageDec = m_project->getImageManager()->findImageByName("testImage");
 
     // check raw-image
-    ASSERT_EQ(testImageDec->getAddress(), 0x140000000);
+    ASSERT_EQ(testImageDec->getImage()->getAddress(), 0x140000000);
 
     // load data types
     {

@@ -16,10 +16,10 @@ CE::ImageDecorator* CE::AddressSpace::getImageAt(std::uintptr_t addr)
 	if (it != m_images.end())
 	{
 		auto offset = it->first;
-		auto image = it->second;
-		if (addr < offset + image->getSize())
+		auto imageDec = it->second;
+		if (addr < offset + imageDec->getImage()->getSize())
 		{
-			return image;
+			return imageDec;
 		}
 	}
 	throw ImageNotFound();

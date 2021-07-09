@@ -1,10 +1,10 @@
 #pragma once
-#include "IImage.h"
+#include "AbstractImage.h"
 #include <vector>
 
 namespace CE
 {
-	class VectorBufferImage : public IImage
+	class VectorBufferImage : public AbstractImage
 	{
 		std::vector<int8_t> m_content;
 	public:
@@ -15,7 +15,5 @@ namespace CE
 		int getSize() override;
 
 		int getOffsetOfEntryPoint() override;
-
-		SegmentType defineSegment(int offset) override;
 	};
 };

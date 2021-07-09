@@ -4,7 +4,12 @@ using namespace CE;
 
 CE::VectorBufferImage::VectorBufferImage(std::vector<int8_t> content)
 	: m_content(content)
-{}
+{
+	ImageSection section;
+	section.m_type = ImageSection::CODE_SEGMENT;
+	section.m_virtualSize = (int)content.size();
+	m_imageSections.push_back(section);
+}
 
 int8_t* CE::VectorBufferImage::getData() {
 	return m_content.data();
@@ -16,10 +21,4 @@ int CE::VectorBufferImage::getSize() {
 
 int CE::VectorBufferImage::getOffsetOfEntryPoint() {
 	return 0;
-}
-
-VectorBufferImage::SegmentType CE::VectorBufferImage::defineSegment(int offset) {
-	if (offset >= 0 && offset < m_content.size())
-		return CODE_SEGMENT;
-	return NONE_SEGMENT;
 }

@@ -47,41 +47,41 @@ IDomainObject* DB::ImageMapper::doLoad(Database* db, SQLite::Statement& query) {
 	std::string json_func_graphs_str = query.getColumn("json_func_graphs");
 	auto json_func_graphs = json::parse(json_func_graphs_str);
 	
-	ImageDecorator* image = nullptr;
+	ImageDecorator* imageDec = nullptr;
 	auto project = getManager()->getProject();
 	auto addrSpace = project->getAddrSpaceManager()->findAddressSpaceById(addr_space_id);
 
 	if (parent_image_id != 0)
 	{
 		auto parentImage = getManager()->findImageById(parent_image_id);
-		image = getManager()->createImageFromParent(addrSpace, parentImage, name, comment, false);
-		image->load();
+		imageDec = getManager()->createImageFromParent(addrSpace, parentImage, name, comment, false);
+		imageDec->load();
 	}
 	else {
 		auto globalSymTable = project->getSymTableManager()->findSymbolTableById(global_table_id);
 		auto funcBodySymTable = project->getSymTableManager()->findSymbolTableById(func_body_table_id);
 
-		image = getManager()->createImage(addrSpace, type, globalSymTable, funcBodySymTable, name, comment, false);
-		image->load();
-		auto imgPCodeGraph = image->getPCodeGraph();
+		imageDec = getManager()->createImage(addrSpace, type, globalSymTable, funcBodySymTable, name, comment, false);
+		imageDec->load();
+		auto imgPCodeGraph = imageDec->getPCodeGraph();
 
 		// load modified instructions for instr. pool
 		for (const auto& json_mod_instr : json_instr_pool["mod_instructions"]) {
 			auto offset = json_mod_instr["offset"].get<int64_t>();
 			auto mod = json_mod_instr["mod"].get<Decompiler::PCode::InstructionPool::MODIFICATOR>();
-			image->getInstrPool()->m_modifiedInstructions[offset] = mod;
+			imageDec->getInstrPool()->m_modifiedInstructions[offset] = mod;
 		}
 		// load virtual func. calls
 		for (const auto& json_vfunc_call : json_vfunc_calls) {
 			auto offset = json_vfunc_call["offset"].get<int64_t>();
 			auto sig_id = json_vfunc_call["sig_id"].get<DB::Id>();
 			auto funcSig = dynamic_cast<DataType::IFunctionSignature*>(getManager()->getProject()->getTypeManager()->findTypeById(sig_id));
-			image->getVirtFuncCalls()[offset] = funcSig;
+			imageDec->getVirtFuncCalls()[offset] = funcSig;
 		}
 		// load pcode func. graphs
 		for (const auto& json_func_graph : json_func_graphs) {
 			auto funcGraph = imgPCodeGraph->createFunctionGraph();
-			loadFuncPCodeGraphJson(json_func_graph, funcGraph, image);
+			loadFuncPCodeGraphJson(json_func_graph, funcGraph, imageDec);
 		}
 		// load pcode func. graph connections
 		for (const auto& json_func_graph : json_func_graphs) {
@@ -104,10 +104,10 @@ IDomainObject* DB::ImageMapper::doLoad(Database* db, SQLite::Statement& query) {
 	}
 
 	// add the image to its addr. space
-	addrSpace->getImages()[image->getAddress()] = image;
+	addrSpace->getImages()[imageDec->getImage()->getAddress()] = imageDec;
 
-	image->setId(image_id);
-	return image;
+	imageDec->setId(image_id);
+	return imageDec;
 }
 
 void DB::ImageMapper::doInsert(TransactionContext* ctx, IDomainObject* obj) {
@@ -138,7 +138,7 @@ void DB::ImageMapper::decodePCodeBlock(CE::Decompiler::PCodeBlock* block, CE::Im
 	PCode::DecoderX86 decoder(&registerFactoryX86, imageDec ->getInstrPool(), &warningContainer);
 	auto offset = block->getMinOffset() >> 8;
 	while (offset < block->getMaxOffset() >> 8) {
-		decoder.decode(imageDec->getData() + offset, offset, imageDec->getSize());
+		decoder.decode(imageDec->getImage()->getData() + offset, offset, imageDec->getImage()->getSize());
 		if (!decoder.getOrigInstruction())
 			break;
 		for (auto instr : decoder.getDecodedPCodeInstructions()) {

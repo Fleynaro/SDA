@@ -1,5 +1,5 @@
 #pragma once
-#include <images/IImage.h>
+#include <images/AbstractImage.h>
 #include <database/DomainObject.h>
 #include <utilities/Description.h>
 #include <datatypes/FunctionSignature.h>
@@ -20,7 +20,7 @@ namespace CE
 	};
 
 	// it is a symbolized image that decorates a raw image and can manipulate with high-level things (symbols)
-	class ImageDecorator : public DB::DomainObject, public Description, public IImage
+	class ImageDecorator : public DB::DomainObject, public Description
 	{
 	public:
 		enum IMAGE_TYPE {
@@ -30,7 +30,7 @@ namespace CE
 	private:
 		ImageManager* m_imageManager;
 		AddressSpace* m_addressSpace;
-		IImage* m_image = nullptr;
+		AbstractImage* m_image = nullptr;
 		IMAGE_TYPE m_type;
 		Symbol::SymbolTable* m_globalSymbolTable;
 		Symbol::SymbolTable* m_funcBodySymbolTable;
@@ -62,6 +62,8 @@ namespace CE
 
 		AddressSpace* getAddressSpace() const;
 
+		AbstractImage* getImage() const;
+
 		IMAGE_TYPE getType() const;
 
 		Symbol::SymbolTable* getGlobalSymbolTable() const;
@@ -77,19 +79,5 @@ namespace CE
 		ImageDecorator* getParentImage() const;
 
 		fs::path getFile();
-
-		int8_t* getData() override;
-
-		int getSize() override;
-
-		int getOffsetOfEntryPoint() override;
-
-		SegmentType defineSegment(int offset) override;
-
-		int toImageOffset(int offset) override;
-
-		int addrToImageOffset(uint64_t addr) override;
-
-		std::uintptr_t getAddress() override;
 	};
 };

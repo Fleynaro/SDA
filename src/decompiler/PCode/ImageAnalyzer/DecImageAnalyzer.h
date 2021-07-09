@@ -11,7 +11,7 @@ namespace CE::Decompiler
 	{
 		Project* m_project;
 		AbstractRegisterFactory* m_registerFactory;
-		IImage* m_image;
+		AbstractImage* m_image;
 		SymbolContext m_symbolCtx;
 	public:
 		struct VTable {
@@ -20,7 +20,7 @@ namespace CE::Decompiler
 		};
 		std::list<VTable> m_vtables;
 
-		PCodeGraphReferenceSearch(CE::Project* project, AbstractRegisterFactory* registerFactory, IImage* image);
+		PCodeGraphReferenceSearch(CE::Project* project, AbstractRegisterFactory* registerFactory, AbstractImage* image);
 
 		~PCodeGraphReferenceSearch();
 
@@ -34,14 +34,14 @@ namespace CE::Decompiler
 	// Analysis of an image of some program (.exe or .dll)
 	class ImageAnalyzer
 	{
-		IImage* m_image;
+		AbstractImage* m_image;
 		ImagePCodeGraph* m_imageGraph = nullptr;
 		PCodeGraphReferenceSearch* m_graphReferenceSearch;
 
 		AbstractRegisterFactory* m_registerFactory;
 		PCode::AbstractDecoder* m_decoder;
 	public:
-		ImageAnalyzer(IImage* image, ImagePCodeGraph* imageGraph, PCode::AbstractDecoder* decoder, AbstractRegisterFactory* registerFactory, PCodeGraphReferenceSearch* graphReferenceSearch = nullptr);
+		ImageAnalyzer(AbstractImage* image, ImagePCodeGraph* imageGraph, PCode::AbstractDecoder* decoder, AbstractRegisterFactory* registerFactory, PCodeGraphReferenceSearch* graphReferenceSearch = nullptr);
 
 		void start(int startOffset, bool onceFunc = false);
 
