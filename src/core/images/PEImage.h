@@ -8,6 +8,7 @@ namespace CE
 	{
 		int8_t* m_data;
 		int m_size;
+		PIMAGE_DOS_HEADER m_pImgDosHeader;
 		PIMAGE_NT_HEADERS m_pImgNtHeaders;
 		PIMAGE_SECTION_HEADER m_pImgSecHeader;
 	public:

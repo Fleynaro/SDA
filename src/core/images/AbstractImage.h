@@ -16,6 +16,14 @@ namespace CE
 		uint64_t m_relVirtualAddress = 0;
 		uint64_t m_virtualSize = 0;
 		uint64_t m_pointerToRawData = m_virtualSize;
+
+		uint64_t getMinOffset() const {
+			return m_pointerToRawData;
+		}
+
+		uint64_t getMaxOffset() const {
+			return m_pointerToRawData + m_virtualSize;
+		}
 	};
 	
 	// raw image that can manipualtes with bytes, no symbols or other high-level things

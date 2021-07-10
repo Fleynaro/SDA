@@ -223,10 +223,13 @@ namespace GUI
 	class StdListView
 		: public AbstractListView<T>
 	{
+	protected:
 		EventHandler<T> m_clickItemEventHandler;
 	public:
-		StdListView(IListModel<T>* listModel = nullptr)
-			: AbstractListView<T>(listModel)
+		T m_selectedItem;
+		
+		StdListView(IListModel<T>* listModel = nullptr, T selectedItem = 0)
+			: AbstractListView<T>(listModel), m_selectedItem(selectedItem)
 		{}
 
 		void handler(const std::function<void(T)>& clickItemEventHandler)
@@ -237,7 +240,24 @@ namespace GUI
 	protected:
 		void renderItem(const std::string& text, const T& data, int n) override
 		{
-			if (ImGui::Selectable(text.c_str())) {
+			if (ImGui::Selectable(text.c_str(), data == m_selectedItem)) {
+				if(m_clickItemEventHandler.isInit())
+					m_clickItemEventHandler(data);
+			}
+		}
+	};
+
+	template<typename T>
+	class MenuListView
+		: public StdListView<T>
+	{
+	public:
+		using StdListView<T>::StdListView;
+
+	protected:
+		void renderItem(const std::string& text, const T& data, int n) override
+		{
+			if (ImGui::MenuItem(text.c_str(), 0, data == m_selectedItem)) {
 				m_clickItemEventHandler(data);
 			}
 		}

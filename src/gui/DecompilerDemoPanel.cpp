@@ -197,7 +197,8 @@ void GUI::DecompilerDemoPanel::renderPanel()
 
 			if (Button::StdButton("open image content viewer").present())
 			{
-				m_imageContentViewerWindow = new StdWindow(new ImageContentViewerPanel(m_project->getImageManager()->findImageByName("testImage11")));
+				m_imageContentViewerWindow = new StdWindow(
+					new ImageContentViewerPanel(m_project->getImageManager()->findImageByName("testImage11")), ImGuiWindowFlags_MenuBar);
 			}
 
 			if (Button::StdButton("open builtin popup").present()) {

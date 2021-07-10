@@ -8,6 +8,9 @@ SymbolManager::SymbolManager(Project* module)
 	: AbstractItemManager(module)
 {
 	m_symbolMapper = new DB::SymbolMapper(this);
+
+	auto defType = getProject()->getTypeManager()->findTypeById(CE::DataType::SystemType::Byte);
+	m_defGlobVarSymbol = getFactory(false).createGlobalVarSymbol(0, DataType::GetUnit(defType), "def_symbol");
 }
 
 void SymbolManager::loadSymbols() const
@@ -17,6 +20,10 @@ void SymbolManager::loadSymbols() const
 
 Symbol::AbstractSymbol* CE::SymbolManager::findSymbolById(DB::Id id) {
 	return dynamic_cast<Symbol::AbstractSymbol*>(find(id));
+}
+
+Symbol::GlobalVarSymbol* SymbolManager::getDefGlobalVarSymbol() {
+	return m_defGlobVarSymbol;
 }
 
 SymbolManager::Factory SymbolManager::getFactory(bool markAsNew) {

@@ -24,22 +24,27 @@ std::uintptr_t CE::PEImage::getAddress() {
 }
 
 void CE::PEImage::parse() {
-	auto& dos_header = *reinterpret_cast<IMAGE_DOS_HEADER*>(m_data);
-	const auto e_magic = reinterpret_cast<char*>(&dos_header.e_magic);
+	m_pImgDosHeader = reinterpret_cast<IMAGE_DOS_HEADER*>(m_data);
+	const auto e_magic = reinterpret_cast<char*>(&m_pImgDosHeader->e_magic);
 	if (std::string(e_magic, 2) != "MZ")
 		throw std::exception();
 
-	m_pImgNtHeaders = reinterpret_cast<PIMAGE_NT_HEADERS>(m_data + dos_header.e_lfanew);
+	m_pImgNtHeaders = reinterpret_cast<PIMAGE_NT_HEADERS>(m_data + m_pImgDosHeader->e_lfanew);
 
 	const auto signature = reinterpret_cast<char*>(&m_pImgNtHeaders->Signature);
 	if (std::string(signature, 2) != "PE")
 		throw std::exception();
 
-	m_pImgSecHeader = reinterpret_cast<PIMAGE_SECTION_HEADER>(m_data + dos_header.e_lfanew + sizeof(IMAGE_NT_HEADERS));
+	m_pImgSecHeader = reinterpret_cast<PIMAGE_SECTION_HEADER>(m_data + m_pImgDosHeader->e_lfanew + sizeof(IMAGE_NT_HEADERS));
 }
 
 void CE::PEImage::loadSections()
 {
+	ImageSection headerSection;
+	headerSection.m_name = "PE HEADER";
+	headerSection.m_virtualSize = m_pImgDosHeader->e_lfanew + sizeof(IMAGE_NT_HEADERS);
+	m_imageSections.push_back(headerSection);
+	
 	size_t i = 0;
 	PIMAGE_SECTION_HEADER pSeh = m_pImgSecHeader;
 	for (i = 0; i < m_pImgNtHeaders->FileHeader.NumberOfSections; i++)

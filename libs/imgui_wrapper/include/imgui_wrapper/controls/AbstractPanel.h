@@ -15,9 +15,14 @@ namespace GUI
 	protected:
 		virtual void renderPanel() = 0;
 
+		virtual void renderMenuBar() {}
 	private:
 		void renderControl() override
 		{
+			if (ImGui::BeginMenuBar()) {
+				renderMenuBar();
+				ImGui::EndMenuBar();
+			}
 			renderPanel();
 		}
 	};

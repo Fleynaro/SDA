@@ -156,7 +156,7 @@ int Unit::getSize() {
 }
 
 std::string DataType::Unit::getViewValue(uint64_t value) {
-	return "(" + getDisplayName() + ")0x" + Helper::String::NumberToHex(value);
+	return m_type->getViewValue(value);
 }
 
 DataType::IType* Unit::getType() const

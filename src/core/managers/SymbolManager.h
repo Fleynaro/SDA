@@ -46,7 +46,10 @@ namespace CE
 
 		Symbol::AbstractSymbol* findSymbolById(DB::Id id);
 
+		Symbol::GlobalVarSymbol* getDefGlobalVarSymbol();
+
 	private:
 		DB::SymbolMapper* m_symbolMapper;
+		Symbol::GlobalVarSymbol* m_defGlobVarSymbol;
 	};
 };
