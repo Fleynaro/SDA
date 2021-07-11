@@ -173,6 +173,7 @@ namespace GUI
 		
 		class CodeSegmentViewerX86 : public AbstractSegmentViewer
 		{
+			// todo: move to other class (bridge pattern), release Debugger viewer
 			ZydisDecoder m_decoder;
 			ZydisFormatter m_formatter;
 
@@ -184,6 +185,7 @@ namespace GUI
 			};
 			std::list<Jmp> m_jmps;
 			std::map<uint64_t, std::list<Jmp*>> m_offsetToJmp;
+			std::set<Jmp*> m_shownJmps;
 		public:
 			CodeSegmentViewerX86(CE::ImageDecorator* imageDec, const CE::ImageSection* imageSection)
 				: AbstractSegmentViewer(imageDec, imageSection)
@@ -195,6 +197,7 @@ namespace GUI
 
 		private:
 			void renderControl() override {
+				m_shownJmps.clear();
 				if (ImGui::BeginTable("content_table", 3, TableFlags))
 				{
 					ImGui::TableSetupScrollFreeze(0, 1);
@@ -215,6 +218,7 @@ namespace GUI
 							ZydisDecodedInstruction instruction;
 							auto success = decodeZydisInstruction(offset, &instruction);
 							if (success) {
+								// todo: change also m_offsetToJmp when image bytes will be changed
 								checkItemLengthChanged(row, instruction.length);
 								success = renderInstructionColumns(row, &instruction, clipper);
 							}
@@ -257,7 +261,7 @@ namespace GUI
 					if(token_type == ZYDIS_TOKEN_MNEMONIC) {
 						command = token_value;
 					} else {
-						// todo: colors
+						// todo: colors, tooltip
 						operands += token_value;
 					}
 				} while (ZYAN_SUCCESS(ZydisFormatterTokenNext(&token)));
@@ -265,12 +269,14 @@ namespace GUI
 				ImGui::TableNextColumn();
 				Text::Text(command).show();
 
-				const auto offset = m_offsets[row];
-				if (const auto it = m_offsetToJmp.find(offset); it != m_offsetToJmp.end()) {
+				// render jump arrow lines
+				if (const auto it = m_offsetToJmp.find(m_offsets[row]); it != m_offsetToJmp.end()) {
 					auto pJmps = it->second;
 					for(auto pJmp : pJmps) {
-						const auto targetRow = offsetToRow(offset == pJmp->m_startOffset ? pJmp->m_endOffset : pJmp->m_startOffset);
-						drawJmpLine(targetRow - row, pJmp->m_level, clipper);
+						if (m_shownJmps.find(pJmp) == m_shownJmps.end()) {
+							drawJmpLine(row, pJmp, clipper);
+							m_shownJmps.insert(pJmp);
+						}
 					}
 				}
 				
@@ -279,16 +285,45 @@ namespace GUI
 				return true;
 			}
 
-			void drawJmpLine(int targetRowDelta, int level, const ImGuiListClipper& clipper) {
+			void drawJmpLine(int row, Jmp* pJmp, const ImGuiListClipper& clipper) {
+				const float JmpLineLeftOffset = 10.0f;
+				const float JmpLineGap = 8.0f;
+				
+				const bool isStart = m_offsets[row] == pJmp->m_startOffset;
+				const auto targetRow = offsetToRow(isStart ? pJmp->m_endOffset : pJmp->m_startOffset);
+
+				auto lineColor = ImGui::GetColorU32(ToImGuiColor(-1));
 				const ImVec2 point1 = { ImGui::GetItemRectMin().x - 2.0f, (ImGui::GetItemRectMin().y + ImGui::GetItemRectMax().y) / 2.0f };
-				const ImVec2 point2 = ImVec2(point1.x - level * 2.0f - 5.0f, point1.y);
-				const ImVec2 point3 = ImVec2(point2.x, point2.y + clipper.ItemsHeight * targetRowDelta);
+				const ImVec2 point2 = ImVec2(point1.x - pJmp->m_level * JmpLineGap - JmpLineLeftOffset, point1.y);
+				const ImVec2 point3 = ImVec2(point2.x, point2.y + clipper.ItemsHeight * (targetRow - row));
 				const ImVec2 point4 = ImVec2(point1.x, point3.y);
 
+				// click event of the jump arrow
+				ImGuiContext& g = *GImGui;
+				if (ImGui::IsMousePosValid(&g.IO.MousePos)) {
+					auto rect = ImRect(point2, { point3.x + JmpLineGap, point3.y });
+					if(rect.Min.x > rect.Max.x || rect.Min.y > rect.Max.y)
+						rect = ImRect(point3, { point2.x + JmpLineGap, point2.y });
+					if (rect.Contains(g.IO.MousePos)) {
+						ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+						lineColor = ImGui::GetColorU32(ToImGuiColor(0x00bfffFF));
+						if(ImGui::IsMouseClicked(0)) {
+							const auto offsetToCenter = clipper.ItemsHeight * (clipper.DisplayEnd - clipper.DisplayStart) / 2.0f;
+							ImGui::SetScrollY(targetRow * clipper.ItemsHeight - offsetToCenter);
+						}
+					}
+				}
+
+
+				// render the jump arrow
 				ImGuiWindow* window = ImGui::GetCurrentWindow();
-				window->DrawList->AddLine(point1, point2, -1);
-				window->DrawList->AddLine(point2, point3, -1);
-				window->DrawList->AddLine(point3, point4, -1);
+				window->DrawList->AddLine(point1, point2, lineColor);
+				window->DrawList->AddLine(point2, point3, lineColor);
+				window->DrawList->AddLine(point3, point4, lineColor);
+				auto arrowPos = isStart ? point4 : point1;
+				arrowPos.x -= 7.0f;
+				arrowPos.y -= 3.0f;
+				ImGui::RenderArrow(window->DrawList, arrowPos, lineColor, ImGuiDir_Right, 0.7f);
 			}
 
 			void fillOffsets() {
@@ -304,16 +339,16 @@ namespace GUI
 						if(operand.type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
 							if(operand.imm.is_relative) {
 								auto targetOffset = offset + instruction.length + operand.imm.value.s;
-								if (std::abs(offset - targetOffset) < 0x100) {
+								if (std::abs(offset - targetOffset) < 0x300) {
 									Jmp jmp;
 									jmp.m_startOffset = offset;
 									jmp.m_endOffset = targetOffset;
 									jmp.m_level = 0;
 									m_jmps.push_back(jmp);
 
-									if (m_offsetToJmp.find(offset) != m_offsetToJmp.end())
+									if (m_offsetToJmp.find(offset) == m_offsetToJmp.end())
 										m_offsetToJmp[offset] = std::list<Jmp*>();
-									if (m_offsetToJmp.find(targetOffset) != m_offsetToJmp.end())
+									if (m_offsetToJmp.find(targetOffset) == m_offsetToJmp.end())
 										m_offsetToJmp[targetOffset] = std::list<Jmp*>();
 									auto pJmp = &*m_jmps.rbegin();
 									m_offsetToJmp[offset].push_back(pJmp);
@@ -326,32 +361,55 @@ namespace GUI
 					offset += instruction.length;
 				}
 
-				// setup jmp levels
-				for (const auto& jmp : m_jmps) {
-					increaseJmpLevels(jmp.m_startOffset, jmp.m_endOffset);
-				}
+				setupJmpLevels();
 			}
 
-			void increaseJmpLevels(uint64_t minOffset, uint64_t maxOffset) {
-				auto it = m_offsetToJmp.find(minOffset);
-				auto end = m_offsetToJmp.find(maxOffset);
-				std::set<Jmp*> passedJmps;
-				while(it != end) {
-					auto pJmps = it->second;
-					for(auto pJmp : pJmps) {
-						if (passedJmps.find(pJmp) == passedJmps.end()) {
-							pJmp->m_level++;
-							passedJmps.insert(pJmp);
-						}
+			// calculate levels for all jump arrow lines
+			void setupJmpLevels() {
+				std::map<uint64_t, std::list<Jmp*>> offToJmps;
+				for (auto& jmp : m_jmps) {
+					// calculate lower bound of jump
+					auto minOffset = std::min(jmp.m_startOffset, jmp.m_endOffset);
+					if (offToJmps.find(minOffset) == offToJmps.end())
+						offToJmps[minOffset] = std::list<Jmp*>();
+					offToJmps[minOffset].push_back(&jmp);
+				}
+
+				std::function getJmp([&](std::map<uint64_t, std::list<Jmp*>>::iterator it)
+				{
+					auto& jmps = it->second;
+					auto jmp = *jmps.begin();
+					jmps.pop_front();
+					if (jmps.empty())
+						offToJmps.erase(it);
+					return jmp;
+				});
+
+				// passing layer by layer and assigning layer level
+				int layerLevel = 1;
+				while (!offToJmps.empty()) {
+					auto it = offToJmps.begin();
+					auto jmp = getJmp(it);
+					jmp->m_level = layerLevel;
+
+					// finding all non-intersected jumps
+					while (true) {
+						// calculate upper bound of jump
+						auto maxOffset = std::max(jmp->m_startOffset, jmp->m_endOffset);
+						it = offToJmps.upper_bound(maxOffset);
+						if (it == offToJmps.end())
+							break;
+						jmp = getJmp(it);	
+						jmp->m_level = layerLevel;
 					}
-					if (minOffset < maxOffset)
-						++it; else --it;
+					// go the next layer
+					layerLevel++;
 				}
 			}
 		};
 		
 		CE::ImageDecorator* m_imageDec;
-		AbstractSegmentViewer* m_imageSectionViewer = nullptr;
+		AbstractSegmentViewer* m_imageSectionViewer = nullptr; //todo: use map
 		ImageSectionListModel m_imageSectionListModel;
 		MenuListView<const CE::ImageSection*> m_imageSectionMenuListView;
 	public:
