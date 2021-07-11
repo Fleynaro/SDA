@@ -38,8 +38,7 @@ namespace GUI::Button
 
 	class StdButton
 		: public AbstractButton,
-		public Attribute::Width,
-		public Attribute::Height,
+		public Attribute::Size,
 		public Attribute::Font
 	{
 	public:
@@ -51,7 +50,7 @@ namespace GUI::Button
 		void renderButton() override {
 			pushFontParam();
 
-			m_isClicked = ImGui::Button(getName().c_str(), ImVec2(getWidth(), getHeight()));
+			m_isClicked = ImGui::Button(getName().c_str(), m_size);
 
 			popFontParam();
 		}

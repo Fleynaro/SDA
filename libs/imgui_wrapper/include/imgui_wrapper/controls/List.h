@@ -331,7 +331,8 @@ namespace GUI
 
 	template<typename T>
 	class TableListViewSelector
-		: public AbstractTableListView<T>
+		: public AbstractTableListView<T>,
+		public Attribute::Id
 	{
 		AbstractTableListView<T>* m_tableListView;
 		EventHandler<T> m_selectEventHandler;
@@ -374,7 +375,7 @@ namespace GUI
 		{
 			m_tableListView->renderItem(text, data, n);
 			ImGui::TableNextColumn();
-			m_btn->setId(this + n);
+			m_btn->setChildId(this, n);
 			if (m_btn->present())
 			{
 				m_selectEventHandler(data);
@@ -384,7 +385,8 @@ namespace GUI
 
 	template<typename T>
 	class TableListViewMultiSelector
-		: public AbstractTableListView<T>
+		: public AbstractTableListView<T>,
+		public Attribute::Id
 	{
 		AbstractTableListView<T>* m_tableListView;
 		EventHandler<> m_selectEventHandler;
@@ -439,7 +441,7 @@ namespace GUI
 			ImGui::TableNextColumn();
 
 			Input::BoolInput checkbox("", m_selectedItems.find(data) != m_selectedItems.end());
-			checkbox.setId(this + n);
+			checkbox.setChildId(this, n);
 			if (checkbox.present())
 			{
 				if (checkbox.isSelected())

@@ -1,5 +1,6 @@
 #pragma once
 #include "ImageDecorator.h"
+#include "imgui_internal.h"
 #include "imgui_wrapper/controls/AbstractPanel.h"
 #include "imgui_wrapper/controls/List.h"
 #include "imgui_wrapper/controls/Text.h"
@@ -78,6 +79,13 @@ namespace GUI
 				return m_offsets[row + 1];
 			}
 
+			int offsetToRow(uint64_t offset) const {
+				using namespace Helper::Algorithm;
+				size_t index = -1;
+				BinarySearch(m_offsets, offset, index);
+				return static_cast<int>(index);
+			}
+
 			void checkItemLengthChanged(int row, int itemLength) {
 				auto offset = m_offsets[row];
 				auto nextOffset = getNextOffset(row);
@@ -114,7 +122,7 @@ namespace GUI
 					ImGui::TableHeadersRow();
 
 					ImGuiListClipper clipper;
-					clipper.Begin(m_offsets.size());
+					clipper.Begin(static_cast<int>(m_offsets.size()));
 					while (clipper.Step())
 					{
 						for (auto row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
@@ -167,6 +175,15 @@ namespace GUI
 		{
 			ZydisDecoder m_decoder;
 			ZydisFormatter m_formatter;
+
+			struct Jmp
+			{
+				int m_level;
+				uint64_t m_startOffset;
+				uint64_t m_endOffset;
+			};
+			std::list<Jmp> m_jmps;
+			std::map<uint64_t, std::list<Jmp*>> m_offsetToJmp;
 		public:
 			CodeSegmentViewerX86(CE::ImageDecorator* imageDec, const CE::ImageSection* imageSection)
 				: AbstractSegmentViewer(imageDec, imageSection)
@@ -187,7 +204,7 @@ namespace GUI
 					ImGui::TableHeadersRow();
 
 					ImGuiListClipper clipper;
-					clipper.Begin(m_offsets.size());
+					clipper.Begin(static_cast<int>(m_offsets.size()));
 					while (clipper.Step())
 					{
 						for (auto row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
@@ -199,7 +216,7 @@ namespace GUI
 							auto success = decodeZydisInstruction(offset, &instruction);
 							if (success) {
 								checkItemLengthChanged(row, instruction.length);
-								success = renderInstructionColumns(&instruction);
+								success = renderInstructionColumns(row, &instruction, clipper);
 							}
 							
 							if (!success) {
@@ -222,7 +239,7 @@ namespace GUI
 				return true;
 			}
 
-			bool renderInstructionColumns(ZydisDecodedInstruction* instruction) {
+			bool renderInstructionColumns(int row, ZydisDecodedInstruction* instruction, const ImGuiListClipper& clipper) {
 				char buffer[256];
 				const ZydisFormatterToken* token;
 				if (ZYAN_FAILED(ZydisFormatterTokenizeInstruction(&m_formatter, instruction, &buffer[0],
@@ -247,20 +264,88 @@ namespace GUI
 				
 				ImGui::TableNextColumn();
 				Text::Text(command).show();
+
+				const auto offset = m_offsets[row];
+				if (const auto it = m_offsetToJmp.find(offset); it != m_offsetToJmp.end()) {
+					auto pJmps = it->second;
+					for(auto pJmp : pJmps) {
+						const auto targetRow = offsetToRow(offset == pJmp->m_startOffset ? pJmp->m_endOffset : pJmp->m_startOffset);
+						drawJmpLine(targetRow - row, pJmp->m_level, clipper);
+					}
+				}
+				
 				ImGui::TableNextColumn();
 				Text::Text(operands).show();
+				return true;
+			}
+
+			void drawJmpLine(int targetRowDelta, int level, const ImGuiListClipper& clipper) {
+				const ImVec2 point1 = { ImGui::GetItemRectMin().x - 2.0f, (ImGui::GetItemRectMin().y + ImGui::GetItemRectMax().y) / 2.0f };
+				const ImVec2 point2 = ImVec2(point1.x - level * 2.0f - 5.0f, point1.y);
+				const ImVec2 point3 = ImVec2(point2.x, point2.y + clipper.ItemsHeight * targetRowDelta);
+				const ImVec2 point4 = ImVec2(point1.x, point3.y);
+
+				ImGuiWindow* window = ImGui::GetCurrentWindow();
+				window->DrawList->AddLine(point1, point2, -1);
+				window->DrawList->AddLine(point2, point3, -1);
+				window->DrawList->AddLine(point3, point4, -1);
 			}
 
 			void fillOffsets() {
 				m_offsets.clear();
 				auto data = getImageData();
-				auto offset = m_imageSection->getMinOffset();
+				auto offset = static_cast<int64_t>(m_imageSection->getMinOffset());
 				ZydisDecodedInstruction instruction;
 				while (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&m_decoder, data + offset, m_imageSection->getMaxOffset() - offset,
 					&instruction)))
 				{
+					if(instruction.meta.category == ZYDIS_CATEGORY_COND_BR || instruction.meta.category == ZYDIS_CATEGORY_UNCOND_BR) {
+						const auto& operand = instruction.operands[0];
+						if(operand.type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
+							if(operand.imm.is_relative) {
+								auto targetOffset = offset + instruction.length + operand.imm.value.s;
+								if (std::abs(offset - targetOffset) < 0x100) {
+									Jmp jmp;
+									jmp.m_startOffset = offset;
+									jmp.m_endOffset = targetOffset;
+									jmp.m_level = 0;
+									m_jmps.push_back(jmp);
+
+									if (m_offsetToJmp.find(offset) != m_offsetToJmp.end())
+										m_offsetToJmp[offset] = std::list<Jmp*>();
+									if (m_offsetToJmp.find(targetOffset) != m_offsetToJmp.end())
+										m_offsetToJmp[targetOffset] = std::list<Jmp*>();
+									auto pJmp = &*m_jmps.rbegin();
+									m_offsetToJmp[offset].push_back(pJmp);
+									m_offsetToJmp[targetOffset].push_back(pJmp);
+								}
+							}
+						}
+					}
 					m_offsets.push_back(offset);
 					offset += instruction.length;
+				}
+
+				// setup jmp levels
+				for (const auto& jmp : m_jmps) {
+					increaseJmpLevels(jmp.m_startOffset, jmp.m_endOffset);
+				}
+			}
+
+			void increaseJmpLevels(uint64_t minOffset, uint64_t maxOffset) {
+				auto it = m_offsetToJmp.find(minOffset);
+				auto end = m_offsetToJmp.find(maxOffset);
+				std::set<Jmp*> passedJmps;
+				while(it != end) {
+					auto pJmps = it->second;
+					for(auto pJmp : pJmps) {
+						if (passedJmps.find(pJmp) == passedJmps.end()) {
+							pJmp->m_level++;
+							passedJmps.insert(pJmp);
+						}
+					}
+					if (minOffset < maxOffset)
+						++it; else --it;
 				}
 			}
 		};
@@ -268,13 +353,13 @@ namespace GUI
 		CE::ImageDecorator* m_imageDec;
 		AbstractSegmentViewer* m_imageSectionViewer = nullptr;
 		ImageSectionListModel m_imageSectionListModel;
-		MenuListView<const CE::ImageSection*> imageSectionMenuListView;
+		MenuListView<const CE::ImageSection*> m_imageSectionMenuListView;
 	public:
 		ImageContentViewerPanel(CE::ImageDecorator* imageDec)
 			: AbstractPanel("Image content viewer"), m_imageDec(imageDec), m_imageSectionListModel(imageDec->getImage())
 		{
-			imageSectionMenuListView = MenuListView(&m_imageSectionListModel);
-			imageSectionMenuListView.handler([&](const CE::ImageSection* imageSection)
+			m_imageSectionMenuListView = MenuListView(&m_imageSectionListModel);
+			m_imageSectionMenuListView.handler([&](const CE::ImageSection* imageSection)
 				{
 					selectImageSection(imageSection);
 				});
@@ -300,7 +385,7 @@ namespace GUI
 		void renderMenuBar() override {
 			if (ImGui::BeginMenu("Image section"))
 			{
-				imageSectionMenuListView.show();
+				m_imageSectionMenuListView.show();
 				ImGui::EndMenu();
 			}
 		}
@@ -313,7 +398,7 @@ namespace GUI
 			else {
 				m_imageSectionViewer = new DataSegmentViewer(m_imageDec, imageSection);
 			}
-			imageSectionMenuListView.m_selectedItem = imageSection;
+			m_imageSectionMenuListView.m_selectedItem = imageSection;
 		}
 	};
 };

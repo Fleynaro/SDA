@@ -7,7 +7,31 @@ namespace fs = std::filesystem;
 
 namespace Helper
 {
-	namespace File {
+	namespace Algorithm
+	{
+		template<typename T>
+		static bool BinarySearch(const std::vector<T>& vector, T value, size_t& index) {
+
+			auto lower = vector.begin();
+			auto upper = vector.end() - 1;
+			while (lower <= upper) {
+				auto mid = lower + (upper - lower) / 2;
+				if (value == *mid) {
+					index = std::distance(vector.begin(), mid);
+					return true;
+				}
+				if (value < *mid)
+					upper = mid - 1;
+				else
+					lower = mid + 1;
+			}
+
+			return false;
+		}
+	};
+	
+	namespace File
+	{
 		// exceptions
 		class FileException : public std::exception {
 		public: FileException(const char* message);
@@ -18,7 +42,8 @@ namespace Helper
 		extern void SaveBufferIntoFile(char* buffer, int size, const fs::path& file);
 	};
 
-	namespace String {
+	namespace String
+	{
 		extern std::vector<std::string> Split(const std::string& input, const std::string& regex);
 		extern void Replace(std::string& source, const std::string& from, const std::string& to);
 		
@@ -43,7 +68,8 @@ namespace Helper
 		std::string format(const std::string fmt_str, ...);
 	};
 
-	namespace Date {
+	namespace Date
+	{
 		namespace View {
 			constexpr const char* Full = "%Y-%m-%d %H:%M:%S";
 			constexpr const char* Date = "%Y-%m-%d";

@@ -5,7 +5,7 @@ namespace GUI
 {
 	class Progress
 		: public Control,
-		public Attribute::Width
+		public Attribute::Size
 	{
 		float m_min;
 		float m_max;
@@ -39,23 +39,9 @@ namespace GUI
 			m_max = value;
 			return this;
 		}
-
-		Progress* setWidth(float value) {
-			m_width = value;
-			return this;
-		}
-
-		Progress* setHeight(float value) {
-			m_height = value;
-			return this;
-		}
 	protected:
 		void renderControl() override {
-			pushWidthParam();
-
-			ImGui::ProgressBar(getFraction(), ImVec2(m_width, m_height));
-
-			popWidthParam();
+			ImGui::ProgressBar(getFraction(), m_size);
 		}
 	};
 };

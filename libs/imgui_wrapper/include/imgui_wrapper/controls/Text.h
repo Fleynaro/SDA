@@ -8,7 +8,7 @@ namespace GUI::Text
 	class Text
 		: public Control,
 		public GenericEvents,
-		public Attribute::Width,
+		public Attribute::Size,
 		public Attribute::Font
 	{
 	public:

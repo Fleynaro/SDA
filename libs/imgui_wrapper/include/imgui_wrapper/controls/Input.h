@@ -62,7 +62,7 @@ namespace GUI::Input
 
 	class TextInput
 		: public AbstractInput,
-		public Attribute::Width,
+		public Attribute::Size,
 		public Attribute::Font
 	{
 		std::string m_inputValue;
@@ -149,7 +149,7 @@ namespace GUI::Input
 
 	class IntegerInput
 		: public AbstractInput,
-		public Attribute::Width
+		public Attribute::Size
 	{
 		int m_value = 0;
 		int m_step = 1;
@@ -181,7 +181,7 @@ namespace GUI::Input
 
 	class FloatInput
 		: public AbstractInput,
-		public Attribute::Width
+		public Attribute::Size
 	{
 		float m_value = 0;
 		float m_step = 0.f;
@@ -213,7 +213,7 @@ namespace GUI::Input
 
 	class DoubleInput
 		: public AbstractInput,
-		public Attribute::Width
+		public Attribute::Size
 	{
 		double m_value = 0;
 		double m_step = 0.0;

@@ -7,82 +7,39 @@ namespace GUI
 		class Pos
 		{
 		public:
-			Pos(float posX = 0.f, float posY = 0.f)
-				: m_posX(posX), m_posY(posY)
+			Pos(ImVec2 pos = {0.0f, 0.0f})
+				: m_pos(pos)
 			{};
 
-			float getPosX() {
-				return m_posX;
-			}
-
-			float getPosY() {
-				return m_posY;
-			}
-
-			void setPosX(float value) {
-				m_posX = value;
-			}
-
-			void setPosY(float value) {
-				m_posY = value;
-			}
-
-			void pushPosParam() {
-				if (getPosX() == 0.f)
-					return;
-				ImGui::SetNextWindowPos(ImVec2(m_posX, m_posY));
+			ImVec2& getPos() {
+				return m_pos;
 			}
 		protected:
-			float m_posX;
-			float m_posY;
+			ImVec2 m_pos;
 		};
 
-		class Width
+		class Size
 		{
 		public:
-			Width(float width = 0.f)
-				: m_width(width)
+			Size(ImVec2 size = { 0.0f, 0.0f })
+				: m_size(size)
 			{};
 
-			float getWidth() {
-				return m_width;
-			}
-
-			void setWidth(float value) {
-				m_width = value;
-			}
-
-			void pushWidthParam() {
-				if (getWidth() == 0.f)
-					return;
-				ImGui::PushItemWidth(getWidth());
-			}
-
-			void popWidthParam() {
-				if (getWidth() == 0.f)
-					return;
-				ImGui::PopItemWidth();
+			ImVec2& getSize() {
+				return m_size;
 			}
 		protected:
-			float m_width;
-		};
+			ImVec2 m_size;
 
-		class Height
-		{
-		public:
-			Height(float height = 0.f)
-				: m_height(height)
-			{};
-
-			float getHeight() {
-				return m_height;
+			void pushWidthParam() const {
+				if(m_size.x)
+					ImGui::PushItemWidth(m_size.x);
 			}
 
-			void setHeight(float value) {
-				m_height = value;
+			void popWidthParam() const {
+				if (m_size.x)
+					ImGui::PopItemWidth();
 			}
-		protected:
-			float m_height;
 		};
 
 		class Font
@@ -92,22 +49,18 @@ namespace GUI
 				: m_font(font)
 			{};
 
-			ImFont* getFont() {
+			ImFont*& getFont() {
 				return m_font;
 			}
 
-			void setFont(ImFont* font) {
-				m_font = font;
-			}
-
-			void pushFontParam() {
-				if (getFont() == nullptr)
+			void pushFontParam() const {
+				if (m_font == nullptr)
 					return;
-				ImGui::PushFont(getFont());
+				ImGui::PushFont(m_font);
 			}
 
-			void popFontParam() {
-				if (getFont() == nullptr)
+			void popFontParam() const {
+				if (m_font == nullptr)
 					return;
 				ImGui::PopFont();
 			}
@@ -119,26 +72,25 @@ namespace GUI
 		{
 			std::string m_id;
 		public:
-			Id(const std::string& id = "")
-				: m_id(id)
+			Id()
 			{
-				setId(this);
-			};
+				m_id = std::to_string(reinterpret_cast<uint64_t>(this));
+			}
 
-			std::string getId() {
+			const std::string& getId() const {
 				return m_id;
 			}
 
 			template<typename T>
-			void setId(T id) {
-				m_id = std::to_string(uint64_t(id));
+			void setChildId(Id* parent, T id) {
+				m_id = parent->getId() + "-" + std::to_string(static_cast<uint64_t>(id));
 			}
 
-			void pushIdParam() {
+			void pushIdParam() const {
 				ImGui::PushID(m_id.c_str());
 			}
 
-			void popIdParam() {
+			void popIdParam() const {
 				ImGui::PopID();
 			}
 		};
@@ -177,7 +129,7 @@ namespace GUI
 				: m_name(name)
 			{};
 
-			const std::string& getName() {
+			const std::string& getName() const {
 				return m_name;
 			}
 

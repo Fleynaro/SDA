@@ -8,6 +8,8 @@ namespace GUI
 	class StdWindow :
 		public Control,
 		public Attribute::Id,
+		public Attribute::Pos,
+		public Attribute::Size,
 		public Attribute::Flags<
 		ImGuiWindowFlags,
 		ImGuiWindowFlags_None
@@ -16,9 +18,6 @@ namespace GUI
 	{
 	protected:
 		AbstractPanel* m_panel;
-		
-		ImVec2 m_pos;
-		ImVec2 m_size;
 
 		bool m_isOpened = true;
 		bool m_fullscreen = false;
@@ -35,22 +34,6 @@ namespace GUI
 		AbstractPanel* getPanel() const
 		{
 			return m_panel;
-		}
-
-		void setPos(ImVec2 pos) {
-			m_pos = pos;
-		}
-
-		ImVec2& getPos() {
-			return m_pos;
-		}
-
-		void setSize(ImVec2 size) {
-			m_size = size;
-		}
-
-		ImVec2& getSize() {
-			return m_size;
 		}
 
 		bool isOpened()
@@ -142,7 +125,7 @@ namespace GUI
 
 		void placeAfterItem()
 		{
-			setPos({ ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y });
+			getPos() = { ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y };
 		}
 
 	private:
