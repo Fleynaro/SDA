@@ -198,7 +198,7 @@ void GUI::DecompilerDemoPanel::renderPanel()
 			if (Button::StdButton("open image content viewer").present())
 			{
 				m_imageContentViewerWindow = new StdWindow(
-					new ImageContentViewerPanel(m_project->getImageManager()->findImageByName("testImage11")), ImGuiWindowFlags_MenuBar);
+					new ImageContentViewerPanel(m_project->getImageManager()->findImageByName("testRealImage")), ImGuiWindowFlags_MenuBar);
 			}
 
 			if (Button::StdButton("open builtin popup").present()) {
@@ -271,6 +271,11 @@ void GUI::DecompilerDemoPanel::renderPanel()
 	ImGui::ShowDemoWindow();
 }
 
+// decompiler
+#include <decompiler/DecMisc.h>
+#include <images/VectorBufferImage.h>
+#include <managers/Managers.h>
+
 void GUI::DecompilerDemoPanel::initProgram() {
 	auto prj_dir = m_program->getExecutableDirectory() / "demo";
 	fs::remove_all(prj_dir);
@@ -284,9 +289,17 @@ void GUI::DecompilerDemoPanel::initProgram() {
 
 	auto testAddrSpace = m_project->getAddrSpaceManager()->createAddressSpace("testAddrSpace1");
 	auto testAddrSpace2 = m_project->getAddrSpaceManager()->createAddressSpace("testAddrSpace2");
-	auto testImageDec = m_project->getImageManager()->createImage(testAddrSpace, ImageDecorator::IMAGE_PE, "testImage11");
-	fs::copy_file(fs::path(TEST_DATA_PATH) / "images" / "img1.exe", testImageDec->getFile());
-	testImageDec->load();
+	auto testImageDec = m_project->getImageManager()->createImage(testAddrSpace, ImageDecorator::IMAGE_PE, "testRealImage");
+	{
+		fs::copy_file(fs::path(TEST_DATA_PATH) / "images" / "img1.exe", testImageDec->getFile());
+		testImageDec->load();
+		WarningContainer warningContainer;
+		RegisterFactoryX86 registerFactoryX86;
+		PCode::DecoderX86 decoder(&registerFactoryX86, testImageDec->getInstrPool(), &warningContainer);
+
+		ImageAnalyzer imageAnalyzer(testImageDec->getImage(), testImageDec->getPCodeGraph(), &decoder, &registerFactoryX86);
+		imageAnalyzer.start(0x216f0, true);
+	}
 	m_project->getImageManager()->createImage(testAddrSpace, ImageDecorator::IMAGE_PE, "testImage12");
 	m_project->getImageManager()->createImage(testAddrSpace2, ImageDecorator::IMAGE_PE, "testImage21");
 	
@@ -325,11 +338,6 @@ void GUI::DecompilerDemoPanel::deassembly(const std::string& textCode) {
     m_bytes_input.setInputText(hexBytesStr);
 }
 
-
-// decompiler
-#include <decompiler/DecMisc.h>
-#include <images/VectorBufferImage.h>
-#include <managers/Managers.h>
 
 int hexToDec(char c) {
     if (c <= '9')

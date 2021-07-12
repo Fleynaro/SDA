@@ -138,7 +138,7 @@ void DB::ImageMapper::decodePCodeBlock(CE::Decompiler::PCodeBlock* block, CE::Im
 	PCode::DecoderX86 decoder(&registerFactoryX86, imageDec ->getInstrPool(), &warningContainer);
 	auto offset = block->getMinOffset() >> 8;
 	while (offset < block->getMaxOffset() >> 8) {
-		decoder.decode(imageDec->getImage()->getData() + offset, offset, imageDec->getImage()->getSize());
+		decoder.decode(imageDec->getImage()->getData() + offset, static_cast<int>(offset), imageDec->getImage()->getSize());
 		if (!decoder.getOrigInstruction())
 			break;
 		for (auto instr : decoder.getDecodedPCodeInstructions()) {

@@ -15,8 +15,8 @@ namespace CE::Decompiler
 		SymbolContext m_symbolCtx;
 	public:
 		struct VTable {
-			int64_t m_offset;
-			std::list<int64_t> m_funcOffsets;
+			uint64_t m_offset;
+			std::list<uint64_t> m_funcOffsets;
 		};
 		std::list<VTable> m_vtables;
 
@@ -24,11 +24,11 @@ namespace CE::Decompiler
 
 		~PCodeGraphReferenceSearch();
 
-		void findNewFunctionOffsets(FunctionPCodeGraph* funcGraph, std::list<int>& nonVirtFuncOffsets, std::list<int>& otherOffsets);
+		void findNewFunctionOffsets(FunctionPCodeGraph* funcGraph, std::list<uint64_t>& nonVirtFuncOffsets, std::list<uint64_t>& otherOffsets);
 
 	private:
 		// analyze memory area to define if it is a vtable
-		void checkOnVTable(int startOffset, VTable* pVtable);
+		void checkOnVTable(uint64_t startOffset, VTable* pVtable);
 	};
 
 	// Analysis of an image of some program (.exe or .dll)
@@ -43,7 +43,7 @@ namespace CE::Decompiler
 	public:
 		ImageAnalyzer(AbstractImage* image, ImagePCodeGraph* imageGraph, PCode::AbstractDecoder* decoder, AbstractRegisterFactory* registerFactory, PCodeGraphReferenceSearch* graphReferenceSearch = nullptr);
 
-		void start(int startOffset, bool onceFunc = false);
+		void start(uint64_t startOffset, bool onceFunc = false) const;
 
 	private:
 		// reconnect all blocks that are referenced by function calls
@@ -53,7 +53,7 @@ namespace CE::Decompiler
 		void prepareFuncGraphs() const;
 
 		// fill {funcGraph} with PCode blocks
-		void createPCodeBlocksAtOffset(int64_t startInstrOffset, FunctionPCodeGraph* funcGraph) const;
+		void createPCodeBlocksAtOffset(uint64_t startInstrOffset, FunctionPCodeGraph* funcGraph) const;
 
 		// prepare a function graph
 		static void PrepareFuncGraph(FunctionPCodeGraph* funcGraph);

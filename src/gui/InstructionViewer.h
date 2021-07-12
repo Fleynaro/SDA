@@ -63,6 +63,20 @@ namespace GUI
 		}
 	};
 
+	class InstructionViewerPCode : public AbstractInstructionViewer
+	{
+		CodeSectionController* m_codeSectionController;
+	public:
+		InstructionViewerPCode(CodeSectionController* codeSectionController)
+			: m_codeSectionController(codeSectionController)
+		{}
+
+	private:
+		void renderControl() override {
+
+		}
+	};
+
 	class InstructionViewerX86 : public AbstractInstructionViewer
 	{
 		CodeSectionControllerX86* m_codeSectionController;

@@ -1,4 +1,5 @@
 #pragma once
+#include "decompiler/PCode/DecPCodeInstructionPool.h"
 #include "utilities/Helper.h"
 #include <Zydis/Zydis.h>
 
@@ -7,24 +8,29 @@ namespace GUI
 {
 	class AbstractSectionController
 	{
+	protected:
+		// mapping rows to memory offsets
+		std::vector<uint64_t> m_offsets;
 	public:
 		CE::ImageDecorator* m_imageDec;
 		const CE::ImageSection* m_imageSection;
-		// mapping rows to memory offsets
-		std::vector<uint64_t> m_offsets;
 
 		AbstractSectionController(CE::ImageDecorator* imageDec, const CE::ImageSection* imageSection)
 			: m_imageDec(imageDec), m_imageSection(imageSection)
 		{}
 
-		int8_t* getImageData() {
+		int8_t* getImageData() const {
 			return m_imageDec->getImage()->getData();
 		}
 
-		uint64_t getNextOffset(int row) {
-			if (row == m_offsets.size() - 1)
+		int getOffsetsCount() const {
+			return static_cast<int>(m_offsets.size());
+		}
+		
+		uint64_t getOffset(int row) const {
+			if (row == getOffsetsCount())
 				return m_imageSection->getMaxOffset();
-			return m_offsets[row + 1];
+			return m_offsets[row];
 		}
 
 		int offsetToRow(uint64_t offset) const {
@@ -34,23 +40,7 @@ namespace GUI
 			return static_cast<int>(index);
 		}
 
-		// check if items(its bytes) were changed and then update {m_offsets}
-		void checkItemLengthChanged(int row, int itemLength) {
-			auto offset = m_offsets[row];
-			auto nextOffset = getNextOffset(row);
-			auto prevInstrLength = nextOffset - offset;
-			if (itemLength < prevInstrLength) {
-				const auto addByteOffsetsCount = prevInstrLength - itemLength;
-				for (int i = 0; i < addByteOffsetsCount; i++)
-					m_offsets.insert(m_offsets.begin() + row + 1, nextOffset - i);
-			}
-			else if (itemLength > prevInstrLength) {
-				m_offsets.erase(m_offsets.begin() + row + 1);
-				checkItemLengthChanged(row, itemLength);
-			}
-		}
-
-		virtual void fillOffsets() = 0;
+		virtual void update() = 0;
 	};
 
 	class DataSectionController : public AbstractSectionController
@@ -62,16 +52,20 @@ namespace GUI
 			fillOffsets();
 		}
 
-		CE::Symbol::AbstractSymbol* getSymbol(uint64_t offset) {
-			auto symbol = m_imageDec->getGlobalSymbolTable()->getSymbolAt(offset).second;
+		CE::Symbol::AbstractSymbol* getSymbol(uint64_t offset) const {
+			const auto symbol = m_imageDec->getGlobalSymbolTable()->getSymbolAt(offset).second;
 			if (!symbol) {
 				return m_imageDec->getImageManager()->getProject()->getSymbolManager()->getDefGlobalVarSymbol();
 			}
 			return symbol;
 		}
+
+		void update() override {
+			m_offsets.clear();
+			fillOffsets();
+		}
 	private:
 		void fillOffsets() {
-			m_offsets.clear();
 			auto offset = m_imageSection->getMinOffset();
 			while (offset < m_imageSection->getMaxOffset()) {
 				m_offsets.push_back(offset);
@@ -97,13 +91,42 @@ namespace GUI
 		};
 		std::list<Jmp> m_jmps;
 		std::map<uint64_t, std::list<Jmp*>> m_offsetToJmp;
+		bool m_showPCode = false;
 
 		CodeSectionController(CE::ImageDecorator* imageDec, const CE::ImageSection* imageSection)
 			: AbstractSectionController(imageDec, imageSection)
 		{}
 
+		void update() override {
+			m_offsets.clear();
+			m_jmps.clear();
+			m_offsetToJmp.clear();
+		}
+
+		uint64_t getInstrOffset(int row) const {
+			return getOffset(row) >> 1;
+		}
+
+		int instrOffsetToRow(uint64_t instrOffset) const {
+			return offsetToRow(instrOffset << 1);
+		}
+	
 	protected:
+		void addOffset(uint64_t offset) {
+			m_offsets.push_back(offset << (8 + 1));
+			if (m_showPCode) {
+				if (auto origInstr = m_imageDec->getInstrPool()->getOrigInstructionAt(offset)) {
+					for (const auto& pair : origInstr->m_pcodeInstructions) {
+						auto pcodeInstr = &pair.second;
+						m_offsets.push_back((pcodeInstr->getOffset() << 1) | 1);
+					}
+				}
+			}
+		}
+		
 		void addJump(uint64_t offset, uint64_t targetOffset) {
+			offset <<= 8;
+			targetOffset <<= 8;
 			Jmp jmp;
 			jmp.m_startOffset = offset;
 			jmp.m_endOffset = targetOffset;
@@ -114,7 +137,7 @@ namespace GUI
 				m_offsetToJmp[offset] = std::list<Jmp*>();
 			if (m_offsetToJmp.find(targetOffset) == m_offsetToJmp.end())
 				m_offsetToJmp[targetOffset] = std::list<Jmp*>();
-			auto pJmp = &*m_jmps.rbegin();
+			const auto pJmp = &*m_jmps.rbegin();
 			m_offsetToJmp[offset].push_back(pJmp);
 			m_offsetToJmp[targetOffset].push_back(pJmp);
 		}
@@ -130,10 +153,10 @@ namespace GUI
 				offToJmps[minOffset].push_back(&jmp);
 			}
 
-			std::function getJmp([&](std::map<uint64_t, std::list<Jmp*>>::iterator it)
+			const std::function getJmp([&](std::map<uint64_t, std::list<Jmp*>>::iterator it)
 				{
 					auto& jmps = it->second;
-					auto jmp = *jmps.begin();
+					const auto jmp = *jmps.begin();
 					jmps.pop_front();
 					if (jmps.empty())
 						offToJmps.erase(it);
@@ -174,34 +197,40 @@ namespace GUI
 			fillOffsets();
 		}
 
-		bool decodeZydisInstruction(uint64_t offset, ZydisDecodedInstruction* instruction) {
-			if (ZYAN_FAILED(ZydisDecoderDecodeBuffer(&m_decoder, getImageData() + offset, 0x100, instruction))) {
+		bool decodeZydisInstruction(uint64_t offset, ZydisDecodedInstruction* instruction) const {
+			if (ZYAN_FAILED(ZydisDecoderDecodeBuffer(&m_decoder, getImageData() + m_imageSection->toImageOffset(offset), 0x100, instruction))) {
 				return false;
 			}
 			return true;
 		}
+
+		void update() override {
+			CodeSectionController::update();
+			fillOffsets();
+		}
+	
 	private:
 		void fillOffsets() {
-			m_offsets.clear();
-			auto data = getImageData();
+			const auto data = getImageData();
 			auto offset = static_cast<int64_t>(m_imageSection->getMinOffset());
+			auto size = m_imageSection->m_virtualSize;
 			ZydisDecodedInstruction instruction;
-			while (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&m_decoder, data + offset, m_imageSection->getMaxOffset() - offset,
-				&instruction)))
+			while (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&m_decoder, data + m_imageSection->toImageOffset(offset), size, &instruction)))
 			{
 				if (instruction.meta.category == ZYDIS_CATEGORY_COND_BR || instruction.meta.category == ZYDIS_CATEGORY_UNCOND_BR) {
 					const auto& operand = instruction.operands[0];
 					if (operand.type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
 						if (operand.imm.is_relative) {
-							auto targetOffset = offset + instruction.length + operand.imm.value.s;
+							const auto targetOffset = offset + instruction.length + operand.imm.value.s;
 							if (std::abs(offset - targetOffset) < 0x300) {
 								addJump(offset, targetOffset);
 							}
 						}
 					}
 				}
-				m_offsets.push_back(offset);
+				addOffset(offset);
 				offset += instruction.length;
+				size -= instruction.length;
 			}
 
 			setupJmpLevels();

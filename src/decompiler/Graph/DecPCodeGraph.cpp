@@ -13,13 +13,13 @@ FunctionPCodeGraph* CE::Decompiler::ImagePCodeGraph::createFunctionGraph() {
 	return &*m_funcGraphList.rbegin();
 }
 
-PCodeBlock* CE::Decompiler::ImagePCodeGraph::createBlock(int64_t minOffset, int64_t maxOffset) {
+PCodeBlock* CE::Decompiler::ImagePCodeGraph::createBlock(uint64_t minOffset, uint64_t maxOffset) {
 	m_blocks.insert(std::make_pair(minOffset, PCodeBlock(minOffset, maxOffset)));
 	const auto newBlock = &m_blocks[minOffset];
 	return newBlock;
 }
 
-PCodeBlock* CE::Decompiler::ImagePCodeGraph::createBlock(int64_t offset) {
+PCodeBlock* CE::Decompiler::ImagePCodeGraph::createBlock(uint64_t offset) {
 	return createBlock(offset, offset);
 }
 
@@ -36,7 +36,7 @@ FunctionPCodeGraph* CE::Decompiler::ImagePCodeGraph::getEntryFunctionGraph() {
 	return &*m_funcGraphList.begin();
 }
 
-PCodeBlock* CE::Decompiler::ImagePCodeGraph::getBlockAtOffset(int64_t offset, bool halfInterval) {
+PCodeBlock* CE::Decompiler::ImagePCodeGraph::getBlockAtOffset(uint64_t offset, bool halfInterval) {
 	if (!m_blocks.empty()) {
 		auto it = std::prev(m_blocks.upper_bound(offset));
 		if (it != m_blocks.end()) {
@@ -49,7 +49,7 @@ PCodeBlock* CE::Decompiler::ImagePCodeGraph::getBlockAtOffset(int64_t offset, bo
 	throw BlockNotFoundException();
 }
 
-FunctionPCodeGraph* CE::Decompiler::ImagePCodeGraph::getFuncGraphAt(int64_t offset, bool halfInterval) {
+FunctionPCodeGraph* CE::Decompiler::ImagePCodeGraph::getFuncGraphAt(uint64_t offset, bool halfInterval) {
 	const auto block = getBlockAtOffset(offset, halfInterval);
 	return block->m_funcPCodeGraph;
 }
@@ -61,7 +61,7 @@ void CE::Decompiler::ImagePCodeGraph::fillHeadFuncGraphs() {
 	}
 }
 
-CE::Decompiler::PCodeBlock::PCodeBlock(int64_t minOffset, int64_t maxOffset)
+CE::Decompiler::PCodeBlock::PCodeBlock(uint64_t minOffset, uint64_t maxOffset)
 	: m_minOffset(minOffset), m_maxOffset(maxOffset), ID(static_cast<int>(minOffset >> 8))
 {}
 
@@ -80,17 +80,17 @@ std::list<PCode::Instruction*>& CE::Decompiler::PCodeBlock::getInstructions() {
 	return m_instructions;
 }
 
-int64_t CE::Decompiler::PCodeBlock::getMinOffset() const
+uint64_t CE::Decompiler::PCodeBlock::getMinOffset() const
 {
 	return m_minOffset;
 }
 
-int64_t CE::Decompiler::PCodeBlock::getMaxOffset() const
+uint64_t CE::Decompiler::PCodeBlock::getMaxOffset() const
 { // todo: auto-calculated?
 	return m_maxOffset;
 }
 
-void CE::Decompiler::PCodeBlock::setMaxOffset(int64_t offset) {
+void CE::Decompiler::PCodeBlock::setMaxOffset(uint64_t offset) {
 	m_maxOffset = offset;
 }
 

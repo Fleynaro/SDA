@@ -11,8 +11,8 @@ namespace CE::Decompiler
 	// pcode graph for a non-branched block
 	class PCodeBlock
 	{
-		int64_t m_minOffset;
-		int64_t m_maxOffset;
+		uint64_t m_minOffset;
+		uint64_t m_maxOffset;
 		std::list<PCode::Instruction*> m_instructions; // content of the block
 		PCodeBlock* m_nextNearBlock = nullptr;
 		PCodeBlock* m_nextFarBlock = nullptr;
@@ -24,7 +24,7 @@ namespace CE::Decompiler
 
 		PCodeBlock() = default;
 
-		PCodeBlock(int64_t minOffset, int64_t maxOffset);
+		PCodeBlock(uint64_t minOffset, uint64_t maxOffset);
 
 		void removeRefBlock(PCodeBlock* block);
 
@@ -32,11 +32,11 @@ namespace CE::Decompiler
 
 		std::list<PCode::Instruction*>& getInstructions();
 
-		int64_t getMinOffset() const;
+		uint64_t getMinOffset() const;
 
-		int64_t getMaxOffset() const;
+		uint64_t getMaxOffset() const;
 
-		void setMaxOffset(int64_t offset);
+		void setMaxOffset(uint64_t offset);
 
 		void removeNextBlock(PCodeBlock* nextBlock);
 
@@ -101,7 +101,7 @@ namespace CE::Decompiler
 	{
 		std::list<FunctionPCodeGraph> m_funcGraphList;
 		std::list<FunctionPCodeGraph*> m_headFuncGraphs;
-		std::map<int64_t, PCodeBlock> m_blocks;
+		std::map<uint64_t, PCodeBlock> m_blocks;
 	public:
 		// exceptions
 		class BlockNotFoundException : public std::exception {};
@@ -110,9 +110,9 @@ namespace CE::Decompiler
 
 		FunctionPCodeGraph* createFunctionGraph();
 
-		PCodeBlock* createBlock(int64_t minOffset, int64_t maxOffset);
+		PCodeBlock* createBlock(uint64_t minOffset, uint64_t maxOffset);
 
-		PCodeBlock* createBlock(int64_t offset);
+		PCodeBlock* createBlock(uint64_t offset);
 
 		const auto& getHeadFuncGraphs() const;
 
@@ -120,9 +120,9 @@ namespace CE::Decompiler
 
 		FunctionPCodeGraph* getEntryFunctionGraph();
 
-		PCodeBlock* getBlockAtOffset(int64_t offset, bool halfInterval = true);
+		PCodeBlock* getBlockAtOffset(uint64_t offset, bool halfInterval = true);
 
-		FunctionPCodeGraph* getFuncGraphAt(int64_t offset, bool halfInterval = true);
+		FunctionPCodeGraph* getFuncGraphAt(uint64_t offset, bool halfInterval = true);
 
 		// add all head functions into the list HeadFuncGraphs
 		void fillHeadFuncGraphs();

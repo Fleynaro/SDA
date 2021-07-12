@@ -14,17 +14,23 @@ ConstantVarnode* InstructionPool::createConstantVarnode(uint64_t value, int size
 	return &*m_constantVarnodes.rbegin();
 }
 
-Instruction* InstructionPool::getInstructionAt(int64_t instrOffset) {
-	const auto byteOffset = instrOffset >> 8;
-	const auto instrOrder = instrOffset & 0xFF;
-	auto it = m_origInstructions.find(byteOffset);
+Instruction::OriginalInstruction* InstructionPool::getOrigInstructionAt(uint64_t offset) {
+	auto it = m_origInstructions.find(offset);
 	if (it == m_origInstructions.end())
-		throw InstructionNotFoundException();
-	auto origInstr = &it->second;
-	auto it2 = origInstr->m_pcodeInstructions.find(instrOrder);
-	if (it2 == origInstr->m_pcodeInstructions.end())
-		throw InstructionNotFoundException();
-	return &it2->second;
+		return nullptr;
+	return &it->second;
+}
+
+Instruction* InstructionPool::getPCodeInstructionAt(uint64_t instrOffset) {
+	const auto byteOffset = instrOffset >> 8;
+	const auto instrOrder = static_cast<int>(instrOffset & 0xFF);
+	auto origInstr = getOrigInstructionAt(byteOffset);
+	if(!origInstr)
+		return nullptr;
+	auto it = origInstr->m_pcodeInstructions.find(instrOrder);
+	if (it == origInstr->m_pcodeInstructions.end())
+		return nullptr;
+	return &it->second;
 }
 
 void InstructionPool::modifyInstruction(Instruction* instr, MODIFICATOR mod) {
@@ -44,7 +50,7 @@ SymbolVarnode* InstructionPool::createSymbolVarnode(int size) {
 	return &*m_symbolVarnodes.rbegin();
 }
 
-Instruction::OriginalInstruction* CE::Decompiler::PCode::InstructionPool::createOrigInstruction(int64_t offset, int length) {
+Instruction::OriginalInstruction* CE::Decompiler::PCode::InstructionPool::createOrigInstruction(uint64_t offset, int length) {
 	m_origInstructions[offset] = Instruction::OriginalInstruction(offset, length);
 	return &m_origInstructions[offset];
 }

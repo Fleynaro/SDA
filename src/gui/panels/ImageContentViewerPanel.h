@@ -53,11 +53,18 @@ namespace GUI
 
 		class AbstractSectionViewer : public Control
 		{
+		public:
+			AbstractSectionController* m_sectionController;
+			
+			AbstractSectionViewer(AbstractSectionController* controller)
+				: m_sectionController(controller)
+			{}
+		
 		protected:
 			void renderAddressColumn(uint64_t offset) {
 				using namespace Helper::String;
 				ImGui::TableNextColumn();
-				auto offsetStr = NumberToHex(offset + (static_cast<uint64_t>(1) << 63)).substr(1);
+				const auto offsetStr = NumberToHex(offset + (static_cast<uint64_t>(1) << 63)).substr(1);
 				Text::Text("base + " + offsetStr).show();
 			}
 		};
@@ -67,7 +74,7 @@ namespace GUI
 			DataSectionController* m_dataSectionController;
 		public:
 			DataSectionViewer(DataSectionController* dataSectionController)
-				: m_dataSectionController(dataSectionController)
+				: AbstractSectionViewer(dataSectionController), m_dataSectionController(dataSectionController)
 			{}
 
 		private:
@@ -81,26 +88,25 @@ namespace GUI
 					ImGui::TableHeadersRow();
 
 					ImGuiListClipper clipper;
-					clipper.Begin(static_cast<int>(m_dataSectionController->m_offsets.size()));
+					clipper.Begin(m_dataSectionController->getOffsetsCount());
 					while (clipper.Step())
 					{
 						for (auto row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
 							ImGui::TableNextRow();
-							auto offset = m_dataSectionController->m_offsets[row];
+							const auto offset = m_dataSectionController->getOffset(row);
 							renderAddressColumn(offset);
-							auto symbol = m_dataSectionController->getSymbol(offset);
-							m_dataSectionController->checkItemLengthChanged(row, symbol->getSize());
-							renderSpecificColumns(symbol, offset);
+							renderSpecificColumns(offset);
 						}
 					}
 					ImGui::EndTable();
 				}
 			}
 
-			void renderSpecificColumns(CE::Symbol::AbstractSymbol* symbol, uint64_t offset) {
+			void renderSpecificColumns(uint64_t offset) const {
 				using namespace Helper::String;
 
-				auto pValue = reinterpret_cast<uint64_t*>(&m_dataSectionController->getImageData()[offset]);
+				auto symbol = m_dataSectionController->getSymbol(offset);
+				const auto pValue = reinterpret_cast<uint64_t*>(&m_dataSectionController->getImageData()[offset]);
 				ImGui::TableNextColumn();
 				Text::Text(symbol->getDataType()->getDisplayName()).show();
 				ImGui::TableNextColumn();
@@ -135,7 +141,7 @@ namespace GUI
 			AbstractInstructionViewer* m_instructionViewer;
 		public:
 			CodeSectionViewer(CodeSectionController* codeSectionController, AbstractInstructionViewer* instructionViewer)
-				: m_codeSectionController(codeSectionController), m_instructionViewer(instructionViewer)
+				: AbstractSectionViewer(codeSectionController), m_codeSectionController(codeSectionController), m_instructionViewer(instructionViewer)
 			{}
 
 			~CodeSectionViewer() override {
@@ -145,6 +151,7 @@ namespace GUI
 		private:
 			void renderControl() override {
 				m_shownJmps.clear();
+				auto goToFunc = Button::StdButton("go to func").present();
 				if (ImGui::BeginTable("content_table", 3, TableFlags))
 				{
 					ImGui::TableSetupScrollFreeze(0, 1);
@@ -154,30 +161,47 @@ namespace GUI
 					ImGui::TableHeadersRow();
 
 					ImGuiListClipper clipper;
-					clipper.Begin(static_cast<int>(m_codeSectionController->m_offsets.size()));
+					clipper.Begin(m_codeSectionController->getOffsetsCount());
 					while (clipper.Step())
 					{
 						for (auto row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
 							ImGui::TableNextRow();
-							auto offset = m_codeSectionController->m_offsets[row];
-							renderAddressColumn(offset);
+							const auto offset = m_codeSectionController->getOffset(row);
 
-							InstructionTokenRender instructionTokenRender;
-							instructionTokenRender.renderJmpArrow([&]()
-								{
-									renderJmpLines(row, clipper);
-								});
-							m_instructionViewer->setTokenRender(&instructionTokenRender);
-							m_instructionViewer->setOffset(offset);
-							m_instructionViewer->show();
+							if ((offset & 1) == 0) {
+								const auto instrOffset = offset >> 9;
+								renderAddressColumn(instrOffset);
+
+								InstructionTokenRender instructionTokenRender;
+								instructionTokenRender.renderJmpArrow([&]()
+									{
+										renderJmpLines(row, clipper);
+									});
+								m_instructionViewer->setTokenRender(&instructionTokenRender);
+								m_instructionViewer->setOffset(instrOffset);
+								m_instructionViewer->show();
+							} else {
+								const auto instrOffset = offset >> 1;
+								if (auto instr = m_codeSectionController->m_imageDec->getInstrPool()->getPCodeInstructionAt(instrOffset)) {
+									ImGui::TableNextColumn();
+									Text::Text("").show();
+									ImGui::TableNextColumn();
+									Text::Text("").show();
+									ImGui::TableNextColumn();
+									Text::Text(instr->printDebug()).show();
+								}
+							}
 						}
+					}
+					if(goToFunc) {
+						ImGui::SetScrollY(m_codeSectionController->instrOffsetToRow(0x216f000) * clipper.ItemsHeight);
 					}
 					ImGui::EndTable();
 				}
 			}
 
 			void renderJmpLines(int row, const ImGuiListClipper& clipper) {
-				if (const auto it = m_codeSectionController->m_offsetToJmp.find(m_codeSectionController->m_offsets[row]);
+				if (const auto it = m_codeSectionController->m_offsetToJmp.find(m_codeSectionController->getInstrOffset(row));
 					it != m_codeSectionController->m_offsetToJmp.end()) {
 					auto pJmps = it->second;
 					for (auto pJmp : pJmps) {
@@ -189,12 +213,12 @@ namespace GUI
 				}
 			}
 
-			void drawJmpLine(int row, CodeSectionControllerX86::Jmp* pJmp, const ImGuiListClipper& clipper) {
+			void drawJmpLine(int row, CodeSectionControllerX86::Jmp* pJmp, const ImGuiListClipper& clipper) const {
 				const float JmpLineLeftOffset = 10.0f;
 				const float JmpLineGap = 8.0f;
 				
-				const bool isStart = m_codeSectionController->m_offsets[row] == pJmp->m_startOffset;
-				const auto targetRow = m_codeSectionController->offsetToRow(isStart ? pJmp->m_endOffset : pJmp->m_startOffset);
+				const bool isStart = m_codeSectionController->getInstrOffset(row) == pJmp->m_startOffset;
+				const auto targetRow = m_codeSectionController->instrOffsetToRow(isStart ? pJmp->m_endOffset : pJmp->m_startOffset);
 
 				auto lineColor = ImGui::GetColorU32(ToImGuiColor(-1));
 				const ImVec2 point1 = { ImGui::GetItemRectMin().x - 2.0f, (ImGui::GetItemRectMin().y + ImGui::GetItemRectMax().y) / 2.0f };
@@ -267,9 +291,31 @@ namespace GUI
 		}
 
 		void renderMenuBar() override {
-			if (ImGui::BeginMenu("Image section"))
+			if (ImGui::BeginMenu("This section"))
+			{
+				if(ImGui::MenuItem("Update")) {
+					m_imageSectionViewer->m_sectionController->update();
+				}
+				if(auto codeController = dynamic_cast<CodeSectionController*>(m_imageSectionViewer->m_sectionController)) {
+					if (ImGui::MenuItem("Show PCode", 0, codeController->m_showPCode)) {
+						codeController->m_showPCode ^= true;
+						codeController->update();
+					}
+				}
+				ImGui::EndMenu();
+			}
+			
+			if (ImGui::BeginMenu("All sections"))
 			{
 				m_imageSectionMenuListView.show();
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Navigation"))
+			{
+				if (ImGui::MenuItem("Go to")) {
+					
+				}
 				ImGui::EndMenu();
 			}
 		}

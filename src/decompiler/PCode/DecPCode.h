@@ -222,14 +222,14 @@ namespace CE::Decompiler::PCode
 	{
 	public:
 		struct OriginalInstruction {
-			int64_t m_offset;
+			uint64_t m_offset;
 			int m_length;
 			std::map<int, Instruction> m_pcodeInstructions;
 			std::string m_originalView;
 
 			OriginalInstruction() = default;
 
-			OriginalInstruction(int64_t offset, int length)
+			OriginalInstruction(uint64_t offset, int length)
 				: m_offset(offset), m_length(length)
 			{}
 		};
@@ -248,10 +248,10 @@ namespace CE::Decompiler::PCode
 		{}
 
 		// get long offset which consist of original offset and pCode instruction order number: origOffset{24} | order{8}
-		int64_t getOffset() const;
+		uint64_t getOffset() const;
 
 		// get long offset of the next instruction following this
-		int64_t getFirstInstrOffsetInNextOrigInstr() const;
+		uint64_t getFirstInstrOffsetInNextOrigInstr() const;
 
 		std::string printDebug() const;
 

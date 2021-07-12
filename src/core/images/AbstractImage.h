@@ -18,11 +18,21 @@ namespace CE
 		uint64_t m_pointerToRawData = m_virtualSize;
 
 		uint64_t getMinOffset() const {
-			return m_pointerToRawData;
+			return m_relVirtualAddress;
 		}
 
 		uint64_t getMaxOffset() const {
-			return m_pointerToRawData + m_virtualSize;
+			return m_relVirtualAddress + m_virtualSize;
+		}
+
+		// image offset to rva (ghidra makes this transform automatically)
+		uint64_t toRva(uint64_t offset) const {
+			return offset - m_pointerToRawData + m_relVirtualAddress;
+		}
+
+		// rva to image offset (ghidra makes this transform automatically)
+		uint64_t toImageOffset(uint64_t rva) const {
+			return rva - m_relVirtualAddress + m_pointerToRawData;
 		}
 	};
 	
@@ -43,7 +53,7 @@ namespace CE
 			return 0x0;
 		}
 
-		const std::list<ImageSection>& getImageSections()
+		const std::list<ImageSection>& getImageSections() const
 		{
 			return m_imageSections;
 		}
@@ -52,15 +62,15 @@ namespace CE
 			return addr - getAddress();
 		}
 
-		// rva to file offset (ghidra makes this transform automatically)
-		uint64_t toImageOffset(uint64_t rva) {
+		// rva to image offset (ghidra makes this transform automatically)
+		uint64_t toImageOffset(uint64_t rva) const {
 			const auto section = getSectionByRva(rva);
 			if (!section)
 				return rva;
-			return rva - section->m_relVirtualAddress + section->m_pointerToRawData;
+			return section->toImageOffset(rva);
 		}
 
-		const ImageSection* getSectionByRva(uint64_t rva)
+		const ImageSection* getSectionByRva(uint64_t rva) const
 		{
 			for (auto& section : m_imageSections)
 			{
