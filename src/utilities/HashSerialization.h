@@ -15,16 +15,16 @@ public:
 		: m_hashValue(seed)
 	{}
 
-	template<class T, class = typename std::enable_if<std::is_integral<T>::value>::type>
+	template<class T>
 	HS operator+(T value) const {
 		return HS(m_hashValue + (Value)value);
 	}
 
-	template<class T, class = typename std::enable_if<std::is_integral<T>::value>::type>
+	template<class T>
 	HS operator<<(T value) const {
 		return *this + (uint64_t)value * 31;
 	}
-
+	
 	HS operator+(float value) const {
 		return *this + (uint32_t&)value;
 	}
@@ -40,7 +40,7 @@ public:
 	HS operator<<(double value) const {
 		return *this << (uint64_t&)value;
 	}
-
+	
 	HS operator+(const std::string& string) const {
 		return *this + hashString(string);
 	}

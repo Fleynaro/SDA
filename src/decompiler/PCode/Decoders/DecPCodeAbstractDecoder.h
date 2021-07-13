@@ -14,7 +14,7 @@ namespace CE::Decompiler::PCode
 			: m_instrPool(instrPool), m_warningContainer(warningContainer)
 		{}
 
-		void decode(void* addr, int offset, int maxSize = 0x0);
+		void decode(void* addr, Offset offset, int maxSize = 0x0);
 
 		void clear();
 
@@ -33,6 +33,6 @@ namespace CE::Decompiler::PCode
 		int m_curOrderId = 0;
 		int m_maxSize = 0x0;
 
-		virtual void tryDecode(void* addr, int offset) = 0;
+		virtual void tryDecode(void* addr, Offset offset) = 0;
 	};
 };

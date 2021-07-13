@@ -23,53 +23,52 @@ namespace GUI
 		virtual void update() = 0;
 	};
 
-	struct AbstractOffsetInfo
+	struct AbstractRow
 	{
 		operator uint64_t() const {
 			return *reinterpret_cast<const uint64_t*>(this);
 		}
 		
-		bool operator==(const AbstractOffsetInfo& other) const {
+		bool operator==(const AbstractRow& other) const {
 			return static_cast<uint64_t>(*this) == static_cast<uint64_t>(other);
 		}
 
-		bool operator<(const AbstractOffsetInfo& other) const {
+		bool operator<(const AbstractRow& other) const {
 			return static_cast<uint64_t>(*this) < static_cast<uint64_t>(other);
 		}
 	};
 	
 	template<typename T = uint64_t>
-	class AbstractSectionControllerWithOffsets : public AbstractSectionController
+	class AbstractSectionControllerWithRows : public AbstractSectionController
 	{
 	protected:
-		// mapping rows to memory offsets
-		std::vector<T> m_offsets;
+		std::vector<T> m_rows;
 	public:
 		using AbstractSectionController::AbstractSectionController;
 		
-		int getOffsetsCount() const {
-			return static_cast<int>(m_offsets.size());
+		int getRowsCount() const {
+			return static_cast<int>(m_rows.size());
 		}
 
-		T getOffset(int row) const {
-			if (row == getOffsetsCount())
+		T getRow(int idx) const {
+			if (idx == getRowsCount())
 				return m_imageSection->getMaxOffset();
-			return m_offsets[row];
+			return m_rows[idx];
 		}
 
-		int offsetToRow(T offset) const {
+		int getRowIdx(T row) const {
 			using namespace Helper::Algorithm;
 			size_t index = -1;
-			BinarySearch<T>(m_offsets, offset, index);
+			BinarySearch<T>(m_rows, row, index);
 			return static_cast<int>(index);
 		}
 	};
 
-	class DataSectionController : public AbstractSectionControllerWithOffsets<uint64_t>
+	class DataSectionController : public AbstractSectionControllerWithRows<uint64_t>
 	{
 	public:
 		DataSectionController(CE::ImageDecorator* imageDec, const CE::ImageSection* imageSection)
-			: AbstractSectionControllerWithOffsets<uint64_t>(imageDec, imageSection)
+			: AbstractSectionControllerWithRows<uint64_t>(imageDec, imageSection)
 		{
 			fillOffsets();
 		}
@@ -83,14 +82,14 @@ namespace GUI
 		}
 
 		void update() override {
-			m_offsets.clear();
+			m_rows.clear();
 			fillOffsets();
 		}
 	private:
 		void fillOffsets() {
 			auto offset = m_imageSection->getMinOffset();
 			while (offset < m_imageSection->getMaxOffset()) {
-				m_offsets.push_back(offset);
+				m_rows.push_back(offset);
 				auto symbol = m_imageDec->getGlobalSymbolTable()->getSymbolAt(offset).second;
 				if (symbol) {
 					offset += symbol->getSize();
@@ -102,29 +101,29 @@ namespace GUI
 		}
 	};
 
-	struct CodeOffsetInfo : AbstractOffsetInfo {
+	struct CodeSectionRow : AbstractRow {
 		union {
 			struct {
-				uint64_t isPCode : 1;
-				uint64_t orderId : 8;
-				uint64_t offset : 55;
+				uint64_t m_isPCode : 1;
+				uint64_t m_orderId : 8;
+				uint64_t m_byteOffset : 55;
 			};
 			struct {
 				uint64_t : 1;
-				uint64_t fullOffset : 63;
+				uint64_t m_fullOffset : 63;
 			};
 		};
 
-		CodeOffsetInfo(uint64_t offset, uint64_t orderId, bool isPCode)
-			: offset(offset), orderId(orderId), isPCode(isPCode)
+		CodeSectionRow(uint64_t offset, uint64_t orderId, bool isPCode)
+			: m_byteOffset(offset), m_orderId(orderId), m_isPCode(isPCode)
 		{}
 
-		CodeOffsetInfo(uint64_t fullOffset, bool isPCode = false)
-			: fullOffset(fullOffset), isPCode(isPCode)
+		CodeSectionRow(uint64_t fullOffset, bool isPCode = false)
+			: m_fullOffset(fullOffset), m_isPCode(isPCode)
 		{}
 	};
 	
-	class CodeSectionController : public AbstractSectionControllerWithOffsets<CodeOffsetInfo>
+	class CodeSectionController : public AbstractSectionControllerWithRows<CodeSectionRow>
 	{
 	public:
 		struct Jmp
@@ -138,23 +137,23 @@ namespace GUI
 		bool m_showPCode = false;
 
 		CodeSectionController(CE::ImageDecorator* imageDec, const CE::ImageSection* imageSection)
-			: AbstractSectionControllerWithOffsets<CodeOffsetInfo>(imageDec, imageSection)
+			: AbstractSectionControllerWithRows<CodeSectionRow>(imageDec, imageSection)
 		{}
 
 		void update() override {
-			m_offsets.clear();
+			m_rows.clear();
 			m_jmps.clear();
 			m_offsetToJmp.clear();
 		}
 	
 	protected:
 		void addOffset(uint64_t offset) {
-			m_offsets.emplace_back(offset, 0, false);
+			m_rows.emplace_back(offset, 0, false);
 			if (m_showPCode) {
 				if (auto origInstr = m_imageDec->getInstrPool()->getOrigInstructionAt(offset)) {
 					for (const auto& pair : origInstr->m_pcodeInstructions) {
 						auto pcodeInstr = &pair.second;
-						m_offsets.emplace_back(pcodeInstr->getOffset(), true);
+						m_rows.emplace_back(pcodeInstr->getOffset(), true);
 					}
 				}
 			}

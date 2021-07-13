@@ -33,7 +33,7 @@ CE::ImageManager* DB::ImageMapper::getManager() const
 IDomainObject* DB::ImageMapper::doLoad(Database* db, SQLite::Statement& query) {
 	int image_id = query.getColumn("image_id");
 	int parent_image_id = query.getColumn("parent_image_id");
-	auto type = static_cast<CE::ImageDecorator::IMAGE_TYPE>((int)query.getColumn("type"));
+	auto type = static_cast<CE::ImageDecorator::IMAGE_TYPE>(static_cast<int>(query.getColumn("type")));
 	//std::uintptr_t addr = (int64_t)query.getColumn("addr");
 	std::string name = query.getColumn("name");
 	std::string comment = query.getColumn("comment");
@@ -67,13 +67,13 @@ IDomainObject* DB::ImageMapper::doLoad(Database* db, SQLite::Statement& query) {
 
 		// load modified instructions for instr. pool
 		for (const auto& json_mod_instr : json_instr_pool["mod_instructions"]) {
-			auto offset = json_mod_instr["offset"].get<int64_t>();
+			auto offset = json_mod_instr["offset"].get<uint64_t>();
 			auto mod = json_mod_instr["mod"].get<Decompiler::PCode::InstructionPool::MODIFICATOR>();
 			imageDec->getInstrPool()->m_modifiedInstructions[offset] = mod;
 		}
 		// load virtual func. calls
 		for (const auto& json_vfunc_call : json_vfunc_calls) {
-			auto offset = json_vfunc_call["offset"].get<int64_t>();
+			auto offset = json_vfunc_call["offset"].get<uint64_t>();
 			auto sig_id = json_vfunc_call["sig_id"].get<DB::Id>();
 			auto funcSig = dynamic_cast<DataType::IFunctionSignature*>(getManager()->getProject()->getTypeManager()->findTypeById(sig_id));
 			imageDec->getVirtFuncCalls()[offset] = funcSig;
@@ -85,17 +85,17 @@ IDomainObject* DB::ImageMapper::doLoad(Database* db, SQLite::Statement& query) {
 		}
 		// load pcode func. graph connections
 		for (const auto& json_func_graph : json_func_graphs) {
-			auto start_block = json_func_graph["start_block"].get<int64_t>();
+			auto start_block = json_func_graph["start_block"].get<uint64_t>();
 			auto funcGraph = imgPCodeGraph->getFuncGraphAt(start_block);
 			// load non-virt func calls
 			for (const auto& json_nv_func : json_func_graph["nv_func_calls"]) {
-				auto nonVirtFuncOffset = json_nv_func.get<int64_t>();
+				auto nonVirtFuncOffset = json_nv_func.get<uint64_t>();
 				auto otherFuncGraph = imgPCodeGraph->getFuncGraphAt(nonVirtFuncOffset);
 				funcGraph->addNonVirtFuncCall(otherFuncGraph);
 			}
 			// load virt func calls
 			for (const auto& json_v_func : json_func_graph["v_func_calls"]) {
-				auto virtFuncOffset = json_v_func.get<int64_t>();
+				auto virtFuncOffset = json_v_func.get<uint64_t>();
 				auto otherFuncGraph = imgPCodeGraph->getFuncGraphAt(virtFuncOffset);
 				funcGraph->addVirtFuncCall(otherFuncGraph);
 			}
@@ -192,12 +192,12 @@ json DB::ImageMapper::createFuncPCodeGraphJson(CE::Decompiler::FunctionPCodeGrap
 	for (auto pcodeBlock : funcPCodeGraph->getBlocks()) {
 		json json_pcode_block;
 		json_pcode_block["level"] = pcodeBlock->m_level;
-		json_pcode_block["min_offset"] = pcodeBlock->getMinOffset();
-		json_pcode_block["max_offset"] = pcodeBlock->getMaxOffset();
+		json_pcode_block["min_offset"] = static_cast<uint64_t>(pcodeBlock->getMinOffset());
+		json_pcode_block["max_offset"] = static_cast<uint64_t>(pcodeBlock->getMaxOffset());
 		if (pcodeBlock->getNextNearBlock())
-			json_pcode_block["next_near_block"] = pcodeBlock->getNextNearBlock()->getMinOffset();
+			json_pcode_block["next_near_block"] = static_cast<uint64_t>(pcodeBlock->getNextNearBlock()->getMinOffset());
 		if (pcodeBlock->getNextFarBlock())
-			json_pcode_block["next_far_block"] = pcodeBlock->getNextFarBlock()->getMinOffset();
+			json_pcode_block["next_far_block"] = static_cast<uint64_t>(pcodeBlock->getNextFarBlock()->getMinOffset());
 		json_pcode_blocks.push_back(json_pcode_block);
 	}
 	json_func_graph["blocks"] = json_pcode_blocks;
@@ -205,19 +205,19 @@ json DB::ImageMapper::createFuncPCodeGraphJson(CE::Decompiler::FunctionPCodeGrap
 	// save non-virt func calls
 	json json_nv_func_calls;
 	for (auto funcGraph : funcPCodeGraph->getNonVirtFuncCalls()) {
-		json_nv_func_calls.push_back(funcGraph->getStartBlock()->getMinOffset());
+		json_nv_func_calls.push_back(static_cast<uint64_t>(funcGraph->getStartBlock()->getMinOffset()));
 	}
 	json_func_graph["nv_func_calls"] = json_nv_func_calls;
 
 	// save virt func calls
 	json json_v_func_calls;
 	for (auto funcGraph : funcPCodeGraph->getVirtFuncCalls()) {
-		json_v_func_calls.push_back(funcGraph->getStartBlock()->getMinOffset());
+		json_v_func_calls.push_back(static_cast<uint64_t>(funcGraph->getStartBlock()->getMinOffset()));
 	}
 	json_func_graph["v_func_calls"] = json_v_func_calls;
 
 	// save other
-	json_func_graph["start_block"] = funcPCodeGraph->getStartBlock()->getMinOffset();
+	json_func_graph["start_block"] = static_cast<uint64_t>(funcPCodeGraph->getStartBlock()->getMinOffset());
 
 	return json_func_graph;
 }
@@ -237,10 +237,10 @@ void DB::ImageMapper::bind(SQLite::Statement& query, CE::ImageDecorator* imageDe
 	}
 	json_instr_pool["mod_instructions"] = json_mod_instrs;
 	// save virtual func. calls
-	for (auto& pair : imageDec->getVirtFuncCalls()) {
+	for (const auto& [offset, sig] : imageDec->getVirtFuncCalls()) {
 		json json_vfunc_call;
-		json_vfunc_call["offset"] = pair.first;
-		json_vfunc_call["sig_id"] = pair.second->getId();
+		json_vfunc_call["offset"] = static_cast<uint64_t>(offset);
+		json_vfunc_call["sig_id"] = sig->getId();
 		json_vfunc_calls.push_back(json_vfunc_call);
 	}
 	// save pcode func. graphs

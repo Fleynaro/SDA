@@ -43,7 +43,7 @@ namespace CE::Decompiler
 	public:
 		ImageAnalyzer(AbstractImage* image, ImagePCodeGraph* imageGraph, PCode::AbstractDecoder* decoder, AbstractRegisterFactory* registerFactory, PCodeGraphReferenceSearch* graphReferenceSearch = nullptr);
 
-		void start(uint64_t startOffset, bool onceFunc = false) const;
+		void start(Offset startOffset, bool onceFunc = false) const;
 
 	private:
 		// reconnect all blocks that are referenced by function calls
@@ -53,7 +53,7 @@ namespace CE::Decompiler
 		void prepareFuncGraphs() const;
 
 		// fill {funcGraph} with PCode blocks
-		void createPCodeBlocksAtOffset(uint64_t startInstrOffset, FunctionPCodeGraph* funcGraph) const;
+		void createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, FunctionPCodeGraph* funcGraph) const;
 
 		// prepare a function graph
 		static void PrepareFuncGraph(FunctionPCodeGraph* funcGraph);

@@ -1,6 +1,7 @@
 #pragma once
 #include <list>
 #include <stdexcept>
+#include "Offset.h"
 
 namespace CE
 {
@@ -17,11 +18,11 @@ namespace CE
 		uint64_t m_virtualSize = 0;
 		uint64_t m_pointerToRawData = m_virtualSize;
 
-		uint64_t getMinOffset() const {
+		Offset getMinOffset() const {
 			return m_relVirtualAddress;
 		}
 
-		uint64_t getMaxOffset() const {
+		Offset getMaxOffset() const {
 			return m_relVirtualAddress + m_virtualSize;
 		}
 

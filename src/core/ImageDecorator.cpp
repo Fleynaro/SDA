@@ -18,7 +18,7 @@ CE::ImageDecorator::ImageDecorator(ImageManager* imageManager, AddressSpace* add
 {
 	m_instrPool = new Decompiler::PCode::InstructionPool();
 	m_imagePCodeGraph = new Decompiler::ImagePCodeGraph();
-	m_vfunc_calls = new std::map<int64_t, CE::DataType::IFunctionSignature*>();
+	m_vfunc_calls = new std::map<ComplexOffset, CE::DataType::IFunctionSignature*>();
 }
 
 CE::ImageDecorator::ImageDecorator(ImageManager* imageManager, AddressSpace* addressSpace, ImageDecorator* parentImageDec, const std::string& name, const std::string& comment)
@@ -105,7 +105,7 @@ Decompiler::ImagePCodeGraph* CE::ImageDecorator::getPCodeGraph() const
 	return m_imagePCodeGraph;
 }
 
-std::map<int64_t, CE::DataType::IFunctionSignature*>& CE::ImageDecorator::getVirtFuncCalls() const
+std::map<ComplexOffset, CE::DataType::IFunctionSignature*>& CE::ImageDecorator::getVirtFuncCalls() const
 {
 	return *m_vfunc_calls;
 }

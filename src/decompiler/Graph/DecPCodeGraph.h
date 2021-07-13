@@ -11,8 +11,8 @@ namespace CE::Decompiler
 	// pcode graph for a non-branched block
 	class PCodeBlock
 	{
-		uint64_t m_minOffset;
-		uint64_t m_maxOffset;
+		ComplexOffset m_minOffset;
+		ComplexOffset m_maxOffset;
 		std::list<PCode::Instruction*> m_instructions; // content of the block
 		PCodeBlock* m_nextNearBlock = nullptr;
 		PCodeBlock* m_nextFarBlock = nullptr;
@@ -24,7 +24,7 @@ namespace CE::Decompiler
 
 		PCodeBlock() = default;
 
-		PCodeBlock(uint64_t minOffset, uint64_t maxOffset);
+		PCodeBlock(ComplexOffset minOffset, ComplexOffset maxOffset);
 
 		void removeRefBlock(PCodeBlock* block);
 
@@ -32,11 +32,11 @@ namespace CE::Decompiler
 
 		std::list<PCode::Instruction*>& getInstructions();
 
-		uint64_t getMinOffset() const;
+		ComplexOffset getMinOffset() const;
 
-		uint64_t getMaxOffset() const;
+		ComplexOffset getMaxOffset() const;
 
-		void setMaxOffset(uint64_t offset);
+		void setMaxOffset(ComplexOffset offset);
 
 		void removeNextBlock(PCodeBlock* nextBlock);
 
@@ -101,18 +101,15 @@ namespace CE::Decompiler
 	{
 		std::list<FunctionPCodeGraph> m_funcGraphList;
 		std::list<FunctionPCodeGraph*> m_headFuncGraphs;
-		std::map<uint64_t, PCodeBlock> m_blocks;
+		std::map<ComplexOffset, PCodeBlock> m_blocks;
 	public:
-		// exceptions
-		class BlockNotFoundException : public std::exception {};
-
 		ImagePCodeGraph();
 
 		FunctionPCodeGraph* createFunctionGraph();
 
-		PCodeBlock* createBlock(uint64_t minOffset, uint64_t maxOffset);
+		PCodeBlock* createBlock(ComplexOffset minOffset, ComplexOffset maxOffset);
 
-		PCodeBlock* createBlock(uint64_t offset);
+		PCodeBlock* createBlock(ComplexOffset offset);
 
 		const auto& getHeadFuncGraphs() const;
 
@@ -120,9 +117,9 @@ namespace CE::Decompiler
 
 		FunctionPCodeGraph* getEntryFunctionGraph();
 
-		PCodeBlock* getBlockAtOffset(uint64_t offset, bool halfInterval = true);
+		PCodeBlock* getBlockAtOffset(ComplexOffset offset, bool halfInterval = true);
 
-		FunctionPCodeGraph* getFuncGraphAt(uint64_t offset, bool halfInterval = true);
+		FunctionPCodeGraph* getFuncGraphAt(ComplexOffset offset, bool halfInterval = true);
 
 		// add all head functions into the list HeadFuncGraphs
 		void fillHeadFuncGraphs();

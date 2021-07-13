@@ -13,38 +13,37 @@ CE::Decompiler::ImageAnalyzer::ImageAnalyzer(AbstractImage* image, ImagePCodeGra
 	: m_image(image), m_imageGraph(imageGraph), m_decoder(decoder), m_registerFactory(registerFactory), m_graphReferenceSearch(graphReferenceSearch)
 {}
 
-void CE::Decompiler::ImageAnalyzer::start(uint64_t startOffset, bool onceFunc) const {
-	std::set<uint64_t> visitedOffsets;
-	std::list<uint64_t> nextOffsetsToVisitLater = { startOffset };
-	std::list<std::pair<FunctionPCodeGraph*, std::list<uint64_t>>> nonVirtFuncOffsetsForGraphs;
-	std::map<uint64_t, FunctionPCodeGraph*> offsetsToFuncGraphs;
+void CE::Decompiler::ImageAnalyzer::start(Offset startOffset, bool onceFunc) const {
+	std::set<Offset> visitedOffsets;
+	std::list<Offset> nextOffsetsToVisitLater = { startOffset };
+	std::list<std::pair<FunctionPCodeGraph*, std::list<Offset>>> nonVirtFuncOffsetsForGraphs;
+	std::map<Offset, FunctionPCodeGraph*> offsetsToFuncGraphs;
 	std::list<PCodeBlock*> blocksToReconnect;
 
 	// generate an image graph
 	while (!nextOffsetsToVisitLater.empty()) {
-		auto startInstrOffset = nextOffsetsToVisitLater.back() << 8;
+		auto startInstrOffset = ComplexOffset(nextOffsetsToVisitLater.back(), 0);
 		if (visitedOffsets.find(startInstrOffset) != visitedOffsets.end())
 			continue;
 		visitedOffsets.insert(startInstrOffset);
 		nextOffsetsToVisitLater.pop_back();
 
 		auto funcGraph = m_imageGraph->createFunctionGraph();
-		try {
-			auto block = m_imageGraph->getBlockAtOffset(startInstrOffset);
+		if (auto block = m_imageGraph->getBlockAtOffset(startInstrOffset)) {
 			// if the function call references to a block of the existing graph
 			funcGraph->setStartBlock(block);
-			offsetsToFuncGraphs[startInstrOffset >> 8] = funcGraph;
+			offsetsToFuncGraphs[startInstrOffset.getByteOffset()] = funcGraph;
 			blocksToReconnect.push_back(block);
 		}
-		catch (ImagePCodeGraph::BlockNotFoundException&) {
+		else {
 			const auto startBlock = m_imageGraph->createBlock(startInstrOffset);
 			funcGraph->setStartBlock(startBlock);
 			createPCodeBlocksAtOffset(startInstrOffset, funcGraph);
-			offsetsToFuncGraphs[startInstrOffset >> 8] = funcGraph;
+			offsetsToFuncGraphs[startInstrOffset.getByteOffset()] = funcGraph;
 
 			if (!onceFunc) {
-				std::list<uint64_t> nonVirtFuncOffsets;
-				std::list<uint64_t> otherOffsets;
+				std::list<Offset> nonVirtFuncOffsets;
+				std::list<Offset> otherOffsets;
 				PrepareFuncGraph(funcGraph);
 				m_graphReferenceSearch->findNewFunctionOffsets(funcGraph, nonVirtFuncOffsets, otherOffsets);
 				nextOffsetsToVisitLater.insert(nextOffsetsToVisitLater.end(), nonVirtFuncOffsets.begin(), nonVirtFuncOffsets.end());
@@ -101,21 +100,20 @@ void CE::Decompiler::ImageAnalyzer::prepareFuncGraphs() const
 
 // fill {funcGraph} with PCode blocks
 
-void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(uint64_t startInstrOffset, FunctionPCodeGraph* funcGraph) const
+void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, FunctionPCodeGraph* funcGraph) const
 {
-	std::set<uint64_t> visitedOffsets;
-	std::list<uint64_t> nextOffsetsToVisitLater;
+	std::set<ComplexOffset> visitedOffsets;
+	std::list<ComplexOffset> nextOffsetsToVisitLater;
 
 	auto offset = startInstrOffset;
 	while (true) {
-		const auto byteOffset = static_cast<int>(offset >> 8);
+		const auto byteOffset = offset.getByteOffset();
 		PCode::Instruction* instr = nullptr;
 		PCodeBlock* curBlock = nullptr;
 
-		if (offset != -1 && visitedOffsets.find(offset) == visitedOffsets.end()) {
-			try {
-				// any offset have to be assoicated with some existing block
-				curBlock = m_imageGraph->getBlockAtOffset(offset, false);
+		if (offset != InvalidOffset && visitedOffsets.find(offset) == visitedOffsets.end()) {
+			// any offset have to be assoicated with some existing block
+			if (curBlock = m_imageGraph->getBlockAtOffset(offset, false)) {
 
 				// try to get an instruction by the offset
 				instr = m_decoder->m_instrPool->getPCodeInstructionAt(offset);
@@ -128,22 +126,21 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(uint64_t startInst
 				}
 				visitedOffsets.insert(offset);
 			}
-			catch (ImagePCodeGraph::BlockNotFoundException&) {}
 		}
 
 		if (instr == nullptr) {
 			// select the next new block to visit
-			offset = -1;
+			offset = InvalidOffset;
 			while (!nextOffsetsToVisitLater.empty()) {
 				offset = nextOffsetsToVisitLater.back();
 				nextOffsetsToVisitLater.pop_back();
 				if (visitedOffsets.find(offset) == visitedOffsets.end())
 					break;
-				offset = -1;
+				offset = InvalidOffset;
 			}
 
 			// visit a new offset
-			if (offset != -1)
+			if (offset != InvalidOffset)
 				continue;
 
 			// if no new offsets then exit
@@ -152,7 +149,7 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(uint64_t startInst
 
 		curBlock->getInstructions().push_back(instr);
 		// calculate offset of the next instruction
-		auto nextInstrOffset = instr->getOffset() + 1;
+		auto nextInstrOffset = ComplexOffset(instr->getOffset() + 1);
 		bool needChangeNextInstrOffset = false;
 		if (const auto instr = m_decoder->m_instrPool->getPCodeInstructionAt(nextInstrOffset)) {
 			if (byteOffset != instr->m_origInstruction->m_offset)
@@ -172,7 +169,7 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(uint64_t startInst
 			PCode::ConstValueCalculating constValueCalculating(curBlock->getInstructions(), &vmCtx, m_registerFactory);
 			constValueCalculating.start(funcGraph->getConstValues());
 
-			uint64_t targetOffset = -1;
+			ComplexOffset targetOffset;
 			if (const auto varnodeConst = dynamic_cast<PCode::ConstantVarnode*>(instr->m_input0)) {
 				// if this input contains hardcoded constant
 				targetOffset = varnodeConst->m_value;
@@ -181,19 +178,18 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(uint64_t startInst
 				// if this input could be constantly calculated by pcode virtual machine
 				auto it = funcGraph->getConstValues().find(instr);
 				if (it != funcGraph->getConstValues().end())
-					targetOffset = it->second << 8;
+					targetOffset = ComplexOffset(it->second, 0);
 			}
 
-			if (targetOffset == -1 || m_image->getSectionByRva(targetOffset >> 8)->m_type != ImageSection::CODE_SEGMENT) {
-				offset = -1;
+			if (targetOffset == InvalidOffset || m_image->getSectionByRva(targetOffset >> 8)->m_type != ImageSection::CODE_SEGMENT) {
+				offset = InvalidOffset;
 				m_decoder->getWarningContainer()->addWarning("rva " + std::to_string(targetOffset >> 8) + " is not correct in the jump instruction " + instr->m_origInstruction->m_originalView + " (at 0x" + Helper::String::NumberToHex(instr->m_origInstruction->m_offset) + ")");
 				continue;
 			}
 
 			// far block
 			PCodeBlock* nextFarBlock = nullptr;
-			try {
-				auto alreadyExistingBlock = m_imageGraph->getBlockAtOffset(targetOffset);
+			if (auto alreadyExistingBlock = m_imageGraph->getBlockAtOffset(targetOffset)) {
 				// split the already existing block into 2 non-empty blocks 
 				if (targetOffset > alreadyExistingBlock->getMinOffset() && targetOffset < alreadyExistingBlock->getMaxOffset() - 1) {
 					auto block1 = alreadyExistingBlock;
@@ -224,7 +220,7 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(uint64_t startInst
 				}
 				curBlock->setNextFarBlock(alreadyExistingBlock);
 			}
-			catch (ImagePCodeGraph::BlockNotFoundException&) {
+			else {
 				nextFarBlock = m_imageGraph->createBlock(targetOffset);
 				curBlock->setNextFarBlock(nextFarBlock);
 			}
@@ -232,10 +228,7 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(uint64_t startInst
 			// near block
 			PCodeBlock* nextNearBlock = nullptr;
 			if (instr->m_id == PCode::InstructionId::CBRANCH) {
-				try {
-					m_imageGraph->getBlockAtOffset(nextInstrOffset);
-				}
-				catch (ImagePCodeGraph::BlockNotFoundException&) {
+				if (m_imageGraph->getBlockAtOffset(nextInstrOffset) == nullptr) {
 					nextNearBlock = m_imageGraph->createBlock(nextInstrOffset);
 					curBlock->setNextNearBlock(nextNearBlock);
 				}
@@ -252,22 +245,20 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(uint64_t startInst
 				offset = nextFarBlock->getMinOffset();
 			}
 			else {
-				offset = -1;
+				offset = InvalidOffset;
 			}
 		}
 		else {
 			// calculate the next offset
 			if (instr->m_id != PCode::InstructionId::RETURN) {
-				try {
-					const auto nextBlock = m_imageGraph->getBlockAtOffset(nextInstrOffset, false);
+				if (const auto nextBlock = m_imageGraph->getBlockAtOffset(nextInstrOffset, false)) {
 					if (curBlock != nextBlock)
 						curBlock->setNextNearBlock(nextBlock);
 				}
-				catch (ImagePCodeGraph::BlockNotFoundException&) {}
 				offset = nextInstrOffset;
 			}
 			else {
-				offset = -1;
+				offset = InvalidOffset;
 			}
 		}
 	}

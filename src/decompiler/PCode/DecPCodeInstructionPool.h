@@ -27,15 +27,15 @@ namespace CE::Decompiler::PCode
 
 		SymbolVarnode* createSymbolVarnode(int size);
 
-		Instruction::OriginalInstruction* createOrigInstruction(uint64_t offset, int length);
+		Instruction::OriginalInstruction* createOrigInstruction(Offset offset, int length);
 
 		Instruction* createInstruction(InstructionId id, Varnode* input0, Varnode* input1, Varnode* output, Instruction::OriginalInstruction* origInstr, int orderId = 0);
 
 		void modifyInstruction(Instruction* instr, MODIFICATOR mod);
 
-		Instruction::OriginalInstruction* getOrigInstructionAt(uint64_t offset);
+		Instruction::OriginalInstruction* getOrigInstructionAt(Offset offset);
 
 		// get pcode instruction at a complex offset (offset + order)
-		Instruction* getPCodeInstructionAt(uint64_t instrOffset);
+		Instruction* getPCodeInstructionAt(ComplexOffset instrOffset);
 	};
 };

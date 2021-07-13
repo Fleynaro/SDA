@@ -1,6 +1,7 @@
 #pragma once
 #include <decompiler/DecMask.h>
 #include <Zydis/Zydis.h>
+#include "Offset.h"
 #include <magic_enum.hpp>
 #include <string>
 #include <list>
@@ -222,14 +223,14 @@ namespace CE::Decompiler::PCode
 	{
 	public:
 		struct OriginalInstruction {
-			uint64_t m_offset;
+			Offset m_offset;
 			int m_length;
 			std::map<int, Instruction> m_pcodeInstructions;
 			std::string m_originalView;
 
 			OriginalInstruction() = default;
 
-			OriginalInstruction(uint64_t offset, int length)
+			OriginalInstruction(Offset offset, int length)
 				: m_offset(offset), m_length(length)
 			{}
 		};
@@ -247,11 +248,11 @@ namespace CE::Decompiler::PCode
 			: m_id(id), m_input0(input0), m_input1(input1), m_output(output), m_origInstruction(origInstruction), m_orderId(orderId)
 		{}
 
-		// get long offset which consist of original offset and pCode instruction order number: origOffset{24} | order{8}
-		uint64_t getOffset() const;
+		// get complex offset which consist of original offset and pCode instruction order number: origOffset{24} | order{8}
+		ComplexOffset getOffset() const;
 
-		// get long offset of the next instruction following this
-		uint64_t getFirstInstrOffsetInNextOrigInstr() const;
+		// get complex offset of the next instruction following this
+		ComplexOffset getFirstInstrOffsetInNextOrigInstr() const;
 
 		std::string printDebug() const;
 

@@ -36,7 +36,7 @@ namespace CE
 		Symbol::SymbolTable* m_funcBodySymbolTable;
 		Decompiler::PCode::InstructionPool* m_instrPool;
 		Decompiler::ImagePCodeGraph* m_imagePCodeGraph;
-		std::map<int64_t, CE::DataType::IFunctionSignature*>* m_vfunc_calls;
+		std::map<ComplexOffset, CE::DataType::IFunctionSignature*>* m_vfunc_calls;
 		// need for making a clone that based on its parent image but haved own raw-image
 		ImageDecorator* m_parentImageDec = nullptr;
 		
@@ -74,7 +74,7 @@ namespace CE
 
 		Decompiler::ImagePCodeGraph* getPCodeGraph() const;
 
-		std::map<int64_t, CE::DataType::IFunctionSignature*>& getVirtFuncCalls() const;
+		std::map<ComplexOffset, CE::DataType::IFunctionSignature*>& getVirtFuncCalls() const;
 
 		ImageDecorator* getParentImage() const;
 

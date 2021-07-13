@@ -6,6 +6,8 @@
 #include "imgui_wrapper/controls/Text.h"
 #include "utilities/Helper.h"
 #include "InstructionViewer.h"
+#include "decompiler/Graph/DecPCodeGraph.h"
+#include "panels/FuncGraphViewerPanel.h"
 
 namespace GUI
 {
@@ -62,10 +64,8 @@ namespace GUI
 		
 		protected:
 			void renderAddressColumn(uint64_t offset) {
-				using namespace Helper::String;
 				ImGui::TableNextColumn();
-				const auto offsetStr = NumberToHex(offset + (static_cast<uint64_t>(1) << 63)).substr(1);
-				Text::Text("base + " + offsetStr).show();
+				RenderAddress(offset);
 			}
 		};
 
@@ -88,12 +88,12 @@ namespace GUI
 					ImGui::TableHeadersRow();
 
 					ImGuiListClipper clipper;
-					clipper.Begin(m_dataSectionController->getOffsetsCount());
+					clipper.Begin(m_dataSectionController->getRowsCount());
 					while (clipper.Step())
 					{
-						for (auto row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
+						for (auto rowIdx = clipper.DisplayStart; rowIdx < clipper.DisplayEnd; rowIdx++) {
 							ImGui::TableNextRow();
-							const auto offset = m_dataSectionController->getOffset(row);
+							const auto offset = m_dataSectionController->getRow(rowIdx);
 							renderAddressColumn(offset);
 							renderSpecificColumns(offset);
 						}
@@ -136,10 +136,12 @@ namespace GUI
 				}
 			};
 			
-			CodeSectionController* m_codeSectionController;
 			std::set<CodeSectionController::Jmp*> m_shownJmps;
-			AbstractInstructionViewer* m_instructionViewer;
 		public:
+			CodeSectionController* m_codeSectionController;
+			AbstractInstructionViewer* m_instructionViewer;
+			CE::Decompiler::FunctionPCodeGraph* m_curFuncPCodeGraph = nullptr;
+			
 			CodeSectionViewer(CodeSectionController* codeSectionController, AbstractInstructionViewer* instructionViewer)
 				: AbstractSectionViewer(codeSectionController), m_codeSectionController(codeSectionController), m_instructionViewer(instructionViewer)
 			{}
@@ -151,6 +153,8 @@ namespace GUI
 		private:
 			void renderControl() override {
 				m_shownJmps.clear();
+				m_curFuncPCodeGraph = nullptr;
+				
 				auto goToFunc = Button::StdButton("go to func").present();
 				if (ImGui::BeginTable("content_table", 3, TableFlags))
 				{
@@ -161,28 +165,29 @@ namespace GUI
 					ImGui::TableHeadersRow();
 
 					ImGuiListClipper clipper;
-					clipper.Begin(m_codeSectionController->getOffsetsCount());
+					clipper.Begin(m_codeSectionController->getRowsCount());
 					while (clipper.Step())
 					{
-						for (auto row = clipper.DisplayStart; row < clipper.DisplayEnd; row++) {
+						for (auto rowIdx = clipper.DisplayStart; rowIdx < clipper.DisplayEnd; rowIdx++) {
 							ImGui::TableNextRow();
-							const auto offset = m_codeSectionController->getOffset(row);
+							const auto codeSectionRow = m_codeSectionController->getRow(rowIdx);
+							//m_imageDec->getPCodeGraph()->getBlockAtOffset(codeSectionRow.m_fullOffset);
 
-							if (!offset.isPCode) {
-								const auto instrOffset = offset.offset;
+							if (!codeSectionRow.m_isPCode) {
+								const auto instrOffset = codeSectionRow.m_byteOffset;
 								renderAddressColumn(instrOffset);
 
 								InstructionTokenRender instructionTokenRender;
 								instructionTokenRender.renderJmpArrow([&]()
 									{
-										renderJmpLines(row, clipper);
+										renderJmpLines(rowIdx, clipper);
 									});
 								m_instructionViewer->setTokenRender(&instructionTokenRender);
 								m_instructionViewer->setOffset(instrOffset);
 								m_instructionViewer->show();
 							} else {
-								const auto instrOffset = offset.fullOffset;
-								if (auto instr = m_codeSectionController->m_imageDec->getInstrPool()->getPCodeInstructionAt(instrOffset)) {
+								const auto instrOffset = codeSectionRow.m_fullOffset;
+								if (const auto instr = m_codeSectionController->m_imageDec->getInstrPool()->getPCodeInstructionAt(instrOffset)) {
 									ImGui::TableNextColumn();
 									Text::Text("").show();
 									ImGui::TableNextColumn();
@@ -194,36 +199,36 @@ namespace GUI
 						}
 					}
 					if(goToFunc) {
-						ImGui::SetScrollY(m_codeSectionController->offsetToRow(CodeOffsetInfo(0x216f000)) * clipper.ItemsHeight);
+						ImGui::SetScrollY(m_codeSectionController->getRowIdx(CodeSectionRow(0x216f000)) * clipper.ItemsHeight);
 					}
 					ImGui::EndTable();
 				}
 			}
 
-			void renderJmpLines(const int row, const ImGuiListClipper& clipper) {
-				if (const auto it = m_codeSectionController->m_offsetToJmp.find(m_codeSectionController->getOffset(row).fullOffset);
+			void renderJmpLines(const int rowIdx, const ImGuiListClipper& clipper) {
+				if (const auto it = m_codeSectionController->m_offsetToJmp.find(m_codeSectionController->getRow(rowIdx).m_fullOffset);
 					it != m_codeSectionController->m_offsetToJmp.end()) {
 					auto pJmps = it->second;
 					for (auto pJmp : pJmps) {
 						if (m_shownJmps.find(pJmp) == m_shownJmps.end()) {
-							drawJmpLine(row, pJmp, clipper);
+							drawJmpLine(rowIdx, pJmp, clipper);
 							m_shownJmps.insert(pJmp);
 						}
 					}
 				}
 			}
 
-			void drawJmpLine(const int row, const CodeSectionControllerX86::Jmp* pJmp, const ImGuiListClipper& clipper) const {
+			void drawJmpLine(const int rowIdx, const CodeSectionControllerX86::Jmp* pJmp, const ImGuiListClipper& clipper) const {
 				const float JmpLineLeftOffset = 10.0f;
 				const float JmpLineGap = 8.0f;
 				
-				const bool isStart = m_codeSectionController->getOffset(row).fullOffset == pJmp->m_startOffset;
-				const auto targetRow = m_codeSectionController->offsetToRow(CodeOffsetInfo(isStart ? pJmp->m_endOffset : pJmp->m_startOffset));
+				const bool isStart = m_codeSectionController->getRow(rowIdx).m_fullOffset == pJmp->m_startOffset;
+				const auto targetRowIdx = m_codeSectionController->getRowIdx(CodeSectionRow(isStart ? pJmp->m_endOffset : pJmp->m_startOffset));
 
 				auto lineColor = ImGui::GetColorU32(ToImGuiColor(-1));
 				const ImVec2 point1 = { ImGui::GetItemRectMin().x - 2.0f, (ImGui::GetItemRectMin().y + ImGui::GetItemRectMax().y) / 2.0f };
 				const ImVec2 point2 = ImVec2(point1.x - pJmp->m_level * JmpLineGap - JmpLineLeftOffset, point1.y);
-				const ImVec2 point3 = ImVec2(point2.x, point2.y + clipper.ItemsHeight * (targetRow - row));
+				const ImVec2 point3 = ImVec2(point2.x, point2.y + clipper.ItemsHeight * (targetRowIdx - rowIdx));
 				const ImVec2 point4 = ImVec2(point1.x, point3.y);
 
 				// click event of the jump arrow
@@ -237,7 +242,7 @@ namespace GUI
 						lineColor = ImGui::GetColorU32(ToImGuiColor(0x00bfffFF));
 						if(ImGui::IsMouseClicked(0)) {
 							const auto offsetToCenter = clipper.ItemsHeight * (clipper.DisplayEnd - clipper.DisplayStart) / 2.0f;
-							ImGui::SetScrollY(targetRow * clipper.ItemsHeight - offsetToCenter);
+							ImGui::SetScrollY(targetRowIdx * clipper.ItemsHeight - offsetToCenter);
 						}
 					}
 				}
@@ -260,6 +265,7 @@ namespace GUI
 		std::map<const CE::ImageSection*, AbstractSectionController*> m_imageSectionControllers; // todo: move out of the scope
 		ImageSectionListModel m_imageSectionListModel;
 		MenuListView<const CE::ImageSection*> m_imageSectionMenuListView;
+		StdWindow* m_funcGraphViewerWindow = nullptr;
 	public:
 		ImageContentViewerPanel(CE::ImageDecorator* imageDec)
 			: AbstractPanel("Image content viewer"), m_imageDec(imageDec), m_imageSectionListModel(imageDec->getImage())
@@ -287,6 +293,7 @@ namespace GUI
 
 	private:
 		void renderPanel() override {
+			Show(m_funcGraphViewerWindow);
 			m_imageSectionViewer->show();
 		}
 
@@ -296,10 +303,15 @@ namespace GUI
 				if(ImGui::MenuItem("Update")) {
 					m_imageSectionViewer->m_sectionController->update();
 				}
-				if(auto codeController = dynamic_cast<CodeSectionController*>(m_imageSectionViewer->m_sectionController)) {
-					if (ImGui::MenuItem("Show PCode", 0, codeController->m_showPCode)) {
-						codeController->m_showPCode ^= true;
-						codeController->update();
+				if(auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer)) {
+					if (ImGui::MenuItem("Show PCode", 0, codeSectionViewer->m_codeSectionController->m_showPCode)) {
+						codeSectionViewer->m_codeSectionController->m_showPCode ^= true;
+						codeSectionViewer->m_codeSectionController->update();
+					}
+					if (ImGui::MenuItem("Show graph", 0)) {
+						delete m_funcGraphViewerWindow;
+						m_funcGraphViewerWindow = new StdWindow(
+							FuncGraphViewerPanel(codeSectionViewer->m_codeSectionController, codeSectionViewer->m_instructionViewer));
 					}
 				}
 				ImGui::EndMenu();

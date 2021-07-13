@@ -3,7 +3,7 @@
 using namespace CE::Decompiler;
 using namespace CE::Decompiler::PCode;
 
-void CE::Decompiler::PCode::AbstractDecoder::decode(void* addr, int offset, int maxSize) {
+void CE::Decompiler::PCode::AbstractDecoder::decode(void* addr, Offset offset, int maxSize) {
 	m_addr = addr;
 	m_curOrigInstr = nullptr;
 	m_curOrderId = 0x0;

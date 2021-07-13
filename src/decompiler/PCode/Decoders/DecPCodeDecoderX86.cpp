@@ -4,7 +4,7 @@
 using namespace CE::Decompiler;
 using namespace CE::Decompiler::PCode;
 
-void CE::Decompiler::PCode::DecoderX86::tryDecode(void* addr, int offset) {
+void CE::Decompiler::PCode::DecoderX86::tryDecode(void* addr, Offset offset) {
 	const auto size = m_maxSize > 0 ? (m_maxSize - offset) : 0x1000;
 	ZydisDecodedInstruction curInstruction;
 	if (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&m_decoder, addr, size,

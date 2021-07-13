@@ -92,16 +92,16 @@ BitMask64 CE::Decompiler::PCode::GetValueRangeMaskWithException(const PCode::Reg
 
 // get long offset which consist of original offset and pCode instruction order number: origOffset{24} | order{8}
 
-uint64_t CE::Decompiler::PCode::Instruction::getOffset() const
+CE::ComplexOffset CE::Decompiler::PCode::Instruction::getOffset() const
 {
-	return (m_origInstruction->m_offset << 8) | m_orderId;
+	return ComplexOffset(m_origInstruction->m_offset, m_orderId);
 }
 
 // get long offset of the next instruction following this
 
-uint64_t CE::Decompiler::PCode::Instruction::getFirstInstrOffsetInNextOrigInstr() const
+CE::ComplexOffset CE::Decompiler::PCode::Instruction::getFirstInstrOffsetInNextOrigInstr() const
 {
-	return (m_origInstruction->m_offset + m_origInstruction->m_length) << 8;
+	return ComplexOffset(m_origInstruction->m_offset + m_origInstruction->m_length, 0);
 }
 
 std::string CE::Decompiler::PCode::Instruction::printDebug() const
