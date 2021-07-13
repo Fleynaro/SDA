@@ -5,8 +5,7 @@ using namespace CE;
 using namespace Decompiler;
 
 void RegisterExecContext::clear() {
-	for (auto& pair : m_registers) {
-		auto& registers = pair.second;
+	for (const auto& [regId, registers]: m_registers) {
 		for (auto& regInfo : registers)
 			delete regInfo.m_expr;
 	}
@@ -73,8 +72,7 @@ void RegisterExecContext::copyFrom(RegisterExecContext* ctx) {
 	m_execContext = execCtx;
 	m_isFilled = true;
 
-	for (auto& pair : m_registers) {
-		auto& registers = pair.second;
+	for (auto& [regId, registers]: m_registers) {
 		for (auto& regInfo : registers) {
 			regInfo.m_expr = new TopNode(regInfo.m_expr->getNode());
 		}
@@ -82,13 +80,11 @@ void RegisterExecContext::copyFrom(RegisterExecContext* ctx) {
 }
 
 void RegisterExecContext::join(RegisterExecContext* ctx) {
-	for (auto& pair : ctx->m_registers) {
-		auto regId = pair.first;
-
+	for (auto& [regId, registers] : ctx->m_registers) {
 		auto it = m_registers.find(regId);
 		if (it != m_registers.end()) {
 			std::list<RegisterInfo> neededRegs;
-			auto regs1 = pair.second; // from ctx->m_registers
+			auto regs1 = registers; // from ctx->m_registers
 			auto& regs2 = it->second; // from m_registers
 
 			// find equal registers with equal top nodes (expr), they are mutual
@@ -333,8 +329,7 @@ ExecContext::~ExecContext() {
 	m_startRegisterExecCtx.clear();
 	m_registerExecCtx.clear();
 
-	for (auto& pair : m_symbolVarnodes) {
-		const auto topNode = pair.second;
+	for (const auto& [symbol, topNode]: m_symbolVarnodes) {
 		delete topNode;
 	}
 }

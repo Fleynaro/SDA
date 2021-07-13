@@ -23,7 +23,7 @@ PCodeBlock* ImagePCodeGraph::createBlock(ComplexOffset offset) {
 	return createBlock(offset, offset);
 }
 
-const auto& ImagePCodeGraph::getHeadFuncGraphs() const
+const std::list<FunctionPCodeGraph*>& ImagePCodeGraph::getHeadFuncGraphs() const
 {
 	return m_headFuncGraphs;
 }
@@ -74,6 +74,15 @@ void PCodeBlock::disconnect() {
 		nextBlock->removeRefBlock(this);
 	}
 	m_nextNearBlock = m_nextFarBlock = nullptr;
+}
+
+int PCodeBlock::getRefHighBlocksCount() const {
+	int count = 0;
+	for (auto refBlock : m_blocksReferencedTo) {
+		if (refBlock->m_level < m_level)
+			count++;
+	}
+	return count;
 }
 
 std::list<Instruction*>& PCodeBlock::getInstructions() {

@@ -172,10 +172,10 @@ json DataTypeMapper::createExtraJson(UserDefinedType* userDefType) {
 	else if (auto Enum = dynamic_cast<DataType::Enum*>(userDefType))
 	{
 		json json_fields;
-		for (const auto& pair : Enum->getFields()) {
+		for (const auto& [name, value] : Enum->getFields()) {
 			json json_field;
-			json_field["name"] = pair.second;
-			json_field["value"] = pair.first;
+			json_field["name"] = name;
+			json_field["value"] = value;
 			json_fields.push_back(json_field);
 		}
 		json_extra["fields"] = json_fields;
@@ -184,8 +184,7 @@ json DataTypeMapper::createExtraJson(UserDefinedType* userDefType) {
 	{
 		// save fields
 		json json_fields;
-		for (const auto& pair : Structure->getFields()) {
-			auto fieldSymbol = pair.second;
+		for (const auto& [offset, fieldSymbol] : Structure->getFields()) {
 			json_fields.push_back(fieldSymbol->getId());
 		}
 		json_extra["field_symbols"] = json_fields;
@@ -197,10 +196,9 @@ json DataTypeMapper::createExtraJson(UserDefinedType* userDefType) {
 	{
 		// save storages
 		json json_storages;
-		for (auto& pair : FuncSignature->getCustomStorages()) {
+		for (const auto& [idx, storage]: FuncSignature->getCustomStorages()) {
 			json json_storage;
-			auto& storage = pair.second;
-			json_storage["idx"] = pair.first;
+			json_storage["idx"] = idx;
 			json_storage["type"] = storage.getType();
 			json_storage["reg_id"] = storage.getRegisterId();
 			json_storage["offset"] = storage.getOffset();

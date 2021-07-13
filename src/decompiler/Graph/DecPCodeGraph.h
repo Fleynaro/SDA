@@ -30,6 +30,8 @@ namespace CE::Decompiler
 
 		void disconnect();
 
+		int getRefHighBlocksCount() const;
+
 		std::list<Instruction*>& getInstructions();
 
 		ComplexOffset getMinOffset() const;
@@ -111,7 +113,7 @@ namespace CE::Decompiler
 
 		PCodeBlock* createBlock(ComplexOffset offset);
 
-		const auto& getHeadFuncGraphs() const;
+		const std::list<FunctionPCodeGraph*>& getHeadFuncGraphs() const;
 
 		std::list<FunctionPCodeGraph>& getFunctionGraphList();
 

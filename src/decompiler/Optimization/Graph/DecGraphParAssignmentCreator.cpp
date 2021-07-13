@@ -51,18 +51,14 @@ void Optimization::GraphParAssignmentCreator::findAllLocalVarsAndGatherParentOpN
 }
 
 void Optimization::GraphParAssignmentCreator::createParAssignmentsForLocalVars() {
-	for (auto& pair : m_localVars) {
-		auto localVar = pair.first;
-		auto& info = pair.second;
+	for (const auto& [localVar, info] : m_localVars) {
 		auto& localVarInfo = m_decompiler->m_localVars[localVar];
 		localVarInfo.m_used = true;
 
 		// try to change the size of the local var
 		if (info.areAllParentOpNode) {
 			ExprBitMask mask;
-			for (auto& pair : info.m_opNodes) {
-				auto opNode = pair.first;
-				const auto isSymbolInLeftNode = pair.second;
+			for (const auto& [opNode, isSymbolInLeftNode]: info.m_opNodes) {
 				const auto anotherOperand = (isSymbolInLeftNode ? opNode->m_rightNode : opNode->m_leftNode);
 				mask = mask | CalculateMask(anotherOperand);
 			}

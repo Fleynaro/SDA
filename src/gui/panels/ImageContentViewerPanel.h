@@ -318,7 +318,7 @@ namespace GUI
 							if (!m_funcGraphViewerWindow) {
 								auto funcGraphViewerPanel = new FuncGraphViewerPanel(codeSectionViewer->m_codeSectionController, codeSectionViewer->m_instructionViewer);
 								funcGraphViewerPanel->setFuncGraph(codeSectionViewer->m_curFuncPCodeGraph);
-								m_funcGraphViewerWindow = new StdWindow(funcGraphViewerPanel);
+								m_funcGraphViewerWindow = funcGraphViewerPanel->createStdWindow();
 							}
 							else {
 								if (auto funcGraphViewerPanel = dynamic_cast<FuncGraphViewerPanel*>(m_funcGraphViewerWindow->getPanel())) {
