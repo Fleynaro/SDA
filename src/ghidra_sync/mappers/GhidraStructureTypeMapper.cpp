@@ -2,7 +2,7 @@
 #include <managers/TypeManager.h>
 
 using namespace CE;
-using namespace CE::Ghidra;
+using namespace Ghidra;
 
 StructureTypeMapper::StructureTypeMapper(DataTypeMapper* dataTypeMapper)
 	: m_dataTypeMapper(dataTypeMapper)
@@ -29,13 +29,13 @@ void StructureTypeMapper::remove(SyncContext* ctx, IObject* obj) {
 	m_dataTypeMapper->remove(ctx, obj);
 }
 
-datatype::SDataTypeStructure StructureTypeMapper::buildDesc(DataType::Structure* Struct) const
+SDataTypeStructure StructureTypeMapper::buildDesc(DataType::Structure* Struct) const
 {
-	datatype::SDataTypeStructure structDesc;
+	SDataTypeStructure structDesc;
 	structDesc.__set_type(m_dataTypeMapper->buildDesc(Struct));
 	for (const auto it : Struct->getFields()) {
 		auto field = it.second;
-		datatype::SDataTypeStructureField structFieldDesc;
+		SDataTypeStructureField structFieldDesc;
 		structFieldDesc.__set_name(field->getName());
 		structFieldDesc.__set_offset(field->getOffset());
 		structFieldDesc.__set_type(m_dataTypeMapper->buildTypeUnitDesc(field->getDataType()));
@@ -45,7 +45,7 @@ datatype::SDataTypeStructure StructureTypeMapper::buildDesc(DataType::Structure*
 	return structDesc;
 }
 
-void StructureTypeMapper::changeStructureByDesc(DataType::Structure* Struct, const datatype::SDataTypeStructure& structDesc) const
+void StructureTypeMapper::changeStructureByDesc(DataType::Structure* Struct, const SDataTypeStructure& structDesc) const
 {
 	m_dataTypeMapper->changeUserTypeByDesc(Struct, structDesc.type);
 	Struct->getFields().clear();

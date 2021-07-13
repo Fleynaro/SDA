@@ -1,24 +1,24 @@
 #include "ExprTreeSdaGoar.h"
 
 using namespace CE;
-using namespace CE::Decompiler;
-using namespace CE::Decompiler::ExprTree;
+using namespace Decompiler;
+using namespace ExprTree;
 
 // for players[0].pos.x the base is "players" array
 
-CE::Decompiler::ExprTree::GoarTopNode::GoarTopNode(ISdaNode* base, int64_t bitOffset, bool isAddrGetting)
+GoarTopNode::GoarTopNode(ISdaNode* base, int64_t bitOffset, bool isAddrGetting)
 	: GoarNode(base), m_bitOffset(bitOffset), m_isAddrGetting(isAddrGetting)
 {}
 
-bool CE::Decompiler::ExprTree::GoarTopNode::isAddrGetting() {
+bool GoarTopNode::isAddrGetting() {
 	return m_isAddrGetting;
 }
 
-void CE::Decompiler::ExprTree::GoarTopNode::setAddrGetting(bool toggle) {
+void GoarTopNode::setAddrGetting(bool toggle) {
 	m_isAddrGetting = toggle;
 }
 
-void CE::Decompiler::ExprTree::GoarTopNode::getLocation(MemLocation& location) {
+void GoarTopNode::getLocation(MemLocation& location) {
 	auto mainBase = getBaseNode(this);
 	if (auto storedInMem = dynamic_cast<IMappedToMemory*>(mainBase)) {
 		storedInMem->getLocation(location);
@@ -32,29 +32,29 @@ void CE::Decompiler::ExprTree::GoarTopNode::getLocation(MemLocation& location) {
 	gatherArrDims(m_base, location);
 }
 
-DataTypePtr CE::Decompiler::ExprTree::GoarTopNode::getSrcDataType() {
+DataTypePtr GoarTopNode::getSrcDataType() {
 	if (m_isAddrGetting) {
 		return MakePointer(m_base->getDataType());
 	}
 	return m_base->getDataType();
 }
 
-HS CE::Decompiler::ExprTree::GoarTopNode::getHash() {
+HS GoarTopNode::getHash() {
 	return GoarNode::getHash() << m_isAddrGetting;
 }
 
-ISdaNode* CE::Decompiler::ExprTree::GoarTopNode::cloneSdaNode(NodeCloneContext* ctx) {
+ISdaNode* GoarTopNode::cloneSdaNode(NodeCloneContext* ctx) {
 	return new GoarTopNode(dynamic_cast<ISdaNode*>(m_base->clone()), m_bitOffset, m_isAddrGetting);
 }
 
-std::string CE::Decompiler::ExprTree::GoarTopNode::printSdaDebug() {
+std::string GoarTopNode::printSdaDebug() {
 	return m_base->printSdaDebug();
 }
 
 
 // players[2][10] -> dims: 10, 2
 
-void CE::Decompiler::ExprTree::GoarTopNode::gatherArrDims(ISdaNode* node, MemLocation& location) {
+void GoarTopNode::gatherArrDims(ISdaNode* node, MemLocation& location) {
 	if (const auto goarNode = dynamic_cast<GoarNode*>(node)) {
 		gatherArrDims(goarNode->m_base, location);
 		if (auto goarArrayNode = dynamic_cast<GoarArrayNode*>(node)) {
@@ -67,60 +67,60 @@ void CE::Decompiler::ExprTree::GoarTopNode::gatherArrDims(ISdaNode* node, MemLoc
 	}
 }
 
-ISdaNode* CE::Decompiler::ExprTree::GoarTopNode::getBaseNode(ISdaNode* node) {
+ISdaNode* GoarTopNode::getBaseNode(ISdaNode* node) {
 	if (const auto goarNode = dynamic_cast<GoarNode*>(node)) {
 		return getBaseNode(goarNode->m_base);
 	}
 	return node;
 }
 
-CE::Decompiler::ExprTree::GoarNode::GoarNode(ISdaNode* base)
+GoarNode::GoarNode(ISdaNode* base)
 	: m_base(base)
 {
 	m_base->addParentNode(this);
 }
 
-CE::Decompiler::ExprTree::GoarNode::~GoarNode() {
+GoarNode::~GoarNode() {
 	m_base->removeBy(this);
 }
 
-void CE::Decompiler::ExprTree::GoarNode::replaceNode(INode* node, INode* newNode) {
+void GoarNode::replaceNode(INode* node, INode* newNode) {
 	const auto newSdaNode = dynamic_cast<ISdaNode*>(newNode);
 	if (node == m_base) {
 		m_base = newSdaNode;
 	}
 }
 
-std::list<ExprTree::INode*> CE::Decompiler::ExprTree::GoarNode::getNodesList() {
+std::list<INode*> GoarNode::getNodesList() {
 	return { m_base };
 }
 
-int CE::Decompiler::ExprTree::GoarNode::getSize() {
+int GoarNode::getSize() {
 	return getSrcDataType()->getSize();
 }
 
-HS CE::Decompiler::ExprTree::GoarNode::getHash() {
+HS GoarNode::getHash() {
 	return m_base->getHash();
 }
 
-bool CE::Decompiler::ExprTree::GoarNode::isFloatingPoint() {
+bool GoarNode::isFloatingPoint() {
 	return false;
 }
 
-void CE::Decompiler::ExprTree::GoarNode::setDataType(DataTypePtr dataType) {
+void GoarNode::setDataType(DataTypePtr dataType) {
 }
 
-CE::Decompiler::ExprTree::GoarArrayNode::GoarArrayNode(ISdaNode* base, ISdaNode* indexNode, DataTypePtr dataType, int itemsMaxCount)
+GoarArrayNode::GoarArrayNode(ISdaNode* base, ISdaNode* indexNode, DataTypePtr dataType, int itemsMaxCount)
 	: GoarNode(base), m_indexNode(indexNode), m_outDataType(dataType), m_itemsMaxCount(itemsMaxCount)
 {
 	m_indexNode->addParentNode(this);
 }
 
-CE::Decompiler::ExprTree::GoarArrayNode::~GoarArrayNode() {
+GoarArrayNode::~GoarArrayNode() {
 	m_indexNode->removeBy(this);
 }
 
-void CE::Decompiler::ExprTree::GoarArrayNode::replaceNode(INode* node, INode* newNode) {
+void GoarArrayNode::replaceNode(INode* node, INode* newNode) {
 	GoarNode::replaceNode(node, newNode);
 	const auto newSdaNode = dynamic_cast<ISdaNode*>(newNode);
 	if (node == m_indexNode) {
@@ -128,41 +128,41 @@ void CE::Decompiler::ExprTree::GoarArrayNode::replaceNode(INode* node, INode* ne
 	}
 }
 
-std::list<ExprTree::INode*> CE::Decompiler::ExprTree::GoarArrayNode::getNodesList() {
+std::list<INode*> GoarArrayNode::getNodesList() {
 	return { m_base, m_indexNode };
 }
 
-DataTypePtr CE::Decompiler::ExprTree::GoarArrayNode::getSrcDataType() {
+DataTypePtr GoarArrayNode::getSrcDataType() {
 	return m_outDataType;
 }
 
-HS CE::Decompiler::ExprTree::GoarArrayNode::getHash() {
+HS GoarArrayNode::getHash() {
 	return GoarNode::getHash() << m_indexNode->getHash();
 }
 
-ISdaNode* CE::Decompiler::ExprTree::GoarArrayNode::cloneSdaNode(NodeCloneContext* ctx) {
+ISdaNode* GoarArrayNode::cloneSdaNode(NodeCloneContext* ctx) {
 	return new GoarArrayNode(dynamic_cast<ISdaNode*>(m_base->clone()), dynamic_cast<ISdaNode*>(m_indexNode->clone(ctx)), CloneUnit(m_outDataType), m_itemsMaxCount);
 }
 
-std::string CE::Decompiler::ExprTree::GoarArrayNode::printSdaDebug() {
+std::string GoarArrayNode::printSdaDebug() {
 	auto str = m_base->printSdaDebug();
 	str = str + "[" + m_indexNode->printDebug() + "]";
 	return str;
 }
 
-CE::Decompiler::ExprTree::GoarFieldNode::GoarFieldNode(ISdaNode* base, DataType::Structure::Field* field)
+GoarFieldNode::GoarFieldNode(ISdaNode* base, DataType::Structure::Field* field)
 	: GoarNode(base), m_field(field)
 {}
 
-DataTypePtr CE::Decompiler::ExprTree::GoarFieldNode::getSrcDataType() {
+DataTypePtr GoarFieldNode::getSrcDataType() {
 	return m_field->getDataType();
 }
 
-ISdaNode* CE::Decompiler::ExprTree::GoarFieldNode::cloneSdaNode(NodeCloneContext* ctx) {
+ISdaNode* GoarFieldNode::cloneSdaNode(NodeCloneContext* ctx) {
 	return new GoarFieldNode(dynamic_cast<ISdaNode*>(m_base->clone()), m_field);
 }
 
-std::string CE::Decompiler::ExprTree::GoarFieldNode::printSdaDebug() {
+std::string GoarFieldNode::printSdaDebug() {
 	auto str = m_base->printSdaDebug();
 	str += m_base->getDataType()->isPointer() ? "->" : ".";
 	str += m_field->getName();

@@ -1,14 +1,14 @@
 #include "SdaGraphMemoryOptimization.h"
 
 using namespace CE;
-using namespace CE::Decompiler;
-using namespace CE::Decompiler::Optimization;
+using namespace Decompiler;
+using namespace Optimization;
 
-CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContextInitializer::MemoryContextInitializer(DecBlock* block, MemoryContext* memCtx)
+SdaGraphMemoryOptimization::MemoryContextInitializer::MemoryContextInitializer(DecBlock* block, MemoryContext* memCtx)
 	: m_block(block), m_memCtx(memCtx)
 {}
 
-void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContextInitializer::start() {
+void SdaGraphMemoryOptimization::MemoryContextInitializer::start() {
 	// iterate over all lines of the code as if executing it
 	for (auto topNode : m_block->getAllTopNodes()) {
 		const auto node = topNode->getNode();
@@ -17,7 +17,7 @@ void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContextInit
 	}
 }
 
-void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContextInitializer::passNode(INode* node) {
+void SdaGraphMemoryOptimization::MemoryContextInitializer::passNode(INode* node) {
 	if (const auto assignmentNode = dynamic_cast<AssignmentNode*>(node)) {
 		if (dynamic_cast<SdaSymbolLeaf*>(assignmentNode->getDstNode())) {
 			passNode(assignmentNode->getSrcNode());
@@ -97,7 +97,7 @@ void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContextInit
 	}
 }
 
-void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContext::clear() {
+void SdaGraphMemoryOptimization::MemoryContext::clear() {
 	for (auto& memValue : m_memValues) {
 		delete memValue.m_topNode;
 	}
@@ -108,7 +108,7 @@ void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContext::cl
 	}
 }
 
-SdaTopNode* CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContext::getMemValue(const MemLocation& location) const {
+SdaTopNode* SdaGraphMemoryOptimization::MemoryContext::getMemValue(const MemLocation& location) const {
 	for (auto it = m_memValues.begin(); it != m_memValues.end(); it++) {
 		if (it->m_location->equal(location)) { // todo: intersect better with <<, >> operation
 			return it->m_topNode;
@@ -117,7 +117,7 @@ SdaTopNode* CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryCont
 	return nullptr;
 }
 
-void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContext::addMemValue(const MemLocation& location, ISdaNode* sdaNode) {
+void SdaGraphMemoryOptimization::MemoryContext::addMemValue(const MemLocation& location, ISdaNode* sdaNode) {
 	const auto newLocation = createNewLocation(location);
 	MemoryValue memoryValue;
 	memoryValue.m_location = newLocation;
@@ -125,7 +125,7 @@ void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContext::ad
 	m_memValues.push_back(memoryValue);
 }
 
-MemLocation* CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContext::createNewLocation(const MemLocation& location) {
+MemLocation* SdaGraphMemoryOptimization::MemoryContext::createNewLocation(const MemLocation& location) {
 	//clear all location that are intersecting this one
 	auto it = m_memValues.begin();
 	while (it != m_memValues.end()) {
@@ -160,14 +160,14 @@ MemLocation* CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryCon
 	return &(*m_usedMemLocations.rbegin()); //dangerous: important no to copy the mem ctx anywhere
 }
 
-int CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContext::getLastUsedMemLocIdx() const
+int SdaGraphMemoryOptimization::MemoryContext::getLastUsedMemLocIdx() const
 {
 	return static_cast<int>(m_usedMemLocations.size()) - 1;
 }
 
 // check intersecting {location} with locations created from {firstUsedMemLocIdx} to {lastUsedMemLocIdx} state indexes
 
-bool CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContext::hasUsed(const MemLocation& location, int firstUsedMemLocIdx, int lastUsedMemLocIdx) {
+bool SdaGraphMemoryOptimization::MemoryContext::hasUsed(const MemLocation& location, int firstUsedMemLocIdx, int lastUsedMemLocIdx) {
 	for (const auto& loc : m_usedMemLocations) {
 		if (lastUsedMemLocIdx-- == -1)
 			break;
@@ -182,11 +182,11 @@ bool CE::Decompiler::Optimization::SdaGraphMemoryOptimization::MemoryContext::ha
 	return false;
 }
 
-CE::Decompiler::Optimization::SdaGraphMemoryOptimization::SdaGraphMemoryOptimization(SdaCodeGraph* sdaCodeGraph)
+SdaGraphMemoryOptimization::SdaGraphMemoryOptimization(SdaCodeGraph* sdaCodeGraph)
 	: SdaGraphModification(sdaCodeGraph)
 {}
 
-void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::start() {
+void SdaGraphMemoryOptimization::start() {
 	initEveryMemCtxForEachBlocks();
 	optimizeAllBlocksUsingMemCtxs();
 
@@ -202,7 +202,7 @@ void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::start() {
 
 //just fill every memory context up for each block
 
-void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::initEveryMemCtxForEachBlocks() {
+void SdaGraphMemoryOptimization::initEveryMemCtxForEachBlocks() {
 	for (auto block : m_sdaCodeGraph->getDecGraph()->getDecompiledBlocks()) {
 		m_memoryContexts[block] = MemoryContext();
 		MemoryContextInitializer memoryContextInitializer(block, &m_memoryContexts[block]);
@@ -212,13 +212,13 @@ void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::initEveryMemCtxFo
 
 //optimize all blocks using filled up memory contexts on prev step
 
-void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::optimizeAllBlocksUsingMemCtxs() {
+void SdaGraphMemoryOptimization::optimizeAllBlocksUsingMemCtxs() {
 	for (auto block : m_sdaCodeGraph->getDecGraph()->getDecompiledBlocks()) {
 		optimizeBlock(block, &m_memoryContexts[block]);
 	}
 }
 
-void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::optimizeBlock(DecBlock* block, MemoryContext* memCtx) {
+void SdaGraphMemoryOptimization::optimizeBlock(DecBlock* block, MemoryContext* memCtx) {
 	for (auto& memVarInfo : memCtx->m_memVars) {
 		ISdaNode* newNode = nullptr;
 		const auto memSnapshot = memVarInfo.m_memSnapshot;
@@ -267,7 +267,7 @@ void CE::Decompiler::Optimization::SdaGraphMemoryOptimization::optimizeBlock(Dec
 	}
 }
 
-ISdaNode* CE::Decompiler::Optimization::SdaGraphMemoryOptimization::getSnapshotValue(DecBlock* block, MemoryContext* memCtx, MemoryContext::MemSnapshot* memSnapshot, int lastUsedMemLocIdx) {
+ISdaNode* SdaGraphMemoryOptimization::getSnapshotValue(DecBlock* block, MemoryContext* memCtx, MemoryContext::MemSnapshot* memSnapshot, int lastUsedMemLocIdx) {
 	if (memSnapshot->m_snapshotValue) {
 		if (auto locSnapshotValue = dynamic_cast<ILocatable*>(memSnapshot->m_snapshotValue->getNode())) {
 			try {
@@ -295,7 +295,7 @@ ISdaNode* CE::Decompiler::Optimization::SdaGraphMemoryOptimization::getSnapshotV
 	return nullptr;
 }
 
-ISdaNode* CE::Decompiler::Optimization::SdaGraphMemoryOptimization::getLocatableNode(MemoryContext* memCtx, MemoryContext::MemSnapshot* memSnapshot, int lastUsedMemLocIdx) {
+ISdaNode* SdaGraphMemoryOptimization::getLocatableNode(MemoryContext* memCtx, MemoryContext::MemSnapshot* memSnapshot, int lastUsedMemLocIdx) {
 	if (memSnapshot->m_locatableNode) {
 		if (!memCtx->hasUsed(memSnapshot->m_location, memSnapshot->m_lastUsedMemLocIdx, lastUsedMemLocIdx)) {
 			return memSnapshot->m_locatableNode;
@@ -304,7 +304,8 @@ ISdaNode* CE::Decompiler::Optimization::SdaGraphMemoryOptimization::getLocatable
 	return nullptr;
 }
 
-std::pair<DecBlock*, SdaGraphMemoryOptimization::MemoryContext::MemSnapshot*> CE::Decompiler::Optimization::SdaGraphMemoryOptimization::findBlockAndMemSnapshotByMemVar(Symbol::MemoryVariable* memVar) {
+std::pair<DecBlock*, SdaGraphMemoryOptimization::MemoryContext::MemSnapshot*>
+SdaGraphMemoryOptimization::findBlockAndMemSnapshotByMemVar(Symbol::MemoryVariable* memVar) {
 	for (auto block : m_sdaCodeGraph->getDecGraph()->getDecompiledBlocks()) {
 		auto& memVarToMemLocation = m_memoryContexts[block].m_memVarSnapshots;
 		auto it = memVarToMemLocation.find(memVar);
@@ -317,7 +318,7 @@ std::pair<DecBlock*, SdaGraphMemoryOptimization::MemoryContext::MemSnapshot*> CE
 
 //finalBlock can be reached if go to it over path(from startBlock) that doesn't contain changes of the memory location
 
-bool CE::Decompiler::Optimization::SdaGraphMemoryOptimization::canBlockBeReachedThroughLocation(DecBlock* startBlock, DecBlock* finalBlock, MemLocation* memLoc) {
+bool SdaGraphMemoryOptimization::canBlockBeReachedThroughLocation(DecBlock* startBlock, DecBlock* finalBlock, MemLocation* memLoc) {
 	BlockFlowIterator blockFlowIterator(startBlock);
 	while (blockFlowIterator.hasNext()) {
 		blockFlowIterator.m_considerLoop = false;
@@ -335,7 +336,7 @@ bool CE::Decompiler::Optimization::SdaGraphMemoryOptimization::canBlockBeReached
 	return false;
 }
 
-ISdaNode* CE::Decompiler::Optimization::SdaGraphMemoryOptimization::findValueNodeInBlocksAbove(DecBlock* startBlock, MemLocation* memLoc) {
+ISdaNode* SdaGraphMemoryOptimization::findValueNodeInBlocksAbove(DecBlock* startBlock, MemLocation* memLoc) {
 	BlockFlowIterator blockFlowIterator(startBlock);
 	while (blockFlowIterator.hasNext()) {
 		blockFlowIterator.m_considerLoop = false;

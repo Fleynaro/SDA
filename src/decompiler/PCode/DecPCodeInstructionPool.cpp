@@ -1,8 +1,8 @@
 #include "DecPCodeInstructionPool.h"
 
 using namespace CE;
-using namespace CE::Decompiler;
-using namespace CE::Decompiler::PCode;
+using namespace Decompiler;
+using namespace PCode;
 
 RegisterVarnode* InstructionPool::createRegisterVarnode(Register reg) {
 	m_registerVarnodes.push_back(RegisterVarnode(reg));
@@ -36,8 +36,8 @@ void InstructionPool::modifyInstruction(Instruction* instr, MODIFICATOR mod) {
 	{
 	case MODIFICATOR_JMP_CALL:
 		// replace JMP with CALL and add RET
-		instr->m_id = PCode::InstructionId::CALL;
-		createInstruction(PCode::InstructionId::RETURN, nullptr, nullptr, nullptr, instr->m_origInstruction, 1);
+		instr->m_id = InstructionId::CALL;
+		createInstruction(InstructionId::RETURN, nullptr, nullptr, nullptr, instr->m_origInstruction, 1);
 		break;
 	}
 	m_modifiedInstructions[instr->getOffset()] = mod;
@@ -48,12 +48,12 @@ SymbolVarnode* InstructionPool::createSymbolVarnode(int size) {
 	return &*m_symbolVarnodes.rbegin();
 }
 
-Instruction::OriginalInstruction* CE::Decompiler::PCode::InstructionPool::createOrigInstruction(Offset offset, int length) {
+Instruction::OriginalInstruction* InstructionPool::createOrigInstruction(Offset offset, int length) {
 	m_origInstructions[offset] = Instruction::OriginalInstruction(offset, length);
 	return &m_origInstructions[offset];
 }
 
-Instruction* CE::Decompiler::PCode::InstructionPool::createInstruction(InstructionId id, Varnode* input0, Varnode* input1, Varnode* output, Instruction::OriginalInstruction* origInstr, int orderId) {
+Instruction* InstructionPool::createInstruction(InstructionId id, Varnode* input0, Varnode* input1, Varnode* output, Instruction::OriginalInstruction* origInstr, int orderId) {
 	auto instr = Instruction(id, input0, input1, output, origInstr, orderId);
 	origInstr->m_pcodeInstructions[orderId] = instr;
 	// check if can modificate the instruction

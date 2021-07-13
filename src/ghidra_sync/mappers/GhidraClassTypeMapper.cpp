@@ -2,7 +2,7 @@
 #include <managers/TypeManager.h>
 
 using namespace CE;
-using namespace CE::Ghidra;
+using namespace Ghidra;
 
 ClassTypeMapper::ClassTypeMapper(StructureTypeMapper* structTypeMapper)
 	: m_structTypeMapper(structTypeMapper)
@@ -29,14 +29,14 @@ void ClassTypeMapper::remove(SyncContext* ctx, IObject* obj) {
 	m_structTypeMapper->remove(ctx, obj);
 }
 
-datatype::SDataTypeClass ClassTypeMapper::buildDesc(DataType::Class* Class) const
+SDataTypeClass ClassTypeMapper::buildDesc(DataType::Class* Class) const
 {
-	datatype::SDataTypeClass classDesc;
+	SDataTypeClass classDesc;
 	classDesc.__set_structType(m_structTypeMapper->buildDesc(Class));
 	return classDesc;
 }
 
-void ClassTypeMapper::changeClassByDesc(DataType::Class* Class, const datatype::SDataTypeClass& classDesc) const
+void ClassTypeMapper::changeClassByDesc(DataType::Class* Class, const SDataTypeClass& classDesc) const
 {
 	m_structTypeMapper->changeStructureByDesc(Class, classDesc.structType);
 }

@@ -4,14 +4,14 @@
 #include <decompiler/DecMask.h>
 
 using namespace CE;
-using namespace CE::DataType;
+using namespace DataType;
 
 std::string AbstractType::getViewValue(uint64_t value) {
 	return std::to_string(value & Decompiler::BitMask64(getSize()).getValue());
 }
 
 IType* AbstractType::getBaseType(bool refType, bool dereferencedType) {
-	if (const auto unit = dynamic_cast<DataType::Unit*>(this)) {
+	if (const auto unit = dynamic_cast<Unit*>(this)) {
 		return unit->getType()->getBaseType();
 	}
 	if (refType) {

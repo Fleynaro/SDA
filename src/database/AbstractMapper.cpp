@@ -45,16 +45,16 @@ DB::IDomainObject* DB::AbstractMapper::find(Id id) const
 }
 
 DB::Id DB::GenerateNextId(Database* db, const std::string& tableName) {
-	SQLite::Statement query(*db, "SELECT seq FROM SQLITE_SEQUENCE WHERE name=?1");
+	Statement query(*db, "SELECT seq FROM SQLITE_SEQUENCE WHERE name=?1");
 	query.bind(1, tableName);
 	if (query.executeStep()) {
-		SQLite::Statement query_update(*db, "UPDATE SQLITE_SEQUENCE SET seq=seq+1 WHERE name=?1");
+		Statement query_update(*db, "UPDATE SQLITE_SEQUENCE SET seq=seq+1 WHERE name=?1");
 		query_update.bind(1, tableName);
 		query_update.exec();
-		return static_cast<DB::Id>(query.getColumn("seq")) + 1;
+		return static_cast<Id>(query.getColumn("seq")) + 1;
 	}
 	else {
-		SQLite::Statement query(*db, "INSERT INTO SQLITE_SEQUENCE (name, seq) VALUES (?1, 1)");
+		Statement query(*db, "INSERT INTO SQLITE_SEQUENCE (name, seq) VALUES (?1, 1)");
 		query.bind(1, tableName);
 		query.exec();
 	}

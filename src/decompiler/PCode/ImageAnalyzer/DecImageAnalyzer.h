@@ -20,7 +20,7 @@ namespace CE::Decompiler
 		};
 		std::list<VTable> m_vtables;
 
-		PCodeGraphReferenceSearch(CE::Project* project, AbstractRegisterFactory* registerFactory, AbstractImage* image);
+		PCodeGraphReferenceSearch(Project* project, AbstractRegisterFactory* registerFactory, AbstractImage* image);
 
 		~PCodeGraphReferenceSearch();
 
@@ -39,9 +39,9 @@ namespace CE::Decompiler
 		PCodeGraphReferenceSearch* m_graphReferenceSearch;
 
 		AbstractRegisterFactory* m_registerFactory;
-		PCode::AbstractDecoder* m_decoder;
+		AbstractDecoder* m_decoder;
 	public:
-		ImageAnalyzer(AbstractImage* image, ImagePCodeGraph* imageGraph, PCode::AbstractDecoder* decoder, AbstractRegisterFactory* registerFactory, PCodeGraphReferenceSearch* graphReferenceSearch = nullptr);
+		ImageAnalyzer(AbstractImage* image, ImagePCodeGraph* imageGraph, AbstractDecoder* decoder, AbstractRegisterFactory* registerFactory, PCodeGraphReferenceSearch* graphReferenceSearch = nullptr);
 
 		void start(Offset startOffset, bool onceFunc = false) const;
 

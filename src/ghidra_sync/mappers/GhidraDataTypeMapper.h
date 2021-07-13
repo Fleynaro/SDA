@@ -9,7 +9,7 @@ namespace CE {
 namespace CE::Ghidra
 {
 	using namespace ghidra;
-	using namespace ghidra::datatype;
+	using namespace datatype;
 
 	class EnumTypeMapper;
 	class StructureTypeMapper;
@@ -25,9 +25,9 @@ namespace CE::Ghidra
 		ClassTypeMapper* m_classTypeMapper;
 		TypedefTypeMapper* m_typedefTypeMapper;
 		SignatureTypeMapper* m_signatureTypeMapper;
-		CE::TypeManager* m_typeManager;
+		TypeManager* m_typeManager;
 
-		DataTypeMapper(CE::TypeManager* typeManager);
+		DataTypeMapper(TypeManager* typeManager);
 
 		void load(packet::SDataFullSyncPacket* dataPacket) override;
 
@@ -35,17 +35,17 @@ namespace CE::Ghidra
 
 		void remove(SyncContext* ctx, IObject* obj) override;
 
-		datatype::SDataType buildDesc(DataType::UserDefinedType* type);
+		SDataType buildDesc(DataType::UserDefinedType* type);
 
 		shared::STypeUnit buildTypeUnitDesc(DataTypePtr type) const;
 
 		DataTypePtr getTypeByDesc(const shared::STypeUnit& typeUnitDesc) const;
 
-		void changeUserTypeByDesc(DataType::UserDefinedType* type, const datatype::SDataType& typeDesc);
+		void changeUserTypeByDesc(DataType::UserDefinedType* type, const SDataType& typeDesc);
 
 	private:
-		void createTypeByDescIfNotExists(const datatype::SDataType& typeDesc);
+		void createTypeByDescIfNotExists(const SDataType& typeDesc);
 
-		DataType::UserDefinedType* createTypeByDesc(const datatype::SDataType& typeDesc);
+		DataType::UserDefinedType* createTypeByDesc(const SDataType& typeDesc);
 	};
 };

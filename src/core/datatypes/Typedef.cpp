@@ -2,9 +2,9 @@
 #include <managers/TypeManager.h>
 
 using namespace CE;
-using namespace CE::DataType;
+using namespace DataType;
 
-CE::DataType::Typedef::Typedef(TypeManager* typeManager, const std::string& name, const std::string& comment)
+Typedef::Typedef(TypeManager* typeManager, const std::string& name, const std::string& comment)
 	: UserDefinedType(typeManager, name, comment)
 {
 	m_refType = GetUnit(typeManager->getFactory().getDefaultType());
@@ -20,7 +20,7 @@ int Typedef::getSize() {
 	return getRefType()->getSize();
 }
 
-std::string DataType::Typedef::getViewValue(uint64_t value) {
+std::string Typedef::getViewValue(uint64_t value) {
 	if (getRefType()->getType() == this)
 		return UserDefinedType::getViewValue(value);
 	return getRefType()->getViewValue(value);

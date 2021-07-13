@@ -8,15 +8,15 @@ namespace CE::Decompiler::PCode
 	class ConstValueCalculating
 	{
 		std::list<Instruction*> m_instructions;
-		PCode::VirtualMachineContext* m_vmCtx;
+		VirtualMachineContext* m_vmCtx;
 		AbstractRegisterFactory* m_registerFactory;
 	public:
-		ConstValueCalculating(const std::list<Instruction*>& instructions, PCode::VirtualMachineContext* vmCtx, AbstractRegisterFactory* registerFactory)
+		ConstValueCalculating(const std::list<Instruction*>& instructions, VirtualMachineContext* vmCtx, AbstractRegisterFactory* registerFactory)
 			: m_instructions(instructions), m_vmCtx(vmCtx), m_registerFactory(registerFactory)
 		{}
 
-		void start(std::map<PCode::Instruction*, DataValue>& constValues) {
-			const PCode::VirtualMachine vm(m_vmCtx);
+		void start(std::map<Instruction*, DataValue>& constValues) {
+			const VirtualMachine vm(m_vmCtx);
 			//SP, IP registers to zero
 			m_vmCtx->setConstantValue(m_registerFactory->createInstructionPointerRegister(), 0);
 			m_vmCtx->setConstantValue(m_registerFactory->createStackPointerRegister(), 0);

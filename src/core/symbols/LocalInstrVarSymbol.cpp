@@ -1,12 +1,12 @@
 #include "LocalInstrVarSymbol.h"
 
 using namespace CE;
-using namespace CE::Symbol;
+using namespace Symbol;
 
-CE::Symbol::LocalInstrVarSymbol::LocalInstrVarSymbol(SymbolManager* manager, DataTypePtr type, const std::string& name, const std::string& comment)
+LocalInstrVarSymbol::LocalInstrVarSymbol(SymbolManager* manager, DataTypePtr type, const std::string& name, const std::string& comment)
 	: AbstractSymbol(manager, type, name, comment)
 {}
 
-Type CE::Symbol::LocalInstrVarSymbol::getType() {
+Type LocalInstrVarSymbol::getType() {
 	return LOCAL_INSTR_VAR;
 }

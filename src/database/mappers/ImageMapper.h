@@ -20,7 +20,7 @@ namespace DB
 
 		CE::ImageManager* getManager() const;
 	protected:
-		IDomainObject* doLoad(Database* db, SQLite::Statement& query) override;
+		IDomainObject* doLoad(Database* db, Statement& query) override;
 
 		void doInsert(TransactionContext* ctx, IDomainObject* obj) override;
 
@@ -35,6 +35,6 @@ namespace DB
 
 		json createFuncPCodeGraphJson(CE::Decompiler::FunctionPCodeGraph* funcPCodeGraph);
 
-		void bind(SQLite::Statement& query, CE::ImageDecorator* imageDec);
+		void bind(Statement& query, CE::ImageDecorator* imageDec);
 	};
 };

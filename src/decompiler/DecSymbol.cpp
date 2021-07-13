@@ -2,7 +2,7 @@
 #include "Graph/DecCodeGraph.h"
 
 using namespace CE::Decompiler;
-using namespace CE::Decompiler::Symbol;
+using namespace Symbol;
 
 CE::Decompiler::Symbol::Symbol* CE::Decompiler::Symbol::Symbol::clone(ExprTree::NodeCloneContext* ctx) {
 	if (!ctx->m_cloneSymbols)

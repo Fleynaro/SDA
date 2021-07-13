@@ -16,7 +16,7 @@ namespace CE::Decompiler::ExprTree
 
 		ISdaNode* getAddress() const;
 
-		void replaceNode(ExprTree::INode* node, ExprTree::INode* newNode) override;
+		void replaceNode(INode* node, INode* newNode) override;
 
 		std::list<INode*> getNodesList() override;
 

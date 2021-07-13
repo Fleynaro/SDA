@@ -4,17 +4,17 @@ using namespace CE::Decompiler;
 
 // share its pressure for others and remove itself
 
-CE::Decompiler::BlockFlowIterator::BlockFlowIterator(DecBlock* startBlock, BitMask64 notNeedToReadMask)
+BlockFlowIterator::BlockFlowIterator(DecBlock* startBlock, BitMask64 notNeedToReadMask)
 {
 	addBlockInfo(startBlock, MaxPressure, notNeedToReadMask); //set the start block (with max pressure that have to be distributed)
 }
 
-bool CE::Decompiler::BlockFlowIterator::isStartBlock() const
+bool BlockFlowIterator::isStartBlock() const
 {
 	return m_iterCount == 1;
 }
 
-bool CE::Decompiler::BlockFlowIterator::hasNext() {
+bool BlockFlowIterator::hasNext() {
 	//remove the first block from the current batch because it already grabbed by next() method
 	if (!m_blocksOnOneLevel.empty()) {
 		if (m_distributePressure) {
@@ -35,22 +35,22 @@ bool CE::Decompiler::BlockFlowIterator::hasNext() {
 	return !m_blocksOnOneLevel.empty();
 }
 
-BlockFlowIterator::BlockInfo& CE::Decompiler::BlockFlowIterator::next() {
+BlockFlowIterator::BlockInfo& BlockFlowIterator::next() {
 	return *m_blocksOnOneLevel.begin();
 }
 
-void CE::Decompiler::BlockFlowIterator::passThisBlockAgain() {
+void BlockFlowIterator::passThisBlockAgain() {
 	m_blocksOnOneLevel.push_back(next());
 	m_distributePressure = false;
 }
 
-void CE::Decompiler::BlockFlowIterator::addBlockInfo(DecBlock* block, uint64_t pressure, BitMask64 notNeedToReadMask) {
+void BlockFlowIterator::addBlockInfo(DecBlock* block, uint64_t pressure, BitMask64 notNeedToReadMask) {
 	m_blockInfos[block] = BlockInfo(block, pressure, notNeedToReadMask);
 }
 
 // add the bottommost blocks to the batch
 
-void CE::Decompiler::BlockFlowIterator::defineBlocksOnOneLevel() {
+void BlockFlowIterator::defineBlocksOnOneLevel() {
 	const auto biggestLevel = getBiggestLevel();
 	for (auto it : m_blockInfos) {
 		const auto block = it.first;
@@ -63,7 +63,7 @@ void CE::Decompiler::BlockFlowIterator::defineBlocksOnOneLevel() {
 
 // get level of the bottommost block
 
-int CE::Decompiler::BlockFlowIterator::getBiggestLevel() {
+int BlockFlowIterator::getBiggestLevel() {
 	int biggestLevel = 0;
 	for (const auto it : m_blockInfos) {
 		const auto block = it.first;
@@ -74,7 +74,7 @@ int CE::Decompiler::BlockFlowIterator::getBiggestLevel() {
 	return biggestLevel;
 }
 
-void CE::Decompiler::BlockFlowIterator::distributePressure(BlockInfo blockInfo, bool considerLoop) {
+void BlockFlowIterator::distributePressure(BlockInfo blockInfo, bool considerLoop) {
 	auto block = blockInfo.m_block;
 	m_blockInfos.erase(block); // block without pressure have to be removed (this pressure distributed for others)
 

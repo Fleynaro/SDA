@@ -2,9 +2,9 @@
 #include <utilities/Helper.h>
 
 using namespace CE::Decompiler;
-using namespace CE::Decompiler::PCode;
+using namespace PCode;
 
-void CE::Decompiler::PCode::DecoderX86::tryDecode(void* addr, Offset offset) {
+void DecoderX86::tryDecode(void* addr, Offset offset) {
 	const auto size = m_maxSize > 0 ? (m_maxSize - offset) : 0x1000;
 	ZydisDecodedInstruction curInstruction;
 	if (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&m_decoder, addr, size,
@@ -15,7 +15,7 @@ void CE::Decompiler::PCode::DecoderX86::tryDecode(void* addr, Offset offset) {
 	}
 }
 
-void CE::Decompiler::PCode::DecoderX86::translateCurInstruction() {
+void DecoderX86::translateCurInstruction() {
 	auto mnemonic = m_curInstr->mnemonic;
 	auto size = m_curInstr->operands[0].size / 0x8;
 	auto operandsCount = getFirstExplicitOperandsCount();
@@ -1214,20 +1214,20 @@ void CE::Decompiler::PCode::DecoderX86::translateCurInstruction() {
 	}
 }
 
-Varnode* CE::Decompiler::PCode::DecoderX86::getJumpOffsetByOperand(const ZydisDecodedOperand& operand) {
+Varnode* DecoderX86::getJumpOffsetByOperand(const ZydisDecodedOperand& operand) {
 	if (operand.type != ZYDIS_OPERAND_TYPE_IMMEDIATE)
 		return requestOperandValue(operand, operand.size / 0x8);
 	const auto jmpOffset = static_cast<int>(operand.imm.value.s);
 	return m_instrPool->createConstantVarnode(getJumpOffset(jmpOffset), 0x8);
 }
 
-uint64_t CE::Decompiler::PCode::DecoderX86::getJumpOffset(int jmpOffset) const
+uint64_t DecoderX86::getJumpOffset(int jmpOffset) const
 {
 	const auto offset = m_curOrigInstr->m_offset + m_curOrigInstr->m_length + jmpOffset;
 	return offset << 8;
 }
 
-void CE::Decompiler::PCode::DecoderX86::GenerateVectorOperation(const VectorOperationGeneratorInfo& info)
+void DecoderX86::GenerateVectorOperation(const VectorOperationGeneratorInfo& info)
 {
 	const int operationsCount = info.maxSize / info.size;
 	auto instrId2 = info.instrId2;
@@ -1266,7 +1266,7 @@ void CE::Decompiler::PCode::DecoderX86::GenerateVectorOperation(const VectorOper
 		}
 }
 
-Varnode* CE::Decompiler::PCode::DecoderX86::addGenericOperation(InstructionId instrId, Varnode* varnodeInput0, Varnode* varnodeInput1, Varnode* memLocVarnode, bool isFictitious, int size, int offset) {
+Varnode* DecoderX86::addGenericOperation(InstructionId instrId, Varnode* varnodeInput0, Varnode* varnodeInput1, Varnode* memLocVarnode, bool isFictitious, int size, int offset) {
 	auto& operand = m_curInstr->operands[0];
 	if (size == 0x0)
 		size = operand.size / 0x8;
@@ -1287,7 +1287,7 @@ Varnode* CE::Decompiler::PCode::DecoderX86::addGenericOperation(InstructionId in
 	return varnodeOutput;
 }
 
-Instruction* CE::Decompiler::PCode::DecoderX86::addMicroInstruction(InstructionId id, Varnode* input0, Varnode* input1, Varnode* output, bool zext) {
+Instruction* DecoderX86::addMicroInstruction(InstructionId id, Varnode* input0, Varnode* input1, Varnode* output, bool zext) {
 	const auto instr = m_instrPool->createInstruction(id, input0, input1, output, m_curOrigInstr, m_curOrderId++);
 	if (m_curOrderId == 1) { //for debug info
 		ZydisFormatter formatter;
@@ -1301,18 +1301,18 @@ Instruction* CE::Decompiler::PCode::DecoderX86::addMicroInstruction(InstructionI
 	return instr;
 }
 
-void CE::Decompiler::PCode::DecoderX86::setDestinationMemOperand(const ZydisDecodedOperand& operand, int size, int offset, Varnode* varnode, Varnode* memLocVarnode) {
+void DecoderX86::setDestinationMemOperand(const ZydisDecodedOperand& operand, int size, int offset, Varnode* varnode, Varnode* memLocVarnode) {
 	if (!memLocVarnode) {
 		memLocVarnode = requestOperandValue(operand, size, offset, nullptr, false);
 	}
 	addMicroInstruction(InstructionId::STORE, memLocVarnode, varnode);
 }
 
-Varnode* CE::Decompiler::PCode::DecoderX86::requestOperandValue(const ZydisDecodedOperand& operand, int size, Varnode** memLocVarnode, bool isMemLocLoaded, int memLocExprSize) {
+Varnode* DecoderX86::requestOperandValue(const ZydisDecodedOperand& operand, int size, Varnode** memLocVarnode, bool isMemLocLoaded, int memLocExprSize) {
 	return requestOperandValue(operand, size, 0x0, memLocVarnode, isMemLocLoaded, memLocExprSize);
 }
 
-Varnode* CE::Decompiler::PCode::DecoderX86::requestOperandValue(const ZydisDecodedOperand& operand, int size, int offset, Varnode** memLocVarnode, bool isMemLocLoaded, int memLocExprSize) {
+Varnode* DecoderX86::requestOperandValue(const ZydisDecodedOperand& operand, int size, int offset, Varnode** memLocVarnode, bool isMemLocLoaded, int memLocExprSize) {
 	if (operand.type == ZYDIS_OPERAND_TYPE_REGISTER) {
 		return CreateVarnode(operand.reg.value, size, offset);
 	}
@@ -1383,7 +1383,7 @@ Varnode* CE::Decompiler::PCode::DecoderX86::requestOperandValue(const ZydisDecod
 	return nullptr;
 }
 
-Varnode* CE::Decompiler::PCode::DecoderX86::GetFlagCondition(FlagCond flagCond) {
+Varnode* DecoderX86::GetFlagCondition(FlagCond flagCond) {
 	Varnode* varnodeCond = nullptr;
 
 	switch (flagCond)
@@ -1480,7 +1480,7 @@ Varnode* CE::Decompiler::PCode::DecoderX86::GetFlagCondition(FlagCond flagCond) 
 	return varnodeCond;
 }
 
-int CE::Decompiler::PCode::DecoderX86::getFirstExplicitOperandsCount() const
+int DecoderX86::getFirstExplicitOperandsCount() const
 {
 	int result = 0;
 	for (int i = 0; i < m_curInstr->operand_count; i++) {
@@ -1490,13 +1490,13 @@ int CE::Decompiler::PCode::DecoderX86::getFirstExplicitOperandsCount() const
 	return result;
 }
 
-RegisterVarnode* CE::Decompiler::PCode::DecoderX86::CreateVarnode(ZydisRegister regId, int size, int offset) const
+RegisterVarnode* DecoderX86::CreateVarnode(ZydisRegister regId, int size, int offset) const
 {
 	const auto reg = m_registerFactoryX86->createRegister(regId, size, offset);
 	return m_instrPool->createRegisterVarnode(reg);
 }
 
-RegisterVarnode* CE::Decompiler::PCode::DecoderX86::CreateVarnode(ZydisCPUFlag flag) const
+RegisterVarnode* DecoderX86::CreateVarnode(ZydisCPUFlag flag) const
 {
 	return m_instrPool->createRegisterVarnode(m_registerFactoryX86->createFlagRegister(flag));
 }

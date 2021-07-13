@@ -1,13 +1,13 @@
 #include "Class.h"
 
 using namespace CE;
-using namespace CE::DataType;
+using namespace DataType;
 
 AbstractType::Group Class::getGroup() {
 	return Group::Class;
 }
 
-Class::MethodListType& CE::DataType::Class::getMethods() {
+Class::MethodListType& Class::getMethods() {
 	return m_methods;
 }
 

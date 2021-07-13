@@ -2,11 +2,11 @@
 #include <managers/TypeManager.h>
 
 using namespace CE;
-using namespace CE::Decompiler;
-using namespace CE::Decompiler::ExprTree;
-using namespace CE::Decompiler::Symbolization;
+using namespace Decompiler;
+using namespace ExprTree;
+using namespace Symbolization;
 
-CE::Decompiler::Symbolization::SdaGoarBuilding::SdaGoarBuilding(UnknownLocation* unknownLocation, Project* project)
+SdaGoarBuilding::SdaGoarBuilding(UnknownLocation* unknownLocation, Project* project)
 	: m_baseSdaNode(unknownLocation->getBaseSdaNode()), m_project(project), m_bitOffset(unknownLocation->getConstTermValue() * 0x8)
 {
 	for (auto term : unknownLocation->getArrTerms()) {
@@ -14,7 +14,7 @@ CE::Decompiler::Symbolization::SdaGoarBuilding::SdaGoarBuilding(UnknownLocation*
 	}
 }
 
-ISdaNode* CE::Decompiler::Symbolization::SdaGoarBuilding::create() {
+ISdaNode* SdaGoarBuilding::create() {
 	auto resultSdaNode = m_baseSdaNode;
 	auto resultBitOffset = m_bitOffset;
 	//building GOAR as long as it possible
@@ -47,7 +47,7 @@ ISdaNode* CE::Decompiler::Symbolization::SdaGoarBuilding::create() {
 	return nullptr;
 }
 
-bool CE::Decompiler::Symbolization::SdaGoarBuilding::buildSingleGoar(ISdaNode*& sdaNode, int64_t& bitOffset, std::list<ISdaNode*>& terms) const
+bool SdaGoarBuilding::buildSingleGoar(ISdaNode*& sdaNode, int64_t& bitOffset, std::list<ISdaNode*>& terms) const
 {
 	auto dataType = sdaNode->getSrcDataType(); // getting a type without a cast (a pointer inside uint64_t)
 	auto ptrLevels = dataType->getPointerLevels();
@@ -78,7 +78,7 @@ bool CE::Decompiler::Symbolization::SdaGoarBuilding::buildSingleGoar(ISdaNode*& 
 	}
 	const int arrItemsMaxCount = *ptrLevels.begin();
 	ptrLevels.pop_front();
-	auto arrItemDataType = DataType::GetUnit(baseDataType, ptrLevels);
+	auto arrItemDataType = GetUnit(baseDataType, ptrLevels);
 	const auto arrItemSize = arrItemDataType->getSize();
 
 	// iterate over all {terms}

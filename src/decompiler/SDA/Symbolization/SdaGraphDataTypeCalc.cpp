@@ -3,17 +3,17 @@
 #include <managers/TypeManager.h>
 
 using namespace CE;
-using namespace CE::Decompiler;
-using namespace CE::Decompiler::ExprTree;
-using namespace CE::Decompiler::Symbolization;
+using namespace Decompiler;
+using namespace ExprTree;
+using namespace Symbolization;
 
 // calculate result data type for two operands
 
-CE::Decompiler::Symbolization::SdaDataTypesCalculater::SdaDataTypesCalculater(SdaCodeGraph* sdaCodeGraph, DataType::IFunctionSignature* signature, Project* project)
+SdaDataTypesCalculater::SdaDataTypesCalculater(SdaCodeGraph* sdaCodeGraph, DataType::IFunctionSignature* signature, Project* project)
 	: SdaGraphModification(sdaCodeGraph), m_signature(signature), m_project(project)
 {}
 
-void CE::Decompiler::Symbolization::SdaDataTypesCalculater::start() {
+void SdaDataTypesCalculater::start() {
 	std::list<DecBlock::BlockTopNode*> allTopNodes;
 	//gather all top nodes within the entire graph
 	for (const auto decBlock : m_sdaCodeGraph->getDecGraph()->getDecompiledBlocks()) {
@@ -32,7 +32,7 @@ void CE::Decompiler::Symbolization::SdaDataTypesCalculater::start() {
 
 //make a pass up through the specified top nodes
 
-void CE::Decompiler::Symbolization::SdaDataTypesCalculater::pass_up(const std::list<DecBlock::BlockTopNode*>& topNodes) {
+void SdaDataTypesCalculater::pass_up(const std::list<DecBlock::BlockTopNode*>& topNodes) {
 	for (auto topNode : topNodes) {
 		const auto node = topNode->getNode();
 		INode::UpdateDebugInfo(node);
@@ -52,7 +52,7 @@ void CE::Decompiler::Symbolization::SdaDataTypesCalculater::pass_up(const std::l
 
 //make a pass down through the specified top nodes
 
-void CE::Decompiler::Symbolization::SdaDataTypesCalculater::pass_down(const std::list<DecBlock::BlockTopNode*>& topNodes) {
+void SdaDataTypesCalculater::pass_down(const std::list<DecBlock::BlockTopNode*>& topNodes) {
 	for (auto topNode : topNodes) {
 		const auto node = topNode->getNode();
 		INode::UpdateDebugInfo(node);
@@ -60,7 +60,7 @@ void CE::Decompiler::Symbolization::SdaDataTypesCalculater::pass_down(const std:
 	}
 }
 
-void CE::Decompiler::Symbolization::SdaDataTypesCalculater::moveExplicitCastsDown(INode* node) {
+void SdaDataTypesCalculater::moveExplicitCastsDown(INode* node) {
 	auto sdaNode = dynamic_cast<ISdaNode*>(node);
 	if (!sdaNode || !sdaNode->getCast()->hasExplicitCast())
 		return;
@@ -89,7 +89,7 @@ void CE::Decompiler::Symbolization::SdaDataTypesCalculater::moveExplicitCastsDow
 		});
 }
 
-void CE::Decompiler::Symbolization::SdaDataTypesCalculater::calculateDataTypes(INode* node) {
+void SdaDataTypesCalculater::calculateDataTypes(INode* node) {
 	// first iterate over all childs
 	node->iterateChildNodes([&](INode* childNode) {
 		calculateDataTypes(childNode);
@@ -224,7 +224,7 @@ void CE::Decompiler::Symbolization::SdaDataTypesCalculater::calculateDataTypes(I
 		// example: *(float*)(&globalVar)
 		auto addrSdaNode = sdaReadValueNode->getAddress();
 		if (addrSdaNode->getDataType()->isPointer()) { // &globalVar is a pointer (type: float*)
-			auto addrDataType = DataType::CloneUnit(addrSdaNode->getDataType());
+			auto addrDataType = CloneUnit(addrSdaNode->getDataType());
 			addrDataType->removePointerLevelOutOfFront(); // float*(8 bytes) -> float(4 bytes)
 			if (sdaReadValueNode->getSize() == addrDataType->getSize()) {
 				if (auto mappedToMemory = dynamic_cast<IMappedToMemory*>(addrSdaNode)) {
@@ -245,7 +245,7 @@ void CE::Decompiler::Symbolization::SdaDataTypesCalculater::calculateDataTypes(I
 
 		// cast &globalVar/stackVar/0x1000 to default type uint32_t* (because reading of 4 bytes)
 		const auto defDataType = sdaReadValueNode->getDataType(); // any sda node have already had a default type
-		auto defPtrDataType = DataType::CloneUnit(defDataType);
+		auto defPtrDataType = CloneUnit(defDataType);
 		defPtrDataType->addPointerLevelInFront();
 		cast(addrSdaNode, defPtrDataType);
 	}
@@ -283,7 +283,7 @@ void CE::Decompiler::Symbolization::SdaDataTypesCalculater::calculateDataTypes(I
 	}
 }
 
-void CE::Decompiler::Symbolization::SdaDataTypesCalculater::handleFunctionNode(SdaFunctionNode* sdaFunctionNode) {
+void SdaDataTypesCalculater::handleFunctionNode(SdaFunctionNode* sdaFunctionNode) {
 	auto funcSignature = sdaFunctionNode->getSignature();
 	if (funcSignature)
 	{
@@ -313,7 +313,7 @@ void CE::Decompiler::Symbolization::SdaDataTypesCalculater::handleFunctionNode(S
 	}
 }
 
-void CE::Decompiler::Symbolization::SdaDataTypesCalculater::handleUnknownLocation(UnknownLocation* unknownLocation) {
+void SdaDataTypesCalculater::handleUnknownLocation(UnknownLocation* unknownLocation) {
 	//if it is a pointer, see to make sure it could'be transformed to an array or a class field
 	if (!dynamic_cast<GoarTopNode*>(unknownLocation->getBaseSdaNode())) {
 		if (const auto goarNode = SdaGoarBuilding(unknownLocation, m_project).create()) {
@@ -323,12 +323,12 @@ void CE::Decompiler::Symbolization::SdaDataTypesCalculater::handleUnknownLocatio
 	}
 }
 
-void CE::Decompiler::Symbolization::SdaDataTypesCalculater::onDataTypeCasting(DataTypePtr fromDataType, DataTypePtr toDataType) {
+void SdaDataTypesCalculater::onDataTypeCasting(DataTypePtr fromDataType, DataTypePtr toDataType) {
 }
 
 // casting {sdaNode} to {toDataType}
 
-void CE::Decompiler::Symbolization::SdaDataTypesCalculater::cast(ISdaNode* sdaNode, DataTypePtr toDataType) {
+void SdaDataTypesCalculater::cast(ISdaNode* sdaNode, DataTypePtr toDataType) {
 	//exception case (better change number view between HEX and non-HEX than do the cast)
 	if (auto sdaNumberLeaf = dynamic_cast<SdaNumberLeaf*>(sdaNode)) {
 		if (!toDataType->isPointer()) {
@@ -359,7 +359,7 @@ void CE::Decompiler::Symbolization::SdaDataTypesCalculater::cast(ISdaNode* sdaNo
 	else if (auto sdaReadValueNode = dynamic_cast<SdaReadValueNode*>(sdaNode)) {
 		if (sdaReadValueNode->getSize() == toDataType->getSize()) {
 			const auto addrSdaNode = sdaReadValueNode->getAddress();
-			auto newAddrDataType = DataType::CloneUnit(toDataType);
+			auto newAddrDataType = CloneUnit(toDataType);
 			newAddrDataType->addPointerLevelInFront();
 
 			cast(addrSdaNode, newAddrDataType);
@@ -370,7 +370,7 @@ void CE::Decompiler::Symbolization::SdaDataTypesCalculater::cast(ISdaNode* sdaNo
 
 // does it need explicit casting (e.g. (float)0x100024)
 
-bool CE::Decompiler::Symbolization::SdaDataTypesCalculater::isExplicitCast(DataTypePtr fromType, DataTypePtr toType) {
+bool SdaDataTypesCalculater::isExplicitCast(DataTypePtr fromType, DataTypePtr toType) {
 	auto fromBaseType = fromType->getBaseType();
 	auto toBaseType = toType->getBaseType();
 	if (auto fromSysType = dynamic_cast<DataType::SystemType*>(fromBaseType)) {
@@ -390,7 +390,7 @@ bool CE::Decompiler::Symbolization::SdaDataTypesCalculater::isExplicitCast(DataT
 	return !DataType::Unit::EqualPointerLvls(ptrList1, ptrList2);
 }
 
-DataTypePtr CE::Decompiler::Symbolization::SdaDataTypesCalculater::calcDataTypeForOperands(DataTypePtr opType1, DataTypePtr opType2) const
+DataTypePtr SdaDataTypesCalculater::calcDataTypeForOperands(DataTypePtr opType1, DataTypePtr opType2) const
 {
 	const auto priority1 = opType1->getConversionPriority();
 	const auto priority2 = opType2->getConversionPriority();

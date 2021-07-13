@@ -2,70 +2,70 @@
 #include <managers/TypeManager.h>
 
 using namespace CE;
-using namespace CE::Decompiler;
-using namespace CE::Decompiler::ExprTree;
+using namespace Decompiler;
+using namespace ExprTree;
 
-CE::Decompiler::ExprTree::SdaFunctionNode::SdaFunctionNode(FunctionCall* funcCallCtx)
+SdaFunctionNode::SdaFunctionNode(FunctionCall* funcCallCtx)
 	: m_funcCall(funcCallCtx)
 {}
 
-CE::Decompiler::ExprTree::SdaFunctionNode::~SdaFunctionNode() {
+SdaFunctionNode::~SdaFunctionNode() {
 	m_funcCall->removeBy(this);
 }
 
-void CE::Decompiler::ExprTree::SdaFunctionNode::replaceNode(INode* node, INode* newNode) {
+void SdaFunctionNode::replaceNode(INode* node, INode* newNode) {
 	m_funcCall->replaceNode(node, newNode);
 }
 
-std::list<ExprTree::INode*> CE::Decompiler::ExprTree::SdaFunctionNode::getNodesList() {
+std::list<INode*> SdaFunctionNode::getNodesList() {
 	return m_funcCall->getNodesList();
 }
 
 // means the address of the function that can be any expr. value, not only an offset or a symbol
 
-INode* CE::Decompiler::ExprTree::SdaFunctionNode::getDestination() const
+INode* SdaFunctionNode::getDestination() const
 {
 	return m_funcCall->getDestination();
 }
 
-std::vector<ExprTree::INode*>& CE::Decompiler::ExprTree::SdaFunctionNode::getParamNodes() const
+std::vector<INode*>& SdaFunctionNode::getParamNodes() const
 {
 	return m_funcCall->getParamNodes();
 }
 
-DataTypePtr CE::Decompiler::ExprTree::SdaFunctionNode::getSrcDataType() {
+DataTypePtr SdaFunctionNode::getSrcDataType() {
 	const auto sig = getSignature();
 	if (!sig)
 		// todo: return DataType::GetUnit(sig->getTypeManager()->findTypeById(DataType::SystemType::Byte));
-		return DataType::GetUnit(new DataType::Byte);
+		return GetUnit(new DataType::Byte);
 	return getSignature()->getReturnType();
 }
 
-void CE::Decompiler::ExprTree::SdaFunctionNode::setDataType(DataTypePtr dataType) {
+void SdaFunctionNode::setDataType(DataTypePtr dataType) {
 	auto sig = getSignature();
 	if (!sig || !sig->isAuto())
 		return;
 	sig->setReturnType(dataType);
 }
 
-int CE::Decompiler::ExprTree::SdaFunctionNode::getSize() {
+int SdaFunctionNode::getSize() {
 	return m_funcCall->getSize();
 }
 
-bool CE::Decompiler::ExprTree::SdaFunctionNode::isFloatingPoint() {
+bool SdaFunctionNode::isFloatingPoint() {
 	return m_funcCall->isFloatingPoint();
 }
 
-HS CE::Decompiler::ExprTree::SdaFunctionNode::getHash() {
+HS SdaFunctionNode::getHash() {
 	return m_funcCall->getHash();
 }
 
-int64_t CE::Decompiler::ExprTree::SdaFunctionNode::getCallInstrOffset() const
+int64_t SdaFunctionNode::getCallInstrOffset() const
 {
 	return m_funcCall->m_instr->getOffset();
 }
 
-ISdaNode* CE::Decompiler::ExprTree::SdaFunctionNode::cloneSdaNode(NodeCloneContext* ctx) {
+ISdaNode* SdaFunctionNode::cloneSdaNode(NodeCloneContext* ctx) {
 	auto clonedFuncCall = dynamic_cast<FunctionCall*>(m_funcCall->clone(ctx));
 	const auto sdaFunctionNode = new SdaFunctionNode(clonedFuncCall);
 	clonedFuncCall->addParentNode(sdaFunctionNode);
@@ -75,7 +75,7 @@ ISdaNode* CE::Decompiler::ExprTree::SdaFunctionNode::cloneSdaNode(NodeCloneConte
 
 // example: (world->vtable->func_get_player)(player_id) where {world->vtable->func_get_player} has a signature type calculated through the step of goar building
 
-DataType::IFunctionSignature* CE::Decompiler::ExprTree::SdaFunctionNode::getSignature() const
+DataType::IFunctionSignature* SdaFunctionNode::getSignature() const
 {
 	if (auto dstCastNode = dynamic_cast<ISdaNode*>(getDestination()))
 		if (const auto signature = dynamic_cast<DataType::IFunctionSignature*>(dstCastNode->getDataType()->getType()))
@@ -83,6 +83,6 @@ DataType::IFunctionSignature* CE::Decompiler::ExprTree::SdaFunctionNode::getSign
 	return nullptr;
 }
 
-std::string CE::Decompiler::ExprTree::SdaFunctionNode::printSdaDebug() {
+std::string SdaFunctionNode::printSdaDebug() {
 	return m_funcCall->printDebug();
 }

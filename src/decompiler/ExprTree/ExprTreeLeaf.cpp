@@ -1,66 +1,66 @@
 #include "ExprTreeLeaf.h"
 
 using namespace CE::Decompiler;
-using namespace CE::Decompiler::ExprTree;
+using namespace ExprTree;
 
-CE::Decompiler::ExprTree::FloatNanLeaf::FloatNanLeaf()
+FloatNanLeaf::FloatNanLeaf()
 {}
 
-int CE::Decompiler::ExprTree::FloatNanLeaf::getSize() {
+int FloatNanLeaf::getSize() {
 	return 8;
 }
 
-HS CE::Decompiler::ExprTree::FloatNanLeaf::getHash() {
+HS FloatNanLeaf::getHash() {
 	return HS();
 }
 
-INode* CE::Decompiler::ExprTree::FloatNanLeaf::clone(NodeCloneContext* ctx) {
+INode* FloatNanLeaf::clone(NodeCloneContext* ctx) {
 	return new FloatNanLeaf();
 }
 
-bool CE::Decompiler::ExprTree::FloatNanLeaf::isFloatingPoint() {
+bool FloatNanLeaf::isFloatingPoint() {
 	return true;
 }
 
-std::string CE::Decompiler::ExprTree::FloatNanLeaf::printDebug() {
+std::string FloatNanLeaf::printDebug() {
 	return m_updateDebugInfo = ("NaN");
 }
 
-CE::Decompiler::ExprTree::SymbolLeaf::SymbolLeaf(Symbol::Symbol* symbol)
+SymbolLeaf::SymbolLeaf(Symbol::Symbol* symbol)
 	: m_symbol(symbol)
 {}
 
-int CE::Decompiler::ExprTree::SymbolLeaf::getSize() {
+int SymbolLeaf::getSize() {
 	return m_symbol->getSize();
 }
 
-HS CE::Decompiler::ExprTree::SymbolLeaf::getHash() {
+HS SymbolLeaf::getHash() {
 	return m_symbol->getHash();
 }
 
-std::list<PCode::Instruction*> CE::Decompiler::ExprTree::SymbolLeaf::getInstructionsRelatedTo() {
-	if (auto symbolRelToInstr = dynamic_cast<PCode::IRelatedToInstruction*>(m_symbol))
+std::list<PCode::Instruction*> SymbolLeaf::getInstructionsRelatedTo() {
+	if (auto symbolRelToInstr = dynamic_cast<IRelatedToInstruction*>(m_symbol))
 		return symbolRelToInstr->getInstructionsRelatedTo();
 	return {};
 }
 
-INode* CE::Decompiler::ExprTree::SymbolLeaf::clone(NodeCloneContext* ctx) {
+INode* SymbolLeaf::clone(NodeCloneContext* ctx) {
 	return new SymbolLeaf(m_symbol->clone(ctx));
 }
 
-std::string CE::Decompiler::ExprTree::SymbolLeaf::printDebug() {
+std::string SymbolLeaf::printDebug() {
 	return m_updateDebugInfo = m_symbol->printDebug();
 }
 
-HS CE::Decompiler::ExprTree::INumberLeaf::getHash() {
+HS INumberLeaf::getHash() {
 	return HS() << getValue();
 }
 
-CE::Decompiler::ExprTree::NumberLeaf::NumberLeaf(uint64_t value, int size)
+NumberLeaf::NumberLeaf(uint64_t value, int size)
 	: m_value(value& BitMask64(size).getValue()), m_size(size)
 {}
 
-CE::Decompiler::ExprTree::NumberLeaf::NumberLeaf(double value, int size)
+NumberLeaf::NumberLeaf(double value, int size)
 	: m_size(size)
 {
 	if (m_size == 4)
@@ -68,22 +68,22 @@ CE::Decompiler::ExprTree::NumberLeaf::NumberLeaf(double value, int size)
 	else (double&)m_value = value;
 }
 
-uint64_t CE::Decompiler::ExprTree::NumberLeaf::getValue() {
+uint64_t NumberLeaf::getValue() {
 	return m_value;
 }
 
-void CE::Decompiler::ExprTree::NumberLeaf::setValue(uint64_t value) {
+void NumberLeaf::setValue(uint64_t value) {
 	m_value = value;
 }
 
-int CE::Decompiler::ExprTree::NumberLeaf::getSize() {
+int NumberLeaf::getSize() {
 	return m_size;
 }
 
-INode* CE::Decompiler::ExprTree::NumberLeaf::clone(NodeCloneContext* ctx) {
+INode* NumberLeaf::clone(NodeCloneContext* ctx) {
 	return new NumberLeaf(m_value, m_size);
 }
 
-std::string CE::Decompiler::ExprTree::NumberLeaf::printDebug() {
+std::string NumberLeaf::printDebug() {
 	return m_updateDebugInfo = ("0x" + Helper::String::NumberToHex(m_value) + "{" + (std::to_string(static_cast<int>(m_value))) + "}");
 }

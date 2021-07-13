@@ -1,9 +1,9 @@
 #include "SymbolTable.h"
 
 using namespace CE;
-using namespace CE::Symbol;
+using namespace Symbol;
 
-CE::Symbol::SymbolTable::SymbolTable(SymbolTableManager* manager, SymbolTableType type)
+SymbolTable::SymbolTable(SymbolTableManager* manager, SymbolTableType type)
 	: m_manager(manager), m_type(type)
 {}
 

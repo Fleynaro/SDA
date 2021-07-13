@@ -26,9 +26,9 @@ SymbolManager* SymbolMapper::getManager() const
 	return static_cast<SymbolManager*>(m_repository);
 }
 
-IDomainObject* SymbolMapper::doLoad(Database* db, SQLite::Statement& query) {
+IDomainObject* SymbolMapper::doLoad(Database* db, Statement& query) {
 	const int symbol_id = query.getColumn("symbol_id");
-	const auto type = static_cast<Symbol::Type>((int)query.getColumn("type"));
+	const auto type = static_cast<Type>((int)query.getColumn("type"));
 	const std::string name = query.getColumn("name");
 	const std::string comment = query.getColumn("comment");
 	std::string json_extra_str = query.getColumn("json_extra");
@@ -41,7 +41,7 @@ IDomainObject* SymbolMapper::doLoad(Database* db, SQLite::Statement& query) {
 	catch (AbstractItemManager::ItemNotFoundException ex) {
 		dataType = getManager()->getProject()->getTypeManager()->getFactory().getDefaultType();
 	}
-	const auto dataTypeUnit = DataType::GetUnit(dataType, query.getColumn("pointer_lvl"));
+	const auto dataTypeUnit = GetUnit(dataType, query.getColumn("pointer_lvl"));
 
 	AbstractSymbol* symbol = nullptr;
 	const auto factory = getManager()->getFactory(false);
@@ -90,7 +90,7 @@ void SymbolMapper::doInsert(TransactionContext* ctx, IDomainObject* obj) {
 
 void SymbolMapper::doUpdate(TransactionContext* ctx, IDomainObject* obj) {
 	auto symbol = dynamic_cast<AbstractSymbol*>(obj);
-	SQLite::Statement query(*ctx->m_db, "REPLACE INTO sda_symbols (symbol_id, type, name, type_id, pointer_lvl, comment, json_extra, save_id, ghidra_sync_id) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 0)");
+	Statement query(*ctx->m_db, "REPLACE INTO sda_symbols (symbol_id, type, name, type_id, pointer_lvl, comment, json_extra, save_id, ghidra_sync_id) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 0)");
 	query.bind(1, symbol->getId());
 	bind(query, *symbol);
 	query.bind(8, ctx->m_saveId);
@@ -105,12 +105,12 @@ void SymbolMapper::doRemove(TransactionContext* ctx, IDomainObject* obj) {
 	query.exec();
 }
 
-void SymbolMapper::bind(SQLite::Statement& query, AbstractSymbol& symbol) {
-	auto type = dynamic_cast<DB::IDomainObject*>(symbol.getDataType()->getType());
+void SymbolMapper::bind(Statement& query, AbstractSymbol& symbol) {
+	auto type = dynamic_cast<IDomainObject*>(symbol.getDataType()->getType());
 	query.bind(2, symbol.getType());
 	query.bind(3, symbol.getName());
 	query.bind(4, type->getId());
-	query.bind(5, DataType::GetPointerLevelStr(symbol.getDataType()));
+	query.bind(5, GetPointerLevelStr(symbol.getDataType()));
 	query.bind(6, symbol.getComment());
 
 	json json_extra;

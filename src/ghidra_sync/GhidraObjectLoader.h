@@ -6,7 +6,7 @@ namespace CE::Ghidra
 	class GhidraObjectLoader
 	{
 	public:
-		GhidraObjectLoader(CE::Project* programModule);
+		GhidraObjectLoader(Project* programModule);
 
 		~GhidraObjectLoader();
 
@@ -16,7 +16,7 @@ namespace CE::Ghidra
 
 		std::list<IObject*>& getObjectsToRemove();
 	private:
-		CE::Project* m_project;
+		Project* m_project;
 		std::list<IObject*> m_upsertedObjs;
 		std::list<IObject*> m_removedObjs;
 	};

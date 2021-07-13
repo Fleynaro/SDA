@@ -1,59 +1,59 @@
 #include "ExprTreeSdaNode.h"
 
 using namespace CE;
-using namespace CE::Decompiler;
-using namespace CE::Decompiler::ExprTree;
+using namespace Decompiler;
+using namespace ExprTree;
 
-CE::Decompiler::ExprTree::SdaTopNode::SdaTopNode(ISdaNode* node)
+SdaTopNode::SdaTopNode(ISdaNode* node)
 	: TopNode(node)
 {}
 
-ISdaNode* CE::Decompiler::ExprTree::SdaTopNode::getSdaNode() {
+ISdaNode* SdaTopNode::getSdaNode() {
 	return dynamic_cast<ISdaNode*>(getNode());
 }
 
-DataTypePtr CE::Decompiler::ExprTree::DataTypeCast::getCastDataType() const
+DataTypePtr DataTypeCast::getCastDataType() const
 {
 	return m_castDataType;
 }
 
-bool CE::Decompiler::ExprTree::DataTypeCast::hasExplicitCast() const
+bool DataTypeCast::hasExplicitCast() const
 {
 	return m_explicitCast;
 }
 
-void CE::Decompiler::ExprTree::DataTypeCast::setCastDataType(DataTypePtr dataType, bool isExplicit) {
+void DataTypeCast::setCastDataType(DataTypePtr dataType, bool isExplicit) {
 	m_castDataType = dataType;
 	m_explicitCast = isExplicit;
 }
 
-void CE::Decompiler::ExprTree::DataTypeCast::clearCast() {
+void DataTypeCast::clearCast() {
 	setCastDataType(nullptr, false);
 }
 
-DataTypePtr CE::Decompiler::ExprTree::ISdaNode::getDataType() {
+DataTypePtr ISdaNode::getDataType() {
 	return hasCast() ? getCast()->getCastDataType() : getSrcDataType();
 }
 
-bool CE::Decompiler::ExprTree::ISdaNode::hasCast() {
+bool ISdaNode::hasCast() {
 	return getCast()->getCastDataType() != nullptr;
 }
 
-std::string CE::Decompiler::ExprTree::ISdaNode::printSdaDebug() {
+std::string ISdaNode::printSdaDebug() {
 	return "";
 }
 
-DataTypeCast* CE::Decompiler::ExprTree::SdaNode::getCast() {
+DataTypeCast* SdaNode::getCast() {
 	return &m_dataTypeCast;
 }
 
-INode* CE::Decompiler::ExprTree::SdaNode::clone(NodeCloneContext* ctx) {
+INode* SdaNode::clone(NodeCloneContext* ctx) {
 	auto clonedSdaNode = cloneSdaNode(ctx);
 	clonedSdaNode->getCast()->setCastDataType(getCast()->getCastDataType(), getCast()->hasExplicitCast());
 	return clonedSdaNode;
 }
 
-std::string CE::Decompiler::ExprTree::SdaNode::printDebug() {
+std::string SdaNode::printDebug() {
 	auto result = printSdaDebug();
 	if (auto addressGetting = dynamic_cast<IMappedToMemory*>(this))
 		if (addressGetting->isAddrGetting())

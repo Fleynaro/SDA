@@ -4,13 +4,13 @@ using namespace CE::Decompiler;
 
 //a << 0x2{2} => a * 4
 
-CE::Decompiler::Optimization::ExprConstCalculating::ExprConstCalculating(OperationalNode* opNode)
+Optimization::ExprConstCalculating::ExprConstCalculating(OperationalNode* opNode)
 	: ExprModification(opNode)
 {}
 
 // make calculation of two constant operands ({size} need for float/double operations)
 
-uint64_t CE::Decompiler::Optimization::ExprConstCalculating::Calculate(uint64_t op1, uint64_t op2, OperationType operation, int size) {
+uint64_t Optimization::ExprConstCalculating::Calculate(uint64_t op1, uint64_t op2, OperationType operation, int size) {
 	switch (operation)
 	{
 	case fAdd:
@@ -65,7 +65,7 @@ uint64_t CE::Decompiler::Optimization::ExprConstCalculating::Calculate(uint64_t 
 	return 0;
 }
 
-void CE::Decompiler::Optimization::ExprConstCalculating::start() {
+void Optimization::ExprConstCalculating::start() {
 	const auto opNode = getOpNode();
 	if (IsOperationUnsupportedToCalculate(opNode->m_operation))
 		return;
@@ -78,13 +78,13 @@ void CE::Decompiler::Optimization::ExprConstCalculating::start() {
 				}
 }
 
-OperationalNode* CE::Decompiler::Optimization::ExprConstCalculating::getOpNode() {
+OperationalNode* Optimization::ExprConstCalculating::getOpNode() {
 	return dynamic_cast<OperationalNode*>(getNode());
 }
 
 //5 + 2 => 7
 
-bool CE::Decompiler::Optimization::ExprConstCalculating::processConstOperands(OperationalNode* opNode) {
+bool Optimization::ExprConstCalculating::processConstOperands(OperationalNode* opNode) {
 	if (auto leftNumberLeaf = dynamic_cast<INumberLeaf*>(opNode->m_leftNode)) {
 		if (auto rightNumberLeaf = dynamic_cast<INumberLeaf*>(opNode->m_rightNode)) {
 			const auto result = Calculate(leftNumberLeaf->getValue(), rightNumberLeaf->getValue(), opNode->m_operation);
@@ -102,7 +102,7 @@ bool CE::Decompiler::Optimization::ExprConstCalculating::processConstOperands(Op
 //[var_2_32] & 0xffffffff00000000{0}		=>		0x0
 //[var_2_32] & 0xffffffff{-1}				=>		[var_2_32]	
 
-bool CE::Decompiler::Optimization::ExprConstCalculating::processConstRightOperand(OperationalNode* opNode) {
+bool Optimization::ExprConstCalculating::processConstRightOperand(OperationalNode* opNode) {
 	if (auto rightNumberLeaf = dynamic_cast<INumberLeaf*>(opNode->m_rightNode)) {
 		if (opNode->m_operation != Div && opNode->m_operation != Mod) {
 			const auto opNodeMask = CalculateMask(opNode);
@@ -155,7 +155,7 @@ bool CE::Decompiler::Optimization::ExprConstCalculating::processConstRightOperan
 //[sym1] | [sym1] => [sym1]
 //[sym1] ^ [sym1] => 0x0
 
-bool CE::Decompiler::Optimization::ExprConstCalculating::processEqualOperands(OperationalNode* opNode) {
+bool Optimization::ExprConstCalculating::processEqualOperands(OperationalNode* opNode) {
 	if (opNode->m_operation == Xor || opNode->m_operation == And || opNode->m_operation == Or) {
 		if (opNode->m_leftNode->getHash().getHashValue() == opNode->m_rightNode->getHash().getHashValue()) {
 			if (opNode->m_operation == Xor) {
@@ -172,7 +172,7 @@ bool CE::Decompiler::Optimization::ExprConstCalculating::processEqualOperands(Op
 	return false;
 }
 
-bool CE::Decompiler::Optimization::ExprConstCalculating::processShl(OperationalNode* opNode) {
+bool Optimization::ExprConstCalculating::processShl(OperationalNode* opNode) {
 	if (opNode->m_operation == Shl) {
 		if (auto numberLeaf = dynamic_cast<INumberLeaf*>(opNode->m_rightNode)) {
 			const auto value = numberLeaf->getValue();

@@ -9,14 +9,14 @@ namespace CE {
 namespace CE::Ghidra
 {
 	using namespace ghidra;
-	using namespace ghidra::function;
+	using namespace function;
 
 	class DataTypeMapper;
 
 	class FunctionMapper : public IMapper
 	{
 	public:
-		FunctionMapper(CE::FunctionManager* functionManager, DataTypeMapper* dataTypeMapper);
+		FunctionMapper(FunctionManager* functionManager, DataTypeMapper* dataTypeMapper);
 
 		void load(packet::SDataFullSyncPacket* dataPacket) override;
 
@@ -25,11 +25,11 @@ namespace CE::Ghidra
 		void remove(SyncContext* ctx, IObject* obj) override;
 
 	private:
-		CE::FunctionManager* m_functionManager;
+		FunctionManager* m_functionManager;
 		DataTypeMapper* m_dataTypeMapper;
 
-		void changeFunctionByDesc(Function* function, const function::SFunction& funcDesc);
+		void changeFunctionByDesc(Function* function, const SFunction& funcDesc);
 
-		function::SFunction buildDesc(Function* function);
+		SFunction buildDesc(Function* function);
 	};
 };

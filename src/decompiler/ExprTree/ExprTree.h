@@ -8,7 +8,7 @@
 namespace CE::Decompiler::ExprTree
 {
 	// get all symbol leafs from the specified {node} according to the specified {symbol}
-	extern void GatherSymbolLeafsFromNode(INode* node, std::list<ExprTree::SymbolLeaf*>& symbolLeafs, Symbol::Symbol* symbol = nullptr);
+	extern void GatherSymbolLeafsFromNode(INode* node, std::list<SymbolLeaf*>& symbolLeafs, Symbol::Symbol* symbol = nullptr);
 
 	// check if the specified {node} has the specified {symbol}
 	extern bool DoesNodeHaveSymbol(INode* node, Symbol::Symbol* symbol);

@@ -4,11 +4,11 @@ using namespace CE::Decompiler;
 
 // arithmetic/logic/floating operation state
 
-CE::Decompiler::Optimization::ExprExpandingToLinearExpr::ExprExpandingToLinearExpr(OperationalNode* node)
+Optimization::ExprExpandingToLinearExpr::ExprExpandingToLinearExpr(OperationalNode* node)
 	: ExprModification(node)
 {}
 
-void CE::Decompiler::Optimization::ExprExpandingToLinearExpr::start() {
+void Optimization::ExprExpandingToLinearExpr::start() {
 	if (!defineOperationState(getOpNode()->m_operation))
 		return;
 	// find all terms and know if m_doBuilding is true
@@ -24,13 +24,13 @@ void CE::Decompiler::Optimization::ExprExpandingToLinearExpr::start() {
 	}
 }
 
-OperationalNode* CE::Decompiler::Optimization::ExprExpandingToLinearExpr::getOpNode() {
+OperationalNode* Optimization::ExprExpandingToLinearExpr::getOpNode() {
 	return dynamic_cast<OperationalNode*>(getNode());
 }
 
 // using terms (including constant term) build linear expression
 
-LinearExpr* CE::Decompiler::Optimization::ExprExpandingToLinearExpr::buildLinearExpr() {
+LinearExpr* Optimization::ExprExpandingToLinearExpr::buildLinearExpr() {
 	const auto constTerm = new NumberLeaf((uint64_t&)m_constTerm, m_constTermSize);
 	auto linearExpr = new LinearExpr(constTerm, m_operationAdd); // todo: change size for number
 																 // iterate over all terms
@@ -54,7 +54,7 @@ LinearExpr* CE::Decompiler::Optimization::ExprExpandingToLinearExpr::buildLinear
 
 //(5x - 10y) * 2 + 5 ->	{x: 10, y: -20, constTerm: 5}
 
-void CE::Decompiler::Optimization::ExprExpandingToLinearExpr::defineTerms(INode* node, int64_t k, int level) {
+void Optimization::ExprExpandingToLinearExpr::defineTerms(INode* node, int64_t k, int level) {
 	const auto size = node->getSize();
 
 	// called for add operation (e.g. x + 5)
@@ -117,7 +117,7 @@ void CE::Decompiler::Optimization::ExprExpandingToLinearExpr::defineTerms(INode*
 	m_terms[hashVal] = std::make_pair(node, newK);
 }
 
-bool CE::Decompiler::Optimization::ExprExpandingToLinearExpr::defineOperationState(OperationType op) {
+bool Optimization::ExprExpandingToLinearExpr::defineOperationState(OperationType op) {
 	if (op == Add || op == Mul) {
 		m_operationAdd = Add;
 		m_operationMul = Mul;

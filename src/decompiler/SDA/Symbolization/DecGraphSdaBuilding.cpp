@@ -1,15 +1,15 @@
 #include "DecGraphSdaBuilding.h"
 
 using namespace CE;
-using namespace CE::Decompiler;
-using namespace CE::Decompiler::ExprTree;
-using namespace CE::Decompiler::Symbolization;
+using namespace Decompiler;
+using namespace ExprTree;
+using namespace Symbolization;
 
-CE::Decompiler::Symbolization::SdaBuilding::SdaBuilding(SdaCodeGraph* sdaCodeGraph, SymbolContext* symbolCtx, Project* project, DataType::IFunctionSignature::CallingConvetion callingConvention)
+SdaBuilding::SdaBuilding(SdaCodeGraph* sdaCodeGraph, SymbolContext* symbolCtx, Project* project, DataType::IFunctionSignature::CallingConvetion callingConvention)
 	: SdaGraphModification(sdaCodeGraph), m_symbolCtx(symbolCtx), m_project(project), m_callingConvention(callingConvention), m_symbolFactory(m_project->getSymbolManager()->getFactory(false))
 {}
 
-void CE::Decompiler::Symbolization::SdaBuilding::start() {
+void SdaBuilding::start() {
 	passAllTopNodes([&](DecBlock::BlockTopNode* topNode) {
 		auto node = topNode->getNode();
 		INode::UpdateDebugInfo(node);
@@ -34,7 +34,7 @@ std::set<CE::Symbol::ISymbol*>& SdaBuilding::getUserDefinedSymbols()
 
 // join auto symbols and user symbols together
 
-void CE::Decompiler::Symbolization::SdaBuilding::addSdaSymbols() {
+void SdaBuilding::addSdaSymbols() {
 	for (auto sdaSymbol : m_newAutoSymbols) {
 		m_sdaCodeGraph->getSdaSymbols().push_back(sdaSymbol);
 	}
@@ -46,13 +46,13 @@ void CE::Decompiler::Symbolization::SdaBuilding::addSdaSymbols() {
 
 // build high-level sda analog of low-level function node
 
-SdaFunctionNode* CE::Decompiler::Symbolization::SdaBuilding::buildSdaFunctionNode(FunctionCall* funcCall) {
+SdaFunctionNode* SdaBuilding::buildSdaFunctionNode(FunctionCall* funcCall) {
 	return new SdaFunctionNode(funcCall);
 }
 
 // build high-level sda analog of low-level number leaf
 
-SdaNumberLeaf* CE::Decompiler::Symbolization::SdaBuilding::buildSdaNumberLeaf(NumberLeaf* numberLeaf) const
+SdaNumberLeaf* SdaBuilding::buildSdaNumberLeaf(NumberLeaf* numberLeaf) const
 {
 	const auto dataType = m_project->getTypeManager()->calcDataTypeForNumber(numberLeaf->getValue());
 	const auto sdaNumberLeaf = new SdaNumberLeaf(numberLeaf->getValue(), dataType);
@@ -61,7 +61,7 @@ SdaNumberLeaf* CE::Decompiler::Symbolization::SdaBuilding::buildSdaNumberLeaf(Nu
 
 // build high-level sda analog of low-level read value node
 
-SdaReadValueNode* CE::Decompiler::Symbolization::SdaBuilding::buildReadValueNode(ReadValueNode* readValueNode) const
+SdaReadValueNode* SdaBuilding::buildReadValueNode(ReadValueNode* readValueNode) const
 {
 	const auto dataType = m_project->getTypeManager()->getDefaultType(readValueNode->getSize());
 	return new SdaReadValueNode(readValueNode, dataType);
@@ -69,7 +69,7 @@ SdaReadValueNode* CE::Decompiler::Symbolization::SdaBuilding::buildReadValueNode
 
 // replace {node} and its childs with high-level sda analog
 
-void CE::Decompiler::Symbolization::SdaBuilding::buildSdaNodesAndReplace(INode* node) {
+void SdaBuilding::buildSdaNodesAndReplace(INode* node) {
 	// first process all childs
 	node->iterateChildNodes([&](INode* childNode) {
 		buildSdaNodesAndReplace(childNode);
@@ -105,7 +105,7 @@ void CE::Decompiler::Symbolization::SdaBuilding::buildSdaNodesAndReplace(INode* 
 	if (symbolLeaf || linearExpr) {
 		//find symbol and offset
 		int64_t offset;
-		ExprTree::SymbolLeaf* sdaSymbolLeafToReplace = nullptr;
+		SymbolLeaf* sdaSymbolLeafToReplace = nullptr;
 
 		if (symbolLeaf) {
 			sdaSymbolLeafToReplace = symbolLeaf; // symbol found!
@@ -221,7 +221,7 @@ void CE::Decompiler::Symbolization::SdaBuilding::buildSdaNodesAndReplace(INode* 
 	node->addParentNode(sdaNode);
 }
 
-CE::Symbol::ISymbol* CE::Decompiler::Symbolization::SdaBuilding::findOrCreateSymbol(Symbol::Symbol* symbol, int size, int64_t& offset) {
+CE::Symbol::ISymbol* SdaBuilding::findOrCreateSymbol(Symbol::Symbol* symbol, int size, int64_t& offset) {
 	if (const auto sdaSymbol = loadSdaSymbolIfMem(symbol, offset))
 		return sdaSymbol;
 
@@ -296,7 +296,7 @@ CE::Symbol::ISymbol* CE::Decompiler::Symbolization::SdaBuilding::findOrCreateSym
 
 	//try to find USER-DEFINED symbol associated with some instruction
 	std::list<int64_t> instrOffsets; //instruction offsets helps to identify user-defined symbols
-	if (auto symbolRelToInstr = dynamic_cast<PCode::IRelatedToInstruction*>(symbol)) {
+	if (auto symbolRelToInstr = dynamic_cast<IRelatedToInstruction*>(symbol)) {
 		for (auto instr : symbolRelToInstr->getInstructionsRelatedTo()) {
 			instrOffsets.push_back(instr->getOffset());
 		}
@@ -335,7 +335,7 @@ CE::Symbol::ISymbol* CE::Decompiler::Symbolization::SdaBuilding::findOrCreateSym
 
 // load stack or global memory symbol by decompiler symbol (RSP/RIP) and offset
 
-CE::Symbol::ISymbol* CE::Decompiler::Symbolization::SdaBuilding::loadSdaSymbolIfMem(Symbol::Symbol* symbol, int64_t& offset) {
+CE::Symbol::ISymbol* SdaBuilding::loadSdaSymbolIfMem(Symbol::Symbol* symbol, int64_t& offset) {
 	if (auto regSymbol = dynamic_cast<Symbol::RegisterVariable*>(symbol)) {
 		auto& reg = regSymbol->m_register;
 		if (reg.getType() == Register::Type::StackPointer) {
@@ -358,7 +358,7 @@ CE::Symbol::ISymbol* CE::Decompiler::Symbolization::SdaBuilding::loadSdaSymbolIf
 
 // store stack or global memory symbol by decompiler symbol (RSP/RIP) and offset
 
-void CE::Decompiler::Symbolization::SdaBuilding::storeSdaSymbolIfMem(CE::Symbol::ISymbol* sdaSymbol, Symbol::Symbol* symbol, int64_t& offset) {
+void SdaBuilding::storeSdaSymbolIfMem(CE::Symbol::ISymbol* sdaSymbol, Symbol::Symbol* symbol, int64_t& offset) {
 	if (auto regSymbol = dynamic_cast<Symbol::RegisterVariable*>(symbol)) {
 		auto& reg = regSymbol->m_register;
 		if (reg.getType() == Register::Type::StackPointer) {
@@ -375,12 +375,12 @@ void CE::Decompiler::Symbolization::SdaBuilding::storeSdaSymbolIfMem(CE::Symbol:
 	}
 }
 
-int64_t CE::Decompiler::Symbolization::SdaBuilding::toGlobalOffset(int64_t offset) const
+int64_t SdaBuilding::toGlobalOffset(int64_t offset) const
 {
 	return m_symbolCtx->m_startOffset + offset;
 }
 
-int64_t CE::Decompiler::Symbolization::SdaBuilding::toLocalOffset(int64_t offset) const
+int64_t SdaBuilding::toLocalOffset(int64_t offset) const
 {
 	return offset - m_symbolCtx->m_startOffset;
 }

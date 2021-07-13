@@ -23,7 +23,7 @@ namespace CE::Decompiler
 
 	public:
 		struct LocalVarInfo {
-			PCode::Register m_register;
+			Register m_register;
 			std::set<ExecContext*> m_execCtxs;
 			bool m_used = false;
 		};
@@ -45,11 +45,11 @@ namespace CE::Decompiler
 		AbstractRegisterFactory* getRegisterFactory() const;
 
 		// called when a function call appears during decompiling
-		FunctionCallInfo requestFunctionCallInfo(ExecContext* ctx, PCode::Instruction* instr);
+		FunctionCallInfo requestFunctionCallInfo(ExecContext* ctx, Instruction* instr);
 
 	protected:
 		// called when a function call appears during decompiling
-		virtual FunctionCallInfo requestFunctionCallInfo(ExecContext* ctx, PCode::Instruction* instr, int dstLocOffset) = 0;
+		virtual FunctionCallInfo requestFunctionCallInfo(ExecContext* ctx, Instruction* instr, int dstLocOffset) = 0;
 
 		virtual void onFinal() {}
 
@@ -62,7 +62,7 @@ namespace CE::Decompiler
 	class PrimaryDecompiler : public AbstractPrimaryDecompiler
 	{
 	public:
-		using FuncCallInfoCallbackType = std::function<FunctionCallInfo(PCode::Instruction*, int)>;
+		using FuncCallInfoCallbackType = std::function<FunctionCallInfo(Instruction*, int)>;
 	private:
 		FuncCallInfoCallbackType m_funcCallInfoCallback;
 	public:
@@ -71,6 +71,6 @@ namespace CE::Decompiler
 		{}
 
 	protected:
-		FunctionCallInfo requestFunctionCallInfo(ExecContext* ctx, PCode::Instruction* instr, int funcOffset) override;
+		FunctionCallInfo requestFunctionCallInfo(ExecContext* ctx, Instruction* instr, int funcOffset) override;
 	};
 };

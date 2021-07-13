@@ -4,7 +4,7 @@
 
 using namespace DB;
 using namespace CE;
-using namespace CE::DataType;
+using namespace DataType;
 
 
 DataTypeMapper::DataTypeMapper(IRepository* repository)
@@ -26,7 +26,7 @@ void DataTypeMapper::loadAfter() {
 		std::string json_extra_str = query.getColumn("json_extra");
 		const auto json_extra = json::parse(json_extra_str);
 
-		const auto userDefType = dynamic_cast<DataType::UserDefinedType*>(getManager()->findTypeById(type_id));
+		const auto userDefType = dynamic_cast<UserDefinedType*>(getManager()->findTypeById(type_id));
 		loadExtraJson(userDefType, json_extra);
 	}
 }
@@ -36,12 +36,12 @@ Id DataTypeMapper::getNextId() {
 	return GenerateNextId(&db, "sda_types");
 }
 
-CE::TypeManager* DataTypeMapper::getManager() const
+TypeManager* DataTypeMapper::getManager() const
 {
-	return static_cast<CE::TypeManager*>(m_repository);
+	return static_cast<TypeManager*>(m_repository);
 }
 
-IDomainObject* DataTypeMapper::doLoad(Database* db, SQLite::Statement& query) {
+IDomainObject* DataTypeMapper::doLoad(Database* db, Statement& query) {
 	const std::string name = query.getColumn("name");
 	const std::string comment = query.getColumn("comment");
 	const int group = query.getColumn("group");
@@ -52,17 +52,17 @@ IDomainObject* DataTypeMapper::doLoad(Database* db, SQLite::Statement& query) {
 	const auto factory = getManager()->getFactory(false);
 	switch (group)
 	{
-	case DataType::AbstractType::Group::Typedef:
+	case AbstractType::Group::Typedef:
 		obj = factory.createTypedef(name, comment);
 		break;
-	case DataType::AbstractType::Group::Enum:
+	case AbstractType::Group::Enum:
 		obj = factory.createEnum(name, comment);
 		break;
-	case DataType::AbstractType::Group::Structure:
+	case AbstractType::Group::Structure:
 		obj = factory.createStructure(name, comment);
 		break;
-	case DataType::AbstractType::Group::FunctionSignature:
-		const auto calling_convention = json_extra["calling_convention"].get<DataType::FunctionSignature::CallingConvetion>();
+	case AbstractType::Group::FunctionSignature:
+		const auto calling_convention = json_extra["calling_convention"].get<FunctionSignature::CallingConvetion>();
 		obj = factory.createSignature(calling_convention, name, comment);
 		break;
 	}
@@ -77,8 +77,8 @@ void DataTypeMapper::doInsert(TransactionContext* ctx, IDomainObject* obj) {
 }
 
 void DataTypeMapper::doUpdate(TransactionContext* ctx, IDomainObject* obj) {
-	auto type = dynamic_cast<CE::DataType::UserDefinedType*>(obj);
-	SQLite::Statement query(*ctx->m_db, "REPLACE INTO sda_types (type_id, `group`, name, comment, json_extra, save_id, ghidra_sync_id) VALUES(?1, ?2, ?3, ?4, ?5, ?6, 0)");
+	auto type = dynamic_cast<UserDefinedType*>(obj);
+	Statement query(*ctx->m_db, "REPLACE INTO sda_types (type_id, `group`, name, comment, json_extra, save_id, ghidra_sync_id) VALUES(?1, ?2, ?3, ?4, ?5, ?6, 0)");
 	query.bind(1, type->getId());
 	bind(query, type);
 	query.bind(6, ctx->m_saveId);
@@ -93,22 +93,22 @@ void DataTypeMapper::doRemove(TransactionContext* ctx, IDomainObject* obj) {
 	query.exec();
 }
 
-DataTypePtr DB::DataTypeMapper::loadDataTypeJson(json json_dataType) {
-	const auto id = json_dataType["id"].get<DB::Id>();
+DataTypePtr DataTypeMapper::loadDataTypeJson(json json_dataType) {
+	const auto id = json_dataType["id"].get<Id>();
 	const auto ptr_lvl = json_dataType["ptr_lvl"].get<std::string>();
 	const auto type = getManager()->findTypeById(id);
-	return DataType::GetUnit(type, ptr_lvl);
+	return GetUnit(type, ptr_lvl);
 }
 
-json DB::DataTypeMapper::createDataTypeJson(DataTypePtr dataType) {
-	auto refType = dynamic_cast<DB::IDomainObject*>(dataType->getType());
+json DataTypeMapper::createDataTypeJson(DataTypePtr dataType) {
+	auto refType = dynamic_cast<IDomainObject*>(dataType->getType());
 	json json_dataType;
 	json_dataType["id"] = refType->getId();
-	json_dataType["ptr_lvl"] = DataType::GetPointerLevelStr(dataType);
+	json_dataType["ptr_lvl"] = GetPointerLevelStr(dataType);
 	return json_dataType;
 }
 
-void DB::DataTypeMapper::loadExtraJson(CE::DataType::UserDefinedType* userDefType, json json_extra) {
+void DataTypeMapper::loadExtraJson(UserDefinedType* userDefType, json json_extra) {
 	if (auto Typedef = dynamic_cast<DataType::Typedef*>(userDefType))
 	{
 		const auto refDataType = loadDataTypeJson(json_extra["ref_type"]);
@@ -127,8 +127,8 @@ void DB::DataTypeMapper::loadExtraJson(CE::DataType::UserDefinedType* userDefTyp
 		// load fields
 		auto symbolManager = getManager()->getProject()->getSymbolManager();
 		for (const auto& json_field_symbol : json_extra["field_symbols"]) {
-			const auto fieldSymbolId = json_field_symbol.get<DB::Id>();
-			const auto fieldSymbol = dynamic_cast<CE::Symbol::StructFieldSymbol*>(symbolManager->findSymbolById(fieldSymbolId));
+			const auto fieldSymbolId = json_field_symbol.get<Id>();
+			const auto fieldSymbol = dynamic_cast<Symbol::StructFieldSymbol*>(symbolManager->findSymbolById(fieldSymbolId));
 			Structure->addField(fieldSymbol);
 		}
 
@@ -151,8 +151,8 @@ void DB::DataTypeMapper::loadExtraJson(CE::DataType::UserDefinedType* userDefTyp
 		// load parameters
 		auto symbolManager = getManager()->getProject()->getSymbolManager();
 		for (const auto& json_param_symbol : json_extra["param_symbols"]) {
-			const auto paramSymbolId = json_param_symbol.get<DB::Id>();
-			const auto paramSymbol = dynamic_cast<CE::Symbol::FuncParameterSymbol*>(symbolManager->findSymbolById(paramSymbolId));
+			const auto paramSymbolId = json_param_symbol.get<Id>();
+			const auto paramSymbol = dynamic_cast<Symbol::FuncParameterSymbol*>(symbolManager->findSymbolById(paramSymbolId));
 			FunctionSignature->addParameter(paramSymbol);
 		}
 
@@ -162,7 +162,7 @@ void DB::DataTypeMapper::loadExtraJson(CE::DataType::UserDefinedType* userDefTyp
 	}
 }
 
-json DB::DataTypeMapper::createExtraJson(CE::DataType::UserDefinedType* userDefType) {
+json DataTypeMapper::createExtraJson(UserDefinedType* userDefType) {
 	json json_extra;
 
 	if (const auto Typedef = dynamic_cast<DataType::Typedef*>(userDefType))
@@ -193,7 +193,7 @@ json DB::DataTypeMapper::createExtraJson(CE::DataType::UserDefinedType* userDefT
 		// save other
 		json_extra["size"] = Structure->getSize();
 	}
-	else if (auto FuncSignature = dynamic_cast<DataType::FunctionSignature*>(userDefType))
+	else if (auto FuncSignature = dynamic_cast<FunctionSignature*>(userDefType))
 	{
 		// save storages
 		json json_storages;
@@ -223,7 +223,7 @@ json DB::DataTypeMapper::createExtraJson(CE::DataType::UserDefinedType* userDefT
 	return json_extra;
 }
 
-void DataTypeMapper::bind(SQLite::Statement& query, CE::DataType::UserDefinedType* userDefType)
+void DataTypeMapper::bind(Statement& query, UserDefinedType* userDefType)
 {
 	const auto json_extra = createExtraJson(userDefType);
 	query.bind(2, userDefType->getGroup());

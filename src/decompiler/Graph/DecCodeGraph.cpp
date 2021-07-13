@@ -4,11 +4,11 @@ using namespace CE::Decompiler;
 
 // pass decompiled graph and calculate max distance from the root to each node (dec block). Similarly to asm graph!
 
-CE::Decompiler::DecompiledCodeGraph::DecompiledCodeGraph(FunctionPCodeGraph* funcGraph)
+DecompiledCodeGraph::DecompiledCodeGraph(FunctionPCodeGraph* funcGraph)
 	: m_funcGraph(funcGraph)
 {}
 
-CE::Decompiler::DecompiledCodeGraph::~DecompiledCodeGraph() {
+DecompiledCodeGraph::~DecompiledCodeGraph() {
 	for (auto block : m_decompiledBlocks) {
 		delete block;
 	}
@@ -22,50 +22,50 @@ CE::Decompiler::DecompiledCodeGraph::~DecompiledCodeGraph() {
 	}
 }
 
-FunctionPCodeGraph* CE::Decompiler::DecompiledCodeGraph::getFuncGraph() const
+FunctionPCodeGraph* DecompiledCodeGraph::getFuncGraph() const
 {
 	return m_funcGraph;
 }
 
-DecBlock* CE::Decompiler::DecompiledCodeGraph::getStartBlock() {
+DecBlock* DecompiledCodeGraph::getStartBlock() {
 	return *getDecompiledBlocks().begin();
 }
 
-std::list<DecBlock*>& CE::Decompiler::DecompiledCodeGraph::getDecompiledBlocks() {
+std::list<DecBlock*>& DecompiledCodeGraph::getDecompiledBlocks() {
 	return m_decompiledBlocks;
 }
 
-std::list<Symbol::Symbol*>& CE::Decompiler::DecompiledCodeGraph::getSymbols() {
+std::list<Symbol::Symbol*>& DecompiledCodeGraph::getSymbols() {
 	return m_symbols;
 }
 
-void CE::Decompiler::DecompiledCodeGraph::removeDecompiledBlock(DecBlock* decBlock) {
+void DecompiledCodeGraph::removeDecompiledBlock(DecBlock* decBlock) {
 	m_decompiledBlocks.remove(decBlock);
 	m_removedDecompiledBlocks.push_back(decBlock);
 	decBlock->disconnect();
 }
 
-void CE::Decompiler::DecompiledCodeGraph::addSymbol(Symbol::Symbol* symbol) {
+void DecompiledCodeGraph::addSymbol(Symbol::Symbol* symbol) {
 	m_symbols.push_back(symbol);
 }
 
-void CE::Decompiler::DecompiledCodeGraph::removeSymbol(Symbol::Symbol* symbol) {
+void DecompiledCodeGraph::removeSymbol(Symbol::Symbol* symbol) {
 	m_symbols.remove(symbol);
 }
 
-void CE::Decompiler::DecompiledCodeGraph::cloneAllExpr() {
+void DecompiledCodeGraph::cloneAllExpr() {
 	for (auto block : m_decompiledBlocks) {
 		block->cloneAllExpr();
 	}
 }
 
-void CE::Decompiler::DecompiledCodeGraph::sortBlocksByLevel() {
+void DecompiledCodeGraph::sortBlocksByLevel() {
 	m_decompiledBlocks.sort([](DecBlock* a, DecBlock* b) {
 		return a->m_level < b->m_level;
 		});
 }
 
-void CE::Decompiler::DecompiledCodeGraph::checkOnSingleParents() {
+void DecompiledCodeGraph::checkOnSingleParents() {
 	for (const auto decBlock : getDecompiledBlocks()) {
 		for (auto topNode : decBlock->getAllTopNodes()) {
 			ExprTree::INode::UpdateDebugInfo(topNode->getNode());
@@ -74,7 +74,7 @@ void CE::Decompiler::DecompiledCodeGraph::checkOnSingleParents() {
 	}
 }
 
-HS CE::Decompiler::DecompiledCodeGraph::getHash() {
+HS DecompiledCodeGraph::getHash() {
 	HS hs;
 	for (const auto decBlock : getDecompiledBlocks()) {
 		for (auto topNode : decBlock->getAllTopNodes()) {
@@ -86,17 +86,17 @@ HS CE::Decompiler::DecompiledCodeGraph::getHash() {
 
 // recalculate levels because some blocks can be removed (while parsing AND/OR block constructions)
 
-void CE::Decompiler::DecompiledCodeGraph::recalculateLevelsForBlocks() {
+void DecompiledCodeGraph::recalculateLevelsForBlocks() {
 	for (const auto decBlock : getDecompiledBlocks()) {
 		decBlock->m_level = 0;
 	}
 	std::list<DecBlock*> path;
-	DecompiledCodeGraph::CalculateLevelsForDecBlocks(getStartBlock(), path);
+	CalculateLevelsForDecBlocks(getStartBlock(), path);
 }
 
 // calculate count of lines(height) for each block beginining from lower blocks (need as some score for linearization)
 
-int CE::Decompiler::DecompiledCodeGraph::CalculateHeightForDecBlocks(DecBlock* block) {
+int DecompiledCodeGraph::CalculateHeightForDecBlocks(DecBlock* block) {
 	int height = 0;
 	for (auto nextBlock : block->getNextBlocks()) {
 		if (nextBlock->m_level > block->m_level) { // to avoid loops
@@ -108,7 +108,7 @@ int CE::Decompiler::DecompiledCodeGraph::CalculateHeightForDecBlocks(DecBlock* b
 	return block->m_maxHeight;
 }
 
-void CE::Decompiler::DecompiledCodeGraph::CalculateLevelsForDecBlocks(DecBlock* block, std::list<DecBlock*>& path) {
+void DecompiledCodeGraph::CalculateLevelsForDecBlocks(DecBlock* block, std::list<DecBlock*>& path) {
 	if (block == nullptr)
 		return;
 

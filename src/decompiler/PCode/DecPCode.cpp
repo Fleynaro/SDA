@@ -4,54 +4,54 @@
 #include <Zycore/LibC.h>
 
 using namespace CE::Decompiler;
-using namespace CE::Decompiler::PCode;
+using namespace PCode;
 
-Register::Type CE::Decompiler::PCode::Register::getType() const {
+Register::Type Register::getType() const {
 	return m_type;
 }
 
-int CE::Decompiler::PCode::Register::getId() const {
+int Register::getId() const {
 	return (m_genericId << 8) | m_index;
 }
 
-RegisterId CE::Decompiler::PCode::Register::getGenericId() const {
+RegisterId Register::getGenericId() const {
 	return m_genericId;
 }
 
-int CE::Decompiler::PCode::Register::getIndex() const {
+int Register::getIndex() const {
 	return m_index;
 }
 
-bool CE::Decompiler::PCode::Register::isValid() const {
+bool Register::isValid() const {
 	return m_genericId != 0;
 }
 
-bool CE::Decompiler::PCode::Register::isPointer() const {
+bool Register::isPointer() const {
 	return m_type == Type::StackPointer || m_type == Type::InstructionPointer;
 }
 
-bool CE::Decompiler::PCode::Register::isVector() const {
+bool Register::isVector() const {
 	return m_type == Type::Vector;
 }
 
 // get size (in bytes) of values range
 
-int CE::Decompiler::PCode::Register::getSize() const {
+int Register::getSize() const {
 	return m_valueRangeMask.getSize();
 }
 
-int CE::Decompiler::PCode::Register::getOffset() const {
+int Register::getOffset() const {
 	return m_valueRangeMask.getOffset() + m_index * 64;
 }
 
 // check if memory area of two registers intersected
 
-bool CE::Decompiler::PCode::Register::intersect(const Register& reg) const {
+bool Register::intersect(const Register& reg) const {
 	//if the masks intersected
 	return getId() == reg.getId() && !(m_valueRangeMask & reg.m_valueRangeMask).isZero();
 }
 
-std::string CE::Decompiler::PCode::Register::printDebug() const
+std::string Register::printDebug() const
 {
 	const auto regId = static_cast<ZydisRegister>(m_genericId);
 
@@ -84,7 +84,7 @@ std::string CE::Decompiler::PCode::Register::printDebug() const
 }
 
 // that is the feature of x86: setting value to EAX cleans fully RAX
-BitMask64 CE::Decompiler::PCode::GetValueRangeMaskWithException(const PCode::Register& reg) {
+BitMask64 PCode::GetValueRangeMaskWithException(const Register& reg) {
 	if (reg.getType() == Register::Type::Helper && reg.m_valueRangeMask == BitMask64(4))
 		return BitMask64(8);
 	return reg.m_valueRangeMask;
@@ -92,19 +92,19 @@ BitMask64 CE::Decompiler::PCode::GetValueRangeMaskWithException(const PCode::Reg
 
 // get long offset which consist of original offset and pCode instruction order number: origOffset{24} | order{8}
 
-CE::ComplexOffset CE::Decompiler::PCode::Instruction::getOffset() const
+CE::ComplexOffset Instruction::getOffset() const
 {
 	return ComplexOffset(m_origInstruction->m_offset, m_orderId);
 }
 
 // get long offset of the next instruction following this
 
-CE::ComplexOffset CE::Decompiler::PCode::Instruction::getFirstInstrOffsetInNextOrigInstr() const
+CE::ComplexOffset Instruction::getFirstInstrOffsetInNextOrigInstr() const
 {
 	return ComplexOffset(m_origInstruction->m_offset + m_origInstruction->m_length, 0);
 }
 
-std::string CE::Decompiler::PCode::Instruction::printDebug() const
+std::string Instruction::printDebug() const
 {
 	std::string result;
 	if (m_output)
@@ -119,40 +119,40 @@ std::string CE::Decompiler::PCode::Instruction::printDebug() const
 
 // BRANCH, CBRANCH, BRANCHIND
 
-bool CE::Decompiler::PCode::Instruction::IsBranching(InstructionId id) {
+bool Instruction::IsBranching(InstructionId id) {
 	return id >= InstructionId::BRANCH && id <= InstructionId::BRANCHIND;
 }
 
 // check if the instruction is some kind of jump (BRANCH/CALL/RETURN)
 
-bool CE::Decompiler::PCode::Instruction::IsAnyJmup(InstructionId id) {
+bool Instruction::IsAnyJmup(InstructionId id) {
 	return id >= InstructionId::BRANCH && id <= InstructionId::RETURN;
 }
 
-int CE::Decompiler::PCode::SymbolVarnode::getSize() {
+int SymbolVarnode::getSize() {
 	return m_size;
 }
 
-std::string CE::Decompiler::PCode::SymbolVarnode::printDebug() {
+std::string SymbolVarnode::printDebug() {
 	return "$U" + std::to_string((uint64_t)this % 10000) + ":" + std::to_string(getSize());
 }
 
-int CE::Decompiler::PCode::ConstantVarnode::getSize() {
+int ConstantVarnode::getSize() {
 	return m_size;
 }
 
-std::string CE::Decompiler::PCode::ConstantVarnode::printDebug() {
+std::string ConstantVarnode::printDebug() {
 	return std::to_string((int64_t&)m_value) + ":" + std::to_string(getSize());
 }
 
-int CE::Decompiler::PCode::RegisterVarnode::getSize() {
+int RegisterVarnode::getSize() {
 	return m_register.getSize();
 }
 
-BitMask64 CE::Decompiler::PCode::RegisterVarnode::getMask() {
+BitMask64 RegisterVarnode::getMask() {
 	return m_register.m_valueRangeMask;
 }
 
-std::string CE::Decompiler::PCode::RegisterVarnode::printDebug() {
+std::string RegisterVarnode::printDebug() {
 	return m_register.printDebug();
 }

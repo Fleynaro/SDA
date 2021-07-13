@@ -37,12 +37,12 @@ Project::~Project() {
 		delete m_db;
 }
 
-ProjectManager* CE::Project::getProjectManager() const
+ProjectManager* Project::getProjectManager() const
 {
 	return m_projectManager;
 }
 
-Program* CE::Project::getProgram() const
+Program* Project::getProgram() const
 {
 	return m_projectManager->getProgram();
 }
@@ -79,7 +79,7 @@ void Project::initManagers()
 	m_allManagersHaveBeenLoaded = true;
 }
 
-void CE::Project::createTablesInDatabase() const
+void Project::createTablesInDatabase() const
 {
 	using namespace SQLite;
 
@@ -91,18 +91,18 @@ void CE::Project::createTablesInDatabase() const
 	try {
 		m_db->exec(sql_query);
 	}
-	catch (SQLite::Exception e) {
+	catch (Exception e) {
 		std::cout << "!!! createTablesInDatabase error: " << std::string(e.what());
 	}
 }
 
-void CE::Project::initDataBase(const fs::path& file)
+void Project::initDataBase(const fs::path& file)
 {
 	const auto filedb = m_directory / file;
-	const bool filedbExisting = fs::exists(filedb);
+	const bool filedbExisting = exists(filedb);
 
 	// init database
-	m_db = new SQLite::Database(filedb.string(), SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+	m_db = new Database(filedb.string(), OPEN_READWRITE | OPEN_CREATE);
 	
 	// if data base didn't exist then create tables
 	if (!filedbExisting) {
@@ -112,7 +112,7 @@ void CE::Project::initDataBase(const fs::path& file)
 	initTransaction();
 }
 
-SQLite::Database& Project::getDB() const
+Database& Project::getDB() const
 {
 	return *m_db;
 }
@@ -137,12 +137,12 @@ FunctionManager* Project::getFunctionManager() const
 	return m_functionManager;
 }
 
-AddressSpaceManager* CE::Project::getAddrSpaceManager() const
+AddressSpaceManager* Project::getAddrSpaceManager() const
 {
 	return m_addrSpaceManager;
 }
 
-ImageManager* CE::Project::getImageManager() const
+ImageManager* Project::getImageManager() const
 {
 	return m_imageManager;
 }
@@ -152,12 +152,12 @@ DB::ITransaction* Project::getTransaction() const
 	return m_transaction;
 }
 
-const fs::path& CE::Project::getDirectory() const
+const fs::path& Project::getDirectory() const
 {
 	return m_directory;
 }
 
-fs::path CE::Project::getImagesDirectory() const
+fs::path Project::getImagesDirectory() const
 {
 	return m_directory / fs::path("images");
 }
@@ -167,39 +167,39 @@ Ghidra::Sync* Project::getGhidraSync() const
 	return m_ghidraSync;
 }
 
-Program* CE::ProjectManager::getProgram() const
+Program* ProjectManager::getProgram() const
 {
 	return m_program;
 }
 
-fs::path CE::ProjectManager::getProjectsFile() const
+fs::path ProjectManager::getProjectsFile() const
 {
 	return m_program->getExecutableDirectory() / fs::path("projects.json");
 }
 
-Project* CE::ProjectManager::loadProject(const fs::path& dir) {
+Project* ProjectManager::loadProject(const fs::path& dir) {
 	return new Project(this, dir);
 }
 
-Project* CE::ProjectManager::createProject(const fs::path& dir) {
+Project* ProjectManager::createProject(const fs::path& dir) {
 	ProjectEntry projectEntry;
 	projectEntry.m_dir = dir;
 	m_projectEntries.push_back(projectEntry);
 
 	const auto project = new Project(this, dir);
-	if (!fs::exists(project->getDirectory()))
-		fs::create_directory(project->getDirectory());
-	if (!fs::exists(project->getImagesDirectory()))
-		fs::create_directory(project->getImagesDirectory());
+	if (!exists(project->getDirectory()))
+		create_directory(project->getDirectory());
+	if (!exists(project->getImagesDirectory()))
+		create_directory(project->getImagesDirectory());
 	return project;
 }
 
-const auto& CE::ProjectManager::getProjectEntries() const
+const auto& ProjectManager::getProjectEntries() const
 {
 	return m_projectEntries;
 }
 
-void CE::ProjectManager::load() {
+void ProjectManager::load() {
 	std::ifstream file(getProjectsFile());
 	if (!file.is_open())
 		throw std::logic_error("");
@@ -213,7 +213,7 @@ void CE::ProjectManager::load() {
 	}
 }
 
-void CE::ProjectManager::save() {
+void ProjectManager::save() {
 	json json_project_entries;
 	for (auto& prjEntry : m_projectEntries) {
 		json json_project_entry;

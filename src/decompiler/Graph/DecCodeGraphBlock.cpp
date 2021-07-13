@@ -2,17 +2,17 @@
 
 using namespace CE::Decompiler;
 
-CE::Decompiler::EndDecBlock::EndDecBlock(DecompiledCodeGraph* decompiledGraph, PCodeBlock* pcodeBlock, int level)
+EndDecBlock::EndDecBlock(DecompiledCodeGraph* decompiledGraph, PCodeBlock* pcodeBlock, int level)
 	: DecBlock(decompiledGraph, pcodeBlock, level)
 {
 	m_returnNode = new ReturnTopNode(this);
 }
 
-CE::Decompiler::EndDecBlock::~EndDecBlock() {
+EndDecBlock::~EndDecBlock() {
 	delete m_returnNode;
 }
 
-std::list<EndDecBlock::BlockTopNode*> CE::Decompiler::EndDecBlock::getAllTopNodes() {
+std::list<EndDecBlock::BlockTopNode*> EndDecBlock::getAllTopNodes() {
 	auto list = DecBlock::getAllTopNodes();
 	if (getReturnNode()) {
 		list.push_back(m_returnNode);
@@ -20,12 +20,12 @@ std::list<EndDecBlock::BlockTopNode*> CE::Decompiler::EndDecBlock::getAllTopNode
 	return list;
 }
 
-ExprTree::INode* CE::Decompiler::EndDecBlock::getReturnNode() const
+ExprTree::INode* EndDecBlock::getReturnNode() const
 {
 	return m_returnNode->getNode();
 }
 
-void CE::Decompiler::EndDecBlock::setReturnNode(ExprTree::INode* returnNode) const
+void EndDecBlock::setReturnNode(ExprTree::INode* returnNode) const
 {
 	if (getReturnNode()) {
 		m_returnNode->clear();
@@ -33,91 +33,91 @@ void CE::Decompiler::EndDecBlock::setReturnNode(ExprTree::INode* returnNode) con
 	m_returnNode->setNode(returnNode);
 }
 
-void CE::Decompiler::EndDecBlock::cloneAllExpr() {
+void EndDecBlock::cloneAllExpr() {
 	DecBlock::cloneAllExpr();
 	if (getReturnNode())
 		setReturnNode(getReturnNode()->clone());
 }
 
-CE::Decompiler::DecBlock::BlockTopNode::BlockTopNode(DecBlock* block, ExprTree::INode* node)
+DecBlock::BlockTopNode::BlockTopNode(DecBlock* block, ExprTree::INode* node)
 	: TopNode(node), m_block(block)
 {}
 
-CE::Decompiler::DecBlock::JumpTopNode::JumpTopNode(DecBlock* block)
+DecBlock::JumpTopNode::JumpTopNode(DecBlock* block)
 	: BlockTopNode(block)
 {}
 
-ExprTree::AbstractCondition* CE::Decompiler::DecBlock::JumpTopNode::getCond() {
+ExprTree::AbstractCondition* DecBlock::JumpTopNode::getCond() {
 	return dynamic_cast<ExprTree::AbstractCondition*>(getNode());
 }
 
-void CE::Decompiler::DecBlock::JumpTopNode::setCond(ExprTree::AbstractCondition* cond) {
+void DecBlock::JumpTopNode::setCond(ExprTree::AbstractCondition* cond) {
 	setNode(cond);
 }
 
-CE::Decompiler::DecBlock::ReturnTopNode::ReturnTopNode(DecBlock* block)
+DecBlock::ReturnTopNode::ReturnTopNode(DecBlock* block)
 	: BlockTopNode(block)
 {}
 
-CE::Decompiler::DecBlock::SeqAssignmentLine::SeqAssignmentLine(DecBlock* block, ExprTree::AssignmentNode* assignmentNode)
+DecBlock::SeqAssignmentLine::SeqAssignmentLine(DecBlock* block, ExprTree::AssignmentNode* assignmentNode)
 	: BlockTopNode(block, assignmentNode)
 {}
 
-CE::Decompiler::DecBlock::SeqAssignmentLine::SeqAssignmentLine(DecBlock * block, ExprTree::INode * dstNode, ExprTree::INode * srcNode, PCode::Instruction * instr)
+DecBlock::SeqAssignmentLine::SeqAssignmentLine(DecBlock * block, ExprTree::INode * dstNode, ExprTree::INode * srcNode, PCode::Instruction * instr)
 	: SeqAssignmentLine(block, new ExprTree::AssignmentNode(dstNode, srcNode, instr))
 {}
 
-CE::Decompiler::DecBlock::SeqAssignmentLine::~SeqAssignmentLine() {
+DecBlock::SeqAssignmentLine::~SeqAssignmentLine() {
 	m_block->m_seqLines.remove(this);
 }
 
-ExprTree::AssignmentNode* CE::Decompiler::DecBlock::SeqAssignmentLine::getAssignmentNode() {
+ExprTree::AssignmentNode* DecBlock::SeqAssignmentLine::getAssignmentNode() {
 	return dynamic_cast<ExprTree::AssignmentNode*>(getNode());
 }
 
 // left node from =
 
-ExprTree::INode* CE::Decompiler::DecBlock::SeqAssignmentLine::getDstNode() {
+ExprTree::INode* DecBlock::SeqAssignmentLine::getDstNode() {
 	return getAssignmentNode()->getDstNode();
 }
 
 // right node from =
 
-ExprTree::INode* CE::Decompiler::DecBlock::SeqAssignmentLine::getSrcNode() {
+ExprTree::INode* DecBlock::SeqAssignmentLine::getSrcNode() {
 	return getAssignmentNode()->getSrcNode();
 }
 
-DecBlock::SeqAssignmentLine* CE::Decompiler::DecBlock::SeqAssignmentLine::clone(DecBlock* block, ExprTree::NodeCloneContext* ctx) {
+DecBlock::SeqAssignmentLine* DecBlock::SeqAssignmentLine::clone(DecBlock* block, ExprTree::NodeCloneContext* ctx) {
 	return new SeqAssignmentLine(block, dynamic_cast<ExprTree::AssignmentNode*>(getNode()->clone(ctx)));
 }
 
-CE::Decompiler::DecBlock::SymbolParallelAssignmentLine::SymbolParallelAssignmentLine(DecBlock* block, ExprTree::AssignmentNode* assignmentNode)
+DecBlock::SymbolParallelAssignmentLine::SymbolParallelAssignmentLine(DecBlock* block, ExprTree::AssignmentNode* assignmentNode)
 	: SeqAssignmentLine(block, assignmentNode)
 {}
 
-CE::Decompiler::DecBlock::SymbolParallelAssignmentLine::SymbolParallelAssignmentLine(DecBlock * block, ExprTree::SymbolLeaf * dstNode, ExprTree::INode * srcNode, PCode::Instruction * instr)
+DecBlock::SymbolParallelAssignmentLine::SymbolParallelAssignmentLine(DecBlock * block, ExprTree::SymbolLeaf * dstNode, ExprTree::INode * srcNode, PCode::Instruction * instr)
 	: SeqAssignmentLine(block, dstNode, srcNode, instr)
 {}
 
-CE::Decompiler::DecBlock::SymbolParallelAssignmentLine::~SymbolParallelAssignmentLine() {
+DecBlock::SymbolParallelAssignmentLine::~SymbolParallelAssignmentLine() {
 	m_block->m_symbolParallelAssignmentLines.remove(this);
 }
 
-ExprTree::SymbolLeaf* CE::Decompiler::DecBlock::SymbolParallelAssignmentLine::getDstSymbolLeaf() {
+ExprTree::SymbolLeaf* DecBlock::SymbolParallelAssignmentLine::getDstSymbolLeaf() {
 	return dynamic_cast<ExprTree::SymbolLeaf*>(getDstNode());
 }
 
-DecBlock::SymbolParallelAssignmentLine* CE::Decompiler::DecBlock::SymbolParallelAssignmentLine::clone(DecBlock* block, ExprTree::NodeCloneContext* ctx) {
+DecBlock::SymbolParallelAssignmentLine* DecBlock::SymbolParallelAssignmentLine::clone(DecBlock* block, ExprTree::NodeCloneContext* ctx) {
 	return new SymbolParallelAssignmentLine(block, dynamic_cast<ExprTree::AssignmentNode*>(getNode()->clone(ctx)));
 }
 
-CE::Decompiler::DecBlock::DecBlock(DecompiledCodeGraph* decompiledGraph, PCodeBlock* pcodeBlock, int level)
+DecBlock::DecBlock(DecompiledCodeGraph* decompiledGraph, PCodeBlock* pcodeBlock, int level)
 	: m_level(level), m_pcodeBlock(pcodeBlock), m_decompiledGraph(decompiledGraph)
 {
 	m_noJmpCond = new JumpTopNode(this);
 }
 
-CE::Decompiler::DecBlock::~DecBlock() {
+DecBlock::~DecBlock() {
 	clearCode();
 
 	for (auto line : m_symbolParallelAssignmentLines) {
@@ -136,7 +136,7 @@ CE::Decompiler::DecBlock::~DecBlock() {
 	disconnect();
 }
 
-void CE::Decompiler::DecBlock::clearCode() {
+void DecBlock::clearCode() {
 	for (auto line : m_seqLines) {
 		delete line;
 	}
@@ -146,18 +146,18 @@ void CE::Decompiler::DecBlock::clearCode() {
 
 // make the block independent from the decompiled graph
 
-void CE::Decompiler::DecBlock::disconnect() {
+void DecBlock::disconnect() {
 	for (auto nextBlock : getNextBlocks()) {
 		nextBlock->removeRefBlock(this);
 	}
 	m_nextNearBlock = m_nextFarBlock = nullptr;
 }
 
-void CE::Decompiler::DecBlock::removeRefBlock(DecBlock* block) {
+void DecBlock::removeRefBlock(DecBlock* block) {
 	m_blocksReferencedTo.remove(block);
 }
 
-void CE::Decompiler::DecBlock::setNextNearBlock(DecBlock* nextBlock) {
+void DecBlock::setNextNearBlock(DecBlock* nextBlock) {
 	if (nextBlock) {
 		nextBlock->removeRefBlock(m_nextNearBlock);
 		nextBlock->m_blocksReferencedTo.push_back(this);
@@ -165,7 +165,7 @@ void CE::Decompiler::DecBlock::setNextNearBlock(DecBlock* nextBlock) {
 	m_nextNearBlock = nextBlock;
 }
 
-void CE::Decompiler::DecBlock::setNextFarBlock(DecBlock* nextBlock) {
+void DecBlock::setNextFarBlock(DecBlock* nextBlock) {
 	if (nextBlock) {
 		nextBlock->removeRefBlock(m_nextFarBlock);
 		nextBlock->m_blocksReferencedTo.push_back(this);
@@ -173,21 +173,21 @@ void CE::Decompiler::DecBlock::setNextFarBlock(DecBlock* nextBlock) {
 	m_nextFarBlock = nextBlock;
 }
 
-DecBlock* CE::Decompiler::DecBlock::getNextNearBlock() const
+DecBlock* DecBlock::getNextNearBlock() const
 {
 	return m_nextNearBlock;
 }
 
-DecBlock* CE::Decompiler::DecBlock::getNextFarBlock() const
+DecBlock* DecBlock::getNextFarBlock() const
 {
 	return m_nextFarBlock;
 }
 
-std::list<DecBlock*>& CE::Decompiler::DecBlock::getBlocksReferencedTo() {
+std::list<DecBlock*>& DecBlock::getBlocksReferencedTo() {
 	return m_blocksReferencedTo;
 }
 
-std::list<DecBlock*> CE::Decompiler::DecBlock::getNextBlocks() const
+std::list<DecBlock*> DecBlock::getNextBlocks() const
 {
 	std::list<DecBlock*> nextBlocks;
 	if (m_nextFarBlock) {
@@ -199,7 +199,7 @@ std::list<DecBlock*> CE::Decompiler::DecBlock::getNextBlocks() const
 	return nextBlocks;
 }
 
-DecBlock* CE::Decompiler::DecBlock::getNextBlock() const
+DecBlock* DecBlock::getNextBlock() const
 {
 	if (m_nextFarBlock) {
 		return m_nextFarBlock;
@@ -210,29 +210,29 @@ DecBlock* CE::Decompiler::DecBlock::getNextBlock() const
 	return nullptr;
 }
 
-void CE::Decompiler::DecBlock::swapNextBlocks() {
+void DecBlock::swapNextBlocks() {
 	std::swap(m_nextNearBlock, m_nextFarBlock);
 }
 
-bool CE::Decompiler::DecBlock::isCondition() const
+bool DecBlock::isCondition() const
 {
 	return m_nextNearBlock != nullptr && m_nextFarBlock != nullptr;
 }
 
-bool CE::Decompiler::DecBlock::isCycle() {
+bool DecBlock::isCycle() {
 	return static_cast<int>(m_blocksReferencedTo.size()) != getRefHighBlocksCount();
 }
 
 // get count of blocks which reference to this block
 
-int CE::Decompiler::DecBlock::getRefBlocksCount() const
+int DecBlock::getRefBlocksCount() const
 {
 	return static_cast<int>(m_blocksReferencedTo.size());
 }
 
 // get count of blocks which reference to this block without loops
 
-int CE::Decompiler::DecBlock::getRefHighBlocksCount() {
+int DecBlock::getRefHighBlocksCount() {
 	int count = 0;
 	for (auto refBlock : m_blocksReferencedTo) {
 		if (refBlock->m_level < m_level)
@@ -243,7 +243,7 @@ int CE::Decompiler::DecBlock::getRefHighBlocksCount() {
 
 // get all top nodes for this block (assignments, function calls, return) / get all expressions
 
-std::list<DecBlock::BlockTopNode*> CE::Decompiler::DecBlock::getAllTopNodes() {
+std::list<DecBlock::BlockTopNode*> DecBlock::getAllTopNodes() {
 	std::list<BlockTopNode*> result;
 	for (auto line : getSeqAssignmentLines()) {
 		result.push_back(line);
@@ -259,12 +259,12 @@ std::list<DecBlock::BlockTopNode*> CE::Decompiler::DecBlock::getAllTopNodes() {
 
 // condition top node which contains boolean expression to jump to another block
 
-ExprTree::AbstractCondition* CE::Decompiler::DecBlock::getNoJumpCondition() const
+ExprTree::AbstractCondition* DecBlock::getNoJumpCondition() const
 {
 	return m_noJmpCond->getCond();
 }
 
-void CE::Decompiler::DecBlock::setNoJumpCondition(ExprTree::AbstractCondition* noJmpCond) const
+void DecBlock::setNoJumpCondition(ExprTree::AbstractCondition* noJmpCond) const
 {
 	if (getNoJumpCondition()) {
 		m_noJmpCond->clear();
@@ -274,32 +274,32 @@ void CE::Decompiler::DecBlock::setNoJumpCondition(ExprTree::AbstractCondition* n
 	}
 }
 
-void CE::Decompiler::DecBlock::addSeqLine(ExprTree::INode* destAddr, ExprTree::INode* srcValue, PCode::Instruction* instr) {
+void DecBlock::addSeqLine(ExprTree::INode* destAddr, ExprTree::INode* srcValue, PCode::Instruction* instr) {
 	m_seqLines.push_back(new SeqAssignmentLine(this, destAddr, srcValue, instr));
 }
 
-std::list<DecBlock::SeqAssignmentLine*>& CE::Decompiler::DecBlock::getSeqAssignmentLines() {
+std::list<DecBlock::SeqAssignmentLine*>& DecBlock::getSeqAssignmentLines() {
 	return m_seqLines;
 }
 
-void CE::Decompiler::DecBlock::addSymbolParallelAssignmentLine(ExprTree::SymbolLeaf* symbolLeaf, ExprTree::INode* srcValue, PCode::Instruction* instr) {
+void DecBlock::addSymbolParallelAssignmentLine(ExprTree::SymbolLeaf* symbolLeaf, ExprTree::INode* srcValue, PCode::Instruction* instr) {
 	m_symbolParallelAssignmentLines.push_back(new SymbolParallelAssignmentLine(this, symbolLeaf, srcValue, instr));
 }
 
-std::list<DecBlock::SymbolParallelAssignmentLine*>& CE::Decompiler::DecBlock::getSymbolParallelAssignmentLines() {
+std::list<DecBlock::SymbolParallelAssignmentLine*>& DecBlock::getSymbolParallelAssignmentLines() {
 	return m_symbolParallelAssignmentLines;
 }
 
 // check if this block is empty
 
-bool CE::Decompiler::DecBlock::hasNoCode() const
+bool DecBlock::hasNoCode() const
 {
 	return m_seqLines.empty() && m_symbolParallelAssignmentLines.empty();
 }
 
 // clone all expr.
 
-void CE::Decompiler::DecBlock::cloneAllExpr() {
+void DecBlock::cloneAllExpr() {
 	ExprTree::NodeCloneContext nodeCloneContext;
 
 	auto seqLines = m_seqLines;
@@ -320,7 +320,7 @@ void CE::Decompiler::DecBlock::cloneAllExpr() {
 		setNoJumpCondition(dynamic_cast<ExprTree::AbstractCondition*>(getNoJumpCondition()->clone(&nodeCloneContext)));
 }
 
-std::string CE::Decompiler::DecBlock::printDebug(bool cond, const std::string& tabStr) {
+std::string DecBlock::printDebug(bool cond, const std::string& tabStr) {
 	std::string result;
 	for (auto line : m_seqLines) {
 		result += tabStr + line->getNode()->printDebug();

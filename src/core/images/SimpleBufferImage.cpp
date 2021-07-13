@@ -2,7 +2,7 @@
 
 using namespace CE;
 
-CE::SimpleBufferImage::SimpleBufferImage(int8_t* data, int size)
+SimpleBufferImage::SimpleBufferImage(int8_t* data, int size)
 	: m_data(data), m_size(size)
 {
 	ImageSection section;
@@ -11,14 +11,14 @@ CE::SimpleBufferImage::SimpleBufferImage(int8_t* data, int size)
 	m_imageSections.push_back(section);
 }
 
-int8_t* CE::SimpleBufferImage::getData() {
+int8_t* SimpleBufferImage::getData() {
 	return m_data;
 }
 
-int CE::SimpleBufferImage::getSize() {
+int SimpleBufferImage::getSize() {
 	return m_size;
 }
 
-int CE::SimpleBufferImage::getOffsetOfEntryPoint() {
+int SimpleBufferImage::getOffsetOfEntryPoint() {
 	return 0;
 }

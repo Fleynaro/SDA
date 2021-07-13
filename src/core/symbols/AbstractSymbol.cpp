@@ -1,7 +1,7 @@
 #include "AbstractSymbol.h"
 
 using namespace CE;
-using namespace CE::Symbol;
+using namespace Symbol;
 
 void AbstractSymbol::setAutoSymbol(bool toggle) {
 	m_isAutoSymbol = toggle;

@@ -2,38 +2,38 @@
 #include <datatypes/SystemType.h>
 
 using namespace CE;
-using namespace CE::Decompiler;
-using namespace CE::Decompiler::ExprTree;
+using namespace Decompiler;
+using namespace ExprTree;
 
-CE::Decompiler::ExprTree::SdaNumberLeaf::SdaNumberLeaf(uint64_t value, DataTypePtr calcDataType)
+SdaNumberLeaf::SdaNumberLeaf(uint64_t value, DataTypePtr calcDataType)
 	: m_value(value), m_calcDataType(calcDataType)
 {}
 
-uint64_t CE::Decompiler::ExprTree::SdaNumberLeaf::getValue() {
+uint64_t SdaNumberLeaf::getValue() {
 	return m_value;
 }
 
-void CE::Decompiler::ExprTree::SdaNumberLeaf::setValue(uint64_t value) {
+void SdaNumberLeaf::setValue(uint64_t value) {
 	m_value = value;
 }
 
-int CE::Decompiler::ExprTree::SdaNumberLeaf::getSize() {
+int SdaNumberLeaf::getSize() {
 	return getDataType()->getSize();
 }
 
-DataTypePtr CE::Decompiler::ExprTree::SdaNumberLeaf::getSrcDataType() {
+DataTypePtr SdaNumberLeaf::getSrcDataType() {
 	return m_calcDataType;
 }
 
-void CE::Decompiler::ExprTree::SdaNumberLeaf::setDataType(DataTypePtr dataType) {
+void SdaNumberLeaf::setDataType(DataTypePtr dataType) {
 	m_calcDataType = dataType;
 }
 
-ISdaNode* CE::Decompiler::ExprTree::SdaNumberLeaf::cloneSdaNode(NodeCloneContext* ctx) {
+ISdaNode* SdaNumberLeaf::cloneSdaNode(NodeCloneContext* ctx) {
 	return new SdaNumberLeaf(m_value, m_calcDataType);
 }
 
-std::string CE::Decompiler::ExprTree::SdaNumberLeaf::printSdaDebug() {
+std::string SdaNumberLeaf::printSdaDebug() {
 	if (getSrcDataType()->isFloatingPoint()) {
 		if (getSrcDataType()->getSize() == 4)
 			return m_updateDebugInfo = std::to_string((float&)m_value);
@@ -51,83 +51,83 @@ std::string CE::Decompiler::ExprTree::SdaNumberLeaf::printSdaDebug() {
 	return "0x" + Helper::String::NumberToHex(m_value);
 }
 
-CE::Decompiler::ExprTree::SdaSymbolLeaf::SdaSymbolLeaf(CE::Symbol::ISymbol* sdaSymbol, Symbol::Symbol* decSymbol)
+SdaSymbolLeaf::SdaSymbolLeaf(CE::Symbol::ISymbol* sdaSymbol, Symbol::Symbol* decSymbol)
 	: m_sdaSymbol(sdaSymbol), m_decSymbol(decSymbol)
 {}
 
-Decompiler::Symbol::Symbol* CE::Decompiler::ExprTree::SdaSymbolLeaf::getDecSymbol() const
+Decompiler::Symbol::Symbol* SdaSymbolLeaf::getDecSymbol() const
 {
 	return m_decSymbol;
 }
 
-CE::Symbol::ISymbol* CE::Decompiler::ExprTree::SdaSymbolLeaf::getSdaSymbol() const
+CE::Symbol::ISymbol* SdaSymbolLeaf::getSdaSymbol() const
 {
 	return m_sdaSymbol;
 }
 
-int CE::Decompiler::ExprTree::SdaSymbolLeaf::getSize() {
+int SdaSymbolLeaf::getSize() {
 	return getDataType()->getSize();
 }
 
-HS CE::Decompiler::ExprTree::SdaSymbolLeaf::getHash() {
+HS SdaSymbolLeaf::getHash() {
 	return m_decSymbol->getHash();
 }
 
-ISdaNode* CE::Decompiler::ExprTree::SdaSymbolLeaf::cloneSdaNode(NodeCloneContext* ctx) {
+ISdaNode* SdaSymbolLeaf::cloneSdaNode(NodeCloneContext* ctx) {
 	return new SdaSymbolLeaf(m_sdaSymbol, m_decSymbol);
 }
 
-bool CE::Decompiler::ExprTree::SdaSymbolLeaf::isFloatingPoint() {
+bool SdaSymbolLeaf::isFloatingPoint() {
 	return false;
 }
 
-DataTypePtr CE::Decompiler::ExprTree::SdaSymbolLeaf::getSrcDataType() {
+DataTypePtr SdaSymbolLeaf::getSrcDataType() {
 	return m_sdaSymbol->getDataType();
 }
 
-void CE::Decompiler::ExprTree::SdaSymbolLeaf::setDataType(DataTypePtr dataType) {
+void SdaSymbolLeaf::setDataType(DataTypePtr dataType) {
 	if (m_sdaSymbol->isAutoSymbol()) {
 		m_sdaSymbol->setDataType(dataType);
 	}
 }
 
-std::string CE::Decompiler::ExprTree::SdaSymbolLeaf::printSdaDebug() {
+std::string SdaSymbolLeaf::printSdaDebug() {
 	return m_sdaSymbol->getName();
 }
 
-CE::Decompiler::ExprTree::SdaMemSymbolLeaf::SdaMemSymbolLeaf(CE::Symbol::IMemorySymbol* sdaSymbol, Symbol::Symbol* decSymbol, int64_t offset, bool isAddrGetting)
+SdaMemSymbolLeaf::SdaMemSymbolLeaf(CE::Symbol::IMemorySymbol* sdaSymbol, Symbol::Symbol* decSymbol, int64_t offset, bool isAddrGetting)
 	: SdaSymbolLeaf(sdaSymbol, decSymbol), m_offset(offset), m_isAddrGetting(isAddrGetting)
 {}
 
-CE::Symbol::IMemorySymbol* CE::Decompiler::ExprTree::SdaMemSymbolLeaf::getSdaSymbol() const
+CE::Symbol::IMemorySymbol* SdaMemSymbolLeaf::getSdaSymbol() const
 {
 	return dynamic_cast<CE::Symbol::IMemorySymbol*>(m_sdaSymbol);
 }
 
-DataTypePtr CE::Decompiler::ExprTree::SdaMemSymbolLeaf::getSrcDataType() {
+DataTypePtr SdaMemSymbolLeaf::getSrcDataType() {
 	if (m_isAddrGetting) {
 		return MakePointer(SdaSymbolLeaf::getSrcDataType());
 	}
 	return SdaSymbolLeaf::getSrcDataType();
 }
 
-HS CE::Decompiler::ExprTree::SdaMemSymbolLeaf::getHash() {
+HS SdaMemSymbolLeaf::getHash() {
 	return SdaSymbolLeaf::getHash() << m_offset;
 }
 
-ISdaNode* CE::Decompiler::ExprTree::SdaMemSymbolLeaf::cloneSdaNode(NodeCloneContext* ctx) {
+ISdaNode* SdaMemSymbolLeaf::cloneSdaNode(NodeCloneContext* ctx) {
 	return new SdaMemSymbolLeaf(getSdaSymbol(), m_decSymbol, m_offset, m_isAddrGetting);
 }
 
-bool CE::Decompiler::ExprTree::SdaMemSymbolLeaf::isAddrGetting() {
+bool SdaMemSymbolLeaf::isAddrGetting() {
 	return m_isAddrGetting;
 }
 
-void CE::Decompiler::ExprTree::SdaMemSymbolLeaf::setAddrGetting(bool toggle) {
+void SdaMemSymbolLeaf::setAddrGetting(bool toggle) {
 	m_isAddrGetting = toggle;
 }
 
-void CE::Decompiler::ExprTree::SdaMemSymbolLeaf::getLocation(MemLocation& location) {
+void SdaMemSymbolLeaf::getLocation(MemLocation& location) {
 	location.m_type = (getSdaSymbol()->getType() == CE::Symbol::LOCAL_STACK_VAR ? MemLocation::STACK : MemLocation::GLOBAL);
 	location.m_offset = m_offset;
 	location.m_valueSize = m_sdaSymbol->getDataType()->getSize();

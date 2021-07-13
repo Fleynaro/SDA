@@ -15,14 +15,14 @@ namespace CE::Ghidra
 
 		void remove(SyncContext* ctx, IObject* obj) override;
 
-		datatype::SDataTypeSignature buildDesc(DataType::FunctionSignature* sig) const
+		SDataTypeSignature buildDesc(DataType::FunctionSignature* sig) const
 		{
-			datatype::SDataTypeSignature sigDesc;
+			SDataTypeSignature sigDesc;
 			sigDesc.__set_type(m_dataTypeMapper->buildDesc(sig));
 			sigDesc.__set_returnType(m_dataTypeMapper->buildTypeUnitDesc(sig->getReturnType()));
 
 			for (auto param : sig->getParameters()) {
-				datatype::SFunctionArgument argDesc;
+				SFunctionArgument argDesc;
 				argDesc.__set_name(param->getName());
 				argDesc.__set_type(m_dataTypeMapper->buildTypeUnitDesc(param->getDataType()));
 				sigDesc.arguments.push_back(argDesc);
@@ -30,7 +30,7 @@ namespace CE::Ghidra
 			return sigDesc;
 		}
 
-		void changeSignatureByDesc(DataType::FunctionSignature* sig, const datatype::SDataTypeSignature& sigDesc) const
+		void changeSignatureByDesc(DataType::FunctionSignature* sig, const SDataTypeSignature& sigDesc) const
 		{
 			m_dataTypeMapper->changeUserTypeByDesc(sig, sigDesc.type);
 			sig->setReturnType(m_dataTypeMapper->getTypeByDesc(sigDesc.returnType));

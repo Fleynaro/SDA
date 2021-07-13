@@ -4,9 +4,9 @@
 #include <managers/FunctionManager.h>
 
 using namespace CE;
-using namespace CE::Ghidra;
+using namespace Ghidra;
 
-FunctionMapper::FunctionMapper(CE::FunctionManager* functionManager, DataTypeMapper* dataTypeMapper)
+FunctionMapper::FunctionMapper(FunctionManager* functionManager, DataTypeMapper* dataTypeMapper)
 	: m_functionManager(functionManager), m_dataTypeMapper(dataTypeMapper)
 {}
 
@@ -23,7 +23,7 @@ void FunctionMapper::load(packet::SDataFullSyncPacket* dataPacket) {
 }
 
 void markObjectAsSynced(SyncContext* ctx, Function* func) {
-	SQLite::Statement query(*ctx->m_db, "UPDATE sda_func_defs SET ghidra_sync_id=?1 WHERE def_id=?2");
+	Statement query(*ctx->m_db, "UPDATE sda_func_defs SET ghidra_sync_id=?1 WHERE def_id=?2");
 	query.bind(1, ctx->m_syncId);
 	query.bind(2, func->getId());
 	query.exec();
@@ -41,7 +41,7 @@ void FunctionMapper::remove(SyncContext* ctx, IObject* obj) {
 	markObjectAsSynced(ctx, func);
 }
 
-void FunctionMapper::changeFunctionByDesc(Function* function, const function::SFunction& funcDesc) {
+void FunctionMapper::changeFunctionByDesc(Function* function, const SFunction& funcDesc) {
 	function->setName(funcDesc.name);
 	function->setComment(funcDesc.comment);
 	/*function->getAddressRangeList().clear();
@@ -49,8 +49,8 @@ void FunctionMapper::changeFunctionByDesc(Function* function, const function::SF
 	m_dataTypeMapper->m_signatureTypeMapper->changeSignatureByDesc(function->getSignature(), funcDesc.signature);*/
 }
 
-function::SFunction FunctionMapper::buildDesc(Function* function) {
-	function::SFunction funcDesc;
+SFunction FunctionMapper::buildDesc(Function* function) {
+	SFunction funcDesc;
 	funcDesc.__set_id(function->getGhidraId());
 
 	const auto spliter = function->getName().find("::");

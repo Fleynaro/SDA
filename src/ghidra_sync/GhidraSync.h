@@ -13,7 +13,7 @@ namespace CE::Ghidra
 	class Sync
 	{
 	public:
-		Sync(CE::Project* programModule);
+		Sync(Project* programModule);
 
 		~Sync();
 
@@ -23,7 +23,7 @@ namespace CE::Ghidra
 
 		packet::DataSyncPacketManagerServiceClient* getDataSyncPacketManagerServiceClient() const;
 	private:
-		CE::Project* m_project;
+		Project* m_project;
 		Client* m_client;
 		packet::DataSyncPacketManagerServiceClient* m_dataSyncPacketManagerServiceClient;
 	};

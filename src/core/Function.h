@@ -15,9 +15,9 @@ namespace CE
 
 	struct SymbolContext {
 		DataType::IFunctionSignature* m_signature;
-		CE::Symbol::SymbolTable* m_globalSymbolTable;
-		CE::Symbol::SymbolTable* m_stackSymbolTable;
-		CE::Symbol::SymbolTable* m_funcBodySymbolTable;
+		Symbol::SymbolTable* m_globalSymbolTable;
+		Symbol::SymbolTable* m_stackSymbolTable;
+		Symbol::SymbolTable* m_funcBodySymbolTable;
 		int64_t m_startOffset = 0;
 	};
 

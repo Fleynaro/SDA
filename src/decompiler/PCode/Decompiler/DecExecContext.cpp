@@ -2,9 +2,9 @@
 #include "PrimaryDecompiler.h"
 
 using namespace CE;
-using namespace CE::Decompiler;
+using namespace Decompiler;
 
-void CE::Decompiler::RegisterExecContext::clear() {
+void RegisterExecContext::clear() {
 	for (auto& pair : m_registers) {
 		auto& registers = pair.second;
 		for (auto& regInfo : registers)
@@ -12,7 +12,7 @@ void CE::Decompiler::RegisterExecContext::clear() {
 	}
 }
 
-ExprTree::INode* RegisterExecContext::requestRegister(const PCode::Register& reg) {
+ExprTree::INode* RegisterExecContext::requestRegister(const Register& reg) {
 	BitMask64 needReadMask = reg.m_valueRangeMask;
 	auto regParts = findRegisterParts(reg.getId(), needReadMask);
 	if (!needReadMask.isZero()) {
@@ -28,7 +28,7 @@ ExprTree::INode* RegisterExecContext::requestRegister(const PCode::Register& reg
 	return CreateExprFromRegisterParts(regParts, reg.m_valueRangeMask);
 }
 
-void CE::Decompiler::RegisterExecContext::setRegister(const PCode::Register& reg, ExprTree::INode* newExpr) {
+void RegisterExecContext::setRegister(const Register& reg, ExprTree::INode* newExpr) {
 	std::list<TopNode*> oldTopNodes;
 
 	auto it = m_registers.find(reg.getId());
@@ -257,7 +257,7 @@ std::list<RegisterExecContext::RegisterPart> RegisterExecContext::findRegisterPa
 	return regParts;
 }
 
-BitMask64 CE::Decompiler::RegisterExecContext::calculateMaxMask(const std::list<RegisterInfo>& regs) {
+BitMask64 RegisterExecContext::calculateMaxMask(const std::list<RegisterInfo>& regs) {
 	BitMask64 mask;
 	for (auto reg : regs) {
 		mask = mask | reg.m_register.m_valueRangeMask;
@@ -265,7 +265,7 @@ BitMask64 CE::Decompiler::RegisterExecContext::calculateMaxMask(const std::list<
 	return mask;
 }
 
-std::list<BitMask64> CE::Decompiler::RegisterExecContext::FindNonIntersectedMasks(const std::list<RegisterInfo>& regs) {
+std::list<BitMask64> RegisterExecContext::FindNonIntersectedMasks(const std::list<RegisterInfo>& regs) {
 	std::list<BitMask64> masks;
 	for (const auto& reg : regs) {
 		masks.push_back(reg.m_register.m_valueRangeMask);
@@ -281,7 +281,7 @@ std::list<BitMask64> CE::Decompiler::RegisterExecContext::FindNonIntersectedMask
 	return masks;
 }
 
-std::set<BitMask64> CE::Decompiler::RegisterExecContext::CalculateMasks(const std::list<RegisterInfo>& regs1, const std::list<RegisterInfo>& regs2) {
+std::set<BitMask64> RegisterExecContext::CalculateMasks(const std::list<RegisterInfo>& regs1, const std::list<RegisterInfo>& regs2) {
 	auto masks1 = FindNonIntersectedMasks(regs1);
 	auto masks2 = FindNonIntersectedMasks(regs2);
 	std::set<BitMask64> resultMasks;
@@ -294,7 +294,7 @@ std::set<BitMask64> CE::Decompiler::RegisterExecContext::CalculateMasks(const st
 	return resultMasks;
 }
 
-ExprTree::INode* CE::Decompiler::RegisterExecContext::CreateExprFromRegisterParts(std::list<RegisterPart> regParts, BitMask64 requestRegMask) {
+ExprTree::INode* RegisterExecContext::CreateExprFromRegisterParts(std::list<RegisterPart> regParts, BitMask64 requestRegMask) {
 	ExprTree::INode* resultExpr = nullptr;
 
 	//descending sort
@@ -329,7 +329,7 @@ ExprTree::INode* CE::Decompiler::RegisterExecContext::CreateExprFromRegisterPart
 	return resultExpr;
 }
 
-CE::Decompiler::ExecContext::~ExecContext() {
+ExecContext::~ExecContext() {
 	m_startRegisterExecCtx.clear();
 	m_registerExecCtx.clear();
 
@@ -339,28 +339,28 @@ CE::Decompiler::ExecContext::~ExecContext() {
 	}
 }
 
-ExprTree::INode* CE::Decompiler::ExecContext::requestVarnode(PCode::Varnode* varnode) {
-	if (const auto registerVarnode = dynamic_cast<PCode::RegisterVarnode*>(varnode)) {
+ExprTree::INode* ExecContext::requestVarnode(Varnode* varnode) {
+	if (const auto registerVarnode = dynamic_cast<RegisterVarnode*>(varnode)) {
 		return m_registerExecCtx.requestRegister(registerVarnode->m_register);
 	}
-	if (const auto symbolVarnode = dynamic_cast<PCode::SymbolVarnode*>(varnode)) {
+	if (const auto symbolVarnode = dynamic_cast<SymbolVarnode*>(varnode)) {
 		const auto it = m_symbolVarnodes.find(symbolVarnode);
 		if (it != m_symbolVarnodes.end()) {
 			const auto topNode = it->second;
 			return topNode->getNode();
 		}
 	}
-	if (auto varnodeConstant = dynamic_cast<PCode::ConstantVarnode*>(varnode)) {
+	if (auto varnodeConstant = dynamic_cast<ConstantVarnode*>(varnode)) {
 		return new ExprTree::NumberLeaf(varnodeConstant->m_value, varnodeConstant->getMask().getSize());
 	}
 	return nullptr;
 }
 
-void CE::Decompiler::ExecContext::setVarnode(PCode::Varnode* varnode, ExprTree::INode* newExpr) {
-	if (const auto registerVarnode = dynamic_cast<PCode::RegisterVarnode*>(varnode)) {
+void ExecContext::setVarnode(Varnode* varnode, ExprTree::INode* newExpr) {
+	if (const auto registerVarnode = dynamic_cast<RegisterVarnode*>(varnode)) {
 		m_registerExecCtx.setRegister(registerVarnode->m_register, newExpr);
 	}
-	if (const auto symbolVarnode = dynamic_cast<PCode::SymbolVarnode*>(varnode)) {
+	if (const auto symbolVarnode = dynamic_cast<SymbolVarnode*>(varnode)) {
 		TopNode* topNode = nullptr;
 		const auto it = m_symbolVarnodes.find(symbolVarnode);
 		if (it != m_symbolVarnodes.end()) {
@@ -375,7 +375,7 @@ void CE::Decompiler::ExecContext::setVarnode(PCode::Varnode* varnode, ExprTree::
 	}
 }
 
-void CE::Decompiler::ExecContext::join(ExecContext* ctx) {
+void ExecContext::join(ExecContext* ctx) {
 	if (!m_registerExecCtx.m_isFilled) {
 		m_registerExecCtx.copyFrom(&ctx->m_registerExecCtx);
 	}

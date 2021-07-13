@@ -26,7 +26,7 @@ SymbolTableManager* SymbolTableMapper::getManager() const
 	return static_cast<SymbolTableManager*>(m_repository);
 }
 
-IDomainObject* SymbolTableMapper::doLoad(Database* db, SQLite::Statement& query) {
+IDomainObject* SymbolTableMapper::doLoad(Database* db, Statement& query) {
 	const int sym_table_id = query.getColumn("sym_table_id");
 	const auto type = static_cast<SymbolTable::SymbolTableType>((int)query.getColumn("type"));
 	std::string json_symbols_str = query.getColumn("json_symbols");
@@ -37,7 +37,7 @@ IDomainObject* SymbolTableMapper::doLoad(Database* db, SQLite::Statement& query)
 
 	// load symbols for the symbol table
 	for (const auto& json_symbol : json_symbols) {
-		const auto symbol_id = json_symbol["sym_id"].get<DB::Id>();
+		const auto symbol_id = json_symbol["sym_id"].get<Id>();
 		const auto offset = json_symbol["offset"].get<int64_t>();
 
 		const auto symbol = getManager()->getProject()->getSymbolManager()->findSymbolById(symbol_id);
@@ -54,7 +54,7 @@ void SymbolTableMapper::doInsert(TransactionContext* ctx, IDomainObject* obj) {
 
 void SymbolTableMapper::doUpdate(TransactionContext* ctx, IDomainObject* obj) {
 	auto symTable = dynamic_cast<SymbolTable*>(obj);
-	SQLite::Statement query(*ctx->m_db, "REPLACE INTO sda_symbol_tables (sym_table_id, type, json_symbols, save_id) VALUES(?1, ?2, ?3, ?4)");
+	Statement query(*ctx->m_db, "REPLACE INTO sda_symbol_tables (sym_table_id, type, json_symbols, save_id) VALUES(?1, ?2, ?3, ?4)");
 	query.bind(1, symTable->getId());
 	bind(query, symTable);
 	query.bind(4, ctx->m_saveId);
@@ -69,7 +69,7 @@ void SymbolTableMapper::doRemove(TransactionContext* ctx, IDomainObject* obj) {
 	query.exec();
 }
 
-void SymbolTableMapper::bind(SQLite::Statement& query, SymbolTable* symbolTable) {
+void SymbolTableMapper::bind(Statement& query, SymbolTable* symbolTable) {
 	json json_symbols;
 	for (auto& pair : symbolTable->getSymbols()) {
 		json json_symbol;

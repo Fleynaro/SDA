@@ -13,7 +13,7 @@ namespace CE::Decompiler
 	struct RegisterExecContext
 	{
 		struct RegisterInfo {
-			PCode::Register m_register;
+			Register m_register;
 			TopNode* m_expr;
 			ExecContext* m_srcExecContext;
 
@@ -32,7 +32,7 @@ namespace CE::Decompiler
 		};
 
 		AbstractPrimaryDecompiler* m_decompiler;
-		std::map<PCode::RegisterId, std::list<RegisterInfo>> m_registers;
+		std::map<RegisterId, std::list<RegisterInfo>> m_registers;
 		ExecContext* m_execContext;
 		bool m_isFilled = false;
 
@@ -42,9 +42,9 @@ namespace CE::Decompiler
 
 		void clear();
 
-		ExprTree::INode* requestRegister(const PCode::Register& reg);
+		ExprTree::INode* requestRegister(const Register& reg);
 
-		void setRegister(const PCode::Register& reg, ExprTree::INode* newExpr);
+		void setRegister(const Register& reg, ExprTree::INode* newExpr);
 
 		void copyFrom(RegisterExecContext* ctx);
 
@@ -65,7 +65,7 @@ namespace CE::Decompiler
 	// it containts register exec. context and values for symbol varnodes
 	class ExecContext
 	{
-		std::map<PCode::SymbolVarnode*, TopNode*> m_symbolVarnodes;
+		std::map<SymbolVarnode*, TopNode*> m_symbolVarnodes;
 	public:
 		RegisterExecContext m_startRegisterExecCtx; // state before decompiling
 		RegisterExecContext m_registerExecCtx; // state during decompiling and after
@@ -77,9 +77,9 @@ namespace CE::Decompiler
 
 		~ExecContext();
 
-		ExprTree::INode* requestVarnode(PCode::Varnode* varnode);
+		ExprTree::INode* requestVarnode(Varnode* varnode);
 
-		void setVarnode(PCode::Varnode* varnode, ExprTree::INode* newExpr);
+		void setVarnode(Varnode* varnode, ExprTree::INode* newExpr);
 
 		void join(ExecContext* ctx);
 	};

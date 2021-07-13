@@ -7,9 +7,9 @@
 #include <managers/TypeManager.h>
 
 using namespace CE;
-using namespace CE::Ghidra;
+using namespace Ghidra;
 
-DataTypeMapper::DataTypeMapper(CE::TypeManager* typeManager)
+DataTypeMapper::DataTypeMapper(TypeManager* typeManager)
 	: m_typeManager(typeManager)
 {
 	m_enumTypeMapper = new EnumTypeMapper(this);
@@ -19,7 +19,7 @@ DataTypeMapper::DataTypeMapper(CE::TypeManager* typeManager)
 	m_signatureTypeMapper = new SignatureTypeMapper(this);
 }
 
-void DataTypeMapper::createTypeByDescIfNotExists(const datatype::SDataType& typeDesc)
+void DataTypeMapper::createTypeByDescIfNotExists(const SDataType& typeDesc)
 {
 	const auto type = m_typeManager->findTypeByGhidraId(typeDesc.id);
 	if (type == nullptr) {
@@ -27,7 +27,7 @@ void DataTypeMapper::createTypeByDescIfNotExists(const datatype::SDataType& type
 	}
 }
 
-DataType::UserDefinedType* DataTypeMapper::createTypeByDesc(const datatype::SDataType& typeDesc)
+DataType::UserDefinedType* DataTypeMapper::createTypeByDesc(const SDataType& typeDesc)
 {
 	DataType::UserDefinedType* userType = nullptr;
 	/*switch (typeDesc.group)
@@ -80,7 +80,7 @@ void DataTypeMapper::load(packet::SDataFullSyncPacket* dataPacket) {
 }
 
 void markObjectAsSynced(SyncContext* ctx, DataType::UserDefinedType* type) {
-	SQLite::Statement query(*ctx->m_db, "UPDATE sda_types SET ghidra_sync_id=?1 WHERE id=?2");
+	Statement query(*ctx->m_db, "UPDATE sda_types SET ghidra_sync_id=?1 WHERE id=?2");
 	query.bind(1, ctx->m_syncId);
 	query.bind(2, type->getId());
 	query.exec();
@@ -97,10 +97,10 @@ void DataTypeMapper::remove(SyncContext* ctx, IObject* obj) {
 	markObjectAsSynced(ctx, type);
 }
 
-datatype::SDataType DataTypeMapper::buildDesc(DataType::UserDefinedType* type) {
-	datatype::SDataType typeDesc;
+SDataType DataTypeMapper::buildDesc(DataType::UserDefinedType* type) {
+	SDataType typeDesc;
 	typeDesc.__set_id(type->getGhidraId());
-	typeDesc.__set_group(static_cast<datatype::DataTypeGroup::type>(type->getGroup()));
+	typeDesc.__set_group(static_cast<DataTypeGroup::type>(type->getGroup()));
 	typeDesc.__set_size(type->getSize());
 	typeDesc.__set_name(type->getName());
 	typeDesc.__set_comment(type->getComment());
@@ -130,7 +130,7 @@ DataTypePtr DataTypeMapper::getTypeByDesc(const shared::STypeUnit& desc) const
 	return std::make_shared<DataType::Unit>(type, ptr_levels);
 }
 
-void DataTypeMapper::changeUserTypeByDesc(DataType::UserDefinedType* type, const datatype::SDataType& typeDesc) {
+void DataTypeMapper::changeUserTypeByDesc(DataType::UserDefinedType* type, const SDataType& typeDesc) {
 	type->setName(typeDesc.name);
 	if (typeDesc.comment != "{pull}") {
 		type->setComment(typeDesc.comment);

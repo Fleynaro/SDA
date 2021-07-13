@@ -10,7 +10,7 @@ namespace CE
 		class Unit : public IType
 		{
 		public:
-			Unit(DataType::IType* type, std::list<int> levels = {});
+			Unit(IType* type, std::list<int> levels = {});
 
 			Group getGroup() override;
 
@@ -48,7 +48,7 @@ namespace CE
 
 			bool isString();
 
-			bool equal(DataType::Unit* typeUnit);
+			bool equal(Unit* typeUnit);
 
 			int getPriority();
 
@@ -68,11 +68,11 @@ namespace CE
 
 			std::string getViewValue(uint64_t value) override;
 
-			DataType::IType* getType() const;
+			IType* getType() const;
 
 			static bool EqualPointerLvls(const std::list<int>& ptrList1, const std::list<int>& ptrList2);
 		private:
-			DataType::IType* m_type;
+			IType* m_type;
 			std::list<int> m_levels;
 		};
 	};
@@ -81,8 +81,8 @@ namespace CE
 
 	namespace DataType
 	{
-		DataTypePtr GetUnit(DataType::IType* type, const std::list<int>& levels_list);
-		DataTypePtr GetUnit(DataType::IType* type, const std::string& levels = "");
+		DataTypePtr GetUnit(IType* type, const std::list<int>& levels_list);
+		DataTypePtr GetUnit(IType* type, const std::string& levels = "");
 		std::string GetPointerLevelStr(DataTypePtr type);
 		std::list<int> ParsePointerLevelsStr(const std::string& str);
 		DataTypePtr CloneUnit(DataTypePtr dataType);

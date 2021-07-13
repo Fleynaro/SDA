@@ -5,9 +5,9 @@
 #include <map>
 
 using namespace CE;
-using namespace CE::DataType;
+using namespace DataType;
 
-Unit::Unit(DataType::IType* type, std::list<int> levels)
+Unit::Unit(IType* type, std::list<int> levels)
 	: m_type(type), m_levels(levels)
 {}
 
@@ -70,7 +70,7 @@ bool Unit::isString() {
 	return dynamic_cast<Char*>(baseType) || dynamic_cast<WChar*>(baseType);
 }
 
-bool Unit::equal(DataType::Unit* typeUnit) {
+bool Unit::equal(Unit* typeUnit) {
 	const auto baseType1 = getBaseType();
 	const auto baseType2 = typeUnit->getBaseType();
 	auto sysType1 = dynamic_cast<SystemType*>(baseType1);
@@ -155,16 +155,16 @@ int Unit::getSize() {
 	return mulDim * m_type->getSize();
 }
 
-std::string DataType::Unit::getViewValue(uint64_t value) {
+std::string Unit::getViewValue(uint64_t value) {
 	return m_type->getViewValue(value);
 }
 
-DataType::IType* Unit::getType() const
+IType* Unit::getType() const
 {
 	return m_type;
 }
 
-bool CE::DataType::Unit::EqualPointerLvls(const std::list<int>& ptrList1, const std::list<int>& ptrList2) {
+bool Unit::EqualPointerLvls(const std::list<int>& ptrList1, const std::list<int>& ptrList2) {
 	if (ptrList1.size() != ptrList2.size())
 		return false;
 	auto it1 = ptrList1.begin();
@@ -186,7 +186,7 @@ bool CE::DataType::Unit::EqualPointerLvls(const std::list<int>& ptrList1, const 
 	(arr**[5])*			<=>			arr[1][5][1][1]
 	((arr[5])*[10])*	<=>			arr[1][10][1][5]
 */
-std::list<int> CE::DataType::ParsePointerLevelsStr(const std::string& str) {
+std::list<int> DataType::ParsePointerLevelsStr(const std::string& str) {
 	std::list<int> result;
 	std::list<int> seq;
 
@@ -225,17 +225,17 @@ std::list<int> CE::DataType::ParsePointerLevelsStr(const std::string& str) {
 	return result;
 }
 
-DataTypePtr CE::DataType::CloneUnit(DataTypePtr dataType) {
+DataTypePtr DataType::CloneUnit(DataTypePtr dataType) {
 	return GetUnit(dataType->getType(), GetPointerLevelStr(dataType));
 }
 
-DataTypePtr CE::DataType::MakePointer(DataTypePtr dataType) {
-	auto pointerDataType = DataType::CloneUnit(dataType);
+DataTypePtr DataType::MakePointer(DataTypePtr dataType) {
+	auto pointerDataType = CloneUnit(dataType);
 	pointerDataType->addPointerLevelInFront();
 	return pointerDataType;
 }
 
-std::string CE::DataType::GetPointerLevelStr(DataTypePtr type) {
+std::string DataType::GetPointerLevelStr(DataTypePtr type) {
 	std::string result = "";
 	for (auto arrSize : type->getPointerLevels()) {
 		result = result + "["+ std::to_string(arrSize) +"]";
@@ -243,11 +243,11 @@ std::string CE::DataType::GetPointerLevelStr(DataTypePtr type) {
 	return result;
 }
 
-DataTypePtr CE::DataType::GetUnit(DataType::IType* type, const std::string& levels) {
+DataTypePtr DataType::GetUnit(IType* type, const std::string& levels) {
 	const auto levels_list = ParsePointerLevelsStr(levels);
 	return GetUnit(type, levels_list);
 }
 
-DataTypePtr CE::DataType::GetUnit(DataType::IType* type, const std::list<int>& levels_list) {
-	return std::make_shared<DataType::Unit>(type, levels_list);
+DataTypePtr DataType::GetUnit(IType* type, const std::list<int>& levels_list) {
+	return std::make_shared<Unit>(type, levels_list);
 }

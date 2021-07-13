@@ -42,7 +42,7 @@ namespace CE::Decompiler::ExprTree
 
 		std::list<Term> getArrTerms() const;
 
-		void replaceNode(ExprTree::INode* node, ExprTree::INode* newNode) override;
+		void replaceNode(INode* node, INode* newNode) override;
 
 		std::list<INode*> getNodesList() override;
 

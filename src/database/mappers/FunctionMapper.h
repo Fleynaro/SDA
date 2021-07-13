@@ -19,7 +19,7 @@ namespace DB
 
 		CE::FunctionManager* getManager() const;
 	protected:
-		IDomainObject* doLoad(Database* db, SQLite::Statement& query) override;
+		IDomainObject* doLoad(Database* db, Statement& query) override;
 
 		void doInsert(TransactionContext* ctx, IDomainObject* obj) override;
 
@@ -28,6 +28,6 @@ namespace DB
 		void doRemove(TransactionContext* ctx, IDomainObject* obj) override;
 
 	private:
-		void bind(SQLite::Statement& query, CE::Function* func);
+		void bind(Statement& query, CE::Function* func);
 	};
 };

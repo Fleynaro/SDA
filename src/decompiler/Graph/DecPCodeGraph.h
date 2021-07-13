@@ -13,7 +13,7 @@ namespace CE::Decompiler
 	{
 		ComplexOffset m_minOffset;
 		ComplexOffset m_maxOffset;
-		std::list<PCode::Instruction*> m_instructions; // content of the block
+		std::list<Instruction*> m_instructions; // content of the block
 		PCodeBlock* m_nextNearBlock = nullptr;
 		PCodeBlock* m_nextFarBlock = nullptr;
 	public:
@@ -30,7 +30,7 @@ namespace CE::Decompiler
 
 		void disconnect();
 
-		std::list<PCode::Instruction*>& getInstructions();
+		std::list<Instruction*>& getInstructions();
 
 		ComplexOffset getMinOffset() const;
 
@@ -50,7 +50,7 @@ namespace CE::Decompiler
 
 		std::list<PCodeBlock*> getNextBlocks() const;
 
-		PCode::Instruction* getLastInstruction();
+		Instruction* getLastInstruction();
 
 		std::string printDebug(void* addr, const std::string& tabStr, bool extraInfo, bool pcode);
 	};
@@ -64,7 +64,7 @@ namespace CE::Decompiler
 		std::set<FunctionPCodeGraph*> m_refFuncCalls;
 		std::set<FunctionPCodeGraph*> m_nonVirtFuncCalls;
 		std::set<FunctionPCodeGraph*> m_virtFuncCalls;
-		std::map<PCode::Instruction*, DataValue> m_constValues;
+		std::map<Instruction*, DataValue> m_constValues;
 	public:
 		FunctionPCodeGraph(ImagePCodeGraph* imagePCodeGraph);
 
@@ -91,7 +91,7 @@ namespace CE::Decompiler
 
 		PCodeBlock* getStartBlock() const;
 
-		std::map<PCode::Instruction*, PCode::DataValue>& getConstValues();
+		std::map<Instruction*, DataValue>& getConstValues();
 
 		void printDebug(void* addr);
 	};

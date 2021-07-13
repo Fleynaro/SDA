@@ -4,13 +4,13 @@
 #include <decompiler/PCode/DecPCode.h>
 
 using namespace CE;
-using namespace CE::DataType;
-using namespace CE::Decompiler;
+using namespace DataType;
+using namespace Decompiler;
 
 FunctionSignature::FunctionSignature(TypeManager* typeManager, const std::string& name, const std::string& comment, CallingConvetion callingConvetion)
 	: UserDefinedType(typeManager, name, comment), m_callingConvetion(callingConvetion)
 {
-	setReturnType(DataType::GetUnit(typeManager->getFactory().getDefaultReturnType()));
+	setReturnType(GetUnit(typeManager->getFactory().getDefaultReturnType()));
 }
 
 AbstractType::Group FunctionSignature::getGroup() {
@@ -29,7 +29,7 @@ FunctionSignature::CallingConvetion FunctionSignature::getCallingConvetion() {
 	return m_callingConvetion;
 }
 
-std::list<std::pair<int, Decompiler::Storage>>& FunctionSignature::getCustomStorages() {
+std::list<std::pair<int, Storage>>& FunctionSignature::getCustomStorages() {
 	return m_customStorages;
 }
 
@@ -107,7 +107,7 @@ void FunctionSignature::updateParameterStorages() {
 	}
 
 	//calling conventions
-	if (getCallingConvetion() == FunctionSignature::FASTCALL) {
+	if (getCallingConvetion() == FASTCALL) {
 		//parameters
 		int paramIdx = 1;
 		for (auto param : getParameters()) {

@@ -1,9 +1,9 @@
 #include "ExprTreeCondition.h"
 
 using namespace CE::Decompiler;
-using namespace CE::Decompiler::ExprTree;
+using namespace ExprTree;
 
-std::string CE::Decompiler::ExprTree::CompositeCondition::ShowConditionType(CompositeConditionType condType) {
+std::string CompositeCondition::ShowConditionType(CompositeConditionType condType) {
 	switch (condType)
 	{
 	case And: return "&&";
@@ -12,7 +12,7 @@ std::string CE::Decompiler::ExprTree::CompositeCondition::ShowConditionType(Comp
 	return "_";
 }
 
-CE::Decompiler::ExprTree::CompositeCondition::CompositeCondition(AbstractCondition* leftCond, AbstractCondition* rightCond, CompositeConditionType cond, PCode::Instruction* instr)
+CompositeCondition::CompositeCondition(AbstractCondition* leftCond, AbstractCondition* rightCond, CompositeConditionType cond, PCode::Instruction* instr)
 	: m_leftCond(leftCond), m_rightCond(rightCond), m_cond(cond), AbstractCondition(instr)
 {
 	leftCond->addParentNode(this);
@@ -21,14 +21,14 @@ CE::Decompiler::ExprTree::CompositeCondition::CompositeCondition(AbstractConditi
 	}
 }
 
-CE::Decompiler::ExprTree::CompositeCondition::~CompositeCondition() {
+CompositeCondition::~CompositeCondition() {
 	if (m_leftCond != nullptr)
 		m_leftCond->removeBy(this);
 	if (m_rightCond != nullptr)
 		m_rightCond->removeBy(this);
 }
 
-void CE::Decompiler::ExprTree::CompositeCondition::replaceNode(INode* node, INode* newNode) {
+void CompositeCondition::replaceNode(INode* node, INode* newNode) {
 	if (const auto cond = dynamic_cast<AbstractCondition*>(node)) {
 		if (const auto newCond = dynamic_cast<AbstractCondition*>(newNode)) {
 			if (m_leftCond == cond)
@@ -39,21 +39,21 @@ void CE::Decompiler::ExprTree::CompositeCondition::replaceNode(INode* node, INod
 	}
 }
 
-std::list<ExprTree::INode*> CE::Decompiler::ExprTree::CompositeCondition::getNodesList() {
+std::list<INode*> CompositeCondition::getNodesList() {
 	return { m_leftCond, m_rightCond };
 }
 
-INode* CE::Decompiler::ExprTree::CompositeCondition::clone(NodeCloneContext* ctx) {
+INode* CompositeCondition::clone(NodeCloneContext* ctx) {
 	return new CompositeCondition(dynamic_cast<AbstractCondition*>(m_leftCond->clone(ctx)), m_rightCond ? dynamic_cast<AbstractCondition*>(m_rightCond->clone(ctx)) : nullptr, m_cond);
 }
 
-HS CE::Decompiler::ExprTree::CompositeCondition::getHash() {
+HS CompositeCondition::getHash() {
 	return HS()
 		<< (m_leftCond->getHash() + (m_rightCond ? m_rightCond->getHash() : 0x0))
 		<< static_cast<int>(m_cond);
 }
 
-void CE::Decompiler::ExprTree::CompositeCondition::inverse() {
+void CompositeCondition::inverse() {
 	if (m_cond == Not) {
 		m_cond = None;
 		return;
@@ -79,7 +79,7 @@ void CE::Decompiler::ExprTree::CompositeCondition::inverse() {
 		m_rightCond->inverse();
 }
 
-std::string CE::Decompiler::ExprTree::CompositeCondition::printDebug() {
+std::string CompositeCondition::printDebug() {
 	if (!m_leftCond)
 		return "";
 	if (m_cond == None) {
@@ -91,21 +91,21 @@ std::string CE::Decompiler::ExprTree::CompositeCondition::printDebug() {
 	return m_updateDebugInfo = ("(" + m_leftCond->printDebug() + " " + ShowConditionType(m_cond) + " " + m_rightCond->printDebug() + ")");
 }
 
-CE::Decompiler::ExprTree::Condition::Condition(INode* leftNode, INode* rightNode, ConditionType cond, PCode::Instruction* instr)
+Condition::Condition(INode* leftNode, INode* rightNode, ConditionType cond, PCode::Instruction* instr)
 	: m_leftNode(leftNode), m_rightNode(rightNode), m_cond(cond), AbstractCondition(instr)
 {
 	leftNode->addParentNode(this);
 	rightNode->addParentNode(this);
 }
 
-CE::Decompiler::ExprTree::Condition::~Condition() {
+Condition::~Condition() {
 	if (m_leftNode != nullptr)
 		m_leftNode->removeBy(this);
 	if (m_rightNode != nullptr)
 		m_rightNode->removeBy(this);
 }
 
-void CE::Decompiler::ExprTree::Condition::replaceNode(INode* node, INode* newNode) {
+void Condition::replaceNode(INode* node, INode* newNode) {
 	if (m_leftNode == node) {
 		m_leftNode = newNode;
 	}
@@ -114,21 +114,21 @@ void CE::Decompiler::ExprTree::Condition::replaceNode(INode* node, INode* newNod
 	}
 }
 
-std::list<ExprTree::INode*> CE::Decompiler::ExprTree::Condition::getNodesList() {
+std::list<INode*> Condition::getNodesList() {
 	return { m_leftNode, m_rightNode };
 }
 
-INode* CE::Decompiler::ExprTree::Condition::clone(NodeCloneContext* ctx) {
+INode* Condition::clone(NodeCloneContext* ctx) {
 	return new Condition(m_leftNode->clone(ctx), m_rightNode->clone(ctx), m_cond);
 }
 
-HS CE::Decompiler::ExprTree::Condition::getHash() {
+HS Condition::getHash() {
 	return HS()
 		<< (m_leftNode->getHash() + m_rightNode->getHash())
 		<< static_cast<int>(m_cond);
 }
 
-void CE::Decompiler::ExprTree::Condition::inverse() {
+void Condition::inverse() {
 	switch (m_cond)
 	{
 	case Eq:
@@ -152,41 +152,41 @@ void CE::Decompiler::ExprTree::Condition::inverse() {
 	}
 }
 
-std::string CE::Decompiler::ExprTree::Condition::printDebug() {
+std::string Condition::printDebug() {
 	if (!m_leftNode || !m_rightNode)
 		return "";
 	return m_updateDebugInfo = ("(" + m_leftNode->printDebug() + " " + ShowConditionType(m_cond) + " " + m_rightNode->printDebug() + ")");
 }
 
-CE::Decompiler::ExprTree::BooleanValue::BooleanValue(bool value, PCode::Instruction* instr)
+BooleanValue::BooleanValue(bool value, PCode::Instruction* instr)
 	: m_value(value), AbstractCondition(instr)
 {}
 
-void CE::Decompiler::ExprTree::BooleanValue::inverse() {
+void BooleanValue::inverse() {
 	m_value ^= true;
 }
 
-INode* CE::Decompiler::ExprTree::BooleanValue::clone(NodeCloneContext* ctx) {
+INode* BooleanValue::clone(NodeCloneContext* ctx) {
 	return new BooleanValue(m_value);
 }
 
-HS CE::Decompiler::ExprTree::BooleanValue::getHash() {
+HS BooleanValue::getHash() {
 	return HS() << m_value;
 }
 
-std::string CE::Decompiler::ExprTree::BooleanValue::printDebug() {
+std::string BooleanValue::printDebug() {
 	return m_updateDebugInfo = (m_value ? "true" : "false");
 }
 
-CE::Decompiler::ExprTree::AbstractCondition::AbstractCondition(PCode::Instruction* instr)
+AbstractCondition::AbstractCondition(PCode::Instruction* instr)
 	: m_instr(instr)
 {}
 
-int CE::Decompiler::ExprTree::AbstractCondition::getSize() {
+int AbstractCondition::getSize() {
 	return 1;
 }
 
-std::list<PCode::Instruction*> CE::Decompiler::ExprTree::AbstractCondition::getInstructionsRelatedTo() {
+std::list<PCode::Instruction*> AbstractCondition::getInstructionsRelatedTo() {
 	if (m_instr)
 		return { m_instr };
 	return {};

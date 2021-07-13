@@ -90,7 +90,7 @@ namespace CE::Decompiler
 			RawStructure* m_rawStructure;
 
 			RawStructureOwner(int id)
-				: m_id(id), DataType::AbstractType("RawStructure")
+				: m_id(id), AbstractType("RawStructure")
 			{
 				m_rawStructure = new RawStructure(this);
 			}
@@ -194,7 +194,7 @@ namespace CE::Decompiler
 				std::list<Function*> m_functions;
 				
 				RawSignature(RawSignatureOwner* owner)
-					: DataType::FunctionSignature("raw-signature")
+					: FunctionSignature("raw-signature")
 				{
 					m_owners.push_back(owner);
 				}
@@ -203,7 +203,7 @@ namespace CE::Decompiler
 			RawSignature* m_rawSignature;
 
 			RawSignatureOwner()
-				: DataType::AbstractType("RawStructure")
+				: AbstractType("RawStructure")
 			{
 				m_rawSignature = new RawSignature(this);
 			}
@@ -254,7 +254,7 @@ namespace CE::Decompiler
 				return m_rawSignature->getCallingConvetion();
 			}
 
-			std::list<std::pair<int, CE::Decompiler::Storage>>& getCustomStorages() override {
+			std::list<std::pair<int, Storage>>& getCustomStorages() override {
 				return m_rawSignature->getCustomStorages();
 			}
 
@@ -290,7 +290,7 @@ namespace CE::Decompiler
 				return m_rawSignature->deleteAllParameters();
 			}
 
-			CE::Decompiler::FunctionCallInfo getCallInfo() override {
+			FunctionCallInfo getCallInfo() override {
 				return m_rawSignature->getCallInfo();
 			}
 		};
@@ -300,7 +300,7 @@ namespace CE::Decompiler
 			ImagePCodeGraphAnalyzer* m_imagePCodeGraphAnalyzer;
 		public:
 			StructureFinder(SdaCodeGraph* sdaCodeGraph, ImagePCodeGraphAnalyzer* imagePCodeGraphAnalyzer)
-				: Symbolization::SdaDataTypesCalculater(sdaCodeGraph, nullptr, &imagePCodeGraphAnalyzer->m_dataTypeFactory), m_imagePCodeGraphAnalyzer(imagePCodeGraphAnalyzer)
+				: SdaDataTypesCalculater(sdaCodeGraph, nullptr, &imagePCodeGraphAnalyzer->m_dataTypeFactory), m_imagePCodeGraphAnalyzer(imagePCodeGraphAnalyzer)
 			{}
 
 		private:
@@ -319,7 +319,7 @@ namespace CE::Decompiler
 			}
 
 			void calculateDataTypes(INode* node) override {
-				Symbolization::SdaDataTypesCalculater::calculateDataTypes(node);
+				SdaDataTypesCalculater::calculateDataTypes(node);
 
 				// only reading from memory is a trigger to define structures
 				if (const auto sdaReadValueNode = dynamic_cast<SdaReadValueNode*>(node)) {
@@ -351,14 +351,14 @@ namespace CE::Decompiler
 					// create a raw structure
 					if (sdaPointerNode) {
 						const auto rawStructOwner = m_imagePCodeGraphAnalyzer->createRawStructureOwner();
-						sdaPointerNode->setDataType(DataType::GetUnit(rawStructOwner, "[1]"));
+						sdaPointerNode->setDataType(GetUnit(rawStructOwner, "[1]"));
 						m_nextPassRequired = true;
 					}
 				}
 			}
 
 			void handleFunctionNode(SdaFunctionNode* sdaFunctionNode) override {
-				Symbolization::SdaDataTypesCalculater::handleFunctionNode(sdaFunctionNode);
+				SdaDataTypesCalculater::handleFunctionNode(sdaFunctionNode);
 
 				if (auto dstCastNode = dynamic_cast<ISdaNode*>(sdaFunctionNode->getDestination())) {
 					if (const auto sdaMemSymbolLeaf = dynamic_cast<SdaMemSymbolLeaf*>(dstCastNode)) {
@@ -473,7 +473,7 @@ namespace CE::Decompiler
 			}
 
 		private:
-			FunctionCallInfo requestFunctionCallInfo(ExecContext* ctx, PCode::Instruction* instr, int funcOffset) override {
+			FunctionCallInfo requestFunctionCallInfo(ExecContext* ctx, Instruction* instr, int funcOffset) override {
 				auto rawSigOwner = m_imagePCodeGraphAnalyzer->getRawSignatureOwner(instr, funcOffset);
 				if (rawSigOwner) {
 					auto& retValStatInfo = rawSigOwner->m_rawSignature->m_retValStatInfo;
@@ -506,7 +506,7 @@ namespace CE::Decompiler
 		};
 
 		ProgramGraph* m_programGraph;
-		CE::Project* m_project;
+		Project* m_project;
 		AbstractRegisterFactory* m_registerFactory;
 		Symbolization::DataTypeFactory m_dataTypeFactory;
 		PCodeGraphReferenceSearch* m_graphReferenceSearch;
@@ -516,7 +516,7 @@ namespace CE::Decompiler
 		std::map<int64_t, RawSignatureOwner*> m_funcOffsetToSig;
 		std::map<int64_t, RawSignatureOwner*> m_virtFuncCallOffsetToSig;
 
-		ImagePCodeGraphAnalyzer(ProgramGraph* programGraph, CE::Project* programModule, AbstractRegisterFactory* registerFactory, PCodeGraphReferenceSearch* graphReferenceSearch = nullptr)
+		ImagePCodeGraphAnalyzer(ProgramGraph* programGraph, Project* programModule, AbstractRegisterFactory* registerFactory, PCodeGraphReferenceSearch* graphReferenceSearch = nullptr)
 			: m_programGraph(programGraph), m_project(programModule), m_registerFactory(registerFactory), m_dataTypeFactory(programModule), m_graphReferenceSearch(graphReferenceSearch)
 		{
 			m_globalSymbolTable = new CE::Symbol::SymbolTable(m_project->getSymTableManager(), CE::Symbol::SymbolTable::GLOBAL_SPACE, 100000);
@@ -586,7 +586,7 @@ namespace CE::Decompiler
 				return;
 
 			DecompiledCodeGraph decompiledCodeGraph(funcGraph);
-			auto funcCallInfoCallback = [&](int offset, ExprTree::INode* dst) { return FunctionCallInfo({}); };
+			auto funcCallInfoCallback = [&](int offset, INode* dst) { return FunctionCallInfo({}); };
 			auto decompiler = PrimaryDecompilerForReturnVal(&decompiledCodeGraph, m_registerFactory, ReturnInfo());
 			decompiler.setImagePCodeGraphAnalyzer(this);
 			decompiler.start();
@@ -653,13 +653,13 @@ namespace CE::Decompiler
 					doPassToDefineReturnValues(nextFuncGraph, visitedGraphs);
 
 
-			auto funcCallInfoCallback = [&](PCode::Instruction* instr, int funcOffset) {
+			auto funcCallInfoCallback = [&](Instruction* instr, int funcOffset) {
 				auto rawSigOwner = getRawSignatureOwner(instr, funcOffset);
 				if (rawSigOwner)
 					return rawSigOwner->getCallInfo();
 				return FunctionCallInfo({});
 			};
-			auto decompiler = CE::Decompiler::Decompiler(funcGraph, funcCallInfoCallback, ReturnInfo(), m_registerFactory);
+			auto decompiler = Decompiler::Decompiler(funcGraph, funcCallInfoCallback, ReturnInfo(), m_registerFactory);
 			decompiler.start();
 
 			auto decCodeGraph = decompiler.getDecGraph();
@@ -733,7 +733,7 @@ namespace CE::Decompiler
 		}
 
 		// find func. signature for the function call (virt. or non-virt.)
-		RawSignatureOwner* getRawSignatureOwner(PCode::Instruction* instr, int funcOffset) {
+		RawSignatureOwner* getRawSignatureOwner(Instruction* instr, int funcOffset) {
 			if (funcOffset != 0) {
 				// if it is a non-virt. call
 				const auto it = m_funcOffsetToSig.find(funcOffset);
@@ -754,7 +754,7 @@ namespace CE::Decompiler
 				auto rawSignature = new RawSignatureOwner();
 				auto funcOffset = funcGraph->getStartBlock()->getMinOffset() >> 8;
 				m_funcOffsetToSig[funcOffset] = rawSignature;
-				auto funcSymbol = new CE::Symbol::FunctionSymbol(funcOffset, DataType::GetUnit(rawSignature), "func");
+				auto funcSymbol = new CE::Symbol::FunctionSymbol(funcOffset, GetUnit(rawSignature), "func");
 				m_globalSymbolTable->addSymbol(funcSymbol, funcOffset);
 				auto function = new Function(funcSymbol, funcGraph);
 				rawSignature->m_rawSignature->m_functions.push_back(function);
@@ -779,7 +779,7 @@ namespace CE::Decompiler
 					offset += 0x8;
 				}
 				// add global var for vtable
-				auto vtableVarSymbol = new CE::Symbol::GlobalVarSymbol(vtable.m_offset, DataType::GetUnit(rawStructOwner), "vtable");
+				auto vtableVarSymbol = new CE::Symbol::GlobalVarSymbol(vtable.m_offset, GetUnit(rawStructOwner), "vtable");
 				m_globalSymbolTable->addSymbol(vtableVarSymbol, vtable.m_offset); // todo: intersecting might be
 			}
 		}

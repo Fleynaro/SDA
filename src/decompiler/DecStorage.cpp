@@ -3,8 +3,8 @@
 #include <utility>
 
 using namespace CE;
-using namespace CE::Decompiler;
-using namespace CE::Decompiler::PCode;
+using namespace Decompiler;
+using namespace PCode;
 
 FunctionCallInfo::FunctionCallInfo(std::list<ParameterInfo> paramInfos)
 	: m_paramInfos(std::move(paramInfos))
@@ -64,11 +64,11 @@ int ParameterInfo::getIndex() const
 	return m_index;
 }
 
-int CE::Decompiler::GetIndex_FASTCALL(const PCode::Register& reg, int64_t offset) {
-	if (reg.getType() == PCode::Register::Type::StackPointer) {
+int Decompiler::GetIndex_FASTCALL(const Register& reg, int64_t offset) {
+	if (reg.getType() == Register::Type::StackPointer) {
 		return static_cast<int>(offset) / 0x8 - 5 + 1;
 	}
-	std::map<PCode::RegisterId, int> regToParamId = {
+	std::map<RegisterId, int> regToParamId = {
 		std::pair(ZYDIS_REGISTER_RCX, 1),
 		std::pair(ZYDIS_REGISTER_ZMM0, 1),
 		std::pair(ZYDIS_REGISTER_RDX, 2),

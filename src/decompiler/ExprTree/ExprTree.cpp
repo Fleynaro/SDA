@@ -1,10 +1,10 @@
 #include "ExprTree.h"
 
 using namespace CE::Decompiler;
-using namespace CE::Decompiler::ExprTree;
+using namespace ExprTree;
 
 // get all symbol leafs from the specified {node} according to the specified {symbol}
-void CE::Decompiler::ExprTree::GatherSymbolLeafsFromNode(INode* node, std::list<ExprTree::SymbolLeaf*>& symbolLeafs, Symbol::Symbol* symbol) {
+void ExprTree::GatherSymbolLeafsFromNode(INode* node, std::list<SymbolLeaf*>& symbolLeafs, Symbol::Symbol* symbol) {
 	node->iterateChildNodes([&](INode* childNode) {
 		GatherSymbolLeafsFromNode(childNode, symbolLeafs, symbol);
 		});
@@ -17,14 +17,14 @@ void CE::Decompiler::ExprTree::GatherSymbolLeafsFromNode(INode* node, std::list<
 }
 
 // check if the specified {node} has the specified {symbol}
-bool CE::Decompiler::ExprTree::DoesNodeHaveSymbol(INode* node, Symbol::Symbol* symbol) {
-	std::list<ExprTree::SymbolLeaf*> symbolLeafs;
+bool ExprTree::DoesNodeHaveSymbol(INode* node, Symbol::Symbol* symbol) {
+	std::list<SymbolLeaf*> symbolLeafs;
 	GatherSymbolLeafsFromNode(node, symbolLeafs, symbol);
 	return !symbolLeafs.empty();
 }
 
 // calculate a full mask for node
-ExprBitMask CE::Decompiler::ExprTree::CalculateFullMask(INode* node) {
+ExprBitMask ExprTree::CalculateFullMask(INode* node) {
 	if (auto numberLeaf = dynamic_cast<INumberLeaf*>(node))
 		return numberLeaf->getValue();
 
@@ -91,6 +91,6 @@ ExprBitMask CE::Decompiler::ExprTree::CalculateFullMask(INode* node) {
 }
 
 // calculate a mask for node
-ExprBitMask CE::Decompiler::ExprTree::CalculateMask(INode* node) {
+ExprBitMask ExprTree::CalculateMask(INode* node) {
 	return CalculateFullMask(node) & ExprBitMask(node->getSize());
 }

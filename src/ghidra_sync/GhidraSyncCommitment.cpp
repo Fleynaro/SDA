@@ -2,7 +2,7 @@
 #include <Project.h>
 
 using namespace CE;
-using namespace CE::Ghidra;
+using namespace Ghidra;
 
 SyncCommitment::SyncCommitment(Sync* sync)
 	: m_sync(sync)
@@ -20,7 +20,7 @@ void SyncCommitment::commit() {
 	packet::SDataFullSyncPacket dataPacket;
 	SyncContext ctx;
 	auto& db = m_sync->getProject()->getDB();
-	SQLite::Transaction transaction(db);
+	Transaction transaction(db);
 
 	ctx.m_syncId = createSyncRecord();
 	ctx.m_dataPacket = &dataPacket;
@@ -44,7 +44,7 @@ int SyncCommitment::createSyncRecord() const
 {
 	using namespace std::chrono;
 	auto& db = m_sync->getProject()->getDB();
-	SQLite::Statement query(db, "INSERT INTO sda_ghidra_sync (date, type, comment, objectsCount) VALUES(?1, ?2, ?3, ?4)");
+	Statement query(db, "INSERT INTO sda_ghidra_sync (date, type, comment, objectsCount) VALUES(?1, ?2, ?3, ?4)");
 	query.bind(1, duration_cast<seconds>(system_clock::now().time_since_epoch()).count());
 	query.bind(2, 1);
 	query.bind(3, "");

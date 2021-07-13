@@ -3,9 +3,9 @@
 #include <managers/TypeManager.h>
 
 using namespace CE;
-using namespace CE::Ghidra;
+using namespace Ghidra;
 
-Sync::Sync(CE::Project* programModule)
+Sync::Sync(Project* programModule)
 	: m_project(programModule)
 {
 	m_client = new Client;

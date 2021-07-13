@@ -22,7 +22,7 @@ namespace DB
 
 		CE::TypeManager* getManager() const;
 	protected:
-		IDomainObject* doLoad(Database* db, SQLite::Statement& query) override;
+		IDomainObject* doLoad(Database* db, Statement& query) override;
 
 		void doInsert(TransactionContext* ctx, IDomainObject* obj) override;
 
@@ -39,6 +39,6 @@ namespace DB
 
 		json createExtraJson(CE::DataType::UserDefinedType* userDefType);
 
-		void bind(SQLite::Statement& query, CE::DataType::UserDefinedType* userDefType);
+		void bind(Statement& query, CE::DataType::UserDefinedType* userDefType);
 	};
 };

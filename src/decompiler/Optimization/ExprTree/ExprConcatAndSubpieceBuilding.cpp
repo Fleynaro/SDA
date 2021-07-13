@@ -2,15 +2,15 @@
 
 using namespace CE::Decompiler;
 
-CE::Decompiler::Optimization::ExprConcatAndSubpieceBuilding::ExprConcatAndSubpieceBuilding(INode* node)
+Optimization::ExprConcatAndSubpieceBuilding::ExprConcatAndSubpieceBuilding(INode* node)
 	: ExprModification(node)
 {}
 
-void CE::Decompiler::Optimization::ExprConcatAndSubpieceBuilding::start() {
+void Optimization::ExprConcatAndSubpieceBuilding::start() {
 	dispatch(getNode());
 }
 
-void CE::Decompiler::Optimization::ExprConcatAndSubpieceBuilding::dispatch(INode* node) {
+void Optimization::ExprConcatAndSubpieceBuilding::dispatch(INode* node) {
 	if (const auto opNode = dynamic_cast<OperationalNode*>(node)) {
 		if (opNode->m_operation == Or) {
 			processOpNode(opNode);
@@ -18,7 +18,7 @@ void CE::Decompiler::Optimization::ExprConcatAndSubpieceBuilding::dispatch(INode
 	}
 }
 
-void CE::Decompiler::Optimization::ExprConcatAndSubpieceBuilding::processOpNode(OperationalNode* opNode) {
+void Optimization::ExprConcatAndSubpieceBuilding::processOpNode(OperationalNode* opNode) {
 	auto pairOp1 = GetConcatOperand(opNode->m_rightNode);
 	std::pair<INode*, int> pairOp2;
 	const auto leftOpNode = dynamic_cast<OperationalNode*>(opNode->m_leftNode);
@@ -48,7 +48,7 @@ void CE::Decompiler::Optimization::ExprConcatAndSubpieceBuilding::processOpNode(
 	}
 }
 
-std::pair<INode*, int> CE::Decompiler::Optimization::ExprConcatAndSubpieceBuilding::GetConcatOperand(INode* node) {
+std::pair<INode*, int> Optimization::ExprConcatAndSubpieceBuilding::GetConcatOperand(INode* node) {
 	if (auto curExpr = dynamic_cast<OperationalNode*>(node)) {
 		if (curExpr->m_operation == Shl) {
 			if (auto shlNumberLeaf = dynamic_cast<INumberLeaf*>(curExpr->m_rightNode)) {

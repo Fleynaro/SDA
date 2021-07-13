@@ -2,11 +2,11 @@
 
 using namespace CE::Decompiler;
 
-CE::Decompiler::Optimization::ExprConstConditionCalculating::ExprConstConditionCalculating(AbstractCondition* cond)
+Optimization::ExprConstConditionCalculating::ExprConstConditionCalculating(AbstractCondition* cond)
 	: ExprModification(cond)
 {}
 
-void CE::Decompiler::Optimization::ExprConstConditionCalculating::start() {
+void Optimization::ExprConstConditionCalculating::start() {
 	if (const auto cond = dynamic_cast<Condition*>(getCondition())) {
 		processSimpleCondition(cond);
 	}
@@ -15,11 +15,11 @@ void CE::Decompiler::Optimization::ExprConstConditionCalculating::start() {
 	}
 }
 
-AbstractCondition* CE::Decompiler::Optimization::ExprConstConditionCalculating::getCondition() {
+AbstractCondition* Optimization::ExprConstConditionCalculating::getCondition() {
 	return dynamic_cast<AbstractCondition*>(getNode());
 }
 
-bool CE::Decompiler::Optimization::ExprConstConditionCalculating::processSimpleCondition(Condition* cond) {
+bool Optimization::ExprConstConditionCalculating::processSimpleCondition(Condition* cond) {
 	//[symbol] == NaN -> false
 	if (auto floatNanLeaf = dynamic_cast<FloatNanLeaf*>(cond->m_rightNode)) {
 		const auto newCond = new BooleanValue(cond->m_cond == Condition::Ne);
@@ -42,7 +42,7 @@ bool CE::Decompiler::Optimization::ExprConstConditionCalculating::processSimpleC
 	return false;
 }
 
-bool CE::Decompiler::Optimization::ExprConstConditionCalculating::processCompositeCondition(CompositeCondition* compCond) {
+bool Optimization::ExprConstConditionCalculating::processCompositeCondition(CompositeCondition* compCond) {
 	if (compCond->m_cond == CompositeCondition::Not || compCond->m_cond == CompositeCondition::None) {
 		//!false -> true
 		if (const auto booleanVal = dynamic_cast<BooleanValue*>(compCond->m_leftCond)) {

@@ -1,7 +1,7 @@
 #include "GhidraObject.h"
 
 using namespace CE;
-using namespace CE::Ghidra;
+using namespace Ghidra;
 
 bool Object::doesSyncWithGhidra() {
 	return m_sync;

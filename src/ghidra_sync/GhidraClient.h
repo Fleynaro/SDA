@@ -5,8 +5,8 @@
 #include <thrift/transport/TTransportUtils.h>
 
 using namespace apache::thrift;
-using namespace apache::thrift::protocol;
-using namespace apache::thrift::transport;
+using namespace protocol;
+using namespace transport;
 
 namespace CE::Ghidra
 {

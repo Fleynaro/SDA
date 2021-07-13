@@ -1,9 +1,9 @@
 #include "DecPCodeAbstractDecoder.h"
 
 using namespace CE::Decompiler;
-using namespace CE::Decompiler::PCode;
+using namespace PCode;
 
-void CE::Decompiler::PCode::AbstractDecoder::decode(void* addr, Offset offset, int maxSize) {
+void AbstractDecoder::decode(void* addr, Offset offset, int maxSize) {
 	m_addr = addr;
 	m_curOrigInstr = nullptr;
 	m_curOrderId = 0x0;
@@ -12,25 +12,25 @@ void CE::Decompiler::PCode::AbstractDecoder::decode(void* addr, Offset offset, i
 	tryDecode(addr, offset);
 }
 
-void CE::Decompiler::PCode::AbstractDecoder::clear() {
+void AbstractDecoder::clear() {
 	m_result.clear();
 }
 
-std::list<Instruction*>& CE::Decompiler::PCode::AbstractDecoder::getDecodedPCodeInstructions() {
+std::list<Instruction*>& AbstractDecoder::getDecodedPCodeInstructions() {
 	return m_result;
 }
 
-void CE::Decompiler::PCode::AbstractDecoder::deleteDecodedPCodeInstructions() {
+void AbstractDecoder::deleteDecodedPCodeInstructions() {
 	for (auto instr : getDecodedPCodeInstructions()) {
 		delete instr;
 	}
 }
 
-Instruction::OriginalInstruction* CE::Decompiler::PCode::AbstractDecoder::getOrigInstruction() const
+Instruction::OriginalInstruction* AbstractDecoder::getOrigInstruction() const
 {
 	return m_curOrigInstr;
 }
 
-WarningContainer* CE::Decompiler::PCode::AbstractDecoder::getWarningContainer() {
+WarningContainer* AbstractDecoder::getWarningContainer() {
 	return m_warningContainer;
 }

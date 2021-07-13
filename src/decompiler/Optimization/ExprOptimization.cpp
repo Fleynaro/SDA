@@ -8,13 +8,13 @@
 #include "ExprTree/ExprConstCondCalculating.h"
 
 using namespace CE::Decompiler;
-using namespace CE::Decompiler::ExprTree;
+using namespace ExprTree;
 
-CE::Decompiler::Optimization::ExprOptimization::ExprOptimization(TopNode* node)
+Optimization::ExprOptimization::ExprOptimization(TopNode* node)
 	: m_topNode(node)
 {}
 
-void CE::Decompiler::Optimization::ExprOptimization::start() {
+void Optimization::ExprOptimization::start() {
 	linearExprToOpNodes(m_topNode->getNode()); // remove linear expressions
 
 											   // todo: calculate hashes using cache
@@ -26,7 +26,7 @@ void CE::Decompiler::Optimization::ExprOptimization::start() {
 	opNodesToLinearExpr(m_topNode->getNode()); // create linear expressions
 }
 
-void CE::Decompiler::Optimization::ExprOptimization::optimizeGenerally(INode* node) {
+void Optimization::ExprOptimization::optimizeGenerally(INode* node) {
 	node->iterateChildNodes([&](INode* childNode) {
 		optimizeGenerally(childNode);
 		});
@@ -69,7 +69,7 @@ void CE::Decompiler::Optimization::ExprOptimization::optimizeGenerally(INode* no
 	}
 }
 
-void CE::Decompiler::Optimization::ExprOptimization::linearExprToOpNodes(INode* node) {
+void Optimization::ExprOptimization::linearExprToOpNodes(INode* node) {
 	node->iterateChildNodes([&](INode* childNode) {
 		linearExprToOpNodes(childNode);
 		});
@@ -84,7 +84,7 @@ void CE::Decompiler::Optimization::ExprOptimization::linearExprToOpNodes(INode* 
 	}
 }
 
-void CE::Decompiler::Optimization::ExprOptimization::opNodesToLinearExpr(INode* node) {
+void Optimization::ExprOptimization::opNodesToLinearExpr(INode* node) {
 	if (const auto opNode = dynamic_cast<OperationalNode*>(node)) {
 		ExprExpandingToLinearExpr exprExpandingToLinearExpr(opNode);
 		exprExpandingToLinearExpr.start();

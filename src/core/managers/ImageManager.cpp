@@ -4,13 +4,13 @@
 
 using namespace CE;
 
-CE::ImageManager::ImageManager(Project* project)
+ImageManager::ImageManager(Project* project)
 	: AbstractItemManager(project)
 {
 	m_imageMapper = new DB::ImageMapper(this);
 }
 
-ImageDecorator* CE::ImageManager::createImage(AddressSpace* addressSpace, ImageDecorator::IMAGE_TYPE type, Symbol::SymbolTable* globalSymbolTable, Symbol::SymbolTable* funcBodySymbolTable, const std::string& name, const std::string& comment, bool markAsNew) {
+ImageDecorator* ImageManager::createImage(AddressSpace* addressSpace, ImageDecorator::IMAGE_TYPE type, Symbol::SymbolTable* globalSymbolTable, Symbol::SymbolTable* funcBodySymbolTable, const std::string& name, const std::string& comment, bool markAsNew) {
 	auto imageDec = new ImageDecorator(this, addressSpace, type, globalSymbolTable, funcBodySymbolTable, name, comment);
 	imageDec->setMapper(m_imageMapper);
 	if (markAsNew) {
@@ -19,14 +19,14 @@ ImageDecorator* CE::ImageManager::createImage(AddressSpace* addressSpace, ImageD
 	return imageDec;
 }
 
-ImageDecorator* CE::ImageManager::createImage(AddressSpace* addressSpace, ImageDecorator::IMAGE_TYPE type, const std::string& name, const std::string& comment, bool markAsNew) {
+ImageDecorator* ImageManager::createImage(AddressSpace* addressSpace, ImageDecorator::IMAGE_TYPE type, const std::string& name, const std::string& comment, bool markAsNew) {
 	const auto factory = getProject()->getSymTableManager()->getFactory();
 	const auto globalSymbolTable = factory.createSymbolTable(Symbol::SymbolTable::GLOBAL_SPACE);
 	const auto funcBodySymbolTable = factory.createSymbolTable(Symbol::SymbolTable::GLOBAL_SPACE);
 	return createImage(addressSpace, type, globalSymbolTable, funcBodySymbolTable, name, comment, markAsNew);
 }
 
-ImageDecorator* CE::ImageManager::createImageFromParent(AddressSpace* addressSpace, ImageDecorator* parentImageDec, const std::string& name, const std::string& comment, bool markAsNew) {
+ImageDecorator* ImageManager::createImageFromParent(AddressSpace* addressSpace, ImageDecorator* parentImageDec, const std::string& name, const std::string& comment, bool markAsNew) {
 	auto imageDec = new ImageDecorator(this, addressSpace, parentImageDec, name, comment);
 	imageDec->setMapper(m_imageMapper);
 	if (markAsNew) {
@@ -36,16 +36,16 @@ ImageDecorator* CE::ImageManager::createImageFromParent(AddressSpace* addressSpa
 	return imageDec;
 }
 
-void CE::ImageManager::loadImages() const
+void ImageManager::loadImages() const
 {
 	m_imageMapper->loadAll();
 }
 
-ImageDecorator* CE::ImageManager::findImageById(DB::Id id) {
+ImageDecorator* ImageManager::findImageById(DB::Id id) {
 	return dynamic_cast<ImageDecorator*>(find(id));
 }
 
-ImageDecorator* CE::ImageManager::findImageByName(const std::string& name) {
+ImageDecorator* ImageManager::findImageByName(const std::string& name) {
 	Iterator it(this);
 	while (it.hasNext()) {
 		auto item = it.next();

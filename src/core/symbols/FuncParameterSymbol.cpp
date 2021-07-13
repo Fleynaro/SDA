@@ -2,18 +2,18 @@
 #include <datatypes/FunctionSignature.h>
 
 using namespace CE;
-using namespace CE::Symbol;
+using namespace Symbol;
 
-int CE::Symbol::FuncParameterSymbol::getParamIdx() const
+int FuncParameterSymbol::getParamIdx() const
 {
 	return m_paramIdx;
 }
 
-Type CE::Symbol::FuncParameterSymbol::getType() {
+Type FuncParameterSymbol::getType() {
 	return FUNC_PARAMETER;
 }
 
-Decompiler::Storage CE::Symbol::FuncParameterSymbol::getStorage() {
+Decompiler::Storage FuncParameterSymbol::getStorage() {
 	const auto paramIdx = getParamIdx();
 	auto callInfo = m_signature->getCallInfo();
 	for (auto& paramInfo : callInfo.getParamInfos()) {
@@ -24,6 +24,6 @@ Decompiler::Storage CE::Symbol::FuncParameterSymbol::getStorage() {
 	return Decompiler::Storage();
 }
 
-void CE::Symbol::FuncParameterSymbol::setFuncSignature(DataType::IFunctionSignature* signature) {
+void FuncParameterSymbol::setFuncSignature(DataType::IFunctionSignature* signature) {
 	m_signature = signature;
 }

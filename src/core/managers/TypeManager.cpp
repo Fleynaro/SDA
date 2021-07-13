@@ -10,7 +10,7 @@
 #include <utilities/ObjectHash.h>
 
 using namespace CE;
-using namespace CE::DataType;
+using namespace DataType;
 
 TypeManager::TypeManager(Project* module)
 	: AbstractItemManager(module)
@@ -32,21 +32,21 @@ TypeManager::Factory TypeManager::getFactory(bool markAsNew) {
 
 void TypeManager::addSystemTypes() {
 	m_items.insert({
-		std::make_pair(DataType::SystemType::Void, new DataType::Void),
-		std::make_pair(DataType::SystemType::Bool, new DataType::Bool),
-		std::make_pair(DataType::SystemType::Byte, new DataType::Byte),
-		std::make_pair(DataType::SystemType::Int8, new DataType::Int8),
-		std::make_pair(DataType::SystemType::Int16, new DataType::Int16),
-		std::make_pair(DataType::SystemType::Int32, new DataType::Int32),
-		std::make_pair(DataType::SystemType::Int64, new DataType::Int64),
-		std::make_pair(DataType::SystemType::UInt16, new DataType::UInt16),
-		std::make_pair(DataType::SystemType::UInt32, new DataType::UInt32),
-		std::make_pair(DataType::SystemType::UInt64, new DataType::UInt64),
-		std::make_pair(DataType::SystemType::UInt128, new DataType::UInt128),
-		std::make_pair(DataType::SystemType::Float, new DataType::Float),
-		std::make_pair(DataType::SystemType::Double, new DataType::Double),
-		std::make_pair(DataType::SystemType::Char, new DataType::Char),
-		std::make_pair(DataType::SystemType::WChar, new DataType::WChar)
+		std::make_pair(SystemType::Void, new Void),
+		std::make_pair(SystemType::Bool, new Bool),
+		std::make_pair(SystemType::Byte, new Byte),
+		std::make_pair(SystemType::Int8, new Int8),
+		std::make_pair(SystemType::Int16, new Int16),
+		std::make_pair(SystemType::Int32, new Int32),
+		std::make_pair(SystemType::Int64, new Int64),
+		std::make_pair(SystemType::UInt16, new UInt16),
+		std::make_pair(SystemType::UInt32, new UInt32),
+		std::make_pair(SystemType::UInt64, new UInt64),
+		std::make_pair(SystemType::UInt128, new UInt128),
+		std::make_pair(SystemType::Float, new Float),
+		std::make_pair(SystemType::Double, new Double),
+		std::make_pair(SystemType::Char, new Char),
+		std::make_pair(SystemType::WChar, new WChar)
 		});
 
 	Iterator it(this);
@@ -58,46 +58,46 @@ void TypeManager::addSystemTypes() {
 
 void TypeManager::addGhidraTypedefs() {
 	static std::pair<std::string, DB::Id> typedefs[] = {
-		std::make_pair("void", DataType::SystemType::Void),
-		std::make_pair("unicode", DataType::SystemType::Void),
-		std::make_pair("string", DataType::SystemType::Void),
-		std::make_pair("IMAGE_RICH_HEADER", DataType::SystemType::Void),
+		std::make_pair("void", SystemType::Void),
+		std::make_pair("unicode", SystemType::Void),
+		std::make_pair("string", SystemType::Void),
+		std::make_pair("IMAGE_RICH_HEADER", SystemType::Void),
 
-		std::make_pair("uchar", DataType::SystemType::Byte),
-		std::make_pair("uint8_t", DataType::SystemType::Byte),
-		std::make_pair("undefined1", DataType::SystemType::Int8),
-		std::make_pair("TerminatedCString", DataType::SystemType::Char),
+		std::make_pair("uchar", SystemType::Byte),
+		std::make_pair("uint8_t", SystemType::Byte),
+		std::make_pair("undefined1", SystemType::Int8),
+		std::make_pair("TerminatedCString", SystemType::Char),
 
-		std::make_pair("short", DataType::SystemType::Int16),
-		std::make_pair("ushort", DataType::SystemType::UInt16),
-		std::make_pair("word", DataType::SystemType::Int16),
-		std::make_pair("undefined2", DataType::SystemType::Int16),
+		std::make_pair("short", SystemType::Int16),
+		std::make_pair("ushort", SystemType::UInt16),
+		std::make_pair("word", SystemType::Int16),
+		std::make_pair("undefined2", SystemType::Int16),
 
-		std::make_pair("int", DataType::SystemType::Int32),
-		std::make_pair("uint", DataType::SystemType::UInt32),
-		std::make_pair("long", DataType::SystemType::Int32),
-		std::make_pair("ulong", DataType::SystemType::UInt32),
-		std::make_pair("dword", DataType::SystemType::Int32),
-		std::make_pair("float", DataType::SystemType::Float),
-		std::make_pair("ImageBaseOffset32", DataType::SystemType::UInt32),
-		std::make_pair("undefined4", DataType::SystemType::Int32),
+		std::make_pair("int", SystemType::Int32),
+		std::make_pair("uint", SystemType::UInt32),
+		std::make_pair("long", SystemType::Int32),
+		std::make_pair("ulong", SystemType::UInt32),
+		std::make_pair("dword", SystemType::Int32),
+		std::make_pair("float", SystemType::Float),
+		std::make_pair("ImageBaseOffset32", SystemType::UInt32),
+		std::make_pair("undefined4", SystemType::Int32),
 
-		std::make_pair("longlong", DataType::SystemType::Int64),
-		std::make_pair("ulonglong", DataType::SystemType::UInt64),
-		std::make_pair("qword", DataType::SystemType::Int64),
-		std::make_pair("double", DataType::SystemType::Double),
-		std::make_pair("undefined8", DataType::SystemType::Int64),
+		std::make_pair("longlong", SystemType::Int64),
+		std::make_pair("ulonglong", SystemType::UInt64),
+		std::make_pair("qword", SystemType::Int64),
+		std::make_pair("double", SystemType::Double),
+		std::make_pair("undefined8", SystemType::Int64),
 
-		std::make_pair("GUID", DataType::SystemType::UInt128)
+		std::make_pair("GUID", SystemType::UInt128)
 	};
 
 	DB::Id startId = 100;
 	for (const auto& it : typedefs) {
-		auto type = new DataType::Typedef(this, it.first);
+		auto type = new Typedef(this, it.first);
 		type->setTypeManager(this);
 		type->setId(startId);
 		type->setGhidraMapper(m_ghidraDataTypeMapper->m_typedefTypeMapper);
-		type->setRefType(DataType::GetUnit(findTypeById(it.second)));
+		type->setRefType(GetUnit(findTypeById(it.second)));
 		m_items.insert(std::make_pair(startId, type));
 		startId++;
 	}
@@ -118,11 +118,11 @@ void TypeManager::loadTypesFrom(ghidra::packet::SDataFullSyncPacket* dataPacket)
 	m_ghidraDataTypeMapper->load(dataPacket);
 }
 
-DataTypePtr CE::TypeManager::getType(DB::Id id) {
-	return DataType::GetUnit(findTypeById(id));
+DataTypePtr TypeManager::getType(DB::Id id) {
+	return GetUnit(findTypeById(id));
 }
 
-DataTypePtr CE::TypeManager::getDefaultType(int size, bool sign, bool floating) {
+DataTypePtr TypeManager::getDefaultType(int size, bool sign, bool floating) {
 	if (floating) {
 		if (size == 0x4)
 			return getType(SystemType::Float);
@@ -142,17 +142,17 @@ DataTypePtr CE::TypeManager::getDefaultType(int size, bool sign, bool floating) 
 	return nullptr;
 }
 
-DataTypePtr CE::TypeManager::calcDataTypeForNumber(uint64_t value) {
+DataTypePtr TypeManager::calcDataTypeForNumber(uint64_t value) {
 	if ((value & ~static_cast<uint64_t>(0xFFFFFFFF)) == static_cast<uint64_t>(0x0))
 		return getType(SystemType::Int32);
 	return getType(SystemType::Int64);
 }
 
-DataType::IType* CE::TypeManager::findTypeById(DB::Id id) {
-	return dynamic_cast<DataType::AbstractType*>(find(id));
+IType* TypeManager::findTypeById(DB::Id id) {
+	return dynamic_cast<AbstractType*>(find(id));
 }
 
-DataType::IType* CE::TypeManager::findTypeByName(const std::string& typeName)
+IType* TypeManager::findTypeByName(const std::string& typeName)
 {
 	Iterator it(this);
 	while (it.hasNext()) {
@@ -164,7 +164,7 @@ DataType::IType* CE::TypeManager::findTypeByName(const std::string& typeName)
 	return nullptr;
 }
 
-DataType::IType* CE::TypeManager::findTypeByGhidraId(Ghidra::Id id) {
+IType* TypeManager::findTypeByGhidraId(Ghidra::Id id) {
 	Iterator it(this);
 	while (it.hasNext()) {
 		const auto type = it.next();
@@ -175,8 +175,8 @@ DataType::IType* CE::TypeManager::findTypeByGhidraId(Ghidra::Id id) {
 	return nullptr;
 }
 
-Ghidra::Id TypeManager::getGhidraId(DataType::IType* type) {
-	if (auto userType = dynamic_cast<DataType::UserDefinedType*>(type)) {
+Ghidra::Id TypeManager::getGhidraId(IType* type) {
+	if (auto userType = dynamic_cast<UserDefinedType*>(type)) {
 		return userType->getGhidraId();
 	}
 	
@@ -185,9 +185,9 @@ Ghidra::Id TypeManager::getGhidraId(DataType::IType* type) {
 	return objHash.getHash();
 }
 
-DataType::Typedef* CE::TypeManager::Factory::createTypedef(const std::string& name, const std::string& desc) const
+Typedef* TypeManager::Factory::createTypedef(const std::string& name, const std::string& desc) const
 {
-	auto type = new DataType::Typedef(m_typeManager, name, desc);
+	auto type = new Typedef(m_typeManager, name, desc);
 	type->setMapper(m_dataTypeMapper);
 	type->setGhidraMapper(m_ghidraDataTypeMapper->m_typedefTypeMapper);
 	if (m_markAsNew)
@@ -195,9 +195,9 @@ DataType::Typedef* CE::TypeManager::Factory::createTypedef(const std::string& na
 	return type;
 }
 
-DataType::Enum* CE::TypeManager::Factory::createEnum(const std::string& name, const std::string& desc) const
+Enum* TypeManager::Factory::createEnum(const std::string& name, const std::string& desc) const
 {
-	auto type = new DataType::Enum(m_typeManager, name, desc);
+	auto type = new Enum(m_typeManager, name, desc);
 	type->setMapper(m_dataTypeMapper);
 	type->setGhidraMapper(m_ghidraDataTypeMapper->m_enumTypeMapper);
 	if (m_markAsNew)
@@ -205,9 +205,9 @@ DataType::Enum* CE::TypeManager::Factory::createEnum(const std::string& name, co
 	return type;
 }
 
-DataType::Structure* CE::TypeManager::Factory::createStructure(const std::string& name, const std::string& desc) const
+Structure* TypeManager::Factory::createStructure(const std::string& name, const std::string& desc) const
 {
-	auto type = new DataType::Structure(m_typeManager, name, desc);
+	auto type = new Structure(m_typeManager, name, desc);
 	type->setMapper(m_dataTypeMapper);
 	type->setGhidraMapper(m_ghidraDataTypeMapper->m_structureTypeMapper);
 	if (m_markAsNew)
@@ -215,9 +215,9 @@ DataType::Structure* CE::TypeManager::Factory::createStructure(const std::string
 	return type;
 }
 
-DataType::Class* CE::TypeManager::Factory::createClass(const std::string& name, const std::string& desc) const
+Class* TypeManager::Factory::createClass(const std::string& name, const std::string& desc) const
 {
-	auto type = new DataType::Class(m_typeManager, name, desc);
+	auto type = new Class(m_typeManager, name, desc);
 	type->setMapper(m_dataTypeMapper);
 	type->setGhidraMapper(m_ghidraDataTypeMapper->m_classTypeMapper);
 	if (m_markAsNew)
@@ -225,9 +225,9 @@ DataType::Class* CE::TypeManager::Factory::createClass(const std::string& name, 
 	return type;
 }
 
-DataType::FunctionSignature* CE::TypeManager::Factory::createSignature(DataType::FunctionSignature::CallingConvetion callingConvetion, const std::string& name, const std::string& desc) const
+FunctionSignature* TypeManager::Factory::createSignature(FunctionSignature::CallingConvetion callingConvetion, const std::string& name, const std::string& desc) const
 {
-	auto type = new DataType::FunctionSignature(m_typeManager, name, desc, callingConvetion);
+	auto type = new FunctionSignature(m_typeManager, name, desc, callingConvetion);
 	type->setMapper(m_typeManager->m_dataTypeMapper);
 	type->setGhidraMapper(m_ghidraDataTypeMapper->m_signatureTypeMapper);
 	if (m_markAsNew)
@@ -235,18 +235,18 @@ DataType::FunctionSignature* CE::TypeManager::Factory::createSignature(DataType:
 	return type;
 }
 
-DataType::FunctionSignature* CE::TypeManager::Factory::createSignature(const std::string& name, const std::string& desc) const
+FunctionSignature* TypeManager::Factory::createSignature(const std::string& name, const std::string& desc) const
 {
-	return createSignature(DataType::FunctionSignature::FASTCALL, name, desc);
+	return createSignature(FunctionSignature::FASTCALL, name, desc);
 }
 
-DataType::IType* CE::TypeManager::Factory::getDefaultType() const
+IType* TypeManager::Factory::getDefaultType() const
 {
-	return m_typeManager->findTypeById(DataType::SystemType::Byte);
+	return m_typeManager->findTypeById(SystemType::Byte);
 }
 
-DataType::IType* CE::TypeManager::Factory::getDefaultReturnType() const
+IType* TypeManager::Factory::getDefaultReturnType() const
 {
-	return m_typeManager->findTypeById(DataType::SystemType::Void);
+	return m_typeManager->findTypeById(SystemType::Void);
 }
 

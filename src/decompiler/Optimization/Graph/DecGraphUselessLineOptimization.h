@@ -15,6 +15,6 @@ namespace CE::Decompiler::Optimization
 
 		bool hasUnknownRegister(INode* node);
 
-		bool isUnknownRegister(PCode::Register& reg);
+		bool isUnknownRegister(Register& reg);
 	};
 };

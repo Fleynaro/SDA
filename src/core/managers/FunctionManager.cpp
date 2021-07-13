@@ -32,11 +32,11 @@ void FunctionManager::loadFunctionsFrom(ghidra::packet::SDataFullSyncPacket* dat
 	m_ghidraFunctionMapper->load(dataPacket);
 }
 
-Function* CE::FunctionManager::findFunctionById(DB::Id id) {
+Function* FunctionManager::findFunctionById(DB::Id id) {
 	return dynamic_cast<Function*>(find(id));
 }
 
-Function* CE::FunctionManager::findFunctionByGhidraId(Ghidra::Id id)
+Function* FunctionManager::findFunctionByGhidraId(Ghidra::Id id)
 {
 	Iterator it(this);
 	while (it.hasNext()) {
@@ -48,7 +48,7 @@ Function* CE::FunctionManager::findFunctionByGhidraId(Ghidra::Id id)
 	return nullptr;
 }
 
-Function* CE::FunctionManager::Factory::createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::SymbolTable* stackSymbolTable) const
+Function* FunctionManager::Factory::createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::SymbolTable* stackSymbolTable) const
 {
 	auto func = new Function(m_functionManager, functionSymbol, imageDec, stackSymbolTable);
 	func->setMapper(m_funcMapper);
@@ -58,14 +58,14 @@ Function* CE::FunctionManager::Factory::createFunction(Symbol::FunctionSymbol* f
 	return func;
 }
 
-Function* CE::FunctionManager::Factory::createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec) const
+Function* FunctionManager::Factory::createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec) const
 {
 	const auto factory = m_functionManager->getProject()->getSymTableManager()->getFactory();
 	const auto stackSymbolTable = factory.createSymbolTable(Symbol::SymbolTable::STACK_SPACE);
 	return createFunction(functionSymbol, imageDec, stackSymbolTable);
 }
 
-Function* CE::FunctionManager::Factory::createFunction(int64_t offset, DataType::IFunctionSignature* funcSignature, ImageDecorator* imageDec, const std::string& name, const std::string& comment) {
+Function* FunctionManager::Factory::createFunction(int64_t offset, DataType::IFunctionSignature* funcSignature, ImageDecorator* imageDec, const std::string& name, const std::string& comment) {
 	const auto factory = m_functionManager->getProject()->getSymbolManager()->getFactory();
 	const auto functionSymbol = factory.createFunctionSymbol(offset, funcSignature, name, comment);
 	imageDec->getGlobalSymbolTable()->addSymbol(functionSymbol, offset);

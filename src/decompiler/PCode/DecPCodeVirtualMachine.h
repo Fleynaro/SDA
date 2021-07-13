@@ -23,16 +23,16 @@ namespace CE::Decompiler::PCode
 		}
 
 		void setConstantValue(Varnode* varnode, DataValue value) {
-			if (const auto varnodeRegister = dynamic_cast<PCode::RegisterVarnode*>(varnode)) {
+			if (const auto varnodeRegister = dynamic_cast<RegisterVarnode*>(varnode)) {
 				setConstantValue(varnodeRegister->m_register, value);
 			}
-			else if (const auto varnodeSymbol = dynamic_cast<PCode::SymbolVarnode*>(varnode)) {
+			else if (const auto varnodeSymbol = dynamic_cast<SymbolVarnode*>(varnode)) {
 				m_symbolVarnodes[varnodeSymbol] = value;
 			}
 		}
 
 		bool tryGetConstantValue(Varnode* varnode, DataValue& value) {
-			if (auto varnodeRegister = dynamic_cast<PCode::RegisterVarnode*>(varnode)) {
+			if (auto varnodeRegister = dynamic_cast<RegisterVarnode*>(varnode)) {
 				auto& reg = varnodeRegister->m_register;
 				auto it = m_registers.find(reg.getId());
 				if (it != m_registers.end()) {
@@ -40,14 +40,14 @@ namespace CE::Decompiler::PCode
 					return true;
 				}
 			}
-			else if(const auto varnodeSymbol = dynamic_cast<PCode::SymbolVarnode*>(varnode)) {
+			else if(const auto varnodeSymbol = dynamic_cast<SymbolVarnode*>(varnode)) {
 				const auto it = m_symbolVarnodes.find(varnodeSymbol);
 				if (it != m_symbolVarnodes.end()) {
 					value = it->second;
 					return true;
 				}
 			}
-			else if (const auto varnodeConstant = dynamic_cast<PCode::ConstantVarnode*>(varnode)) {
+			else if (const auto varnodeConstant = dynamic_cast<ConstantVarnode*>(varnode)) {
 				value = varnodeConstant->m_value;
 				return true;
 			}
@@ -55,10 +55,10 @@ namespace CE::Decompiler::PCode
 		}
 
 		void clear(Varnode* varnode) {
-			if (const auto varnodeRegister = dynamic_cast<PCode::RegisterVarnode*>(varnode)) {
+			if (const auto varnodeRegister = dynamic_cast<RegisterVarnode*>(varnode)) {
 				m_registers.erase(varnodeRegister->m_register.getId());
 			}
-			else if (const auto varnodeSymbol = dynamic_cast<PCode::SymbolVarnode*>(varnode)) {
+			else if (const auto varnodeSymbol = dynamic_cast<SymbolVarnode*>(varnode)) {
 				m_symbolVarnodes.erase(varnodeSymbol);
 			}
 		}

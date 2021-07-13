@@ -70,7 +70,7 @@ namespace CE::Decompiler::ExprTree
 
 		void replaceNode(INode* node, INode* newNode) override;
 
-		std::list<ExprTree::INode*> getNodesList() override;
+		std::list<INode*> getNodesList() override;
 
 		INode* clone(NodeCloneContext* ctx) override;
 
@@ -104,7 +104,7 @@ namespace CE::Decompiler::ExprTree
 
 		void replaceNode(INode* node, INode* newNode) override;
 
-		std::list<ExprTree::INode*> getNodesList() override;
+		std::list<INode*> getNodesList() override;
 
 		INode* clone(NodeCloneContext* ctx) override;
 

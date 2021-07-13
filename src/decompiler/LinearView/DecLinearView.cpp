@@ -1,7 +1,7 @@
 #include "DecLinearView.h"
 
 using namespace CE::Decompiler;
-using namespace CE::Decompiler::LinearView;
+using namespace LinearView;
 
 Block* BlockList::findBlock(DecBlock* decBlock) {
 	for (auto it : m_blocks) {

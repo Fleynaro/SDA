@@ -5,15 +5,15 @@
 #include <managers/SymbolTableManager.h>
 
 using namespace CE::Decompiler;
-using namespace CE::Decompiler::PCode;
+using namespace PCode;
 
 // pass pcode graph and gather its blocks
 
-CE::Decompiler::ImageAnalyzer::ImageAnalyzer(AbstractImage* image, ImagePCodeGraph* imageGraph, PCode::AbstractDecoder* decoder, AbstractRegisterFactory* registerFactory, PCodeGraphReferenceSearch* graphReferenceSearch)
+ImageAnalyzer::ImageAnalyzer(AbstractImage* image, ImagePCodeGraph* imageGraph, AbstractDecoder* decoder, AbstractRegisterFactory* registerFactory, PCodeGraphReferenceSearch* graphReferenceSearch)
 	: m_image(image), m_imageGraph(imageGraph), m_decoder(decoder), m_registerFactory(registerFactory), m_graphReferenceSearch(graphReferenceSearch)
 {}
 
-void CE::Decompiler::ImageAnalyzer::start(Offset startOffset, bool onceFunc) const {
+void ImageAnalyzer::start(Offset startOffset, bool onceFunc) const {
 	std::set<Offset> visitedOffsets;
 	std::list<Offset> nextOffsetsToVisitLater = { startOffset };
 	std::list<std::pair<FunctionPCodeGraph*, std::list<Offset>>> nonVirtFuncOffsetsForGraphs;
@@ -72,12 +72,12 @@ void CE::Decompiler::ImageAnalyzer::start(Offset startOffset, bool onceFunc) con
 
 // reconnect all blocks that are referenced by function calls
 
-void CE::Decompiler::ImageAnalyzer::reconnectBlocksAndReplaceJmpByCall(std::list<PCodeBlock*> blocks) const
+void ImageAnalyzer::reconnectBlocksAndReplaceJmpByCall(std::list<PCodeBlock*> blocks) const
 {
 	for (auto block : blocks) {
 		for (auto refBlock : block->m_blocksReferencedTo) {
 			auto lastInstr = refBlock->getLastInstruction();
-			if (PCode::Instruction::IsBranching(lastInstr->m_id)) {
+			if (Instruction::IsBranching(lastInstr->m_id)) {
 				m_decoder->m_instrPool->modifyInstruction(lastInstr, InstructionPool::MODIFICATOR_JMP_CALL);
 				// after modification add new RET instr into ref. block
 				auto lastInsertedInstr = &lastInstr->m_origInstruction->m_pcodeInstructions.rbegin()->second;
@@ -91,7 +91,7 @@ void CE::Decompiler::ImageAnalyzer::reconnectBlocksAndReplaceJmpByCall(std::list
 
 // calculate levels and gather PCode blocks for each function graph
 
-void CE::Decompiler::ImageAnalyzer::prepareFuncGraphs() const
+void ImageAnalyzer::prepareFuncGraphs() const
 {
 	for (auto& funcGraph : m_imageGraph->getFunctionGraphList()) {
 		PrepareFuncGraph(&funcGraph);
@@ -100,7 +100,7 @@ void CE::Decompiler::ImageAnalyzer::prepareFuncGraphs() const
 
 // fill {funcGraph} with PCode blocks
 
-void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, FunctionPCodeGraph* funcGraph) const
+void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, FunctionPCodeGraph* funcGraph) const
 {
 	std::set<ComplexOffset> visitedOffsets;
 	std::list<ComplexOffset> nextOffsetsToVisitLater;
@@ -108,7 +108,7 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset star
 	auto offset = startInstrOffset;
 	while (true) {
 		const auto byteOffset = offset.getByteOffset();
-		PCode::Instruction* instr = nullptr;
+		Instruction* instr = nullptr;
 		PCodeBlock* curBlock = nullptr;
 
 		if (offset != InvalidOffset && visitedOffsets.find(offset) == visitedOffsets.end()) {
@@ -164,13 +164,13 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset star
 		curBlock->setMaxOffset(nextInstrOffset);
 
 		// create a new block
-		if (PCode::Instruction::IsBranching(instr->m_id)) {
-			PCode::VirtualMachineContext vmCtx;
-			PCode::ConstValueCalculating constValueCalculating(curBlock->getInstructions(), &vmCtx, m_registerFactory);
+		if (Instruction::IsBranching(instr->m_id)) {
+			VirtualMachineContext vmCtx;
+			ConstValueCalculating constValueCalculating(curBlock->getInstructions(), &vmCtx, m_registerFactory);
 			constValueCalculating.start(funcGraph->getConstValues());
 
 			ComplexOffset targetOffset;
-			if (const auto varnodeConst = dynamic_cast<PCode::ConstantVarnode*>(instr->m_input0)) {
+			if (const auto varnodeConst = dynamic_cast<ConstantVarnode*>(instr->m_input0)) {
 				// if this input contains hardcoded constant
 				targetOffset = varnodeConst->m_value;
 			}
@@ -195,8 +195,8 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset star
 					auto block1 = alreadyExistingBlock;
 					auto block2 = m_imageGraph->createBlock(targetOffset);
 
-					std::list<PCode::Instruction*> instrOfBlock1;
-					std::list<PCode::Instruction*> instrOfBlock2;
+					std::list<Instruction*> instrOfBlock1;
+					std::list<Instruction*> instrOfBlock2;
 					for (auto instr : alreadyExistingBlock->getInstructions()) {
 						if (instr->getOffset() < targetOffset)
 							instrOfBlock1.push_back(instr);
@@ -227,7 +227,7 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset star
 
 			// near block
 			PCodeBlock* nextNearBlock = nullptr;
-			if (instr->m_id == PCode::InstructionId::CBRANCH) {
+			if (instr->m_id == InstructionId::CBRANCH) {
 				if (m_imageGraph->getBlockAtOffset(nextInstrOffset) == nullptr) {
 					nextNearBlock = m_imageGraph->createBlock(nextInstrOffset);
 					curBlock->setNextNearBlock(nextNearBlock);
@@ -250,7 +250,7 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset star
 		}
 		else {
 			// calculate the next offset
-			if (instr->m_id != PCode::InstructionId::RETURN) {
+			if (instr->m_id != InstructionId::RETURN) {
 				if (const auto nextBlock = m_imageGraph->getBlockAtOffset(nextInstrOffset, false)) {
 					if (curBlock != nextBlock)
 						curBlock->setNextNearBlock(nextBlock);
@@ -266,7 +266,7 @@ void CE::Decompiler::ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset star
 
 // prepare a function graph
 
-void CE::Decompiler::ImageAnalyzer::PrepareFuncGraph(FunctionPCodeGraph* funcGraph) {
+void ImageAnalyzer::PrepareFuncGraph(FunctionPCodeGraph* funcGraph) {
 	std::list<PCodeBlock*> path;
 	CalculateLevelsForPCodeBlocks(funcGraph->getStartBlock(), path);
 
@@ -279,7 +279,7 @@ void CE::Decompiler::ImageAnalyzer::PrepareFuncGraph(FunctionPCodeGraph* funcGra
 
 // pass pcode graph and calculate max distance from root to each node (pcode block)
 
-void CE::Decompiler::ImageAnalyzer::CalculateLevelsForPCodeBlocks(PCodeBlock* block, std::list<PCodeBlock*>& path) {
+void ImageAnalyzer::CalculateLevelsForPCodeBlocks(PCodeBlock* block, std::list<PCodeBlock*>& path) {
 	if (block == nullptr)
 		return;
 
@@ -297,7 +297,7 @@ void CE::Decompiler::ImageAnalyzer::CalculateLevelsForPCodeBlocks(PCodeBlock* bl
 	path.pop_back();
 }
 
-void CE::Decompiler::ImageAnalyzer::GatherPCodeBlocks(PCodeBlock* block, std::set<PCodeBlock*>& gatheredBlocks) {
+void ImageAnalyzer::GatherPCodeBlocks(PCodeBlock* block, std::set<PCodeBlock*>& gatheredBlocks) {
 	if (block == nullptr || gatheredBlocks.find(block) != gatheredBlocks.end())
 		return;
 	gatheredBlocks.insert(block);
@@ -305,7 +305,7 @@ void CE::Decompiler::ImageAnalyzer::GatherPCodeBlocks(PCodeBlock* block, std::se
 	GatherPCodeBlocks(block->getNextFarBlock(), gatheredBlocks);
 }
 
-CE::Decompiler::PCodeGraphReferenceSearch::PCodeGraphReferenceSearch(CE::Project* project, AbstractRegisterFactory* registerFactory, AbstractImage* image)
+PCodeGraphReferenceSearch::PCodeGraphReferenceSearch(Project* project, AbstractRegisterFactory* registerFactory, AbstractImage* image)
 	: m_project(project), m_registerFactory(registerFactory), m_image(image)
 {
 	const auto factory = m_project->getSymTableManager()->getFactory(false);
@@ -315,15 +315,15 @@ CE::Decompiler::PCodeGraphReferenceSearch::PCodeGraphReferenceSearch(CE::Project
 	m_symbolCtx.m_funcBodySymbolTable = factory.createSymbolTable(CE::Symbol::SymbolTable::GLOBAL_SPACE);
 }
 
-CE::Decompiler::PCodeGraphReferenceSearch::~PCodeGraphReferenceSearch() {
+PCodeGraphReferenceSearch::~PCodeGraphReferenceSearch() {
 	delete m_symbolCtx.m_globalSymbolTable;
 	delete m_symbolCtx.m_stackSymbolTable;
 	delete m_symbolCtx.m_funcBodySymbolTable;
 }
 
-void CE::Decompiler::PCodeGraphReferenceSearch::findNewFunctionOffsets(FunctionPCodeGraph* funcGraph, std::list<uint64_t>& nonVirtFuncOffsets, std::list<uint64_t>& otherOffsets) {
-	auto funcCallInfoCallback = [&](PCode::Instruction* instr, int offset) { return FunctionCallInfo({}); };
-	auto decompiler = CE::Decompiler::Decompiler(funcGraph, funcCallInfoCallback, ReturnInfo(), m_registerFactory);
+void PCodeGraphReferenceSearch::findNewFunctionOffsets(FunctionPCodeGraph* funcGraph, std::list<uint64_t>& nonVirtFuncOffsets, std::list<uint64_t>& otherOffsets) {
+	auto funcCallInfoCallback = [&](Instruction* instr, int offset) { return FunctionCallInfo({}); };
+	auto decompiler = Decompiler(funcGraph, funcCallInfoCallback, ReturnInfo(), m_registerFactory);
 	decompiler.start();
 
 	const auto decCodeGraph = decompiler.getDecGraph();
@@ -360,7 +360,7 @@ void CE::Decompiler::PCodeGraphReferenceSearch::findNewFunctionOffsets(FunctionP
 
 // analyze memory area to define if it is a vtable
 
-void CE::Decompiler::PCodeGraphReferenceSearch::checkOnVTable(uint64_t startOffset, VTable* pVtable) {
+void PCodeGraphReferenceSearch::checkOnVTable(uint64_t startOffset, VTable* pVtable) {
 	std::list<uint64_t> funcOffsets;
 	const auto data = m_image->getData();
 	for (auto offset = startOffset; offset < m_image->getSize(); offset += sizeof(uint64_t)) {

@@ -1,7 +1,7 @@
 #include "GhidraClient.h"
 
 using namespace CE;
-using namespace CE::Ghidra;
+using namespace Ghidra;
 
 Transport::~Transport()
 {

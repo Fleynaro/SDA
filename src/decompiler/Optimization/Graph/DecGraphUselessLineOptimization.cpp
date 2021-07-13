@@ -44,7 +44,7 @@ bool CE::Decompiler::Optimization::GraphUselessLineDeleting::hasUnknownRegister(
 	return false;
 }
 
-bool CE::Decompiler::Optimization::GraphUselessLineDeleting::isUnknownRegister(PCode::Register& reg) {
+bool CE::Decompiler::Optimization::GraphUselessLineDeleting::isUnknownRegister(Register& reg) {
 	const bool isFound = false;
 	/*for (auto paramInfo : m_decGraph->getFunctionCallInfo().getParamInfos()) {
 	if (reg.getId() == paramInfo.m_storage.getRegisterId()) {

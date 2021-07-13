@@ -3,9 +3,9 @@
 #include <managers/SymbolManager.h>
 
 using namespace CE;
-using namespace CE::DataType;
+using namespace DataType;
 
-CE::DataType::Structure::Structure(TypeManager* typeManager, const std::string& name, const std::string& comment)
+Structure::Structure(TypeManager* typeManager, const std::string& name, const std::string& comment)
 	: UserDefinedType(typeManager, name, comment)
 {
 	const auto factory = typeManager->getProject()->getSymbolManager()->getFactory(false);

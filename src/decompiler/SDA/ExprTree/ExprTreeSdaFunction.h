@@ -16,12 +16,12 @@ namespace CE::Decompiler::ExprTree
 
 		void replaceNode(INode* node, INode* newNode) override;
 
-		std::list<ExprTree::INode*> getNodesList() override;
+		std::list<INode*> getNodesList() override;
 
 		// means the address of the function that can be any expr. value, not only an offset or a symbol
 		INode* getDestination() const;
 
-		std::vector<ExprTree::INode*>& getParamNodes() const;
+		std::vector<INode*>& getParamNodes() const;
 
 		DataTypePtr getSrcDataType() override;
 

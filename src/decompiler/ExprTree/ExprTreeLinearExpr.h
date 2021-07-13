@@ -14,17 +14,17 @@ namespace CE::Decompiler::ExprTree
 
 		~LinearExpr();
 
-		void addTerm(ExprTree::INode* term);
+		void addTerm(INode* term);
 
 		void setConstTermValue(int64_t constTerm) const;
 
 		int64_t getConstTermValue() const;
 
-		std::list<ExprTree::INode*>& getTerms();
+		std::list<INode*>& getTerms();
 
 		INumberLeaf* getConstTerm() const;
 
-		void replaceNode(ExprTree::INode* node, ExprTree::INode* newNode) override;
+		void replaceNode(INode* node, INode* newNode) override;
 
 		std::list<INode*> getNodesList() override;
 

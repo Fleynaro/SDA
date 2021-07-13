@@ -4,11 +4,11 @@ using namespace CE::Decompiler;
 
 //replace in condition: {localVar + 1}	=>	 {localVar}
 
-CE::Decompiler::Optimization::GraphLastLineAndConditionOrderFixing::GraphLastLineAndConditionOrderFixing(DecompiledCodeGraph* decGraph)
+Optimization::GraphLastLineAndConditionOrderFixing::GraphLastLineAndConditionOrderFixing(DecompiledCodeGraph* decGraph)
 	: GraphModification(decGraph)
 {}
 
-void CE::Decompiler::Optimization::GraphLastLineAndConditionOrderFixing::start() {
+void Optimization::GraphLastLineAndConditionOrderFixing::start() {
 	for (const auto decBlock : m_decGraph->getDecompiledBlocks()) {
 		if (decBlock->getNoJumpCondition()) {
 			processBlock(decBlock);
@@ -16,7 +16,7 @@ void CE::Decompiler::Optimization::GraphLastLineAndConditionOrderFixing::start()
 	}
 }
 
-void CE::Decompiler::Optimization::GraphLastLineAndConditionOrderFixing::processBlock(DecBlock* block) {
+void Optimization::GraphLastLineAndConditionOrderFixing::processBlock(DecBlock* block) {
 	std::map<HS::Value, Symbol::LocalVariable*> localVars;
 	gatherLocalVarsDependedOnItselfFromBlock(block, localVars);
 	doSingleFix(block->getNoJumpCondition(), localVars);
@@ -24,7 +24,7 @@ void CE::Decompiler::Optimization::GraphLastLineAndConditionOrderFixing::process
 
 //gather localVars located in something like this: localVar = localVar + 1
 
-void CE::Decompiler::Optimization::GraphLastLineAndConditionOrderFixing::gatherLocalVarsDependedOnItselfFromBlock(DecBlock* block, std::map<HS::Value, Symbol::LocalVariable*>& localVars) {
+void Optimization::GraphLastLineAndConditionOrderFixing::gatherLocalVarsDependedOnItselfFromBlock(DecBlock* block, std::map<HS::Value, Symbol::LocalVariable*>& localVars) {
 	for (auto symbolAssignmentLine : block->getSymbolParallelAssignmentLines()) {
 		if (auto localVar = dynamic_cast<Symbol::LocalVariable*>(symbolAssignmentLine->getDstSymbolLeaf()->m_symbol)) {
 			//if localVar expressed through itself (e.g. localVar = {localVar + 1})
@@ -36,7 +36,7 @@ void CE::Decompiler::Optimization::GraphLastLineAndConditionOrderFixing::gatherL
 	}
 }
 
-bool CE::Decompiler::Optimization::GraphLastLineAndConditionOrderFixing::doSingleFix(INode* node, std::map<HS::Value, Symbol::LocalVariable*>& localVars) {
+bool Optimization::GraphLastLineAndConditionOrderFixing::doSingleFix(INode* node, std::map<HS::Value, Symbol::LocalVariable*>& localVars) {
 	const auto it = localVars.find(node->getHash().getHashValue());
 	if (it != localVars.end()) {
 		node->replaceWith(new SymbolLeaf(it->second));

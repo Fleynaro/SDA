@@ -4,11 +4,11 @@ using namespace CE::Decompiler;
 
 //(x < 2 || x == 2)		->		(x <= 2)
 
-CE::Decompiler::Optimization::ExprCompositeConditionOptimization::ExprCompositeConditionOptimization(CompositeCondition* compCond)
+Optimization::ExprCompositeConditionOptimization::ExprCompositeConditionOptimization(CompositeCondition* compCond)
 	: ExprModification(compCond)
 {}
 
-void CE::Decompiler::Optimization::ExprCompositeConditionOptimization::start() {
+void Optimization::ExprCompositeConditionOptimization::start() {
 	inverseConditions(getCompCondition());
 	if (getCompCondition()) { // check if this node continue being comp. condition during replacing
 		makeOrderInCompositeCondition(getCompCondition());
@@ -18,13 +18,13 @@ void CE::Decompiler::Optimization::ExprCompositeConditionOptimization::start() {
 	}
 }
 
-CompositeCondition* CE::Decompiler::Optimization::ExprCompositeConditionOptimization::getCompCondition() {
+CompositeCondition* Optimization::ExprCompositeConditionOptimization::getCompCondition() {
 	return dynamic_cast<CompositeCondition*>(getNode());
 }
 
 //!(x == 2)	-> (x != 2)
 
-bool CE::Decompiler::Optimization::ExprCompositeConditionOptimization::inverseConditions(CompositeCondition* compCond) {
+bool Optimization::ExprCompositeConditionOptimization::inverseConditions(CompositeCondition* compCond) {
 	if (compCond->m_cond == CompositeCondition::Not) {
 		compCond->m_leftCond->inverse();
 		replace(compCond->m_leftCond);
@@ -39,7 +39,7 @@ bool CE::Decompiler::Optimization::ExprCompositeConditionOptimization::inverseCo
 
 //x > 2 && x == 3 -> x == 3 && x > 2
 
-void CE::Decompiler::Optimization::ExprCompositeConditionOptimization::makeOrderInCompositeCondition(CompositeCondition* compCond) const
+void Optimization::ExprCompositeConditionOptimization::makeOrderInCompositeCondition(CompositeCondition* compCond) const
 {
 	if (!compCond->m_rightCond)
 		return;
@@ -67,7 +67,7 @@ void CE::Decompiler::Optimization::ExprCompositeConditionOptimization::makeOrder
 	}
 }
 
-void CE::Decompiler::Optimization::ExprCompositeConditionOptimization::optimizeCompositeCondition(CompositeCondition* compCond) {
+void Optimization::ExprCompositeConditionOptimization::optimizeCompositeCondition(CompositeCondition* compCond) {
 	if (auto leftSimpleCond = dynamic_cast<Condition*>(compCond->m_leftCond)) {
 		if (auto rightSimpleCond = dynamic_cast<Condition*>(compCond->m_rightCond)) {
 			if (leftSimpleCond->m_leftNode->getHash().getHashValue() == rightSimpleCond->m_leftNode->getHash().getHashValue()

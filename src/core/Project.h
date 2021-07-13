@@ -33,7 +33,7 @@ namespace CE
 
 		bool m_allManagersHaveBeenLoaded = false;
 		DB::ITransaction* m_transaction = nullptr;
-		SQLite::Database* m_db = nullptr;
+		Database* m_db = nullptr;
 
 		// the directory is an id for a project
 		fs::path m_directory;
@@ -62,7 +62,7 @@ namespace CE
 
 		void initDataBase(const fs::path& file);
 
-		SQLite::Database& getDB() const;
+		Database& getDB() const;
 
 		TypeManager* getTypeManager() const;
 

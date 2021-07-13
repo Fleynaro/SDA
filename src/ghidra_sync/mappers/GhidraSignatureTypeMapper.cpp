@@ -2,7 +2,7 @@
 #include <managers/TypeManager.h>
 
 using namespace CE;
-using namespace CE::Ghidra;
+using namespace Ghidra;
 
 SignatureTypeMapper::SignatureTypeMapper(DataTypeMapper* dataTypeMapper)
 	: m_dataTypeMapper(dataTypeMapper)

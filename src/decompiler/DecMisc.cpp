@@ -1,9 +1,9 @@
 #include "DecMisc.h"
 
 // show all symbols
-std::string CE::Decompiler::Misc::ShowAllSymbols(SdaCodeGraph* sdaCodeGraph) {
+std::string Misc::ShowAllSymbols(SdaCodeGraph* sdaCodeGraph) {
     std::string result;
-    sdaCodeGraph->getSdaSymbols().sort([](CE::Symbol::ISymbol* a, CE::Symbol::ISymbol* b) {
+    sdaCodeGraph->getSdaSymbols().sort([](ISymbol* a, ISymbol* b) {
         return a->getName() < b->getName();
         });
 
@@ -13,7 +13,7 @@ std::string CE::Decompiler::Misc::ShowAllSymbols(SdaCodeGraph* sdaCodeGraph) {
         if (var->getDataType()->isArray())
             comment += ", size: " + std::to_string(var->getDataType()->getSize());
         //offsets
-        if (auto localInstrSymbol = dynamic_cast<CE::Symbol::LocalInstrVarSymbol*>(var)) {
+        if (auto localInstrSymbol = dynamic_cast<LocalInstrVarSymbol*>(var)) {
             if (!localInstrSymbol->m_instrOffsets.empty()) {
                 comment += ", offsets: ";
                 for (auto off : localInstrSymbol->m_instrOffsets) {
@@ -29,7 +29,7 @@ std::string CE::Decompiler::Misc::ShowAllSymbols(SdaCodeGraph* sdaCodeGraph) {
     return result;
 }
 
-LinearView::BlockList* CE::Decompiler::Misc::BuildBlockList(DecompiledCodeGraph* graph) {
+LinearView::BlockList* Misc::BuildBlockList(DecompiledCodeGraph* graph) {
     auto converter = LinearView::Converter(graph);
     converter.start();
     const auto blockList = converter.getBlockList();

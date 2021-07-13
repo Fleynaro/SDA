@@ -18,8 +18,8 @@ namespace CE::Ghidra
 	private:
 		DataTypeMapper* m_dataTypeMapper;
 
-		datatype::SDataTypeEnum buildDesc(DataType::Enum* Enum) const;
+		SDataTypeEnum buildDesc(DataType::Enum* Enum) const;
 
-		void changeEnumByDesc(DataType::Enum* Enum, const datatype::SDataTypeEnum& enumDesc) const;
+		void changeEnumByDesc(DataType::Enum* Enum, const SDataTypeEnum& enumDesc) const;
 	};
 };

@@ -1,7 +1,7 @@
 #include "Enum.h"
 
 using namespace CE;
-using namespace CE::DataType;
+using namespace DataType;
 
 int Enum::getSize() {
 	return m_size;

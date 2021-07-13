@@ -2,7 +2,7 @@
 
 using namespace CE::Decompiler;
 
-void CE::Decompiler::Decompiler::start() {
+void Decompiler::start() {
 	m_decompiledCodeGraph = new DecompiledCodeGraph(m_funcGraph);
 	auto primaryDecompiler = PrimaryDecompiler(m_decompiledCodeGraph, m_registerFactory, m_retInfo, m_funcCallInfoCallback);
 	primaryDecompiler.start();
@@ -10,7 +10,7 @@ void CE::Decompiler::Decompiler::start() {
 	m_decompiledCodeGraph->checkOnSingleParents();
 }
 
-DecompiledCodeGraph* CE::Decompiler::Decompiler::getDecGraph() const
+DecompiledCodeGraph* Decompiler::getDecGraph() const
 {
 	return m_decompiledCodeGraph;
 }

@@ -2,18 +2,18 @@
 
 using namespace CE::Decompiler;
 
-CE::Decompiler::Optimization::GraphCondBlockOptimization::GraphCondBlockOptimization(DecompiledCodeGraph* decGraph)
+Optimization::GraphCondBlockOptimization::GraphCondBlockOptimization(DecompiledCodeGraph* decGraph)
 	: GraphModification(decGraph)
 {}
 
-void CE::Decompiler::Optimization::GraphCondBlockOptimization::start() {
+void Optimization::GraphCondBlockOptimization::start() {
 	doBlockJoining();
 
 	//recalculate levels because some blocks can be removed
 	m_decGraph->recalculateLevelsForBlocks();
 }
 
-void CE::Decompiler::Optimization::GraphCondBlockOptimization::doBlockJoining() {
+void Optimization::GraphCondBlockOptimization::doBlockJoining() {
 	//join conditions and remove useless blocks
 	for (auto it = m_decGraph->getDecompiledBlocks().rbegin(); it != m_decGraph->getDecompiledBlocks().rend(); it++) {
 		const auto block = *it;
@@ -25,7 +25,7 @@ void CE::Decompiler::Optimization::GraphCondBlockOptimization::doBlockJoining() 
 	}
 }
 
-void CE::Decompiler::Optimization::GraphCondBlockOptimization::optimizeConditionDecBlock(DecBlock* block) {
+void Optimization::GraphCondBlockOptimization::optimizeConditionDecBlock(DecBlock* block) {
 	if (!block->isCondition())
 		return;
 	const auto delta = block->getNextNearBlock()->m_level - block->m_level;
@@ -35,7 +35,7 @@ void CE::Decompiler::Optimization::GraphCondBlockOptimization::optimizeCondition
 	block->getNoJumpCondition()->inverse();
 }
 
-DecBlock* CE::Decompiler::Optimization::GraphCondBlockOptimization::joinCondition(DecBlock* block) {
+DecBlock* Optimization::GraphCondBlockOptimization::joinCondition(DecBlock* block) {
 	if (!block->isCondition())
 		return nullptr;
 

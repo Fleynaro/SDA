@@ -2,7 +2,7 @@
 #include <utilities/ObjectHash.h>
 
 using namespace CE;
-using namespace CE::DataType;
+using namespace DataType;
 
 bool UserDefinedType::isUserDefined() {
 	return true;

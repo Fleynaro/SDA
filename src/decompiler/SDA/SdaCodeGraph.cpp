@@ -1,20 +1,20 @@
 #include "SdaCodeGraph.h"
 
 using namespace CE;
-using namespace CE::Decompiler;
+using namespace Decompiler;
 
-CE::Decompiler::SdaCodeGraph::SdaCodeGraph(DecompiledCodeGraph* decGraph)
+SdaCodeGraph::SdaCodeGraph(DecompiledCodeGraph* decGraph)
 	: m_decGraph(decGraph)
 {}
 
-CE::Decompiler::SdaCodeGraph::~SdaCodeGraph() {
+SdaCodeGraph::~SdaCodeGraph() {
 }
 
-DecompiledCodeGraph* CE::Decompiler::SdaCodeGraph::getDecGraph() const
+DecompiledCodeGraph* SdaCodeGraph::getDecGraph() const
 {
 	return m_decGraph;
 }
 
-std::list<CE::Symbol::ISymbol*>& CE::Decompiler::SdaCodeGraph::getSdaSymbols() {
+std::list<CE::Symbol::ISymbol*>& SdaCodeGraph::getSdaSymbols() {
 	return m_sdaSymbols;
 }

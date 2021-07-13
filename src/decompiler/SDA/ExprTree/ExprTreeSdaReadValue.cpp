@@ -3,66 +3,66 @@
 #include "ExprTreeSdaGenericNode.h"
 
 using namespace CE;
-using namespace CE::Decompiler;
-using namespace CE::Decompiler::ExprTree;
+using namespace Decompiler;
+using namespace ExprTree;
 
-CE::Decompiler::ExprTree::SdaReadValueNode::SdaReadValueNode(ReadValueNode* readValueNode, DataTypePtr outDataType)
+SdaReadValueNode::SdaReadValueNode(ReadValueNode* readValueNode, DataTypePtr outDataType)
 	: m_readValueNode(readValueNode), m_outDataType(outDataType)
 {}
 
-CE::Decompiler::ExprTree::SdaReadValueNode::~SdaReadValueNode() {
+SdaReadValueNode::~SdaReadValueNode() {
 	m_readValueNode->removeBy(this);
 }
 
-ISdaNode* CE::Decompiler::ExprTree::SdaReadValueNode::getAddress() const
+ISdaNode* SdaReadValueNode::getAddress() const
 {
 	return dynamic_cast<ISdaNode*>(m_readValueNode->getAddress());
 }
 
-void CE::Decompiler::ExprTree::SdaReadValueNode::replaceNode(ExprTree::INode* node, ExprTree::INode* newNode) {
+void SdaReadValueNode::replaceNode(INode* node, INode* newNode) {
 	if (node == m_readValueNode)
 		m_readValueNode = dynamic_cast<ReadValueNode*>(newNode);
 }
 
-std::list<INode*> CE::Decompiler::ExprTree::SdaReadValueNode::getNodesList() {
+std::list<INode*> SdaReadValueNode::getNodesList() {
 	return m_readValueNode->getNodesList();
 }
 
-std::list<PCode::Instruction*> CE::Decompiler::ExprTree::SdaReadValueNode::getInstructionsRelatedTo() {
+std::list<PCode::Instruction*> SdaReadValueNode::getInstructionsRelatedTo() {
 	return m_readValueNode->getInstructionsRelatedTo();
 }
 
-int CE::Decompiler::ExprTree::SdaReadValueNode::getSize() {
+int SdaReadValueNode::getSize() {
 	return m_readValueNode->getSize();
 }
 
-HS CE::Decompiler::ExprTree::SdaReadValueNode::getHash() {
+HS SdaReadValueNode::getHash() {
 	return m_readValueNode->getHash(); //todo: + term hashes
 }
 
-ISdaNode* CE::Decompiler::ExprTree::SdaReadValueNode::cloneSdaNode(NodeCloneContext* ctx) {
+ISdaNode* SdaReadValueNode::cloneSdaNode(NodeCloneContext* ctx) {
 	auto clonedReadValueNode = dynamic_cast<ReadValueNode*>(m_readValueNode->clone(ctx));
 	const auto sdaReadValueNode = new SdaReadValueNode(clonedReadValueNode, CloneUnit(m_outDataType));
 	clonedReadValueNode->addParentNode(sdaReadValueNode);
 	return sdaReadValueNode;
 }
 
-DataTypePtr CE::Decompiler::ExprTree::SdaReadValueNode::getSrcDataType() {
+DataTypePtr SdaReadValueNode::getSrcDataType() {
 	return m_outDataType;
 }
 
-void CE::Decompiler::ExprTree::SdaReadValueNode::setDataType(DataTypePtr dataType) {
+void SdaReadValueNode::setDataType(DataTypePtr dataType) {
 	m_outDataType = dataType;
 }
 
-bool CE::Decompiler::ExprTree::SdaReadValueNode::isAddrGetting() {
+bool SdaReadValueNode::isAddrGetting() {
 	return false;
 }
 
-void CE::Decompiler::ExprTree::SdaReadValueNode::setAddrGetting(bool toggle) {
+void SdaReadValueNode::setAddrGetting(bool toggle) {
 }
 
-void CE::Decompiler::ExprTree::SdaReadValueNode::getLocation(MemLocation& location) {
+void SdaReadValueNode::getLocation(MemLocation& location) {
 	if (auto locatableAddrNode = dynamic_cast<ILocatable*>(getAddress())) {
 		locatableAddrNode->getLocation(location);
 		location.m_valueSize = getSize();
@@ -95,7 +95,7 @@ void CE::Decompiler::ExprTree::SdaReadValueNode::getLocation(MemLocation& locati
 	throw std::exception("impossible to determine the location");
 }
 
-std::string CE::Decompiler::ExprTree::SdaReadValueNode::printSdaDebug() {
+std::string SdaReadValueNode::printSdaDebug() {
 	auto result = "*" + getAddress()->printDebug();
 	return result;
 }

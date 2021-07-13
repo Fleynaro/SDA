@@ -4,11 +4,11 @@ using namespace CE::Decompiler;
 
 // optimize: localVar = ((5 << 32) | 10) & 0xFFFFFFFF -> localVar = 10
 
-CE::Decompiler::Optimization::GraphParAssignmentCreator::GraphParAssignmentCreator(DecompiledCodeGraph* decGraph, PrimaryDecompiler* decompiler)
+Optimization::GraphParAssignmentCreator::GraphParAssignmentCreator(DecompiledCodeGraph* decGraph, PrimaryDecompiler* decompiler)
 	: GraphModification(decGraph), m_decompiler(decompiler)
 {}
 
-void CE::Decompiler::Optimization::GraphParAssignmentCreator::start() {
+void Optimization::GraphParAssignmentCreator::start() {
 	// iterate over all expr. in dec. graph
 	for (const auto decBlock : m_decGraph->getDecompiledBlocks()) {
 		for (auto topNode : decBlock->getAllTopNodes()) {
@@ -22,8 +22,8 @@ void CE::Decompiler::Optimization::GraphParAssignmentCreator::start() {
 	optimizeAllParAssignments();
 }
 
-void CE::Decompiler::Optimization::GraphParAssignmentCreator::findAllLocalVarsAndGatherParentOpNodes(DecBlock::BlockTopNode* topNode) {
-	std::list<ExprTree::SymbolLeaf*> symbolLeafs;
+void Optimization::GraphParAssignmentCreator::findAllLocalVarsAndGatherParentOpNodes(DecBlock::BlockTopNode* topNode) {
+	std::list<SymbolLeaf*> symbolLeafs;
 	GatherSymbolLeafsFromNode(topNode->getNode(), symbolLeafs);
 	for (auto symbolLeaf : symbolLeafs) {
 		if (auto localVar = dynamic_cast<Symbol::LocalVariable*>(symbolLeaf->m_symbol))
@@ -32,14 +32,14 @@ void CE::Decompiler::Optimization::GraphParAssignmentCreator::findAllLocalVarsAn
 				m_localVars[localVar] = LocalVarInfo();
 
 			// ignore localVars in dst node of assignments: localVar = 5
-			const auto parentAssignmentNode = dynamic_cast<ExprTree::AssignmentNode*>(symbolLeaf->getParentNode());
+			const auto parentAssignmentNode = dynamic_cast<AssignmentNode*>(symbolLeaf->getParentNode());
 			if (parentAssignmentNode && parentAssignmentNode->getDstNode() == symbolLeaf)
 				continue;
 
 			// see parent
 			bool isParentOpNode = false;
-			if (auto opNode = dynamic_cast<ExprTree::OperationalNode*>(symbolLeaf->getParentNode())) {
-				if (opNode->m_operation == ExprTree::And) {
+			if (auto opNode = dynamic_cast<OperationalNode*>(symbolLeaf->getParentNode())) {
+				if (opNode->m_operation == And) {
 					bool isSymbolInLeftNode = (opNode->m_leftNode == symbolLeaf);
 					m_localVars[localVar].m_opNodes.push_back(std::pair(opNode, isSymbolInLeftNode));
 					isParentOpNode = true;
@@ -50,7 +50,7 @@ void CE::Decompiler::Optimization::GraphParAssignmentCreator::findAllLocalVarsAn
 	}
 }
 
-void CE::Decompiler::Optimization::GraphParAssignmentCreator::createParAssignmentsForLocalVars() {
+void Optimization::GraphParAssignmentCreator::createParAssignmentsForLocalVars() {
 	for (auto& pair : m_localVars) {
 		auto localVar = pair.first;
 		auto& info = pair.second;
@@ -87,26 +87,26 @@ void CE::Decompiler::Optimization::GraphParAssignmentCreator::createParAssignmen
 			const auto expr = execCtx->m_registerExecCtx.requestRegister(localVarInfo.m_register);
 
 			// to avoide: localVar1 = localVar1
-			if (const auto symbolLeaf = dynamic_cast<ExprTree::SymbolLeaf*>(expr))
+			if (const auto symbolLeaf = dynamic_cast<SymbolLeaf*>(expr))
 				if (symbolLeaf->m_symbol == localVar)
 					continue;
 
 			// associate localVar with PCode instructions
-			if (auto nodeRelToInstr = dynamic_cast<PCode::IRelatedToInstruction*>(expr)) {
+			if (auto nodeRelToInstr = dynamic_cast<IRelatedToInstruction*>(expr)) {
 				for (auto instr : nodeRelToInstr->getInstructionsRelatedTo())
 					localVar->m_instructionsRelatedTo.push_back(instr);
 			}
 
 			// create assignment: localVar = {expr}
 			auto& blockInfo = m_decompiler->m_decompiledBlocks[execCtx->m_pcodeBlock];
-			blockInfo.m_decBlock->addSymbolParallelAssignmentLine(new ExprTree::SymbolLeaf(localVar), expr);
+			blockInfo.m_decBlock->addSymbolParallelAssignmentLine(new SymbolLeaf(localVar), expr);
 		}
 
 		m_decGraph->addSymbol(localVar);
 	}
 }
 
-void CE::Decompiler::Optimization::GraphParAssignmentCreator::optimizeAllParAssignments() const
+void Optimization::GraphParAssignmentCreator::optimizeAllParAssignments() const
 {
 	for (const auto decBlock : m_decGraph->getDecompiledBlocks()) {
 		for (auto parAssignmentLine : decBlock->getSymbolParallelAssignmentLines()) {

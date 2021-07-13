@@ -4,13 +4,13 @@
 
 using namespace CE;
 
-CE::Function::Function(FunctionManager* manager, Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::SymbolTable* stackSymbolTable)
+Function::Function(FunctionManager* manager, Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::SymbolTable* stackSymbolTable)
 	: m_manager(manager), m_functionSymbol(functionSymbol), m_imageDec(imageDec), m_stackSymbolTable(stackSymbolTable)
 {
 	functionSymbol->setFunction(this);
 }
 
-SymbolContext CE::Function::getSymbolContext() const
+SymbolContext Function::getSymbolContext() const
 {
 	SymbolContext symbolCtx;
 	symbolCtx.m_signature = getSignature();
@@ -25,7 +25,7 @@ Symbol::FunctionSymbol* Function::getFunctionSymbol() const
 	return m_functionSymbol;
 }
 
-ImageDecorator* CE::Function::getImage() const
+ImageDecorator* Function::getImage() const
 {
 	return m_imageDec;
 }
@@ -56,7 +56,7 @@ DataType::IFunctionSignature* Function::getSignature() const
 	return m_functionSymbol->getSignature();
 }
 
-int64_t CE::Function::getOffset() const
+int64_t Function::getOffset() const
 {
 	return m_functionSymbol->getOffset();
 }

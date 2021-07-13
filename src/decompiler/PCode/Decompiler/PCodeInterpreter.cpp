@@ -2,7 +2,7 @@
 #include "PrimaryDecompiler.h"
 
 using namespace CE::Decompiler;
-using namespace CE::Decompiler::PCode;
+using namespace PCode;
 
 void InstructionInterpreter::execute(Instruction* instr) {
 	m_instr = instr;
@@ -334,7 +334,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 			}
 		}
 
-		PCode::Register dstRegister;
+		Register dstRegister;
 		auto retInfo = funcCallInfo.getReturnInfo();
 		if (retInfo.m_storage.getType() != Storage::STORAGE_NONE) {
 			dstRegister = m_decompiler->getRegisterFactory()->createRegister(retInfo.m_storage.getRegisterId(), retInfo.m_size, retInfo.m_storage.getOffset());
@@ -384,7 +384,7 @@ ExprTree::INode* InstructionInterpreter::buildParameterInfoExpr(ParameterInfo& p
 	return regSymbol;
 }
 
-ExprTree::INode* InstructionInterpreter::requestVarnode(PCode::Varnode* varnode) const
+ExprTree::INode* InstructionInterpreter::requestVarnode(Varnode* varnode) const
 {
 	return m_ctx->requestVarnode(varnode);
 }
@@ -399,7 +399,7 @@ ExprTree::AbstractCondition* InstructionInterpreter::toBoolean(ExprTree::INode* 
 	return new ExprTree::Condition(node, new ExprTree::NumberLeaf(static_cast<uint64_t>(0x0), 1), ExprTree::Condition::Ne);
 }
 
-ExprTree::SymbolLeaf* PCode::InstructionInterpreter::createMemSymbol(ExprTree::ReadValueNode* readValueNode, PCode::Instruction* instr) const
+ExprTree::SymbolLeaf* InstructionInterpreter::createMemSymbol(ExprTree::ReadValueNode* readValueNode, Instruction* instr) const
 {
 	const auto memVar = new Symbol::MemoryVariable(instr, readValueNode->getSize());
 	readValueNode->m_memVar = memVar;

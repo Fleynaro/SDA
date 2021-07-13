@@ -4,7 +4,7 @@ using namespace CE::Decompiler::ExprTree;
 
 // replace this node with another, remove all associations and make this node independent from expression tree
 
-void CE::Decompiler::ExprTree::Node::replaceWith(INode* newNode) {
+void Node::replaceWith(INode* newNode) {
 	auto it = m_parentNodes.begin();
 	while(it != m_parentNodes.end())
 	{
@@ -19,7 +19,7 @@ void CE::Decompiler::ExprTree::Node::replaceWith(INode* newNode) {
 	}
 }
 
-void CE::Decompiler::ExprTree::Node::removeBy(INodeAgregator* node) {
+void Node::removeBy(INodeAgregator* node) {
 	if (node != nullptr) {
 		node->replaceNode(this, nullptr);
 		removeParentNode(node);
@@ -28,23 +28,23 @@ void CE::Decompiler::ExprTree::Node::removeBy(INodeAgregator* node) {
 		delete this;
 }
 
-void CE::Decompiler::ExprTree::Node::addParentNode(INodeAgregator* node) {
+void Node::addParentNode(INodeAgregator* node) {
 	if (this == dynamic_cast<INode*>(node))
 		return;
 	m_parentNodes.push_back(node);
 }
 
-void CE::Decompiler::ExprTree::Node::removeParentNode(INodeAgregator* node) {
+void Node::removeParentNode(INodeAgregator* node) {
 	m_parentNodes.remove(node);
 }
 
-std::list<INodeAgregator*>& CE::Decompiler::ExprTree::Node::getParentNodes() {
+std::list<INodeAgregator*>& Node::getParentNodes() {
 	return m_parentNodes;
 }
 
 // get single parent (exception thrown because of multiple parents)
 
-INodeAgregator* CE::Decompiler::ExprTree::Node::getParentNode() {
+INodeAgregator* Node::getParentNode() {
 	if (m_parentNodes.size() != 1) {
 		throw std::logic_error("it is ambigious because of multiple parents");
 	}
@@ -54,20 +54,20 @@ INodeAgregator* CE::Decompiler::ExprTree::Node::getParentNode() {
 
 // not integer type
 
-bool CE::Decompiler::ExprTree::Node::isFloatingPoint() {
+bool Node::isFloatingPoint() {
 	return false;
 }
 
-std::string CE::Decompiler::ExprTree::Node::printDebug() {
+std::string Node::printDebug() {
 	return "";
 }
 
-INode* CE::Decompiler::ExprTree::INode::clone() {
+INode* INode::clone() {
 	NodeCloneContext ctx;
 	return clone(&ctx);
 }
 
-void CE::Decompiler::ExprTree::INode::iterateChildNodes(std::function<void(INode*)> func) {
+void INode::iterateChildNodes(std::function<void(INode*)> func) {
 	if (auto agregator = dynamic_cast<INodeAgregator*>(this)) {
 		auto list = agregator->getNodesList();
 		for (auto node : list) {
@@ -78,13 +78,13 @@ void CE::Decompiler::ExprTree::INode::iterateChildNodes(std::function<void(INode
 	}
 }
 
-void CE::Decompiler::ExprTree::INode::UpdateDebugInfo(INode* node) {
+void INode::UpdateDebugInfo(INode* node) {
 	if (!node) return;
 	node->printDebug();
 	//node->checkOnSingleParents();
 }
 
-void CE::Decompiler::ExprTree::INode::checkOnSingleParents() {
+void INode::checkOnSingleParents() {
 	auto parentNode = getParentNode();
 	if (auto nodeAgregator = dynamic_cast<INodeAgregator*>(this)) {
 		for (auto childNode : nodeAgregator->getNodesList())

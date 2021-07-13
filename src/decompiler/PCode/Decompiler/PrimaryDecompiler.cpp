@@ -2,9 +2,9 @@
 #include <decompiler/Graph/DecCodeGraph.h>
 
 using namespace CE;
-using namespace CE::Decompiler;
+using namespace Decompiler;
 
-CE::Decompiler::AbstractPrimaryDecompiler::~AbstractPrimaryDecompiler() {
+AbstractPrimaryDecompiler::~AbstractPrimaryDecompiler() {
 	for (auto& pair : m_decompiledBlocks) {
 		auto& decBlockInfo = pair.second;
 		delete decBlockInfo.m_execCtx;
@@ -18,7 +18,7 @@ CE::Decompiler::AbstractPrimaryDecompiler::~AbstractPrimaryDecompiler() {
 	}
 }
 
-void CE::Decompiler::AbstractPrimaryDecompiler::start() {
+void AbstractPrimaryDecompiler::start() {
 	// prepare
 	for (auto pcodeBlock : m_decompiledGraph->getFuncGraph()->getBlocks()) {
 		DecBlock* newDecBlock;
@@ -53,14 +53,14 @@ void CE::Decompiler::AbstractPrimaryDecompiler::start() {
 	onFinal();
 }
 
-AbstractRegisterFactory* CE::Decompiler::AbstractPrimaryDecompiler::getRegisterFactory() const
+AbstractRegisterFactory* AbstractPrimaryDecompiler::getRegisterFactory() const
 {
 	return m_registerFactory;
 }
 
 // called when a function call appears during decompiling
 
-FunctionCallInfo CE::Decompiler::AbstractPrimaryDecompiler::requestFunctionCallInfo(ExecContext* ctx, PCode::Instruction* instr) {
+FunctionCallInfo AbstractPrimaryDecompiler::requestFunctionCallInfo(ExecContext* ctx, Instruction* instr) {
 	int funcOffset = 0;
 	auto& constValues = m_decompiledGraph->getFuncGraph()->getConstValues();
 	const auto it = constValues.find(instr);
@@ -69,7 +69,7 @@ FunctionCallInfo CE::Decompiler::AbstractPrimaryDecompiler::requestFunctionCallI
 	return requestFunctionCallInfo(ctx, instr, funcOffset);
 }
 
-void CE::Decompiler::AbstractPrimaryDecompiler::interpreteGraph(PCodeBlock* pcodeBlock, int versionOfDecompiling) {
+void AbstractPrimaryDecompiler::interpreteGraph(PCodeBlock* pcodeBlock, int versionOfDecompiling) {
 	auto& blockInfo = m_decompiledBlocks[pcodeBlock];
 
 	// todo: redecompile block because of loops
@@ -82,7 +82,7 @@ void CE::Decompiler::AbstractPrimaryDecompiler::interpreteGraph(PCodeBlock* pcod
 
 		// execute the instructions and then change the execution context
 		blockInfo.m_decBlock->clearCode();
-		PCode::InstructionInterpreter instructionInterpreter(this, blockInfo.m_decBlock, blockInfo.m_execCtx);
+		InstructionInterpreter instructionInterpreter(this, blockInfo.m_decBlock, blockInfo.m_execCtx);
 		for (auto instr : pcodeBlock->getInstructions()) {
 			instructionInterpreter.execute(instr);
 		}
@@ -114,7 +114,7 @@ void CE::Decompiler::AbstractPrimaryDecompiler::interpreteGraph(PCodeBlock* pcod
 	}
 }
 
-void CE::Decompiler::AbstractPrimaryDecompiler::setAllDecBlocksLinks() {
+void AbstractPrimaryDecompiler::setAllDecBlocksLinks() {
 	for (const auto& pair : m_decompiledBlocks) {
 		auto& decBlockInfo = pair.second;
 		if (auto nextPCodeBlock = decBlockInfo.m_pcodeBlock->getNextNearBlock()) {
@@ -126,6 +126,6 @@ void CE::Decompiler::AbstractPrimaryDecompiler::setAllDecBlocksLinks() {
 	}
 }
 
-FunctionCallInfo CE::Decompiler::PrimaryDecompiler::requestFunctionCallInfo(ExecContext* ctx, PCode::Instruction* instr, int funcOffset) {
+FunctionCallInfo PrimaryDecompiler::requestFunctionCallInfo(ExecContext* ctx, Instruction* instr, int funcOffset) {
 	return m_funcCallInfoCallback(instr, funcOffset);
 }

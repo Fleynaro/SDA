@@ -97,7 +97,7 @@ namespace CE::Decompiler::ExprTree
 
 		void replaceNode(INode* node, INode* newNode) override;
 
-		std::list<ExprTree::INode*> getNodesList() override;
+		std::list<INode*> getNodesList() override;
 
 		std::list<PCode::Instruction*> getInstructionsRelatedTo() override;
 

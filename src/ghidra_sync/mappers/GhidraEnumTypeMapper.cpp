@@ -2,7 +2,7 @@
 #include <managers/TypeManager.h>
 
 using namespace CE;
-using namespace CE::Ghidra;
+using namespace Ghidra;
 
 EnumTypeMapper::EnumTypeMapper(DataTypeMapper* dataTypeMapper)
 	: m_dataTypeMapper(dataTypeMapper)
@@ -29,12 +29,12 @@ void EnumTypeMapper::remove(SyncContext* ctx, IObject* obj) {
 	m_dataTypeMapper->remove(ctx, obj);
 }
 
-datatype::SDataTypeEnum EnumTypeMapper::buildDesc(DataType::Enum* Enum) const
+SDataTypeEnum EnumTypeMapper::buildDesc(DataType::Enum* Enum) const
 {
-	datatype::SDataTypeEnum enumDesc;
+	SDataTypeEnum enumDesc;
 	enumDesc.__set_type(m_dataTypeMapper->buildDesc(Enum));
 	for (auto& field : Enum->getFields()) {
-		datatype::SDataTypeEnumField enumFieldDesc;
+		SDataTypeEnumField enumFieldDesc;
 		enumFieldDesc.__set_name(field.second);
 		enumFieldDesc.__set_value(field.first);
 		enumDesc.fields.push_back(enumFieldDesc);
@@ -42,7 +42,7 @@ datatype::SDataTypeEnum EnumTypeMapper::buildDesc(DataType::Enum* Enum) const
 	return enumDesc;
 }
 
-void EnumTypeMapper::changeEnumByDesc(DataType::Enum* Enum, const datatype::SDataTypeEnum& enumDesc) const
+void EnumTypeMapper::changeEnumByDesc(DataType::Enum* Enum, const SDataTypeEnum& enumDesc) const
 {
 	m_dataTypeMapper->changeUserTypeByDesc(Enum, enumDesc.type);
 	Enum->setSize(enumDesc.type.size);

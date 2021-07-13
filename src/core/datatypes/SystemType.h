@@ -49,7 +49,7 @@ namespace CE
 			virtual Set getSet() = 0;
 
 			Group getGroup() override {
-				return Group::Simple;
+				return Simple;
 			}
 
 			std::string getDisplayName() override {
@@ -77,7 +77,7 @@ namespace CE
 			}
 
 			Set getSet() {
-				return Set::Undefined;
+				return Undefined;
 			}
 
 			int getSize() override {
@@ -101,7 +101,7 @@ namespace CE
 			}
 
 			Set getSet() {
-				return Set::Boolean;
+				return Boolean;
 			}
 
 			std::string getViewValue(uint64_t value) override {
@@ -129,7 +129,7 @@ namespace CE
 			}
 
 			Set getSet() {
-				return Set::Integer;
+				return Integer;
 			}
 
 			int getSize() override {
@@ -153,7 +153,7 @@ namespace CE
 			}
 
 			Set getSet() {
-				return Set::Integer;
+				return Integer;
 			}
 
 			bool isSigned() override {
@@ -185,7 +185,7 @@ namespace CE
 			}
 
 			Set getSet() {
-				return Set::Integer;
+				return Integer;
 			}
 
 			bool isSigned() override {
@@ -217,7 +217,7 @@ namespace CE
 			}
 
 			Set getSet() {
-				return Set::Integer;
+				return Integer;
 			}
 
 			bool isSigned() override {
@@ -249,7 +249,7 @@ namespace CE
 			}
 
 			Set getSet() {
-				return Set::Integer;
+				return Integer;
 			}
 
 			bool isSigned() override {
@@ -281,7 +281,7 @@ namespace CE
 			}
 
 			Set getSet() {
-				return Set::Integer;
+				return Integer;
 			}
 
 			int getSize() override {
@@ -305,7 +305,7 @@ namespace CE
 			}
 
 			Set getSet() {
-				return Set::Integer;
+				return Integer;
 			}
 
 			int getSize() override {
@@ -329,7 +329,7 @@ namespace CE
 			}
 
 			Set getSet() {
-				return Set::Integer;
+				return Integer;
 			}
 
 			int getSize() override {
@@ -353,7 +353,7 @@ namespace CE
 			}
 
 			Set getSet() {
-				return Set::Integer;
+				return Integer;
 			}
 
 			int getSize() override {
@@ -377,7 +377,7 @@ namespace CE
 			}
 
 			Set getSet() {
-				return Set::Real;
+				return Real;
 			}
 
 			bool isSigned() override {
@@ -409,7 +409,7 @@ namespace CE
 			}
 
 			Set getSet() {
-				return Set::Real;
+				return Real;
 			}
 
 			bool isSigned() override {
@@ -441,7 +441,7 @@ namespace CE
 			}
 
 			Set getSet() {
-				return Set::Integer;
+				return Integer;
 			}
 
 			int getSize() override {
@@ -465,7 +465,7 @@ namespace CE
 			}
 
 			Set getSet() {
-				return Set::Integer;
+				return Integer;
 			}
 
 			int getSize() override {

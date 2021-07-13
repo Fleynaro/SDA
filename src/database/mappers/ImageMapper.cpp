@@ -8,32 +8,32 @@
 
 using namespace DB;
 using namespace CE;
-using namespace CE::Decompiler;
+using namespace Decompiler;
 
-DB::ImageMapper::ImageMapper(IRepository* repository)
+ImageMapper::ImageMapper(IRepository* repository)
 	: AbstractMapper(repository)
 {}
 
-void DB::ImageMapper::loadAll() {
+void ImageMapper::loadAll() {
 	auto& db = getManager()->getProject()->getDB();
 	Statement query(db, "SELECT * FROM sda_images");
 	load(&db, query);
 }
 
-Id DB::ImageMapper::getNextId() {
+Id ImageMapper::getNextId() {
 	auto& db = getManager()->getProject()->getDB();
 	return GenerateNextId(&db, "sda_images");
 }
 
-CE::ImageManager* DB::ImageMapper::getManager() const
+ImageManager* ImageMapper::getManager() const
 {
 	return static_cast<ImageManager*>(m_repository);
 }
 
-IDomainObject* DB::ImageMapper::doLoad(Database* db, SQLite::Statement& query) {
+IDomainObject* ImageMapper::doLoad(Database* db, Statement& query) {
 	int image_id = query.getColumn("image_id");
 	int parent_image_id = query.getColumn("parent_image_id");
-	auto type = static_cast<CE::ImageDecorator::IMAGE_TYPE>(static_cast<int>(query.getColumn("type")));
+	auto type = static_cast<ImageDecorator::IMAGE_TYPE>(static_cast<int>(query.getColumn("type")));
 	//std::uintptr_t addr = (int64_t)query.getColumn("addr");
 	std::string name = query.getColumn("name");
 	std::string comment = query.getColumn("comment");
@@ -68,13 +68,13 @@ IDomainObject* DB::ImageMapper::doLoad(Database* db, SQLite::Statement& query) {
 		// load modified instructions for instr. pool
 		for (const auto& json_mod_instr : json_instr_pool["mod_instructions"]) {
 			auto offset = json_mod_instr["offset"].get<uint64_t>();
-			auto mod = json_mod_instr["mod"].get<Decompiler::PCode::InstructionPool::MODIFICATOR>();
+			auto mod = json_mod_instr["mod"].get<InstructionPool::MODIFICATOR>();
 			imageDec->getInstrPool()->m_modifiedInstructions[offset] = mod;
 		}
 		// load virtual func. calls
 		for (const auto& json_vfunc_call : json_vfunc_calls) {
 			auto offset = json_vfunc_call["offset"].get<uint64_t>();
-			auto sig_id = json_vfunc_call["sig_id"].get<DB::Id>();
+			auto sig_id = json_vfunc_call["sig_id"].get<Id>();
 			auto funcSig = dynamic_cast<DataType::IFunctionSignature*>(getManager()->getProject()->getTypeManager()->findTypeById(sig_id));
 			imageDec->getVirtFuncCalls()[offset] = funcSig;
 		}
@@ -110,21 +110,21 @@ IDomainObject* DB::ImageMapper::doLoad(Database* db, SQLite::Statement& query) {
 	return imageDec;
 }
 
-void DB::ImageMapper::doInsert(TransactionContext* ctx, IDomainObject* obj) {
+void ImageMapper::doInsert(TransactionContext* ctx, IDomainObject* obj) {
 	doUpdate(ctx, obj);
 }
 
-void DB::ImageMapper::doUpdate(TransactionContext* ctx, IDomainObject* obj) {
+void ImageMapper::doUpdate(TransactionContext* ctx, IDomainObject* obj) {
 	auto imageDec = dynamic_cast<ImageDecorator*>(obj);
-	SQLite::Statement query(*ctx->m_db,
-		"REPLACE INTO sda_images (image_id, parent_image_id, type, name, comment, addr_space_id, global_table_id, func_body_table_id, json_instr_pool, json_vfunc_calls, json_func_graphs, save_id) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)");
+	Statement query(*ctx->m_db,
+	                "REPLACE INTO sda_images (image_id, parent_image_id, type, name, comment, addr_space_id, global_table_id, func_body_table_id, json_instr_pool, json_vfunc_calls, json_func_graphs, save_id) VALUES(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)");
 	query.bind(1, imageDec->getId());
 	bind(query, imageDec);
 	query.bind(12, ctx->m_saveId);
 	query.exec();
 }
 
-void DB::ImageMapper::doRemove(TransactionContext* ctx, IDomainObject* obj) {
+void ImageMapper::doRemove(TransactionContext* ctx, IDomainObject* obj) {
 	const std::string action_query_text =
 		ctx->m_notDelete ? "UPDATE sda_images SET deleted=1" : "DELETE FROM sda_images";
 	Statement query(*ctx->m_db, action_query_text + " WHERE image_id=?1");
@@ -132,10 +132,10 @@ void DB::ImageMapper::doRemove(TransactionContext* ctx, IDomainObject* obj) {
 	query.exec();
 }
 
-void DB::ImageMapper::decodePCodeBlock(CE::Decompiler::PCodeBlock* block, CE::ImageDecorator* imageDec) {
+void ImageMapper::decodePCodeBlock(PCodeBlock* block, ImageDecorator* imageDec) {
 	WarningContainer warningContainer;
 	RegisterFactoryX86 registerFactoryX86;
-	PCode::DecoderX86 decoder(&registerFactoryX86, imageDec ->getInstrPool(), &warningContainer);
+	DecoderX86 decoder(&registerFactoryX86, imageDec ->getInstrPool(), &warningContainer);
 	auto offset = block->getMinOffset() >> 8;
 	while (offset < block->getMaxOffset() >> 8) {
 		decoder.decode(imageDec->getImage()->getData() + offset, static_cast<int>(offset), imageDec->getImage()->getSize());
@@ -148,7 +148,7 @@ void DB::ImageMapper::decodePCodeBlock(CE::Decompiler::PCodeBlock* block, CE::Im
 	}
 }
 
-void DB::ImageMapper::loadFuncPCodeGraphJson(const json& json_func_graph, CE::Decompiler::FunctionPCodeGraph* funcGraph, CE::ImageDecorator* imageDec) {
+void ImageMapper::loadFuncPCodeGraphJson(const json& json_func_graph, FunctionPCodeGraph* funcGraph, ImageDecorator* imageDec) {
 	auto imgPCodeGraph = funcGraph->getImagePCodeGraph();
 
 	// load blocks
@@ -184,7 +184,7 @@ void DB::ImageMapper::loadFuncPCodeGraphJson(const json& json_func_graph, CE::De
 	funcGraph->setStartBlock(startBlock);
 }
 
-json DB::ImageMapper::createFuncPCodeGraphJson(CE::Decompiler::FunctionPCodeGraph* funcPCodeGraph) {
+json ImageMapper::createFuncPCodeGraphJson(FunctionPCodeGraph* funcPCodeGraph) {
 	json json_func_graph;
 
 	// save pcode blocks
@@ -222,7 +222,7 @@ json DB::ImageMapper::createFuncPCodeGraphJson(CE::Decompiler::FunctionPCodeGrap
 	return json_func_graph;
 }
 
-void DB::ImageMapper::bind(SQLite::Statement& query, CE::ImageDecorator* imageDec) {
+void ImageMapper::bind(Statement& query, ImageDecorator* imageDec) {
 	json json_instr_pool;
 	json json_vfunc_calls;
 	json json_func_graphs;
