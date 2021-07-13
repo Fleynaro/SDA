@@ -8,9 +8,6 @@ namespace GUI
 {
 	class AbstractSectionController
 	{
-	protected:
-		// mapping rows to memory offsets
-		std::vector<uint64_t> m_offsets;
 	public:
 		CE::ImageDecorator* m_imageDec;
 		const CE::ImageSection* m_imageSection;
@@ -23,31 +20,56 @@ namespace GUI
 			return m_imageDec->getImage()->getData();
 		}
 
+		virtual void update() = 0;
+	};
+
+	struct AbstractOffsetInfo
+	{
+		operator uint64_t() const {
+			return *reinterpret_cast<const uint64_t*>(this);
+		}
+		
+		bool operator==(const AbstractOffsetInfo& other) const {
+			return static_cast<uint64_t>(*this) == static_cast<uint64_t>(other);
+		}
+
+		bool operator<(const AbstractOffsetInfo& other) const {
+			return static_cast<uint64_t>(*this) < static_cast<uint64_t>(other);
+		}
+	};
+	
+	template<typename T = uint64_t>
+	class AbstractSectionControllerWithOffsets : public AbstractSectionController
+	{
+	protected:
+		// mapping rows to memory offsets
+		std::vector<T> m_offsets;
+	public:
+		using AbstractSectionController::AbstractSectionController;
+		
 		int getOffsetsCount() const {
 			return static_cast<int>(m_offsets.size());
 		}
-		
-		uint64_t getOffset(int row) const {
+
+		T getOffset(int row) const {
 			if (row == getOffsetsCount())
 				return m_imageSection->getMaxOffset();
 			return m_offsets[row];
 		}
 
-		int offsetToRow(uint64_t offset) const {
+		int offsetToRow(T offset) const {
 			using namespace Helper::Algorithm;
 			size_t index = -1;
-			BinarySearch(m_offsets, offset, index);
+			BinarySearch<T>(m_offsets, offset, index);
 			return static_cast<int>(index);
 		}
-
-		virtual void update() = 0;
 	};
 
-	class DataSectionController : public AbstractSectionController
+	class DataSectionController : public AbstractSectionControllerWithOffsets<uint64_t>
 	{
 	public:
 		DataSectionController(CE::ImageDecorator* imageDec, const CE::ImageSection* imageSection)
-			: AbstractSectionController(imageDec, imageSection)
+			: AbstractSectionControllerWithOffsets<uint64_t>(imageDec, imageSection)
 		{
 			fillOffsets();
 		}
@@ -80,7 +102,29 @@ namespace GUI
 		}
 	};
 
-	class CodeSectionController : public AbstractSectionController
+	struct CodeOffsetInfo : AbstractOffsetInfo {
+		union {
+			struct {
+				uint64_t isPCode : 1;
+				uint64_t orderId : 8;
+				uint64_t offset : 55;
+			};
+			struct {
+				uint64_t : 1;
+				uint64_t fullOffset : 63;
+			};
+		};
+
+		CodeOffsetInfo(uint64_t offset, uint64_t orderId, bool isPCode)
+			: offset(offset), orderId(orderId), isPCode(isPCode)
+		{}
+
+		CodeOffsetInfo(uint64_t fullOffset, bool isPCode = false)
+			: fullOffset(fullOffset), isPCode(isPCode)
+		{}
+	};
+	
+	class CodeSectionController : public AbstractSectionControllerWithOffsets<CodeOffsetInfo>
 	{
 	public:
 		struct Jmp
@@ -94,7 +138,7 @@ namespace GUI
 		bool m_showPCode = false;
 
 		CodeSectionController(CE::ImageDecorator* imageDec, const CE::ImageSection* imageSection)
-			: AbstractSectionController(imageDec, imageSection)
+			: AbstractSectionControllerWithOffsets<CodeOffsetInfo>(imageDec, imageSection)
 		{}
 
 		void update() override {
@@ -102,23 +146,15 @@ namespace GUI
 			m_jmps.clear();
 			m_offsetToJmp.clear();
 		}
-
-		uint64_t getInstrOffset(int row) const {
-			return getOffset(row) >> 1;
-		}
-
-		int instrOffsetToRow(uint64_t instrOffset) const {
-			return offsetToRow(instrOffset << 1);
-		}
 	
 	protected:
 		void addOffset(uint64_t offset) {
-			m_offsets.push_back(offset << (8 + 1));
+			m_offsets.emplace_back(offset, 0, false);
 			if (m_showPCode) {
 				if (auto origInstr = m_imageDec->getInstrPool()->getOrigInstructionAt(offset)) {
 					for (const auto& pair : origInstr->m_pcodeInstructions) {
 						auto pcodeInstr = &pair.second;
-						m_offsets.push_back((pcodeInstr->getOffset() << 1) | 1);
+						m_offsets.emplace_back(pcodeInstr->getOffset(), true);
 					}
 				}
 			}

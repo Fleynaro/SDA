@@ -168,8 +168,8 @@ namespace GUI
 							ImGui::TableNextRow();
 							const auto offset = m_codeSectionController->getOffset(row);
 
-							if ((offset & 1) == 0) {
-								const auto instrOffset = offset >> 9;
+							if (!offset.isPCode) {
+								const auto instrOffset = offset.offset;
 								renderAddressColumn(instrOffset);
 
 								InstructionTokenRender instructionTokenRender;
@@ -181,7 +181,7 @@ namespace GUI
 								m_instructionViewer->setOffset(instrOffset);
 								m_instructionViewer->show();
 							} else {
-								const auto instrOffset = offset >> 1;
+								const auto instrOffset = offset.fullOffset;
 								if (auto instr = m_codeSectionController->m_imageDec->getInstrPool()->getPCodeInstructionAt(instrOffset)) {
 									ImGui::TableNextColumn();
 									Text::Text("").show();
@@ -194,14 +194,14 @@ namespace GUI
 						}
 					}
 					if(goToFunc) {
-						ImGui::SetScrollY(m_codeSectionController->instrOffsetToRow(0x216f000) * clipper.ItemsHeight);
+						ImGui::SetScrollY(m_codeSectionController->offsetToRow(CodeOffsetInfo(0x216f000)) * clipper.ItemsHeight);
 					}
 					ImGui::EndTable();
 				}
 			}
 
-			void renderJmpLines(int row, const ImGuiListClipper& clipper) {
-				if (const auto it = m_codeSectionController->m_offsetToJmp.find(m_codeSectionController->getInstrOffset(row));
+			void renderJmpLines(const int row, const ImGuiListClipper& clipper) {
+				if (const auto it = m_codeSectionController->m_offsetToJmp.find(m_codeSectionController->getOffset(row).fullOffset);
 					it != m_codeSectionController->m_offsetToJmp.end()) {
 					auto pJmps = it->second;
 					for (auto pJmp : pJmps) {
@@ -213,12 +213,12 @@ namespace GUI
 				}
 			}
 
-			void drawJmpLine(int row, CodeSectionControllerX86::Jmp* pJmp, const ImGuiListClipper& clipper) const {
+			void drawJmpLine(const int row, const CodeSectionControllerX86::Jmp* pJmp, const ImGuiListClipper& clipper) const {
 				const float JmpLineLeftOffset = 10.0f;
 				const float JmpLineGap = 8.0f;
 				
-				const bool isStart = m_codeSectionController->getInstrOffset(row) == pJmp->m_startOffset;
-				const auto targetRow = m_codeSectionController->instrOffsetToRow(isStart ? pJmp->m_endOffset : pJmp->m_startOffset);
+				const bool isStart = m_codeSectionController->getOffset(row).fullOffset == pJmp->m_startOffset;
+				const auto targetRow = m_codeSectionController->offsetToRow(CodeOffsetInfo(isStart ? pJmp->m_endOffset : pJmp->m_startOffset));
 
 				auto lineColor = ImGui::GetColorU32(ToImGuiColor(-1));
 				const ImVec2 point1 = { ImGui::GetItemRectMin().x - 2.0f, (ImGui::GetItemRectMin().y + ImGui::GetItemRectMax().y) / 2.0f };
