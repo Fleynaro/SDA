@@ -17,36 +17,36 @@ public:
 
 	template<class T>
 	HS operator+(T value) const {
-		return HS(m_hashValue + (Value)value);
+		return HS(m_hashValue + static_cast<Value>(value));
 	}
 
 	template<class T>
 	HS operator<<(T value) const {
-		return *this + (uint64_t)value * 31;
+		return *this + static_cast<uint64_t>(value) * 31;
 	}
 	
 	HS operator+(float value) const {
-		return *this + (uint32_t&)value;
+		return *this + reinterpret_cast<uint32_t&>(value);
 	}
 
 	HS operator<<(float value) const {
-		return *this << (uint32_t&)value;
+		return *this << reinterpret_cast<uint32_t&>(value);
 	}
 
 	HS operator+(double value) const {
-		return *this + (uint64_t&)value;
+		return *this + reinterpret_cast<uint64_t&>(value);
 	}
 
 	HS operator<<(double value) const {
-		return *this << (uint64_t&)value;
+		return *this << reinterpret_cast<uint64_t&>(value);
 	}
 	
 	HS operator+(const std::string& string) const {
-		return *this + hashString(string);
+		return *this + HashString(string);
 	}
 
 	HS operator<<(const std::string& string) const {
-		return *this << hashString(string);
+		return *this << HashString(string);
 	}
 
 	HS operator+(const HS& hs) const {
@@ -63,7 +63,7 @@ public:
 	}
 
 private:
-	HS hashString(const std::string& string) const {
+	static HS HashString(const std::string& string) {
 		HS hs;
 		for (const auto& ch : string) {
 			hs = hs << ch;

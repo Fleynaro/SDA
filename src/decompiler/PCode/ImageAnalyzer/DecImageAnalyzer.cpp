@@ -48,7 +48,7 @@ void ImageAnalyzer::start(Offset startOffset, bool onceFunc) const {
 				m_graphReferenceSearch->findNewFunctionOffsets(funcGraph, nonVirtFuncOffsets, otherOffsets);
 				nextOffsetsToVisitLater.insert(nextOffsetsToVisitLater.end(), nonVirtFuncOffsets.begin(), nonVirtFuncOffsets.end());
 				nextOffsetsToVisitLater.insert(nextOffsetsToVisitLater.end(), otherOffsets.begin(), otherOffsets.end());
-				nonVirtFuncOffsetsForGraphs.push_back(std::make_pair(funcGraph, nonVirtFuncOffsets));
+				nonVirtFuncOffsetsForGraphs.emplace_back(funcGraph, nonVirtFuncOffsets);
 			}
 		}
 	}
@@ -113,7 +113,7 @@ void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, Fu
 
 		if (offset != InvalidOffset && visitedOffsets.find(offset) == visitedOffsets.end()) {
 			// any offset have to be assoicated with some existing block
-			if (curBlock = m_imageGraph->getBlockAtOffset(offset, false)) {
+			if ((curBlock = m_imageGraph->getBlockAtOffset(offset, false))) {
 
 				// try to get an instruction by the offset
 				instr = m_decoder->m_instrPool->getPCodeInstructionAt(offset);
@@ -183,7 +183,8 @@ void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, Fu
 
 			if (targetOffset == InvalidOffset || m_image->getSectionByRva(targetOffset >> 8)->m_type != ImageSection::CODE_SEGMENT) {
 				offset = InvalidOffset;
-				m_decoder->getWarningContainer()->addWarning("rva " + std::to_string(targetOffset >> 8) + " is not correct in the jump instruction " + instr->m_origInstruction->m_originalView + " (at 0x" + Helper::String::NumberToHex(instr->m_origInstruction->m_offset) + ")");
+				m_decoder->getWarningContainer()->addWarning(
+					"rva " + std::to_string(targetOffset >> 8) + " is not correct in the jump instruction " + instr->m_origInstruction->m_originalView + " (at 0x" + Helper::String::NumberToHex(instr->m_origInstruction->m_offset) + ")");
 				continue;
 			}
 

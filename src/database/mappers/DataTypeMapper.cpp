@@ -145,7 +145,7 @@ void DataTypeMapper::loadExtraJson(UserDefinedType* userDefType, json json_extra
 			const auto register_id = json_storage["reg_id"].get<int>();
 			const auto offset = json_storage["offset"].get<int64_t>();
 			auto storage = Decompiler::Storage(storage_type, register_id, offset);
-			FunctionSignature->getCustomStorages().push_back(std::pair(idx, storage));
+			FunctionSignature->getCustomStorages().emplace_back(idx, storage);
 		}
 
 		// load parameters

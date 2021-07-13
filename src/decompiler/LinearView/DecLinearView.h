@@ -80,7 +80,7 @@ namespace CE::Decompiler::LinearView
 			auto curDecBlock = decBlock;
 			while (curDecBlock != nullptr) {
 				if (usedBlocks.count(curDecBlock) != 0) {
-					m_goto.push_back(std::make_pair(blockList, curDecBlock));
+					m_goto.emplace_back(blockList, curDecBlock);
 					break;
 				}
 				DecBlock* nextBlock = nullptr;
@@ -156,8 +156,8 @@ namespace CE::Decompiler::LinearView
 					auto cond = new Condition(curDecBlock);
 					blockList->addBlock(cond);
 					if (nextBlock) {
-						nextBlocksToFill.push_back(std::make_pair(cond->m_mainBranch, curDecBlock->getNextNearBlock()));
-						nextBlocksToFill.push_back(std::make_pair(cond->m_elseBranch, curDecBlock->getNextFarBlock()));
+						nextBlocksToFill.emplace_back(cond->m_mainBranch, curDecBlock->getNextNearBlock());
+						nextBlocksToFill.emplace_back(cond->m_elseBranch, curDecBlock->getNextFarBlock());
 					}
 					else {
 						auto blockInCond = curDecBlock->getNextNearBlock();
@@ -166,9 +166,9 @@ namespace CE::Decompiler::LinearView
 							std::swap(blockInCond, blockBelowCond);
 							cond->m_cond->inverse();
 						}
-						nextBlocksToFill.push_back(std::make_pair(cond->m_mainBranch, blockInCond));
-						nextBlocksToFill.push_back(std::make_pair(blockList, blockBelowCond));
-						m_goto.push_back(std::make_pair(cond->m_elseBranch, blockBelowCond));
+						nextBlocksToFill.emplace_back(cond->m_mainBranch, blockInCond);
+						nextBlocksToFill.emplace_back(blockList, blockBelowCond);
+						m_goto.emplace_back(cond->m_elseBranch, blockBelowCond);
 					}
 				}
 				else {

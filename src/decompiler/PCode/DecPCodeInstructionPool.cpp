@@ -5,12 +5,12 @@ using namespace Decompiler;
 using namespace PCode;
 
 RegisterVarnode* InstructionPool::createRegisterVarnode(Register reg) {
-	m_registerVarnodes.push_back(RegisterVarnode(reg));
+	m_registerVarnodes.emplace_back(reg);
 	return &*m_registerVarnodes.rbegin();
 }
 
 ConstantVarnode* InstructionPool::createConstantVarnode(uint64_t value, int size) {
-	m_constantVarnodes.push_back(ConstantVarnode(value, size));
+	m_constantVarnodes.emplace_back(value, size);
 	return &*m_constantVarnodes.rbegin();
 }
 
@@ -44,7 +44,7 @@ void InstructionPool::modifyInstruction(Instruction* instr, MODIFICATOR mod) {
 }
 
 SymbolVarnode* InstructionPool::createSymbolVarnode(int size) {
-	m_symbolVarnodes.push_back(SymbolVarnode(size));
+	m_symbolVarnodes.emplace_back(size);
 	return &*m_symbolVarnodes.rbegin();
 }
 

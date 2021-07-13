@@ -9,7 +9,7 @@ ImagePCodeGraph::ImagePCodeGraph()
 {}
 
 FunctionPCodeGraph* ImagePCodeGraph::createFunctionGraph() {
-	m_funcGraphList.push_back(FunctionPCodeGraph(this));
+	m_funcGraphList.emplace_back(this);
 	return &*m_funcGraphList.rbegin();
 }
 

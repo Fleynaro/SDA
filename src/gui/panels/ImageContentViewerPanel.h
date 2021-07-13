@@ -171,7 +171,11 @@ namespace GUI
 						for (auto rowIdx = clipper.DisplayStart; rowIdx < clipper.DisplayEnd; rowIdx++) {
 							ImGui::TableNextRow();
 							const auto codeSectionRow = m_codeSectionController->getRow(rowIdx);
-							//m_imageDec->getPCodeGraph()->getBlockAtOffset(codeSectionRow.m_fullOffset);
+							if (rowIdx == (clipper.DisplayStart + clipper.DisplayEnd) / 2) {
+								if (const auto pcodeBlock = m_codeSectionController->m_imageDec->getPCodeGraph()->getBlockAtOffset(codeSectionRow.m_fullOffset)) {
+									m_curFuncPCodeGraph = pcodeBlock->m_funcPCodeGraph;
+								}
+							}
 
 							if (!codeSectionRow.m_isPCode) {
 								const auto instrOffset = codeSectionRow.m_byteOffset;
@@ -289,6 +293,7 @@ namespace GUI
 			delete m_imageSectionViewer;
 			for (const auto& pair : m_imageSectionControllers)
 				delete pair.second;
+			delete m_funcGraphViewerWindow;
 		}
 
 	private:
@@ -308,10 +313,19 @@ namespace GUI
 						codeSectionViewer->m_codeSectionController->m_showPCode ^= true;
 						codeSectionViewer->m_codeSectionController->update();
 					}
-					if (ImGui::MenuItem("Show graph", 0)) {
-						delete m_funcGraphViewerWindow;
-						m_funcGraphViewerWindow = new StdWindow(
-							FuncGraphViewerPanel(codeSectionViewer->m_codeSectionController, codeSectionViewer->m_instructionViewer));
+					if (codeSectionViewer->m_curFuncPCodeGraph) {
+						if (ImGui::MenuItem("Show function graph", 0)) {
+							if (!m_funcGraphViewerWindow) {
+								auto funcGraphViewerPanel = new FuncGraphViewerPanel(codeSectionViewer->m_codeSectionController, codeSectionViewer->m_instructionViewer);
+								funcGraphViewerPanel->setFuncGraph(codeSectionViewer->m_curFuncPCodeGraph);
+								m_funcGraphViewerWindow = new StdWindow(funcGraphViewerPanel);
+							}
+							else {
+								if (auto funcGraphViewerPanel = dynamic_cast<FuncGraphViewerPanel*>(m_funcGraphViewerWindow->getPanel())) {
+									funcGraphViewerPanel->setFuncGraph(codeSectionViewer->m_curFuncPCodeGraph);
+								}
+							}
+						}
 					}
 				}
 				ImGui::EndMenu();

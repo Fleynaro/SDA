@@ -41,7 +41,7 @@ void Optimization::GraphParAssignmentCreator::findAllLocalVarsAndGatherParentOpN
 			if (auto opNode = dynamic_cast<OperationalNode*>(symbolLeaf->getParentNode())) {
 				if (opNode->m_operation == And) {
 					bool isSymbolInLeftNode = (opNode->m_leftNode == symbolLeaf);
-					m_localVars[localVar].m_opNodes.push_back(std::pair(opNode, isSymbolInLeftNode));
+					m_localVars[localVar].m_opNodes.emplace_back(opNode, isSymbolInLeftNode);
 					isParentOpNode = true;
 				}
 			}

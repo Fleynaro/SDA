@@ -98,11 +98,11 @@ void FunctionSignature::updateParameterStorages() {
 		const auto storage = pair.second;
 		if (paramIdx >= 1 && paramIdx <= getParameters().size()) {
 			const auto paramSize = getParameters()[paramIdx - 1]->getDataType()->getSize();
-			m_paramInfos.push_back(ParameterInfo(paramIdx, paramSize, storage));
+			m_paramInfos.emplace_back(paramIdx, paramSize, storage);
 		}
 		else if (paramIdx == 0) {
 			//if it is return
-			m_paramInfos.push_back(ParameterInfo(0, getReturnType()->getSize(), storage));
+			m_paramInfos.emplace_back(0, getReturnType()->getSize(), storage);
 		}
 	}
 
@@ -124,12 +124,12 @@ void FunctionSignature::updateParameterStorages() {
 					auto& reg = it->second;
 					const auto regId = !paramType->isFloatingPoint() ? reg.first : reg.second;
 					const auto storage = Storage(Storage::STORAGE_REGISTER, regId, 0x0);
-					m_paramInfos.push_back(ParameterInfo(paramIdx, paramType->getSize(), storage));
+					m_paramInfos.emplace_back(paramIdx, paramType->getSize(), storage);
 				}
 			}
 			else {
 				const auto storage = Storage(Storage::STORAGE_STACK, ZYDIS_REGISTER_RSP, paramIdx * 0x8);
-				m_paramInfos.push_back(ParameterInfo(paramIdx, paramType->getSize(), storage));
+				m_paramInfos.emplace_back(paramIdx, paramType->getSize(), storage);
 			}
 
 			paramIdx++;
@@ -140,7 +140,7 @@ void FunctionSignature::updateParameterStorages() {
 		if (retType->getSize() != 0x0) {
 			const auto regId = !retType->isFloatingPoint() ? ZYDIS_REGISTER_RAX : ZYDIS_REGISTER_ZMM0;
 			const auto storage = Storage(Storage::STORAGE_REGISTER, regId, 0x0);
-			m_paramInfos.push_back(ReturnInfo(retType->getSize(), storage));
+			m_paramInfos.emplace_back(retType->getSize(), storage);
 		}
 	}
 }
