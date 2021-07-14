@@ -116,38 +116,36 @@ namespace GUI
 		
 		class CodeSectionViewer : public AbstractSectionViewer
 		{
-			class InstructionTokenRender : public AbstractInstructionViewer::AbstractTokenRenderText
+			class CodeSectionInstructionViewer : public InstructionTableRowViewer
 			{
 				EventHandler<> m_renderJmpArrow;
 			public:
+				using InstructionTableRowViewer::InstructionTableRowViewer;
+				
 				void renderJmpArrow(const std::function<void()>& renderJmpArrow)
 				{
 					m_renderJmpArrow = renderJmpArrow;
 				}
 			
 			protected:
-				void render() override {
-					ImGui::TableNextColumn();
-					Text::Text(m_command).show();
+				void renderMnemonic() override {
+					InstructionTableRowViewer::renderMnemonic();
 					m_renderJmpArrow();
-
-					ImGui::TableNextColumn();
-					Text::Text(m_operands).show();
 				}
 			};
 			
 			std::set<CodeSectionController::Jmp*> m_shownJmps;
 		public:
 			CodeSectionController* m_codeSectionController;
-			AbstractInstructionViewer* m_instructionViewer;
+			AbstractInstructionViewDecoder* m_instructionViewDecoder;
 			CE::Decompiler::FunctionPCodeGraph* m_curFuncPCodeGraph = nullptr;
 			
-			CodeSectionViewer(CodeSectionController* codeSectionController, AbstractInstructionViewer* instructionViewer)
-				: AbstractSectionViewer(codeSectionController), m_codeSectionController(codeSectionController), m_instructionViewer(instructionViewer)
+			CodeSectionViewer(CodeSectionController* codeSectionController, AbstractInstructionViewDecoder* instructionViewDecoder)
+				: AbstractSectionViewer(codeSectionController), m_codeSectionController(codeSectionController), m_instructionViewDecoder(instructionViewDecoder)
 			{}
 
 			~CodeSectionViewer() override {
-				delete m_instructionViewer;
+				delete m_instructionViewDecoder;
 			}
 
 		private:
@@ -181,14 +179,14 @@ namespace GUI
 								const auto instrOffset = codeSectionRow.m_byteOffset;
 								renderAddressColumn(instrOffset);
 
-								InstructionTokenRender instructionTokenRender;
-								instructionTokenRender.renderJmpArrow([&]()
+								InstructionViewInfo instrViewInfo;
+								m_instructionViewDecoder->decode(m_codeSectionController->getImageDataByOffset(instrOffset), &instrViewInfo);
+								CodeSectionInstructionViewer instructionViewer(&instrViewInfo);
+								instructionViewer.renderJmpArrow([&]()
 									{
 										renderJmpLines(rowIdx, clipper);
 									});
-								m_instructionViewer->setTokenRender(&instructionTokenRender);
-								m_instructionViewer->setOffset(instrOffset);
-								m_instructionViewer->show();
+								instructionViewer.show();
 							} else {
 								const auto instrOffset = codeSectionRow.m_fullOffset;
 								if (const auto instr = m_codeSectionController->m_imageDec->getInstrPool()->getPCodeInstructionAt(instrOffset)) {
@@ -229,7 +227,7 @@ namespace GUI
 				const bool isStart = m_codeSectionController->getRow(rowIdx).m_fullOffset == pJmp->m_startOffset;
 				const auto targetRowIdx = m_codeSectionController->getRowIdx(CodeSectionRow(isStart ? pJmp->m_endOffset : pJmp->m_startOffset));
 
-				auto lineColor = ImGui::GetColorU32(ToImGuiColor(-1));
+				auto lineColor = ToImGuiColorU32(-1);
 				const ImVec2 point1 = { ImGui::GetItemRectMin().x - 2.0f, (ImGui::GetItemRectMin().y + ImGui::GetItemRectMax().y) / 2.0f };
 				const ImVec2 point2 = ImVec2(point1.x - pJmp->m_level * JmpLineGap - JmpLineLeftOffset, point1.y);
 				const ImVec2 point3 = ImVec2(point2.x, point2.y + clipper.ItemsHeight * (targetRowIdx - rowIdx));
@@ -243,7 +241,7 @@ namespace GUI
 						rect = ImRect(point3, { point2.x + JmpLineGap, point2.y });
 					if (rect.Contains(g.IO.MousePos)) {
 						ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-						lineColor = ImGui::GetColorU32(ToImGuiColor(0x00bfffFF));
+						lineColor = ToImGuiColorU32(0x00bfffFF);
 						if(ImGui::IsMouseClicked(0)) {
 							const auto offsetToCenter = clipper.ItemsHeight * (clipper.DisplayEnd - clipper.DisplayStart) / 2.0f;
 							ImGui::SetScrollY(targetRowIdx * clipper.ItemsHeight - offsetToCenter);
@@ -316,7 +314,7 @@ namespace GUI
 					if (codeSectionViewer->m_curFuncPCodeGraph) {
 						if (ImGui::MenuItem("Show function graph", 0)) {
 							if (!m_funcGraphViewerWindow) {
-								auto funcGraphViewerPanel = new FuncGraphViewerPanel(codeSectionViewer->m_codeSectionController, codeSectionViewer->m_instructionViewer);
+								auto funcGraphViewerPanel = new FuncGraphViewerPanel(m_imageDec, codeSectionViewer->m_instructionViewDecoder);
 								funcGraphViewerPanel->setFuncGraph(codeSectionViewer->m_curFuncPCodeGraph);
 								m_funcGraphViewerWindow = funcGraphViewerPanel->createStdWindow();
 							}
@@ -359,7 +357,7 @@ namespace GUI
 				auto codeController = dynamic_cast<CodeSectionControllerX86*>(controller);
 				if (!codeController)
 					m_imageSectionControllers[imageSection] = codeController = new CodeSectionControllerX86(m_imageDec, imageSection);
-				m_imageSectionViewer = new CodeSectionViewer(codeController, new InstructionViewerX86(codeController));
+				m_imageSectionViewer = new CodeSectionViewer(codeController, new InstructionViewDecoderX86);
 			}
 			else {
 				auto dataController = dynamic_cast<DataSectionController*>(controller);

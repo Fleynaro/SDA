@@ -20,6 +20,10 @@ namespace GUI
 			return m_imageDec->getImage()->getData();
 		}
 
+		int8_t* getImageDataByOffset(CE::Offset offset) const {
+			return m_imageDec->getImage()->getData() + m_imageSection->toImageOffset(offset);
+		}
+
 		virtual void update() = 0;
 	};
 
@@ -114,12 +118,12 @@ namespace GUI
 			};
 		};
 
-		CodeSectionRow(uint64_t offset, uint64_t orderId, bool isPCode)
+		CodeSectionRow(CE::Offset offset, int orderId, bool isPCode)
 			: m_byteOffset(offset), m_orderId(orderId), m_isPCode(isPCode)
 		{}
 
-		CodeSectionRow(uint64_t fullOffset, bool isPCode = false)
-			: m_fullOffset(fullOffset), m_isPCode(isPCode)
+		CodeSectionRow(CE::ComplexOffset offset, bool isPCode = false)
+			: m_fullOffset(offset), m_isPCode(isPCode)
 		{}
 	};
 	
@@ -147,7 +151,7 @@ namespace GUI
 		}
 	
 	protected:
-		void addOffset(uint64_t offset) {
+		void addOffset(CE::Offset offset) {
 			m_rows.emplace_back(offset, 0, false);
 			if (m_showPCode) {
 				if (auto origInstr = m_imageDec->getInstrPool()->getOrigInstructionAt(offset)) {
@@ -159,7 +163,7 @@ namespace GUI
 			}
 		}
 		
-		void addJump(uint64_t offset, uint64_t targetOffset) {
+		void addJump(CE::Offset offset, CE::Offset targetOffset) {
 			offset <<= 8;
 			targetOffset <<= 8;
 			Jmp jmp;
@@ -232,8 +236,8 @@ namespace GUI
 			fillOffsets();
 		}
 
-		bool decodeZydisInstruction(uint64_t offset, ZydisDecodedInstruction* instruction) const {
-			if (ZYAN_FAILED(ZydisDecoderDecodeBuffer(&m_decoder, getImageData() + m_imageSection->toImageOffset(offset), 0x100, instruction))) {
+		bool decodeZydisInstruction(CE::Offset offset, ZydisDecodedInstruction* instruction) const {
+			if (ZYAN_FAILED(ZydisDecoderDecodeBuffer(&m_decoder, getImageDataByOffset(offset), 0x100, instruction))) {
 				return false;
 			}
 			return true;

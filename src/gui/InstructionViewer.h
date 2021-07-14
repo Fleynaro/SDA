@@ -4,102 +4,102 @@
 
 namespace GUI
 {
-	class AbstractInstructionViewer : public Control
+	struct InstructionViewInfo
 	{
-	public:
-		class ITokenRender
+		enum Type
 		{
-		public:
-			virtual void renderMnemonic(const std::string& token) = 0;
-
-			virtual void renderRegister(const std::string& token) = 0;
-
-			virtual void renderAbsAddress(const std::string& token) = 0;
-
-			virtual void renderRelAddress(const std::string& token) = 0;
-
-			virtual void renderOther(const std::string& token) = 0;
-
-			virtual void render() = 0;
+			TOKEN_MNEMONIC,
+			TOKEN_REGISTER,
+			TOKEN_ADDRESS_ABS,
+			TOKEN_ADDRESS_REL,
+			TOKEN_OTHER
 		};
-
-		class AbstractTokenRenderText : public ITokenRender
+		
+		struct Token
 		{
-		protected:
-			std::string m_command;
-			std::string m_operands;
-		public:
-			void renderMnemonic(const std::string& token) override {
-				m_command = token;
-			}
-
-			void renderRegister(const std::string& token) override {
-				m_operands += token;
-			}
-
-			void renderAbsAddress(const std::string& token) override {
-				m_operands += token;
-			}
-
-			void renderRelAddress(const std::string& token) override {
-				m_operands += token;
-			}
-
-			void renderOther(const std::string& token) override {
-				m_operands += token;
-			}
+			Type m_type;
+			std::string m_text;
 		};
-	protected:
-		uint64_t m_offset;
-		ITokenRender* m_tokenRender = nullptr;
-
-	public:
-		void setOffset(uint64_t offset) {
-			m_offset = offset;
-		}
-
-		void setTokenRender(ITokenRender* tokenRender) {
-			m_tokenRender = tokenRender;
-		}
+		
+		std::list<Token> m_tokens;
+		int m_length;
 	};
 
-	class InstructionViewerPCode : public AbstractInstructionViewer
+	class AbstractInstructionViewer : public Control
 	{
-		CodeSectionController* m_codeSectionController;
+		InstructionViewInfo* m_instrViewInfo;
 	public:
-		InstructionViewerPCode(CodeSectionController* codeSectionController)
-			: m_codeSectionController(codeSectionController)
+		AbstractInstructionViewer(InstructionViewInfo* instrViewInfo)
+			: m_instrViewInfo(instrViewInfo)
 		{}
+
+	protected:
+		virtual void renderMnemonic() {
+			const auto mnemonic = m_instrViewInfo->m_tokens.begin()->m_text;
+			Text::Text(mnemonic).show();
+		}
+
+		virtual void renderOperands() {
+			std::string operands;
+			for (auto it = std::next(m_instrViewInfo->m_tokens.begin()); it != m_instrViewInfo->m_tokens.end(); ++it)
+				operands += it->m_text;
+			Text::Text(operands).show();
+		}
 
 	private:
 		void renderControl() override {
-
+			renderMnemonic();
+			renderOperands();
 		}
 	};
 
-	class InstructionViewerX86 : public AbstractInstructionViewer
+	class InstructionTableRowViewer : public AbstractInstructionViewer
 	{
-		CodeSectionControllerX86* m_codeSectionController;
+	public:
+		using AbstractInstructionViewer::AbstractInstructionViewer;
+	
+	protected:
+		void renderMnemonic() override {
+			ImGui::TableNextColumn();
+			AbstractInstructionViewer::renderMnemonic();
+		}
+
+		void renderOperands() override {
+			ImGui::TableNextColumn();
+			AbstractInstructionViewer::renderOperands();
+		}
+	};
+	
+	class AbstractInstructionViewDecoder
+	{
+	public:
+		virtual bool decode(const void* addr, InstructionViewInfo* instrViewInfo) = 0;
+	};
+
+	class InstructionViewDecoderX86 : public AbstractInstructionViewDecoder
+	{
+		ZydisDecoder m_decoder;
 		ZydisFormatter m_formatter;
 	public:
-		InstructionViewerX86(CodeSectionControllerX86* codeSectionController)
-			: m_codeSectionController(codeSectionController)
+		InstructionViewDecoderX86()
 		{
+			ZydisDecoderInit(&m_decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64);
 			ZydisFormatterInit(&m_formatter, ZYDIS_FORMATTER_STYLE_INTEL);
 		}
 
-	private:
-		void renderControl() override {
+		bool decode(const void* addr, InstructionViewInfo* instrViewInfo) override {
 			ZydisDecodedInstruction instruction;
-			m_codeSectionController->decodeZydisInstruction(m_offset, &instruction);
+			if (ZYAN_FAILED(ZydisDecoderDecodeBuffer(&m_decoder, addr, 0x100, &instruction))) {
+				return false;
+			}
 
+			instrViewInfo->m_length = instruction.length;
+			
 			char buffer[256];
 			const ZydisFormatterToken* token;
 			if (ZYAN_FAILED(ZydisFormatterTokenizeInstruction(&m_formatter, &instruction, &buffer[0],
 				sizeof(buffer), ZYDIS_RUNTIME_ADDRESS_NONE, &token))) {
-				m_tokenRender->renderMnemonic("error");
-				m_tokenRender->render();
-				return;
+				return false;
 			}
 
 			ZydisTokenType token_type;
@@ -108,22 +108,22 @@ namespace GUI
 			{
 				ZydisFormatterTokenGetValue(token, &token_type, &token_value);
 				if (token_type == ZYDIS_TOKEN_MNEMONIC) {
-					m_tokenRender->renderMnemonic(token_value);
+					instrViewInfo->m_tokens.push_back({InstructionViewInfo::TOKEN_MNEMONIC, token_value });
 				}
 				else if (token_type == ZYDIS_TOKEN_REGISTER) {
-					m_tokenRender->renderRegister(token_value);
+					instrViewInfo->m_tokens.push_back({ InstructionViewInfo::TOKEN_REGISTER, token_value });
 				}
 				else if (token_type == ZYDIS_TOKEN_ADDRESS_ABS) {
-					m_tokenRender->renderAbsAddress(token_value);
+					instrViewInfo->m_tokens.push_back({ InstructionViewInfo::TOKEN_ADDRESS_ABS, token_value });
 				}
 				else if (token_type == ZYDIS_TOKEN_ADDRESS_REL) {
-					m_tokenRender->renderRelAddress(token_value);
+					instrViewInfo->m_tokens.push_back({ InstructionViewInfo::TOKEN_ADDRESS_REL, token_value });
 				}
 				else {
-					m_tokenRender->renderOther(token_value);
+					instrViewInfo->m_tokens.push_back({ InstructionViewInfo::TOKEN_OTHER, token_value });
 				}
 			} while (ZYAN_SUCCESS(ZydisFormatterTokenNext(&token)));
-			m_tokenRender->render();
+			return true;
 		}
 	};
 };

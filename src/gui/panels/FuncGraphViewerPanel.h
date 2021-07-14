@@ -21,6 +21,7 @@ namespace GUI
 			public Attribute::Size
 		{
 			Canvas* m_canvas;
+			bool m_isMouseDragging = false;
 		
 		public:
 			Block(Canvas* canvas)
@@ -30,10 +31,22 @@ namespace GUI
 		private:
 			void renderControl() override {
 				m_canvas->setPos(m_pos);
-				if (ImGui::BeginChild(getId().c_str(), m_size, true)) {
+				ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32_BLACK);
+				ImGui::BeginChild(getId().c_str(), m_size, true, ImGuiWindowFlags_NoMove);
+				{
+					m_size = ImGui::GetWindowSize();
+					m_canvas->m_scalingEnabled &= !ImGui::IsWindowHovered();
+					if (ImGui::IsWindowHovered() || m_isMouseDragging) {
+						if (m_isMouseDragging = ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+							m_pos.x += ImGui::GetIO().MouseDelta.x;
+							m_pos.y += ImGui::GetIO().MouseDelta.y;
+						}
+					}
+					
 					renderBlock();
 				}
 				ImGui::EndChild();
+				ImGui::PopStyleColor();
 			}
 
 		protected:
@@ -46,6 +59,8 @@ namespace GUI
 		ImVec2 m_size;
 		ImVec2 m_offset;
 		ImVec2 m_origin;
+		float m_scaling = 1.0f;
+		bool m_scalingEnabled = true;
 		bool m_isGridRendered = true;
 	
 	public:
@@ -54,73 +69,125 @@ namespace GUI
 
 	private:
 		void renderControl() override {
-			if (ImGui::BeginChild(getId().c_str(), m_size, false, ImGuiWindowFlags_NoScrollbar)) {
-				ImGui::SetWindowFontScale(1.0f);
+			m_scalingEnabled = true;
+			ImGui::BeginChild(getId().c_str(), m_size, false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+			{
+				ImGui::SetWindowFontScale(m_scaling);
 				m_drawList = ImGui::GetWindowDrawList();
 				m_size = ImGui::GetContentRegionAvail();
 				m_p0 = ImGui::GetCursorScreenPos();
 				m_p1 = ImVec2(m_p0.x + m_size.x, m_p0.y + m_size.y);
 				m_origin = ImVec2(m_p0.x + m_offset.x, m_p0.y + m_offset.y);
 
-				ImGui::InvisibleButton(getId().c_str(), m_size, ImGuiButtonFlags_MouseButtonLeft);
-				if (ImGui::IsItemActive())
-				{
+				ImGui::InvisibleButton("##empty", m_size, ImGuiButtonFlags_MouseButtonLeft);
+				if (ImGui::IsItemActive()) {
 					if (ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-						const auto& io = ImGui::GetIO();
-						m_offset.x += io.MouseDelta.x;
-						m_offset.y += io.MouseDelta.y;
+						m_offset.x += ImGui::GetIO().MouseDelta.x;
+						m_offset.y += ImGui::GetIO().MouseDelta.y;
+					}
+				}
+				if (ImGui::IsItemHovered()) {
+					if (m_scalingEnabled) {
+						m_scaling += ImGui::GetIO().MouseWheel * 0.1f;
+						m_scaling = std::min(2.0f, m_scaling);
+						m_scaling = std::max(0.2f, m_scaling);
 					}
 				}
 
 				ImGui::PushClipRect(m_p0, m_p1, true);
-				renderCanvas();
 				if (m_isGridRendered)
 					renderGrid();
+				renderCanvas();
 				ImGui::PopClipRect();
-				ImGui::EndChild();
 			}
+			ImGui::EndChild();
 		}
 
 	protected:
 		virtual void renderCanvas() = 0;
 
+		ImVec2 toAbsPos(const ImVec2& pos) const {
+			return ImVec2(m_origin.x + pos.x, m_origin.y + pos.y);
+		}
+		
 		void setPos(const ImVec2& pos) const {
-			ImGui::SetCursorScreenPos(ImVec2(m_origin.x + pos.x, m_origin.y + pos.y));
+			ImGui::SetCursorScreenPos(toAbsPos(pos));
 		}
 
 		void renderGrid() const {
 			const float GRID_STEP = 64.0f;
 			for (float x = fmodf(m_offset.x, GRID_STEP); x < m_size.x; x += GRID_STEP)
-				m_drawList->AddLine(ImVec2(m_p0.x + x, m_p0.y), ImVec2(m_p0.x + x, m_p1.y), IM_COL32(200, 200, 200, 40));
+				m_drawList->AddLine(ImVec2(m_p0.x + x, m_p0.y), ImVec2(m_p0.x + x, m_p1.y), IM_COL32(200, 200, 200, 40), m_scaling);
 			for (float y = fmodf(m_offset.y, GRID_STEP); y < m_size.y; y += GRID_STEP)
-				m_drawList->AddLine(ImVec2(m_p0.x, m_p0.y + y), ImVec2(m_p1.x, m_p0.y + y), IM_COL32(200, 200, 200, 40));
+				m_drawList->AddLine(ImVec2(m_p0.x, m_p0.y + y), ImVec2(m_p1.x, m_p0.y + y), IM_COL32(200, 200, 200, 40), m_scaling);
 		}
 	};
 
 	class FuncGraphViewerPanel : public AbstractPanel
 	{
+		/*
+		 * todo:
+		 * 1) loop line
+		 * 2) drag and drop block
+		 * 3) scale
+		 */
 		class FuncGraphViewerCanvas : public Canvas
 		{
 			class CanvasPCodeBlock : public Block
 			{
+				class InstructioViewer : public AbstractInstructionViewer
+				{
+				public:
+					using AbstractInstructionViewer::AbstractInstructionViewer;
+
+				protected:
+					void renderMnemonic() override {
+						ImGui::TableNextColumn();
+						AbstractInstructionViewer::renderMnemonic();
+						SameLine(2.0f);
+					}
+
+					void renderOperands() override {
+						AbstractInstructionViewer::renderOperands();
+					}
+				};
+				
 				FuncGraphViewerCanvas* m_canvas; //todo: remove
-				const CE::Decompiler::PCodeBlock* m_pcodeBlock;
 			public:
+				const CE::Decompiler::PCodeBlock* m_pcodeBlock;
+				
 				CanvasPCodeBlock(FuncGraphViewerCanvas* canvas = nullptr, const CE::Decompiler::PCodeBlock* pcodeBlock = nullptr)
 					: Block(canvas), m_canvas(canvas), m_pcodeBlock(pcodeBlock)
 				{}
 
 			private:
 				void renderBlock() override {
-					if (ImGui::BeginTable("table", 2, ImGuiTableFlags_Borders))
+					Text::Text("ID = " + std::to_string(m_pcodeBlock->ID) + ", level = " + std::to_string(m_pcodeBlock->m_level)).show();
+					
+					if (ImGui::BeginTable("table", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
 					{
-						ImGui::TableNextColumn();
-						Text::Text("ID = " + std::to_string(m_pcodeBlock->ID)).show();
-						ImGui::TableNextColumn();
-						Text::Text("level = " + std::to_string(m_pcodeBlock->m_level)).show();
+						/*ImGui::TableSetupColumn("Offset");
+						ImGui::TableSetupColumn("Instruction");
+						ImGui::TableHeadersRow();*/
+						
+						const auto graphOffset = m_pcodeBlock->m_funcPCodeGraph->getStartBlock()->getMinOffset().getByteOffset();
+						auto offset = m_pcodeBlock->getMinOffset().getByteOffset();
+						while(offset < m_pcodeBlock->getMaxOffset().getByteOffset()) {
+							ImGui::TableNextRow();
+							ImGui::TableNextColumn();
+							using namespace Helper::String;
+							Text::Text("+" + NumberToHex(offset - graphOffset)).show();
+							
+							InstructionViewInfo instrViewInfo;
+							auto image = m_canvas->m_panel->m_imageDec->getImage();
+							m_canvas->m_panel->m_instructionViewDecoder->decode(image->getData() + image->toImageOffset(offset), &instrViewInfo);
+							InstructioViewer instructionViewer(&instrViewInfo);
+							instructionViewer.show();
+							offset += instrViewInfo.m_length;
+						}
 						ImGui::EndTable();
 					}
-				}
+				}	
 			};
 			
 			FuncGraphViewerPanel* m_panel;
@@ -143,9 +210,34 @@ namespace GUI
 
 		private:
 			void renderCanvas() override {
-				for(auto& [pcodeBlock, block] : m_canvasBlocks) {
-					block->show();
+				for(auto& [pcodeBlock, canvasBlock] : m_canvasBlocks) {
+					canvasBlock->show();
+					
+					// render lines
+					for (auto nextPCodeBlock : pcodeBlock->getNextBlocks()) {
+						if (pcodeBlock->m_level >= nextPCodeBlock->m_level)
+							continue;
+						const auto nextCanvasBlock = m_canvasBlocks[nextPCodeBlock];
+						drawJmpLine(canvasBlock, nextCanvasBlock);
+					}
 				}
+			}
+
+			void drawJmpLine(CanvasPCodeBlock* fromBlock, CanvasPCodeBlock* toBlock) const {
+				const bool isFar = fromBlock->m_pcodeBlock->getNextFarBlock() == toBlock->m_pcodeBlock;
+				const auto color = ToImGuiColorU32(isFar ? 0xbbe3faFF : 0xfabbbbFF);
+				// line
+				const auto bPos1 = fromBlock->getPos();
+				const auto bPos2 = toBlock->getPos();
+				const auto bSize1 = fromBlock->getSize();
+				const auto bSize2 = toBlock->getSize();
+				const auto p1 = ImVec2(bPos1.x + bSize1.x * (0.4f + isFar * 0.2f), bPos1.y + bSize1.y);
+				const auto p2 = ImVec2(bPos2.x + bSize2.x / 2.0f, bPos2.y);
+				m_drawList->AddLine(toAbsPos(p1), toAbsPos(p2), color, 2.0f * m_scaling);
+				// label
+				const auto p_middle = ImVec2((p1.x + p2.x) / 2.0f, (p1.y + p2.y) / 2.0f);
+				const auto label = isFar ? "far" : "near";
+				m_drawList->AddText(toAbsPos(p_middle), color, label);
 			}
 
 			void buildFunctionGraph(const CE::Decompiler::PCodeBlock* pcodeBlock, std::map<const CE::Decompiler::PCodeBlock*, int>& blockParentsCount) {
@@ -153,13 +245,13 @@ namespace GUI
 				if(blockParentsCount[pcodeBlock] == parentsCount) {
 					// calculate position
 					ImVec2 pos;
-					pos.y = (pcodeBlock->m_level - 1) * 300.f;
+					pos.y = (pcodeBlock->m_level - 1) * 400.f;
 					if(parentsCount == 1) {
 						const auto parentBlock = *pcodeBlock->m_blocksReferencedTo.begin();
 						pos.x = m_canvasBlocks[parentBlock]->getPos().x;
-						if (auto parentNextBlocks = parentBlock->getNextBlocks(); parentNextBlocks.size() == 2) {
-							const float ChildBlockOffset = 200.f;
-							if (pcodeBlock == *parentNextBlocks.begin())
+						if (parentBlock->getNextBlocks().size() == 2) {
+							const float ChildBlockOffset = 300.f;
+							if (pcodeBlock == parentBlock->getNextFarBlock())
 								pos.x += ChildBlockOffset;
 							else pos.x -= ChildBlockOffset;
 						}
@@ -174,7 +266,7 @@ namespace GUI
 					// create canvas block
 					auto canvasBlock = new CanvasPCodeBlock(this, pcodeBlock);
 					canvasBlock->getPos() = pos;
-					canvasBlock->getSize() = ImVec2(200, 200);
+					canvasBlock->getSize() = ImVec2(300, 300);
 					m_canvasBlocks[pcodeBlock] = canvasBlock;
 
 					// go next pcode blocks
@@ -189,14 +281,14 @@ namespace GUI
 				}
 			}
 		};
-		
-		CodeSectionController* m_codeSectionController;
-		AbstractInstructionViewer* m_instructionViewer;
+
+		const CE::ImageDecorator* m_imageDec;
+		AbstractInstructionViewDecoder* m_instructionViewDecoder;
 		CE::Decompiler::FunctionPCodeGraph* m_funcPCodeGraph = nullptr;
 		FuncGraphViewerCanvas* m_funcGraphViewerCanvas = nullptr;
 	public:
-		FuncGraphViewerPanel(CodeSectionController* codeSectionController, AbstractInstructionViewer* instructionViewer)
-			: AbstractPanel("Function graph viewer"), m_codeSectionController(codeSectionController), m_instructionViewer(instructionViewer)
+		FuncGraphViewerPanel(const CE::ImageDecorator* imageDec, AbstractInstructionViewDecoder* instructionViewDecoder)
+			: AbstractPanel("Function graph viewer"), m_imageDec(imageDec), m_instructionViewDecoder(instructionViewDecoder)
 		{}
 
 		~FuncGraphViewerPanel() override {
