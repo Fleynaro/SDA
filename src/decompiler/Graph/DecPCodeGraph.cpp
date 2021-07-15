@@ -76,13 +76,13 @@ void PCodeBlock::disconnect() {
 	m_nextNearBlock = m_nextFarBlock = nullptr;
 }
 
-int PCodeBlock::getRefHighBlocksCount() const {
-	int count = 0;
+std::list<PCodeBlock*> PCodeBlock::getRefHighBlocks() const {
+	std::list<PCodeBlock*> blocks;
 	for (auto refBlock : m_blocksReferencedTo) {
 		if (refBlock->m_level < m_level)
-			count++;
+			blocks.push_back(refBlock);
 	}
-	return count;
+	return blocks;
 }
 
 std::list<Instruction*>& PCodeBlock::getInstructions() {

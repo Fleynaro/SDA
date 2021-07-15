@@ -1,5 +1,6 @@
 #pragma once
 #include "ImageDecorator.h"
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 #include "imgui_wrapper/controls/AbstractPanel.h"
 #include "imgui_wrapper/controls/List.h"
@@ -201,7 +202,7 @@ namespace GUI
 						}
 					}
 					if(goToFunc) {
-						ImGui::SetScrollY(m_codeSectionController->getRowIdx(CodeSectionRow(0x216f000)) * clipper.ItemsHeight);
+						ImGui::SetScrollY(m_codeSectionController->getRowIdx(CodeSectionRow(0x21fc000)) * clipper.ItemsHeight);
 					}
 					ImGui::EndTable();
 				}
@@ -256,8 +257,7 @@ namespace GUI
 				window->DrawList->AddLine(point2, point3, lineColor);
 				window->DrawList->AddLine(point3, point4, lineColor);
 				auto arrowPos = isStart ? point4 : point1;
-				arrowPos.x -= 7.0f;
-				arrowPos.y -= 3.0f;
+				arrowPos -= ImVec2(7.0f, 3.0f);
 				ImGui::RenderArrow(window->DrawList, arrowPos, lineColor, ImGuiDir_Right, 0.7f);
 			}
 		};

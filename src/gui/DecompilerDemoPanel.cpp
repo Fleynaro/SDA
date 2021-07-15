@@ -298,7 +298,9 @@ void GUI::DecompilerDemoPanel::initProgram() {
 		PCode::DecoderX86 decoder(&registerFactoryX86, testImageDec->getInstrPool(), &warningContainer);
 
 		ImageAnalyzer imageAnalyzer(testImageDec->getImage(), testImageDec->getPCodeGraph(), &decoder, &registerFactoryX86);
-		imageAnalyzer.start(0x216f0, true);
+		// 0x20c80
+		// 0x21fc0
+		imageAnalyzer.start(0x21fc0, true);
 	}
 	m_project->getImageManager()->createImage(testAddrSpace, ImageDecorator::IMAGE_PE, "testImage12");
 	m_project->getImageManager()->createImage(testAddrSpace2, ImageDecorator::IMAGE_PE, "testImage21");

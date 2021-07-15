@@ -172,10 +172,6 @@ namespace GUI
 			jmp.m_level = 0;
 			m_jmps.push_back(jmp);
 
-			if (m_offsetToJmp.find(offset) == m_offsetToJmp.end())
-				m_offsetToJmp[offset] = std::list<Jmp*>();
-			if (m_offsetToJmp.find(targetOffset) == m_offsetToJmp.end())
-				m_offsetToJmp[targetOffset] = std::list<Jmp*>();
 			const auto pJmp = &*m_jmps.rbegin();
 			m_offsetToJmp[offset].push_back(pJmp);
 			m_offsetToJmp[targetOffset].push_back(pJmp);
@@ -187,8 +183,6 @@ namespace GUI
 			for (auto& jmp : m_jmps) {
 				// calculate lower bound of jump
 				auto minOffset = std::min(jmp.m_startOffset, jmp.m_endOffset);
-				if (offToJmps.find(minOffset) == offToJmps.end())
-					offToJmps[minOffset] = std::list<Jmp*>();
 				offToJmps[minOffset].push_back(&jmp);
 			}
 

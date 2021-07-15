@@ -1,6 +1,5 @@
 #pragma once
 
-
 namespace GUI
 {
 	static void RenderAddress(uint64_t offset) {
@@ -22,7 +21,7 @@ namespace GUI
 		{
 			Canvas* m_canvas;
 			bool m_isMouseDragging = false;
-		
+			float m_padding = 0.0f;
 		public:
 			Block(Canvas* canvas)
 				: m_canvas(canvas)
@@ -30,22 +29,32 @@ namespace GUI
 		
 		private:
 			void renderControl() override {
-				m_canvas->setPos(m_pos);
+				ImGui::SetCursorScreenPos(m_canvas->toAbsPos(m_pos));
 				ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32_BLACK);
-				ImGui::BeginChild(getId().c_str(), m_size, true, ImGuiWindowFlags_NoMove);
+				ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(m_padding, m_padding));
+				ImGui::BeginChild(getId().c_str(), m_size * m_canvas->m_scaling, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
 				{
-					m_size = ImGui::GetWindowSize();
-					m_canvas->m_scalingEnabled &= !ImGui::IsWindowHovered();
 					if (ImGui::IsWindowHovered() || m_isMouseDragging) {
-						if (m_isMouseDragging = ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-							m_pos.x += ImGui::GetIO().MouseDelta.x;
-							m_pos.y += ImGui::GetIO().MouseDelta.y;
+						if ((m_isMouseDragging = ImGui::IsMouseDragging(ImGuiMouseButton_Left))) {
+							m_pos += ImGui::GetIO().MouseDelta / m_canvas->m_scaling;
 						}
 					}
 					
-					renderBlock();
+					ImGui::BeginGroup();
+					{
+						renderBlock();
+					}
+					ImGui::EndGroup();
+					if (m_size.x == 0.0f || m_size.y == 0.0f) {
+						const auto calcMinSize = ImGui::GetItemRectSize();
+						if (m_size.x == 0.0f)
+							m_size.x = calcMinSize.x;
+						if (m_size.y == 0.0f)
+							m_size.y = calcMinSize.y;
+					}
 				}
 				ImGui::EndChild();
+				ImGui::PopStyleVar();
 				ImGui::PopStyleColor();
 			}
 
@@ -61,6 +70,7 @@ namespace GUI
 		ImVec2 m_origin;
 		float m_scaling = 1.0f;
 		bool m_scalingEnabled = true;
+		bool m_scalingEnabledWhenBlocksHovered = true; // false if blocks have scrollbar
 		bool m_isGridRendered = true;
 	
 	public:
@@ -76,21 +86,22 @@ namespace GUI
 				m_drawList = ImGui::GetWindowDrawList();
 				m_size = ImGui::GetContentRegionAvail();
 				m_p0 = ImGui::GetCursorScreenPos();
-				m_p1 = ImVec2(m_p0.x + m_size.x, m_p0.y + m_size.y);
-				m_origin = ImVec2(m_p0.x + m_offset.x, m_p0.y + m_offset.y);
+				m_p1 = m_p0 + m_size;
+				m_origin = m_p0 + m_offset;
 
 				ImGui::InvisibleButton("##empty", m_size, ImGuiButtonFlags_MouseButtonLeft);
 				if (ImGui::IsItemActive()) {
 					if (ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-						m_offset.x += ImGui::GetIO().MouseDelta.x;
-						m_offset.y += ImGui::GetIO().MouseDelta.y;
+						m_offset += ImGui::GetIO().MouseDelta;
 					}
 				}
-				if (ImGui::IsItemHovered()) {
-					if (m_scalingEnabled) {
-						m_scaling += ImGui::GetIO().MouseWheel * 0.1f;
-						m_scaling = std::min(2.0f, m_scaling);
-						m_scaling = std::max(0.2f, m_scaling);
+				if (m_scalingEnabled) {
+					if (ImGui::IsWindowHovered()) {
+						if (m_scalingEnabledWhenBlocksHovered || ImGui::IsItemHovered()) {
+							m_scaling += ImGui::GetIO().MouseWheel * 0.1f;
+							m_scaling = std::min(2.0f, m_scaling);
+							m_scaling = std::max(0.2f, m_scaling);
+						}
 					}
 				}
 
@@ -107,15 +118,11 @@ namespace GUI
 		virtual void renderCanvas() = 0;
 
 		ImVec2 toAbsPos(const ImVec2& pos) const {
-			return ImVec2(m_origin.x + pos.x, m_origin.y + pos.y);
-		}
-		
-		void setPos(const ImVec2& pos) const {
-			ImGui::SetCursorScreenPos(toAbsPos(pos));
+			return m_origin + pos * m_scaling;
 		}
 
 		void renderGrid() const {
-			const float GRID_STEP = 64.0f;
+			const float GRID_STEP = 64.0f * m_scaling;
 			for (float x = fmodf(m_offset.x, GRID_STEP); x < m_size.x; x += GRID_STEP)
 				m_drawList->AddLine(ImVec2(m_p0.x + x, m_p0.y), ImVec2(m_p0.x + x, m_p1.y), IM_COL32(200, 200, 200, 40), m_scaling);
 			for (float y = fmodf(m_offset.y, GRID_STEP); y < m_size.y; y += GRID_STEP)
@@ -130,6 +137,7 @@ namespace GUI
 		 * 1) loop line
 		 * 2) drag and drop block
 		 * 3) scale
+		 * 4) autosize
 		 */
 		class FuncGraphViewerCanvas : public Canvas
 		{
@@ -192,14 +200,15 @@ namespace GUI
 			
 			FuncGraphViewerPanel* m_panel;
 			std::map<const CE::Decompiler::PCodeBlock*, CanvasPCodeBlock*> m_canvasBlocks;
+			bool isFirstRender = true;
 		public:
 			FuncGraphViewerCanvas(FuncGraphViewerPanel* panel)
 				: m_panel(panel)
 			{
-				const auto startPCodeBlock = m_panel->m_funcPCodeGraph->getStartBlock();
-				std::map<const CE::Decompiler::PCodeBlock*, int> blockParentsCount;
-				blockParentsCount[startPCodeBlock] = 0;
-				buildFunctionGraph(startPCodeBlock, blockParentsCount);
+				// create canvas blocks
+				for(auto pcodeBlock : m_panel->m_funcPCodeGraph->getBlocks()) {
+					m_canvasBlocks[pcodeBlock] = new CanvasPCodeBlock(this, pcodeBlock);
+				}
 			}
 
 			~FuncGraphViewerCanvas() override {
@@ -210,64 +219,100 @@ namespace GUI
 
 		private:
 			void renderCanvas() override {
+				if(isFirstRender) {
+					// render canvas blocks to calculate its sizes
+					for (auto& [pcodeBlock, canvasBlock] : m_canvasBlocks)
+						canvasBlock->show();
+					arrangeCanvasBlocks();
+					isFirstRender = false;
+					return;
+				}
+				
 				for(auto& [pcodeBlock, canvasBlock] : m_canvasBlocks) {
 					canvasBlock->show();
 					
 					// render lines
 					for (auto nextPCodeBlock : pcodeBlock->getNextBlocks()) {
-						if (pcodeBlock->m_level >= nextPCodeBlock->m_level)
-							continue;
 						const auto nextCanvasBlock = m_canvasBlocks[nextPCodeBlock];
 						drawJmpLine(canvasBlock, nextCanvasBlock);
 					}
 				}
 			}
 
+			void arrangeCanvasBlocks() {
+				// calculate coordinate X for canvas blocks
+				const auto startPCodeBlock = m_panel->m_funcPCodeGraph->getStartBlock();
+				std::map<const CE::Decompiler::PCodeBlock*, int> blockParentsCount;
+				blockParentsCount[startPCodeBlock] = 0;
+				buildFunctionGraph(startPCodeBlock, blockParentsCount);
+				
+				// calculate coordinate Y for canvas blocks
+				std::map<int, std::list<CanvasPCodeBlock*>> canvasBlocks;
+				for (auto& [pcodeBlock, canvasBlock] : m_canvasBlocks) {
+					canvasBlocks[pcodeBlock->m_level].push_back(canvasBlock);
+				}
+				float posY = 0.0f;
+				for(auto& [level, canvasBlocks] : canvasBlocks) {
+					for (auto canvasBlock : canvasBlocks)
+						canvasBlock->getPos().y = posY;
+					// calculate max size
+					float maxSizeY = 0.0f;
+					for (auto canvasBlock : canvasBlocks)
+						maxSizeY = std::max(maxSizeY, canvasBlock->getSize().y);
+					posY += maxSizeY + 100.0f;
+				}
+			}
+
 			void drawJmpLine(CanvasPCodeBlock* fromBlock, CanvasPCodeBlock* toBlock) const {
+				const bool isUncondJmp = fromBlock->m_pcodeBlock->getNextNearBlock() == nullptr;
 				const bool isFar = fromBlock->m_pcodeBlock->getNextFarBlock() == toBlock->m_pcodeBlock;
-				const auto color = ToImGuiColorU32(isFar ? 0xbbe3faFF : 0xfabbbbFF);
+				const bool isLoop = fromBlock->m_pcodeBlock->m_level >= toBlock->m_pcodeBlock->m_level;
+				const auto color = ToImGuiColorU32(isLoop ? 0xfeffc7FF : (isFar ? 0xbbe3faFF : 0xfabbbbFF));
+				
 				// line
 				const auto bPos1 = fromBlock->getPos();
 				const auto bPos2 = toBlock->getPos();
 				const auto bSize1 = fromBlock->getSize();
 				const auto bSize2 = toBlock->getSize();
-				const auto p1 = ImVec2(bPos1.x + bSize1.x * (0.4f + isFar * 0.2f), bPos1.y + bSize1.y);
+				const auto p1 = ImVec2(bPos1.x + bSize1.x * (0.4f + isFar * 0.2f - isUncondJmp * 0.1f), bPos1.y + bSize1.y);
 				const auto p2 = ImVec2(bPos2.x + bSize2.x / 2.0f, bPos2.y);
 				m_drawList->AddLine(toAbsPos(p1), toAbsPos(p2), color, 2.0f * m_scaling);
+				
 				// label
-				const auto p_middle = ImVec2((p1.x + p2.x) / 2.0f, (p1.y + p2.y) / 2.0f);
+				const auto labelPos = p1 + ImVec2(-1.0f, 0.0f);
 				const auto label = isFar ? "far" : "near";
-				m_drawList->AddText(toAbsPos(p_middle), color, label);
+				m_drawList->AddText(toAbsPos(labelPos), color, label);
+
+				// loop label
+				if(isLoop) {
+					const auto loopLabelPos = (p1 + p2) / 2.0f;
+					m_drawList->AddText(toAbsPos(loopLabelPos), color, "loop");
+				}
 			}
 
 			void buildFunctionGraph(const CE::Decompiler::PCodeBlock* pcodeBlock, std::map<const CE::Decompiler::PCodeBlock*, int>& blockParentsCount) {
-				const auto parentsCount = pcodeBlock->getRefHighBlocksCount();
-				if(blockParentsCount[pcodeBlock] == parentsCount) {
-					// calculate position
-					ImVec2 pos;
-					pos.y = (pcodeBlock->m_level - 1) * 400.f;
-					if(parentsCount == 1) {
-						const auto parentBlock = *pcodeBlock->m_blocksReferencedTo.begin();
-						pos.x = m_canvasBlocks[parentBlock]->getPos().x;
+				auto parentBlocks = pcodeBlock->getRefHighBlocks();
+				if(blockParentsCount[pcodeBlock] == parentBlocks.size()) {
+					// calculate coordinate X
+					float posX = 0.0f;
+					if(parentBlocks.size() == 1) {
+						const auto parentBlock = *parentBlocks.begin();
+						posX = m_canvasBlocks[parentBlock]->getPos().x;
 						if (parentBlock->getNextBlocks().size() == 2) {
-							const float ChildBlockOffset = 300.f;
 							if (pcodeBlock == parentBlock->getNextFarBlock())
-								pos.x += ChildBlockOffset;
-							else pos.x -= ChildBlockOffset;
+								posX += m_canvasBlocks[parentBlock]->getSize().x;
+							else posX -= m_canvasBlocks[pcodeBlock]->getSize().x;
+						} else {
+							posX += (m_canvasBlocks[parentBlock]->getSize().x - m_canvasBlocks[pcodeBlock]->getSize().x) / 2.0f;
 						}
 					}
-					else if (parentsCount > 1) {
+					else if (parentBlocks.size() > 1) {
 						for(const auto parentBlock : pcodeBlock->m_blocksReferencedTo) {
-							pos.x += m_canvasBlocks[parentBlock]->getPos().x;
+							posX += m_canvasBlocks[parentBlock]->getPos().x;
 						}
-						pos.x /= parentsCount;
+						posX /= parentBlocks.size();
 					}
-
-					// create canvas block
-					auto canvasBlock = new CanvasPCodeBlock(this, pcodeBlock);
-					canvasBlock->getPos() = pos;
-					canvasBlock->getSize() = ImVec2(300, 300);
-					m_canvasBlocks[pcodeBlock] = canvasBlock;
+					m_canvasBlocks[pcodeBlock]->getPos().x = posX;
 
 					// go next pcode blocks
 					for (auto nextPCodeBlock : pcodeBlock->getNextBlocks()) {

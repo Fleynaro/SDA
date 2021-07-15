@@ -30,7 +30,7 @@ namespace CE::Decompiler
 
 		void disconnect();
 
-		int getRefHighBlocksCount() const;
+		std::list<PCodeBlock*> getRefHighBlocks() const;
 
 		std::list<Instruction*>& getInstructions();
 
