@@ -156,7 +156,7 @@ namespace GUI
 			if (m_showPCode) {
 				if (auto origInstr = m_imageDec->getInstrPool()->getOrigInstructionAt(offset)) {
 					for (const auto& pair : origInstr->m_pcodeInstructions) {
-						auto pcodeInstr = &pair.second;
+						const auto pcodeInstr = &pair.second;
 						m_rows.emplace_back(pcodeInstr->getOffset(), true);
 					}
 				}
@@ -228,13 +228,6 @@ namespace GUI
 		{
 			ZydisDecoderInit(&m_decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64);
 			fillOffsets();
-		}
-
-		bool decodeZydisInstruction(CE::Offset offset, ZydisDecodedInstruction* instruction) const {
-			if (ZYAN_FAILED(ZydisDecoderDecodeBuffer(&m_decoder, getImageDataByOffset(offset), 0x100, instruction))) {
-				return false;
-			}
-			return true;
 		}
 
 		void update() override {

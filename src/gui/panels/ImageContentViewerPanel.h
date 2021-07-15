@@ -294,6 +294,10 @@ namespace GUI
 			delete m_funcGraphViewerWindow;
 		}
 
+		StdWindow* createStdWindow() {
+			return new StdWindow(this, ImGuiWindowFlags_MenuBar);
+		}
+
 	private:
 		void renderPanel() override {
 			Show(m_funcGraphViewerWindow);
@@ -301,18 +305,24 @@ namespace GUI
 		}
 
 		void renderMenuBar() override {
-			if (ImGui::BeginMenu("This section"))
+			if (ImGui::BeginMenu("Select"))
+			{
+				m_imageSectionMenuListView.show();
+				ImGui::EndMenu();
+			}
+			
+			if (ImGui::BeginMenu("View"))
 			{
 				if(ImGui::MenuItem("Update")) {
 					m_imageSectionViewer->m_sectionController->update();
 				}
 				if(auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer)) {
-					if (ImGui::MenuItem("Show PCode", 0, codeSectionViewer->m_codeSectionController->m_showPCode)) {
+					if (ImGui::MenuItem("Show PCode", nullptr, codeSectionViewer->m_codeSectionController->m_showPCode)) {
 						codeSectionViewer->m_codeSectionController->m_showPCode ^= true;
 						codeSectionViewer->m_codeSectionController->update();
 					}
 					if (codeSectionViewer->m_curFuncPCodeGraph) {
-						if (ImGui::MenuItem("Show function graph", 0)) {
+						if (ImGui::MenuItem("Show function graph", nullptr)) {
 							if (!m_funcGraphViewerWindow) {
 								auto funcGraphViewerPanel = new FuncGraphViewerPanel(m_imageDec, codeSectionViewer->m_instructionViewDecoder);
 								funcGraphViewerPanel->setFuncGraph(codeSectionViewer->m_curFuncPCodeGraph);
@@ -326,12 +336,6 @@ namespace GUI
 						}
 					}
 				}
-				ImGui::EndMenu();
-			}
-			
-			if (ImGui::BeginMenu("All sections"))
-			{
-				m_imageSectionMenuListView.show();
 				ImGui::EndMenu();
 			}
 

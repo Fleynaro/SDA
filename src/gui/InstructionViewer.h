@@ -36,14 +36,20 @@ namespace GUI
 	protected:
 		virtual void renderMnemonic() {
 			const auto mnemonic = m_instrViewInfo->m_tokens.begin()->m_text;
-			Text::Text(mnemonic).show();
+			Text::ColoredText(mnemonic, 0xe6e4b3FF).show();
 		}
 
 		virtual void renderOperands() {
 			std::string operands;
-			for (auto it = std::next(m_instrViewInfo->m_tokens.begin()); it != m_instrViewInfo->m_tokens.end(); ++it)
-				operands += it->m_text;
-			Text::Text(operands).show();
+			for (auto it = std::next(m_instrViewInfo->m_tokens.begin()); it != m_instrViewInfo->m_tokens.end(); ++it) {
+				ColorRGBA color = 0xebebebFF;
+				if (it->m_type == InstructionViewInfo::TOKEN_REGISTER)
+					color = 0xb3e6e4FF;
+				else if (it->m_type == InstructionViewInfo::TOKEN_ADDRESS_REL || it->m_type == InstructionViewInfo::TOKEN_ADDRESS_ABS)
+					color = 0xafcfa7FF;
+				Text::ColoredText(it->m_text, color).show();
+				SameLine(1.0f);
+			}
 		}
 
 	private:

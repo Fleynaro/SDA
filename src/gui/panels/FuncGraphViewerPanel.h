@@ -68,12 +68,13 @@ namespace GUI
 		ImVec2 m_size;
 		ImVec2 m_offset;
 		ImVec2 m_origin;
-		float m_scaling = 1.0f;
 		bool m_scalingEnabled = true;
 		bool m_scalingEnabledWhenBlocksHovered = true; // false if blocks have scrollbar
 		bool m_isGridRendered = true;
 	
 	public:
+		float m_scaling = 1.0f;
+		
 		Canvas()
 		{}
 
@@ -134,10 +135,7 @@ namespace GUI
 	{
 		/*
 		 * todo:
-		 * 1) loop line
-		 * 2) drag and drop block
-		 * 3) scale
-		 * 4) autosize
+		 * 1) curve jmp lines without intersecting with blocks
 		 */
 		class FuncGraphViewerCanvas : public Canvas
 		{
@@ -191,6 +189,17 @@ namespace GUI
 							m_canvas->m_panel->m_instructionViewDecoder->decode(image->getData() + image->toImageOffset(offset), &instrViewInfo);
 							InstructioViewer instructionViewer(&instrViewInfo);
 							instructionViewer.show();
+
+							if (m_canvas->m_panel->m_showPCode) {
+								if (const auto instr = m_canvas->m_panel->m_imageDec->getInstrPool()->getOrigInstructionAt(offset)) {
+									for (const auto& [orderId, pcodeInstr] : instr->m_pcodeInstructions) {
+										ImGui::TableNextColumn();
+										Text::Text("").show();
+										ImGui::TableNextColumn();
+										Text::Text(pcodeInstr.printDebug()).show();
+									}
+								}
+							}
 							offset += instrViewInfo.m_length;
 						}
 						ImGui::EndTable();
@@ -200,7 +209,7 @@ namespace GUI
 			
 			FuncGraphViewerPanel* m_panel;
 			std::map<const CE::Decompiler::PCodeBlock*, CanvasPCodeBlock*> m_canvasBlocks;
-			bool isFirstRender = true;
+			bool m_arrangeCanvasBlocks = true;
 		public:
 			FuncGraphViewerCanvas(FuncGraphViewerPanel* panel)
 				: m_panel(panel)
@@ -217,14 +226,23 @@ namespace GUI
 				}
 			}
 
+			void restoreArrangement() {
+				m_arrangeCanvasBlocks = true;
+			}
+
+			void updateSizes() {
+				for (auto& [pcodeBlock, canvasBlock] : m_canvasBlocks)
+					canvasBlock->getSize() = ImVec2(0, 0);
+			}
+
 		private:
 			void renderCanvas() override {
-				if(isFirstRender) {
+				if(m_arrangeCanvasBlocks) {
 					// render canvas blocks to calculate its sizes
 					for (auto& [pcodeBlock, canvasBlock] : m_canvasBlocks)
 						canvasBlock->show();
 					arrangeCanvasBlocks();
-					isFirstRender = false;
+					m_arrangeCanvasBlocks = false;
 					return;
 				}
 				
@@ -331,6 +349,7 @@ namespace GUI
 		AbstractInstructionViewDecoder* m_instructionViewDecoder;
 		CE::Decompiler::FunctionPCodeGraph* m_funcPCodeGraph = nullptr;
 		FuncGraphViewerCanvas* m_funcGraphViewerCanvas = nullptr;
+		bool m_showPCode = false;
 	public:
 		FuncGraphViewerPanel(const CE::ImageDecorator* imageDec, AbstractInstructionViewDecoder* instructionViewDecoder)
 			: AbstractPanel("Function graph viewer"), m_imageDec(imageDec), m_instructionViewDecoder(instructionViewDecoder)
@@ -347,12 +366,34 @@ namespace GUI
 		}
 
 		StdWindow* createStdWindow() {
-			return new StdWindow(this, ImGuiWindowFlags_NoScrollbar);
+			return new StdWindow(this, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_MenuBar);
 		}
 	
 	private:
 		void renderPanel() override {
 			m_funcGraphViewerCanvas->show();
+		}
+
+		void renderMenuBar() override {
+			if (ImGui::BeginMenu("Graph"))
+			{
+				if (ImGui::MenuItem("Restore arrangement")) {
+					m_funcGraphViewerCanvas->m_scaling = 1.0f;
+					m_funcGraphViewerCanvas->restoreArrangement();
+				}
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("View"))
+			{
+				if (ImGui::MenuItem("Show PCode", nullptr, m_showPCode)) {
+					m_showPCode ^= true;
+					m_funcGraphViewerCanvas->m_scaling = 1.0f;
+					m_funcGraphViewerCanvas->updateSizes();
+					m_funcGraphViewerCanvas->restoreArrangement();
+				}
+				ImGui::EndMenu();
+			}
 		}
 	};
 };
