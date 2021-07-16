@@ -5,6 +5,7 @@ namespace CE::Decompiler::ExprTree
 {
 	class LinearExpr : public Node, public INodeAgregator, public PCode::IRelatedToInstruction
 	{
+		friend class ExprTreeViewGenerator;
 		std::list<INode*> m_terms;
 		INumberLeaf* m_constTerm;
 	public:
@@ -37,7 +38,5 @@ namespace CE::Decompiler::ExprTree
 		INode* clone(NodeCloneContext* ctx) override;
 
 		HS getHash() override;
-
-		std::string printDebug() override;
 	};
 };

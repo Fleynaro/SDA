@@ -29,8 +29,6 @@ namespace CE::Decompiler::ExprTree
 		INode* clone(NodeCloneContext* ctx) override;
 
 		HS getHash() override;
-
-		std::string printDebug() override;
 	};
 
 	class Condition : public AbstractCondition, public INodeAgregator
@@ -46,19 +44,6 @@ namespace CE::Decompiler::ExprTree
 			Gt,
 			Ge
 		};
-
-		static std::string ShowConditionType(ConditionType condType) {
-			switch (condType)
-			{
-			case Eq: return "==";
-			case Ne: return "!=";
-			case Lt: return "<";
-			case Le: return "<=";
-			case Gt: return ">";
-			case Ge: return ">=";
-			}
-			return "_";
-		}
 
 		INode* m_leftNode;
 		INode* m_rightNode;
@@ -77,8 +62,6 @@ namespace CE::Decompiler::ExprTree
 		HS getHash() override;
 
 		void inverse() override;
-
-		std::string printDebug() override;
 	};
 
 	class CompositeCondition : public AbstractCondition, public INodeAgregator
@@ -100,7 +83,7 @@ namespace CE::Decompiler::ExprTree
 
 		CompositeCondition(AbstractCondition* leftCond, AbstractCondition* rightCond = nullptr, CompositeConditionType cond = None, PCode::Instruction* instr = nullptr);
 
-		~CompositeCondition();
+		~CompositeCondition() override;
 
 		void replaceNode(INode* node, INode* newNode) override;
 
@@ -111,7 +94,5 @@ namespace CE::Decompiler::ExprTree
 		HS getHash() override;
 
 		void inverse() override;
-
-		std::string printDebug() override;
 	};
 };

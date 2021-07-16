@@ -199,8 +199,8 @@ namespace GUI
 										ImGui::TableNextColumn();
 										Text::Text("").show();
 										ImGui::TableNextColumn();
-										PCodeInstructionRender instrRender(&pcodeInstr);
-										instrRender.render();
+										PCodeInstructionRender instrRender;
+										instrRender.generate(&pcodeInstr);
 									}
 								}
 							}
@@ -269,7 +269,7 @@ namespace GUI
 				const auto startPCodeBlock = m_panel->m_funcPCodeGraph->getStartBlock();
 				std::map<const CE::Decompiler::PCodeBlock*, int> blockParentsCount;
 				blockParentsCount[startPCodeBlock] = 0;
-				buildFunctionGraph(startPCodeBlock, blockParentsCount);
+				calculateCoordX(startPCodeBlock, blockParentsCount);
 				
 				// calculate coordinate Y for canvas blocks
 				std::map<int, std::list<CanvasPCodeBlock*>> canvasBlocks;
@@ -315,7 +315,7 @@ namespace GUI
 				}
 			}
 
-			void buildFunctionGraph(const CE::Decompiler::PCodeBlock* pcodeBlock, std::map<const CE::Decompiler::PCodeBlock*, int>& blockParentsCount) {
+			void calculateCoordX(const CE::Decompiler::PCodeBlock* pcodeBlock, std::map<const CE::Decompiler::PCodeBlock*, int>& blockParentsCount) {
 				auto parentBlocks = pcodeBlock->getRefHighBlocks();
 				if(blockParentsCount[pcodeBlock] == parentBlocks.size()) {
 					// calculate coordinate X
@@ -337,6 +337,8 @@ namespace GUI
 						}
 						posX /= parentBlocks.size();
 					}
+
+					// set the coordinate X
 					m_canvasBlocks[pcodeBlock]->getPos().x = posX;
 
 					// go next pcode blocks
@@ -346,7 +348,7 @@ namespace GUI
 						if(blockParentsCount.find(nextPCodeBlock) == blockParentsCount.end())
 							blockParentsCount[nextPCodeBlock] = 0;
 						blockParentsCount[nextPCodeBlock] ++;
-						buildFunctionGraph(nextPCodeBlock, blockParentsCount);
+						calculateCoordX(nextPCodeBlock, blockParentsCount);
 					}
 				}
 			}

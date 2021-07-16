@@ -48,27 +48,6 @@ bool ExprTree::IsOperationManipulatedWithBitVector(OperationType opType) {
 	return (opType == And || opType == Or || opType == Xor) && !IsOperationUnsupportedToCalculate(opType);
 }
 
-// print operation sign
-std::string ExprTree::ShowOperation(OperationType opType) {
-	switch (opType)
-	{
-	case Add: return "+";
-	case Mul: return "*";
-	case Div: return "/";
-	case fAdd: return "+";
-	case fMul: return "*";
-	case fDiv: return "/";
-	case Mod: return "%";
-	case And: return "&";
-	case Or: return "|";
-	case Xor: return "^";
-	case Shr: return ">>";
-	case Shl: return "<<";
-	case ReadValue: return "&";
-	}
-	return "_";
-}
-
 OperationalNode::~OperationalNode() {
 	auto leftNode = m_leftNode;
 	if (leftNode != nullptr)
@@ -128,26 +107,6 @@ INode* OperationalNode::clone(NodeCloneContext* ctx) {
 	return new OperationalNode(m_leftNode->clone(ctx), m_rightNode ? m_rightNode->clone(ctx) : nullptr, m_operation, m_instr);
 }
 
-std::string OperationalNode::printDebug() {
-	if (!m_leftNode || !m_rightNode)
-		return "";
-	std::string result = "";
-	const auto opSizeStr = getOpSize(getSize(), isFloatingPoint());
-	if (m_operation == Xor) {
-		auto numLeaf = dynamic_cast<INumberLeaf*>(m_rightNode);
-		if (numLeaf && numLeaf->getValue() == -1) {
-			result = "~" + m_leftNode->printDebug();
-		}
-	}
-	if (m_operation == Concat) {
-		result = "CONCAT<" + opSizeStr + ">(" + m_leftNode->printDebug() + ", " + m_rightNode->printDebug() + "; " + std::to_string(m_rightNode->getSize() * 0x8) + ")";
-	}
-
-	if (result.empty())
-		result = "(" + m_leftNode->printDebug() + " " + ShowOperation(m_operation) + "" + opSizeStr + " " + m_rightNode->printDebug() + ")";
-	return (m_updateDebugInfo = result);
-}
-
 std::string OperationalNode::getOpSize(int size, bool isFloat) {
 	std::string opSize = "";
 	if (true) {
@@ -175,12 +134,6 @@ INode* ReadValueNode::clone(NodeCloneContext* ctx) {
 	return readValueNode;
 }
 
-std::string ReadValueNode::printDebug() {
-	if (!m_leftNode)
-		return "";
-	return m_updateDebugInfo = ("*{uint_" + std::to_string(8 * getSize()) + "t*}" + m_leftNode->printDebug());
-}
-
 HS CastNode::getHash() {
 	return OperationalNode::getHash() << m_size << m_isSigned;
 }
@@ -203,12 +156,6 @@ INode* CastNode::clone(NodeCloneContext* ctx) {
 	return new CastNode(m_leftNode->clone(ctx), m_size, m_isSigned);
 }
 
-std::string CastNode::printDebug() {
-	if (!m_leftNode)
-		return "";
-	return m_updateDebugInfo = ("{" + std::string(!m_isSigned ? "u" : "") + "int_" + std::to_string(8 * getSize()) + "t}" + m_leftNode->printDebug());
-}
-
 int FunctionalNode::getSize() {
 	return 1;
 }
@@ -219,12 +166,6 @@ HS FunctionalNode::getHash() {
 
 INode* FunctionalNode::clone(NodeCloneContext* ctx) {
 	return new FunctionalNode(m_leftNode->clone(ctx), m_rightNode->clone(ctx), m_funcId, m_instr);
-}
-
-std::string FunctionalNode::printDebug() {
-	if (!m_leftNode || !m_rightNode)
-		return "";
-	return m_updateDebugInfo = (std::string(magic_enum::enum_name(m_funcId)) + "(" + m_leftNode->printDebug() + ", " + m_rightNode->printDebug() + ")");
 }
 
 int FloatFunctionalNode::getSize() {
@@ -241,10 +182,4 @@ bool FloatFunctionalNode::isFloatingPoint() {
 
 INode* FloatFunctionalNode::clone(NodeCloneContext* ctx) {
 	return new FloatFunctionalNode(m_leftNode->clone(ctx), m_funcId, m_size, m_instr);
-}
-
-std::string FloatFunctionalNode::printDebug() {
-	if (!m_leftNode)
-		return "";
-	return m_updateDebugInfo = (std::string(magic_enum::enum_name(m_funcId)) + "(" + m_leftNode->printDebug() + ")");
 }

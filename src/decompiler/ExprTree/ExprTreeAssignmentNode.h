@@ -17,7 +17,7 @@ namespace CE::Decompiler::ExprTree
 			m_srcNode->addParentNode(this);
 		}
 
-		~AssignmentNode();
+		~AssignmentNode() override;
 
 		void replaceNode(INode* node, INode* newNode) override;
 
@@ -38,7 +38,5 @@ namespace CE::Decompiler::ExprTree
 		HS getHash() override;
 
 		INode* clone(NodeCloneContext* ctx) override;
-
-		std::string printDebug() override;
 	};
 };

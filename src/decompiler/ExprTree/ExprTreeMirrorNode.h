@@ -11,7 +11,7 @@ namespace CE::Decompiler::ExprTree
 
 		MirrorNode(INode* node, PCode::Instruction* instr);
 
-		~MirrorNode();
+		~MirrorNode() override;
 
 		void replaceNode(INode* node, INode* newNode) override;
 
@@ -26,7 +26,5 @@ namespace CE::Decompiler::ExprTree
 		INode* clone(NodeCloneContext* ctx) override;
 
 		HS getHash() override;
-
-		std::string printDebug() override;
 	};
 };

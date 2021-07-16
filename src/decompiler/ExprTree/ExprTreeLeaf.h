@@ -21,8 +21,6 @@ namespace CE::Decompiler::ExprTree
 		std::list<PCode::Instruction*> getInstructionsRelatedTo() override;
 
 		INode* clone(NodeCloneContext* ctx) override;
-
-		std::string printDebug() override;
 	};
 
 	class INumberLeaf : public ILeaf
@@ -37,6 +35,7 @@ namespace CE::Decompiler::ExprTree
 
 	class NumberLeaf : public Node, public INumberLeaf
 	{
+		friend class ExprTreeViewGenerator;
 		uint64_t m_value;
 		int m_size;
 	public:
@@ -52,8 +51,6 @@ namespace CE::Decompiler::ExprTree
 		int getSize() override;
 
 		INode* clone(NodeCloneContext* ctx) override;
-
-		std::string printDebug() override;
 	};
 
 	class FloatNanLeaf : public Node
@@ -68,7 +65,5 @@ namespace CE::Decompiler::ExprTree
 		INode* clone(NodeCloneContext* ctx) override;
 
 		bool isFloatingPoint() override;
-
-		std::string printDebug() override;
 	};
 };

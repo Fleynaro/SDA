@@ -270,27 +270,22 @@ namespace CE::Decompiler::PCode
 			TOKEN_OTHER
 		};
 		
-		const Instruction* m_instruction;
 	public:
-		InstructionViewGenerator(const Instruction* instruction)
-			: m_instruction(instruction)
-		{}
-
-		void generate() {
-			if (m_instruction->m_output) {
-				generateVarnode(m_instruction->m_output);
+		virtual void generate(const Instruction* instruction) {
+			if (instruction->m_output) {
+				generateVarnode(instruction->m_output);
 				generateToken(" = ", TOKEN_OTHER);
 			}
 			
-			generateToken(magic_enum::enum_name(m_instruction->m_id).data(), TOKEN_MNEMONIC);
+			generateToken(magic_enum::enum_name(instruction->m_id).data(), TOKEN_MNEMONIC);
 			
-			if (m_instruction->m_input0) {
+			if (instruction->m_input0) {
 				generateToken(" ", TOKEN_OTHER);
-				generateVarnode(m_instruction->m_input0);
+				generateVarnode(instruction->m_input0);
 			}
-			if (m_instruction->m_input1) {
+			if (instruction->m_input1) {
 				generateToken(", ", TOKEN_OTHER);
-				generateVarnode(m_instruction->m_input1);
+				generateVarnode(instruction->m_input1);
 			}
 		}
 
@@ -348,8 +343,7 @@ namespace CE::Decompiler::PCode
 	{
 	public:
 		std::string m_text;
-		using InstructionViewGenerator::InstructionViewGenerator;
-		
+
 		void generateToken(const std::string& text, TokenType tokenType) override {
 			m_text += text;
 		}

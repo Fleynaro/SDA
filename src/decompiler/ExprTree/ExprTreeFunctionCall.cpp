@@ -79,15 +79,3 @@ INode* FunctionCall::clone(NodeCloneContext* ctx) {
 	}
 	return funcCallCtx;
 }
-
-std::string FunctionCall::printDebug() {
-	std::string str = "(" + getDestination()->printDebug() + ")(";
-	for (auto paramNode : m_paramNodes) {
-		str += paramNode->printDebug() + ", ";
-	}
-	if (!m_paramNodes.empty()) {
-		str.pop_back();
-		str.pop_back();
-	}
-	return (m_updateDebugInfo = (str + ")"));
-}

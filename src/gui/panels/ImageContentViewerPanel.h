@@ -9,6 +9,7 @@
 #include "InstructionViewer.h"
 #include "decompiler/Graph/DecPCodeGraph.h"
 #include "panels/FuncGraphViewerPanel.h"
+#include "panels/DecompiledCodeViewerPanel.h"
 
 namespace GUI
 {
@@ -196,8 +197,8 @@ namespace GUI
 									ImGui::TableNextColumn();
 									Text::Text("").show();
 									ImGui::TableNextColumn();
-									PCodeInstructionRender instrRender(instr);
-									instrRender.render();
+									PCodeInstructionRender instrRender;
+									instrRender.generate(instr);
 								}
 							}
 						}

@@ -3,15 +3,6 @@
 using namespace CE::Decompiler;
 using namespace ExprTree;
 
-std::string CompositeCondition::ShowConditionType(CompositeConditionType condType) {
-	switch (condType)
-	{
-	case And: return "&&";
-	case Or: return "||";
-	}
-	return "_";
-}
-
 CompositeCondition::CompositeCondition(AbstractCondition* leftCond, AbstractCondition* rightCond, CompositeConditionType cond, PCode::Instruction* instr)
 	: m_leftCond(leftCond), m_rightCond(rightCond), m_cond(cond), AbstractCondition(instr)
 {
@@ -79,18 +70,6 @@ void CompositeCondition::inverse() {
 		m_rightCond->inverse();
 }
 
-std::string CompositeCondition::printDebug() {
-	if (!m_leftCond)
-		return "";
-	if (m_cond == None) {
-		return m_updateDebugInfo = m_leftCond->printDebug();
-	}
-	if (m_cond == Not) {
-		return m_updateDebugInfo = ("!(" + m_leftCond->printDebug() + ")");
-	}
-	return m_updateDebugInfo = ("(" + m_leftCond->printDebug() + " " + ShowConditionType(m_cond) + " " + m_rightCond->printDebug() + ")");
-}
-
 Condition::Condition(INode* leftNode, INode* rightNode, ConditionType cond, PCode::Instruction* instr)
 	: m_leftNode(leftNode), m_rightNode(rightNode), m_cond(cond), AbstractCondition(instr)
 {
@@ -152,12 +131,6 @@ void Condition::inverse() {
 	}
 }
 
-std::string Condition::printDebug() {
-	if (!m_leftNode || !m_rightNode)
-		return "";
-	return m_updateDebugInfo = ("(" + m_leftNode->printDebug() + " " + ShowConditionType(m_cond) + " " + m_rightNode->printDebug() + ")");
-}
-
 BooleanValue::BooleanValue(bool value, PCode::Instruction* instr)
 	: m_value(value), AbstractCondition(instr)
 {}
@@ -172,10 +145,6 @@ INode* BooleanValue::clone(NodeCloneContext* ctx) {
 
 HS BooleanValue::getHash() {
 	return HS() << m_value;
-}
-
-std::string BooleanValue::printDebug() {
-	return m_updateDebugInfo = (m_value ? "true" : "false");
 }
 
 AbstractCondition::AbstractCondition(PCode::Instruction* instr)

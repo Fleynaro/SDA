@@ -97,20 +97,3 @@ HS LinearExpr::getHash() {
 		<< m_constTerm->getHash()
 		<< static_cast<int>(m_operation);
 }
-
-std::string LinearExpr::printDebug() {
-	std::string result = "(";
-	for (auto it = m_terms.begin(); it != m_terms.end(); it++) {
-		result += (*it)->printDebug();
-		if (it != std::prev(m_terms.end()) || m_constTerm->getValue()) {
-			result += " " + ShowOperation(m_operation) + OperationalNode::getOpSize(getSize(), isFloatingPoint()) + " ";
-		}
-	}
-
-	if (m_constTerm->getValue()) {
-		result += m_constTerm->printDebug();
-	}
-
-	result += ")";
-	return (m_updateDebugInfo = result);
-}

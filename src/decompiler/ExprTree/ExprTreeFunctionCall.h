@@ -13,7 +13,7 @@ namespace CE::Decompiler::ExprTree
 		
 		FunctionCall(INode* destination, PCode::Instruction* instr);
 
-		~FunctionCall();
+		~FunctionCall() override;
 
 		void replaceNode(INode* node, INode* newNode) override;
 
@@ -34,7 +34,5 @@ namespace CE::Decompiler::ExprTree
 		std::list<PCode::Instruction*> getInstructionsRelatedTo() override;
 
 		INode* clone(NodeCloneContext* ctx) override;
-
-		std::string printDebug() override;
 	};
 };

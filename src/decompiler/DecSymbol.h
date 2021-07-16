@@ -31,8 +31,6 @@ namespace CE::Decompiler::Symbol
 
 		Symbol* clone(ExprTree::NodeCloneContext* ctx);
 
-		virtual std::string printDebug() = 0;
-
 	protected:
 		int m_size;
 
@@ -53,10 +51,6 @@ namespace CE::Decompiler::Symbol
 			return HS()
 				<< m_register.getId()
 				<< m_register.m_valueRangeMask.getValue();
-		}
-
-		std::string printDebug() override {
-			return "[reg_" + PCode::InstructionViewGenerator::GenerateRegisterName(m_register) + "]";
 		}
 
 	protected:
@@ -102,10 +96,6 @@ namespace CE::Decompiler::Symbol
 			return m_instructionsRelatedTo;
 		}
 
-		std::string printDebug() override {
-			return "[var_" + Helper::String::NumberToHex(getId()) + "_" + std::to_string(getSize() * 8) + "]";
-		}
-
 	protected:
 		Symbol* cloneSymbol() override {
 			auto localVar = new LocalVariable(getSize());
@@ -130,10 +120,6 @@ namespace CE::Decompiler::Symbol
 			return { m_instr };
 		}
 
-		std::string printDebug() override {
-			return "[mem_" + Helper::String::NumberToHex(getId()) + "_" + std::to_string(getSize() * 8) + "]";
-		}
-
 	protected:
 		Symbol* cloneSymbol() override {
 			return new MemoryVariable(m_instr, getSize());
@@ -154,10 +140,6 @@ namespace CE::Decompiler::Symbol
 			if (!m_instr)
 				return {};
 			return { m_instr };
-		}
-
-		std::string printDebug() override {
-			return "[funcVar_" + std::to_string(getId()) + "_" + std::to_string(getSize() * 8) + "]";
 		}
 
 	protected:

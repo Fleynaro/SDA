@@ -70,7 +70,3 @@ HS AssignmentNode::getHash() {
 INode* AssignmentNode::clone(NodeCloneContext* ctx) {
 	return new AssignmentNode(m_dstNode->clone(ctx), m_srcNode->clone(ctx));
 }
-
-std::string AssignmentNode::printDebug() {
-	return m_dstNode->printDebug() + " = " + m_srcNode->printDebug() + "\n";
-}

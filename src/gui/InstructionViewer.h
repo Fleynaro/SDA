@@ -133,15 +133,8 @@ namespace GUI
 		}
 	};
 
-	class PCodeInstructionRender : public IRender, CE::Decompiler::PCode::InstructionViewGenerator
+	class PCodeInstructionRender : public CE::Decompiler::PCode::InstructionViewGenerator
 	{
-	public:
-		using InstructionViewGenerator::InstructionViewGenerator;
-
-		void render() override {
-			generate();
-		}
-	private:
 		void generateToken(const std::string& text, TokenType tokenType) override {
 			ColorRGBA color = 0xebebebFF;
 			if (tokenType == TOKEN_MNEMONIC)

@@ -67,9 +67,6 @@ namespace CE::Decompiler::ExprTree
 	// in these operations bits of operands can be viewed separately: And, Or, Xor
 	extern bool IsOperationManipulatedWithBitVector(OperationType opType);
 
-	// print operation sign
-	extern std::string ShowOperation(OperationType opType);
-
 	// Arithmetic, logic, floating or other operation
 	class OperationalNode : public Node, public INodeAgregator, public PCode::IRelatedToInstruction
 	{
@@ -109,8 +106,6 @@ namespace CE::Decompiler::ExprTree
 
 		INode* clone(NodeCloneContext* ctx) override;
 
-		std::string printDebug() override;
-
 		static std::string getOpSize(int size, bool isFloat);
 	};
 
@@ -130,13 +125,12 @@ namespace CE::Decompiler::ExprTree
 		int getSize() override;
 
 		INode* clone(NodeCloneContext* ctx) override;
-
-		std::string printDebug() override;
 	};
 
 	// Casting between signed and unsgined value of different size (for movsx, imul, idiv, ...)
 	class CastNode : public OperationalNode
 	{
+		friend class ExprTreeViewGenerator;
 		int m_size;
 		bool m_isSigned;
 	public:
@@ -153,8 +147,6 @@ namespace CE::Decompiler::ExprTree
 		bool isSigned() const;
 
 		INode* clone(NodeCloneContext* ctx) override;
-
-		std::string printDebug() override;
 	};
 
 	// Gets two arguments (float) and returns boolean value: CARRY, SCARRY, SBORROW
@@ -177,8 +169,6 @@ namespace CE::Decompiler::ExprTree
 		HS getHash() override;
 
 		INode* clone(NodeCloneContext* ctx) override;
-
-		std::string printDebug() override;
 	};
 
 	// Gets one argument (float or int) and returns float value: FABS, FSQRT, FLOOR, TOFLOAT, ...
@@ -209,8 +199,6 @@ namespace CE::Decompiler::ExprTree
 		bool isFloatingPoint() override;
 
 		INode* clone(NodeCloneContext* ctx) override;
-
-		std::string printDebug() override;
 
 	};
 };

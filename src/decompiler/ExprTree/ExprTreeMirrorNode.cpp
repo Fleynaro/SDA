@@ -44,7 +44,3 @@ INode* MirrorNode::clone(NodeCloneContext* ctx) {
 HS MirrorNode::getHash() {
 	return m_node->getHash();
 }
-
-std::string MirrorNode::printDebug() {
-	return m_node->printDebug();
-}

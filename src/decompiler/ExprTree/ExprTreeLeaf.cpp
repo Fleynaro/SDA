@@ -22,10 +22,6 @@ bool FloatNanLeaf::isFloatingPoint() {
 	return true;
 }
 
-std::string FloatNanLeaf::printDebug() {
-	return m_updateDebugInfo = ("NaN");
-}
-
 SymbolLeaf::SymbolLeaf(Symbol::Symbol* symbol)
 	: m_symbol(symbol)
 {}
@@ -48,10 +44,6 @@ INode* SymbolLeaf::clone(NodeCloneContext* ctx) {
 	return new SymbolLeaf(m_symbol->clone(ctx));
 }
 
-std::string SymbolLeaf::printDebug() {
-	return m_updateDebugInfo = m_symbol->printDebug();
-}
-
 HS INumberLeaf::getHash() {
 	return HS() << getValue();
 }
@@ -64,8 +56,8 @@ NumberLeaf::NumberLeaf(double value, int size)
 	: m_size(size)
 {
 	if (m_size == 4)
-		(float&)m_value = static_cast<float>(value);
-	else (double&)m_value = value;
+		reinterpret_cast<float&>(m_value) = static_cast<float>(value);
+	else reinterpret_cast<double&>(m_value) = value;
 }
 
 uint64_t NumberLeaf::getValue() {
@@ -82,8 +74,4 @@ int NumberLeaf::getSize() {
 
 INode* NumberLeaf::clone(NodeCloneContext* ctx) {
 	return new NumberLeaf(m_value, m_size);
-}
-
-std::string NumberLeaf::printDebug() {
-	return m_updateDebugInfo = ("0x" + Helper::String::NumberToHex(m_value) + "{" + (std::to_string(static_cast<int>(m_value))) + "}");
 }
