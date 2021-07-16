@@ -11,10 +11,19 @@ namespace GUI
 	using Color = uint32_t;
 	using ColorRGBA = Color;
 	using ColorComponent = int;
+
+	class IRender
+	{
+		virtual void render() = 0;
+	};
 	
-	class Control
+	class Control : public IRender
 	{
 		bool m_display = true;
+
+		void render() override {
+			renderControl();
+		}
 	protected:
 		virtual ~Control() {};
 
@@ -23,7 +32,7 @@ namespace GUI
 	public:
 		void show() {
 			if (isShown()) {
-				renderControl();
+				render();
 			}
 		}
 

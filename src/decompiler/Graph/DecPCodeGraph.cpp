@@ -156,7 +156,7 @@ std::string PCodeBlock::printDebug(void* addr, const std::string& tabStr, bool e
 			result += prefix + " " + instr->m_origInstruction->m_originalView + "\n";
 		if (pcode) {
 			prefix += ":" + std::to_string(instr->m_orderId) + "(" + Helper::String::NumberToHex(instr->getOffset()) + ")";
-			result += "\t" + prefix + " " + instr->printDebug();
+			result += "\t" + prefix + " " + InstructionTextGenerator(instr).m_text;
 			if (instr->m_id == InstructionId::UNKNOWN)
 				result += " <------------------------------------------------ ";
 			result += "\n";

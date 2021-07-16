@@ -14,6 +14,7 @@ namespace CE::Decompiler::PCode
 	// PCode register of some type (e.g. RAX:4, ZMM0:8)
 	class Register
 	{
+		friend class InstructionViewGenerator;
 	public:
 		enum class Type {
 			Helper,
@@ -34,9 +35,7 @@ namespace CE::Decompiler::PCode
 
 		Register(RegisterId genericId = 0, int index = 0, BitMask64 valueRangeMask = 0x0, Type type = Type::Helper)
 			: m_genericId(genericId), m_index(index), m_valueRangeMask(valueRangeMask), m_type(type)
-		{
-			m_debugInfo = printDebug();
-		}
+		{}
 
 		Type getType() const;
 
@@ -63,8 +62,6 @@ namespace CE::Decompiler::PCode
 		bool operator ==(const Register& reg) const {
 			return getId() == reg.getId() && m_valueRangeMask == reg.m_valueRangeMask;
 		}
-
-		std::string printDebug() const;
 	};
 
 	// that is the feature of x86: setting value to EAX cleans fully RAX
@@ -81,8 +78,6 @@ namespace CE::Decompiler::PCode
 		virtual BitMask64 getMask() {
 			return BitMask64(getSize());
 		}
-
-		virtual std::string printDebug() = 0;
 	};
 
 	// e.g. EAX, ZMM0, ...
@@ -100,8 +95,6 @@ namespace CE::Decompiler::PCode
 		int getSize() override;
 
 		BitMask64 getMask() override;
-
-		std::string printDebug() override;
 	};
 
 	// e.g. 100
@@ -118,8 +111,6 @@ namespace CE::Decompiler::PCode
 		{}
 
 		int getSize() override;
-
-		std::string printDebug() override;
 	};
 
 	// e.g. $U9680
@@ -135,8 +126,6 @@ namespace CE::Decompiler::PCode
 		{}
 
 		int getSize() override;
-
-		std::string printDebug() override;
 	};
 
 	// PCode instruction id
@@ -254,8 +243,6 @@ namespace CE::Decompiler::PCode
 		// get complex offset of the next instruction following this
 		ComplexOffset getFirstInstrOffsetInNextOrigInstr() const;
 
-		std::string printDebug() const;
-
 		// BRANCH, CBRANCH, BRANCHIND
 		static bool IsBranching(InstructionId id);
 
@@ -270,4 +257,101 @@ namespace CE::Decompiler::PCode
 	};
 
 	using DataValue = uint64_t;
+
+	class InstructionViewGenerator
+	{
+	protected:
+		enum TokenType
+		{
+			TOKEN_MNEMONIC,
+			TOKEN_REGISTER,
+			TOKEN_VARIABLE,
+			TOKEN_NUMBER,
+			TOKEN_OTHER
+		};
+		
+		const Instruction* m_instruction;
+	public:
+		InstructionViewGenerator(const Instruction* instruction)
+			: m_instruction(instruction)
+		{}
+
+		void generate() {
+			if (m_instruction->m_output) {
+				generateVarnode(m_instruction->m_output);
+				generateToken(" = ", TOKEN_OTHER);
+			}
+			
+			generateToken(magic_enum::enum_name(m_instruction->m_id).data(), TOKEN_MNEMONIC);
+			
+			if (m_instruction->m_input0) {
+				generateToken(" ", TOKEN_OTHER);
+				generateVarnode(m_instruction->m_input0);
+			}
+			if (m_instruction->m_input1) {
+				generateToken(", ", TOKEN_OTHER);
+				generateVarnode(m_instruction->m_input1);
+			}
+		}
+
+		virtual void generateVarnode(Varnode* varnode) {
+			if(const auto registerVarnode = dynamic_cast<RegisterVarnode*>(varnode)) {
+				const auto regName = GenerateRegisterName(registerVarnode->m_register);
+				generateToken(regName, TOKEN_REGISTER);
+			}
+			else if (const auto symbolVarnode = dynamic_cast<SymbolVarnode*>(varnode)) {
+				const auto uniqueId = (uint64_t)symbolVarnode % 10000;
+				const auto symbolName = "$U" + std::to_string(uniqueId) + ":" + std::to_string(symbolVarnode->getSize());
+				generateToken(symbolName, TOKEN_VARIABLE);
+			}
+			else if (const auto constVarnode = dynamic_cast<ConstantVarnode*>(varnode)) {
+				const auto number = std::to_string((int64_t&)constVarnode->m_value) + ":" + std::to_string(constVarnode->getSize());
+				generateToken(number, TOKEN_NUMBER);
+			}
+		}
+
+		virtual void generateToken(const std::string& text, TokenType tokenType) = 0;
+
+		static std::string GenerateRegisterName(const Register& reg) {
+			const auto regId = static_cast<ZydisRegister>(reg.m_genericId);
+
+			const auto size = reg.getSize();
+			std::string maskStr = std::to_string(size);
+			if (reg.isVector()) {
+				if (size == 4 || size == 8) {
+					maskStr = std::string(size == 4 ? "D" : "Q") + static_cast<char>('a' + static_cast<char>(reg.getOffset() / (size * 8)));
+				}
+			}
+
+			if (regId != ZYDIS_REGISTER_RFLAGS)
+				return std::string(ZydisRegisterGetString(regId)) + ":" + maskStr;
+
+			std::string flagName = "flag";
+			const auto flag = static_cast<ZydisCPUFlag>(reg.m_valueRangeMask.getOffset());
+			if (flag == ZYDIS_CPUFLAG_CF)
+				flagName = "CF";
+			else if (flag == ZYDIS_CPUFLAG_OF)
+				flagName = "OF";
+			else if (flag == ZYDIS_CPUFLAG_SF)
+				flagName = "SF";
+			else if (flag == ZYDIS_CPUFLAG_ZF)
+				flagName = "ZF";
+			else if (flag == ZYDIS_CPUFLAG_AF)
+				flagName = "AF";
+			else if (flag == ZYDIS_CPUFLAG_PF)
+				flagName = "PF";
+			return flagName + ":1";
+		}
+	};
+
+	class InstructionTextGenerator : public InstructionViewGenerator
+	{
+	public:
+		std::string m_text;
+		using InstructionViewGenerator::InstructionViewGenerator;
+		
+		void generateToken(const std::string& text, TokenType tokenType) override {
+			m_text += text;
+		}
+	};
 };

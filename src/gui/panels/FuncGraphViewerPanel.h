@@ -50,7 +50,7 @@ namespace GUI
 						if (m_size.x == 0.0f)
 							m_size.x = calcMinSize.x;
 						if (m_size.y == 0.0f)
-							m_size.y = calcMinSize.y;
+							m_size.y = std::min(500.0f, calcMinSize.y);
 					}
 				}
 				ImGui::EndChild();
@@ -66,13 +66,11 @@ namespace GUI
 		ImVec2 m_p0;
 		ImVec2 m_p1;
 		ImVec2 m_size;
-		ImVec2 m_offset;
-		ImVec2 m_origin;
 		bool m_scalingEnabled = true;
-		bool m_scalingEnabledWhenBlocksHovered = true; // false if blocks have scrollbar
 		bool m_isGridRendered = true;
 	
 	public:
+		ImVec2 m_offset;
 		float m_scaling = 1.0f;
 		
 		Canvas()
@@ -88,7 +86,6 @@ namespace GUI
 				m_size = ImGui::GetContentRegionAvail();
 				m_p0 = ImGui::GetCursorScreenPos();
 				m_p1 = m_p0 + m_size;
-				m_origin = m_p0 + m_offset;
 
 				ImGui::InvisibleButton("##empty", m_size, ImGuiButtonFlags_MouseButtonLeft);
 				if (ImGui::IsItemActive()) {
@@ -96,13 +93,15 @@ namespace GUI
 						m_offset += ImGui::GetIO().MouseDelta;
 					}
 				}
-				if (m_scalingEnabled) {
+				if (m_scalingEnabled && ImGui::GetIO().MouseWheel != 0.0f) {
 					if (ImGui::IsWindowHovered()) {
-						if (m_scalingEnabledWhenBlocksHovered || ImGui::IsItemHovered()) {
-							m_scaling += ImGui::GetIO().MouseWheel * 0.1f;
-							m_scaling = std::min(2.0f, m_scaling);
-							m_scaling = std::max(0.2f, m_scaling);
-						}
+						const auto mousePos = ImGui::GetIO().MousePos - getOrigin();
+						const auto prevScaling = m_scaling;
+						
+						m_scaling += ImGui::GetIO().MouseWheel * 0.1f;
+						m_scaling = std::min(2.0f, m_scaling);
+						m_scaling = std::max(0.2f, m_scaling);
+						m_offset -= mousePos * (m_scaling / prevScaling - 1.0f);
 					}
 				}
 
@@ -118,8 +117,12 @@ namespace GUI
 	protected:
 		virtual void renderCanvas() = 0;
 
+		ImVec2 getOrigin() const {
+			return  m_p0 + m_offset;
+		}
+		
 		ImVec2 toAbsPos(const ImVec2& pos) const {
-			return m_origin + pos * m_scaling;
+			return getOrigin() + pos * m_scaling;
 		}
 
 		void renderGrid() const {
@@ -196,7 +199,8 @@ namespace GUI
 										ImGui::TableNextColumn();
 										Text::Text("").show();
 										ImGui::TableNextColumn();
-										Text::Text(pcodeInstr.printDebug()).show();
+										PCodeInstructionRender instrRender(&pcodeInstr);
+										instrRender.render();
 									}
 								}
 							}
@@ -227,12 +231,15 @@ namespace GUI
 			}
 
 			void restoreArrangement() {
+				m_scaling = 1.0f;
 				m_arrangeCanvasBlocks = true;
 			}
 
 			void updateSizes() {
-				for (auto& [pcodeBlock, canvasBlock] : m_canvasBlocks)
-					canvasBlock->getSize() = ImVec2(0, 0);
+				for (auto& [pcodeBlock, canvasBlock] : m_canvasBlocks) {
+					canvasBlock->getPos() = canvasBlock->getSize() = ImVec2(0, 0);
+				}
+				restoreArrangement();
 			}
 
 		private:
@@ -356,6 +363,7 @@ namespace GUI
 		{}
 
 		~FuncGraphViewerPanel() override {
+			delete m_instructionViewDecoder;
 			delete m_funcGraphViewerCanvas;
 		}
 
@@ -378,7 +386,6 @@ namespace GUI
 			if (ImGui::BeginMenu("Graph"))
 			{
 				if (ImGui::MenuItem("Restore arrangement")) {
-					m_funcGraphViewerCanvas->m_scaling = 1.0f;
 					m_funcGraphViewerCanvas->restoreArrangement();
 				}
 				ImGui::EndMenu();
@@ -386,11 +393,13 @@ namespace GUI
 
 			if (ImGui::BeginMenu("View"))
 			{
+				if (ImGui::MenuItem("Default position")) {
+					m_funcGraphViewerCanvas->m_offset = ImVec2(0, 0);
+				}
+				
 				if (ImGui::MenuItem("Show PCode", nullptr, m_showPCode)) {
 					m_showPCode ^= true;
-					m_funcGraphViewerCanvas->m_scaling = 1.0f;
 					m_funcGraphViewerCanvas->updateSizes();
-					m_funcGraphViewerCanvas->restoreArrangement();
 				}
 				ImGui::EndMenu();
 			}

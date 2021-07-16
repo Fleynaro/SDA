@@ -196,7 +196,8 @@ namespace GUI
 									ImGui::TableNextColumn();
 									Text::Text("").show();
 									ImGui::TableNextColumn();
-									Text::Text(instr->printDebug()).show();
+									PCodeInstructionRender instrRender(instr);
+									instrRender.render();
 								}
 							}
 						}
@@ -310,6 +311,14 @@ namespace GUI
 				m_imageSectionMenuListView.show();
 				ImGui::EndMenu();
 			}
+
+			if (ImGui::BeginMenu("Navigation"))
+			{
+				if (ImGui::MenuItem("Go to")) {
+
+				}
+				ImGui::EndMenu();
+			}
 			
 			if (ImGui::BeginMenu("View"))
 			{
@@ -324,7 +333,7 @@ namespace GUI
 					if (codeSectionViewer->m_curFuncPCodeGraph) {
 						if (ImGui::MenuItem("Show function graph", nullptr)) {
 							if (!m_funcGraphViewerWindow) {
-								auto funcGraphViewerPanel = new FuncGraphViewerPanel(m_imageDec, codeSectionViewer->m_instructionViewDecoder);
+								auto funcGraphViewerPanel = new FuncGraphViewerPanel(m_imageDec, new InstructionViewDecoderX86);
 								funcGraphViewerPanel->setFuncGraph(codeSectionViewer->m_curFuncPCodeGraph);
 								m_funcGraphViewerWindow = funcGraphViewerPanel->createStdWindow();
 							}
@@ -335,14 +344,6 @@ namespace GUI
 							}
 						}
 					}
-				}
-				ImGui::EndMenu();
-			}
-
-			if (ImGui::BeginMenu("Navigation"))
-			{
-				if (ImGui::MenuItem("Go to")) {
-					
 				}
 				ImGui::EndMenu();
 			}

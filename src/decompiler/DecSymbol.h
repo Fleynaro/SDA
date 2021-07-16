@@ -56,7 +56,7 @@ namespace CE::Decompiler::Symbol
 		}
 
 		std::string printDebug() override {
-			return "[reg_" + m_register.printDebug() + "]";
+			return "[reg_" + PCode::InstructionViewGenerator::GenerateRegisterName(m_register) + "]";
 		}
 
 	protected:

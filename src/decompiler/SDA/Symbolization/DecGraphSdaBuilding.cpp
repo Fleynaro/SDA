@@ -288,7 +288,7 @@ CE::Symbol::ISymbol* SdaBuilding::findOrCreateSymbol(Symbol::Symbol* symbol, int
 
 		//NOT-MEMORY symbol (unknown registers)
 		const auto defType = m_project->getTypeManager()->getDefaultType(size);
-		auto sdaSymbol = m_symbolFactory.createLocalInstrVarSymbol(defType, "in_" + reg.printDebug());
+		auto sdaSymbol = m_symbolFactory.createLocalInstrVarSymbol(defType, "in_" + InstructionViewGenerator::GenerateRegisterName(reg));
 		sdaSymbol->setAutoSymbol(true);
 		m_newAutoSymbols.insert(sdaSymbol);
 		return sdaSymbol;

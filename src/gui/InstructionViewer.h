@@ -132,4 +132,28 @@ namespace GUI
 			return true;
 		}
 	};
+
+	class PCodeInstructionRender : public IRender, CE::Decompiler::PCode::InstructionViewGenerator
+	{
+	public:
+		using InstructionViewGenerator::InstructionViewGenerator;
+
+		void render() override {
+			generate();
+		}
+	private:
+		void generateToken(const std::string& text, TokenType tokenType) override {
+			ColorRGBA color = 0xebebebFF;
+			if (tokenType == TOKEN_MNEMONIC)
+				color = 0xe6e4b3FF;
+			else if (tokenType == TOKEN_REGISTER)
+				color = 0xb3e6e4FF;
+			else if (tokenType == TOKEN_VARIABLE)
+				color = 0xaac5f2FF;
+			else if (tokenType == TOKEN_NUMBER)
+				color = 0xc7c7c7FF;
+			Text::ColoredText(text, color).show();
+			SameLine(1.0f);
+		}
+	};
 };
