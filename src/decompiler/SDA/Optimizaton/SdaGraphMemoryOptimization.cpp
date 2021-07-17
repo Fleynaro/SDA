@@ -12,7 +12,7 @@ void SdaGraphMemoryOptimization::MemoryContextInitializer::start() {
 	// iterate over all lines of the code as if executing it
 	for (auto topNode : m_block->getAllTopNodes()) {
 		const auto node = topNode->getNode();
-		INode::UpdateDebugInfo(node);
+		UpdateDebugInfo(node);
 		passNode(node);
 	}
 }

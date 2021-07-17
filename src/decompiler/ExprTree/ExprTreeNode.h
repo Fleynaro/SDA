@@ -57,10 +57,6 @@ namespace CE::Decompiler::ExprTree
 
 		void iterateChildNodes(std::function<void(INode*)> func);
 
-		virtual std::string printDebug() = 0;
-
-		void static UpdateDebugInfo(INode* node);
-
 		virtual void checkOnSingleParents();
 	};
 
@@ -93,9 +89,9 @@ namespace CE::Decompiler::ExprTree
 		// not integer type
 		bool isFloatingPoint() override;
 
-		std::string printDebug() override;
-
 	private:
 		std::list<INodeAgregator*> m_parentNodes;
 	};
+
+	extern void UpdateDebugInfo(INode* node);
 };

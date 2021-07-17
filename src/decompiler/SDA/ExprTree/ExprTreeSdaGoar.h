@@ -48,8 +48,6 @@ namespace CE::Decompiler::ExprTree
 		HS getHash() override;
 
 		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override;
-
-		std::string printSdaDebug() override;
 	};
 
 	// Field of a class: player.pos.x
@@ -63,8 +61,6 @@ namespace CE::Decompiler::ExprTree
 		DataTypePtr getSrcDataType() override;
 
 		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override;
-
-		std::string printSdaDebug() override;
 	};
 
 	// Top node for any goar structure that need to define operator &: &player.pos.x
@@ -86,8 +82,6 @@ namespace CE::Decompiler::ExprTree
 		HS getHash() override;
 
 		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override;
-		
-		std::string printSdaDebug() override;
 
 	private:
 		// players[2][10] -> dims: 10, 2

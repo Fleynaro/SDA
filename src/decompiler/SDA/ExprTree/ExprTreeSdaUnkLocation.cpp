@@ -107,7 +107,3 @@ void UnknownLocation::getLocation(MemLocation& location) {
 		location.addArrayDim(itemSize);
 	}
 }
-
-std::string UnknownLocation::printSdaDebug() {
-	return m_linearExpr->printDebug();
-}

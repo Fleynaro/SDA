@@ -29,7 +29,5 @@ namespace CE::Decompiler::ExprTree
 		HS getHash() override;
 
 		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override;
-
-		std::string printSdaDebug() override;
 	};
 };

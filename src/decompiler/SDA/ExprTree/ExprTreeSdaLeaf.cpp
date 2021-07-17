@@ -1,5 +1,4 @@
 #include "ExprTreeSdaLeaf.h"
-#include <datatypes/SystemType.h>
 
 using namespace CE;
 using namespace Decompiler;
@@ -31,24 +30,6 @@ void SdaNumberLeaf::setDataType(DataTypePtr dataType) {
 
 ISdaNode* SdaNumberLeaf::cloneSdaNode(NodeCloneContext* ctx) {
 	return new SdaNumberLeaf(m_value, m_calcDataType);
-}
-
-std::string SdaNumberLeaf::printSdaDebug() {
-	if (getSrcDataType()->isFloatingPoint()) {
-		if (getSrcDataType()->getSize() == 4)
-			return m_updateDebugInfo = std::to_string((float&)m_value);
-		else return m_updateDebugInfo = std::to_string((double&)m_value);
-	}
-	if (auto sysType = dynamic_cast<DataType::SystemType*>(getSrcDataType()->getBaseType())) {
-		if (sysType->isSigned()) {
-			const auto size = getSrcDataType()->getSize();
-			if (size <= 4)
-				return m_updateDebugInfo = std::to_string(static_cast<int32_t>(m_value));
-			else
-				return m_updateDebugInfo = std::to_string(static_cast<int64_t>(m_value));
-		}
-	}
-	return "0x" + Helper::String::NumberToHex(m_value);
 }
 
 SdaSymbolLeaf::SdaSymbolLeaf(CE::Symbol::ISymbol* sdaSymbol, Symbol::Symbol* decSymbol)
@@ -89,10 +70,6 @@ void SdaSymbolLeaf::setDataType(DataTypePtr dataType) {
 	if (m_sdaSymbol->isAutoSymbol()) {
 		m_sdaSymbol->setDataType(dataType);
 	}
-}
-
-std::string SdaSymbolLeaf::printSdaDebug() {
-	return m_sdaSymbol->getName();
 }
 
 SdaMemSymbolLeaf::SdaMemSymbolLeaf(CE::Symbol::IMemorySymbol* sdaSymbol, Symbol::Symbol* decSymbol, int64_t offset, bool isAddrGetting)

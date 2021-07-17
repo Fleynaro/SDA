@@ -7,7 +7,7 @@ using namespace CE::Decompiler;
 ExprModification::ExprModification(INode* node)
 	: m_node(node)
 {
-	INode::UpdateDebugInfo(m_node);
+	UpdateDebugInfo(m_node);
 }
 
 INode* ExprModification::getNode() const
@@ -31,5 +31,5 @@ void ExprModification::replace(INode* newNode, bool destroy) {
 	}
 	m_node = newNode;
 	changed();
-	INode::UpdateDebugInfo(m_node);
+	UpdateDebugInfo(m_node);
 }

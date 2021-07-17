@@ -1,4 +1,5 @@
 #pragma once
+#include "datatypes/SystemType.h"
 #include "ExprTree/ExprTreeAssignmentNode.h"
 #include "ExprTree/ExprTreeCondition.h"
 #include "ExprTree/ExprTreeFunctionCall.h"
@@ -6,43 +7,20 @@
 #include "ExprTree/ExprTreeMirrorNode.h"
 #include "ExprTree/ExprTreeNode.h"
 #include "ExprTree/ExprTreeOperationalNode.h"
+#include "SDA/ExprTree/ExprTreeSdaFunction.h"
+#include "SDA/ExprTree/ExprTreeSdaGenericNode.h"
+#include "SDA/ExprTree/ExprTreeSdaGoar.h"
+#include "SDA/ExprTree/ExprTreeSdaLeaf.h"
 #include "SDA/ExprTree/ExprTreeSdaNode.h"
+#include "SDA/ExprTree/ExprTreeSdaReadValue.h"
+#include "SDA/ExprTree/ExprTreeSdaUnkLocation.h"
 
 namespace CE::Decompiler
 {
-	namespace Symbol
-	{
-		class SymbolViewGenerator
-		{
-		public:
-			void generate(Symbol* symbol) {
-				if (const auto registerVariable = dynamic_cast<RegisterVariable*>(symbol)) {
-					const auto token = "[reg_" + PCode::InstructionViewGenerator::GenerateRegisterName(registerVariable->m_register) + "]";
-					generateToken(token);
-				} else if (const auto variable = dynamic_cast<AbstractVariable*>(symbol)) {
-					if (const auto localVariable = dynamic_cast<LocalVariable*>(variable)) {
-						generateToken("[var_");
-					}
-					else if (const auto memoryVariable = dynamic_cast<MemoryVariable*>(variable)) {
-						generateToken("[mem_");
-					}
-					else if (const auto funcResultVar = dynamic_cast<FunctionResultVar*>(variable)) {
-						generateToken("[funcVar_");
-					}
-					generateToken(Helper::String::NumberToHex(variable->getId()) + "_" + std::to_string(variable->getSize() * 8) + "]");
-				}
-			}
-
-			virtual void generateToken(const std::string& text) = 0;
-		};
-	};
-	
 	namespace ExprTree
 	{
 		class ExprTreeViewGenerator
 		{
-			Symbol::SymbolViewGenerator* m_symbolViewGenerator;
-			bool m_debugMode = false;
 		protected:
 			enum TokenType
 			{
@@ -50,19 +28,29 @@ namespace CE::Decompiler
 				TOKEN_OPERATOR,
 				TOKEN_FUNCTION_CALL,
 				TOKEN_DATA_TYPE,
-				TOKEN_SYMBOL,
+				TOKEN_DEC_SYMBOL,
+				TOKEN_SDA_SYMBOL,
 				TOKEN_NUMBER,
 				TOKEN_DEBUG_INFO,
 				TOKEN_OTHER
 			};
 		
 		public:
-			ExprTreeViewGenerator(Symbol::SymbolViewGenerator* symbolViewGenerator, bool debugMode)
-				: m_symbolViewGenerator(symbolViewGenerator), m_debugMode(debugMode)
-			{}
+			bool m_debugMode = false;
+			bool m_markSdaNodes = false;
 			
 			virtual void generate(INode* node) {
 				if (const auto sdaNode = dynamic_cast<ISdaNode*>(node)) {
+					if (m_debugMode && m_markSdaNodes) {
+						generateToken("@", TOKEN_DEBUG_INFO);
+					}
+					if (sdaNode->hasCast() && sdaNode->getCast()->hasExplicitCast()) {
+						generateCast(sdaNode);
+					}
+					if (auto addressGetting = dynamic_cast<IMappedToMemory*>(this)) {
+						if (addressGetting->isAddrGetting())
+							generateToken("&", TOKEN_OPERATION);
+					}
 					generateSdaNode(sdaNode);
 				}
 				else if(const auto assignmentNode = dynamic_cast<AssignmentNode*>(node)) {
@@ -116,8 +104,97 @@ namespace CE::Decompiler
 				}
 			}
 
+			virtual void generateCast(ISdaNode* node) {
+				const auto dataTypeName = node->getCast()->getCastDataType()->getDisplayName();
+				generateToken("(", TOKEN_OTHER);
+				generateToken(dataTypeName, TOKEN_DATA_TYPE);
+				generateToken(")", TOKEN_OTHER);
+			}
+
 			virtual void generateSdaNode(ISdaNode* node) {
-				
+				if (const auto sdaGenericNode = dynamic_cast<SdaGenericNode*>(node)) {
+					generate(sdaGenericNode->getNode());
+				}
+				else if (const auto sdaReadValueNode = dynamic_cast<SdaReadValueNode*>(node)) {
+					generateSdaReadValueNode(sdaReadValueNode);
+				}
+				else if (const auto sdaFunctionNode = dynamic_cast<SdaFunctionNode*>(node)) {
+					generateSdaFunctionNode(sdaFunctionNode);
+				}
+				else if (const auto unknownLocation = dynamic_cast<UnknownLocation*>(node)) {
+					generateUnknownLocation(unknownLocation);
+				}
+				else if (const auto goarNode = dynamic_cast<GoarNode*>(node)) {
+					if (const auto goarArrayNode = dynamic_cast<GoarArrayNode*>(goarNode)) {
+						generateGoarArrayNode(goarArrayNode);
+					}
+					else if (const auto goarFieldNode = dynamic_cast<GoarFieldNode*>(goarNode)) {
+						generateGoarFieldNode(goarFieldNode);
+					}
+					else if (const auto goarTopNode = dynamic_cast<GoarTopNode*>(goarNode)) {
+						generateGoarTopNode(goarTopNode);
+					}
+				}
+				else if (const auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(node)) {
+					generateSdaSymbolLeaf(sdaSymbolLeaf);
+				}
+				else if (const auto sdaNumberLeaf = dynamic_cast<SdaNumberLeaf*>(node)) {
+					generateSdaNumberLeaf(sdaNumberLeaf);
+				}
+			}
+
+			virtual void generateSdaReadValueNode(SdaReadValueNode* node) {
+				generateToken("*", TOKEN_OPERATION);
+				generate(node->getAddress());
+			}
+
+			virtual void generateSdaFunctionNode(SdaFunctionNode* node) {
+				generate(node->m_funcCall);
+			}
+			
+			virtual void generateUnknownLocation(UnknownLocation* node) {
+				generate(node->m_linearExpr);
+			}
+
+			virtual void generateGoarArrayNode(GoarArrayNode* node) {
+				generate(node->m_base);
+				generateToken("[", TOKEN_OPERATION);
+				generate(node->m_indexNode);
+				generateToken("]", TOKEN_OPERATION);
+			}
+
+			virtual void generateGoarFieldNode(GoarFieldNode* node) {
+				const auto isPointer = node->m_base->getDataType()->isPointer();
+				generate(node->m_base);
+				generateToken(isPointer ? "->" : ".", TOKEN_OPERATION);
+				generateToken(node->m_field->getName(), TOKEN_OTHER);
+			}
+
+			virtual void generateGoarTopNode(GoarTopNode* node) {
+				generate(node->m_base);
+			}
+
+			virtual void generateSdaSymbolLeaf(SdaSymbolLeaf* node) {
+				generateSdaSymbol(node->getSdaSymbol());
+			}
+
+			virtual void generateSdaNumberLeaf(SdaNumberLeaf* node) {
+				std::string number = "0x" + Helper::String::NumberToHex(node->m_value);
+				if (node->getSrcDataType()->isFloatingPoint()) {
+					if (node->getSrcDataType()->getSize() == 4)
+						number = std::to_string(reinterpret_cast<float&>(node->m_value));
+					else number = std::to_string(reinterpret_cast<double&>(node->m_value));
+				}
+				if (auto sysType = dynamic_cast<DataType::SystemType*>(node->getSrcDataType()->getBaseType())) {
+					if (sysType->isSigned()) {
+						const auto size = node->getSrcDataType()->getSize();
+						if (size <= 4)
+							number = std::to_string(static_cast<int32_t>(node->m_value));
+						else
+							number = std::to_string(static_cast<int64_t>(node->m_value));
+					}
+				}
+				generateToken(number, TOKEN_NUMBER);
 			}
 
 			virtual void generateAssignmentNode(const AssignmentNode* node) {
@@ -220,7 +297,7 @@ namespace CE::Decompiler
 			}
 
 			virtual void generateSymbolLeaf(SymbolLeaf* leaf) {
-				m_symbolViewGenerator->generate(leaf->m_symbol);
+				generateDecSymbol(leaf->m_symbol);
 			}
 
 			virtual void generateNumberLeaf(NumberLeaf* leaf) {
@@ -303,6 +380,30 @@ namespace CE::Decompiler
 				generateToken(")", TOKEN_OTHER);
 			}
 
+			virtual void generateDecSymbol(Symbol::Symbol* symbol) {
+				if (const auto registerVariable = dynamic_cast<Symbol::RegisterVariable*>(symbol)) {
+					const auto token = "[reg_" + PCode::InstructionViewGenerator::GenerateRegisterName(registerVariable->m_register) + "]";
+					generateToken(token, TOKEN_DEC_SYMBOL);
+				}
+				else if (const auto variable = dynamic_cast<Symbol::AbstractVariable*>(symbol)) {
+					if (const auto localVariable = dynamic_cast<Symbol::LocalVariable*>(variable)) {
+						generateToken("[var_", TOKEN_DEC_SYMBOL);
+					}
+					else if (const auto memoryVariable = dynamic_cast<Symbol::MemoryVariable*>(variable)) {
+						generateToken("[mem_", TOKEN_DEC_SYMBOL);
+					}
+					else if (const auto funcResultVar = dynamic_cast<Symbol::FunctionResultVar*>(variable)) {
+						generateToken("[funcVar_", TOKEN_DEC_SYMBOL);
+					}
+					const auto endToken = Helper::String::NumberToHex(variable->getId()) + "_" + std::to_string(variable->getSize() * 8) + "]";
+					generateToken(endToken, TOKEN_DEC_SYMBOL);
+				}
+			}
+
+			virtual void generateSdaSymbol(CE::Symbol::ISymbol* symbol) {
+				generateToken(symbol->getName(), TOKEN_SDA_SYMBOL);
+			}
+
 			virtual void generateToken(const std::string& text, TokenType tokenType) = 0;
 
 		private:
@@ -356,5 +457,18 @@ namespace CE::Decompiler
 				return "_";
 			}
 		};
+
+		class ExprTreeTextGenerator : public ExprTreeViewGenerator
+		{
+		public:
+			std::string m_text;
+
+			void generateToken(const std::string& text, TokenType tokenType) override {
+				m_text += text;
+			}
+		};
 	};
+
+
+	
 };

@@ -35,7 +35,7 @@ void SdaDataTypesCalculater::start() {
 void SdaDataTypesCalculater::pass_up(const std::list<DecBlock::BlockTopNode*>& topNodes) {
 	for (auto topNode : topNodes) {
 		const auto node = topNode->getNode();
-		INode::UpdateDebugInfo(node);
+		UpdateDebugInfo(node);
 		calculateDataTypes(node);
 
 		//for return statement
@@ -55,7 +55,7 @@ void SdaDataTypesCalculater::pass_up(const std::list<DecBlock::BlockTopNode*>& t
 void SdaDataTypesCalculater::pass_down(const std::list<DecBlock::BlockTopNode*>& topNodes) {
 	for (auto topNode : topNodes) {
 		const auto node = topNode->getNode();
-		INode::UpdateDebugInfo(node);
+		UpdateDebugInfo(node);
 		moveExplicitCastsDown(node);
 	}
 }

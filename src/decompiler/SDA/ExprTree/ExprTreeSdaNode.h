@@ -6,8 +6,6 @@
 
 namespace CE::Decompiler::ExprTree
 {
-	static bool g_MARK_SDA_NODES = false;
-
 	// used for all sda nodes to cast them from their types to another in some cases
 	class DataTypeCast
 	{
@@ -37,8 +35,6 @@ namespace CE::Decompiler::ExprTree
 		bool hasCast();
 
 		virtual DataTypeCast* getCast() = 0;
-
-		virtual std::string printSdaDebug();
 	};
 
 	// means that the class addresses some memory location (not give a value!)
@@ -67,8 +63,6 @@ namespace CE::Decompiler::ExprTree
 		DataTypeCast* getCast() override sealed;
 
 		INode* clone(NodeCloneContext* ctx) override sealed;
-
-		std::string printDebug() override sealed;
 
 	protected:
 		virtual ISdaNode* cloneSdaNode(NodeCloneContext* ctx) = 0;

@@ -26,7 +26,6 @@ namespace CE::Decompiler::ExprTree
 
 		void setDataType(DataTypePtr dataType) override;
 
-		std::string printSdaDebug() override;
 	protected:
 		Symbol::Symbol* m_decSymbol;
 		CE::Symbol::ISymbol* m_sdaSymbol;
@@ -76,6 +75,5 @@ namespace CE::Decompiler::ExprTree
 
 		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override;
 
-		std::string printSdaDebug() override;
 	};
 };

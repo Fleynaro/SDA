@@ -7,8 +7,9 @@ namespace CE::Decompiler::ExprTree
 {
 	class SdaFunctionNode : public SdaNode, public INodeAgregator
 	{
+		friend class ExprTreeViewGenerator;
 		FunctionCall* m_funcCall;
-
+		
 	public:
 		SdaFunctionNode(FunctionCall* funcCallCtx);
 
@@ -39,7 +40,5 @@ namespace CE::Decompiler::ExprTree
 
 		// example: (world->vtable->func_get_player)(player_id) where {world->vtable->func_get_player} has a signature type calculated through the step of goar building
 		DataType::IFunctionSignature* getSignature() const;
-
-		std::string printSdaDebug() override;
 	};
 };

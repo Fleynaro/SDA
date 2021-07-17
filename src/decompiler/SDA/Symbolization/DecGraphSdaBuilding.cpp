@@ -12,10 +12,10 @@ SdaBuilding::SdaBuilding(SdaCodeGraph* sdaCodeGraph, SymbolContext* symbolCtx, P
 void SdaBuilding::start() {
 	passAllTopNodes([&](DecBlock::BlockTopNode* topNode) {
 		auto node = topNode->getNode();
-		INode::UpdateDebugInfo(node);
+		UpdateDebugInfo(node);
 		buildSdaNodesAndReplace(node);
 		node = topNode->getNode();
-		INode::UpdateDebugInfo(node);
+		UpdateDebugInfo(node);
 		node = nullptr;
 		});
 

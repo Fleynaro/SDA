@@ -94,8 +94,3 @@ void SdaReadValueNode::getLocation(MemLocation& location) {
 	}
 	throw std::exception("impossible to determine the location");
 }
-
-std::string SdaReadValueNode::printSdaDebug() {
-	auto result = "*" + getAddress()->printDebug();
-	return result;
-}

@@ -47,10 +47,6 @@ ISdaNode* GoarTopNode::cloneSdaNode(NodeCloneContext* ctx) {
 	return new GoarTopNode(dynamic_cast<ISdaNode*>(m_base->clone()), m_bitOffset, m_isAddrGetting);
 }
 
-std::string GoarTopNode::printSdaDebug() {
-	return m_base->printSdaDebug();
-}
-
 
 // players[2][10] -> dims: 10, 2
 
@@ -144,12 +140,6 @@ ISdaNode* GoarArrayNode::cloneSdaNode(NodeCloneContext* ctx) {
 	return new GoarArrayNode(dynamic_cast<ISdaNode*>(m_base->clone()), dynamic_cast<ISdaNode*>(m_indexNode->clone(ctx)), CloneUnit(m_outDataType), m_itemsMaxCount);
 }
 
-std::string GoarArrayNode::printSdaDebug() {
-	auto str = m_base->printSdaDebug();
-	str = str + "[" + m_indexNode->printDebug() + "]";
-	return str;
-}
-
 GoarFieldNode::GoarFieldNode(ISdaNode* base, DataType::Structure::Field* field)
 	: GoarNode(base), m_field(field)
 {}
@@ -160,11 +150,4 @@ DataTypePtr GoarFieldNode::getSrcDataType() {
 
 ISdaNode* GoarFieldNode::cloneSdaNode(NodeCloneContext* ctx) {
 	return new GoarFieldNode(dynamic_cast<ISdaNode*>(m_base->clone()), m_field);
-}
-
-std::string GoarFieldNode::printSdaDebug() {
-	auto str = m_base->printSdaDebug();
-	str += m_base->getDataType()->isPointer() ? "->" : ".";
-	str += m_field->getName();
-	return str;
 }

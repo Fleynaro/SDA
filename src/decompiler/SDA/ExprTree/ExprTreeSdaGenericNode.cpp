@@ -53,10 +53,3 @@ ISdaNode* SdaGenericNode::cloneSdaNode(NodeCloneContext* ctx) {
 	clonedNode->addParentNode(sdaNode);
 	return sdaNode;
 }
-
-std::string SdaGenericNode::printSdaDebug() {
-	auto result = m_node->printDebug();
-	if (const auto readValueNode = dynamic_cast<ReadValueNode*>(m_node))
-		result = "*" + readValueNode->getAddress()->printDebug();
-	return result;
-}

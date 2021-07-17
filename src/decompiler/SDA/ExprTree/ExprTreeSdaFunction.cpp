@@ -82,7 +82,3 @@ DataType::IFunctionSignature* SdaFunctionNode::getSignature() const
 			return signature;
 	return nullptr;
 }
-
-std::string SdaFunctionNode::printSdaDebug() {
-	return m_funcCall->printDebug();
-}

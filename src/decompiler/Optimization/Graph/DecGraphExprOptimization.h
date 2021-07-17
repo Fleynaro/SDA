@@ -19,7 +19,7 @@ namespace CE::Decompiler::Optimization
 	private:
 		// optimize expression on the specified {topNode}
 		void optimize(DecBlock::BlockTopNode* topNode) {
-			INode::UpdateDebugInfo(topNode->getNode());
+			UpdateDebugInfo(topNode->getNode());
 			ExprOptimization exprOptimization(topNode);
 			exprOptimization.start();
 		}

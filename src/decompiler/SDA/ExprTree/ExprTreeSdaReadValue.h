@@ -37,7 +37,5 @@ namespace CE::Decompiler::ExprTree
 		void setAddrGetting(bool toggle) override;
 
 		void getLocation(MemLocation& location) override;
-
-		std::string printSdaDebug() override;
 	};
 };

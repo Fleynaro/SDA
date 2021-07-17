@@ -1,4 +1,5 @@
 #include "ExprTreeNode.h"
+#include "decompiler/DecCodeGenerator.h"
 
 using namespace CE::Decompiler::ExprTree;
 
@@ -58,8 +59,13 @@ bool Node::isFloatingPoint() {
 	return false;
 }
 
-std::string Node::printDebug() {
-	return "";
+void CE::Decompiler::ExprTree::UpdateDebugInfo(INode* node) {
+	if (!node) return;
+	auto gen = ExprTreeTextGenerator();
+	gen.m_debugMode = true;
+	gen.generate(node);
+	if(auto node_ = dynamic_cast<Node*>(node))
+		node_->m_updateDebugInfo = gen.m_text;
 }
 
 INode* INode::clone() {
@@ -76,12 +82,6 @@ void INode::iterateChildNodes(std::function<void(INode*)> func) {
 			}
 		}
 	}
-}
-
-void INode::UpdateDebugInfo(INode* node) {
-	if (!node) return;
-	node->printDebug();
-	//node->checkOnSingleParents();
 }
 
 void INode::checkOnSingleParents() {

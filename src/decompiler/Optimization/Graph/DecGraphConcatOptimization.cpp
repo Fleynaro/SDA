@@ -7,7 +7,7 @@ CE::Decompiler::Optimization::GraphConcatOptimization::GraphConcatOptimization(D
 void CE::Decompiler::Optimization::GraphConcatOptimization::start() {
 	passAllTopNodes([&](DecBlock::BlockTopNode* topNode) {
 		const auto node = topNode->getNode();
-		INode::UpdateDebugInfo(node);
+		UpdateDebugInfo(node);
 		findConcat(node);
 		});
 }

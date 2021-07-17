@@ -68,7 +68,7 @@ void DecompiledCodeGraph::sortBlocksByLevel() {
 void DecompiledCodeGraph::checkOnSingleParents() {
 	for (const auto decBlock : getDecompiledBlocks()) {
 		for (auto topNode : decBlock->getAllTopNodes()) {
-			ExprTree::INode::UpdateDebugInfo(topNode->getNode());
+			ExprTree::UpdateDebugInfo(topNode->getNode());
 			topNode->getNode()->checkOnSingleParents();
 		}
 	}
