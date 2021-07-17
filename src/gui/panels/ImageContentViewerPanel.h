@@ -7,7 +7,11 @@
 #include "imgui_wrapper/controls/Text.h"
 #include "utilities/Helper.h"
 #include "InstructionViewer.h"
+#include "decompiler/Decompiler.h"
 #include "decompiler/Graph/DecPCodeGraph.h"
+#include "decompiler/SDA/Optimizaton/SdaGraphMemoryOptimization.h"
+#include "decompiler/SDA/Symbolization/DecGraphSdaBuilding.h"
+#include "decompiler/SDA/Symbolization/SdaGraphDataTypeCalc.h"
 #include "panels/FuncGraphViewerPanel.h"
 #include "panels/DecompiledCodeViewerPanel.h"
 
@@ -204,7 +208,7 @@ namespace GUI
 						}
 					}
 					if(goToFunc) {
-						ImGui::SetScrollY(m_codeSectionController->getRowIdx(CodeSectionRow(0x21fc000)) * clipper.ItemsHeight);
+						ImGui::SetScrollY(m_codeSectionController->getRowIdx(CodeSectionRow(0x20c8000)) * clipper.ItemsHeight);
 					}
 					ImGui::EndTable();
 				}
@@ -307,6 +311,8 @@ namespace GUI
 		}
 
 		void renderMenuBar() override {
+			auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer);
+			
 			if (ImGui::BeginMenu("Select"))
 			{
 				m_imageSectionMenuListView.show();
@@ -326,7 +332,7 @@ namespace GUI
 				if(ImGui::MenuItem("Update")) {
 					m_imageSectionViewer->m_sectionController->update();
 				}
-				if(auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer)) {
+				if(codeSectionViewer) {
 					if (ImGui::MenuItem("Show PCode", nullptr, codeSectionViewer->m_codeSectionController->m_showPCode)) {
 						codeSectionViewer->m_codeSectionController->m_showPCode ^= true;
 						codeSectionViewer->m_codeSectionController->update();
@@ -347,6 +353,18 @@ namespace GUI
 					}
 				}
 				ImGui::EndMenu();
+			}
+
+			if (codeSectionViewer) {
+				if (codeSectionViewer->m_curFuncPCodeGraph) {
+					if (ImGui::BeginMenu("Decompiler"))
+					{
+						if (ImGui::MenuItem("Decompile")) {
+							decompile(codeSectionViewer->m_curFuncPCodeGraph);
+						}
+						ImGui::EndMenu();
+					}
+				}
 			}
 		}
 
@@ -370,6 +388,37 @@ namespace GUI
 				if (!dataController)
 					m_imageSectionControllers[imageSection] = dataController = new DataSectionController(m_imageDec, imageSection);
 				m_imageSectionViewer = new DataSectionViewer(dataController);
+			}
+		}
+
+		void decompile(CE::Decompiler::FunctionPCodeGraph* functionPCodeGraph) {
+			CE::Decompiler::RegisterFactoryX86 registerFactoryX86;
+			const auto funcOffset = functionPCodeGraph->getStartBlock()->getMinOffset().getByteOffset();
+			if(const auto function = m_imageDec->getFunctionAt(funcOffset)) {
+				const auto project = m_imageDec->getImageManager()->getProject();
+
+				// decompile
+				auto funcCallInfoCallback = [&](CE::Decompiler::PCode::Instruction* instr, int offset)
+					{
+						return project->getTypeManager()->getDefaultFuncSignature()->getCallInfo();
+					};
+				auto decompiler = new CE::Decompiler::Decompiler(
+					functionPCodeGraph, funcCallInfoCallback, function->getSignature()->getCallInfo().getReturnInfo(), &registerFactoryX86);
+				decompiler->start();
+
+				// sda building
+				auto sdaCodeGraph = new CE::Decompiler::SdaCodeGraph(decompiler->getDecGraph());
+				auto symbolCtx = function->getSymbolContext();
+				CE::Decompiler::Symbolization::SdaBuilding sdaBuilding(sdaCodeGraph, &symbolCtx, project);
+				sdaBuilding.start();
+
+				// data type calculater
+				CE::Decompiler::Symbolization::SdaDataTypesCalculater sdaDataTypesCalculater(sdaCodeGraph, symbolCtx.m_signature, project);
+				sdaDataTypesCalculater.start();
+
+				// memory optimization
+				CE::Decompiler::Optimization::SdaGraphMemoryOptimization memoryOptimization(sdaCodeGraph);
+				memoryOptimization.start();
 			}
 		}
 	};

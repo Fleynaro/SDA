@@ -85,6 +85,12 @@ ImageDecorator::IMAGE_TYPE ImageDecorator::getType() const
 	return m_type;
 }
 
+Function* ImageDecorator::getFunctionAt(Offset offset) const {
+	if (const auto funcSymbol = dynamic_cast<Symbol::FunctionSymbol*>(getGlobalSymbolTable()->getSymbolAt(offset).second))
+		return funcSymbol->getFunction();
+	return nullptr;
+}
+
 Symbol::SymbolTable* ImageDecorator::getGlobalSymbolTable() const
 {
 	return m_globalSymbolTable;

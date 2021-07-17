@@ -1,4 +1,5 @@
 #pragma once
+#include "Function.h"
 #include <images/AbstractImage.h>
 #include <database/DomainObject.h>
 #include <utilities/Description.h>
@@ -65,6 +66,8 @@ namespace CE
 		AbstractImage* getImage() const;
 
 		IMAGE_TYPE getType() const;
+
+		Function* getFunctionAt(Offset offset) const;
 
 		Symbol::SymbolTable* getGlobalSymbolTable() const;
 

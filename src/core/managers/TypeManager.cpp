@@ -19,6 +19,7 @@ TypeManager::TypeManager(Project* module)
 	m_ghidraDataTypeMapper = new Ghidra::DataTypeMapper(this);
 	addSystemTypes();
 	addGhidraTypedefs();
+	m_defSignature = getFactory(false).createSignature(DataType::IFunctionSignature::FASTCALL, "defSignature");
 }
 
 TypeManager::~TypeManager() {
@@ -146,6 +147,10 @@ DataTypePtr TypeManager::calcDataTypeForNumber(uint64_t value) {
 	if ((value & ~static_cast<uint64_t>(0xFFFFFFFF)) == static_cast<uint64_t>(0x0))
 		return getType(SystemType::Int32);
 	return getType(SystemType::Int64);
+}
+
+IFunctionSignature* TypeManager::getDefaultFuncSignature() const {
+	return m_defSignature;
 }
 
 IType* TypeManager::findTypeById(DB::Id id) {

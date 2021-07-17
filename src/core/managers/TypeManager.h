@@ -72,6 +72,8 @@ namespace CE
 
 		DataTypePtr calcDataTypeForNumber(uint64_t value);
 
+		DataType::IFunctionSignature* getDefaultFuncSignature() const;
+
 		DataType::IType* findTypeById(DB::Id id);
 
 		DataType::IType* findTypeByName(const std::string& typeName);
@@ -81,5 +83,6 @@ namespace CE
 		Ghidra::Id getGhidraId(DataType::IType* type);
 	private:
 		DB::DataTypeMapper* m_dataTypeMapper;
+		DataType::FunctionSignature* m_defSignature;
 	};
 };

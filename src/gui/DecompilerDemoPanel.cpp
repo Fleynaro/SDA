@@ -300,7 +300,14 @@ void GUI::DecompilerDemoPanel::initProgram() {
 		ImageAnalyzer imageAnalyzer(testImageDec->getImage(), testImageDec->getPCodeGraph(), &decoder, &registerFactoryX86);
 		// 0x20c80
 		// 0x21fc0
-		imageAnalyzer.start(0x21fc0, true);
+		imageAnalyzer.start(0x20c80, true);
+		
+		for(auto funcGraph : testImageDec->getPCodeGraph()->getFunctionGraphList()) {
+			const auto funcOffset = funcGraph.getStartBlock()->getMinOffset().getByteOffset();
+			const auto suffix = std::to_string(funcOffset);
+			const auto funcSignature = m_project->getTypeManager()->getFactory().createSignature("sig_" + suffix);
+			m_project->getFunctionManager()->getFactory().createFunction(funcOffset, funcSignature, testImageDec, "func_" + suffix);
+		}
 	}
 	m_project->getImageManager()->createImage(testAddrSpace, ImageDecorator::IMAGE_PE, "testImage12");
 	m_project->getImageManager()->createImage(testAddrSpace2, ImageDecorator::IMAGE_PE, "testImage21");
