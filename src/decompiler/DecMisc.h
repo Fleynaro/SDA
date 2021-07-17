@@ -1,12 +1,8 @@
 #pragma once
 #include <decompiler/Decompiler.h>
-#include <decompiler/LinearView/DecLinearView.h>
 #include <decompiler/LinearView/DecLinearViewOptimization.h>
-#include <decompiler/LinearView/DecLinearViewSimpleOutput.h>
 #include <decompiler/SDA/Symbolization/DecGraphSymbolization.h>
-#include <decompiler/SDA/Optimizaton/SdaGraphFinalOptimization.h>
-#include <decompiler/PCode/Decoders/DecPCodeDecoderX86.h>
-#include <decompiler/PCode/DecPCodeConstValueCalc.h>
+#include "decompiler/LinearView/DecLinearView.h"
 #include <decompiler/PCode/ImageAnalyzer/DecImageAnalyzer.h>
 
 using namespace CE::Decompiler;
@@ -15,9 +11,6 @@ using namespace CE::DataType;
 
 namespace CE::Decompiler::Misc
 {
-    // show all symbols
-    extern std::string ShowAllSymbols(SdaCodeGraph* sdaCodeGraph);
-
     extern LinearView::BlockList* BuildBlockList(DecompiledCodeGraph* graph);
 
     /*static Symbolization::SymbolContext CreateUserSymbolDef(Project* programModule) {

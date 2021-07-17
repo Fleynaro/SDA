@@ -1,4 +1,6 @@
 #include "DecComponentTest.h"
+#include "decompiler/DecCodeGenerator.h"
+#include "images/SimpleBufferImage.h"
 
 // MEMORY LOCATION
 TEST(Decompiler, Test_MemLocation)
@@ -78,11 +80,11 @@ TEST_F(ProgramDecCompFixture, Test_ExprOptim)
 	auto expr4 = new OperationalNode(expr3, expr1, Add); // (rcx + 0x20 + rdx) + 0x20
 	auto result = new OperationalNode(expr4, new NumberLeaf((uint64_t)0xFFFF, 8), And);
 
-	printf("before: %s\n", result->printDebug().c_str());
+	printf("before: %s\n", ExprTreeTextGenerator().getText(result).c_str());
 
 	auto clone1 = new TopNode(result->clone(&exprCloneCtx));
 	optimize(clone1);
-	printf("after: %s\n", clone1->getNode()->printDebug().c_str());
+	printf("after: %s\n", ExprTreeTextGenerator().getText(clone1->getNode()).c_str());
 
 	replaceSymbolWithExpr(clone1->getNode(), rcx, new NumberLeaf((uint64_t)0x5, 8)); // rcx -> 0x5
 	replaceSymbolWithExpr(clone1->getNode(), rdx, new NumberLeaf((uint64_t)0x5, 8)); // rdx -> 0x5
@@ -230,13 +232,11 @@ TEST_F(ProgramDecCompFixture, Test_Symbolization)
 	auto sdaCodeGraph = new SdaCodeGraph(decCodeGraph);
 	Symbolization::SdaBuilding sdaBuilding(sdaCodeGraph, &symbolCtx, m_project);
 	sdaBuilding.start();
-	printf(Misc::ShowAllSymbols(sdaCodeGraph).c_str());
-	showDecGraph(sdaCodeGraph->getDecGraph());
+	showDecGraph(sdaCodeGraph->getDecGraph(), false, sdaCodeGraph);
 
 	Symbolization::SdaDataTypesCalculater sdaDataTypesCalculater(sdaCodeGraph, symbolCtx.m_signature, m_project);
 	sdaDataTypesCalculater.start();
-	printf(Misc::ShowAllSymbols(sdaCodeGraph).c_str());
-	showDecGraph(sdaCodeGraph->getDecGraph());
+	showDecGraph(sdaCodeGraph->getDecGraph(), false, sdaCodeGraph);
 
 	Optimization::SdaGraphMemoryOptimization memoryOptimization(sdaCodeGraph);
 	memoryOptimization.start();

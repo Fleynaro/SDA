@@ -53,8 +53,6 @@ namespace CE::Decompiler
 		std::list<PCodeBlock*> getNextBlocks() const;
 
 		Instruction* getLastInstruction();
-
-		std::string printDebug(void* addr, const std::string& tabStr, bool extraInfo, bool pcode);
 	};
 
 	// pcode graph (consisted of PCode connected blocks) for a function
@@ -94,8 +92,6 @@ namespace CE::Decompiler
 		PCodeBlock* getStartBlock() const;
 
 		std::map<Instruction*, DataValue>& getConstValues();
-
-		void printDebug(void* addr);
 	};
 
 	// pcode graph (consisted of NON-connected function graphs in final state) for a whole program

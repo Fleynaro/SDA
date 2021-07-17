@@ -172,7 +172,7 @@ json DataTypeMapper::createExtraJson(UserDefinedType* userDefType) {
 	else if (auto Enum = dynamic_cast<DataType::Enum*>(userDefType))
 	{
 		json json_fields;
-		for (const auto& [name, value] : Enum->getFields()) {
+		for (const auto& [value, name] : Enum->getFields()) {
 			json json_field;
 			json_field["name"] = name;
 			json_field["value"] = value;

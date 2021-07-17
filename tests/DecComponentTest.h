@@ -39,9 +39,9 @@ public:
 
 	// show all pcode instructions with original asm instructions
 	void showInstructions(const std::list<Instruction*>& instructions) {
-		PCodeBlock pcodeBlock(0, 0);
-		pcodeBlock.getInstructions() = instructions;
-		out(pcodeBlock.printDebug(nullptr, "", false, true).c_str());
+		for(auto instr : instructions) {
+			out(InstructionTextGenerator().getText(instr).c_str());
+		}
 	}
 
 	// execute pcode on the virtual machine
@@ -54,8 +54,8 @@ public:
 
 	// show const values calculated by the virtual machine
 	void showConstValues(std::map<PCode::Instruction*, DataValue> constValues) {
-		for (auto pair : constValues) {
-			printf("%s -> %64i", pair.first->printDebug().c_str(), pair.second);
+		for (const auto& [instr, dataValue] : constValues) {
+			printf("%s -> %64i", InstructionTextGenerator().getText(instr).c_str(), dataValue);
 		}
 	}
 

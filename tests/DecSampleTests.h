@@ -1,5 +1,6 @@
 #pragma once
 #include "AbstractTest.h"
+#include "images/VectorBufferImage.h"
 #include <decompiler_test_lib.h>
 
 using namespace CE::Decompiler;

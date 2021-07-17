@@ -146,34 +146,6 @@ Instruction* PCodeBlock::getLastInstruction() {
 	return *std::prev(m_instructions.end());
 }
 
-std::string PCodeBlock::printDebug(void* addr, const std::string& tabStr, bool extraInfo, bool pcode) {
-	std::string result;
-
-	const ZyanU64 runtime_address = (ZyanU64)addr;
-	for (auto instr : m_instructions) {
-		std::string prefix = tabStr + "0x" + Helper::String::NumberToHex(runtime_address + instr->m_origInstruction->m_offset);
-		if (!instr->m_origInstruction->m_originalView.empty())
-			result += prefix + " " + instr->m_origInstruction->m_originalView + "\n";
-		if (pcode) {
-			prefix += ":" + std::to_string(instr->m_orderId) + "(" + Helper::String::NumberToHex(instr->getOffset()) + ")";
-			result += "\t" + prefix + " " + InstructionTextGenerator(instr).m_text;
-			if (instr->m_id == InstructionId::UNKNOWN)
-				result += " <------------------------------------------------ ";
-			result += "\n";
-		}
-	}
-
-	if (extraInfo) {
-		result += "Level: " + std::to_string(m_level) + "\n";
-		if (m_nextNearBlock != nullptr)
-			result += "Next near: " + Helper::String::NumberToHex(m_nextNearBlock->getMinOffset()) + "\n";
-		if (m_nextFarBlock != nullptr)
-			result += "Next far: " + Helper::String::NumberToHex(m_nextFarBlock->getMinOffset()) + "\n";
-	}
-
-	return result;
-}
-
 FunctionPCodeGraph::FunctionPCodeGraph(ImagePCodeGraph* imagePCodeGraph)
 	: m_imagePCodeGraph(imagePCodeGraph)
 {}
@@ -236,18 +208,4 @@ PCodeBlock* FunctionPCodeGraph::getStartBlock() const
 
 std::map<Instruction*, DataValue>& FunctionPCodeGraph::getConstValues() {
 	return m_constValues;
-}
-
-void FunctionPCodeGraph::printDebug(void* addr) {
-	std::list<PCodeBlock*> blocks;
-	for (auto block : m_blocks)
-		blocks.push_back(block);
-	blocks.sort([](PCodeBlock* a, PCodeBlock* b) {
-		return a->getMinOffset() < b->getMinOffset();
-		});
-
-	for (auto block : blocks) {
-		puts(block->printDebug(addr, "", true, true).c_str());
-		puts("==================");
-	}
 }

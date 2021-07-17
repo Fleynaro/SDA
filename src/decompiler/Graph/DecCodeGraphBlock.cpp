@@ -319,19 +319,3 @@ void DecBlock::cloneAllExpr() {
 	if (getNoJumpCondition())
 		setNoJumpCondition(dynamic_cast<ExprTree::AbstractCondition*>(getNoJumpCondition()->clone(&nodeCloneContext)));
 }
-
-std::string DecBlock::printDebug(bool cond, const std::string& tabStr) {
-	std::string result;
-	for (auto line : m_seqLines) {
-		result += tabStr + line->getNode()->printDebug();
-	}
-	if (!m_symbolParallelAssignmentLines.empty())
-		result += tabStr + "<Symbol assignments>:\n";
-	for (auto line : m_symbolParallelAssignmentLines) {
-		result += tabStr + "- " + line->getNode()->printDebug();
-	}
-	if (cond && getNoJumpCondition() != nullptr) {
-		result += "------> Condition: " + getNoJumpCondition()->printDebug() + "\n";
-	}
-	return result;
-}

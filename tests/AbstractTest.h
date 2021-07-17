@@ -4,6 +4,8 @@
 #include <Project.h>
 #include <managers/Managers.h>
 
+#include "decompiler/DecCodeGenerator.h"
+
 //gtest
 #include "gtest/gtest.h"
 
@@ -66,19 +68,14 @@ protected:
 };
 
 #include <decompiler/Decompiler.h>
-#include <decompiler/LinearView/DecLinearView.h>
 #include <decompiler/LinearView/DecLinearViewOptimization.h>
-#include <decompiler/LinearView/DecLinearViewSimpleOutput.h>
 #include <decompiler/SDA/Symbolization/DecGraphSymbolization.h>
 #include <decompiler/SDA/Optimizaton/SdaGraphFinalOptimization.h>
 #include <decompiler/SDA/Optimizaton/SdaGraphMemoryOptimization.h>
 #include <decompiler/PCode/Decoders/DecPCodeDecoderX86.h>
-#include <decompiler/PCode/DecPCodeConstValueCalc.h>
 #include <decompiler/PCode/ImageAnalyzer/DecImageAnalyzer.h>
 //#include <decompiler/Graph/Analyzer/ImagePCodeGraphAnalyzer.h>
 #include <decompiler/DecMisc.h>
-#include <images/SimpleBufferImage.h>
-#include <images/VectorBufferImage.h>
 
 class ProgramDecFixture : public ProgramFixture
 {
@@ -136,12 +133,12 @@ protected:
         m_testImage = m_project->getImageManager()->createImage(m_addressSpace, ImageDecorator::IMAGE_PE, "testImage");
     }
 
-    void showDecGraph(DecompiledCodeGraph* decGraph, bool minInfo = false) {
-        LinearViewSimpleOutput output(Misc::BuildBlockList(decGraph), decGraph);
+    void showDecGraph(DecompiledCodeGraph* decGraph, bool minInfo = false, SdaCodeGraph* sdaCodeGraph = nullptr) {
         if (m_isOutput) {
+            CodeTextGenerator gen;
             if (minInfo)
-                output.setMinInfoToShow();
-            output.show();
+                gen.setMinInfoToShow();
+            gen.print(Misc::BuildBlockList(decGraph), sdaCodeGraph);
             out("******************\n\n\n");
         }
     }

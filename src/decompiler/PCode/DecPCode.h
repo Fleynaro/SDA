@@ -347,5 +347,11 @@ namespace CE::Decompiler::PCode
 		void generateToken(const std::string& text, TokenType tokenType) override {
 			m_text += text;
 		}
+
+		std::string getText(const Instruction* instruction) {
+			m_text.clear();
+			generate(instruction);
+			return m_text;
+		}
 	};
 };

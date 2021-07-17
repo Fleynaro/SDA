@@ -13,6 +13,7 @@ namespace CE::Decompiler
 	// Decompiled block which contains the abstract tree
 	class DecBlock
 	{
+		friend class CodeViewGenerator;
 	public:
 		// here are top nodes which are roots of expression trees
 
@@ -151,8 +152,6 @@ namespace CE::Decompiler
 
 		// clone all expr.
 		virtual void cloneAllExpr();
-
-		std::string printDebug(bool cond = true, const std::string& tabStr = "");
 	};
 
 	// Block in which the control flow end (the last instruction of these blocks is RET).

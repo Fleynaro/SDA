@@ -389,8 +389,8 @@ TEST_F(ProgramDecSampleTestFixture, Test_Dec_Samples)
 		imageAnalyzer.start(sampleTest->m_imageOffset, true);
 		auto graph = &*imageGraph->getFunctionGraphList().begin();
 
-		if (m_isOutput && sampleTest->m_showAsmBefore)
-			graph->printDebug(0x0);
+		/*if (m_isOutput && sampleTest->m_showAsmBefore)
+			graph->printDebug(0x0);*/
 
 		// 4) DECOMPILING (transform the asm graph to decompiled code graph)
 		auto info = sampleTest->m_symbolCtx.m_signature->getCallInfo();
@@ -412,9 +412,8 @@ TEST_F(ProgramDecSampleTestFixture, Test_Dec_Samples)
 		//show code
 		if (m_isOutput) {
 			out("\n\n\n********************* BEFORE OPTIMIZATION(test id %i): *********************\n\n", sampleTest->m_testId);
-			auto blockList = Misc::BuildBlockList(decCodeGraph);
-			LinearViewSimpleOutput output(blockList, decCodeGraph);
-			output.show();
+			CodeTextGenerator gen;
+			gen.print(Misc::BuildBlockList(decCodeGraph));
 		}
 
 		Optimization::ProcessDecompiledGraph(decCodeGraph, &primaryDecompiler);
@@ -430,9 +429,8 @@ TEST_F(ProgramDecSampleTestFixture, Test_Dec_Samples)
 		//show code
 		if (m_isOutput) {
 			out("\n\n\n********************* AFTER OPTIMIZATION(test id %i): *********************\n\n", sampleTest->m_testId);
-			auto blockList = Misc::BuildBlockList(decCodeGraph);
-			LinearViewSimpleOutput output(blockList, decCodeGraph);
-			output.show();
+			CodeTextGenerator gen;
+			gen.print(Misc::BuildBlockList(decCodeGraph));
 		}
 
 		// 6) SYMBOLIZATION
@@ -447,27 +445,22 @@ TEST_F(ProgramDecSampleTestFixture, Test_Dec_Samples)
 				testFail = true;
 			}
 			out("\n\n\n********************* AFTER SYMBOLIZATION(test id %i): *********************\n\n", sampleTest->m_testId);
-			auto blockList = Misc::BuildBlockList(sdaCodeGraph->getDecGraph());
-
-			printf(Misc::ShowAllSymbols(sdaCodeGraph).c_str());
-			LinearViewSimpleOutput output3(blockList, sdaCodeGraph->getDecGraph());
-			output3.setMinInfoToShow();
-			if (m_isOutput) {
-				output3.show();
-			}
 			decCodeGraph->checkOnSingleParents();
-
+			if (m_isOutput) {
+				CodeTextGenerator gen;
+				gen.print(Misc::BuildBlockList(sdaCodeGraph->getDecGraph()), sdaCodeGraph);
+			}
+			
 			// 7) FINAL OPTIMIZATION
 			m_isOutput |= sampleTest->m_showFinalResult;
 			out("\n\n\n********************* AFTER FINAL OPTIMIZATION(test id %i): *********************\n\n", sampleTest->m_testId);
 			Optimization::MakeFinalGraphOptimization(sdaCodeGraph);
-			blockList = Misc::BuildBlockList(sdaCodeGraph->getDecGraph());
 			decCodeGraph->checkOnSingleParents();
-			LinearViewSimpleOutput output4(blockList, sdaCodeGraph->getDecGraph());
-			output4.setMinInfoToShow();
-			output4.m_SHOW_BLOCK_HEADER = true;
 			if (m_isOutput) {
-				output4.show();
+				CodeTextGenerator gen;
+				gen.setMinInfoToShow();
+				gen.m_SHOW_BLOCK_HEADER = true;
+				gen.print(Misc::BuildBlockList(sdaCodeGraph->getDecGraph()), sdaCodeGraph);
 			}
 		}
 		out("\n\n\n\n\n");

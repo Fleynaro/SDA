@@ -63,7 +63,7 @@ void CE::Decompiler::ExprTree::UpdateDebugInfo(INode* node) {
 	if (!node) return;
 	auto gen = ExprTreeTextGenerator();
 	gen.m_debugMode = true;
-	gen.generate(node);
+	gen.generateNode(node);
 	if(auto node_ = dynamic_cast<Node*>(node))
 		node_->m_updateDebugInfo = gen.m_text;
 }
