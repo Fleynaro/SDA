@@ -274,6 +274,7 @@ namespace GUI
 		ImageSectionListModel m_imageSectionListModel;
 		MenuListView<const CE::ImageSection*> m_imageSectionMenuListView;
 		StdWindow* m_funcGraphViewerWindow = nullptr;
+		StdWindow* m_decompiledCodeViewerWindow = nullptr;
 	public:
 		ImageContentViewerPanel(CE::ImageDecorator* imageDec)
 			: AbstractPanel("Image content viewer"), m_imageDec(imageDec), m_imageSectionListModel(imageDec->getImage())
@@ -307,6 +308,7 @@ namespace GUI
 	private:
 		void renderPanel() override {
 			Show(m_funcGraphViewerWindow);
+			Show(m_decompiledCodeViewerWindow);
 			m_imageSectionViewer->show();
 		}
 
@@ -419,6 +421,10 @@ namespace GUI
 				// memory optimization
 				CE::Decompiler::Optimization::SdaGraphMemoryOptimization memoryOptimization(sdaCodeGraph);
 				memoryOptimization.start();
+
+				delete m_decompiledCodeViewerWindow;
+				auto panel = new DecompiledCodeViewerPanel(sdaCodeGraph);
+				m_decompiledCodeViewerWindow = panel->createStdWindow();
 			}
 		}
 	};

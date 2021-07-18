@@ -178,24 +178,24 @@ namespace CE::Decompiler
 				generateNode(node->m_base);
 			}
 
-			virtual void generateSdaSymbolLeaf(SdaSymbolLeaf* node) {
-				generateSdaSymbol(node->getSdaSymbol());
+			virtual void generateSdaSymbolLeaf(SdaSymbolLeaf* leaf) {
+				generateSdaSymbol(leaf->getSdaSymbol());
 			}
 
-			virtual void generateSdaNumberLeaf(SdaNumberLeaf* node) {
-				std::string number = "0x" + Helper::String::NumberToHex(node->m_value);
-				if (node->getSrcDataType()->isFloatingPoint()) {
-					if (node->getSrcDataType()->getSize() == 4)
-						number = std::to_string(reinterpret_cast<float&>(node->m_value));
-					else number = std::to_string(reinterpret_cast<double&>(node->m_value));
+			virtual void generateSdaNumberLeaf(SdaNumberLeaf* leaf) {
+				std::string number = "0x" + Helper::String::NumberToHex(leaf->m_value);
+				if (leaf->getSrcDataType()->isFloatingPoint()) {
+					if (leaf->getSrcDataType()->getSize() == 4)
+						number = std::to_string(reinterpret_cast<float&>(leaf->m_value));
+					else number = std::to_string(reinterpret_cast<double&>(leaf->m_value));
 				}
-				else if (auto sysType = dynamic_cast<DataType::SystemType*>(node->getSrcDataType()->getBaseType())) {
+				else if (auto sysType = dynamic_cast<DataType::SystemType*>(leaf->getSrcDataType()->getBaseType())) {
 					if (sysType->isSigned()) {
-						const auto size = node->getSrcDataType()->getSize();
+						const auto size = leaf->getSrcDataType()->getSize();
 						if (size <= 4)
-							number = std::to_string(static_cast<int32_t>(node->m_value));
+							number = std::to_string(static_cast<int32_t>(leaf->m_value));
 						else
-							number = std::to_string(static_cast<int64_t>(node->m_value));
+							number = std::to_string(static_cast<int64_t>(leaf->m_value));
 					}
 				}
 				generateToken(number, TOKEN_NUMBER);
@@ -497,6 +497,7 @@ namespace CE::Decompiler
 		enum TokenType
 		{
 			TOKEN_TAB,
+			TOKEN_BRACE,
 			TOKEN_OPERATOR,
 			TOKEN_LABEL,
 			TOKEN_SEMICOLON,
@@ -523,7 +524,7 @@ namespace CE::Decompiler
 
 		virtual void generate(LinearView::BlockList* blockList) {
 			m_blocksToGoTo.clear();
-			generateBlockList(blockList, false);
+			generateBlockList(blockList, false, false);
 		}
 
 		virtual void generateHeader(SdaCodeGraph* sdaCodeGraph) {
@@ -561,9 +562,14 @@ namespace CE::Decompiler
 			}
 		}
 		
-		virtual void generateBlockList(LinearView::BlockList* blockList, bool generateTabs = true) {
-			if(generateTabs)
+		virtual void generateBlockList(LinearView::BlockList* blockList, bool generateTabs = true, bool generateBraces = true) {
+			if (generateBraces) {
+				generateBrace("{", blockList);
+				generateEndLine();
+			}
+			if (generateTabs) {
 				m_tabs.push_back('\t');
+			}
 			for (auto block : blockList->getBlocks()) {
 				if (const auto conditionBlock = dynamic_cast<LinearView::Condition*>(block)) {
 					generateConditionBlock(conditionBlock);
@@ -581,8 +587,17 @@ namespace CE::Decompiler
 				}
 			}
 			generateGotoStatement(blockList);
-			if(generateTabs)
+			if (generateTabs) {
 				m_tabs.pop_back();
+			}
+			if (generateBraces) {
+				generateBrace("}", blockList);
+			}
+		}
+
+		virtual void generateBrace(const std::string& text, LinearView::BlockList* blockList) {
+			generateTabs();
+			generateToken(text, TOKEN_BRACE);
 		}
 
 		virtual void generateBlock(LinearView::Block* block) {
@@ -609,25 +624,21 @@ namespace CE::Decompiler
 			generateBlock(block);
 			generateTabs();
 			generateToken("if", TOKEN_OPERATOR);
-			generateToken("(", TOKEN_OTHER);
+			generateToken(" (", TOKEN_OTHER);
 			{
 				m_exprTreeViewGenerator->generateNode(block->m_cond);
 			}
-			generateToken(") {", TOKEN_OTHER);
+			generateToken(")", TOKEN_OTHER);
 			generateEndLine();
 			{
 				generateBlockList(block->m_mainBranch);
 			}
 			if (m_SHOW_ALL_GOTO || !block->m_elseBranch->isEmpty()) {
 				generateTabs();
-				generateToken("} ", TOKEN_OTHER);
 				generateToken("else", TOKEN_OPERATOR);
-				generateToken(" {", TOKEN_OTHER);
 				generateEndLine();
 				generateBlockList(block->m_elseBranch);
 			}
-			generateTabs();
-			generateToken("}", TOKEN_OTHER);
 			generateEndLine();
 		}
 
@@ -636,30 +647,25 @@ namespace CE::Decompiler
 				generateBlock(block);
 				generateTabs();
 				generateToken("while", TOKEN_OPERATOR);
-				generateToken("(", TOKEN_OTHER);
+				generateToken(" (", TOKEN_OTHER);
 				{
 					m_exprTreeViewGenerator->generateNode(block->m_cond);
 				}
-				generateToken(") {", TOKEN_OTHER);
+				generateToken(")", TOKEN_OTHER);
 				generateEndLine();
 				{
 					generateBlockList(block->m_mainBranch);
 				}
-				generateTabs();
-				generateToken("}", TOKEN_OTHER);
 				generateEndLine();
 			}
 			else {
 				generateTabs();
 				generateToken("do", TOKEN_OPERATOR);
-				generateToken(" {", TOKEN_OTHER);
 				generateEndLine();
 				generateBlockList(block->m_mainBranch);
 				generateBlock(block);
-				generateTabs();
-				generateToken("}", TOKEN_OTHER);
 				generateToken("while", TOKEN_OPERATOR);
-				generateToken("(", TOKEN_OTHER);
+				generateToken(" (", TOKEN_OTHER);
 				{
 					m_exprTreeViewGenerator->generateNode(block->m_cond);
 				}
@@ -775,6 +781,7 @@ namespace CE::Decompiler
 				m_parentGen->m_text += text;
 			}
 		};
+		
 		ExprTreeGenerator m_exprTreeGenerator;
 	public:
 		std::string m_text;

@@ -84,13 +84,13 @@ public:
     {}
 
 protected:
-    RegisterFactoryX86 m_registerFactoryX86;
+    Decompiler::RegisterFactoryX86 m_registerFactoryX86;
     bool m_isOutput = true;
     CE::DataType::Structure* m_vec3D = nullptr;
     CE::DataType::Structure* m_vecExt3D = nullptr;
     CE::DataType::Structure* m_vec4D = nullptr;
     CE::DataType::Structure* m_matrix4x4 = nullptr;
-    FunctionSignature* m_defSignature = nullptr;
+    DataType::FunctionSignature* m_defSignature = nullptr;
     AddressSpace* m_addressSpace = nullptr;
     ImageDecorator* m_testImage = nullptr;
 
@@ -133,12 +133,12 @@ protected:
         m_testImage = m_project->getImageManager()->createImage(m_addressSpace, ImageDecorator::IMAGE_PE, "testImage");
     }
 
-    void showDecGraph(DecompiledCodeGraph* decGraph, bool minInfo = false, SdaCodeGraph* sdaCodeGraph = nullptr) {
+    void showDecGraph(Decompiler::DecompiledCodeGraph* decGraph, bool minInfo = false, Decompiler::SdaCodeGraph* sdaCodeGraph = nullptr) {
         if (m_isOutput) {
-            CodeTextGenerator gen;
+	        Decompiler::CodeTextGenerator gen;
             if (minInfo)
                 gen.setMinInfoToShow();
-            gen.print(Misc::BuildBlockList(decGraph), sdaCodeGraph);
+            gen.print(Decompiler::Misc::BuildBlockList(decGraph), sdaCodeGraph);
             out("******************\n\n\n");
         }
     }

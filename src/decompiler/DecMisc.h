@@ -5,10 +5,6 @@
 #include "decompiler/LinearView/DecLinearView.h"
 #include <decompiler/PCode/ImageAnalyzer/DecImageAnalyzer.h>
 
-using namespace CE::Decompiler;
-using namespace CE::Symbol;
-using namespace CE::DataType;
-
 namespace CE::Decompiler::Misc
 {
     extern LinearView::BlockList* BuildBlockList(DecompiledCodeGraph* graph);

@@ -1,6 +1,7 @@
 #include "Function.h"
 #include <managers/FunctionManager.h>
 #include <decompiler/Graph/DecPCodeGraph.h>
+#include <ImageDecorator.h>
 
 using namespace CE;
 

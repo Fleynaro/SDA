@@ -1,4 +1,5 @@
 #include "DecGraphSdaBuilding.h"
+#include "SymbolTable.h"
 
 using namespace CE;
 using namespace Decompiler;

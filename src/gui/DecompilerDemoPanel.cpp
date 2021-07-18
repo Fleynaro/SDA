@@ -293,11 +293,11 @@ void GUI::DecompilerDemoPanel::initProgram() {
 	{
 		fs::copy_file(fs::path(TEST_DATA_PATH) / "images" / "img1.exe", testImageDec->getFile());
 		testImageDec->load();
-		WarningContainer warningContainer;
-		RegisterFactoryX86 registerFactoryX86;
-		PCode::DecoderX86 decoder(&registerFactoryX86, testImageDec->getInstrPool(), &warningContainer);
+		Decompiler::WarningContainer warningContainer;
+		Decompiler::RegisterFactoryX86 registerFactoryX86;
+		Decompiler::PCode::DecoderX86 decoder(&registerFactoryX86, testImageDec->getInstrPool(), &warningContainer);
 
-		ImageAnalyzer imageAnalyzer(testImageDec->getImage(), testImageDec->getPCodeGraph(), &decoder, &registerFactoryX86);
+		Decompiler::ImageAnalyzer imageAnalyzer(testImageDec->getImage(), testImageDec->getPCodeGraph(), &decoder, &registerFactoryX86);
 		// 0x20c80
 		// 0x21fc0
 		imageAnalyzer.start(0x20c80, true);

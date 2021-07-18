@@ -137,7 +137,10 @@ DecBlock::~DecBlock() {
 }
 
 void DecBlock::clearCode() {
-	for (auto line : m_seqLines) {
+	auto it = m_seqLines.begin();
+	while (it != m_seqLines.end()) {
+		const auto line = *it;
+		++it;
 		delete line;
 	}
 	m_seqLines.clear();

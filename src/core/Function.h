@@ -2,7 +2,6 @@
 #include <ghidra_sync/GhidraObject.h>
 #include <datatypes/FunctionSignature.h>
 #include <symbols/FunctionSymbol.h>
-#include <ImageDecorator.h>
 
 namespace CE
 {
@@ -12,6 +11,7 @@ namespace CE
 	};
 
 	class FunctionManager;
+	class ImageDecorator;
 
 	struct SymbolContext {
 		DataType::IFunctionSignature* m_signature;

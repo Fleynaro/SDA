@@ -2,6 +2,7 @@
 #include "TypeManager.h"
 #include "SymbolManager.h"
 #include "SymbolTableManager.h"
+#include "ImageDecorator.h"
 #include <database/Mappers/FunctionMapper.h>
 #include <ghidra_sync/Mappers/GhidraFunctionMapper.h>
 
