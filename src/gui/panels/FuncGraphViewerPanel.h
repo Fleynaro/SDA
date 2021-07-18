@@ -72,6 +72,7 @@ namespace GUI
 	public:
 		ImVec2 m_offset;
 		float m_scaling = 1.0f;
+		bool m_fixMouseCursorWhenScalling = false;
 		
 		Canvas()
 		{}
@@ -95,13 +96,13 @@ namespace GUI
 				}
 				if (m_scalingEnabled && ImGui::GetIO().MouseWheel != 0.0f) {
 					if (ImGui::IsWindowHovered()) {
-						const auto mousePos = ImGui::GetIO().MousePos - getOrigin();
+						const auto fixedPos = m_fixMouseCursorWhenScalling ? ImGui::GetIO().MousePos : (m_p0 + m_p1) / 2.0f;
 						const auto prevScaling = m_scaling;
 						
 						m_scaling += ImGui::GetIO().MouseWheel * 0.1f;
 						m_scaling = std::min(2.0f, m_scaling);
 						m_scaling = std::max(0.2f, m_scaling);
-						m_offset -= mousePos * (m_scaling / prevScaling - 1.0f);
+						m_offset -= (fixedPos - getOrigin()) * (m_scaling / prevScaling - 1.0f);
 					}
 				}
 
@@ -171,7 +172,7 @@ namespace GUI
 
 			private:
 				void renderBlock() override {
-					Text::Text("ID = " + std::to_string(m_pcodeBlock->ID) + ", level = " + std::to_string(m_pcodeBlock->m_level)).show();
+					Text::Text("Name = " + m_pcodeBlock->getName() + ", level = " + std::to_string(m_pcodeBlock->m_level)).show();
 					
 					if (ImGui::BeginTable("table", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
 					{
@@ -402,6 +403,10 @@ namespace GUI
 				if (ImGui::MenuItem("Show PCode", nullptr, m_showPCode)) {
 					m_showPCode ^= true;
 					m_funcGraphViewerCanvas->updateSizes();
+				}
+
+				if (ImGui::MenuItem("Fix mouse cursor", nullptr, m_funcGraphViewerCanvas->m_fixMouseCursorWhenScalling)) {
+					m_funcGraphViewerCanvas->m_fixMouseCursorWhenScalling ^= true;
 				}
 				ImGui::EndMenu();
 			}

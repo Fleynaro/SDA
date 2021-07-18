@@ -17,7 +17,7 @@ namespace CE::Decompiler
 		PCodeBlock* m_nextNearBlock = nullptr;
 		PCodeBlock* m_nextFarBlock = nullptr;
 	public:
-		int ID = 0;
+		std::string m_name;
 		int m_level = 0;
 		std::list<PCodeBlock*> m_blocksReferencedTo;
 		FunctionPCodeGraph* m_funcPCodeGraph = nullptr;
@@ -25,6 +25,8 @@ namespace CE::Decompiler
 		PCodeBlock() = default;
 
 		PCodeBlock(ComplexOffset minOffset, ComplexOffset maxOffset);
+
+		std::string getName() const;
 
 		void removeRefBlock(PCodeBlock* block);
 

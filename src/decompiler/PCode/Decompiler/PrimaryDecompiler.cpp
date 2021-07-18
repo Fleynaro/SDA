@@ -33,7 +33,7 @@ void AbstractPrimaryDecompiler::start() {
 		decompiledBlock.m_pcodeBlock = pcodeBlock;
 		decompiledBlock.m_execCtx = new ExecContext(this, pcodeBlock);
 		decompiledBlock.m_decBlock = newDecBlock;
-		decompiledBlock.m_decBlock->m_name = Helper::String::NumberToHex(pcodeBlock->ID);
+		decompiledBlock.m_decBlock->m_name = pcodeBlock->getName();
 
 		m_decompiledBlocks[pcodeBlock] = decompiledBlock;
 	}

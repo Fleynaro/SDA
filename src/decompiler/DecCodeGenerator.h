@@ -562,12 +562,12 @@ namespace CE::Decompiler
 			}
 		}
 		
-		virtual void generateBlockList(LinearView::BlockList* blockList, bool generateTabs = true, bool generateBraces = true) {
-			if (generateBraces) {
+		virtual void generateBlockList(LinearView::BlockList* blockList, bool generatingTabs = true, bool generatingBraces = true) {
+			if (generatingBraces) {
 				generateBrace("{", blockList);
 				generateEndLine();
 			}
-			if (generateTabs) {
+			if (generatingTabs) {
 				m_tabs.push_back('\t');
 			}
 			for (auto block : blockList->getBlocks()) {
@@ -587,10 +587,10 @@ namespace CE::Decompiler
 				}
 			}
 			generateGotoStatement(blockList);
-			if (generateTabs) {
+			if (generatingTabs) {
 				m_tabs.pop_back();
 			}
-			if (generateBraces) {
+			if (generatingBraces) {
 				generateBrace("}", blockList);
 			}
 		}
@@ -602,9 +602,8 @@ namespace CE::Decompiler
 
 		virtual void generateBlock(LinearView::Block* block) {
 			const auto pcodeBlock = block->m_decBlock->m_pcodeBlock;
-			const auto blockName = Helper::String::NumberToHex(pcodeBlock->ID);
 			if (m_SHOW_BLOCK_HEADER) {
-				const auto comment = "//block " + blockName + " (level: " + std::to_string(block->m_decBlock->m_level) +
+				const auto comment = "//block " + pcodeBlock->getName() + " (level: " + std::to_string(block->m_decBlock->m_level) +
 					", maxHeight: " + std::to_string(block->m_decBlock->m_maxHeight) + ", backOrderId: " + std::to_string(block->getBackOrderId()) +
 					", linearLevel: " + std::to_string(block->getLinearLevel()) + ", refCount: " + std::to_string(block->m_decBlock->getRefBlocksCount()) + ")";
 				generateTabs();
@@ -612,7 +611,7 @@ namespace CE::Decompiler
 				generateEndLine();
 			}
 			if (m_blocksToGoTo.find(block) != m_blocksToGoTo.end()) {
-				const auto labelName = "label_" + blockName + ":";
+				const auto labelName = "label_" + pcodeBlock->getName() + ":";
 				generateTabs();
 				generateToken(labelName, TOKEN_LABEL);
 				generateEndLine();
@@ -663,7 +662,6 @@ namespace CE::Decompiler
 				generateToken("do", TOKEN_OPERATOR);
 				generateEndLine();
 				generateBlockList(block->m_mainBranch);
-				generateBlock(block);
 				generateToken("while", TOKEN_OPERATOR);
 				generateToken(" (", TOKEN_OTHER);
 				{
@@ -709,7 +707,7 @@ namespace CE::Decompiler
 			bool hasGotoOperator = false;
 			if (blockList->m_goto != nullptr) {
 				const auto gotoType = blockList->getGotoType();
-				blockName = Helper::String::NumberToHex(blockList->m_goto->m_decBlock->m_pcodeBlock->ID);
+				blockName = blockList->m_goto->m_decBlock->m_pcodeBlock->getName();
 				if (gotoType != LinearView::GotoType::None) {
 					hasGotoOperator = true;
 					generateTabs();

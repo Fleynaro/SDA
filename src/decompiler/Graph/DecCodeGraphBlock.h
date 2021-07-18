@@ -91,7 +91,7 @@ namespace CE::Decompiler
 		std::list<SymbolParallelAssignmentLine*> m_symbolParallelAssignmentLines; // temporary list, empty in the end of graph optimization
 		JumpTopNode* m_noJmpCond;
 	public:
-		int m_maxHeight = 0;
+		int m_maxHeight = 0; // calculated as count of the lines from the top to the block
 		DecompiledCodeGraph* m_decompiledGraph;
 
 		DecBlock(DecompiledCodeGraph* decompiledGraph, PCodeBlock* pcodeBlock, int level);

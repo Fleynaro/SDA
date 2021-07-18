@@ -38,24 +38,26 @@ namespace CE::Decompiler::LinearView
 		{}
 
 		void start() {
+			// finding all loops
 			const auto startBlock = m_decCodeGraph->getStartBlock();
 			std::map<DecBlock*, VisitedBlockInfo> visitedBlocks;
 			std::list<DecBlock*> passedBlocks;
 			findAllLoops(startBlock, visitedBlocks, passedBlocks);
 
+			// converting the decompiled graph into block lists
 			m_blockList = new BlockList;
-			std::set<DecBlock*> usedBlocks;
-			std::set<DecBlock*> createdCycleBlocks;
-			convert(m_blockList, startBlock, usedBlocks, createdCycleBlocks);
+			std::set<DecBlock*> usedDecBlocks;
+			std::set<DecBlock*> createdCycleDecBlocks;
+			convert(m_blockList, startBlock, usedDecBlocks, createdCycleDecBlocks);
 
-			for (const auto it : m_goto) {
-				auto blockList = it.first;
-				const auto nextBlock = it.second;
+			// process all goto
+			for (const auto& [blockList, nextBlock] : m_goto) {
 				//if a condition block is above then not set goto as it is excess
-				if (!blockList->getBlocks().empty())
-					if (dynamic_cast<Condition*>(*std::prev(blockList->getBlocks().end())))
+				auto blocks = blockList->getBlocks();
+				if (!blocks.empty())
+					if (dynamic_cast<Condition*>(*blocks.rbegin()))
 						continue;
-
+				// set goto
 				const auto block = m_blockList->findBlock(nextBlock);
 				if (block != nullptr) {
 					blockList->setGoto(block);
@@ -74,34 +76,37 @@ namespace CE::Decompiler::LinearView
 		std::list<std::pair<BlockList*, DecBlock*>> m_goto;
 		BlockList* m_blockList;
 
-		void convert(BlockList* blockList, DecBlock* decBlock, std::set<DecBlock*>& usedBlocks, std::set<DecBlock*>& createdCycleBlocks) {
-			std::list<std::pair<BlockList*, DecBlock*>> nextBlocksToFill;
+		void convert(BlockList* blockList, DecBlock* decBlock, std::set<DecBlock*>& usedDecBlocks, std::set<DecBlock*>& createdCycleDecBlocks) {
+			// need for filling it with new dec. blocks they have to be visited in the next recursive call
+			std::list<std::pair<BlockList*, DecBlock*>> nextDecBlocksToFillBlockLists;
 			
 			auto curDecBlock = decBlock;
 			while (curDecBlock != nullptr) {
-				if (usedBlocks.count(curDecBlock) != 0) {
+				if (usedDecBlocks.count(curDecBlock) != 0) {
+					// if go to the already visited block, don't process it again, just refer to it
 					m_goto.emplace_back(blockList, curDecBlock);
 					break;
 				}
 				DecBlock* nextBlock = nullptr;
 
-				if (curDecBlock->isCycle() && createdCycleBlocks.count(curDecBlock) == 0) {
-					createdCycleBlocks.insert(curDecBlock);
-					auto it = m_cycles.find(curDecBlock);
+				if (curDecBlock->isCycle() && createdCycleDecBlocks.count(curDecBlock) == 0) {
+					createdCycleDecBlocks.insert(curDecBlock);
+					const auto it = m_cycles.find(curDecBlock);
 					if (it != m_cycles.end()) {
-						auto& cycle = it->second;
-						auto startCycleBlock = cycle.m_startBlock;
+						const auto& cycle = it->second;
+						const auto startCycleBlock = cycle.m_startBlock;
 						const auto endCycleBlock = cycle.m_endBlock;
 
+						// let the cycle be a {do-while} by default
 						bool isDoWhileCycleBetter = true;
-						if (startCycleBlock->isCondition() && startCycleBlock->hasNoCode()) {
-							auto nextBlockAfterCycle1 = startCycleBlock->getNextFarBlock();
-							if (cycle.m_blocks.count(nextBlockAfterCycle1) == 0) {
+						// {while} cycle has always the first block that's conditional one($1), to get out of the cycle's scope($2)
+						if (startCycleBlock->isCondition() && startCycleBlock->hasNoCode()) { // check $1
+							if (cycle.m_blocks.count(startCycleBlock->getNextFarBlock()) == 0) { // check $2
 								isDoWhileCycleBetter = false;
 
+								// need to make the cycle body bigger (e.g. return statement can be inside the cycle, not after it)
 								if (endCycleBlock->isCondition()) {
-									const auto nextBlockAfterCycle2 = endCycleBlock->getNextNearBlock();
-									if (nextBlockAfterCycle1->m_maxHeight < nextBlockAfterCycle2->m_maxHeight) {
+									if (startCycleBlock->getNextFarBlock()->m_maxHeight < endCycleBlock->getNextNearBlock()->m_maxHeight) {
 										isDoWhileCycleBetter = true;
 									}
 								}
@@ -109,22 +114,25 @@ namespace CE::Decompiler::LinearView
 						}
 
 						if (!isDoWhileCycleBetter) {
-							WhileCycle* whileCycle = new WhileCycle(startCycleBlock, false);
+							WhileCycle* const whileCycle = new WhileCycle(startCycleBlock, false);
 							blockList->addBlock(whileCycle);
-							nextBlocksToFill.push_front(std::make_pair(whileCycle->m_mainBranch, startCycleBlock->getNextNearBlock()));
+							nextDecBlocksToFillBlockLists.emplace_front(whileCycle->m_mainBranch, startCycleBlock->getNextNearBlock());
 							nextBlock = startCycleBlock->getNextFarBlock();
 						}
 						else {
 							WhileCycle* whileCycle;
+							// check if a conditional block to exit the cycle is in the end or in the middle
 							if (endCycleBlock->isCondition()) {
 								whileCycle = new WhileCycle(endCycleBlock, true);
 								nextBlock = endCycleBlock->getNextNearBlock();
 							}
 							else {
+								// the infinite cycle with a condition in the middle to exit it
 								whileCycle = new WhileCycle(endCycleBlock, true, true);
+								// finding a conditional block($1) that refers to a non-cycle block($2)
 								for (auto cycleBlock : cycle.m_blocks) {
-									auto farBlock = cycleBlock->getNextFarBlock();
-									if (farBlock && cycle.m_blocks.count(farBlock) == 0) {
+									const auto farBlock = cycleBlock->getNextFarBlock();
+									if (farBlock && cycle.m_blocks.count(farBlock) == 0) { // check $1 and $2
 										nextBlock = farBlock;
 										if (farBlock->getRefBlocksCount() != 1) {
 											break;
@@ -133,41 +141,58 @@ namespace CE::Decompiler::LinearView
 								}
 							}
 							blockList->addBlock(whileCycle);
-							nextBlocksToFill.push_front(std::make_pair(whileCycle->m_mainBranch, startCycleBlock));
-							curDecBlock = endCycleBlock;
+							nextDecBlocksToFillBlockLists.emplace_front(whileCycle->m_mainBranch, startCycleBlock);
+							curDecBlock = nullptr;
 						}
 					}
 				}
 				else if (curDecBlock->isCondition()) {
-					auto it = m_loops.find(curDecBlock);
+					const auto it = m_loops.find(curDecBlock);
 					if (it != m_loops.end()) {
-						auto& loop = it->second;
+						const auto& loop = it->second;
 						nextBlock = loop.m_endBlock;
 						for (auto block : loop.m_blocks) {
 							if (block == loop.m_endBlock)
 								continue;
-							if (usedBlocks.count(block) != 0) {
+							if (usedDecBlocks.count(block) != 0) {
 								nextBlock = nullptr;
 								break;
 							}
 						}
 					}
 
-					auto cond = new Condition(curDecBlock);
+					const auto cond = new Condition(curDecBlock);
 					blockList->addBlock(cond);
 					if (nextBlock) {
-						nextBlocksToFill.emplace_back(cond->m_mainBranch, curDecBlock->getNextNearBlock());
-						nextBlocksToFill.emplace_back(cond->m_elseBranch, curDecBlock->getNextFarBlock());
+						// common {if-else} block
+						nextDecBlocksToFillBlockLists.emplace_back(cond->m_mainBranch, curDecBlock->getNextNearBlock());
+						nextDecBlocksToFillBlockLists.emplace_back(cond->m_elseBranch, curDecBlock->getNextFarBlock());
 					}
 					else {
+						// need make the block list more linearly (for different if-checks)
+						/*
+						 * Before:
+						 * if() {
+						 *	block 1
+						 * } else {
+						 *	block 2
+						 * }
+						 * 
+						 * After:
+						 * if() {
+						 *  block 1
+						 *	return;
+						 * }
+						 * block 2
+						 */
 						auto blockInCond = curDecBlock->getNextNearBlock();
 						auto blockBelowCond = curDecBlock->getNextFarBlock();
-						if (blockInCond->m_maxHeight > blockBelowCond->m_maxHeight || usedBlocks.count(blockInCond) != 0) {
+						if (blockInCond->m_maxHeight > blockBelowCond->m_maxHeight || usedDecBlocks.count(blockInCond) != 0) {
 							std::swap(blockInCond, blockBelowCond);
 							cond->m_cond->inverse();
 						}
-						nextBlocksToFill.emplace_back(cond->m_mainBranch, blockInCond);
-						nextBlocksToFill.emplace_back(blockList, blockBelowCond);
+						nextDecBlocksToFillBlockLists.emplace_back(cond->m_mainBranch, blockInCond);
+						nextDecBlocksToFillBlockLists.emplace_back(blockList, blockBelowCond);
 						m_goto.emplace_back(cond->m_elseBranch, blockBelowCond);
 					}
 				}
@@ -177,13 +202,14 @@ namespace CE::Decompiler::LinearView
 				}
 
 				if (curDecBlock) {
-					usedBlocks.insert(curDecBlock);
+					usedDecBlocks.insert(curDecBlock);
 				}
 				curDecBlock = nextBlock;
 			}
 
-			for (const auto block : nextBlocksToFill) {
-				convert(block.first, block.second, usedBlocks, createdCycleBlocks);
+			// go to the next block lists for filling it with remaining dec. blocks
+			for (const auto& [blockList, decBlock] : nextDecBlocksToFillBlockLists) {
+				convert(blockList, decBlock, usedDecBlocks, createdCycleDecBlocks);
 			}
 		}
 

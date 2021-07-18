@@ -62,8 +62,14 @@ void ImagePCodeGraph::fillHeadFuncGraphs() {
 }
 
 PCodeBlock::PCodeBlock(ComplexOffset minOffset, ComplexOffset maxOffset)
-	: m_minOffset(minOffset), m_maxOffset(maxOffset), ID(static_cast<int>(minOffset >> 8))
-{}
+	: m_minOffset(minOffset), m_maxOffset(maxOffset)
+{
+	m_name = Helper::String::NumberToHex(static_cast<int>(minOffset >> 8));
+}
+
+std::string PCodeBlock::getName() const {
+	return m_name;
+}
 
 void PCodeBlock::removeRefBlock(PCodeBlock * block) {
 	m_blocksReferencedTo.remove(block);

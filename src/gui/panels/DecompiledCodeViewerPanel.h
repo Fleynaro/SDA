@@ -120,7 +120,7 @@ namespace GUI
 				SameLine(1.0f);
 			}
 
-			void generateBlockList(CE::Decompiler::LinearView::BlockList* blockList, bool generateTabsAndBrackets) override {
+			void generateBlockList(CE::Decompiler::LinearView::BlockList* blockList, bool generatingTabs, bool generatingBraces) override {
 				if (m_decompiledCodeViewer->m_hidedBlockLists.find(blockList) != m_decompiledCodeViewer->m_hidedBlockLists.end()) {
 					ImGui::BeginGroup();
 					generateTabs();
@@ -139,7 +139,7 @@ namespace GUI
 				}
 				
 				ImGui::BeginGroup();
-				CodeViewGenerator::generateBlockList(blockList, generateTabsAndBrackets);
+				CodeViewGenerator::generateBlockList(blockList, generatingTabs, generatingBraces);
 				ImGui::EndGroup();
 				if (!m_hasBlockListSelected) {
 					if (ImGui::IsItemClicked()) {

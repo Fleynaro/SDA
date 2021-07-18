@@ -33,10 +33,9 @@ bool BlockList::hasGoto() {
 }
 
 GotoType BlockList::getGotoType() {
-	if (!m_goto || m_parent->isInversed())
+	if (!m_goto)
 		return GotoType::None;
-	auto whileCycle = getWhileCycle();
-	if (whileCycle) {
+	if (const auto whileCycle = getWhileCycle()) {
 		if (m_goto->getLinearLevel() >= getMaxLinearLevel()) {
 			if (m_goto->getBackOrderId() == whileCycle->getBackOrderId() - 1)
 				return GotoType::Break;
