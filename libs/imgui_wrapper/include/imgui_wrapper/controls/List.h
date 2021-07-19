@@ -287,13 +287,13 @@ namespace GUI
 	template<typename T>
 	class TableListView
 		: public AbstractTableListView<T>,
-		public Attribute::Name
+		public Attribute::Id
 	{
 	public:
 		std::list<ColInfo> m_colsInfo;
 		
-		TableListView(IListModel<T>* listModel = nullptr, const std::string& name = "", const std::list<ColInfo>& colsInfo = {})
-			: AbstractTableListView<T>(listModel), Attribute::Name(name), m_colsInfo(colsInfo)
+		TableListView(IListModel<T>* listModel = nullptr, const std::list<ColInfo>& colsInfo = {})
+			: AbstractTableListView<T>(listModel), m_colsInfo(colsInfo)
 		{}
 
 	private:
@@ -304,10 +304,11 @@ namespace GUI
 		
 		bool renderTop() override
 		{
-			if (ImGui::BeginTable(getName().c_str(), static_cast<int>(m_colsInfo.size()), ImGuiTableFlags_Borders))
+			if (ImGui::BeginTable(getId().c_str(), static_cast<int>(m_colsInfo.size()), ImGuiTableFlags_Borders))
 			{
 				for (const auto& colInfo : m_colsInfo)
 					ImGui::TableSetupColumn(colInfo.m_name.c_str(), colInfo.m_flags, colInfo.m_width);
+				ImGui::TableHeadersRow();
 				return true;
 			}
 			return false;

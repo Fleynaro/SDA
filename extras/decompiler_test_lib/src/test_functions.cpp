@@ -1,6 +1,6 @@
 #include <Windows.h>
 #include <iostream>
-#include "decompiler_test_lib.h"
+#include "test_functions.h"
 
 //functions
 int Func1(int a) {
@@ -56,12 +56,12 @@ int Test_Switch() {
 		b *= 15 + a * a;
 		break;
 	case 4:
-		b ++;
+		b++;
 	case 5:
 	case 6:
 		b *= 30 + (int)pow(a, 3);
 		break;
-	
+
 	default: {
 		b = 0;
 	}
@@ -93,7 +93,7 @@ int Test_FloatingPoints() {
 	}
 
 	if (b == 10 && b == 20 || b == 30 && b == 40 && b == 50 || b == 60) {
-		 b+= 2;
+		b += 2;
 	}
 
 	return (int)b;

@@ -277,7 +277,7 @@ namespace GUI
 		StdWindow* m_decompiledCodeViewerWindow = nullptr;
 	public:
 		ImageContentViewerPanel(CE::ImageDecorator* imageDec)
-			: AbstractPanel("Image content viewer"), m_imageDec(imageDec), m_imageSectionListModel(imageDec->getImage())
+			: AbstractPanel("Image content viewer: " + imageDec->getName()), m_imageDec(imageDec), m_imageSectionListModel(imageDec->getImage())
 		{
 			m_imageSectionMenuListView = MenuListView(&m_imageSectionListModel);
 			m_imageSectionMenuListView.handler([&](const CE::ImageSection* imageSection)

@@ -51,6 +51,10 @@ ImageDecorator::~ImageDecorator() {
 	}
 }
 
+void ImageDecorator::setImage(AbstractImage* image) {
+	m_image = image;
+}
+
 void ImageDecorator::load() {
 	char* buffer = nullptr;
 	int size;

@@ -152,18 +152,4 @@ protected:
         vprintf(fmt, args);
         va_end(args);
     }
-
-    // returns array of bytes on specified address of some function (seeing RET instruction)
-    static std::vector<byte> GetFuncBytes(void* addr) {
-        auto size = CalculateFuncSize((byte*)addr, 0);
-        return std::vector<byte>((byte*)addr, (byte*)addr + size);
-    }
-
-    // calculates the function size, seeing RET instruction
-    static int CalculateFuncSize(byte* addr, bool endByRet = false) {
-        int size = 0;
-        while (!(addr[size] == 0xC3 && addr[size + 1] == 0xCC))
-            size++;
-        return size + 1;
-    }
 };

@@ -47,7 +47,7 @@ namespace GUI
 		FunctionManagerPanel(CE::FunctionManager* manager)
 			: AbstractPanel("Function manager"), m_manager(manager), m_controller(manager), m_filterControl(this)
 		{
-			m_listView = new TableListView(&m_controller.m_listModel, "table", {
+			m_listView = new TableListView(&m_controller.m_listModel, {
 				ColInfo("Function")
 			});
 			m_controller.update();

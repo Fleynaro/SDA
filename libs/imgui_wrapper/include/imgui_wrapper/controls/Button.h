@@ -16,7 +16,7 @@ namespace GUI::Button
 		{}
 
 		bool present() {
-			Control::show();
+			show();
 			return isClicked();
 		}
 
@@ -68,9 +68,7 @@ namespace GUI::Button
 	protected:
 		void renderButton() override
 		{
-			if (ImGui::ArrowButton(getName().c_str(), m_direction)) {
-				m_isClicked = true;
-			}
+			m_isClicked = ImGui::ArrowButton(getName().c_str(), m_direction);
 		}
 	};
 
@@ -88,9 +86,7 @@ namespace GUI::Button
 		{
 			pushFontParam();
 
-			if (ImGui::SmallButton(getName().c_str())) {
-				m_isClicked = true;
-			}
+			m_isClicked = ImGui::SmallButton(getName().c_str());
 
 			popFontParam();
 		}

@@ -55,6 +55,8 @@ namespace CE
 
 		~ImageDecorator();
 
+		void setImage(AbstractImage* image);
+
 		void load();
 
 		void save();

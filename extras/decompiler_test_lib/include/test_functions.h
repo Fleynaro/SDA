@@ -1,4 +1,4 @@
-#pragma once
+#include <cstdint>
 
 class TestA {
 public:

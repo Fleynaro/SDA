@@ -44,7 +44,10 @@ set_target_properties(imgui_wrapper PROPERTIES FOLDER "libs")
 add_subdirectory(extras/ghidra_sync)
 add_subdirectory(data/resources)
 include_directories(src)
-add_subdirectory(src)
+add_subdirectory(src/utilities)
+add_subdirectory(src/core)
+add_subdirectory(extras/decompiler_test_lib)
+add_subdirectory(src/gui)
 
 # for creating the gui app
 add_executable(
@@ -61,7 +64,6 @@ target_link_libraries(
 # for creating the console app to test
 if(USE_TESTS)
     find_package(GTest CONFIG REQUIRED)
-    add_subdirectory(extras/decompiler_test_lib)
     set_target_properties(decompiler_test_lib PROPERTIES FOLDER "extras")
 
     file(GLOB_RECURSE TEST_SRC

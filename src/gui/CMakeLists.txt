@@ -15,7 +15,8 @@ target_include_directories(
 target_link_libraries(
     gui PUBLIC
     core
-    imgui_wrapper)
+    imgui_wrapper
+    decompiler_test_lib)
 
 target_compile_definitions(
     gui PRIVATE

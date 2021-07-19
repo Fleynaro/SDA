@@ -37,7 +37,7 @@ namespace GUI
 		ImageSelector(CE::ImageManager* manager)
 			: m_controller(manager)
 		{
-			auto tableListView = new TableListView(&m_controller.m_listModel, "images table", {
+			auto tableListView = new TableListView(&m_controller.m_listModel, {
 				ColInfo("Image")
 				});
 			auto tableListViewMultiselector = new TableListViewMultiSelector(tableListView);

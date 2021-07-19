@@ -4,6 +4,7 @@
 #include "panels/FunctionManagerPanel.h"
 #include "panels/ImageManagerPanel.h"
 #include "managers/Managers.h"
+#include "panels/DecSampleViewerPanel.h"
 #include "panels/ImageContentViewerPanel.h"
 
 using namespace CE;
@@ -201,6 +202,12 @@ void GUI::DecompilerDemoPanel::renderPanel()
 				m_imageContentViewerWindow = panel->createStdWindow();
 			}
 
+			if (Button::StdButton("open dec. sample viewer").present())
+			{
+				auto panel = new DecSampleViewerPanel(m_project);
+				m_decSampleViewerWindow = panel->createStdWindow();
+			}
+
 			if (Button::StdButton("open builtin popup").present()) {
 				auto panel = new StdPanel();
 				panel->handler([&]()
@@ -244,7 +251,7 @@ void GUI::DecompilerDemoPanel::renderPanel()
 			Separator();
 			NewLine();
 
-			TableListView tableListView(&m_testListModel, "table");
+			TableListView tableListView(&m_testListModel);
 			tableListView.show();
 
 			NewLine();
@@ -264,6 +271,7 @@ void GUI::DecompilerDemoPanel::renderPanel()
 	Show(m_functionManagerWindow);
 	Show(m_imageViewerWindow);
 	Show(m_imageContentViewerWindow);
+	Show(m_decSampleViewerWindow);
 	Show(m_popupModalWin);
 	Show(m_popupBuiltinWindow);
 	/*if(m_functionManagerWindow)
