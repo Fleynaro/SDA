@@ -10,6 +10,7 @@
 #include "decompiler/Decompiler.h"
 #include "decompiler/Graph/DecPCodeGraph.h"
 #include "decompiler/SDA/Optimizaton/SdaGraphMemoryOptimization.h"
+#include "decompiler/SDA/Optimizaton/SdaGraphUselessLineOptimization.h"
 #include "decompiler/SDA/Symbolization/DecGraphSdaBuilding.h"
 #include "decompiler/SDA/Symbolization/SdaGraphDataTypeCalc.h"
 #include "panels/FuncGraphViewerPanel.h"
@@ -421,6 +422,9 @@ namespace GUI
 				// memory optimization
 				CE::Decompiler::Optimization::SdaGraphMemoryOptimization memoryOptimization(sdaCodeGraph);
 				memoryOptimization.start();
+
+				CE::Decompiler::Optimization::SdaGraphUselessLineOptimization uselessLineOptimization(sdaCodeGraph);
+				uselessLineOptimization.start();
 
 				delete m_decompiledCodeViewerWindow;
 				auto panel = new DecompiledCodeViewerPanel(sdaCodeGraph);

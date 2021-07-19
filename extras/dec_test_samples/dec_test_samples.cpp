@@ -1,10 +1,59 @@
-#include "decompiler_test_lib.h"
-#include "test_functions.h"
+#include "dec_test_samples.h"
+#include "dec_test_functions.h"
 #include "decompiler/DecWarningContainer.h"
 #include "decompiler/Optimization/DecGraphOptimization.h"
 #include "decompiler/PCode/Decoders/DecPCodeDecoderX86.h"
 #include "decompiler/PCode/ImageAnalyzer/DecImageAnalyzer.h"
 #include "decompiler/SDA/Symbolization/DecGraphSymbolization.h"
+
+void CE::DecTestSamplesPool::Sample::decode() {
+	using namespace Decompiler;
+
+	// INSTRUCTION DECODNING (from bytes to pCode graph)
+	auto imageGraph = m_imageDec->getPCodeGraph();
+	WarningContainer warningContainer;
+	RegisterFactoryX86 registerFactoryX86;
+	DecoderX86 decoder(&registerFactoryX86, m_imageDec->getInstrPool(), &warningContainer);
+
+	const ImageAnalyzer imageAnalyzer(m_imageDec->getImage(), imageGraph, &decoder, &registerFactoryX86);
+	imageAnalyzer.start(m_imageOffset, true);
+	m_funcGraph = &*imageGraph->getFunctionGraphList().begin();
+}
+
+CE::Decompiler::DecompiledCodeGraph* CE::DecTestSamplesPool::Sample::decompile() {
+	using namespace Decompiler;
+
+	// DECOMPILING (transform the asm graph to decompiled code graph)
+	auto funcCallInfoCallback = [&](Instruction* instr, int offset)
+	{
+		if (offset != 0x0) {
+			auto it = m_functions.find(offset);
+			if (it != m_functions.end())
+				return FunctionCallInfo(it->second->getCallInfo());
+		}
+		return FunctionCallInfo(m_pool->m_defSignature->getCallInfo());
+	};
+
+	RegisterFactoryX86 registerFactoryX86;
+	auto decCodeGraph = new DecompiledCodeGraph(m_funcGraph);
+	auto primaryDecompiler = PrimaryDecompiler(decCodeGraph, &registerFactoryX86,
+	                                           m_func->getSignature()->getCallInfo().getReturnInfo(),
+	                                           funcCallInfoCallback);
+	primaryDecompiler.start();
+
+	// PROCESSING
+	Optimization::ProcessDecompiledGraph(decCodeGraph, &primaryDecompiler);
+	decCodeGraph->checkOnSingleParents();
+	return decCodeGraph;
+}
+
+CE::Decompiler::SdaCodeGraph* CE::DecTestSamplesPool::Sample::symbolize(
+	Decompiler::DecompiledCodeGraph* decCodeGraph) const {
+	const auto sdaCodeGraph = new Decompiler::SdaCodeGraph(decCodeGraph);
+	auto symbolCtx = m_func->getSymbolContext();
+	Decompiler::Symbolization::SymbolizeWithSDA(sdaCodeGraph, symbolCtx, m_pool->m_project);
+	return sdaCodeGraph;
+}
 
 CE::DecTestSamplesPool::DecTestSamplesPool(Project* project)
 	: m_project(project)
@@ -501,6 +550,7 @@ CE::DecTestSamplesPool::Sample* CE::DecTestSamplesPool::createSampleTest(int tes
 	sample->m_imageDec = m_project->getImageManager()->createImage(m_addrSpace, ImageDecorator::IMAGE_PE, "image_" + suffix, "", false);
 	sample->m_imageDec->setImage(image);
 	sample->m_imageOffset = offset;
+	sample->m_pool = this;
 
 	auto sig = m_project->getTypeManager()->getFactory(false).createSignature(
 		DataType::IFunctionSignature::FASTCALL, "sig_" + suffix);
@@ -516,53 +566,6 @@ CE::DecTestSamplesPool::Sample* CE::DecTestSamplesPool::createSampleTest(int tes
                                                                          std::vector<uint8_t> content) {
 	return createSampleTest(testId, name, comment, new VectorBufferImage(
 		                        std::vector<int8_t>(content.begin(), content.end())));
-}
-
-void CE::DecTestSamplesPool::decode(Sample* sample) {
-	using namespace Decompiler;
-	
-	// INSTRUCTION DECODNING (from bytes to pCode graph)
-	auto imageGraph = sample->m_imageDec->getPCodeGraph();
-	WarningContainer warningContainer;
-	RegisterFactoryX86 registerFactoryX86;
-	DecoderX86 decoder(&registerFactoryX86, sample->m_imageDec->getInstrPool(), &warningContainer);
-
-	const ImageAnalyzer imageAnalyzer(sample->m_imageDec->getImage(), imageGraph, &decoder, &registerFactoryX86);
-	imageAnalyzer.start(sample->m_imageOffset, true);
-	sample->m_funcGraph = &*imageGraph->getFunctionGraphList().begin();
-}
-
-CE::Decompiler::DecompiledCodeGraph* CE::DecTestSamplesPool::decompile(Sample* sample) {
-	using namespace Decompiler;
-
-	// DECOMPILING (transform the asm graph to decompiled code graph)
-	auto funcCallInfoCallback = [&](Instruction* instr, int offset)
-	{
-		if (offset != 0x0) {
-			auto it = sample->m_functions.find(offset);
-			if (it != sample->m_functions.end())
-				return FunctionCallInfo(it->second->getCallInfo());
-		}
-		return FunctionCallInfo(m_defSignature->getCallInfo());
-	};
-
-	RegisterFactoryX86 registerFactoryX86;
-	auto decCodeGraph = new DecompiledCodeGraph(sample->m_funcGraph);
-	auto primaryDecompiler = PrimaryDecompiler(decCodeGraph, &registerFactoryX86,
-		sample->m_func->getSignature()->getCallInfo().getReturnInfo(), funcCallInfoCallback);
-	primaryDecompiler.start();
-
-	// PROCESSING
-	Optimization::ProcessDecompiledGraph(decCodeGraph, &primaryDecompiler);
-	decCodeGraph->checkOnSingleParents();
-	return decCodeGraph;
-}
-
-CE::Decompiler::SdaCodeGraph* CE::DecTestSamplesPool::symbolize(Sample* sample, Decompiler::DecompiledCodeGraph* decCodeGraph) const {
-	const auto sdaCodeGraph = new Decompiler::SdaCodeGraph(decCodeGraph);
-	auto symbolCtx = sample->m_func->getSymbolContext();
-	Decompiler::Symbolization::SymbolizeWithSDA(sdaCodeGraph, symbolCtx, m_project);
-	return sdaCodeGraph;
 }
 
 CE::DataTypePtr CE::DecTestSamplesPool::findType(std::string typeName, std::string typeLevel) const {

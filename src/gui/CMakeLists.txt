@@ -16,7 +16,7 @@ target_link_libraries(
     gui PUBLIC
     core
     imgui_wrapper
-    decompiler_test_lib)
+    dec_test_samples)
 
 target_compile_definitions(
     gui PRIVATE

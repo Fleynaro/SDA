@@ -46,8 +46,12 @@ add_subdirectory(data/resources)
 include_directories(src)
 add_subdirectory(src/utilities)
 add_subdirectory(src/core)
-add_subdirectory(extras/decompiler_test_lib)
+add_subdirectory(extras/dec_test_functions)
+add_subdirectory(extras/dec_test_samples)
 add_subdirectory(src/gui)
+
+set_target_properties(dec_test_samples PROPERTIES FOLDER "extras")
+set_target_properties(dec_test_functions PROPERTIES FOLDER "extras")
 
 # for creating the gui app
 add_executable(
@@ -64,7 +68,6 @@ target_link_libraries(
 # for creating the console app to test
 if(USE_TESTS)
     find_package(GTest CONFIG REQUIRED)
-    set_target_properties(decompiler_test_lib PROPERTIES FOLDER "extras")
 
     file(GLOB_RECURSE TEST_SRC
         tests/*.cpp
@@ -76,7 +79,7 @@ if(USE_TESTS)
     target_link_libraries(
         sda_tests PRIVATE
         core
-        decompiler_test_lib
+        dec_test_samples
         GTest::gtest
         )
     target_compile_definitions(

@@ -304,7 +304,7 @@ namespace GUI
 		
 		bool renderTop() override
 		{
-			if (ImGui::BeginTable(getId().c_str(), static_cast<int>(m_colsInfo.size()), ImGuiTableFlags_Borders))
+			if (ImGui::BeginTable(getId().c_str(), static_cast<int>(m_colsInfo.size()), ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
 			{
 				for (const auto& colInfo : m_colsInfo)
 					ImGui::TableSetupColumn(colInfo.m_name.c_str(), colInfo.m_flags, colInfo.m_width);

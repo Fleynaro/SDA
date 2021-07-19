@@ -736,13 +736,14 @@ namespace CE::Decompiler
 					generateTabs();
 				generateToken(comment, TOKEN_COMMENT);
 				generateEndLine();
-				if (m_SHOW_LINEAR_LEVEL_EXT) {
-					auto const comment2 = "//backOrderId: " + std::to_string(blockList->getBackOrderId()) + "; minLinLevel: " +
-						std::to_string(blockList->getMinLinearLevel()) + ", maxLinLevel: " + std::to_string(blockList->getMaxLinearLevel());
-					generateTabs();
-					generateToken(comment2, TOKEN_COMMENT);
-					generateEndLine();
-				}
+			}
+
+			if (m_SHOW_LINEAR_LEVEL_EXT) {
+				auto const comment2 = "//backOrderId: " + std::to_string(blockList->getBackOrderId()) + "; minLinLevel: " +
+					std::to_string(blockList->getMinLinearLevel()) + ", maxLinLevel: " + std::to_string(blockList->getMaxLinearLevel());
+				generateTabs();
+				generateToken(comment2, TOKEN_COMMENT);
+				generateEndLine();
 			}
 		}
 		

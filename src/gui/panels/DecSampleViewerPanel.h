@@ -1,6 +1,6 @@
 #pragma once
 #include "DecompiledCodeViewerPanel.h"
-#include "decompiler_test_lib.h"
+#include "dec_test_samples.h"
 #include "ImageContentViewerPanel.h"
 #include "Project.h"
 #include "imgui_wrapper/Window.h"
@@ -26,7 +26,7 @@ namespace GUI
 				{}
 
 				void getNextItem(std::string* text, CE::DecTestSamplesPool::Sample** data) override {
-					*text = (*m_it)->m_name + ", " + (*m_it)->m_comment;
+					*text = std::to_string((*m_it)->m_testId) + "," + (*m_it)->m_name + ", " + (*m_it)->m_comment;
 					*data = *m_it;
 					++m_it;
 				}
@@ -60,6 +60,7 @@ namespace GUI
 
 			m_listModel = new ListModel(m_decTestSamplesPool);
 			m_tableListView = new TableListViewSelector(new TableListView(m_listModel, {
+				ColInfo("Id", ImGuiTableColumnFlags_WidthFixed, 50.0f),
 				ColInfo("Name"),
 				ColInfo("Comment")
 			}));
@@ -86,14 +87,8 @@ namespace GUI
 		}
 
 		void selectSample(CE::DecTestSamplesPool::Sample* sample) {
-			/*const auto decCodeGraph = m_decTestSamplesPool->decompile(sample);
-			const auto sdaCodeGraph = m_decTestSamplesPool->symbolize(sample, decCodeGraph);
-			CE::Decompiler::Optimization::MakeFinalGraphOptimization(sdaCodeGraph);
-			delete m_decompiledCodeViewerWindow;
-			auto panel = new DecompiledCodeViewerPanel(sdaCodeGraph);
-			m_decompiledCodeViewerWindow = panel->createStdWindow();*/
 			if (!sample->m_funcGraph) {
-				m_decTestSamplesPool->decode(sample);
+				sample->decode();
 			}
 			
 			delete m_imageContentViewerWindow;

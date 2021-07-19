@@ -28,6 +28,13 @@ namespace CE
 			SymbolContext m_symbolCtx;
 			Decompiler::FunctionPCodeGraph* m_funcGraph = nullptr;
 			std::map<int64_t, DataType::IFunctionSignature*> m_functions;
+			DecTestSamplesPool* m_pool;
+
+			void decode();
+
+			Decompiler::DecompiledCodeGraph* decompile();
+
+			Decompiler::SdaCodeGraph* symbolize(Decompiler::DecompiledCodeGraph* decCodeGraph) const;
 		};
 
 		std::list<Sample*> m_samples;
@@ -40,12 +47,6 @@ namespace CE
 		                         int offset = 0);
 
 		Sample* createSampleTest(int testId, const std::string& name, const std::string& comment, std::vector<uint8_t> content);
-
-		void decode(Sample* sample);
-
-		Decompiler::DecompiledCodeGraph* decompile(Sample* sample);
-
-		Decompiler::SdaCodeGraph* symbolize(Sample* sample, Decompiler::DecompiledCodeGraph* decCodeGraph) const;
 
 	private:
 		DataTypePtr findType(std::string typeName, std::string typeLevel = "") const;

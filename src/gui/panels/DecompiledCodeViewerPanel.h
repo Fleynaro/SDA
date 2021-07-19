@@ -100,7 +100,10 @@ namespace GUI
 		public:
 			CodeGenerator(DecompiledCodeViewer* decompiledCodeViewer)
 				: CodeViewGenerator(&m_exprTreeGenerator), m_decompiledCodeViewer(decompiledCodeViewer), m_exprTreeGenerator(this)
-			{}
+			{
+				setMinInfoToShow();
+				m_SHOW_LINEAR_LEVEL_EXT = true;
+			}
 
 		private:
 			void generateToken(const std::string& text, TokenType tokenType) override {

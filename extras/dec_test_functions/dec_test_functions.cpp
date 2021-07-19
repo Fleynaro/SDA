@@ -1,6 +1,6 @@
 #include <Windows.h>
 #include <iostream>
-#include "test_functions.h"
+#include "dec_test_functions.h"
 
 //functions
 int Func1(int a) {
