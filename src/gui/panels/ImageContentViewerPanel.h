@@ -471,6 +471,9 @@ namespace GUI
 				{
 					auto funcCallInfoCallback = [&](Instruction* instr, int offset)
 					{
+						if(const auto func = m_imageDec->getFunctionAt(offset)) {
+							return func->getSignature()->getCallInfo();
+						}
 						return project->getTypeManager()->getDefaultFuncSignature()->getCallInfo();
 					};
 					SdaCodeGraph* sdaCodeGraph = nullptr;

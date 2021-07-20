@@ -27,7 +27,7 @@ namespace CE::Decompiler
 			enum TokenType
 			{
 				TOKEN_OPERATION,		// +/*/%
-				TOKEN_ROUND_BRACKET,	// {}
+				TOKEN_ROUND_BRACKET,	// ()
 				TOKEN_FUNCTION_CALL,	// func()
 				TOKEN_DATA_TYPE,		// float/int64_t
 				TOKEN_DEC_SYMBOL,
@@ -111,6 +111,9 @@ namespace CE::Decompiler
 			}
 
 			virtual void generateCast(ISdaNode* node) {
+				/*if (dynamic_cast<DataType::Void*>(node->getCast()->getCastDataType()->getType()))
+					return;*/
+				// todo: (float) -> (float&)
 				generateRoundBracket("(", node);
 				generateDataType(node->getCast()->getCastDataType());
 				generateRoundBracket(")", node);
@@ -203,9 +206,32 @@ namespace CE::Decompiler
 			}
 
 			virtual void generateAssignmentNode(const AssignmentNode* node) {
-				generateNode(node->getDstNode());
-				generateToken(" = ", TOKEN_OPERATION);
+				bool showDstNode = true;
+				if(const auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(node->getDstNode())) {
+					showDstNode = !dynamic_cast<DataType::Void*>(sdaSymbolLeaf->getDataType()->getBaseType());
+				}
+				if (showDstNode) {
+					generateNode(node->getDstNode());
+					generateToken(" = ", TOKEN_OPERATION);
+				}
 				generateNode(node->getSrcNode());
+			}
+
+			static bool OperationPriority(OperationType opType, OperationType parentOpType) {
+				std::map priorities = {
+					std::pair(Mul, 13), std::pair(Div, 13), std::pair(Mod, 13), std::pair(fMul, 13), std::pair(fDiv, 13),
+					std::pair(Add, 12), std::pair(fAdd, 12),
+					std::pair(Shr, 11), std::pair(Shl, 11),
+					std::pair(And, 8),
+					std::pair(Xor, 7),
+					std::pair(Or, 6),
+					std::pair(Functional, 0), std::pair(fFunctional, 0)
+				};
+				const auto it1 = priorities.find(opType);
+				const auto it2 = priorities.find(parentOpType);
+				if (it1 != priorities.end() && it2 != priorities.end())
+					return it1->second <= it2->second;
+				return true;
 			}
 
 			virtual void generateOperationalNode(OperationalNode* node) {
@@ -239,7 +265,23 @@ namespace CE::Decompiler
 				}
 
 				const auto operation = GetOperation(node->m_operation);
-				generateRoundBracket("(", node);
+
+				bool needBrackets = true;
+				// todo: make for linear expr also (LinearExpr is a OperationalNode)
+				if (const auto sdaParent = dynamic_cast<SdaGenericNode*>(node->getParentNode())) {
+					if ((needBrackets = !dynamic_cast<DecBlock::BlockTopNode*>(sdaParent->getParentNode()))) {
+						if ((needBrackets = !dynamic_cast<AssignmentNode*>(sdaParent->getParentNode()))) {
+							if (const auto parentOpNode = dynamic_cast<OperationalNode*>(sdaParent->getParentNode())) {
+								needBrackets &= OperationPriority(node->m_operation, parentOpNode->m_operation);
+							} else if (const auto parentLinearExpr = dynamic_cast<LinearExpr*>(sdaParent->getParentNode())) {
+								needBrackets &= OperationPriority(node->m_operation, parentLinearExpr->m_operation);
+							}
+						}
+					}
+				}
+				
+				if (needBrackets)
+					generateRoundBracket("(", node);
 				generateNode(node->m_leftNode);
 				generateToken(" ", TOKEN_OTHER);
 				generateToken(operation, TOKEN_OPERATION);
@@ -248,7 +290,8 @@ namespace CE::Decompiler
 				}
 				generateToken(" ", TOKEN_OTHER);
 				generateNode(node->m_rightNode);
-				generateRoundBracket(")", node);
+				if (needBrackets)
+					generateRoundBracket(")", node);
 			}
 
 			virtual void generateReadValueNode(ReadValueNode* node) {
@@ -351,40 +394,51 @@ namespace CE::Decompiler
 			virtual void generateSimpleCondition(Condition* node) {
 				if (!node->m_leftNode || !node->m_rightNode)
 					return;
+				const auto needBrackets = node->getParentNodes().size() != 1 || dynamic_cast<DecBlock::JumpTopNode*>(node->getParentNode());
+				if (needBrackets)
+					generateRoundBracket("(", node);
 				generateNode(node->m_leftNode);
 				generateToken(" ", TOKEN_OTHER);
 				generateToken(GetConditionType(node->m_cond), TOKEN_OPERATION);
 				generateToken(" ", TOKEN_OTHER);
 				generateNode(node->m_rightNode);
+				if (needBrackets)
+					generateRoundBracket(")", node);
 			}
 
 			virtual void generateCompositeCondition(CompositeCondition* node) {
 				if (!node->m_leftCond)
 					return;
-				
+
+				const auto needBrackets = node->getParentNodes().size() != 1 || dynamic_cast<DecBlock::JumpTopNode*>(node->getParentNode());
 				if (node->m_cond == CompositeCondition::None) {
+					if(needBrackets)
+						generateRoundBracket("(", node);
 					generateNode(node->m_leftCond);
+					if (needBrackets)
+						generateRoundBracket(")", node);
 					return;
 				}
 				
 				if (node->m_cond == CompositeCondition::Not) {
+					if (needBrackets)
+						generateRoundBracket("(", node);
 					generateToken("!", TOKEN_OTHER);
 					generateRoundBracket("(", node);
 					generateNode(node->m_leftCond);
 					generateRoundBracket(")", node);
+					if (needBrackets)
+						generateRoundBracket(")", node);
 					return;
 				}
 
-				const auto needBrackets = !dynamic_cast<DecBlock::JumpTopNode*>(node->getParentNode());
-				if (needBrackets)
-					generateRoundBracket("(", node);
+				generateRoundBracket("(", node);
 				generateNode(node->m_leftCond);
 				generateToken(" ", TOKEN_OTHER);
 				generateToken(GetCompConditionType(node->m_cond), TOKEN_OPERATION);
 				generateToken(" ", TOKEN_OTHER);
 				generateNode(node->m_rightCond);
-				if (needBrackets)
-					generateRoundBracket(")", node);
+				generateRoundBracket(")", node);
 			}
 
 			virtual void generateDecSymbol(Symbol::Symbol* symbol) {
@@ -504,7 +558,7 @@ namespace CE::Decompiler
 		enum TokenType
 		{
 			TOKEN_TAB,
-			TOKEN_CURLY_BRACKET,	// ()
+			TOKEN_CURLY_BRACKET,	// {}
 			TOKEN_OPERATOR,			// if/while/return
 			TOKEN_LABEL,
 			TOKEN_SEMICOLON,		// ;
@@ -515,6 +569,7 @@ namespace CE::Decompiler
 		};
 	
 	public:
+		bool m_SHOW_ALL_COMMENTS = true;
 		bool m_SHOW_ALL_GOTO = true;
 		bool m_SHOW_LINEAR_LEVEL_EXT = true;
 		bool m_SHOW_BLOCK_HEADER = true;
@@ -546,7 +601,7 @@ namespace CE::Decompiler
 				m_exprTreeViewGenerator->generateSdaSymbol(symbol);
 				generateSemicolon();
 				
-				if (m_SHOW_COMMENTS_IN_HEADER) {
+				if (m_SHOW_ALL_COMMENTS && m_SHOW_COMMENTS_IN_HEADER) {
 					std::string comment = "//priority: " + std::to_string(symbol->getDataType()->getPriority());
 					//size
 					if (symbol->getDataType()->isArray())
@@ -572,7 +627,6 @@ namespace CE::Decompiler
 		virtual void generateBlockList(LinearView::BlockList* blockList, bool generatingTabs = true, bool generatingBraces = true) {
 			if (generatingBraces) {
 				generateCurlyBracket("{", blockList);
-				generateEndLine();
 			}
 			if (generatingTabs) {
 				m_tabs.push_back('\t');
@@ -598,13 +652,14 @@ namespace CE::Decompiler
 				m_tabs.pop_back();
 			}
 			if (generatingBraces) {
+				generateTabs();
 				generateCurlyBracket("}", blockList);
 			}
 		}
 
 		virtual void generateBlock(LinearView::Block* block) {
 			const auto pcodeBlock = block->m_decBlock->m_pcodeBlock;
-			if (m_SHOW_BLOCK_HEADER) {
+			if (m_SHOW_ALL_COMMENTS && m_SHOW_BLOCK_HEADER) {
 				const auto comment = "//block " + pcodeBlock->getName() + " (level: " + std::to_string(block->m_decBlock->m_level) +
 					", maxHeight: " + std::to_string(block->m_decBlock->m_maxHeight) + ", backOrderId: " + std::to_string(block->getBackOrderId()) +
 					", linearLevel: " + std::to_string(block->getLinearLevel()) + ", refCount: " + std::to_string(block->m_decBlock->getRefBlocksCount()) + ")";
@@ -625,19 +680,17 @@ namespace CE::Decompiler
 			generateBlock(block);
 			generateTabs();
 			generateToken("if", TOKEN_OPERATOR);
-			generateToken(" (", TOKEN_OTHER);
 			{
 				m_exprTreeViewGenerator->generateNode(block->m_cond);
 			}
-			generateToken(")", TOKEN_OTHER);
-			generateEndLine();
+			generateToken(" ", TOKEN_OTHER);
 			{
 				generateBlockList(block->m_mainBranch);
 			}
 			if (m_SHOW_ALL_GOTO || !block->m_elseBranch->isEmpty()) {
 				generateTabs();
 				generateToken("else", TOKEN_OPERATOR);
-				generateEndLine();
+				generateToken(" ", TOKEN_OTHER);
 				generateBlockList(block->m_elseBranch);
 			}
 			generateEndLine();
@@ -648,12 +701,11 @@ namespace CE::Decompiler
 				generateBlock(block);
 				generateTabs();
 				generateToken("while", TOKEN_OPERATOR);
-				generateToken(" (", TOKEN_OTHER);
+				generateToken(" ", TOKEN_OTHER);
 				{
 					m_exprTreeViewGenerator->generateNode(block->m_cond);
 				}
-				generateToken(")", TOKEN_OTHER);
-				generateEndLine();
+				generateToken(" ", TOKEN_OTHER);
 				{
 					generateBlockList(block->m_mainBranch);
 				}
@@ -662,14 +714,13 @@ namespace CE::Decompiler
 			else {
 				generateTabs();
 				generateToken("do", TOKEN_OPERATOR);
-				generateEndLine();
+				generateToken(" ", TOKEN_OTHER);
 				generateBlockList(block->m_mainBranch);
 				generateToken("while", TOKEN_OPERATOR);
-				generateToken(" (", TOKEN_OTHER);
+				generateToken(" ", TOKEN_OTHER);
 				{
 					m_exprTreeViewGenerator->generateNode(block->m_cond);
 				}
-				generateToken(")", TOKEN_OTHER);
 				generateSemicolon();
 				generateEndLine();
 			}
@@ -726,13 +777,13 @@ namespace CE::Decompiler
 						generateToken("continue", TOKEN_OPERATOR);
 					}
 					generateSemicolon();
-					if (m_SHOW_ALL_GOTO)
+					if (m_SHOW_ALL_COMMENTS && m_SHOW_ALL_GOTO)
 						generateToken(" ", TOKEN_OTHER);
 					else generateEndLine();
 				}
 			}
 
-			if (m_SHOW_ALL_GOTO) {
+			if (m_SHOW_ALL_COMMENTS && m_SHOW_ALL_GOTO) {
 				const auto comment = "//goto to block " + blockName;
 				if (!hasGotoOperator)
 					generateTabs();
@@ -740,7 +791,7 @@ namespace CE::Decompiler
 				generateEndLine();
 			}
 
-			if (m_SHOW_LINEAR_LEVEL_EXT) {
+			if (m_SHOW_ALL_COMMENTS && m_SHOW_LINEAR_LEVEL_EXT) {
 				auto const comment2 = "//backOrderId: " + std::to_string(blockList->getBackOrderId()) + "; minLinLevel: " +
 					std::to_string(blockList->getMinLinearLevel()) + ", maxLinLevel: " + std::to_string(blockList->getMaxLinearLevel());
 				generateTabs();
@@ -750,8 +801,9 @@ namespace CE::Decompiler
 		}
 
 		virtual void generateCurlyBracket(const std::string& text, LinearView::BlockList* blockList) {
-			generateTabs();
 			generateToken(text, TOKEN_CURLY_BRACKET);
+			if(text == "{")
+				generateEndLine();
 		}
 		
 		virtual void generateToken(const std::string& text, TokenType tokenType) = 0;

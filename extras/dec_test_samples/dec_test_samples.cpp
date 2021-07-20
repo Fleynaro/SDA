@@ -20,39 +20,11 @@ void CE::DecTestSamplesPool::Sample::decode() {
 	m_funcGraph = &*imageGraph->getFunctionGraphList().begin();
 }
 
-CE::Decompiler::DecompiledCodeGraph* CE::DecTestSamplesPool::Sample::decompile() {
-	using namespace Decompiler;
-
-	// DECOMPILING (transform the asm graph to decompiled code graph)
-	auto funcCallInfoCallback = [&](Instruction* instr, int offset)
-	{
-		if (offset != 0x0) {
-			auto it = m_functions.find(offset);
-			if (it != m_functions.end())
-				return FunctionCallInfo(it->second->getCallInfo());
-		}
-		return FunctionCallInfo(m_pool->m_defSignature->getCallInfo());
-	};
-
-	RegisterFactoryX86 registerFactoryX86;
-	auto decCodeGraph = new DecompiledCodeGraph(m_funcGraph);
-	auto primaryDecompiler = PrimaryDecompiler(decCodeGraph, &registerFactoryX86,
-	                                           m_func->getSignature()->getCallInfo().getReturnInfo(),
-	                                           funcCallInfoCallback);
-	primaryDecompiler.start();
-
-	// PROCESSING
-	Optimization::ProcessDecompiledGraph(decCodeGraph, &primaryDecompiler);
-	decCodeGraph->checkOnSingleParents();
-	return decCodeGraph;
-}
-
-CE::Decompiler::SdaCodeGraph* CE::DecTestSamplesPool::Sample::symbolize(
-	Decompiler::DecompiledCodeGraph* decCodeGraph) const {
-	const auto sdaCodeGraph = new Decompiler::SdaCodeGraph(decCodeGraph);
-	auto symbolCtx = m_func->getSymbolContext();
-	Decompiler::Symbolization::SymbolizeWithSDA(sdaCodeGraph, symbolCtx, m_pool->m_project);
-	return sdaCodeGraph;
+CE::Function* CE::DecTestSamplesPool::Sample::createFunc(Offset offset, const std::string& name) const {
+	auto sig = m_pool->m_project->getTypeManager()->getFactory(false).createSignature(
+		DataType::IFunctionSignature::FASTCALL, name + "_sig");
+	return m_pool->m_project->getFunctionManager()->getFactory(false).createFunction(
+		offset, sig, m_imageDec, name);
 }
 
 CE::DecTestSamplesPool::DecTestSamplesPool(Project* project)
@@ -155,7 +127,7 @@ void CE::DecTestSamplesPool::fillByTests() {
 
 		sample->m_symbolCtx.m_funcBodySymbolTable->addSymbol(symFactory.createLocalInstrVarSymbol(findType("uint32_t", "[1]"), "someObject"), 9985);
 
-		sig = sample->m_functions[0xffffffffffffff90] = typeFactory.createSignature("Func1_2");
+		sig = sample->createFunc(0xffffffffffffff90, "Func1_2")->getSignature();
 		sig->addParameter("param1", findType("uint64_t", ""));
 		sig->addParameter("param2", findType("uint64_t", ""));
 		sig->setReturnType(findType("uint32_t", "[1]"));
@@ -212,7 +184,7 @@ void CE::DecTestSamplesPool::fillByTests() {
 			auto entity = typeFactory.createStructure("Entity100", "");
 			entity->addField(0x70, "pos", GetUnit(pos));
 
-			auto sig = sample->m_functions[0xfffffffffffde098] = typeFactory.createSignature("getEntitySig");
+			auto sig = sample->createFunc(0xfffffffffffde098, "getEntitySig")->getSignature();
 			sig->addParameter("param1", findType("uint32_t"));
 			sig->setReturnType(GetUnit(entity, "[1]"));
 			sample->m_symbolCtx.m_globalSymbolTable->addSymbol(symFactory.createLocalInstrVarSymbol(GetUnit(sig), "getEntity"), 0xfffffffffffde098);
@@ -393,7 +365,7 @@ void CE::DecTestSamplesPool::fillByTests() {
 			sample->m_symbolCtx.m_stackSymbolTable->addSymbol(symFactory.createLocalStackVarSymbol(-0x48, GetUnit(valueUI), "value4"), -0x48);
 			sample->m_symbolCtx.m_stackSymbolTable->addSymbol(symFactory.createLocalStackVarSymbol(-0x28, GetUnit(valueUI), "value5"), -0x28);
 
-			auto uiDrawSig = sample->m_functions[0xfffffffffffedf50] = typeFactory.createSignature("UI_Draw107");
+			auto uiDrawSig = sample->createFunc(0xfffffffffffedf50, "UI_Draw107")->getSignature();
 			uiDrawSig->addParameter("param1", findType("uint64_t", ""));
 			uiDrawSig->addParameter("param2", findType("uint64_t", ""));
 			uiDrawSig->addParameter("param3", GetUnit(valueUI, "[1]"));
@@ -497,7 +469,7 @@ void CE::DecTestSamplesPool::fillByTests() {
 		sig->addParameter("p4_Speed", findType("float", ""));
 
 		{
-			sig = sample->m_functions[0xc14c] = sample->m_functions[0xffffffffffe19b7c] = typeFactory.createSignature("Func1_109");
+			sig = sample->createFunc(0xffffffffffe19b7c, "Func1_109")->getSignature(); // 0xc14c
 			sig->addParameter("param1", findType("uint64_t", ""));
 			sig->addParameter("param2", findType("uint64_t", ""));
 			sig->addParameter("param3", findType("uint64_t", ""));
@@ -506,14 +478,14 @@ void CE::DecTestSamplesPool::fillByTests() {
 			sample->m_symbolCtx.m_globalSymbolTable->addSymbol(symFactory.createFunctionSymbol(0xc14c, sig, "Func1_109"), 0xc14c);
 			sample->m_symbolCtx.m_globalSymbolTable->addSymbol(symFactory.createFunctionSymbol(0xffffffffffe19b7c, sig, "Func2_109"), 0xffffffffffe19b7c);
 
-			sig = sample->m_functions[0xcd74] = typeFactory.createSignature("Func2_109");
+			sig = sample->createFunc(0xcd74, "Func2_109")->getSignature();
 			sig->addParameter("param1", findType("uint32_t", ""));
 			sig->addParameter("param2", findType("char", "[1]"));
 			sig->addParameter("param3", findType("char", "[1]"));
 			sig->setReturnType(findType("uint64_t"));
 			sample->m_symbolCtx.m_globalSymbolTable->addSymbol(symFactory.createFunctionSymbol(0xcd74, sig, "Func3_109"), 0xcd74);
 
-			sig = sample->m_functions[0xc208] = typeFactory.createSignature("Func4_109");
+			sig = sample->createFunc(0xc208, "Func4_109")->getSignature();
 			sig->addParameter("param1", findType("uint32_t", ""));
 			sig->addParameter("param2", findType("bool", ""));
 			sig->addParameter("param3", findType("bool", ""));
@@ -521,7 +493,7 @@ void CE::DecTestSamplesPool::fillByTests() {
 			sig->setReturnType(findType("uint64_t"));
 			sample->m_symbolCtx.m_globalSymbolTable->addSymbol(symFactory.createFunctionSymbol(0xc208, sig, "Func4_109"), 0xc208);
 
-			sig = sample->m_functions[0x7e1804] = typeFactory.createSignature("Func5_109");
+			sig = sample->createFunc(0x7e1804, "Func5_109")->getSignature();
 			sig->addParameter("param1", findType("uint32_t", ""));
 			sig->addParameter("param2", findType("uint64_t", ""));
 			sig->addParameter("param3", findType("bool", ""));
@@ -529,7 +501,7 @@ void CE::DecTestSamplesPool::fillByTests() {
 			sig->setReturnType(findType("uint32_t"));
 			sample->m_symbolCtx.m_globalSymbolTable->addSymbol(symFactory.createFunctionSymbol(0x7e1804, sig, "Func5_109"), 0x7e1804);
 
-			sig = sample->m_functions[0xffffffffff8e6ad4] = typeFactory.createSignature("Func6_109");
+			sig = sample->createFunc(0xffffffffff8e6ad4, "Func6_109")->getSignature();
 			sig->addParameter("param1", findType("uint64_t", ""));
 			sig->addParameter("param2", findType("uint64_t", ""));
 			sig->addParameter("param3", findType("uint32_t", ""));

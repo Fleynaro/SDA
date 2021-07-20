@@ -27,14 +27,11 @@ namespace CE
 			Function* m_func;
 			SymbolContext m_symbolCtx;
 			Decompiler::FunctionPCodeGraph* m_funcGraph = nullptr;
-			std::map<int64_t, DataType::IFunctionSignature*> m_functions;
 			DecTestSamplesPool* m_pool;
 
 			void decode();
 
-			Decompiler::DecompiledCodeGraph* decompile();
-
-			Decompiler::SdaCodeGraph* symbolize(Decompiler::DecompiledCodeGraph* decCodeGraph) const;
+			Function* createFunc(Offset offset, const std::string& name) const;
 		};
 
 		std::list<Sample*> m_samples;

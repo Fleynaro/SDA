@@ -269,26 +269,36 @@ namespace GUI
 			}
 
 			void generateCurlyBracket(const std::string& text, CE::Decompiler::LinearView::BlockList* blockList) override {
+				const auto isSelected = blockList == m_decCodeViewer->m_selectedBlockList;
 				if (text == "{") {
+					generateToken(text, TOKEN_CURLY_BRACKET);
+					if (isSelected) {
+						FrameItem(COLOR_FRAME_SELECTED_TEXT);
+					}
+					curlyBracketEvent(blockList);
+					generateEndLine();
 					ImGui::BeginGroup();
 				}
 				
-				CodeViewGenerator::generateCurlyBracket(text, blockList);
-				if (blockList == m_decCodeViewer->m_selectedBlockList) {
-					FrameItem(COLOR_FRAME_SELECTED_TEXT);
-				}
-				
 				if (text == "}") {
+					generateToken(text, TOKEN_CURLY_BRACKET);
+					if (isSelected) {
+						FrameItem(COLOR_FRAME_SELECTED_TEXT);
+					}
 					ImGui::EndGroup();
-					if (!m_hasBlockListSelected) {
-						if (ImGui::IsItemClicked()) {
-							m_decCodeViewer->m_selectedBlockList = blockList;
-							m_hasBlockListSelected = true;
-						}
-						if (ImGui::IsItemClicked(ImGuiMouseButton_Middle)) {
-							m_decCodeViewer->m_hidedBlockLists.insert(blockList);
-							m_hasBlockListSelected = true;
-						}
+					curlyBracketEvent(blockList);
+				}
+			}
+
+			void curlyBracketEvent(CE::Decompiler::LinearView::BlockList* blockList) {
+				if (!m_hasBlockListSelected) {
+					if (ImGui::IsItemClicked()) {
+						m_decCodeViewer->m_selectedBlockList = blockList;
+						m_hasBlockListSelected = true;
+					}
+					if (ImGui::IsItemClicked(ImGuiMouseButton_Middle)) {
+						m_decCodeViewer->m_hidedBlockLists.insert(blockList);
+						m_hasBlockListSelected = true;
 					}
 				}
 			}
@@ -308,6 +318,7 @@ namespace GUI
 			bool Asm = false;
 			bool PCode = false;
 			bool ExecCtxs = false;
+			bool DebugComments = true;
 		} m_show;
 		
 		DecompiledCodeViewer(CE::Decompiler::LinearView::BlockList* blockList)
@@ -330,6 +341,7 @@ namespace GUI
 	protected:
 		virtual void renderCode() {
 			CodeGenerator generator(this);
+			generator.m_SHOW_ALL_COMMENTS = m_show.DebugComments;
 			generator.generate(m_blockList);
 		}
 
@@ -377,6 +389,7 @@ namespace GUI
 		private:
 			void renderCode() override {
 				CodeGenerator generator(this);
+				generator.m_SHOW_ALL_COMMENTS = m_show.DebugComments;
 				generator.generateHeader(m_sdaCodeGraph);
 				generator.generateEndLine();
 				DecompiledCodeViewer::renderCode();
@@ -435,6 +448,9 @@ namespace GUI
 				}
 				if (ImGui::MenuItem("Show exec. contexts", nullptr, m_decompiledCodeViewer->m_show.ExecCtxs)) {
 					m_decompiledCodeViewer->m_show.ExecCtxs ^= true;
+				}
+				if (ImGui::MenuItem("Show comments", nullptr, m_decompiledCodeViewer->m_show.DebugComments)) {
+					m_decompiledCodeViewer->m_show.DebugComments ^= true;
 				}
 				ImGui::PopItemFlag();
 				ImGui::EndMenu();
