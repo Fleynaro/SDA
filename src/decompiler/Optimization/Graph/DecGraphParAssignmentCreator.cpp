@@ -40,9 +40,17 @@ void Optimization::GraphParAssignmentCreator::findAllLocalVarsAndGatherParentOpN
 			bool isParentOpNode = false;
 			if (auto opNode = dynamic_cast<OperationalNode*>(symbolLeaf->getParentNode())) {
 				if (opNode->m_operation == And) {
-					bool isSymbolInLeftNode = (opNode->m_leftNode == symbolLeaf);
-					m_localVars[localVar].m_opNodes.emplace_back(opNode, isSymbolInLeftNode);
-					isParentOpNode = true;
+					if (const auto parentOpNode = dynamic_cast<OperationalNode*>(opNode->getParentNode())) {
+						if (false && parentOpNode->m_operation == Shr) {
+							m_localVars[localVar].m_opNodes.push_back(parentOpNode);
+							isParentOpNode = true;
+						}
+					}
+					if (!isParentOpNode) {
+						const bool isSymbolInLeftNode = (opNode->m_leftNode == symbolLeaf);
+						m_localVars[localVar].m_opNodes.push_back(isSymbolInLeftNode ? opNode->m_rightNode : opNode->m_leftNode);
+						isParentOpNode = true;
+					}
 				}
 			}
 			m_localVars[localVar].areAllParentOpNode &= isParentOpNode;
@@ -58,9 +66,8 @@ void Optimization::GraphParAssignmentCreator::createParAssignmentsForLocalVars()
 		// try to change the size of the local var
 		if (info.areAllParentOpNode) {
 			ExprBitMask mask;
-			for (const auto& [opNode, isSymbolInLeftNode]: info.m_opNodes) {
-				const auto anotherOperand = (isSymbolInLeftNode ? opNode->m_rightNode : opNode->m_leftNode);
-				mask = mask | CalculateMask(anotherOperand);
+			for (const auto opNode : info.m_opNodes) {
+				mask = mask | CalculateMask(opNode);
 			}
 
 			// change the size of local var
@@ -69,8 +76,7 @@ void Optimization::GraphParAssignmentCreator::createParAssignmentsForLocalVars()
 				localVar->setSize(newLocalVarSize);
 				localVarInfo.m_register.m_valueRangeMask = BitMask64(newLocalVarSize);
 				// optimize all parent operational AND nodes
-				for (auto& pair : info.m_opNodes) {
-					const auto opNode = pair.first;
+				for (const auto opNode : info.m_opNodes) {
 					auto topNode = TopNode(opNode);
 					ExprOptimization exprOptimization(&topNode);
 					exprOptimization.start();

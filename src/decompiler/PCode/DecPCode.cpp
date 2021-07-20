@@ -1,10 +1,12 @@
 #include "DecPCode.h"
-//for debug x86
-#include <Zycore/Format.h>
-#include <Zycore/LibC.h>
 
 using namespace CE::Decompiler;
 using namespace PCode;
+
+Register::Register(RegisterId genericId, int index, BitMask64 valueRangeMask, Type type): m_genericId(genericId),
+	m_index(index), m_valueRangeMask(valueRangeMask), m_type(type) {
+	m_debugName = InstructionViewGenerator::GenerateRegisterName(*this);
+}
 
 Register::Type Register::getType() const {
 	return m_type;

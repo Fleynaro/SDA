@@ -67,7 +67,7 @@ namespace CE::Decompiler::Symbol
 		{}
 
 		HS getHash() override {
-			HS hs;
+			HS hs(0);
 			for (auto instr : getInstructionsRelatedTo())
 				hs = hs + (HS() << instr->getOffset());
 			return hs;

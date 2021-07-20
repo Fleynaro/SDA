@@ -75,6 +75,19 @@ namespace GUI
 			AbstractInstructionViewer::renderOperands();
 		}
 	};
+
+	class InstructionTableRowViewer2 : public AbstractInstructionViewer
+	{
+	public:
+		using AbstractInstructionViewer::AbstractInstructionViewer;
+
+	protected:
+		void renderMnemonic() override {
+			ImGui::TableNextColumn();
+			AbstractInstructionViewer::renderMnemonic();
+			SameLine(2.0f);
+		}
+	};
 	
 	class AbstractInstructionViewDecoder
 	{

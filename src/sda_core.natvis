@@ -1,17 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?> 
-<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010"> 
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="CE::Decompiler::PCode::Register">
+    <DisplayString>Reg: {m_debugName}</DisplayString>
+  </Type>
+
   <Type Name="CE::Decompiler::ExprTree::Node">
     <DisplayString>Expr: {m_updateDebugInfo}</DisplayString>
     <Expand>
         <Item Name="[expr]" Optional="true">m_updateDebugInfo</Item>
-    </Expand>
-  </Type>
-
-  <Type Name="CE::Decompiler::ExprTree::OperationalNode">
-    <DisplayString>Expr: {m_updateDebugInfo}</DisplayString>
-    <Expand>
-      <Item Name="[expr]" Optional="true">m_updateDebugInfo</Item>
-      <Item Name="[mask]" Optional="true">m_mask</Item>
     </Expand>
   </Type>
 </AutoVisualizer>

@@ -26,9 +26,10 @@ namespace CE::Decompiler
 		protected:
 			enum TokenType
 			{
-				TOKEN_OPERATION,
-				TOKEN_FUNCTION_CALL,
-				TOKEN_DATA_TYPE,
+				TOKEN_OPERATION,		// +/*/%
+				TOKEN_ROUND_BRACKET,	// {}
+				TOKEN_FUNCTION_CALL,	// func()
+				TOKEN_DATA_TYPE,		// float/int64_t
 				TOKEN_DEC_SYMBOL,
 				TOKEN_SDA_SYMBOL,
 				TOKEN_NUMBER,
@@ -110,9 +111,9 @@ namespace CE::Decompiler
 			}
 
 			virtual void generateCast(ISdaNode* node) {
-				generateToken("(", TOKEN_OTHER);
+				generateRoundBracket("(", node);
 				generateDataType(node->getCast()->getCastDataType());
-				generateToken(")", TOKEN_OTHER);
+				generateRoundBracket(")", node);
 			}
 
 			virtual void generateSdaNode(ISdaNode* node) {
@@ -217,13 +218,13 @@ namespace CE::Decompiler
 					if(m_debugMode) {
 						generateToken("<" + opSize + ">", TOKEN_DEBUG_INFO);
 					}
-					generateToken("(", TOKEN_OTHER);
+					generateRoundBracket("(", node);
 					generateNode(node->m_leftNode);
 					generateToken(", ", TOKEN_OTHER);
 					generateNode(node->m_rightNode);
 					generateToken(", ", TOKEN_OTHER);
 					generateToken(std::to_string(node->m_rightNode->getSize() * 0x8), TOKEN_OTHER);
-					generateToken(")", TOKEN_OTHER);
+					generateRoundBracket(")", node);
 					return;
 				}
 
@@ -238,7 +239,7 @@ namespace CE::Decompiler
 				}
 
 				const auto operation = GetOperation(node->m_operation);
-				generateToken("(", TOKEN_OTHER);
+				generateRoundBracket("(", node);
 				generateNode(node->m_leftNode);
 				generateToken(" ", TOKEN_OTHER);
 				generateToken(operation, TOKEN_OPERATION);
@@ -247,7 +248,7 @@ namespace CE::Decompiler
 				}
 				generateToken(" ", TOKEN_OTHER);
 				generateNode(node->m_rightNode);
-				generateToken(")", TOKEN_OTHER);
+				generateRoundBracket(")", node);
 			}
 
 			virtual void generateReadValueNode(ReadValueNode* node) {
@@ -270,34 +271,34 @@ namespace CE::Decompiler
 				if (!node->m_leftNode || !node->m_rightNode)
 					return;
 				generateToken(magic_enum::enum_name(node->m_funcId).data(), TOKEN_FUNCTION_CALL);
-				generateToken("(", TOKEN_OTHER);
+				generateRoundBracket("(", node);
 				generateNode(node->m_leftNode);
 				generateToken(", ", TOKEN_OTHER);
 				generateNode(node->m_rightNode);
-				generateToken(")", TOKEN_OTHER);
+				generateRoundBracket(")", node);
 			}
 
 			virtual void generateFloatFunctionalNode(FloatFunctionalNode* node) {
 				if (!node->m_leftNode)
 					return;
 				generateToken(magic_enum::enum_name(node->m_funcId).data(), TOKEN_FUNCTION_CALL);
-				generateToken("(", TOKEN_OTHER);
+				generateRoundBracket("(", node);
 				generateNode(node->m_leftNode);
-				generateToken(")", TOKEN_OTHER);
+				generateRoundBracket(")", node);
 			}
 
 			virtual void generateFunctionCall(FunctionCall* node) {
-				generateToken("(", TOKEN_OTHER);
+				generateRoundBracket("(", node);
 				generateNode(node->getDestination());
-				generateToken(")", TOKEN_OTHER);
+				generateRoundBracket(")", node);
 				
-				generateToken("(", TOKEN_OTHER);
+				generateRoundBracket("(", node);
 				for (auto it = node->m_paramNodes.begin(); it != node->m_paramNodes.end(); ++it) {
 					generateNode(*it);
 					if(it != std::prev(node->m_paramNodes.end()))
 						generateToken(", ", TOKEN_OTHER);
 				}
-				generateToken(")", TOKEN_OTHER);
+				generateRoundBracket(")", node);
 			}
 
 			virtual void generateSymbolLeaf(SymbolLeaf* leaf) {
@@ -320,7 +321,7 @@ namespace CE::Decompiler
 				const auto operation = GetOperation(node->m_operation);
 				const auto opSize = GetOperationSize(node->getSize(), node->isFloatingPoint());
 
-				generateToken("(", TOKEN_OTHER);
+				generateRoundBracket("(", node);
 				for (auto it = node->m_terms.begin(); it != node->m_terms.end(); ++it) {
 					generateNode(*it);
 					if (it != std::prev(node->m_terms.end()) || node->m_constTerm->getValue()) {
@@ -336,7 +337,7 @@ namespace CE::Decompiler
 				if (node->m_constTerm->getValue()) {
 					generateNode(node->m_constTerm);
 				}
-				generateToken(")", TOKEN_OTHER);
+				generateRoundBracket(")", node);
 			}
 
 			virtual void generateMirrorNode(MirrorNode* node) {
@@ -350,13 +351,11 @@ namespace CE::Decompiler
 			virtual void generateSimpleCondition(Condition* node) {
 				if (!node->m_leftNode || !node->m_rightNode)
 					return;
-				generateToken("(", TOKEN_OTHER);
 				generateNode(node->m_leftNode);
 				generateToken(" ", TOKEN_OTHER);
 				generateToken(GetConditionType(node->m_cond), TOKEN_OPERATION);
 				generateToken(" ", TOKEN_OTHER);
 				generateNode(node->m_rightNode);
-				generateToken(")", TOKEN_OTHER);
 			}
 
 			virtual void generateCompositeCondition(CompositeCondition* node) {
@@ -369,19 +368,23 @@ namespace CE::Decompiler
 				}
 				
 				if (node->m_cond == CompositeCondition::Not) {
-					generateToken("!(", TOKEN_OTHER);
+					generateToken("!", TOKEN_OTHER);
+					generateRoundBracket("(", node);
 					generateNode(node->m_leftCond);
-					generateToken(")", TOKEN_OTHER);
+					generateRoundBracket(")", node);
 					return;
 				}
-				
-				generateToken("(", TOKEN_OTHER);
+
+				const auto needBrackets = !dynamic_cast<DecBlock::JumpTopNode*>(node->getParentNode());
+				if (needBrackets)
+					generateRoundBracket("(", node);
 				generateNode(node->m_leftCond);
 				generateToken(" ", TOKEN_OTHER);
 				generateToken(GetCompConditionType(node->m_cond), TOKEN_OPERATION);
 				generateToken(" ", TOKEN_OTHER);
 				generateNode(node->m_rightCond);
-				generateToken(")", TOKEN_OTHER);
+				if (needBrackets)
+					generateRoundBracket(")", node);
 			}
 
 			virtual void generateDecSymbol(Symbol::Symbol* symbol) {
@@ -410,6 +413,10 @@ namespace CE::Decompiler
 
 			virtual void generateDataType(DataTypePtr dataType) {
 				generateToken(dataType->getDisplayName(), TOKEN_DATA_TYPE);
+			}
+
+			virtual void generateRoundBracket(const std::string& text, INode* node) {
+				generateToken(text, TOKEN_ROUND_BRACKET);
 			}
 
 			virtual void generateToken(const std::string& text, TokenType tokenType) = 0;
@@ -497,10 +504,10 @@ namespace CE::Decompiler
 		enum TokenType
 		{
 			TOKEN_TAB,
-			TOKEN_BRACE,
-			TOKEN_OPERATOR,
+			TOKEN_CURLY_BRACKET,	// ()
+			TOKEN_OPERATOR,			// if/while/return
 			TOKEN_LABEL,
-			TOKEN_SEMICOLON,
+			TOKEN_SEMICOLON,		// ;
 			TOKEN_END_LINE,
 			TOKEN_COMMENT,
 			TOKEN_DEBUG_INFO,
@@ -564,7 +571,7 @@ namespace CE::Decompiler
 		
 		virtual void generateBlockList(LinearView::BlockList* blockList, bool generatingTabs = true, bool generatingBraces = true) {
 			if (generatingBraces) {
-				generateBrace("{", blockList);
+				generateCurlyBracket("{", blockList);
 				generateEndLine();
 			}
 			if (generatingTabs) {
@@ -591,13 +598,8 @@ namespace CE::Decompiler
 				m_tabs.pop_back();
 			}
 			if (generatingBraces) {
-				generateBrace("}", blockList);
+				generateCurlyBracket("}", blockList);
 			}
-		}
-
-		virtual void generateBrace(const std::string& text, LinearView::BlockList* blockList) {
-			generateTabs();
-			generateToken(text, TOKEN_BRACE);
 		}
 
 		virtual void generateBlock(LinearView::Block* block) {
@@ -745,6 +747,11 @@ namespace CE::Decompiler
 				generateToken(comment2, TOKEN_COMMENT);
 				generateEndLine();
 			}
+		}
+
+		virtual void generateCurlyBracket(const std::string& text, LinearView::BlockList* blockList) {
+			generateTabs();
+			generateToken(text, TOKEN_CURLY_BRACKET);
 		}
 		
 		virtual void generateToken(const std::string& text, TokenType tokenType) = 0;

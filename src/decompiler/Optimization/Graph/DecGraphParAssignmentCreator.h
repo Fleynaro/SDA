@@ -12,7 +12,7 @@ namespace CE::Decompiler::Optimization
 
 		struct LocalVarInfo {
 			bool areAllParentOpNode = true;
-			std::list<std::pair<OperationalNode*, bool>> m_opNodes;
+			std::list<INode*> m_opNodes;
 		};
 		std::map<Symbol::LocalVariable*, LocalVarInfo> m_localVars;
 	public:

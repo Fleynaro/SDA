@@ -88,19 +88,21 @@ void RegisterExecContext::join(RegisterExecContext* ctx) {
 			auto& regs2 = it->second; // from m_registers
 
 			// find equal registers with equal top nodes (expr), they are mutual
-			for (auto it1 = regs1.begin(); it1 != regs1.end(); it1++) {
-				bool hasFound = false;
-				for (auto it2 = regs2.begin(); it2 != regs2.end(); it2++) {
+			auto it1 = regs1.begin();
+			while (it1 != regs1.end()) {
+				auto it2 = regs2.begin();
+				while (it2 != regs2.end()) {
 					if (it1->m_register == it2->m_register && it1->m_expr->getNode() == it2->m_expr->getNode()) {
 						neededRegs.push_back(*it2);
-						regs1.erase(it1);
+						it1 = regs1.erase(it1);
 						regs2.erase(it2);
-						hasFound = true;
 						break;
 					}
+					++it2;
 				}
-				if (hasFound)
+				if (it1 == regs1.end())
 					break;
+				++it1;
 			}
 
 			// if there are registers which come from different blocks

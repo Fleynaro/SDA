@@ -145,23 +145,6 @@ namespace GUI
 		{
 			class CanvasPCodeBlock : public Block
 			{
-				class InstructioViewer : public AbstractInstructionViewer
-				{
-				public:
-					using AbstractInstructionViewer::AbstractInstructionViewer;
-
-				protected:
-					void renderMnemonic() override {
-						ImGui::TableNextColumn();
-						AbstractInstructionViewer::renderMnemonic();
-						SameLine(2.0f);
-					}
-
-					void renderOperands() override {
-						AbstractInstructionViewer::renderOperands();
-					}
-				};
-				
 				FuncGraphViewerCanvas* m_canvas; //todo: remove
 			public:
 				const CE::Decompiler::PCodeBlock* m_pcodeBlock;
@@ -191,7 +174,7 @@ namespace GUI
 							InstructionViewInfo instrViewInfo;
 							auto image = m_canvas->m_panel->m_imageDec->getImage();
 							m_canvas->m_panel->m_instructionViewDecoder->decode(image->getData() + image->toImageOffset(offset), &instrViewInfo);
-							InstructioViewer instructionViewer(&instrViewInfo);
+							InstructionTableRowViewer2 instructionViewer(&instrViewInfo);
 							instructionViewer.show();
 
 							if (m_canvas->m_panel->m_showPCode) {

@@ -268,6 +268,29 @@ namespace GUI
 				ImGui::RenderArrow(window->DrawList, arrowPos, lineColor, ImGuiDir_Right, 0.7f);
 			}
 		};
+
+		enum class DecompilerStep
+		{
+			DECOMPILING,
+			PROCESSING,
+			SYMBOLIZING,
+			FINAL_PROCESSING,
+			DEFAULT = FINAL_PROCESSING
+		};
+
+		enum class SymbolizingStep
+		{
+			BUILDING,
+			CALCULATING,
+			DEFAULT = CALCULATING
+		};
+
+		enum class FinalProcessingStep
+		{
+			MEMORY_OPTIMIZING = 1,
+			USELESS_LINES_OPTIMIZING = 2,
+			DEFAULT = MEMORY_OPTIMIZING | USELESS_LINES_OPTIMIZING
+		};
 		
 		CE::ImageDecorator* m_imageDec;
 		AbstractSectionViewer* m_imageSectionViewer = nullptr;
@@ -276,6 +299,10 @@ namespace GUI
 		MenuListView<const CE::ImageSection*> m_imageSectionMenuListView;
 		StdWindow* m_funcGraphViewerWindow = nullptr;
 		StdWindow* m_decompiledCodeViewerWindow = nullptr;
+
+		DecompilerStep m_decompilerStep = DecompilerStep::DEFAULT;
+		SymbolizingStep m_symbolizingStep = SymbolizingStep::DEFAULT;
+		FinalProcessingStep m_finalProcessingStep = FinalProcessingStep::DEFAULT;
 	public:
 		ImageContentViewerPanel(CE::ImageDecorator* imageDec)
 			: AbstractPanel("Image content viewer: " + imageDec->getName()), m_imageDec(imageDec), m_imageSectionListModel(imageDec->getImage())
@@ -365,6 +392,44 @@ namespace GUI
 						if (ImGui::MenuItem("Decompile")) {
 							decompile(codeSectionViewer->m_curFuncPCodeGraph);
 						}
+
+						ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
+						if (ImGui::MenuItem("Decompiling step", nullptr, m_decompilerStep >= DecompilerStep::DECOMPILING)) {
+							m_decompilerStep = DecompilerStep::DECOMPILING;
+						}
+						if (ImGui::MenuItem("Processing step", nullptr, m_decompilerStep >= DecompilerStep::PROCESSING)) {
+							m_decompilerStep = DecompilerStep::PROCESSING;
+						}
+						if (ImGui::MenuItem("Symbolizing step", nullptr, m_decompilerStep >= DecompilerStep::SYMBOLIZING)) {
+							m_decompilerStep = DecompilerStep::SYMBOLIZING;
+						}
+						if (ImGui::MenuItem("Final processing step", nullptr, m_decompilerStep >= DecompilerStep::FINAL_PROCESSING)) {
+							m_decompilerStep = DecompilerStep::FINAL_PROCESSING;
+						}
+						
+						if (ImGui::BeginMenu("Symbolizing steps"))
+						{
+							if (ImGui::MenuItem("Building step", nullptr, m_symbolizingStep >= SymbolizingStep::BUILDING)) {
+								m_symbolizingStep = SymbolizingStep::BUILDING;
+							}
+							if (ImGui::MenuItem("Calculating step", nullptr, m_symbolizingStep >= SymbolizingStep::CALCULATING)) {
+								m_symbolizingStep = SymbolizingStep::CALCULATING;
+							}
+							ImGui::EndMenu();
+						}
+
+						if (ImGui::BeginMenu("Final processing steps"))
+						{
+							using namespace magic_enum::bitwise_operators;
+							if (ImGui::MenuItem("Memory optimizing step", nullptr, (m_finalProcessingStep | FinalProcessingStep::MEMORY_OPTIMIZING) == m_finalProcessingStep)) {
+								m_finalProcessingStep ^= FinalProcessingStep::MEMORY_OPTIMIZING;
+							}
+							if (ImGui::MenuItem("Useless lines optimizing step", nullptr, (m_finalProcessingStep | FinalProcessingStep::USELESS_LINES_OPTIMIZING) == m_finalProcessingStep)) {
+								m_finalProcessingStep ^= FinalProcessingStep::USELESS_LINES_OPTIMIZING;
+							}
+							ImGui::EndMenu();
+						}
+						ImGui::PopItemFlag();
 						ImGui::EndMenu();
 					}
 				}
@@ -395,40 +460,70 @@ namespace GUI
 		}
 
 		void decompile(CE::Decompiler::FunctionPCodeGraph* functionPCodeGraph) {
-			CE::Decompiler::RegisterFactoryX86 registerFactoryX86;
+			using namespace CE::Decompiler;
+
+			RegisterFactoryX86 registerFactoryX86;
 			const auto funcOffset = functionPCodeGraph->getStartBlock()->getMinOffset().getByteOffset();
 			if(const auto function = m_imageDec->getFunctionAt(funcOffset)) {
 				const auto project = m_imageDec->getImageManager()->getProject();
 
-				// decompile
-				auto funcCallInfoCallback = [&](CE::Decompiler::PCode::Instruction* instr, int offset)
+				if (m_decompilerStep >= DecompilerStep::DECOMPILING)
+				{
+					auto funcCallInfoCallback = [&](Instruction* instr, int offset)
 					{
 						return project->getTypeManager()->getDefaultFuncSignature()->getCallInfo();
 					};
-				auto decompiler = new CE::Decompiler::Decompiler(
-					functionPCodeGraph, funcCallInfoCallback, function->getSignature()->getCallInfo().getReturnInfo(), &registerFactoryX86);
-				decompiler->start();
+					SdaCodeGraph* sdaCodeGraph = nullptr;
+					auto decCodeGraph = new DecompiledCodeGraph(functionPCodeGraph);
+					auto primaryDecompiler = new PrimaryDecompiler(decCodeGraph, &registerFactoryX86,
+						function->getSignature()->getCallInfo().getReturnInfo(), funcCallInfoCallback);
+					primaryDecompiler->start();
 
-				// sda building
-				auto sdaCodeGraph = new CE::Decompiler::SdaCodeGraph(decompiler->getDecGraph());
-				auto symbolCtx = function->getSymbolContext();
-				CE::Decompiler::Symbolization::SdaBuilding sdaBuilding(sdaCodeGraph, &symbolCtx, project);
-				sdaBuilding.start();
+					if (m_decompilerStep >= DecompilerStep::PROCESSING)
+					{
+						Optimization::ProcessDecompiledGraph(decCodeGraph, primaryDecompiler);
 
-				// data type calculater
-				CE::Decompiler::Symbolization::SdaDataTypesCalculater sdaDataTypesCalculater(sdaCodeGraph, symbolCtx.m_signature, project);
-				sdaDataTypesCalculater.start();
+						if (m_decompilerStep >= DecompilerStep::SYMBOLIZING)
+						{
+							if (m_symbolizingStep >= SymbolizingStep::BUILDING) {
+								sdaCodeGraph = new SdaCodeGraph(decCodeGraph);
+								auto symbolCtx = function->getSymbolContext();
+								Symbolization::SdaBuilding sdaBuilding(sdaCodeGraph, &symbolCtx, project);
+								sdaBuilding.start();
 
-				// memory optimization
-				CE::Decompiler::Optimization::SdaGraphMemoryOptimization memoryOptimization(sdaCodeGraph);
-				memoryOptimization.start();
+								if (m_symbolizingStep >= SymbolizingStep::CALCULATING) {
+									Symbolization::SdaDataTypesCalculater sdaDataTypesCalculater(sdaCodeGraph, symbolCtx.m_signature, project);
+									sdaDataTypesCalculater.start();
+								}
 
-				CE::Decompiler::Optimization::SdaGraphUselessLineOptimization uselessLineOptimization(sdaCodeGraph);
-				uselessLineOptimization.start();
+								if (m_decompilerStep >= DecompilerStep::FINAL_PROCESSING)
+								{
+									using namespace magic_enum::bitwise_operators;
+									if ((m_finalProcessingStep | FinalProcessingStep::MEMORY_OPTIMIZING) == m_finalProcessingStep) {
+										Optimization::SdaGraphMemoryOptimization memoryOptimization(sdaCodeGraph);
+										memoryOptimization.start();
+									}
 
-				delete m_decompiledCodeViewerWindow;
-				auto panel = new DecompiledCodeViewerPanel(sdaCodeGraph);
-				m_decompiledCodeViewerWindow = panel->createStdWindow();
+									if ((m_finalProcessingStep | FinalProcessingStep::USELESS_LINES_OPTIMIZING) == m_finalProcessingStep) {
+										Optimization::SdaGraphUselessLineOptimization uselessLineOptimization(sdaCodeGraph);
+										uselessLineOptimization.start();
+									}
+								}
+							}
+						}
+					}
+
+					// open the window
+					delete m_decompiledCodeViewerWindow;
+					DecompiledCodeViewerPanel* panel;
+					if (sdaCodeGraph) {
+						panel = new DecompiledCodeViewerPanel(sdaCodeGraph);
+					} else {
+						panel = new DecompiledCodeViewerPanel(decCodeGraph);
+					}
+					panel->m_decompiledCodeViewer->setInfoToShowAsm(m_imageDec->getImage(), new InstructionViewDecoderX86);
+					m_decompiledCodeViewerWindow = panel->createStdWindow();
+				}
 			}
 		}
 	};

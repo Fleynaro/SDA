@@ -74,7 +74,6 @@ namespace CE::Decompiler::ExprTree
 		INode* m_leftNode;
 		INode* m_rightNode;
 		OperationType m_operation;
-		bool m_notChangedMask;
 		PCode::Instruction* m_instr;
 
 		OperationalNode(INode* leftNode, INode* rightNode, OperationType operation, PCode::Instruction* instr = nullptr)

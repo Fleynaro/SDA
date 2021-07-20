@@ -30,12 +30,10 @@ namespace CE::Decompiler::PCode
 		Type m_type;
 
 	public:
-		std::string m_debugInfo;
+		std::string m_debugName;
 		BitMask64 m_valueRangeMask; // range of possible values
 
-		Register(RegisterId genericId = 0, int index = 0, BitMask64 valueRangeMask = 0x0, Type type = Type::Helper)
-			: m_genericId(genericId), m_index(index), m_valueRangeMask(valueRangeMask), m_type(type)
-		{}
+		Register(RegisterId genericId = 0, int index = 0, BitMask64 valueRangeMask = 0x0, Type type = Type::Helper);
 
 		Type getType() const;
 
