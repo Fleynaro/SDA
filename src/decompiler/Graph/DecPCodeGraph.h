@@ -3,6 +3,11 @@
 #include <decompiler/PCode/DecPCodeConstValueCalc.h>
 #include <set>
 
+namespace DB
+{
+	class ImageMapper;
+};
+
 namespace CE::Decompiler
 {
 	class ImagePCodeGraph;
@@ -11,6 +16,8 @@ namespace CE::Decompiler
 	// pcode graph for a non-branched block
 	class PCodeBlock
 	{
+		friend class ImageAnalyzer;
+		friend class DB::ImageMapper;
 		ComplexOffset m_minOffset;
 		ComplexOffset m_maxOffset;
 		std::list<Instruction*> m_instructions; // content of the block
@@ -34,7 +41,7 @@ namespace CE::Decompiler
 
 		std::list<PCodeBlock*> getRefHighBlocks() const;
 
-		std::list<Instruction*>& getInstructions();
+		const std::list<Instruction*>& getInstructions() const;
 
 		ComplexOffset getMinOffset() const;
 

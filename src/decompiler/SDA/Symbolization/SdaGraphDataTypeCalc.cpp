@@ -155,6 +155,14 @@ void SdaDataTypesCalculater::calculateDataTypes(INode* node) {
 			auto sdaConstTerm = dynamic_cast<SdaNumberLeaf*>(linearExpr->getConstTerm());
 			DataTypePtr calcPointerDataType = sdaConstTerm->getDataType();
 
+			/*
+			 * Important info about {player + 0x10} where player has a {Player*} data type:
+			 * Let access the field using 2 ways:
+			 * 1) *(int*)(player + 0x10) - error!!! because {player + 0x10} == player[0x10]
+			 * 2) *(int*)((uint64_t)player + 0x10) - correct
+			 * So you need cast all terms into {uint64_t}, no {Player*}
+			 */
+
 			//finding a pointer among terms (base term)
 			ISdaNode* sdaPointerNode = nullptr; // it is a pointer
 			int sdaPointerNodeIdx = 0;
@@ -171,7 +179,7 @@ void SdaDataTypesCalculater::calculateDataTypes(INode* node) {
 				}
 				idx++;
 			}
-
+			
 			//set the default data type (usually size of 8 bytes) for all terms (including the base)
 			cast(sdaConstTerm, calcPointerDataType);
 			for (auto termNode : linearExpr->getTerms()) {

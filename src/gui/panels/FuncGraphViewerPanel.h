@@ -162,34 +162,7 @@ namespace GUI
 						/*ImGui::TableSetupColumn("Offset");
 						ImGui::TableSetupColumn("Instruction");
 						ImGui::TableHeadersRow();*/
-						
-						const auto graphOffset = m_pcodeBlock->m_funcPCodeGraph->getStartBlock()->getMinOffset().getByteOffset();
-						auto offset = m_pcodeBlock->getMinOffset().getByteOffset();
-						while(offset < m_pcodeBlock->getMaxOffset().getByteOffset()) {
-							ImGui::TableNextRow();
-							ImGui::TableNextColumn();
-							using namespace Helper::String;
-							Text::Text("+" + NumberToHex(offset - graphOffset)).show();
-							
-							InstructionViewInfo instrViewInfo;
-							auto image = m_canvas->m_panel->m_imageDec->getImage();
-							m_canvas->m_panel->m_instructionViewDecoder->decode(image->getData() + image->toImageOffset(offset), &instrViewInfo);
-							InstructionTableRowViewer2 instructionViewer(&instrViewInfo);
-							instructionViewer.show();
-
-							if (m_canvas->m_panel->m_showPCode) {
-								if (const auto instr = m_canvas->m_panel->m_imageDec->getInstrPool()->getOrigInstructionAt(offset)) {
-									for (const auto& [orderId, pcodeInstr] : instr->m_pcodeInstructions) {
-										ImGui::TableNextColumn();
-										Text::Text("").show();
-										ImGui::TableNextColumn();
-										PCodeInstructionRender instrRender;
-										instrRender.generate(&pcodeInstr);
-									}
-								}
-							}
-							offset += instrViewInfo.m_length;
-						}
+						RenderAsmListing(m_pcodeBlock, m_canvas->m_panel->m_imageDec->getImage(), m_canvas->m_panel->m_instructionViewDecoder);
 						ImGui::EndTable();
 					}
 				}	

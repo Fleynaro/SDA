@@ -9,7 +9,9 @@ using namespace DataType;
 
 Unit::Unit(IType* type, std::list<int> levels)
 	: m_type(type), m_levels(levels)
-{}
+{
+	m_debugName = getDisplayName();
+}
 
 Unit::Group Unit::getGroup() {
 	return m_type->getGroup();

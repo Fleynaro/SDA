@@ -4,7 +4,6 @@
 #include <managers/SymbolTableManager.h>
 #include <managers/TypeManager.h>
 #include <decompiler/PCode/Decoders/DecPCodeDecoderX86.h>
-#include <decompiler/Graph/DecPCodeGraph.h>
 
 using namespace DB;
 using namespace CE;
@@ -141,8 +140,8 @@ void ImageMapper::decodePCodeBlock(PCodeBlock* block, ImageDecorator* imageDec) 
 		decoder.decode(imageDec->getImage()->getData() + offset, static_cast<int>(offset), imageDec->getImage()->getSize());
 		if (!decoder.getOrigInstruction())
 			break;
-		for (auto instr : decoder.getDecodedPCodeInstructions()) {
-			block->getInstructions().push_back(instr);
+		for (const auto instr : decoder.getDecodedPCodeInstructions()) {
+			block->m_instructions.push_back(instr);
 		}
 		offset += decoder.getOrigInstruction()->m_length;
 	}

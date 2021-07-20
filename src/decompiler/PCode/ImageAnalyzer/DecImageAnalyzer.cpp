@@ -81,7 +81,7 @@ void ImageAnalyzer::reconnectBlocksAndReplaceJmpByCall(std::list<PCodeBlock*> bl
 				m_decoder->m_instrPool->modifyInstruction(lastInstr, InstructionPool::MODIFICATOR_JMP_CALL);
 				// after modification add new RET instr into ref. block
 				auto lastInsertedInstr = &lastInstr->m_origInstruction->m_pcodeInstructions.rbegin()->second;
-				refBlock->getInstructions().push_back(lastInsertedInstr);
+				refBlock->m_instructions.push_back(lastInsertedInstr);
 			}
 			refBlock->removeNextBlock(block);
 		}
@@ -147,7 +147,7 @@ void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, Fu
 			break;
 		}
 
-		curBlock->getInstructions().push_back(instr);
+		curBlock->m_instructions.push_back(instr);
 		// calculate offset of the next instruction
 		auto nextInstrOffset = ComplexOffset(instr->getOffset() + 1);
 		bool needChangeNextInstrOffset = false;
@@ -198,13 +198,13 @@ void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, Fu
 
 					std::list<Instruction*> instrOfBlock1;
 					std::list<Instruction*> instrOfBlock2;
-					for (auto instr : alreadyExistingBlock->getInstructions()) {
+					for (const auto instr : alreadyExistingBlock->getInstructions()) {
 						if (instr->getOffset() < targetOffset)
 							instrOfBlock1.push_back(instr);
 						else instrOfBlock2.push_back(instr);
 					}
-					block1->getInstructions() = instrOfBlock1;
-					block2->getInstructions() = instrOfBlock2;
+					block1->m_instructions = instrOfBlock1;
+					block2->m_instructions = instrOfBlock2;
 
 					block2->setMaxOffset(alreadyExistingBlock->getMaxOffset());
 					block1->setMaxOffset(targetOffset);

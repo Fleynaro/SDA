@@ -50,8 +50,6 @@ namespace GUI
 						color = COLOR_DATA_TYPE;
 					else if (tokenType == TOKEN_DEC_SYMBOL)
 						color = 0xb7c2b2FF;
-					else if (tokenType == TOKEN_SDA_SYMBOL)
-						color = 0xcde0c5FF;
 					else if (tokenType == TOKEN_FUNCTION_CALL)
 						color = 0xdedac5FF;
 					else if (tokenType == TOKEN_DEBUG_INFO)
@@ -61,7 +59,7 @@ namespace GUI
 				}
 
 				void generateSdaSymbol(CE::Symbol::ISymbol* symbol) override {
-					ExprTreeViewGenerator::generateSdaSymbol(symbol);
+					RenderSdaSymbol(symbol);
 					auto& selSymbols = m_parentGen->m_decCodeViewer->m_selectedSymbols;
 					if (ImGui::IsItemClicked()) {
 						selSymbols[symbol] = 1000;
@@ -70,7 +68,7 @@ namespace GUI
 					const auto hasSymbolSelected = selSymbols.find(symbol) != selSymbols.end();
 					if (ImGui::IsItemHovered() || hasSymbolSelected) {
 						HighlightItem(ImGui::IsItemHovered() ? COLOR_BG_TEXT_ON_HOVER : COLOR_BG_SELECTED_TEXT);
-						ExprTreeViewGenerator::generateSdaSymbol(symbol);
+						RenderSdaSymbol(symbol);
 						if (hasSymbolSelected)
 							selSymbols[symbol]++;
 					}
@@ -79,6 +77,24 @@ namespace GUI
 						ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 						ImGui::SetTooltip(("Data type: " + symbol->getDataType()->getDisplayName()).c_str());
 					}
+				}
+
+				static void RenderSdaSymbol(CE::Symbol::ISymbol* symbol) {
+					ColorRGBA color = 0x0;
+					if (symbol->getType() == CE::Symbol::FUNC_PARAMETER)
+						color = 0xcf7e7eFF;
+					else if (symbol->getType() == CE::Symbol::GLOBAL_VAR)
+						color = 0x6784c7FF;
+					else if (symbol->getType() == CE::Symbol::LOCAL_INSTR_VAR)
+						color = 0x8dbfccFF;
+					else if (symbol->getType() == CE::Symbol::LOCAL_STACK_VAR)
+						color = 0xbaf5edFF;
+					else if (symbol->getType() == CE::Symbol::FUNCTION)
+						color = 0xcacc9fFF;
+					else if (symbol->getType() == CE::Symbol::STRUCT_FIELD)
+						color = 0xdbdbdbFF;
+					Text::ColoredText(symbol->getName(), color).show();
+					SameLine(1.0f);
 				}
 
 				void generateNumberLeaf(CE::Decompiler::NumberLeaf* leaf) override {
@@ -202,32 +218,54 @@ namespace GUI
 			}
 
 			void generateCode(CE::Decompiler::DecBlock* decBlock) override {
-				// show block with assembler code
-				if(m_decCodeViewer->m_showAsm) {
-					const auto pcodeBlock = decBlock->m_pcodeBlock;
+				using namespace CE::Decompiler;
+				const auto pcodeBlock = decBlock->m_pcodeBlock;
+				
+				// show block with assembler code & PCode
+				if(m_decCodeViewer->m_show.Asm) {
 					generateTabs();
-					if (ImGui::BeginTable(("table-" + pcodeBlock->getName()).c_str(), 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
+					if (ImGui::BeginTable(("table1-" + pcodeBlock->getName()).c_str(), 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
 					{
-						const auto graphOffset = pcodeBlock->m_funcPCodeGraph->getStartBlock()->getMinOffset().getByteOffset();
-						auto offset = pcodeBlock->getMinOffset().getByteOffset();
-						while (offset < pcodeBlock->getMaxOffset().getByteOffset()) {
-							ImGui::TableNextRow();
-							ImGui::TableNextColumn();
-							using namespace Helper::String;
-							Text::Text("+" + NumberToHex(offset - graphOffset)).show();
-
-							InstructionViewInfo instrViewInfo;
-							const auto image = m_decCodeViewer->m_image;
-							m_decCodeViewer->m_instructionViewDecoder->decode(image->getData() + image->toImageOffset(offset), &instrViewInfo);
-							InstructionTableRowViewer2 instructionViewer(&instrViewInfo);
-							instructionViewer.show();
-
-							offset += instrViewInfo.m_length;
+						RenderAsmListing(pcodeBlock, m_decCodeViewer->m_image, m_decCodeViewer->m_instructionViewDecoder, m_decCodeViewer->m_show.PCode);
+						ImGui::EndTable();
+					}
+				}
+				
+				CodeViewGenerator::generateCode(decBlock);
+				
+				// show states of execution contexts
+				if (m_decCodeViewer->m_show.ExecCtxs) {
+					auto execCtx = m_decCodeViewer->m_primaryDecompiler->m_decompiledBlocks[pcodeBlock].m_execCtx;
+					generateTabs();
+					if (ImGui::BeginTable(("table2-" + pcodeBlock->getName()).c_str(), 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
+					{
+						ImGui::TableSetupColumn("Register");
+						ImGui::TableSetupColumn("Using");
+						ImGui::TableSetupColumn("Expression");
+						ImGui::TableHeadersRow();
+						for(const auto& [regId, registers] : execCtx->m_registerExecCtx.m_registers) {
+							for (const auto regInfo : registers) {
+								ImGui::TableNextRow();
+								
+								ImGui::TableNextColumn();
+								const auto regName = InstructionViewGenerator::GenerateRegisterName(regInfo.m_register);
+								Text::Text(regName).show();
+								
+								ImGui::TableNextColumn();
+								std::string usingType = "not";
+								if (regInfo.m_using == RegisterExecContext::RegisterInfo::REGISTER_FULLY_USING)
+									usingType = "full";
+								else if (regInfo.m_using == RegisterExecContext::RegisterInfo::REGISTER_PARTIALLY_USING)
+									usingType = "part";
+								Text::Text(usingType).show();
+								
+								ImGui::TableNextColumn();
+								m_exprTreeGenerator.generate(regInfo.m_expr->getNode());
+							}
 						}
 						ImGui::EndTable();
 					}
 				}
-				CodeViewGenerator::generateCode(decBlock);
 			}
 
 			void generateCurlyBracket(const std::string& text, CE::Decompiler::LinearView::BlockList* blockList) override {
@@ -263,8 +301,14 @@ namespace GUI
 		std::set<CE::Decompiler::LinearView::BlockList*> m_hidedBlockLists;
 		CE::AbstractImage* m_image = nullptr;
 		AbstractInstructionViewDecoder* m_instructionViewDecoder = nullptr;
+		CE::Decompiler::PrimaryDecompiler* m_primaryDecompiler = nullptr;
 	public:
-		bool m_showAsm = false;
+		struct
+		{
+			bool Asm = false;
+			bool PCode = false;
+			bool ExecCtxs = false;
+		} m_show;
 		
 		DecompiledCodeViewer(CE::Decompiler::LinearView::BlockList* blockList)
 			: m_blockList(blockList)
@@ -277,6 +321,10 @@ namespace GUI
 		void setInfoToShowAsm(CE::AbstractImage* image, AbstractInstructionViewDecoder* instructionViewDecoder) {
 			m_image = image;
 			m_instructionViewDecoder = instructionViewDecoder;
+		}
+
+		void setInfoToShowExecCtxs(CE::Decompiler::PrimaryDecompiler* primaryDecompiler) {
+			m_primaryDecompiler = primaryDecompiler;
 		}
 
 	protected:
@@ -375,10 +423,20 @@ namespace GUI
 				if (ImGui::MenuItem("Show all blocks")) {
 					m_decompiledCodeViewer->m_hidedBlockLists.clear();
 				}
-				
-				if (ImGui::MenuItem("Show assembler", nullptr, m_decompiledCodeViewer->m_showAsm)) {
-					m_decompiledCodeViewer->m_showAsm ^= true;
+
+				ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
+				if (ImGui::MenuItem("Show assembler", nullptr, m_decompiledCodeViewer->m_show.Asm)) {
+					m_decompiledCodeViewer->m_show.Asm ^= true;
 				}
+				if (m_decompiledCodeViewer->m_show.Asm) {
+					if (ImGui::MenuItem("Show PCode", nullptr, m_decompiledCodeViewer->m_show.PCode)) {
+						m_decompiledCodeViewer->m_show.PCode ^= true;
+					}
+				}
+				if (ImGui::MenuItem("Show exec. contexts", nullptr, m_decompiledCodeViewer->m_show.ExecCtxs)) {
+					m_decompiledCodeViewer->m_show.ExecCtxs ^= true;
+				}
+				ImGui::PopItemFlag();
 				ImGui::EndMenu();
 			}
 		}

@@ -9,7 +9,11 @@ namespace CE
 	{
 		class Unit : public IType
 		{
+			IType* m_type;
+			std::list<int> m_levels;
 		public:
+			std::string m_debugName;
+			
 			Unit(IType* type, std::list<int> levels = {});
 
 			Group getGroup() override;
@@ -71,9 +75,6 @@ namespace CE
 			IType* getType() const;
 
 			static bool EqualPointerLvls(const std::list<int>& ptrList1, const std::list<int>& ptrList2);
-		private:
-			IType* m_type;
-			std::list<int> m_levels;
 		};
 	};
 

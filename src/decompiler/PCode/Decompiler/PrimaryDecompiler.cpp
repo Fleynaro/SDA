@@ -83,7 +83,7 @@ void AbstractPrimaryDecompiler::interpreteGraph(PCodeBlock* pcodeBlock, int vers
 		// execute the instructions and then change the execution context
 		blockInfo.m_decBlock->clearCode();
 		InstructionInterpreter instructionInterpreter(this, blockInfo.m_decBlock, blockInfo.m_execCtx);
-		for (auto instr : pcodeBlock->getInstructions()) {
+		for (const auto instr : pcodeBlock->getInstructions()) {
 			instructionInterpreter.execute(instr);
 		}
 

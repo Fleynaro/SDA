@@ -23,6 +23,9 @@ ISdaNode* SdaGoarBuilding::create() {
 	if (dynamic_cast<GoarNode*>(resultSdaNode)) {
 		const bool isPointer = m_baseSdaNode->getSrcDataType()->isPointer(); // getting a type without a cast (a pointer inside uint64_t)
 		if (isPointer) {
+			// remove {uint64_t} type
+			m_baseSdaNode->getCast()->clearCast();
+
 			//if the base is a kind of pointer then remove & operation (and set it up later in the top of the built GOAR)
 			if (auto addrGetting = dynamic_cast<IMappedToMemory*>(m_baseSdaNode)) {
 				addrGetting->setAddrGetting(false); // (&player) + 0x10 -> &(player.pos.x)

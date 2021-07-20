@@ -149,7 +149,7 @@ namespace CE::Decompiler
 			}
 
 			virtual void generateSdaReadValueNode(SdaReadValueNode* node) {
-				generateToken("*", TOKEN_OPERATION);
+				generateToken("*", TOKEN_DATA_TYPE);
 				generateNode(node->getAddress());
 			}
 

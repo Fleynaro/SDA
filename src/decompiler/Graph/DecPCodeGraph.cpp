@@ -91,7 +91,7 @@ std::list<PCodeBlock*> PCodeBlock::getRefHighBlocks() const {
 	return blocks;
 }
 
-std::list<Instruction*>& PCodeBlock::getInstructions() {
+const std::list<Instruction*>& PCodeBlock::getInstructions() const {
 	return m_instructions;
 }
 

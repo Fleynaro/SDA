@@ -514,7 +514,6 @@ namespace GUI
 					}
 
 					// open the window
-					delete m_decompiledCodeViewerWindow;
 					DecompiledCodeViewerPanel* panel;
 					if (sdaCodeGraph) {
 						panel = new DecompiledCodeViewerPanel(sdaCodeGraph);
@@ -522,6 +521,12 @@ namespace GUI
 						panel = new DecompiledCodeViewerPanel(decCodeGraph);
 					}
 					panel->m_decompiledCodeViewer->setInfoToShowAsm(m_imageDec->getImage(), new InstructionViewDecoderX86);
+					panel->m_decompiledCodeViewer->setInfoToShowExecCtxs(primaryDecompiler);
+					if (m_decompiledCodeViewerWindow) {
+						if (auto prevPanel = dynamic_cast<DecompiledCodeViewerPanel*>(m_decompiledCodeViewerWindow->getPanel()))
+							panel->m_decompiledCodeViewer->m_show = prevPanel->m_decompiledCodeViewer->m_show;
+					}
+					delete m_decompiledCodeViewerWindow;
 					m_decompiledCodeViewerWindow = panel->createStdWindow();
 				}
 			}

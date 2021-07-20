@@ -111,12 +111,12 @@ void RegisterExecContext::join(RegisterExecContext* ctx) {
 				auto mask1 = calculateMaxMask(regs1);
 				auto mask2 = calculateMaxMask(regs2);
 				auto resultMask = mask1 & mask2;
-				auto resultMasks = { resultMask };
+				//auto resultMasks = { resultMask };
 
 				// WAY 2 (multiple masks)
 				// calculate masks which belongs to different groups with non-intersected registers.
 				// need for XMM registers to split low and high parts into two independent local vars
-				// auto resultMasks = CalculateMasks(regs1, regs2); // todo: does it need?
+				auto resultMasks = CalculateMasks(regs1, regs2);
 
 				for (auto resultMask : resultMasks)
 				{

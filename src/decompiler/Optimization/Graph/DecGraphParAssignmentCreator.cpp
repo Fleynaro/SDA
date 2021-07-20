@@ -40,12 +40,12 @@ void Optimization::GraphParAssignmentCreator::findAllLocalVarsAndGatherParentOpN
 			bool isParentOpNode = false;
 			if (auto opNode = dynamic_cast<OperationalNode*>(symbolLeaf->getParentNode())) {
 				if (opNode->m_operation == And) {
-					if (const auto parentOpNode = dynamic_cast<OperationalNode*>(opNode->getParentNode())) {
-						if (false && parentOpNode->m_operation == Shr) {
+					/*if (const auto parentOpNode = dynamic_cast<OperationalNode*>(opNode->getParentNode())) { // for sample #50
+						if (parentOpNode->m_operation == Shr) {
 							m_localVars[localVar].m_opNodes.push_back(parentOpNode);
 							isParentOpNode = true;
 						}
-					}
+					}*/
 					if (!isParentOpNode) {
 						const bool isSymbolInLeftNode = (opNode->m_leftNode == symbolLeaf);
 						m_localVars[localVar].m_opNodes.push_back(isSymbolInLeftNode ? opNode->m_rightNode : opNode->m_leftNode);

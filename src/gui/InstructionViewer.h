@@ -1,5 +1,6 @@
 #pragma once
 #include "controllers/ImageContentController.h"
+#include "decompiler/Graph/DecPCodeGraph.h"
 #include "imgui_wrapper/controls/Control.h"
 
 namespace GUI
@@ -162,4 +163,33 @@ namespace GUI
 			SameLine(1.0f);
 		}
 	};
+
+	static void RenderAsmListing(const CE::Decompiler::PCodeBlock* pcodeBlock, CE::AbstractImage* image, AbstractInstructionViewDecoder* instrViewDecoder, bool showPCode = false) {
+		const auto graphOffset = pcodeBlock->m_funcPCodeGraph->getStartBlock()->getMinOffset().getByteOffset();
+		auto offset = pcodeBlock->getMinOffset().getByteOffset();
+		while (offset < pcodeBlock->getMaxOffset().getByteOffset()) {
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			using namespace Helper::String;
+			Text::Text("+" + NumberToHex(offset - graphOffset)).show();
+
+			InstructionViewInfo instrViewInfo;
+			instrViewDecoder->decode(image->getData() + image->toImageOffset(offset), &instrViewInfo);
+			InstructionTableRowViewer2 instructionViewer(&instrViewInfo);
+			instructionViewer.show();
+
+			if (showPCode) {
+				for (const auto instr : pcodeBlock->getInstructions()) {
+					if (instr->getOffset().getByteOffset() != offset)
+						continue;
+					ImGui::TableNextColumn();
+					Text::Text("").show();
+					ImGui::TableNextColumn();
+					PCodeInstructionRender instrRender;
+					instrRender.generate(instr);
+				}
+			}
+			offset += instrViewInfo.m_length;
+		}
+	}
 };
