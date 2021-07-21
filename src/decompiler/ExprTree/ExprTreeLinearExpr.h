@@ -3,7 +3,8 @@
 
 namespace CE::Decompiler::ExprTree
 {
-	class LinearExpr : public Node, public INodeAgregator, public PCode::IRelatedToInstruction
+	// todo: inherit from OperationalNode to make its processing single through one interface
+	class LinearExpr : public Node, public IOperation, public INodeAgregator, public PCode::IRelatedToInstruction
 	{
 		friend class ExprTreeViewGenerator;
 		std::list<INode*> m_terms;
@@ -14,6 +15,8 @@ namespace CE::Decompiler::ExprTree
 		LinearExpr(INumberLeaf* constTerm, OperationType operation = Add);
 
 		~LinearExpr();
+
+		OperationType getOperation() override;
 
 		void addTerm(INode* term);
 

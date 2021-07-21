@@ -16,6 +16,10 @@ LinearExpr::~LinearExpr() {
 	m_constTerm->removeBy(this);
 }
 
+OperationType LinearExpr::getOperation() {
+	return m_operation;
+}
+
 void LinearExpr::addTerm(INode* term) {
 	term->addParentNode(this);
 	m_terms.push_back(term);

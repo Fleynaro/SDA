@@ -101,25 +101,14 @@ void SdaDataTypesCalculater::calculateDataTypes(INode* node) {
 	sdaNode->getCast()->clearCast();
 
 	// method <cast> called for child nodes
-	if (auto sdaGenNode = dynamic_cast<SdaGenericNode*>(sdaNode))
+	if (const auto sdaGenNode = dynamic_cast<SdaGenericNode*>(sdaNode))
 	{
 		/*
 		TODO: for operation >> and & of not-pointer object with size up to 8 bytes
 		Create SUBPIECE node combined both >> and & operation to extract a field of a object
 		Next call createGoar passing object and offset
 		*/
-		if (auto castNode = dynamic_cast<CastNode*>(sdaGenNode->getNode())) {
-			if (auto srcSdaNode = dynamic_cast<ISdaNode*>(castNode->getNode())) {
-				auto srcDataType = srcSdaNode->getDataType();
-				auto srcBaseDataType = srcDataType->getBaseType();
-				const auto castDataType = m_project->getTypeManager()->getDefaultType(castNode->getSize(), castNode->isSigned());
-				sdaGenNode->setDataType(castDataType);
-				if (srcDataType->isPointer() || castNode->isSigned() != srcBaseDataType->isSigned() || castNode->getSize() != srcBaseDataType->getSize()) {
-					cast(srcSdaNode, castDataType);
-				}
-			}
-		}
-		else if (auto opNode = dynamic_cast<OperationalNode*>(sdaGenNode->getNode())) {
+		if (const auto opNode = dynamic_cast<OperationalNode*>(sdaGenNode->getNode())) {
 			if (!IsOperationUnsupportedToCalculate(opNode->m_operation)
 				&& opNode->m_operation != Concat && opNode->m_operation != Subpiece) {
 				if (auto sdaLeftSdaNode = dynamic_cast<ISdaNode*>(opNode->m_leftNode)) {
@@ -137,6 +126,7 @@ void SdaDataTypesCalculater::calculateDataTypes(INode* node) {
 						auto calcDataType = calcDataTypeForOperands(sdaLeftSdaNode->getDataType(), rightNodeDataType);
 						if (opNode->isFloatingPoint()) { // floating operation used?
 							calcDataType = calcDataTypeForOperands(calcDataType, m_project->getTypeManager()->getDefaultType(opNodeSize, true, true));
+							calcDataType->m_ampersand = true;
 						}
 						else {
 							if (opNodeSize > calcDataType->getSize()) {
@@ -144,9 +134,44 @@ void SdaDataTypesCalculater::calculateDataTypes(INode* node) {
 								calcDataType = m_project->getTypeManager()->getDefaultType(opNodeSize);
 							}
 						}
+						
 						cast(sdaLeftSdaNode, calcDataType);
 						cast(sdaRightSdaNode, calcDataType);
 						sdaGenNode->setDataType(calcDataType);
+					}
+				}
+			}
+			else if (const auto funcNode = dynamic_cast<FunctionalNode*>(opNode)) {
+				const auto booleanDataType = DataType::GetUnit(m_project->getTypeManager()->findTypeById(DataType::SystemType::Bool));
+				sdaGenNode->setDataType(booleanDataType);
+			}
+			else if (const auto floatFuncNode = dynamic_cast<FloatFunctionalNode*>(opNode)) {
+				DataTypePtr dataType;
+				if(floatFuncNode->m_funcId == FloatFunctionalNode::Id::TOINT) {
+					dataType = m_project->getTypeManager()->getDefaultType(floatFuncNode->getSize(), true);
+				} else {
+					dataType = m_project->getTypeManager()->getDefaultType(floatFuncNode->getSize(), false, true);
+				}
+				sdaGenNode->setDataType(dataType);
+				if (floatFuncNode->m_funcId == FloatFunctionalNode::Id::TOINT || floatFuncNode->m_funcId == FloatFunctionalNode::Id::TOFLOAT) {
+					/* --- $1 ---
+					 * var1 = (float)var2;
+					 * {var1} has a float type
+					 * {var2} has a int type
+					 * Don't cast {var2} to a float type because (float)var2 == TO_FLOAT(var2), then {var2} should not be a float
+					 */
+					sdaGenNode->getCast()->setCastDataType(dataType, true);
+				}
+			}
+			else if (const auto castNode = dynamic_cast<CastNode*>(sdaGenNode->getNode())) {
+				if (auto srcSdaNode = dynamic_cast<ISdaNode*>(castNode->getNode())) {
+					auto srcDataType = srcSdaNode->getDataType();
+					auto srcBaseDataType = srcDataType->getBaseType();
+					const auto castDataType = m_project->getTypeManager()->getDefaultType(castNode->getSize(), castNode->isSigned());
+					sdaGenNode->setDataType(castDataType);
+					if (srcDataType->isPointer() || castNode->isSigned() != srcBaseDataType->isSigned() || castNode->getSize() != srcBaseDataType->getSize()) {
+						// read above --- $1 ---
+						sdaGenNode->getCast()->setCastDataType(castDataType, true);
 					}
 				}
 			}

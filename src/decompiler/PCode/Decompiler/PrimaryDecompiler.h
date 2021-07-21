@@ -24,7 +24,8 @@ namespace CE::Decompiler
 	public:
 		struct LocalVarInfo {
 			Register m_register;
-			std::set<ExecContext*> m_execCtxs;
+			// parent contexts where par.assignments(localVar = 5) will be created
+			std::set<ExecContext*> m_parentExecCtxs;
 			bool m_used = false;
 		};
 

@@ -95,14 +95,13 @@ void RegisterExecContext::join(RegisterExecContext* ctx) {
 					if (it1->m_register == it2->m_register && it1->m_expr->getNode() == it2->m_expr->getNode()) {
 						neededRegs.push_back(*it2);
 						it1 = regs1.erase(it1);
-						regs2.erase(it2);
+						it2 = regs2.erase(it2);
 						break;
 					}
 					++it2;
 				}
-				if (it1 == regs1.end())
-					break;
-				++it1;
+				if (it1 != regs1.end() && it2 == regs2.end())
+					++it1;
 			}
 
 			// if there are registers which come from different blocks
@@ -126,7 +125,7 @@ void RegisterExecContext::join(RegisterExecContext* ctx) {
 					auto newUsing = RegisterInfo::REGISTER_NOT_USING;
 
 					// parent contexts
-					std::set<ExecContext*> newExecCtxs;
+					std::set<ExecContext*> newParentExecCtxs;
 
 					// iterate over all register parts in two parent contexts
 					Symbol::LocalVariable* existingLocalVar = nullptr;
@@ -134,7 +133,7 @@ void RegisterExecContext::join(RegisterExecContext* ctx) {
 						for (auto& regInfo : regs) {
 							// add contexts
 							if (regInfo.m_srcExecContext != m_execContext)
-								newExecCtxs.insert(regInfo.m_srcExecContext);
+								newParentExecCtxs.insert(regInfo.m_srcExecContext);
 
 							// change using state
 							if (newUsing == RegisterInfo::REGISTER_NOT_USING) {
@@ -165,8 +164,8 @@ void RegisterExecContext::join(RegisterExecContext* ctx) {
 											else {
 												// when eax=localVar and ax=5 coming in
 												if (regInfo.m_srcExecContext == m_execContext) {
-													for (auto ctx : localVarInfo.m_execCtxs)
-														newExecCtxs.insert(ctx);
+													for (auto ctx : localVarInfo.m_parentExecCtxs)
+														newParentExecCtxs.insert(ctx);
 												}
 											}
 											break;
@@ -195,8 +194,8 @@ void RegisterExecContext::join(RegisterExecContext* ctx) {
 
 					// add parent contexts where par. assignments (localVar = 5) will be created
 					auto& localVarInfo = m_decompiler->m_localVars[localVar];
-					for (auto ctx : newExecCtxs)
-						localVarInfo.m_execCtxs.insert(ctx);
+					for (auto ctx : newParentExecCtxs)
+						localVarInfo.m_parentExecCtxs.insert(ctx);
 
 					// add new register info
 					neededRegs.push_back(registerInfo);

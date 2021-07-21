@@ -67,8 +67,14 @@ namespace CE::Decompiler::ExprTree
 	// in these operations bits of operands can be viewed separately: And, Or, Xor
 	extern bool IsOperationManipulatedWithBitVector(OperationType opType);
 
+	class IOperation : public virtual INode
+	{
+	public:
+		virtual OperationType getOperation() = 0;
+	};
+
 	// Arithmetic, logic, floating or other operation
-	class OperationalNode : public Node, public INodeAgregator, public PCode::IRelatedToInstruction
+	class OperationalNode : public Node, public IOperation, public INodeAgregator, public PCode::IRelatedToInstruction
 	{
 	public:
 		INode* m_leftNode;
@@ -76,22 +82,14 @@ namespace CE::Decompiler::ExprTree
 		OperationType m_operation;
 		PCode::Instruction* m_instr;
 
-		OperationalNode(INode* leftNode, INode* rightNode, OperationType operation, PCode::Instruction* instr = nullptr)
-			: m_leftNode(leftNode), m_rightNode(rightNode), m_operation(operation), m_instr(instr)
-		{
-			leftNode->addParentNode(this);
-			if (rightNode != nullptr) {
-				rightNode->addParentNode(this);
-			}
-			else {
-				if (!IsOperationWithSingleOperand(operation))
-					throw std::logic_error("The second operand is empty in the binary operation.");
-			}
-		}
+		OperationalNode(INode* leftNode, INode* rightNode, OperationType operation,
+		                PCode::Instruction* instr = nullptr);
 
 		~OperationalNode();
 
 		void replaceNode(INode* node, INode* newNode) override;
+
+		OperationType getOperation() override;
 
 		std::list<INode*> getNodesList() override;
 

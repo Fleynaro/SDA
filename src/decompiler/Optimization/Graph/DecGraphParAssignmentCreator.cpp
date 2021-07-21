@@ -85,7 +85,7 @@ void Optimization::GraphParAssignmentCreator::createParAssignmentsForLocalVars()
 		}
 
 		// iterate over all ctxs and create assignments: localVar1 = 0x5
-		for (auto execCtx : localVarInfo.m_execCtxs) {
+		for (auto execCtx : localVarInfo.m_parentExecCtxs) {
 			const auto expr = execCtx->m_registerExecCtx.requestRegister(localVarInfo.m_register);
 
 			// to avoide: localVar1 = localVar1

@@ -141,13 +141,13 @@ namespace GUI
 					ImGui::EndTooltip();
 				}
 
-				void generateRoundBracket(const std::string& text, CE::Decompiler::INode* node) override {
+				void generateRoundBracket(const std::string& text, void* obj) override {
 					if (text == "(") {
 						ImGui::BeginGroup();
 					}
 					
-					ExprTreeViewGenerator::generateRoundBracket(text, node);
-					if(node == m_parentGen->m_decCodeViewer->m_selectedNode) {
+					ExprTreeViewGenerator::generateRoundBracket(text, obj);
+					if(obj == m_parentGen->m_decCodeViewer->m_selectedObj) {
 						FrameItem(COLOR_FRAME_SELECTED_TEXT);
 					}
 
@@ -156,7 +156,7 @@ namespace GUI
 						SameLine(0.0f);
 						if (!m_parentGen->m_hasNodeSelected) {
 							if (ImGui::IsItemClicked()) {
-								m_parentGen->m_decCodeViewer->m_selectedNode = node;
+								m_parentGen->m_decCodeViewer->m_selectedObj = obj;
 								m_parentGen->m_hasNodeSelected = true;
 							}
 						}
@@ -306,7 +306,7 @@ namespace GUI
 
 		CE::Decompiler::LinearView::BlockList* m_blockList;
 		std::map<CE::Symbol::ISymbol*, int> m_selectedSymbols; // todo: create a controller?
-		CE::Decompiler::INode* m_selectedNode = nullptr;
+		void* m_selectedObj = nullptr;
 		CE::Decompiler::LinearView::BlockList* m_selectedBlockList = nullptr;
 		std::set<CE::Decompiler::LinearView::BlockList*> m_hidedBlockLists;
 		CE::AbstractImage* m_image = nullptr;
@@ -351,7 +351,7 @@ namespace GUI
 			if (ImGui::IsWindowHovered()) {
 				if (ImGui::IsMouseClicked(0)) {
 					m_selectedSymbols.clear();
-					m_selectedNode = nullptr;
+					m_selectedObj = nullptr;
 					m_selectedBlockList = nullptr;
 				}
 			}

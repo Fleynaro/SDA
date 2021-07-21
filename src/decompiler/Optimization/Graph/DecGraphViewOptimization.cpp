@@ -40,8 +40,10 @@ void CE::Decompiler::Optimization::GraphViewOptimization::replaceConfusedNodesWi
 	if (!filter(node)) {
 		const auto it = nodeHashTolocalVar.find(node->getHash().getHashValue());
 		if (it != nodeHashTolocalVar.end()) {
-			node->replaceWith(new SymbolLeaf(it->second));
+			const auto symbolLeaf = new SymbolLeaf(it->second);
+			node->replaceWith(symbolLeaf);
 			delete node;
+			return;
 		}
 	}
 

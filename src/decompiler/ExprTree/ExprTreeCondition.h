@@ -3,6 +3,7 @@
 
 namespace CE::Decompiler::ExprTree
 {
+	// todo: inherit from OperationalNode to make its processing single through one interface
 	class AbstractCondition : public Node, public PCode::IRelatedToInstruction
 	{
 	public:

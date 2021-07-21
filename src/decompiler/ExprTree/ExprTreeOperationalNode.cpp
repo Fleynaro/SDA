@@ -48,6 +48,19 @@ bool ExprTree::IsOperationManipulatedWithBitVector(OperationType opType) {
 	return (opType == And || opType == Or || opType == Xor) && !IsOperationUnsupportedToCalculate(opType);
 }
 
+OperationalNode::OperationalNode(INode* leftNode, INode* rightNode, OperationType operation,
+                                 PCode::Instruction* instr): m_leftNode(leftNode), m_rightNode(rightNode),
+                                                             m_operation(operation), m_instr(instr) {
+	leftNode->addParentNode(this);
+	if (rightNode != nullptr) {
+		rightNode->addParentNode(this);
+	}
+	else {
+		if (!IsOperationWithSingleOperand(operation))
+			throw std::logic_error("The second operand is empty in the binary operation.");
+	}
+}
+
 OperationalNode::~OperationalNode() {
 	auto leftNode = m_leftNode;
 	if (leftNode != nullptr)
@@ -63,6 +76,10 @@ void OperationalNode::replaceNode(INode* node, INode* newNode) {
 	else if (m_rightNode == node) {
 		m_rightNode = newNode;
 	}
+}
+
+OperationType OperationalNode::getOperation() {
+	return m_operation;
 }
 
 std::list<INode*> OperationalNode::getNodesList() {

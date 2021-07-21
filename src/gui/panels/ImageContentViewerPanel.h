@@ -278,6 +278,18 @@ namespace GUI
 			DEFAULT = FINAL_PROCESSING
 		};
 
+		enum class ProcessingStep
+		{
+			CONDITION_PROCESSING		= 1 << 0,
+			EXPR_OPTIMIZING				= 1 << 1,
+			PAR_ASSIGNMENT_CREATING		= 1 << 2,
+			ORDER_FIXING				= 1 << 3,
+			VIEW_OPTIMIZING				= 1 << 4,
+			LINE_EXPANDING				= 1 << 5,
+			USELESS_LINES_REMOVING		= 1 << 6,
+			DEFAULT = 0xFFFFFFFF & ~USELESS_LINES_REMOVING
+		};
+
 		enum class SymbolizingStep
 		{
 			BUILDING,
@@ -287,8 +299,8 @@ namespace GUI
 
 		enum class FinalProcessingStep
 		{
-			MEMORY_OPTIMIZING = 1,
-			USELESS_LINES_OPTIMIZING = 2,
+			MEMORY_OPTIMIZING			= 1 << 0,
+			USELESS_LINES_OPTIMIZING	= 1 << 1,
 			DEFAULT = MEMORY_OPTIMIZING | USELESS_LINES_OPTIMIZING
 		};
 		
@@ -301,6 +313,7 @@ namespace GUI
 		StdWindow* m_decompiledCodeViewerWindow = nullptr;
 
 		DecompilerStep m_decompilerStep = DecompilerStep::DEFAULT;
+		ProcessingStep m_processingStep = ProcessingStep::DEFAULT;
 		SymbolizingStep m_symbolizingStep = SymbolizingStep::DEFAULT;
 		FinalProcessingStep m_finalProcessingStep = FinalProcessingStep::DEFAULT;
 	public:
@@ -406,6 +419,33 @@ namespace GUI
 						if (ImGui::MenuItem("Final processing step", nullptr, m_decompilerStep >= DecompilerStep::FINAL_PROCESSING)) {
 							m_decompilerStep = DecompilerStep::FINAL_PROCESSING;
 						}
+
+						if (ImGui::BeginMenu("Processing steps"))
+						{
+							using namespace magic_enum::bitwise_operators;
+							if (ImGui::MenuItem("Condition processing step", nullptr, (m_processingStep | ProcessingStep::CONDITION_PROCESSING) == m_processingStep)) {
+								m_processingStep ^= ProcessingStep::CONDITION_PROCESSING;
+							}
+							if (ImGui::MenuItem("Expr. optimizing step", nullptr, (m_processingStep | ProcessingStep::EXPR_OPTIMIZING) == m_processingStep)) {
+								m_processingStep ^= ProcessingStep::EXPR_OPTIMIZING;
+							}
+							if (ImGui::MenuItem("Par. assignment creating step", nullptr, (m_processingStep | ProcessingStep::PAR_ASSIGNMENT_CREATING) == m_processingStep)) {
+								m_processingStep ^= ProcessingStep::PAR_ASSIGNMENT_CREATING;
+							}
+							if (ImGui::MenuItem("Order fixing step", nullptr, (m_processingStep | ProcessingStep::ORDER_FIXING) == m_processingStep)) {
+								m_processingStep ^= ProcessingStep::ORDER_FIXING;
+							}
+							if (ImGui::MenuItem("View optimizing step", nullptr, (m_processingStep | ProcessingStep::VIEW_OPTIMIZING) == m_processingStep)) {
+								m_processingStep ^= ProcessingStep::VIEW_OPTIMIZING;
+							}
+							if (ImGui::MenuItem("Line expanding step", nullptr, (m_processingStep | ProcessingStep::LINE_EXPANDING) == m_processingStep)) {
+								m_processingStep ^= ProcessingStep::LINE_EXPANDING;
+							}
+							if (ImGui::MenuItem("Useless lines removing step", nullptr, (m_processingStep | ProcessingStep::USELESS_LINES_REMOVING) == m_processingStep)) {
+								m_processingStep ^= ProcessingStep::USELESS_LINES_REMOVING;
+							}
+							ImGui::EndMenu();
+						}
 						
 						if (ImGui::BeginMenu("Symbolizing steps"))
 						{
@@ -484,7 +524,47 @@ namespace GUI
 
 					if (m_decompilerStep >= DecompilerStep::PROCESSING)
 					{
-						Optimization::ProcessDecompiledGraph(decCodeGraph, primaryDecompiler);
+						using namespace magic_enum::bitwise_operators;
+						{
+							decCodeGraph->cloneAllExpr();
+
+							if ((m_processingStep | ProcessingStep::CONDITION_PROCESSING) == m_processingStep) {
+								Optimization::GraphCondBlockOptimization graphCondBlockOptimization(decCodeGraph);
+								graphCondBlockOptimization.start();
+							}
+
+							if ((m_processingStep | ProcessingStep::EXPR_OPTIMIZING) == m_processingStep) {
+								Optimization::GraphExprOptimization graphExprOptimization(decCodeGraph);
+								graphExprOptimization.start();
+							}
+
+							if ((m_processingStep | ProcessingStep::PAR_ASSIGNMENT_CREATING) == m_processingStep) {
+								Optimization::GraphParAssignmentCreator graphParAssignmentCreator(decCodeGraph, primaryDecompiler);
+								graphParAssignmentCreator.start();
+							}
+
+							if ((m_processingStep | ProcessingStep::ORDER_FIXING) == m_processingStep) {
+								Optimization::GraphLastLineAndConditionOrderFixing graphLastLineAndConditionOrderFixing(decCodeGraph);
+								graphLastLineAndConditionOrderFixing.start();
+							}
+
+							if ((m_processingStep | ProcessingStep::VIEW_OPTIMIZING) == m_processingStep) {
+								Optimization::GraphViewOptimization graphViewOptimization(decCodeGraph);
+								graphViewOptimization.start();
+							}
+
+							if ((m_processingStep | ProcessingStep::LINE_EXPANDING) == m_processingStep) {
+								Optimization::GraphLinesExpanding graphLinesExpanding(decCodeGraph);
+								graphLinesExpanding.start();
+							}
+
+							if ((m_processingStep | ProcessingStep::USELESS_LINES_REMOVING) == m_processingStep) {
+								Optimization::GraphUselessLineDeleting graphUselessLineDeleting(decCodeGraph);
+								graphUselessLineDeleting.start();
+							}
+							
+							DecompiledCodeGraph::CalculateHeightForDecBlocks(decCodeGraph->getStartBlock());
+						}
 
 						if (m_decompilerStep >= DecompilerStep::SYMBOLIZING)
 						{
@@ -501,7 +581,6 @@ namespace GUI
 
 								if (m_decompilerStep >= DecompilerStep::FINAL_PROCESSING)
 								{
-									using namespace magic_enum::bitwise_operators;
 									if ((m_finalProcessingStep | FinalProcessingStep::MEMORY_OPTIMIZING) == m_finalProcessingStep) {
 										Optimization::SdaGraphMemoryOptimization memoryOptimization(sdaCodeGraph);
 										memoryOptimization.start();

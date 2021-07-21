@@ -12,6 +12,7 @@ namespace CE
 			IType* m_type;
 			std::list<int> m_levels;
 		public:
+			bool m_ampersand = false;
 			std::string m_debugName;
 			
 			Unit(IType* type, std::list<int> levels = {});

@@ -50,14 +50,18 @@ namespace CE::Decompiler
 					if (m_debugMode && m_markSdaNodes) {
 						generateToken("@", TOKEN_DEBUG_INFO);
 					}
-					if (sdaNode->hasCast() && sdaNode->getCast()->hasExplicitCast()) {
-						generateCast(sdaNode);
+					const auto hasExplCast = sdaNode->hasCast() && sdaNode->getCast()->hasExplicitCast();
+					if (hasExplCast) {
+						generateCast(sdaNode->getCast());
+						generateRoundBracket("(", sdaNode->getCast());
 					}
-					if (auto addressGetting = dynamic_cast<IMappedToMemory*>(this)) {
+					if (auto addressGetting = dynamic_cast<IMappedToMemory*>(sdaNode)) {
 						if (addressGetting->isAddrGetting())
 							generateToken("&", TOKEN_OPERATION);
 					}
 					generateSdaNode(sdaNode);
+					if (hasExplCast)
+						generateRoundBracket(")", sdaNode->getCast());
 				}
 				else if(const auto assignmentNode = dynamic_cast<AssignmentNode*>(node)) {
 					generateAssignmentNode(assignmentNode);
@@ -110,18 +114,24 @@ namespace CE::Decompiler
 				}
 			}
 
-			virtual void generateCast(ISdaNode* node) {
+			virtual void generateCast(DataTypeCast* cast) {
 				/*if (dynamic_cast<DataType::Void*>(node->getCast()->getCastDataType()->getType()))
 					return;*/
-				// todo: (float) -> (float&)
-				generateRoundBracket("(", node);
-				generateDataType(node->getCast()->getCastDataType());
-				generateRoundBracket(")", node);
+				const auto dataType = cast->getCastDataType();
+				generateRoundBracket("(", cast);
+				generateDataType(dataType);
+				generateRoundBracket(")", cast);
 			}
 
 			virtual void generateSdaNode(ISdaNode* node) {
 				if (const auto sdaGenericNode = dynamic_cast<SdaGenericNode*>(node)) {
-					generateNode(sdaGenericNode->getNode());
+					if (const auto castNode = dynamic_cast<CastNode*>(sdaGenericNode->getNode())) {
+						// avoid to generate {uint32_t} in sda view
+						generateNode(castNode->getNode());
+					}
+					else {
+						generateNode(sdaGenericNode->getNode());
+					}
 				}
 				else if (const auto sdaReadValueNode = dynamic_cast<SdaReadValueNode*>(node)) {
 					generateSdaReadValueNode(sdaReadValueNode);
@@ -218,6 +228,12 @@ namespace CE::Decompiler
 			}
 
 			static bool OperationPriority(OperationType opType, OperationType parentOpType) {
+				/*
+				 * let {opType} = +, {parentOpType} = *
+				 * (X + 0.5f) * Y	- round brackets
+				 * X + 0.5f * Y		- no brackets
+				 */
+				
 				std::map priorities = {
 					std::pair(Mul, 13), std::pair(Div, 13), std::pair(Mod, 13), std::pair(fMul, 13), std::pair(fDiv, 13),
 					std::pair(Add, 12), std::pair(fAdd, 12),
@@ -232,6 +248,27 @@ namespace CE::Decompiler
 				if (it1 != priorities.end() && it2 != priorities.end())
 					return it1->second <= it2->second;
 				return true;
+			}
+
+			static bool DoesNeedRoundBrackets(IOperation* node) {
+				if (node->getParentNodes().size() != 1)
+					return true;
+
+				/*
+				 * return X + 0.5f;		- no brackets
+				 * Y = X + 0.5f;		- no brackets
+				 */
+				bool needBrackets = true;
+				if (const auto sdaParent = dynamic_cast<SdaGenericNode*>(node->getParentNode())) {
+					if ((needBrackets = !dynamic_cast<DecBlock::BlockTopNode*>(sdaParent->getParentNode()))) {
+						if ((needBrackets = !dynamic_cast<AssignmentNode*>(sdaParent->getParentNode()))) {
+							if (const auto parentOpNode = dynamic_cast<IOperation*>(sdaParent->getParentNode())) {
+								needBrackets &= OperationPriority(node->getOperation(), parentOpNode->getOperation());
+							}
+						}
+					}
+				}
+				return needBrackets;
 			}
 
 			virtual void generateOperationalNode(OperationalNode* node) {
@@ -265,20 +302,7 @@ namespace CE::Decompiler
 				}
 
 				const auto operation = GetOperation(node->m_operation);
-
-				bool needBrackets = true;
-				// todo: make for linear expr also (LinearExpr is a OperationalNode)
-				if (const auto sdaParent = dynamic_cast<SdaGenericNode*>(node->getParentNode())) {
-					if ((needBrackets = !dynamic_cast<DecBlock::BlockTopNode*>(sdaParent->getParentNode()))) {
-						if ((needBrackets = !dynamic_cast<AssignmentNode*>(sdaParent->getParentNode()))) {
-							if (const auto parentOpNode = dynamic_cast<OperationalNode*>(sdaParent->getParentNode())) {
-								needBrackets &= OperationPriority(node->m_operation, parentOpNode->m_operation);
-							} else if (const auto parentLinearExpr = dynamic_cast<LinearExpr*>(sdaParent->getParentNode())) {
-								needBrackets &= OperationPriority(node->m_operation, parentLinearExpr->m_operation);
-							}
-						}
-					}
-				}
+				const auto needBrackets = DoesNeedRoundBrackets(node);
 				
 				if (needBrackets)
 					generateRoundBracket("(", node);
@@ -324,10 +348,40 @@ namespace CE::Decompiler
 			virtual void generateFloatFunctionalNode(FloatFunctionalNode* node) {
 				if (!node->m_leftNode)
 					return;
+				if (node->m_funcId == FloatFunctionalNode::Id::TOINT || node->m_funcId == FloatFunctionalNode::Id::TOFLOAT) {
+					generateNode(node->m_leftNode);
+					return;
+				}
 				generateToken(magic_enum::enum_name(node->m_funcId).data(), TOKEN_FUNCTION_CALL);
 				generateRoundBracket("(", node);
 				generateNode(node->m_leftNode);
 				generateRoundBracket(")", node);
+			}
+
+			virtual void generateLinearExpr(LinearExpr* node) {
+				const auto operation = GetOperation(node->m_operation);
+				const auto opSize = GetOperationSize(node->getSize(), node->isFloatingPoint());
+
+				const auto needBrackets = DoesNeedRoundBrackets(node);
+				if(needBrackets)
+					generateRoundBracket("(", node);
+				for (auto it = node->m_terms.begin(); it != node->m_terms.end(); ++it) {
+					generateNode(*it);
+					if (it != std::prev(node->m_terms.end()) || node->m_constTerm->getValue()) {
+						generateToken(" ", TOKEN_OTHER);
+						generateToken(operation, TOKEN_OPERATION);
+						if (m_debugMode) {
+							generateToken(opSize, TOKEN_DEBUG_INFO);
+						}
+						generateToken(" ", TOKEN_OTHER);
+					}
+				}
+
+				if (node->m_constTerm->getValue()) {
+					generateNode(node->m_constTerm);
+				}
+				if (needBrackets)
+					generateRoundBracket(")", node);
 			}
 
 			virtual void generateFunctionCall(FunctionCall* node) {
@@ -360,41 +414,28 @@ namespace CE::Decompiler
 				generateToken("NaN", TOKEN_NUMBER);
 			}
 
-			virtual void generateLinearExpr(LinearExpr* node) {
-				const auto operation = GetOperation(node->m_operation);
-				const auto opSize = GetOperationSize(node->getSize(), node->isFloatingPoint());
-
-				generateRoundBracket("(", node);
-				for (auto it = node->m_terms.begin(); it != node->m_terms.end(); ++it) {
-					generateNode(*it);
-					if (it != std::prev(node->m_terms.end()) || node->m_constTerm->getValue()) {
-						generateToken(" ", TOKEN_OTHER);
-						generateToken(operation, TOKEN_OPERATION);
-						if (m_debugMode) {
-							generateToken(opSize, TOKEN_DEBUG_INFO);
-						}
-						generateToken(" ", TOKEN_OTHER);
-					}
-				}
-				
-				if (node->m_constTerm->getValue()) {
-					generateNode(node->m_constTerm);
-				}
-				generateRoundBracket(")", node);
-			}
-
 			virtual void generateMirrorNode(MirrorNode* node) {
 				generateNode(node->m_node);
 			}
 
+			static bool DoesNeedRoundBrackets(AbstractCondition* node) {
+				// todo: no good to count parents
+				return node->getParentNodes().size() != 1 || dynamic_cast<DecBlock::JumpTopNode*>(node->getParentNode());
+			}
+
 			virtual void generateBooleanValue(BooleanValue* node) {
+				const auto needBrackets = DoesNeedRoundBrackets(node);
+				if (needBrackets)
+					generateRoundBracket("(", node);
 				generateToken(node->m_value ? "true" : "false", TOKEN_NUMBER);
+				if (needBrackets)
+					generateRoundBracket(")", node);
 			}
 
 			virtual void generateSimpleCondition(Condition* node) {
 				if (!node->m_leftNode || !node->m_rightNode)
 					return;
-				const auto needBrackets = node->getParentNodes().size() != 1 || dynamic_cast<DecBlock::JumpTopNode*>(node->getParentNode());
+				const auto needBrackets = DoesNeedRoundBrackets(node);
 				if (needBrackets)
 					generateRoundBracket("(", node);
 				generateNode(node->m_leftNode);
@@ -410,7 +451,7 @@ namespace CE::Decompiler
 				if (!node->m_leftCond)
 					return;
 
-				const auto needBrackets = node->getParentNodes().size() != 1 || dynamic_cast<DecBlock::JumpTopNode*>(node->getParentNode());
+				const auto needBrackets = DoesNeedRoundBrackets(node);
 				if (node->m_cond == CompositeCondition::None) {
 					if(needBrackets)
 						generateRoundBracket("(", node);
@@ -469,7 +510,7 @@ namespace CE::Decompiler
 				generateToken(dataType->getDisplayName(), TOKEN_DATA_TYPE);
 			}
 
-			virtual void generateRoundBracket(const std::string& text, INode* node) {
+			virtual void generateRoundBracket(const std::string& text, void* obj) {
 				generateToken(text, TOKEN_ROUND_BRACKET);
 			}
 
@@ -735,13 +776,12 @@ namespace CE::Decompiler
 			}
 			if (!decBlock->m_symbolParallelAssignmentLines.empty()) {
 				generateTabs();
-				generateToken("//Symbol assignments", TOKEN_COMMENT);
+				generateToken("//Symbol parallel assignments:", TOKEN_COMMENT);
+				generateEndLine();
 				for (auto line : decBlock->m_symbolParallelAssignmentLines) {
 					generateTabs();
-					generateTab();
-					ExprTree::ExprTreeTextGenerator exprTreeTextGenerator;
-					exprTreeTextGenerator.generateNode(line->getNode());
-					generateToken("//" + exprTreeTextGenerator.m_text, TOKEN_COMMENT);
+					m_exprTreeViewGenerator->generateNode(line->getNode());
+					generateEndLine();
 				}
 			}
 		}
