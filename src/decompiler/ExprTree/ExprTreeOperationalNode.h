@@ -193,6 +193,8 @@ namespace CE::Decompiler::ExprTree
 
 		HS getHash() override;
 
+		INode* getNode() const;
+
 		bool isFloatingPoint() override;
 
 		INode* clone(NodeCloneContext* ctx) override;

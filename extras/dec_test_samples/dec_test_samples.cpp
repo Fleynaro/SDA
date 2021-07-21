@@ -250,6 +250,8 @@ void CE::DecTestSamplesPool::fillByTests() {
 		sig->addParameter("param1", findType("int32_t", ""));
 		sig->addParameter("param2", findType("int32_t", ""));
 		sig->setReturnType(findType("int32_t"));
+		sig = sample->createFunc(0xfffffffffffeca68, "Func_103")->getSignature();
+		sig->setReturnType(findType("uint64_t"));
 	}
 
 	{

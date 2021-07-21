@@ -50,18 +50,19 @@ namespace CE::Decompiler
 					if (m_debugMode && m_markSdaNodes) {
 						generateToken("@", TOKEN_DEBUG_INFO);
 					}
-					const auto hasExplCast = sdaNode->hasCast() && sdaNode->getCast()->hasExplicitCast();
-					if (hasExplCast) {
-						generateCast(sdaNode->getCast());
-						generateRoundBracket("(", sdaNode->getCast());
+					if (sdaNode->hasCast() && sdaNode->getCast()->hasExplicitCast()) {
+						generateCast(sdaNode->getCast(), false);
 					}
-					if (auto addressGetting = dynamic_cast<IMappedToMemory*>(sdaNode)) {
-						if (addressGetting->isAddrGetting())
+					if (auto memoryNode = dynamic_cast<IMappedToMemory*>(sdaNode)) {
+						bool isAddrGetting = memoryNode->isAddrGetting();
+						if (isAddrGetting) {
+							if (const auto funcCallNode = dynamic_cast<FunctionCall*>(sdaNode->getParentNode()))
+								isAddrGetting = funcCallNode->getDestination() != sdaNode;
+						}
+						if (isAddrGetting)
 							generateToken("&", TOKEN_OPERATION);
 					}
 					generateSdaNode(sdaNode);
-					if (hasExplCast)
-						generateRoundBracket(")", sdaNode->getCast());
 				}
 				else if(const auto assignmentNode = dynamic_cast<AssignmentNode*>(node)) {
 					generateAssignmentNode(assignmentNode);
@@ -114,22 +115,43 @@ namespace CE::Decompiler
 				}
 			}
 
-			virtual void generateCast(DataTypeCast* cast) {
+			virtual void generateCast(DataTypeCast* cast, bool ampersand = false) {
 				/*if (dynamic_cast<DataType::Void*>(node->getCast()->getCastDataType()->getType()))
 					return;*/
 				const auto dataType = cast->getCastDataType();
 				generateRoundBracket("(", cast);
 				generateDataType(dataType);
+				if(ampersand) {
+					/*
+					 * (float&)var		- interpreting bytes as {float} data type
+					 * (float)var		- function TO_FLOAT
+					 * var should be memory symbol, not operational node
+					 */
+					generateToken("&", TOKEN_OPERATION);
+				}
 				generateRoundBracket(")", cast);
 			}
 
 			virtual void generateSdaNode(ISdaNode* node) {
 				if (const auto sdaGenericNode = dynamic_cast<SdaGenericNode*>(node)) {
+					INode* childNode = nullptr;
 					if (const auto castNode = dynamic_cast<CastNode*>(sdaGenericNode->getNode())) {
-						// avoid to generate {uint32_t} in sda view
-						generateNode(castNode->getNode());
+						childNode = castNode->getNode();
 					}
-					else {
+					else if (const auto floatFuncNode = dynamic_cast<FloatFunctionalNode*>(sdaGenericNode->getNode())) {
+						if (floatFuncNode->m_funcId == FloatFunctionalNode::Id::TOINT || floatFuncNode->m_funcId == FloatFunctionalNode::Id::TOFLOAT) {
+							childNode = floatFuncNode->getNode();
+						}
+					}
+					
+					if (childNode) {
+						DataTypeCast cast;
+						cast.setCastDataType(sdaGenericNode->getSrcDataType(), true);
+						generateCast(&cast);
+						generateRoundBracket("(", &cast);
+						generateNode(childNode);
+						generateRoundBracket(")", &cast);
+					} else {
 						generateNode(sdaGenericNode->getNode());
 					}
 				}
@@ -260,6 +282,8 @@ namespace CE::Decompiler
 				 */
 				bool needBrackets = true;
 				if (const auto sdaParent = dynamic_cast<SdaGenericNode*>(node->getParentNode())) {
+					if (sdaParent->hasCast() && sdaParent->getCast()->hasExplicitCast())
+						return true;
 					if ((needBrackets = !dynamic_cast<DecBlock::BlockTopNode*>(sdaParent->getParentNode()))) {
 						if ((needBrackets = !dynamic_cast<AssignmentNode*>(sdaParent->getParentNode()))) {
 							if (const auto parentOpNode = dynamic_cast<IOperation*>(sdaParent->getParentNode())) {
@@ -348,10 +372,6 @@ namespace CE::Decompiler
 			virtual void generateFloatFunctionalNode(FloatFunctionalNode* node) {
 				if (!node->m_leftNode)
 					return;
-				if (node->m_funcId == FloatFunctionalNode::Id::TOINT || node->m_funcId == FloatFunctionalNode::Id::TOFLOAT) {
-					generateNode(node->m_leftNode);
-					return;
-				}
 				generateToken(magic_enum::enum_name(node->m_funcId).data(), TOKEN_FUNCTION_CALL);
 				generateRoundBracket("(", node);
 				generateNode(node->m_leftNode);
@@ -385,9 +405,12 @@ namespace CE::Decompiler
 			}
 
 			virtual void generateFunctionCall(FunctionCall* node) {
-				generateRoundBracket("(", node);
+				/*bool needBrackets = true;
+				if(const auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(node)) {
+					if(dynamic_cast<>)
+				}*/
+				
 				generateNode(node->getDestination());
-				generateRoundBracket(")", node);
 				
 				generateRoundBracket("(", node);
 				for (auto it = node->m_paramNodes.begin(); it != node->m_paramNodes.end(); ++it) {

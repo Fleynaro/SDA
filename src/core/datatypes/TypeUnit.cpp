@@ -94,7 +94,7 @@ int Unit::getPriority() {
 	bool isFloatingPoint = false;
 	if (auto sysType = dynamic_cast<SystemType*>(baseType))
 		isFloatingPoint = (sysType->getSet() == SystemType::Real);
-	return size | (hasPointerLvl << 3) | (isSigned << 4) | (isNotSimple << 5) | (isFloatingPoint << 6) | (!m_ampersand << 7);
+	return size | (hasPointerLvl << 3) | (isSigned << 4) | (isNotSimple << 5) | (isFloatingPoint << 6);
 }
 
 int Unit::getConversionPriority() {
@@ -112,7 +112,7 @@ int Unit::getConversionPriority() {
 
 		const auto it = typesInOrder.find(systemType->getTypeId());
 		if (it != typesInOrder.end())
-			return it->second | (!m_ampersand << 4);
+			return it->second;
 		return 0;
 	}
 	return -1;
@@ -140,13 +140,6 @@ std::string Unit::getDisplayName() {
 	auto name = m_type->getDisplayName();
 	for (auto level : m_levels) {
 		name += (level == 1 ? "*" : ("[" + std::to_string(level) + "]"));
-	}
-	if (m_ampersand) {
-		/*
-		 * (float&)var		- interpreting bytes as {float} data type
-		 * (float)var		- function TO_FLOAT
-		 */
-		name += "&";
 	}
 	return name;
 }

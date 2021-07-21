@@ -126,7 +126,6 @@ void SdaDataTypesCalculater::calculateDataTypes(INode* node) {
 						auto calcDataType = calcDataTypeForOperands(sdaLeftSdaNode->getDataType(), rightNodeDataType);
 						if (opNode->isFloatingPoint()) { // floating operation used?
 							calcDataType = calcDataTypeForOperands(calcDataType, m_project->getTypeManager()->getDefaultType(opNodeSize, true, true));
-							calcDataType->m_ampersand = true;
 						}
 						else {
 							if (opNodeSize > calcDataType->getSize()) {
@@ -160,7 +159,7 @@ void SdaDataTypesCalculater::calculateDataTypes(INode* node) {
 					 * {var2} has a int type
 					 * Don't cast {var2} to a float type because (float)var2 == TO_FLOAT(var2), then {var2} should not be a float
 					 */
-					sdaGenNode->getCast()->setCastDataType(dataType, true);
+					//sdaGenNode->getCast()->setCastDataType(dataType, true);
 				}
 			}
 			else if (const auto castNode = dynamic_cast<CastNode*>(sdaGenNode->getNode())) {
@@ -171,7 +170,7 @@ void SdaDataTypesCalculater::calculateDataTypes(INode* node) {
 					sdaGenNode->setDataType(castDataType);
 					if (srcDataType->isPointer() || castNode->isSigned() != srcBaseDataType->isSigned() || castNode->getSize() != srcBaseDataType->getSize()) {
 						// read above --- $1 ---
-						sdaGenNode->getCast()->setCastDataType(castDataType, true);
+						//sdaGenNode->getCast()->setCastDataType(castDataType, true);
 					}
 				}
 			}

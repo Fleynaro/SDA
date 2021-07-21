@@ -193,6 +193,10 @@ HS FloatFunctionalNode::getHash() {
 	return OperationalNode::getHash() << static_cast<int>(m_funcId);
 }
 
+INode* FloatFunctionalNode::getNode() const {
+	return m_leftNode;
+}
+
 bool FloatFunctionalNode::isFloatingPoint() {
 	return m_funcId != Id::TOINT;
 }
