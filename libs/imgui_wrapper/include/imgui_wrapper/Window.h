@@ -5,6 +5,10 @@
 
 namespace GUI
 {
+	static ImVec2 GetLeftBottom() {
+		return { ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y };
+	}
+	
 	class StdWindow :
 		public Control,
 		public Attribute::Id,
@@ -24,7 +28,9 @@ namespace GUI
 	public:
 		StdWindow(AbstractPanel* panel, ImGuiWindowFlags flags = ImGuiWindowFlags_None)
 			: m_panel(panel), Attribute::Flags<ImGuiWindowFlags, ImGuiWindowFlags_None>(flags)
-		{}
+		{
+			m_panel->m_window = this;
+		}
 
 		~StdWindow() override
 		{
@@ -125,7 +131,7 @@ namespace GUI
 
 		void placeAfterItem()
 		{
-			getPos() = { ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y };
+			getPos() = GetLeftBottom();
 		}
 
 	private:

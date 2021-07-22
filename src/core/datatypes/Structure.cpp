@@ -10,6 +10,7 @@ Structure::Structure(TypeManager* typeManager, const std::string& name, const st
 {
 	const auto factory = typeManager->getProject()->getSymbolManager()->getFactory(false);
 	m_defaultField = factory.createStructFieldSymbol(-1, -1, this, GetUnit(typeManager->getFactory().getDefaultType()), "undefined");
+	m_defaultField->m_isDefault = true;
 }
 
 Structure::~Structure() {

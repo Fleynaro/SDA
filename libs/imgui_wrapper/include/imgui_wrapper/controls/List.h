@@ -355,12 +355,13 @@ namespace GUI
 		{
 			m_selectEventHandler = selectEventHandler;
 		}
-	
-	protected:
+
 		std::list<ColInfo>& getColumnSetups() override
 		{
 			return m_tableListView->getColumnSetups();
 		}
+	
+	protected:
 		
 		bool renderTop() override
 		{

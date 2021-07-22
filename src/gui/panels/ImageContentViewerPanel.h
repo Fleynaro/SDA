@@ -287,7 +287,7 @@ namespace GUI
 			VIEW_OPTIMIZING				= 1 << 4,
 			LINE_EXPANDING				= 1 << 5,
 			USELESS_LINES_REMOVING		= 1 << 6,
-			DEFAULT = 0xFFFFFFFF & ~USELESS_LINES_REMOVING
+			DEFAULT = -1 & ~USELESS_LINES_REMOVING
 		};
 
 		enum class SymbolizingStep
@@ -351,6 +351,8 @@ namespace GUI
 			Show(m_funcGraphViewerWindow);
 			Show(m_decompiledCodeViewerWindow);
 			m_imageSectionViewer->show();
+
+			checkDecompiledCodeChanged();
 		}
 
 		void renderMenuBar() override {
@@ -514,6 +516,9 @@ namespace GUI
 						if(const auto func = m_imageDec->getFunctionAt(offset)) {
 							return func->getSignature()->getCallInfo();
 						}
+						const auto it = m_imageDec->getVirtFuncCalls().find(instr->getOffset());
+						if(it != m_imageDec->getVirtFuncCalls().end())
+							return it->second->getCallInfo();
 						return project->getTypeManager()->getDefaultFuncSignature()->getCallInfo();
 					};
 					SdaCodeGraph* sdaCodeGraph = nullptr;
@@ -598,7 +603,7 @@ namespace GUI
 					// open the window
 					DecompiledCodeViewerPanel* panel;
 					if (sdaCodeGraph) {
-						panel = new DecompiledCodeViewerPanel(sdaCodeGraph);
+						panel = new DecompiledCodeViewerPanel(sdaCodeGraph, function);
 					} else {
 						panel = new DecompiledCodeViewerPanel(decCodeGraph);
 					}
@@ -610,6 +615,19 @@ namespace GUI
 					}
 					delete m_decompiledCodeViewerWindow;
 					m_decompiledCodeViewerWindow = panel->createStdWindow();
+				}
+			}
+		}
+
+		// e.g. if a symbol was renamed then redecompile
+		void checkDecompiledCodeChanged() {
+			if (m_decompiledCodeViewerWindow) {
+				if (auto prevPanel = dynamic_cast<DecompiledCodeViewerPanel*>(m_decompiledCodeViewerWindow->getPanel())) {
+					if (prevPanel->m_decompiledCodeViewer->m_codeChanged) {
+						if (auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer)) {
+							decompile(codeSectionViewer->m_curFuncPCodeGraph);
+						}
+					}
 				}
 			}
 		}

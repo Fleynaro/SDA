@@ -11,7 +11,7 @@ bool AbstractSymbol::isAutoSymbol() {
 	return m_isAutoSymbol;
 }
 
-SymbolManager* AbstractSymbol::getManager() const
+SymbolManager* AbstractSymbol::getManager()
 {
 	return m_manager;
 }

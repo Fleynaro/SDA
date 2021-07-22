@@ -23,7 +23,7 @@ namespace CE::Decompiler
 	{
 		class ExprTreeViewGenerator
 		{
-		protected:
+		public:
 			enum TokenType
 			{
 				TOKEN_OPERATION,		// +/*/%
@@ -36,8 +36,7 @@ namespace CE::Decompiler
 				TOKEN_DEBUG_INFO,
 				TOKEN_OTHER
 			};
-		
-		public:
+			
 			bool m_debugMode = false;
 			bool m_markSdaNodes = false;
 
@@ -51,7 +50,7 @@ namespace CE::Decompiler
 						generateToken("@", TOKEN_DEBUG_INFO);
 					}
 					if (sdaNode->hasCast() && sdaNode->getCast()->hasExplicitCast()) {
-						generateCast(sdaNode->getCast(), false);
+						generateCast(sdaNode->getCast());
 					}
 					if (auto memoryNode = dynamic_cast<IMappedToMemory*>(sdaNode)) {
 						bool isAddrGetting = memoryNode->isAddrGetting();
@@ -115,11 +114,12 @@ namespace CE::Decompiler
 				}
 			}
 
-			virtual void generateCast(DataTypeCast* cast, bool ampersand = false) {
+			virtual void generateCast(DataTypeCast* cast, bool roundBraces = true, bool ampersand = false) {
 				/*if (dynamic_cast<DataType::Void*>(node->getCast()->getCastDataType()->getType()))
 					return;*/
 				const auto dataType = cast->getCastDataType();
-				generateRoundBracket("(", cast);
+				if(roundBraces)
+					generateRoundBracket("(", cast);
 				generateDataType(dataType);
 				if(ampersand) {
 					/*
@@ -129,7 +129,8 @@ namespace CE::Decompiler
 					 */
 					generateToken("&", TOKEN_OPERATION);
 				}
-				generateRoundBracket(")", cast);
+				if (roundBraces)
+					generateRoundBracket(")", cast);
 			}
 
 			virtual void generateSdaNode(ISdaNode* node) {
@@ -147,7 +148,7 @@ namespace CE::Decompiler
 					if (childNode) {
 						DataTypeCast cast;
 						cast.setCastDataType(sdaGenericNode->getSrcDataType(), true);
-						generateCast(&cast);
+						generateCast(&cast, false);
 						generateRoundBracket("(", &cast);
 						generateNode(childNode);
 						generateRoundBracket(")", &cast);
@@ -207,7 +208,7 @@ namespace CE::Decompiler
 				const auto isPointer = node->m_base->getDataType()->isPointer();
 				generateNode(node->m_base);
 				generateToken(isPointer ? "->" : ".", TOKEN_OPERATION);
-				generateToken(node->m_field->getName(), TOKEN_OTHER);
+				generateSdaSymbol(node->m_field);
 			}
 
 			virtual void generateGoarTopNode(GoarTopNode* node) {
@@ -255,6 +256,9 @@ namespace CE::Decompiler
 				 * (X + 0.5f) * Y	- round brackets
 				 * X + 0.5f * Y		- no brackets
 				 */
+
+				if (opType == parentOpType && IsOperationMoving(opType))
+					return false;
 				
 				std::map priorities = {
 					std::pair(Mul, 13), std::pair(Div, 13), std::pair(Mod, 13), std::pair(fMul, 13), std::pair(fDiv, 13),
@@ -267,8 +271,9 @@ namespace CE::Decompiler
 				};
 				const auto it1 = priorities.find(opType);
 				const auto it2 = priorities.find(parentOpType);
-				if (it1 != priorities.end() && it2 != priorities.end())
+				if (it1 != priorities.end() && it2 != priorities.end()) {
 					return it1->second <= it2->second;
+				}
 				return true;
 			}
 
@@ -286,8 +291,10 @@ namespace CE::Decompiler
 						return true;
 					if ((needBrackets = !dynamic_cast<DecBlock::BlockTopNode*>(sdaParent->getParentNode()))) {
 						if ((needBrackets = !dynamic_cast<AssignmentNode*>(sdaParent->getParentNode()))) {
-							if (const auto parentOpNode = dynamic_cast<IOperation*>(sdaParent->getParentNode())) {
-								needBrackets &= OperationPriority(node->getOperation(), parentOpNode->getOperation());
+							if ((needBrackets = !dynamic_cast<FunctionCall*>(sdaParent->getParentNode()))) {
+								if (const auto parentOpNode = dynamic_cast<IOperation*>(sdaParent->getParentNode())) {
+									needBrackets &= OperationPriority(node->getOperation(), parentOpNode->getOperation());
+								}
 							}
 						}
 					}
@@ -405,12 +412,19 @@ namespace CE::Decompiler
 			}
 
 			virtual void generateFunctionCall(FunctionCall* node) {
-				/*bool needBrackets = true;
-				if(const auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(node)) {
-					if(dynamic_cast<>)
-				}*/
-				
+				bool needBrackets = false;
+				if (const auto sdaNode = dynamic_cast<ISdaNode*>(node->getDestination())) {
+					// ((uint64_t)vt->f2)(5);
+					if (sdaNode->hasCast() && sdaNode->getCast()->hasExplicitCast()) {
+						needBrackets = true;
+					}
+				}
+
+				if(needBrackets)
+					generateRoundBracket("(", node);
 				generateNode(node->getDestination());
+				if (needBrackets)
+					generateRoundBracket(")", node);
 				
 				generateRoundBracket("(", node);
 				for (auto it = node->m_paramNodes.begin(); it != node->m_paramNodes.end(); ++it) {
@@ -617,8 +631,11 @@ namespace CE::Decompiler
 	{
 		ExprTree::ExprTreeViewGenerator* m_exprTreeViewGenerator;
 		std::set<LinearView::Block*> m_blocksToGoTo;
-		std::string m_tabs;
+
 	protected:
+		std::string m_tabs;
+	
+	public:
 		enum TokenType
 		{
 			TOKEN_TAB,
@@ -631,8 +648,7 @@ namespace CE::Decompiler
 			TOKEN_DEBUG_INFO,
 			TOKEN_OTHER
 		};
-	
-	public:
+		
 		bool m_SHOW_ALL_COMMENTS = true;
 		bool m_SHOW_ALL_GOTO = true;
 		bool m_SHOW_LINEAR_LEVEL_EXT = true;
@@ -650,16 +666,12 @@ namespace CE::Decompiler
 
 		virtual void generate(LinearView::BlockList* blockList) {
 			m_blocksToGoTo.clear();
-			generateBlockList(blockList, false, false);
+			generateBlockList(blockList, false);
 		}
 
-		virtual void generateHeader(SdaCodeGraph* sdaCodeGraph) {
-			auto symbols = sdaCodeGraph->getSdaSymbols();
-			symbols.sort([](CE::Symbol::ISymbol* a, CE::Symbol::ISymbol* b) {
-				return a->getName() < b->getName();
-				});
-
+		virtual void generateHeader(const std::list<CE::Symbol::ISymbol*>& symbols) {
 			for (auto symbol : symbols) {
+				generateTabs();
 				m_exprTreeViewGenerator->generateDataType(symbol->getDataType());
 				generateToken(" ", TOKEN_OTHER);
 				m_exprTreeViewGenerator->generateSdaSymbol(symbol);
@@ -688,12 +700,9 @@ namespace CE::Decompiler
 			}
 		}
 		
-		virtual void generateBlockList(LinearView::BlockList* blockList, bool generatingTabs = true, bool generatingBraces = true) {
+		virtual void generateBlockList(LinearView::BlockList* blockList, bool generatingBraces = true) {
 			if (generatingBraces) {
 				generateCurlyBracket("{", blockList);
-			}
-			if (generatingTabs) {
-				m_tabs.push_back('\t');
 			}
 			for (auto block : blockList->getBlocks()) {
 				if (const auto conditionBlock = dynamic_cast<LinearView::Condition*>(block)) {
@@ -712,11 +721,7 @@ namespace CE::Decompiler
 				}
 			}
 			generateGotoStatement(blockList);
-			if (generatingTabs) {
-				m_tabs.pop_back();
-			}
 			if (generatingBraces) {
-				generateTabs();
 				generateCurlyBracket("}", blockList);
 			}
 		}
@@ -732,9 +737,9 @@ namespace CE::Decompiler
 				generateEndLine();
 			}
 			if (m_blocksToGoTo.find(block) != m_blocksToGoTo.end()) {
-				const auto labelName = "label_" + pcodeBlock->getName() + ":";
 				generateTabs();
-				generateToken(labelName, TOKEN_LABEL);
+				generateLabelName(pcodeBlock);
+				generateToken(":", TOKEN_OTHER);
 				generateEndLine();
 			}
 			generateCode(block->m_decBlock);
@@ -830,7 +835,7 @@ namespace CE::Decompiler
 					if (gotoType == LinearView::GotoType::Normal) {
 						generateToken("goto", TOKEN_OPERATOR);
 						generateToken(" ", TOKEN_OTHER);
-						generateToken(blockName, TOKEN_LABEL);
+						generateLabelName(blockList->m_goto->m_decBlock->m_pcodeBlock);
 						m_blocksToGoTo.insert(blockList->m_goto);
 					}
 					else if (gotoType == LinearView::GotoType::Break) {
@@ -864,12 +869,23 @@ namespace CE::Decompiler
 		}
 
 		virtual void generateCurlyBracket(const std::string& text, LinearView::BlockList* blockList) {
+			if (text == "}") {
+				m_tabs.pop_back();
+				generateTabs();
+			}
 			generateToken(text, TOKEN_CURLY_BRACKET);
-			if(text == "{")
+			if (text == "{") {
 				generateEndLine();
+				m_tabs.push_back('\t');
+			}
 		}
 		
 		virtual void generateToken(const std::string& text, TokenType tokenType) = 0;
+
+		void generateLabelName(PCodeBlock* pcodeBlock) {
+			const auto labelName = "label_" + pcodeBlock->getName();
+			generateToken(labelName, TOKEN_LABEL);
+		}
 
 		void generateTab() {
 			generateToken("\t", TOKEN_TAB);
@@ -918,7 +934,7 @@ namespace CE::Decompiler
 		void print(LinearView::BlockList* blockList, SdaCodeGraph* sdaCodeGraph = nullptr) {
 			m_text.clear();
 			if (sdaCodeGraph) {
-				generateHeader(sdaCodeGraph);
+				generateHeader(sdaCodeGraph->getSdaSymbols());
 				generateEndLine();
 				generateEndLine();
 			}

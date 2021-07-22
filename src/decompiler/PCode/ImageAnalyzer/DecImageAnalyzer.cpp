@@ -163,12 +163,15 @@ void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, Fu
 		// extend size of the current block
 		curBlock->setMaxOffset(nextInstrOffset);
 
-		// create a new block
-		if (Instruction::IsBranching(instr->m_id)) {
+		// fill const values
+		if (Instruction::IsAnyJmup(instr->m_id)) {
 			VirtualMachineContext vmCtx;
 			ConstValueCalculating constValueCalculating(curBlock->getInstructions(), &vmCtx, m_registerFactory);
 			constValueCalculating.start(funcGraph->getConstValues());
+		}
 
+		// create a new block
+		if (Instruction::IsBranching(instr->m_id)) {
 			ComplexOffset targetOffset;
 			if (const auto varnodeConst = dynamic_cast<ConstantVarnode*>(instr->m_input0)) {
 				// if this input contains hardcoded constant

@@ -335,6 +335,11 @@ void CE::DecTestSamplesPool::fillByTests() {
 			entity->addField(96, "matrix", GetUnit(m_matrix4x4));
 			sample->m_symbolCtx.m_funcBodySymbolTable->addSymbol(symFactory.createLocalInstrVarSymbol(GetUnit(entity, "[1]"), "entity"), 17153);
 		}
+
+		sig = sample->createFunc(0xfffffffffffdd064, "GetEntity")->getSignature();
+		sig->setReturnType(findType("uint64_t"));
+		sample->m_imageDec->getVirtFuncCalls()[ComplexOffset(0x5A, 2)] = sig;
+		sample->m_imageDec->getVirtFuncCalls()[ComplexOffset(0x7A, 2)] = sig;
 	}
 
 	{
@@ -378,7 +383,8 @@ void CE::DecTestSamplesPool::fillByTests() {
 			uiDrawSig->addParameter("param4", GetUnit(valueUI, "[1]"));
 			uiDrawSig->addParameter("param5", GetUnit(valueUI, "[1]"));
 			uiDrawSig->addParameter("param6", GetUnit(valueUI, "[1]"));
-			sample->m_symbolCtx.m_globalSymbolTable->addSymbol(symFactory.createLocalStackVarSymbol(0xfffffffffffedf50, GetUnit(uiDrawSig), "UI_Draw"), 0xfffffffffffedf50);
+
+			// todo: *(uint64_t*)&value1 = (uint64_t)(float)(param1)		->		 *(float*)&value1 = (float)(param1)
 		}
 	}
 
@@ -475,21 +481,25 @@ void CE::DecTestSamplesPool::fillByTests() {
 		sig->addParameter("p4_Speed", findType("float", ""));
 
 		{
-			sig = sample->createFunc(0xffffffffffe19b7c, "Func1_109")->getSignature(); // 0xc14c
+			sig = sample->createFunc(0xffffffffffe19b7c, "Func0_109")->getSignature();
 			sig->addParameter("param1", findType("uint64_t", ""));
 			sig->addParameter("param2", findType("uint64_t", ""));
 			sig->addParameter("param3", findType("uint64_t", ""));
 			sig->addParameter("param4", findType("uint64_t", ""));
 			sig->setReturnType(findType("bool"));
-			sample->m_symbolCtx.m_globalSymbolTable->addSymbol(symFactory.createFunctionSymbol(0xc14c, sig, "Func1_109"), 0xc14c);
-			sample->m_symbolCtx.m_globalSymbolTable->addSymbol(symFactory.createFunctionSymbol(0xffffffffffe19b7c, sig, "Func2_109"), 0xffffffffffe19b7c);
+
+			sig = sample->createFunc(0xc14c, "Func1_109")->getSignature();
+			sig->addParameter("param1", findType("uint64_t", ""));
+			sig->addParameter("param2", findType("uint64_t", ""));
+			sig->addParameter("param3", findType("uint64_t", ""));
+			sig->addParameter("param4", findType("uint64_t", ""));
+			sig->setReturnType(findType("bool"));
 
 			sig = sample->createFunc(0xcd74, "Func2_109")->getSignature();
 			sig->addParameter("param1", findType("uint32_t", ""));
 			sig->addParameter("param2", findType("char", "[1]"));
 			sig->addParameter("param3", findType("char", "[1]"));
 			sig->setReturnType(findType("uint64_t"));
-			sample->m_symbolCtx.m_globalSymbolTable->addSymbol(symFactory.createFunctionSymbol(0xcd74, sig, "Func3_109"), 0xcd74);
 
 			sig = sample->createFunc(0xc208, "Func4_109")->getSignature();
 			sig->addParameter("param1", findType("uint32_t", ""));
@@ -497,7 +507,6 @@ void CE::DecTestSamplesPool::fillByTests() {
 			sig->addParameter("param3", findType("bool", ""));
 			sig->addParameter("param4", findType("uint32_t", ""));
 			sig->setReturnType(findType("uint64_t"));
-			sample->m_symbolCtx.m_globalSymbolTable->addSymbol(symFactory.createFunctionSymbol(0xc208, sig, "Func4_109"), 0xc208);
 
 			sig = sample->createFunc(0x7e1804, "Func5_109")->getSignature();
 			sig->addParameter("param1", findType("uint32_t", ""));
@@ -505,14 +514,12 @@ void CE::DecTestSamplesPool::fillByTests() {
 			sig->addParameter("param3", findType("bool", ""));
 			sig->addParameter("param4", findType("uint32_t", ""));
 			sig->setReturnType(findType("uint32_t"));
-			sample->m_symbolCtx.m_globalSymbolTable->addSymbol(symFactory.createFunctionSymbol(0x7e1804, sig, "Func5_109"), 0x7e1804);
 
 			sig = sample->createFunc(0xffffffffff8e6ad4, "Func6_109")->getSignature();
 			sig->addParameter("param1", findType("uint64_t", ""));
 			sig->addParameter("param2", findType("uint64_t", ""));
 			sig->addParameter("param3", findType("uint32_t", ""));
 			sig->addParameter("param4", findType("byte", ""));
-			sample->m_symbolCtx.m_globalSymbolTable->addSymbol(symFactory.createFunctionSymbol(0xffffffffff8e6ad4, sig, "Func6_109"), 0xffffffffff8e6ad4);
 		}
 	}
 }

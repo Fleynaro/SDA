@@ -59,7 +59,6 @@ void TypeManager::addSystemTypes() {
 
 void TypeManager::addGhidraTypedefs() {
 	static std::pair<std::string, DB::Id> typedefs[] = {
-		std::make_pair("void", SystemType::Void),
 		std::make_pair("unicode", SystemType::Void),
 		std::make_pair("string", SystemType::Void),
 		std::make_pair("IMAGE_RICH_HEADER", SystemType::Void),
@@ -79,14 +78,12 @@ void TypeManager::addGhidraTypedefs() {
 		std::make_pair("long", SystemType::Int32),
 		std::make_pair("ulong", SystemType::UInt32),
 		std::make_pair("dword", SystemType::Int32),
-		std::make_pair("float", SystemType::Float),
 		std::make_pair("ImageBaseOffset32", SystemType::UInt32),
 		std::make_pair("undefined4", SystemType::Int32),
 
 		std::make_pair("longlong", SystemType::Int64),
 		std::make_pair("ulonglong", SystemType::UInt64),
 		std::make_pair("qword", SystemType::Int64),
-		std::make_pair("double", SystemType::Double),
 		std::make_pair("undefined8", SystemType::Int64),
 
 		std::make_pair("GUID", SystemType::UInt128)

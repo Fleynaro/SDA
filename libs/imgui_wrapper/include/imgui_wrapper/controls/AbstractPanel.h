@@ -3,15 +3,20 @@
 
 namespace GUI
 {
+	class StdWindow;
+	
 	class AbstractPanel :
 		public Control,
 		public Attribute::Name
 	{
+		friend class StdWindow;
+	protected:
+		StdWindow* m_window = nullptr;
 	public:
 		AbstractPanel(const std::string& name = "")
 			: Attribute::Name(name)
 		{}
-
+	
 	protected:
 		virtual void renderPanel() = 0;
 

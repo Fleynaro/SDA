@@ -135,8 +135,7 @@ namespace GUI
 			{
 				auto isOpen = ImageListViewGrouping::renderGroupTop(img, group_n);
 				if (GenericEvents(true).isClickedByRightMouseBtn()) {
-					if(m_addrSpaceContextWindow)
-						delete m_addrSpaceContextWindow;
+					delete m_addrSpaceContextWindow;
 					m_addrSpaceContextWindow = new PopupContextWindow(new AddrSpaceContextPanel(img->getAddressSpace()));
 					m_addrSpaceContextWindow->open();
 				}
@@ -148,8 +147,7 @@ namespace GUI
 				ImageListViewGrouping::renderItem(text, imageDec, n);
 				if (GenericEvents(true).isClickedByRightMouseBtn())
 				{
-					if(m_imageContextWindow)
-						delete m_imageContextWindow;
+					delete m_imageContextWindow;
 					m_imageContextWindow = new PopupContextWindow(new ImageContextPanel(imageDec));
 					m_imageContextWindow->open();
 				}

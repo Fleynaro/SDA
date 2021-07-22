@@ -27,6 +27,8 @@ namespace CE
 
 			virtual void setDataType(DataTypePtr dataType) = 0;
 
+			virtual SymbolManager* getManager() = 0;
+
 			virtual int getSize() {
 				return getDataType()->getSize();
 			}
@@ -43,7 +45,7 @@ namespace CE
 
 			bool isAutoSymbol() override;
 
-			SymbolManager* getManager() const;
+			SymbolManager* getManager() override;
 
 			DataTypePtr getDataType() override;
 

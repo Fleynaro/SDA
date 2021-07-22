@@ -61,7 +61,7 @@ AbstractRegisterFactory* AbstractPrimaryDecompiler::getRegisterFactory() const
 // called when a function call appears during decompiling
 
 FunctionCallInfo AbstractPrimaryDecompiler::requestFunctionCallInfo(ExecContext* ctx, Instruction* instr) {
-	int funcOffset = 0;
+	int funcOffset = -1;
 	auto& constValues = m_decompiledGraph->getFuncGraph()->getConstValues();
 	const auto it = constValues.find(instr);
 	if (it != constValues.end())

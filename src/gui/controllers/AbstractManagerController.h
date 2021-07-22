@@ -46,6 +46,7 @@ namespace GUI
 
 		std::list<T*> m_items;
 		CE::AbstractItemManager* m_manager;
+		int m_maxItemsCount = -1;
 		AbstractManagerController(CE::AbstractItemManager* manager)
 			: m_manager(manager)
 		{}
@@ -63,6 +64,7 @@ namespace GUI
 
 		void update()
 		{
+			int itemsCount = 0;
 			m_items.clear();
 			CE::AbstractItemManager::AbstractIterator<T> iterator(m_manager);
 			while (iterator.hasNext())
@@ -70,6 +72,9 @@ namespace GUI
 				auto item = iterator.next();
 				if (filter(item)) {
 					m_items.push_back(item);
+					itemsCount++;
+					if (itemsCount == m_maxItemsCount)
+						break;
 				}
 			}
 			sort();

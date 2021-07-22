@@ -17,6 +17,7 @@ namespace GUI::Input
 	{
 		ColorRGBA m_borderColor = 0x0;
 		uint64_t m_borderHideTime = 0;
+		bool m_focus = false;
 	public:
 		AbstractInput(const std::string& name)
 			: Attribute::Name(name)
@@ -36,6 +37,10 @@ namespace GUI::Input
 			}
 		}
 
+		void focus() {
+			m_focus = true;
+		}
+
 		void hideBorder() {
 			m_borderColor = 0x0;
 		}
@@ -52,6 +57,10 @@ namespace GUI::Input
 
 		void renderControl() override {
 			pushIdParam();
+			if(m_focus) {
+				ImGui::SetKeyboardFocusHere();
+				m_focus = false;
+			}
 			renderInput();
 			drawInputBorder();
 			popIdParam();
