@@ -24,7 +24,6 @@ namespace GUI
 
 		bool m_isOpened = true;
 		bool m_fullscreen = false;
-		ImGuiID m_dockspaceId = 0;
 	public:
 		bool m_applyPosAndSize = false;
 		
@@ -66,16 +65,10 @@ namespace GUI
 		void setFullscreen(bool toggle) {
 			m_fullscreen = toggle;
 		}
-
-		void setDockSpace(ImGuiID dockspaceId) {
-			m_dockspaceId = dockspaceId;
-		}
 	
 	protected:
 		void renderControl() override {
 			pushParams();
-			if(m_dockspaceId)
-				ImGui::SetNextWindowDockID(m_dockspaceId, ImGuiCond_FirstUseEver);
 			bool isOpen = ImGui::Begin(m_panel->getName().c_str(), &m_isOpened, getFlags());
 			processGenericEvents();
 			

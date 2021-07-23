@@ -23,6 +23,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 class GuiApplication
 {
     GUI::StdWindow* m_mainWindow;
+	std::string m_iniFilename;
 public:
     GuiApplication()
     {}
@@ -31,7 +32,7 @@ public:
         m_mainWindow = mainWindow;
     }
 
-    void init(HWND hwnd, ID3D11Device* device, ID3D11DeviceContext* ctx)
+    void init(HWND hwnd, ID3D11Device* device, ID3D11DeviceContext* ctx, const fs::path& iniFilename)
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -40,6 +41,8 @@ public:
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport / Platform Windows
+        m_iniFilename = iniFilename.string();
+    	io.IniFilename = m_iniFilename.c_str();
 
         ImGui_ImplWin32_Init(hwnd);
         ImGui_ImplDX11_Init(device, ctx);
@@ -115,7 +118,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     // Init GUI
     GuiApplication app;
-    app.init(hwnd, g_pd3dDevice, g_pd3dDeviceContext);
+    app.init(hwnd, g_pd3dDevice, g_pd3dDeviceContext, program.getExecutableDirectory() / "imgui.ini");
     const auto projectManagerPanel = new GUI::ProjectManagerPanel(&program);
     const auto projectManagerWindow = projectManagerPanel->createStdWindow();
     app.setMainWindow(projectManagerWindow);
