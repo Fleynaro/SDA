@@ -10,9 +10,9 @@ namespace GUI
 		public Attribute::Name
 	{
 		friend class StdWindow;
-	protected:
-		StdWindow* m_window = nullptr;
 	public:
+		StdWindow* m_window = nullptr;
+		
 		AbstractPanel(const std::string& name = "")
 			: Attribute::Name(name)
 		{}

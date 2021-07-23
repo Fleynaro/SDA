@@ -1,6 +1,6 @@
 #include "ProjectManagerPanel.h"
+#include "DecompilerDemoPanel.h"
 #include "panels/ProjectPanel.h"
-#include "Project.h"
 #include "imgui_wrapper/controls/Text.h"
 
 void GUI::ProjectManagerPanel::ProjectCreatorPanel::renderPanel() {
@@ -66,6 +66,7 @@ void GUI::ProjectManagerPanel::renderPanel() {
 		renderProjectWindows();
 		Show(m_prjCreatorWin);
 		Show(m_warningModalWin);
+		Show(m_demoWin);
 	}
 	catch (WarningException& ex) {
 		createWarningWindow(ex);
@@ -85,6 +86,13 @@ void GUI::ProjectManagerPanel::renderProjectList() {
 	}
 	else {
 		Text::Text("No projects.").show();
+	}
+
+	NewLine();
+	NewLine();
+	if (Button::StdButton("Open demo window").present()) {
+		delete m_demoWin;
+		m_demoWin = new StdWindow(new DecompilerDemoPanel);
 	}
 }
 
@@ -127,7 +135,7 @@ void GUI::ProjectManagerPanel::loadProject(CE::Project* project) {
 	project->initDataBase("database.db");
 	project->initManagers();
 	project->load();
-	m_projectWins.push_back(new StdWindow(new ProjectPanel(project)));
+	m_projectWins.push_back((new ProjectPanel(project))->createStdWindow());
 }
 
 void GUI::ProjectManagerPanel::openProjectCreatorPanel() {

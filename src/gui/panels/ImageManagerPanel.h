@@ -4,6 +4,7 @@
 #include "imgui_wrapper/Window.h"
 #include "imgui_wrapper/controls/AbstractPanel.h"
 #include "imgui_wrapper/controls/Input.h"
+#include "imgui_wrapper/controls/Text.h"
 
 
 namespace GUI

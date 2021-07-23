@@ -11,7 +11,6 @@ namespace GUI
 	
 	class StdWindow :
 		public Control,
-		public Attribute::Id,
 		public Attribute::Pos,
 		public Attribute::Size,
 		public Attribute::Flags<
@@ -25,9 +24,12 @@ namespace GUI
 
 		bool m_isOpened = true;
 		bool m_fullscreen = false;
+		ImGuiID m_dockspaceId = 0;
 	public:
+		bool m_applyPosAndSize = false;
+		
 		StdWindow(AbstractPanel* panel, ImGuiWindowFlags flags = ImGuiWindowFlags_None)
-			: m_panel(panel), Attribute::Flags<ImGuiWindowFlags, ImGuiWindowFlags_None>(flags)
+			: m_panel(panel), Flags<ImGuiWindowFlags, ImGuiWindowFlags_None>(flags)
 		{
 			m_panel->m_window = this;
 		}
@@ -64,10 +66,16 @@ namespace GUI
 		void setFullscreen(bool toggle) {
 			m_fullscreen = toggle;
 		}
+
+		void setDockSpace(ImGuiID dockspaceId) {
+			m_dockspaceId = dockspaceId;
+		}
+	
 	protected:
 		void renderControl() override {
 			pushParams();
-			pushIdParam();
+			if(m_dockspaceId)
+				ImGui::SetNextWindowDockID(m_dockspaceId, ImGuiCond_FirstUseEver);
 			bool isOpen = ImGui::Begin(m_panel->getName().c_str(), &m_isOpened, getFlags());
 			processGenericEvents();
 			
@@ -77,9 +85,8 @@ namespace GUI
 			if (isOpen)
 			{
 				m_panel->show();
-				ImGui::End();
 			}
-			popIdParam();
+			ImGui::End();
 		}
 
 		void pushParams() {
@@ -87,6 +94,7 @@ namespace GUI
 				const ImGuiViewport* viewport = ImGui::GetMainViewport();
 				ImGui::SetNextWindowPos(m_pos = viewport->WorkPos);
 				ImGui::SetNextWindowSize(m_size = viewport->WorkSize);
+				ImGui::SetNextWindowViewport(viewport->ID);
 				addFlags(ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings);
 			}
 			else {
@@ -97,6 +105,12 @@ namespace GUI
 				if (isFlags(ImGuiWindowFlags_NoResize)) {
 					ImGui::SetNextWindowSize(m_size);
 				}
+			}
+
+			if(m_applyPosAndSize) {
+				ImGui::SetNextWindowPos(m_pos);
+				ImGui::SetNextWindowSize(m_size);
+				m_applyPosAndSize = false;
 			}
 		}
 
@@ -110,7 +124,8 @@ namespace GUI
 	};
 
 	class PopupBuiltinWindow
-		: public StdWindow
+		: public StdWindow,
+		public Attribute::Id
 	{
 		bool m_closeByClickOutside;
 		bool m_closeByTimer;
@@ -161,8 +176,8 @@ namespace GUI
 					}
 					
 					m_panel->show();
-					ImGui::End();
 				}
+				ImGui::End();
 			}
 		}
 
@@ -173,7 +188,8 @@ namespace GUI
 	};
 
 	class PopupContextWindow
-		: public StdWindow
+		: public StdWindow,
+		public Attribute::Id
 	{
 		bool m_isOpenPopup = false;
 	public:

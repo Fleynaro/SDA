@@ -36,6 +36,7 @@ namespace GUI
 		
 		ProjectManagerController m_controller;
 		TableListViewSelector<CE::ProjectManager::ProjectEntry*>* m_tableListView;
+		StdWindow* m_demoWin = nullptr;
 		StdWindow* m_prjCreatorWin = nullptr;
 		PopupModalWindow* m_warningModalWin = nullptr;
 		std::list<StdWindow*> m_projectWins;
