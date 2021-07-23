@@ -89,36 +89,4 @@ namespace CE
 
 		void createTablesInDatabase() const;
 	};
-
-	class ProjectManager
-	{
-	public:
-		struct ProjectEntry
-		{
-			fs::path m_dir;
-		};
-
-	private:
-		Program* m_program;
-		std::list<ProjectEntry> m_projectEntries;
-
-	public:
-		ProjectManager(Program* program)
-			: m_program(program)
-		{}
-
-		Program* getProgram() const;
-
-		fs::path getProjectsFile() const;
-
-		Project* loadProject(const fs::path& dir);
-
-		Project* createProject(const fs::path& dir);
-
-		const auto& getProjectEntries() const;
-
-		void load();
-
-		void save();
-	};
 };

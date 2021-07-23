@@ -1,5 +1,6 @@
 #include "Program.h"
-#include <Project.h>
+#include "ProjectManager.h"
+#include "Windows.h"
 
 CE::Program::Program()
 {

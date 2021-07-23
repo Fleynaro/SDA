@@ -1,4 +1,5 @@
 #include "DecompilerDemoPanel.h"
+#include "ProjectManager.h"
 #include <Project.h>
 #include <asmtk/asmtk.h>
 #include "panels/FunctionManagerPanel.h"

@@ -3,7 +3,9 @@
 #include <list>
 #include <set>
 
+#include "../Events.h"
 #include "Control.h"
+#include "Button.h"
 #include "utilities/Helper.h"
 
 namespace GUI

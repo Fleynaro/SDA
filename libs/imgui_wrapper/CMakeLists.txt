@@ -3,6 +3,7 @@ project(imgui_wrapper)
 
 set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/external/imgui")
 set(IMGUI_TEXT_EDITOR_DIR "${CMAKE_SOURCE_DIR}/external/ImGuiColorTextEdit")
+set(IMGUI_FILE_DIALOG_DIR "${CMAKE_SOURCE_DIR}/external/ImGuiFileDialog")
 
 # imgui
 file(GLOB IMGUI_SRC
@@ -20,6 +21,10 @@ set(IMGUI_MISC_SRC
 file(GLOB IMGUI_TEXT_EDITOR_SRC
     ${IMGUI_TEXT_EDITOR_DIR}/*.cpp
     ${IMGUI_TEXT_EDITOR_DIR}/*.h)
+# imgui file dialog
+file(GLOB IMGUI_FILE_DIALOG_SRC
+    ${IMGUI_FILE_DIALOG_DIR}/*.cpp
+    ${IMGUI_FILE_DIALOG_DIR}/*.h)
 # imgui wrapper
 file(GLOB_RECURSE IMGUI_WRAPPER_SRC
     "include/*.h"
@@ -31,13 +36,15 @@ add_library(
     ${IMGUI_SRC}
     ${IMGUI_BACKEND_SRC}
     ${IMGUI_MISC_SRC}
-    ${IMGUI_TEXT_EDITOR_SRC})
+    ${IMGUI_TEXT_EDITOR_SRC}
+    ${IMGUI_FILE_DIALOG_SRC})
 
 target_include_directories(
     imgui_wrapper PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${IMGUI_DIR}
-    ${IMGUI_TEXT_EDITOR_DIR})
+    ${IMGUI_TEXT_EDITOR_DIR}
+    ${IMGUI_FILE_DIALOG_DIR})
 
 target_compile_definitions(
     imgui_wrapper PUBLIC

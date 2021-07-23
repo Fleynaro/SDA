@@ -3,7 +3,8 @@
 #include <d3d11.h>
 #include <backends/imgui_impl_dx11.h>
 #include <backends//imgui_impl_win32.h>
-#include <gui/DecompilerDemoPanel.h>
+#include "Program.h"
+#include <gui/panels/ProjectManagerPanel.h>
 
 // Data
 static ID3D11Device* g_pd3dDevice = NULL;
@@ -95,7 +96,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         NULL
     };
     ::RegisterClassEx(&wc);
-    HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("GUI Test"), WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, NULL);
+    HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("Project manager"), WS_OVERLAPPEDWINDOW, 100, 100, 600, 500, NULL, NULL, wc.hInstance, NULL);
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
@@ -109,10 +110,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     ::ShowWindow(hwnd, SW_SHOWDEFAULT);
     ::UpdateWindow(hwnd);
 
+	// Init the program
+    CE::Program program;
+
     // Init GUI
     GuiApplication app;
     app.init(hwnd, g_pd3dDevice, g_pd3dDeviceContext);
-    app.setMainWindow(GUI::DecompilerDemoPanel::GetStdWindow());
+    const auto projectManagerPanel = new GUI::ProjectManagerPanel(&program);
+    const auto projectManagerWindow = projectManagerPanel->createStdWindow();
+    app.setMainWindow(projectManagerWindow);
+
 
     // Main loop
     bool done = false;
@@ -142,6 +149,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     CleanupDeviceD3D();
     ::DestroyWindow(hwnd);
     ::UnregisterClass(wc.lpszClassName, wc.hInstance);
+    delete projectManagerWindow;
     return 0;
 }
 
