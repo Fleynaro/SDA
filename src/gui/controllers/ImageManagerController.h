@@ -1,12 +1,13 @@
 #pragma once
 #include "AbstractManagerController.h"
 #include "AddressSpace.h"
+#include "managers/AddressSpaceManager.h"
 #include "managers/ImageManager.h"
 
 
 namespace GUI
 {
-	class ImageManagerController : public AbstractManagerController<CE::ImageDecorator>
+	class ImageManagerController : public AbstractManagerController<CE::ImageDecorator, CE::ImageManager>
 	{
 	public:
 		struct ImageFilter
@@ -49,8 +50,20 @@ namespace GUI
 		ImageListModel m_listModel;
 
 		ImageManagerController(CE::ImageManager* manager)
-			: AbstractManagerController<CE::ImageDecorator>(manager), m_tableListModel(this, true), m_listModel(this, false)
+			: AbstractManagerController<CE::ImageDecorator, CE::ImageManager>(manager), m_tableListModel(this, true), m_listModel(this, false)
 		{}
+
+		CE::ImageDecorator* createImage(CE::AddressSpace* addrSpace, const std::string& name, const fs::path& pathToImage) const {
+			return m_manager->createImage(addrSpace, CE::ImageDecorator::IMAGE_PE, name);
+		}
+		
+		CE::AddressSpace* createAddrSpace(const std::string& name) const {
+			return getAddressSpaceManager()->createAddressSpace(name);
+		}
+
+		CE::AddressSpaceManager* getAddressSpaceManager() const {
+			return m_manager->getProject()->getAddrSpaceManager();
+		}
 
 	private:
 		bool filter(CE::ImageDecorator* item) override

@@ -12,6 +12,7 @@ namespace DB
 		virtual void markAsNew(IDomainObject* obj) = 0;
 		virtual void markAsDirty(IDomainObject* obj) = 0;
 		virtual void markAsRemoved(IDomainObject* obj) = 0;
+		virtual bool hasNewItems() = 0;
 		virtual void commit() = 0;
 	};
 
@@ -26,6 +27,8 @@ namespace DB
 		void markAsDirty(IDomainObject* obj) override;
 
 		void markAsRemoved(IDomainObject* obj) override;
+
+		bool hasNewItems() override;
 
 		void commit() override;
 	private:

@@ -33,6 +33,10 @@ void DB::Transaction::markAsRemoved(IDomainObject* obj) {
 		obj->getMapper()->getRepository()->onChangeBeforeCommit(obj, IRepository::Removed);
 }
 
+bool DB::Transaction::hasNewItems() {
+	return !m_insertedObjs.empty() || !m_updatedObjs.empty() || !m_removedObjs.empty();
+}
+
 void DB::Transaction::commit() {
 	SQLite::Transaction transaction(*m_db);
 

@@ -4,7 +4,7 @@
 
 namespace GUI
 {
-	template<typename T>
+	template<typename T, typename T2 = CE::AbstractItemManager>
 	class AbstractManagerController
 	{
 	public:
@@ -45,9 +45,9 @@ namespace GUI
 		};
 
 		std::list<T*> m_items;
-		CE::AbstractItemManager* m_manager;
+		T2* m_manager;
 		int m_maxItemsCount = -1;
-		AbstractManagerController(CE::AbstractItemManager* manager)
+		AbstractManagerController(T2* manager)
 			: m_manager(manager)
 		{}
 

@@ -5,28 +5,11 @@
 
 void GUI::ProjectManagerPanel::ProjectCreatorPanel::renderPanel() {
 	Text::Text("Choose a directory for your project.").show();
-	m_pathInput.show();
-	SameLine();
-	if (Button::StdButton("Open").present()) {
-		ImGuiFileDialog::Instance()->OpenModal("fd", "Choose directory", nullptr, ".", 1, nullptr, ImGuiFileDialogFlags_Default);
-	}
+	m_fileDialog.show();
 	NewLine();
 	if (Button::StdButton("Create").present()) {
-		const fs::path path = m_pathInput.getInputText();
-		m_prjManagerPanel->createNewProject(path);
+		m_prjManagerPanel->createNewProject(m_fileDialog.getPath());
 		m_window->close();
-	}
-	
-	renderFileDialog();
-}
-
-void GUI::ProjectManagerPanel::ProjectCreatorPanel::renderFileDialog() {
-	if (ImGuiFileDialog::Instance()->Display("fd", ImGuiWindowFlags_None, ImVec2(600, 500))) {
-		if (ImGuiFileDialog::Instance()->IsOk()) {
-			const std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
-			m_pathInput.setInputText(filePathName);
-		}
-		ImGuiFileDialog::Instance()->Close();
 	}
 }
 

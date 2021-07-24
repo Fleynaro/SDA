@@ -47,11 +47,12 @@ namespace GUI
 			};
 			
 			ProjectPanel* m_projectPanel;
+			CE::Project* m_project;
 			StdWindow* m_imageViewerWindow = nullptr;
 			StdWindow* m_imageContentViewerWindow = nullptr;
 		public:
 			StdWorkspace(ProjectPanel* projectPanel)
-				: m_projectPanel(projectPanel)
+				: m_projectPanel(projectPanel), m_project(projectPanel->m_project)
 			{
 				if (exists(getGuiFile())) {
 					loadWindows();
@@ -74,8 +75,8 @@ namespace GUI
 			void renderMenuBar() override {
 				if (ImGui::BeginMenu("File"))
 				{
-					if (ImGui::MenuItem("Save")) {
-						
+					if (ImGui::MenuItem("Save", nullptr, false, m_project->getTransaction()->hasNewItems())) {
+						m_project->getTransaction()->commit();
 					}
 					ImGui::EndMenu();
 				}
@@ -92,7 +93,7 @@ namespace GUI
 			}
 
 			fs::path getGuiFile() {
-				return m_projectPanel->m_project->getProgram()->getExecutableDirectory() / "gui.json";
+				return m_project->getProgram()->getExecutableDirectory() / "gui.json";
 			}
 
 			void loadWindows() {
@@ -114,7 +115,7 @@ namespace GUI
 			}
 
 			void createImageViewerWindow() {
-				m_imageViewerWindow = new StdWindow(new ImageManagerPanel(m_projectPanel->m_project->getImageManager()));
+				m_imageViewerWindow = new StdWindow(new ImageManagerPanel(m_project->getImageManager()));
 			}
 		};
 
@@ -139,12 +140,19 @@ namespace GUI
 	
 	protected:
 		void renderPanel() override {
+			checkUnsavedState();
 			ImGui::DockSpace(ImGui::GetID("ProjectDockSpace"), ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 			m_workspace->renderPanel();
 		}
 
 		void renderMenuBar() override {
 			m_workspace->renderMenuBar();
+		}
+
+		void checkUnsavedState() const {
+			if(m_project->getTransaction()->hasNewItems()) {
+				m_window->addFlags(ImGuiWindowFlags_UnsavedDocument);
+			}
 		}
 	};
 };

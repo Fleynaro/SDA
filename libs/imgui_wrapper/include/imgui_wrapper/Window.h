@@ -2,6 +2,7 @@
 #include "Events.h"
 #include "controls/Control.h"
 #include "controls/AbstractPanel.h"
+#include <stdexcept>
 
 namespace GUI
 {
@@ -233,6 +234,9 @@ namespace GUI
 
 	private:
 		void renderControl() override {
+			if (m_panel->getName().empty())
+				throw std::logic_error("empty name");
+			
 			if (m_isOpenPopup) {
 				ImGui::OpenPopup(m_panel->getName().c_str());
 				m_isOpenPopup = false;

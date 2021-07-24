@@ -4,7 +4,7 @@
 #include "imgui_wrapper/controls/AbstractPanel.h"
 #include "imgui_wrapper/controls/Button.h"
 #include "imgui_wrapper/controls/Input.h"
-#include "ImGuiFileDialog.h"
+#include "imgui_wrapper/widgets/file_dialog/FileDialog.h"
 
 
 namespace GUI
@@ -14,12 +14,13 @@ namespace GUI
 		class ProjectCreatorPanel : public AbstractPanel
 		{
 			ProjectManagerPanel* m_prjManagerPanel;
-			Input::TextInput m_pathInput;
+			Widget::FileDialog m_fileDialog;
 		public:
 			ProjectCreatorPanel(ProjectManagerPanel* prjManagerPanel)
 				: AbstractPanel("Create a new project"), m_prjManagerPanel(prjManagerPanel)
 			{
-				m_pathInput.setInputText(m_prjManagerPanel->m_controller.findDefaultPath().string());
+				m_fileDialog = Widget::FileDialog("Choose Directory");
+				m_fileDialog.setPath(m_prjManagerPanel->m_controller.findDefaultPath());
 			}
 
 			StdWindow* createStdWindow() {
@@ -30,8 +31,6 @@ namespace GUI
 
 		private:
 			void renderPanel() override;
-
-			void renderFileDialog();
 		};
 		
 		ProjectManagerController m_controller;
