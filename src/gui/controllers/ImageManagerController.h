@@ -32,9 +32,12 @@ namespace GUI
 			private:
 				std::string getText(CE::ImageDecorator* item) override
 				{
+					auto name = item->getName();
+					if (!item->hasLoaded())
+						name += " (not loaded)";
 					if(static_cast<ImageListModel*>(m_listModel)->m_isTable)
-						return item->getAddressSpace()->getName() + "," + item->getName();
-					return item->getName();
+						return item->getAddressSpace()->getName() + "," + name;
+					return name;
 				}
 			};
 
@@ -55,14 +58,6 @@ namespace GUI
 
 		CE::ImageDecorator* createImage(CE::AddressSpace* addrSpace, const std::string& name, const fs::path& pathToImage) const {
 			return m_manager->createImage(addrSpace, CE::ImageDecorator::IMAGE_PE, name);
-		}
-		
-		CE::AddressSpace* createAddrSpace(const std::string& name) const {
-			return getAddressSpaceManager()->createAddressSpace(name);
-		}
-
-		CE::AddressSpaceManager* getAddressSpaceManager() const {
-			return m_manager->getProject()->getAddrSpaceManager();
 		}
 
 	private:

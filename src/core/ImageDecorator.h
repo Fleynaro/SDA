@@ -61,6 +61,8 @@ namespace CE
 
 		void save();
 
+		bool hasLoaded() const;
+
 		ImageManager* getImageManager() const;
 
 		AddressSpace* getAddressSpace() const;

@@ -19,6 +19,7 @@ ImageDecorator::ImageDecorator(ImageManager* imageManager, AddressSpace* address
 	m_instrPool = new Decompiler::PCode::InstructionPool();
 	m_imagePCodeGraph = new Decompiler::ImagePCodeGraph();
 	m_vfunc_calls = new std::map<ComplexOffset, DataType::IFunctionSignature*>();
+	m_addressSpace->getImageDecorators().push_back(this);
 }
 
 ImageDecorator::ImageDecorator(ImageManager* imageManager, AddressSpace* addressSpace, ImageDecorator* parentImageDec, const std::string& name, const std::string& comment)
@@ -39,6 +40,8 @@ ImageDecorator::ImageDecorator(ImageManager* imageManager, AddressSpace* address
 }
 
 ImageDecorator::~ImageDecorator() {
+	m_addressSpace->getImageDecorators().remove(this);
+	
 	if (m_image) {
 		delete m_image->getData();
 		delete m_image;
@@ -67,6 +70,10 @@ void ImageDecorator::load() {
 
 void ImageDecorator::save() {
 	Helper::File::SaveBufferIntoFile((char*)m_image->getData(), m_image->getSize(), getFile());
+}
+
+bool ImageDecorator::hasLoaded() const {
+	return m_image != nullptr;
 }
 
 ImageManager* ImageDecorator::getImageManager() const

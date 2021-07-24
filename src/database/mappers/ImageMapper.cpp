@@ -4,6 +4,7 @@
 #include <managers/SymbolTableManager.h>
 #include <managers/TypeManager.h>
 #include <decompiler/PCode/Decoders/DecPCodeDecoderX86.h>
+#include "utilities/Helper.h"
 
 using namespace DB;
 using namespace CE;
@@ -61,7 +62,9 @@ IDomainObject* ImageMapper::doLoad(Database* db, Statement& query) {
 		auto funcBodySymTable = project->getSymTableManager()->findSymbolTableById(func_body_table_id);
 
 		imageDec = getManager()->createImage(addrSpace, type, globalSymTable, funcBodySymTable, name, comment, false);
-		imageDec->load();
+		try {
+			imageDec->load();
+		} catch (Helper::File::FileException&) {}
 		auto imgPCodeGraph = imageDec->getPCodeGraph();
 
 		// load modified instructions for instr. pool
@@ -101,9 +104,6 @@ IDomainObject* ImageMapper::doLoad(Database* db, Statement& query) {
 		}
 		imgPCodeGraph->fillHeadFuncGraphs();
 	}
-
-	// add the image to its addr. space
-	addrSpace->getImages()[imageDec->getImage()->getAddress()] = imageDec;
 
 	imageDec->setId(image_id);
 	return imageDec;

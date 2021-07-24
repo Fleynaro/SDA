@@ -5,24 +5,19 @@ fs::path CE::AddressSpace::getImagesDirectory() {
 	return getAddrSpaceManager()->getProject()->getImagesDirectory() / fs::path(getName());
 }
 
-std::map<std::uintptr_t, CE::ImageDecorator*>& CE::AddressSpace::getImages()
+std::list<CE::ImageDecorator*>& CE::AddressSpace::getImageDecorators()
 {
-	return m_images;
+	return m_imagesDecorators;
 }
 
-CE::ImageDecorator* CE::AddressSpace::getImageAt(std::uintptr_t addr)
+CE::ImageDecorator* CE::AddressSpace::getImageDecoratorAt(std::uintptr_t addr)
 {
-	const auto it = std::prev(m_images.upper_bound(addr));
-	if (it != m_images.end())
-	{
-		const auto offset = it->first;
-		const auto imageDec = it->second;
-		if (addr < offset + imageDec->getImage()->getSize())
-		{
+	for(const auto imageDec : m_imagesDecorators) {
+		if(addr >= imageDec->getImage()->getAddress() && addr < imageDec->getImage()->getAddress() + imageDec->getImage()->getSize()) {
 			return imageDec;
 		}
 	}
-	throw ImageNotFound();
+	return nullptr;
 }
 
 CE::AddressSpaceManager* CE::AddressSpace::getAddrSpaceManager() const

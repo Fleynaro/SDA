@@ -62,6 +62,10 @@ void DB::Transaction::commit() {
 			delete obj;
 		}
 	}
+
+	m_insertedObjs.clear();
+	m_updatedObjs.clear();
+	m_removedObjs.clear();
 	
 	transaction.commit();
 }

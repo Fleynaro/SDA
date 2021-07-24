@@ -150,9 +150,7 @@ namespace GUI
 		}
 
 		void checkUnsavedState() const {
-			if(m_project->getTransaction()->hasNewItems()) {
-				m_window->addFlags(ImGuiWindowFlags_UnsavedDocument);
-			}
+			m_window->addFlags(ImGuiWindowFlags_UnsavedDocument, m_project->getTransaction()->hasNewItems());
 		}
 	};
 };

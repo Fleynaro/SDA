@@ -153,6 +153,10 @@ namespace GUI
 			: AbstractListView<T>(listView->m_listModel), m_listView(listView)
 		{}
 
+		~ListViewGrouping() {
+			delete m_listView;
+		}
+
 	protected:
 		virtual bool groupBy(const T& data1, const T& data2) = 0;
 		
