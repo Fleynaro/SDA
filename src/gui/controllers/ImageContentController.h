@@ -1,5 +1,7 @@
 #pragma once
 #include "decompiler/PCode/DecPCodeInstructionPool.h"
+#include "managers/ImageManager.h"
+#include "managers/SymbolManager.h"
 #include "utilities/Helper.h"
 #include <Zydis/Zydis.h>
 

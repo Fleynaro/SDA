@@ -37,7 +37,6 @@ namespace GUI
 		TableListViewSelector<CE::ProjectManager::ProjectEntry*>* m_tableListView;
 		StdWindow* m_demoWin = nullptr;
 		StdWindow* m_prjCreatorWin = nullptr;
-		PopupModalWindow* m_warningModalWin = nullptr;
 		std::list<StdWindow*> m_projectWins;
 		bool m_tryToLoad = true;
 	public:
@@ -54,13 +53,13 @@ namespace GUI
 
 		void renderProjectWindows();
 
-		void createWarningWindow(const WarningException& ex);
-
 		void createNewProject(const fs::path& dir);
 
 		void openProject(CE::ProjectManager::ProjectEntry* projectEntry);
 
 		void loadProject(CE::Project* project);
+
+		void openTestProjectPanel();
 
 		void openProjectCreatorPanel();
 	};

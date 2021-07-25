@@ -2,10 +2,14 @@
 #include "Events.h"
 #include "controls/Control.h"
 #include "controls/AbstractPanel.h"
+#include "controls/Text.h"
+#include "controls/Button.h"
 #include <stdexcept>
 
 namespace GUI
 {
+	class PopupModalWindow;
+
 	static ImVec2 GetLeftBottom() {
 		return { ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y };
 	}
@@ -66,7 +70,7 @@ namespace GUI
 		void setFullscreen(bool toggle) {
 			m_fullscreen = toggle;
 		}
-	
+
 	protected:
 		void renderControl() override {
 			pushParams();
@@ -255,4 +259,19 @@ namespace GUI
 			}
 		}
 	};
+
+	static PopupModalWindow* CreateMessageWindow(const std::string& message) {
+		const auto panel = new StdPanel("Message");
+		panel->handler([message, panel]()
+			{
+				Text::Text::Text(message).show();
+				NewLine();
+				if (Button::StdButton("Ok").present()) {
+					panel->m_window->close();
+				}
+			});
+		const auto messageWindow = new PopupModalWindow(panel);
+		messageWindow->open();
+		return messageWindow;
+	}
 };

@@ -1,5 +1,6 @@
 #pragma once
 #include "ItemSelector.h"
+#include "NamePanel.h"
 #include "controllers/AddressSpaceManagerController.h"
 #include "controllers/ImageManagerController.h"
 #include "imgui_wrapper/Window.h"
@@ -113,6 +114,7 @@ namespace GUI
 					ImageCreatorPanel(AddrSpaceContextPanel* ctx)
 						: AbstractPanel("Image Creator (Address space: " + ctx->m_addrSpace->getName() + ")###ImageCreator"), m_ctx(ctx)
 					{
+						m_fileDialog = Widget::FileDialog("Choose Image File", ".*");
 						m_nameInput.focus();
 					}
 
@@ -126,7 +128,12 @@ namespace GUI
 						NewLine();
 						if (Button::StdButton("Ok").present()) {
 							const auto name = m_nameInput.getInputText();
-							m_ctx->m_imageManagerPanel->m_controller.createImage(m_ctx->m_addrSpace, name, m_fileDialog.getPath());
+							try {
+								m_ctx->m_imageManagerPanel->m_controller.createImage(m_ctx->m_addrSpace, name, m_fileDialog.getPath());
+							} catch(WarningException& ex) {
+								delete m_ctx->m_imageManagerPanel->m_messageWindow;
+								m_ctx->m_imageManagerPanel->m_messageWindow = CreateMessageWindow(ex.what());
+							}
 							m_window->close();
 						}
 						SameLine();
@@ -138,9 +145,10 @@ namespace GUI
 
 				ImageManagerPanel* m_imageManagerPanel;
 				CE::AddressSpace* m_addrSpace;
+				ImVec2 m_winPos;
 			public:
-				AddrSpaceContextPanel(CE::AddressSpace* addrSpace, ImageManagerPanel* imageManagerPanel)
-					: m_addrSpace(addrSpace), m_imageManagerPanel(imageManagerPanel)
+				AddrSpaceContextPanel(CE::AddressSpace* addrSpace, ImageManagerPanel* imageManagerPanel, ImVec2 winPos)
+					: m_addrSpace(addrSpace), m_imageManagerPanel(imageManagerPanel), m_winPos(winPos)
 				{}
 			
 			private:		
@@ -150,6 +158,18 @@ namespace GUI
 						m_imageManagerPanel->m_popupModalWindow = new PopupModalWindow(new ImageCreatorPanel(this));
 						m_imageManagerPanel->m_popupModalWindow->open();
 					}
+
+					if (ImGui::MenuItem("Rename")) {
+						delete m_imageManagerPanel->m_popupBuiltinWindow;
+						const auto panel = new NamePanel(m_addrSpace->getName());
+						panel->handler([&](const std::string& name)
+							{
+								m_imageManagerPanel->m_addrSpaceController.rename(m_addrSpace, name);
+							});
+						m_imageManagerPanel->m_popupBuiltinWindow = new PopupBuiltinWindow(panel);
+						m_imageManagerPanel->m_popupBuiltinWindow->getPos() = m_winPos;
+						m_imageManagerPanel->m_popupBuiltinWindow->open();
+					}
 				}
 			};
 
@@ -157,15 +177,24 @@ namespace GUI
 			{
 				ImageManagerPanel* m_imageManagerPanel;
 				CE::ImageDecorator* m_imageDec;
+				ImVec2 m_winPos;
 			public:
-				ImageContextPanel(CE::ImageDecorator* imageDec, ImageManagerPanel* imageManagerPanel)
-					: m_imageDec(imageDec), m_imageManagerPanel(imageManagerPanel)
+				ImageContextPanel(CE::ImageDecorator* imageDec, ImageManagerPanel* imageManagerPanel, ImVec2 winPos)
+					: m_imageDec(imageDec), m_imageManagerPanel(imageManagerPanel), m_winPos(winPos)
 				{}
 
 			private:
 				void renderPanel() override {
-					if (ImGui::MenuItem(m_imageDec->getName().c_str(), nullptr)) {
-						int a = 5;
+					if (ImGui::MenuItem("Rename")) {
+						delete m_imageManagerPanel->m_popupBuiltinWindow;
+						const auto panel = new NamePanel(m_imageDec->getName());
+						panel->handler([&](const std::string& name)
+							{
+								m_imageManagerPanel->m_controller.rename(m_imageDec, name);
+							});
+						m_imageManagerPanel->m_popupBuiltinWindow = new PopupBuiltinWindow(panel);
+						m_imageManagerPanel->m_popupBuiltinWindow->getPos() = m_winPos;
+						m_imageManagerPanel->m_popupBuiltinWindow->open();
 					}
 				}
 			};
@@ -189,10 +218,15 @@ namespace GUI
 
 			void renderItem(const std::string& text, CE::ImageDecorator* const& imageDec, int n) override {
 				ImageListViewGrouping::renderItem(text, imageDec, n);
-				if (GenericEvents(true).isClickedByRightMouseBtn())
+				const auto events = GenericEvents(true);
+				if (events.isClickedByLeftMouseBtn()) {
+					if(m_imageManagerPanel->m_selectImageEventHandler.isInit())
+						m_imageManagerPanel->m_selectImageEventHandler(imageDec);
+				}
+				if (events.isClickedByRightMouseBtn())
 				{
 					delete m_imageManagerPanel->m_imageContextWindow;
-					m_imageManagerPanel->m_imageContextWindow = new PopupContextWindow(new ImageContextPanel(imageDec, m_imageManagerPanel));
+					m_imageManagerPanel->m_imageContextWindow = new PopupContextWindow(new ImageContextPanel(imageDec, m_imageManagerPanel, GetLeftBottom()));
 					m_imageManagerPanel->m_imageContextWindow->open();
 					m_isContextPanelOpened = true;
 				}
@@ -202,7 +236,7 @@ namespace GUI
 				const auto result = ImageListViewGrouping::renderGroupHeader(addrSpace);
 				if (GenericEvents(true).isClickedByRightMouseBtn()) {
 					delete m_imageManagerPanel->m_addrSpaceContextWindow;
-					m_imageManagerPanel->m_addrSpaceContextWindow = new PopupContextWindow(new AddrSpaceContextPanel(addrSpace, m_imageManagerPanel));
+					m_imageManagerPanel->m_addrSpaceContextWindow = new PopupContextWindow(new AddrSpaceContextPanel(addrSpace, m_imageManagerPanel, GetLeftBottom()));
 					m_imageManagerPanel->m_addrSpaceContextWindow->open();
 					m_isContextPanelOpened = true;
 				}
@@ -260,6 +294,9 @@ namespace GUI
 		PopupContextWindow* m_addrSpaceContextWindow = nullptr;
 		PopupContextWindow* m_imageContextWindow = nullptr;
 		PopupModalWindow* m_popupModalWindow = nullptr;
+		PopupBuiltinWindow* m_popupBuiltinWindow = nullptr;
+		PopupModalWindow* m_messageWindow = nullptr;
+		EventHandler<CE::ImageDecorator*> m_selectImageEventHandler;
 	public:
 		ImageManagerController m_controller;
 		AddressSpaceManagerController m_addrSpaceController;
@@ -268,13 +305,6 @@ namespace GUI
 		ImageManagerPanel(CE::ImageManager* manager)
 			: AbstractPanel("Image viewer"), m_controller(manager), m_addrSpaceController(manager->getProject()->getAddrSpaceManager())
 		{
-			/*auto tableListView = new TableListView(&m_controller.m_tableListModel, "images table", {
-				ColInfo("AddrSpace"),
-				ColInfo("Image")
-			});
-			auto tableListViewMultiselector = new TableListViewMultiSelector(tableListView);
-			m_listView = new ImageListViewGrouping(tableListViewMultiselector);*/
-
 			m_addrSpaceController.m_filter.m_showEmpty = true;
 			const auto listView = new StdListView(&m_controller.m_listModel);
 			m_listView = new ImageListView(listView, this);
@@ -285,20 +315,39 @@ namespace GUI
 			delete m_listView;
 		}
 
+		void selectImageEventHandler(const std::function<void(CE::ImageDecorator*)>& eventHandler) {
+			m_selectImageEventHandler = eventHandler;
+		}
+
 	protected:
 		void renderPanel() override
 		{
 			m_controller.update();
 			m_addrSpaceController.update();
-			
-			if (m_search_input.isTextEntering()) {
-				m_controller.m_filter.m_name = m_search_input.getInputText();
-				m_controller.update();
-			}
-			m_search_input.show();
 
+			renderSearch();
 			m_listView->show();
-			
+			imageManagerContextWindow();
+
+			Show(m_imageManagerContextWindow);
+			Show(m_addrSpaceContextWindow);
+			Show(m_imageContextWindow);
+			Show(m_popupModalWindow);
+			Show(m_popupBuiltinWindow);
+			Show(m_messageWindow);
+		}
+
+		void renderSearch() {
+			if (m_controller.m_manager->getItemsCount() > 0) {
+				if (m_search_input.isTextEntering()) {
+					m_controller.m_filter.m_name = m_search_input.getInputText();
+					m_controller.update();
+				}
+				m_search_input.show();
+			}
+		}
+
+		void imageManagerContextWindow() {
 			if (ImGui::IsWindowHovered() && !m_listView->m_isContextPanelOpened) {
 				if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
 					delete m_imageManagerContextWindow;
@@ -306,11 +355,6 @@ namespace GUI
 					m_imageManagerContextWindow->open();
 				}
 			}
-
-			Show(m_imageManagerContextWindow);
-			Show(m_addrSpaceContextWindow);
-			Show(m_imageContextWindow);
-			Show(m_popupModalWindow);
 		}
 	};
 };

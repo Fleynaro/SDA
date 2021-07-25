@@ -49,6 +49,11 @@ namespace GUI
 			return m_manager->createAddressSpace(name);
 		}
 
+		void rename(CE::AddressSpace* addrSpace, const std::string& name) const {
+			addrSpace->setName(name);
+			m_manager->getProject()->getTransaction()->markAsDirty(addrSpace);
+		}
+
 	private:
 		bool filter(CE::AddressSpace* item) override
 		{

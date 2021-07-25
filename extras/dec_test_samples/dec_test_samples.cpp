@@ -21,16 +21,16 @@ void CE::DecTestSamplesPool::Sample::decode() {
 }
 
 CE::Function* CE::DecTestSamplesPool::Sample::createFunc(Offset offset, const std::string& name) const {
-	auto sig = m_pool->m_project->getTypeManager()->getFactory(false).createSignature(
+	auto sig = m_pool->m_project->getTypeManager()->getFactory().createSignature(
 		DataType::IFunctionSignature::FASTCALL, name + "_sig");
-	return m_pool->m_project->getFunctionManager()->getFactory(false).createFunction(
+	return m_pool->m_project->getFunctionManager()->getFactory().createFunction(
 		offset, sig, m_imageDec, name);
 }
 
 CE::DecTestSamplesPool::DecTestSamplesPool(Project* project)
 	: m_project(project)
 {
-	const auto typeFactory = m_project->getTypeManager()->getFactory(false);
+	const auto typeFactory = m_project->getTypeManager()->getFactory();
 	m_vec3D = typeFactory.createStructure("testVector3D", "");
 	m_vec3D->addField(0x4 * 0, "x", findType("float", ""));
 	m_vec3D->addField(0x4 * 1, "y", findType("float", ""));
@@ -53,7 +53,7 @@ CE::DecTestSamplesPool::DecTestSamplesPool(Project* project)
 	m_matrix4x4->addField(m_vec4D->getSize() * 2, "vec3", GetUnit(m_vec4D));
 	m_matrix4x4->addField(m_vec4D->getSize() * 3, "vec4", GetUnit(m_vec4D));
 
-	m_defSignature = m_project->getTypeManager()->getFactory(false).createSignature(
+	m_defSignature = m_project->getTypeManager()->getFactory().createSignature(
 		DataType::IFunctionSignature::FASTCALL, "defSignature");
 	m_defSignature->addParameter("param1", findType("uint32_t"));
 	m_defSignature->addParameter("param2", findType("uint32_t"));
@@ -62,13 +62,13 @@ CE::DecTestSamplesPool::DecTestSamplesPool(Project* project)
 	m_defSignature->addParameter("param5", findType("uint32_t"));
 	m_defSignature->setReturnType(findType("uint32_t"));
 
-	m_addrSpace = m_project->getAddrSpaceManager()->createAddressSpace("decompiler samples", "", false);
+	m_addrSpace = m_project->getAddrSpaceManager()->createAddressSpace("decompiler samples", "");
 }
 
 void CE::DecTestSamplesPool::fillByTests() {
 	Sample* sample;
-	const auto typeFactory = m_project->getTypeManager()->getFactory(false);
-	const auto symFactory = m_project->getSymbolManager()->getFactory(false);
+	const auto typeFactory = m_project->getTypeManager()->getFactory();
+	const auto symFactory = m_project->getSymbolManager()->getFactory();
 
 	{
 		// TEST
@@ -532,14 +532,14 @@ CE::DecTestSamplesPool::Sample* CE::DecTestSamplesPool::createSampleTest(int tes
 	sample->m_testId = testId;
 	sample->m_name = name;
 	sample->m_comment = comment;
-	sample->m_imageDec = m_project->getImageManager()->createImage(m_addrSpace, ImageDecorator::IMAGE_PE, "image_" + suffix, "", false);
+	sample->m_imageDec = m_project->getImageManager()->createImage(m_addrSpace, ImageDecorator::IMAGE_PE, "image_" + suffix, "");
 	sample->m_imageDec->setImage(image);
 	sample->m_imageOffset = offset;
 	sample->m_pool = this;
 
-	auto sig = m_project->getTypeManager()->getFactory(false).createSignature(
+	auto sig = m_project->getTypeManager()->getFactory().createSignature(
 		DataType::IFunctionSignature::FASTCALL, "sig_" + suffix);
-	sample->m_func = m_project->getFunctionManager()->getFactory(false).createFunction(
+	sample->m_func = m_project->getFunctionManager()->getFactory().createFunction(
 		0x0, sig, sample->m_imageDec, "func_" + suffix);
 	sample->m_symbolCtx = sample->m_func->getSymbolContext();
 	m_samples.push_back(sample);

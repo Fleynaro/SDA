@@ -194,12 +194,11 @@ namespace GUI
 			std::list<Item> itemsInOneGroup;
 			for (auto it = items.begin(); it != items.end(); ++it)
 			{
-				itemsInOneGroup.push_back(*it);
-				if(it != items.begin() && groupBy(std::prev(it)->data, it->data))
-				{
+				if(it != items.begin() && groupBy(std::prev(it)->data, it->data)) {
 					renderGroupWithItems(itemsInOneGroup, group_n++);
 					itemsInOneGroup.clear();
 				}
+				itemsInOneGroup.push_back(*it);
 			}
 			if(!itemsInOneGroup.empty())
 				renderGroupWithItems(itemsInOneGroup, group_n);

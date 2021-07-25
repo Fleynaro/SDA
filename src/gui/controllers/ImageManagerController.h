@@ -1,8 +1,8 @@
 #pragma once
 #include "AbstractManagerController.h"
 #include "AddressSpace.h"
-#include "managers/AddressSpaceManager.h"
 #include "managers/ImageManager.h"
+#include "Exception.h"
 
 
 namespace GUI
@@ -57,12 +57,26 @@ namespace GUI
 		{}
 
 		CE::ImageDecorator* createImage(CE::AddressSpace* addrSpace, const std::string& name, const fs::path& pathToImage) const {
-			return m_manager->createImage(addrSpace, CE::ImageDecorator::IMAGE_PE, name);
+			const auto imageDec = m_manager->createImage(addrSpace, CE::ImageDecorator::IMAGE_PE, name);
+			try {
+				if(exists(imageDec->getFile()))
+					remove(imageDec->getFile());
+				copy_file(pathToImage, imageDec->getFile());
+				imageDec->load();
+			}
+			catch (std::filesystem::filesystem_error& ex) {
+				throw WarningException(ex.what());
+			}
+			return imageDec;
+		}
+
+		void rename(CE::ImageDecorator* imageDec, const std::string& name) const {
+			imageDec->setName(name);
+			m_manager->getProject()->getTransaction()->markAsDirty(imageDec);
 		}
 
 	private:
-		bool filter(CE::ImageDecorator* item) override
-		{
+		bool filter(CE::ImageDecorator* item) override {
 			using namespace Helper::String;
 			if (!m_filter.m_name.empty() && ToLower(item->getName()).find(ToLower(m_filter.m_name)) == std::string::npos)
 				return false;

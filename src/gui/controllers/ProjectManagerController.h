@@ -1,6 +1,7 @@
 #pragma once
 #include "imgui_wrapper/controls/List.h"
 #include "Exception.h"
+#include "Program.h"
 #include "ProjectManager.h"
 
 namespace GUI
@@ -48,8 +49,11 @@ namespace GUI
 
 		ProjectListModel m_listModel;
 		CE::Program* m_program;
+		CE::Project* m_testProject = nullptr;
 
 		ProjectManagerController(CE::Program* program);
+
+		void createDemoProject();
 
 		void load() const;
 
@@ -58,6 +62,8 @@ namespace GUI
 		CE::Project* openProject(CE::ProjectManager::ProjectEntry* projectEntry) const;
 
 		CE::Project* createNewProject(const fs::path& dir) const;
+
+		void loadProject(CE::Project* project) const;
 
 		fs::path findDefaultPath() const;
 	};

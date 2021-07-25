@@ -318,7 +318,7 @@ namespace GUI
 		FinalProcessingStep m_finalProcessingStep = FinalProcessingStep::DEFAULT;
 	public:
 		ImageContentViewerPanel(CE::ImageDecorator* imageDec)
-			: AbstractPanel("Image content viewer: " + imageDec->getName()), m_imageDec(imageDec), m_imageSectionListModel(imageDec->getImage())
+			: AbstractPanel("Image: " + imageDec->getName() + "###ImageContentViewer"), m_imageDec(imageDec), m_imageSectionListModel(imageDec->getImage())
 		{
 			m_imageSectionMenuListView = MenuListView(&m_imageSectionListModel);
 			m_imageSectionMenuListView.handler([&](const CE::ImageSection* imageSection)

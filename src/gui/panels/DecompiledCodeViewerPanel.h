@@ -3,6 +3,7 @@
 #include "DataTypeManagerPanel.h"
 #include "imgui_internal.h"
 #include "InstructionViewer.h"
+#include "controllers/SymbolManagerController.h"
 #include "decompiler/SDA/SdaCodeGraph.h"
 #include "decompiler/DecCodeGenerator.h"
 #include "decompiler/DecMisc.h"
@@ -46,42 +47,19 @@ namespace GUI
 		
 		class SymbolContextPanel : public AbstractContextPanel
 		{
-			class NamePanel : public AbstractPanel
+			class DataTypePanel : public AbstractPanel
 			{
-			protected:
 				SymbolContextPanel* m_ctx;
 				Input::TextInput m_input;
-			public:
-				NamePanel(SymbolContextPanel* ctx)
-					: m_ctx(ctx)
-				{
-					m_input.setInputText(m_ctx->m_symbol->getName());
-					m_input.focus();
-				}
-
-			private:
-				void renderPanel() override {
-					m_input.show();
-					SameLine();
-					if(Button::StdButton("Ok").present()) {
-						m_ctx->m_symbol->setName(m_input.getInputText());
-						m_ctx->m_decCodeViewer->m_codeChanged = true;
-						m_window->close();
-						
-					}
-				}
-			};
-
-			class DataTypePanel : public NamePanel
-			{
 				DataTypeManagerController m_controller;
 				TableListViewSelector<CE::DataType::IType*>* m_tableListViewSelector;
 				CE::TypeManager* m_typeManager;
 			public:
 				DataTypePanel(SymbolContextPanel* ctx)
-					: NamePanel(ctx), m_controller(ctx->m_symbol->getDataType()->getTypeManager()), m_typeManager(ctx->m_symbol->getDataType()->getTypeManager())
+					: m_controller(ctx->m_symbol->getDataType()->getTypeManager()), m_typeManager(ctx->m_symbol->getDataType()->getTypeManager())
 				{
 					m_input.setInputText(m_ctx->m_symbol->getDataType()->getName());
+					m_input.focus();
 					m_controller.m_maxItemsCount = 10;
 					
 					auto tableListView = new TableListView(&m_controller.m_listModel, {
@@ -140,17 +118,24 @@ namespace GUI
 			};
 			
 			CE::Symbol::ISymbol* m_symbol;
+			SymbolManagerController m_symbolManagerController;
 		public:
 			SymbolContextPanel(CE::Symbol::ISymbol* symbol, DecompiledCodeViewer* decCodeViewer, ImVec2 winPos)
-				: AbstractContextPanel(decCodeViewer, winPos), m_symbol(symbol)
+				: AbstractContextPanel(decCodeViewer, winPos), m_symbolManagerController(symbol->getManager()), m_symbol(symbol)
 			{}
 
 		private:
 			void renderPanel() override {
 				auto& builtinWin = m_decCodeViewer->m_builtinWindow;
-				if (ImGui::MenuItem("Change name")) {
+				if (ImGui::MenuItem("Rename")) {
 					delete builtinWin;
-					builtinWin = new PopupBuiltinWindow(new NamePanel(this));
+					const auto panel = new NamePanel(m_symbol->getName());
+					panel->handler([&](const std::string& name)
+						{
+							m_symbolManagerController.rename(m_symbol, name);
+							m_decCodeViewer->m_codeChanged = true;
+						});
+					builtinWin = new PopupBuiltinWindow(panel);
 					builtinWin->getPos() = m_winPos;
 					builtinWin->open();
 				}

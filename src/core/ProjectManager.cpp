@@ -41,6 +41,7 @@ void ProjectManager::load() {
 		throw NotFoundException("cannot open file: " + getProjectsFile().string());
 	std::string content;
 	file >> content;
+	m_projectEntries.clear();
 	auto json_project_entries = json::parse(content);
 	for (const auto& json_project_entry : json_project_entries) {
 		ProjectEntry projectEntry;

@@ -1,4 +1,5 @@
 #pragma once
+#include "ImageContentViewerPanel.h"
 #include "ImageManagerPanel.h"
 #include "Program.h"
 #include "Project.h"
@@ -50,6 +51,7 @@ namespace GUI
 			CE::Project* m_project;
 			StdWindow* m_imageViewerWindow = nullptr;
 			StdWindow* m_imageContentViewerWindow = nullptr;
+			StdWindow* m_messageWindow = nullptr;
 		public:
 			StdWorkspace(ProjectPanel* projectPanel)
 				: m_projectPanel(projectPanel), m_project(projectPanel->m_project)
@@ -70,6 +72,8 @@ namespace GUI
 		private:
 			void renderPanel() override {
 				Show(m_imageViewerWindow);
+				Show(m_imageContentViewerWindow);
+				Show(m_messageWindow);
 			}
 
 			void renderMenuBar() override {
@@ -115,7 +119,21 @@ namespace GUI
 			}
 
 			void createImageViewerWindow() {
-				m_imageViewerWindow = new StdWindow(new ImageManagerPanel(m_project->getImageManager()));
+				const auto panel = new ImageManagerPanel(m_project->getImageManager());
+				panel->selectImageEventHandler([&](CE::ImageDecorator* imageDec)
+					{
+						if (!imageDec->hasLoaded()) {
+							delete m_messageWindow;
+							m_messageWindow = CreateMessageWindow("The image has not loaded.");
+							return;
+						}
+						createImageContentViewerWindow(imageDec);
+					});
+				m_imageViewerWindow = new StdWindow(panel);
+			}
+
+			void createImageContentViewerWindow(CE::ImageDecorator* imageDec) {
+				m_imageContentViewerWindow = (new ImageContentViewerPanel(imageDec))->createStdWindow();
 			}
 		};
 

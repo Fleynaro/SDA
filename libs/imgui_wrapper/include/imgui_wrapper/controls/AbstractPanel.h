@@ -9,7 +9,6 @@ namespace GUI
 		public Control,
 		public Attribute::Name
 	{
-		friend class StdWindow;
 	public:
 		StdWindow* m_window = nullptr;
 		

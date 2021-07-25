@@ -40,20 +40,14 @@ GUI::StdWindow* GUI::ProjectManagerPanel::createStdWindow() {
 }
 
 void GUI::ProjectManagerPanel::renderPanel() {
-	try {
-		if (m_tryToLoad) {
-			m_controller.load();
-			m_tryToLoad = false;
-		}
-		renderProjectList();
-		renderProjectWindows();
-		Show(m_prjCreatorWin);
-		Show(m_warningModalWin);
-		Show(m_demoWin);
+	if (m_tryToLoad) {
+		m_controller.load();
+		m_tryToLoad = false;
 	}
-	catch (WarningException& ex) {
-		createWarningWindow(ex);
-	}
+	renderProjectList();
+	renderProjectWindows();
+	Show(m_prjCreatorWin);
+	Show(m_demoWin);
 }
 
 void GUI::ProjectManagerPanel::renderProjectList() {
@@ -61,6 +55,10 @@ void GUI::ProjectManagerPanel::renderProjectList() {
 	
 	if (Button::StdButton("Create a new project").present()) {
 		openProjectCreatorPanel();
+	}
+	SameLine();
+	if (Button::StdButton("Open demo project").present()) {
+		openTestProjectPanel();
 	}
 	NewLine();
 
@@ -92,18 +90,6 @@ void GUI::ProjectManagerPanel::renderProjectWindows() {
 	}
 }
 
-void GUI::ProjectManagerPanel::createWarningWindow(const WarningException& ex) {
-	delete m_warningModalWin;
-	m_warningModalWin = new PopupModalWindow(new StdPanel([&]()
-	{
-		Text::Text(ex.what()).show();
-		NewLine();
-		if (Button::StdButton("Ok").present()) {
-			m_window->close();
-		}
-	}, "Exception"));
-}
-
 void GUI::ProjectManagerPanel::createNewProject(const fs::path& dir) {
 	const auto project = m_controller.createNewProject(dir);
 	loadProject(project);
@@ -115,10 +101,13 @@ void GUI::ProjectManagerPanel::openProject(CE::ProjectManager::ProjectEntry* pro
 }
 
 void GUI::ProjectManagerPanel::loadProject(CE::Project* project) {
-	project->initDataBase("database.db");
-	project->initManagers();
-	project->load();
+	m_controller.loadProject(project);
 	m_projectWins.push_back((new ProjectPanel(project))->createStdWindow());
+}
+
+void GUI::ProjectManagerPanel::openTestProjectPanel() {
+	m_controller.createDemoProject();
+	m_projectWins.push_back((new ProjectPanel(m_controller.m_testProject))->createStdWindow());
 }
 
 void GUI::ProjectManagerPanel::openProjectCreatorPanel() {
