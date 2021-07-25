@@ -524,26 +524,32 @@ void CE::DecTestSamplesPool::fillByTests() {
 	}
 }
 
+void CE::DecTestSamplesPool::analyze() {
+	for (auto& sample : m_samples) {
+		sample.decode();
+	}
+}
+
 CE::DecTestSamplesPool::Sample* CE::DecTestSamplesPool::createSampleTest(int testId, const std::string& name,
                                                                          const std::string& comment,
                                                                          AbstractImage* image, int offset) {
 	const auto suffix = std::to_string(testId);
-	auto sample = new Sample;
-	sample->m_testId = testId;
-	sample->m_name = name;
-	sample->m_comment = comment;
-	sample->m_imageDec = m_project->getImageManager()->createImage(m_addrSpace, ImageDecorator::IMAGE_PE, "image_" + suffix, "");
-	sample->m_imageDec->setImage(image);
-	sample->m_imageOffset = offset;
-	sample->m_pool = this;
+	Sample sample;
+	sample.m_testId = testId;
+	sample.m_name = name;
+	sample.m_comment = comment;
+	sample.m_imageDec = m_project->getImageManager()->createImage(m_addrSpace, ImageDecorator::IMAGE_PE, suffix + ": " + name, comment);
+	sample.m_imageDec->setImage(image);
+	sample.m_imageOffset = offset;
+	sample.m_pool = this;
 
 	auto sig = m_project->getTypeManager()->getFactory().createSignature(
 		DataType::IFunctionSignature::FASTCALL, "sig_" + suffix);
-	sample->m_func = m_project->getFunctionManager()->getFactory().createFunction(
-		0x0, sig, sample->m_imageDec, "func_" + suffix);
-	sample->m_symbolCtx = sample->m_func->getSymbolContext();
+	sample.m_func = m_project->getFunctionManager()->getFactory().createFunction(
+		0x0, sig, sample.m_imageDec, "func_" + suffix);
+	sample.m_symbolCtx = sample.m_func->getSymbolContext();
 	m_samples.push_back(sample);
-	return sample;
+	return &*m_samples.rbegin();
 }
 
 CE::DecTestSamplesPool::Sample* CE::DecTestSamplesPool::createSampleTest(int testId, const std::string& name,

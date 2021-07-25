@@ -45,8 +45,8 @@ void GUI::ProjectManagerPanel::renderPanel() {
 		m_tryToLoad = false;
 	}
 	renderProjectList();
-	renderProjectWindows();
 	Show(m_prjCreatorWin);
+	Show(m_projectWin);
 	Show(m_demoWin);
 }
 
@@ -77,19 +77,6 @@ void GUI::ProjectManagerPanel::renderProjectList() {
 	}
 }
 
-void GUI::ProjectManagerPanel::renderProjectWindows() {
-	auto it = m_projectWins.begin();
-	while (it != m_projectWins.end()) {
-		const auto projectWin = *it;
-		projectWin->show();
-		if (projectWin->isRemoved()) {
-			it = m_projectWins.erase(it);
-			delete projectWin;
-		}
-		else ++it;
-	}
-}
-
 void GUI::ProjectManagerPanel::createNewProject(const fs::path& dir) {
 	const auto project = m_controller.createNewProject(dir);
 	loadProject(project);
@@ -102,12 +89,15 @@ void GUI::ProjectManagerPanel::openProject(CE::ProjectManager::ProjectEntry* pro
 
 void GUI::ProjectManagerPanel::loadProject(CE::Project* project) {
 	m_controller.loadProject(project);
-	m_projectWins.push_back((new ProjectPanel(project))->createStdWindow());
+	delete m_projectWin;
+	m_projectWin = (new ProjectPanel(project))->createStdWindow();
 }
 
 void GUI::ProjectManagerPanel::openTestProjectPanel() {
-	m_controller.createDemoProject();
-	m_projectWins.push_back((new ProjectPanel(m_controller.m_testProject))->createStdWindow());
+	if(!m_controller.m_testProject)
+		m_controller.createDemoProject();
+	delete m_projectWin;
+	m_projectWin = (new ProjectPanel(m_controller.m_testProject))->createStdWindow();
 }
 
 void GUI::ProjectManagerPanel::openProjectCreatorPanel() {

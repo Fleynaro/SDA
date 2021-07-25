@@ -15,6 +15,7 @@ void GUI::ProjectManagerController::createDemoProject() {
 	loadProject(m_testProject);
 	CE::DecTestSamplesPool decTestSamplesPool(m_testProject);
 	decTestSamplesPool.fillByTests();
+	decTestSamplesPool.analyze();
 }
 
 void GUI::ProjectManagerController::load() const {

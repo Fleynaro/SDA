@@ -37,7 +37,7 @@ namespace GUI
 		TableListViewSelector<CE::ProjectManager::ProjectEntry*>* m_tableListView;
 		StdWindow* m_demoWin = nullptr;
 		StdWindow* m_prjCreatorWin = nullptr;
-		std::list<StdWindow*> m_projectWins;
+		StdWindow* m_projectWin = nullptr;
 		bool m_tryToLoad = true;
 	public:
 		ProjectManagerPanel(CE::Program* program);
@@ -50,8 +50,6 @@ namespace GUI
 		void renderPanel() override;
 
 		void renderProjectList();
-
-		void renderProjectWindows();
 
 		void createNewProject(const fs::path& dir);
 

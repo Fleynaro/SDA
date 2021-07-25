@@ -29,6 +29,7 @@ namespace GUI
 
 		bool m_isOpened = true;
 		bool m_fullscreen = false;
+		bool m_focus = false;
 	public:
 		bool m_applyPosAndSize = false;
 		
@@ -38,18 +39,15 @@ namespace GUI
 			m_panel->m_window = this;
 		}
 
-		~StdWindow() override
-		{
+		~StdWindow() override {
 			delete m_panel;
 		}
 
-		AbstractPanel* getPanel() const
-		{
+		AbstractPanel* getPanel() const {
 			return m_panel;
 		}
 
-		bool isOpened()
-		{
+		bool isOpened() {
 			return m_isOpened;
 		}
 
@@ -57,13 +55,11 @@ namespace GUI
 			return !m_isOpened;
 		}
 
-		virtual void open()
-		{
+		virtual void open() {
 			m_isOpened = true;
 		}
 
-		void close()
-		{
+		void close() {
 			m_isOpened = false;
 		}
 
@@ -71,9 +67,17 @@ namespace GUI
 			m_fullscreen = toggle;
 		}
 
+		void focus() {
+			m_focus = true;
+		}
+
 	protected:
 		void renderControl() override {
 			pushParams();
+			if(m_focus) {
+				ImGui::SetNextWindowFocus();
+				m_focus = false;
+			}
 			bool isOpen = ImGui::Begin(m_panel->getName().c_str(), &m_isOpened, getFlags());
 			processGenericEvents();
 			
@@ -257,6 +261,64 @@ namespace GUI
 				m_panel->show();
 				ImGui::EndPopup();
 			}
+		}
+	};
+
+	class WindowManager : public Control
+	{
+		std::vector<StdWindow*> m_windows;
+	public:
+		ImGuiID m_dockSpaceId = 0;
+		
+		WindowManager() {}
+
+		~WindowManager() override {
+			for (const auto window : m_windows)
+				delete window;
+		}
+
+		const std::vector<StdWindow*>& getWindows() const {
+			return m_windows;
+		}
+
+		template<typename T = AbstractPanel>
+		StdWindow* findWindow(const std::function<bool(T*)>& filter) const {
+			for (const auto window : m_windows) {
+				if (window && filter(dynamic_cast<T*>(window->getPanel())))
+					return window;
+			}
+			return nullptr;
+		}
+		
+		void addWindow(StdWindow* window) {
+			for(int i = 0; i < m_windows.size(); i ++) {
+				if(!m_windows[i]) {
+					m_windows[i] = window;
+					AddIdSuffix(window, i);
+					return;
+				}
+			}
+			AddIdSuffix(window, static_cast<int>(m_windows.size()));
+			m_windows.push_back(window);
+		}
+
+	protected:
+		void renderControl() override {
+			for (int i = 0; i < m_windows.size(); i++) {
+				if (!m_windows[i])
+					continue;
+				if (m_dockSpaceId)
+					ImGui::SetNextWindowDockID(m_dockSpaceId, ImGuiCond_FirstUseEver);
+				m_windows[i]->show();
+				if (m_windows[i]->isRemoved()) {
+					delete m_windows[i];
+					m_windows[i] = nullptr;
+				}
+			}
+		}
+
+		static void AddIdSuffix(StdWindow* window, int id) {
+			window->getPanel()->setName(window->getPanel()->getName() + std::to_string(id));
 		}
 	};
 

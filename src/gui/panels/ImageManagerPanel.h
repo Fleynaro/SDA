@@ -185,6 +185,11 @@ namespace GUI
 
 			private:
 				void renderPanel() override {
+					if (ImGui::MenuItem("Open")) {
+						if (m_imageManagerPanel->m_selectImageEventHandler.isInit())
+							m_imageManagerPanel->m_selectImageEventHandler(m_imageDec, true);
+					}
+					
 					if (ImGui::MenuItem("Rename")) {
 						delete m_imageManagerPanel->m_popupBuiltinWindow;
 						const auto panel = new NamePanel(m_imageDec->getName());
@@ -221,7 +226,7 @@ namespace GUI
 				const auto events = GenericEvents(true);
 				if (events.isClickedByLeftMouseBtn()) {
 					if(m_imageManagerPanel->m_selectImageEventHandler.isInit())
-						m_imageManagerPanel->m_selectImageEventHandler(imageDec);
+						m_imageManagerPanel->m_selectImageEventHandler(imageDec, false);
 				}
 				if (events.isClickedByRightMouseBtn())
 				{
@@ -296,7 +301,7 @@ namespace GUI
 		PopupModalWindow* m_popupModalWindow = nullptr;
 		PopupBuiltinWindow* m_popupBuiltinWindow = nullptr;
 		PopupModalWindow* m_messageWindow = nullptr;
-		EventHandler<CE::ImageDecorator*> m_selectImageEventHandler;
+		EventHandler<CE::ImageDecorator*, bool> m_selectImageEventHandler;
 	public:
 		ImageManagerController m_controller;
 		AddressSpaceManagerController m_addrSpaceController;
@@ -315,7 +320,7 @@ namespace GUI
 			delete m_listView;
 		}
 
-		void selectImageEventHandler(const std::function<void(CE::ImageDecorator*)>& eventHandler) {
+		void selectImageEventHandler(const std::function<void(CE::ImageDecorator*, bool)>& eventHandler) {
 			m_selectImageEventHandler = eventHandler;
 		}
 

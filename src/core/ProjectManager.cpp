@@ -23,9 +23,11 @@ Project* ProjectManager::loadProject(const fs::path& dir) {
 }
 
 Project* ProjectManager::createProject(const fs::path& dir) {
-	ProjectEntry projectEntry;
-	projectEntry.m_dir = dir;
-	m_projectEntries.push_back(projectEntry);
+	if (dir.filename() != "demo") {
+		ProjectEntry projectEntry;
+		projectEntry.m_dir = dir;
+		m_projectEntries.push_back(projectEntry);
+	}
 
 	const auto project = new Project(this, dir);
 	if (!exists(project->getDirectory()))

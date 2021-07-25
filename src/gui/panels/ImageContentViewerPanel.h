@@ -304,7 +304,6 @@ namespace GUI
 			DEFAULT = MEMORY_OPTIMIZING | USELESS_LINES_OPTIMIZING
 		};
 		
-		CE::ImageDecorator* m_imageDec;
 		AbstractSectionViewer* m_imageSectionViewer = nullptr;
 		std::map<const CE::ImageSection*, AbstractSectionController*> m_imageSectionControllers; // todo: move out of the scope
 		ImageSectionListModel m_imageSectionListModel;
@@ -317,6 +316,8 @@ namespace GUI
 		SymbolizingStep m_symbolizingStep = SymbolizingStep::DEFAULT;
 		FinalProcessingStep m_finalProcessingStep = FinalProcessingStep::DEFAULT;
 	public:
+		CE::ImageDecorator* m_imageDec;
+		
 		ImageContentViewerPanel(CE::ImageDecorator* imageDec)
 			: AbstractPanel("Image: " + imageDec->getName() + "###ImageContentViewer"), m_imageDec(imageDec), m_imageSectionListModel(imageDec->getImage())
 		{

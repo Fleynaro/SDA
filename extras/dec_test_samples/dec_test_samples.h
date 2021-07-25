@@ -34,11 +34,13 @@ namespace CE
 			Function* createFunc(Offset offset, const std::string& name) const;
 		};
 
-		std::list<Sample*> m_samples;
+		std::list<Sample> m_samples;
 
 		DecTestSamplesPool(Project* project);
 
 		void fillByTests();
+
+		void analyze();
 
 		Sample* createSampleTest(int testId, const std::string& name, const std::string& comment, AbstractImage* image,
 		                         int offset = 0);

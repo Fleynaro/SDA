@@ -50,7 +50,7 @@ namespace GUI
 			ProjectPanel* m_projectPanel;
 			CE::Project* m_project;
 			StdWindow* m_imageViewerWindow = nullptr;
-			StdWindow* m_imageContentViewerWindow = nullptr;
+			WindowManager m_winManager;
 			StdWindow* m_messageWindow = nullptr;
 		public:
 			StdWorkspace(ProjectPanel* projectPanel)
@@ -71,8 +71,9 @@ namespace GUI
 		
 		private:
 			void renderPanel() override {
+				m_winManager.m_dockSpaceId = m_projectPanel->m_dockSpaceId;
+				m_winManager.show();
 				Show(m_imageViewerWindow);
-				Show(m_imageContentViewerWindow);
 				Show(m_messageWindow);
 			}
 
@@ -120,24 +121,39 @@ namespace GUI
 
 			void createImageViewerWindow() {
 				const auto panel = new ImageManagerPanel(m_project->getImageManager());
-				panel->selectImageEventHandler([&](CE::ImageDecorator* imageDec)
+				panel->selectImageEventHandler([&](CE::ImageDecorator* imageDec, bool duplicate)
 					{
-						if (!imageDec->hasLoaded()) {
-							delete m_messageWindow;
-							m_messageWindow = CreateMessageWindow("The image has not loaded.");
-							return;
-						}
-						createImageContentViewerWindow(imageDec);
+						selectImage(imageDec, duplicate);
 					});
 				m_imageViewerWindow = new StdWindow(panel);
 			}
 
 			void createImageContentViewerWindow(CE::ImageDecorator* imageDec) {
-				m_imageContentViewerWindow = (new ImageContentViewerPanel(imageDec))->createStdWindow();
+				m_winManager.addWindow((new ImageContentViewerPanel(imageDec))->createStdWindow());
+			}
+
+			void selectImage(CE::ImageDecorator* imageDec, bool duplicate) {
+				if (!imageDec->hasLoaded()) {
+					delete m_messageWindow;
+					m_messageWindow = CreateMessageWindow("The image has not loaded.");
+					return;
+				}
+				if (!duplicate) {
+					const auto existingWindow = m_winManager.findWindow<ImageContentViewerPanel>([&](ImageContentViewerPanel* panel)
+						{
+							return imageDec == panel->m_imageDec;
+						});
+					if (existingWindow) {
+						existingWindow->focus();
+						return;
+					}
+				}
+				createImageContentViewerWindow(imageDec);
 			}
 		};
 
 		StdWorkspace* m_workspace = nullptr;
+		ImGuiID m_dockSpaceId;
 	public:
 		
 		ProjectPanel(CE::Project* project)
@@ -159,7 +175,7 @@ namespace GUI
 	protected:
 		void renderPanel() override {
 			checkUnsavedState();
-			ImGui::DockSpace(ImGui::GetID("ProjectDockSpace"), ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
+			ImGui::DockSpace(m_dockSpaceId = ImGui::GetID("ProjectDockSpace"), ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 			m_workspace->renderPanel();
 		}
 

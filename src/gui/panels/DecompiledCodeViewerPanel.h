@@ -626,7 +626,7 @@ namespace GUI
 		}
 
 		StdWindow* createStdWindow() {
-			return new StdWindow(this, ImGuiWindowFlags_MenuBar);
+			return new StdWindow(this, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_HorizontalScrollbar);
 		}
 
 	private:
