@@ -4,6 +4,31 @@
 
 namespace GUI
 {
+	static std::string GetGroupName(CE::DataType::IType* dataType) {
+		std::string groupName = "Unknown";
+		switch (dataType->getGroup()) {
+		case CE::DataType::IType::Simple:
+			groupName = "Simple";
+			break;
+		case CE::DataType::IType::Typedef:
+			groupName = "Typedef";
+			break;
+		case CE::DataType::IType::Enum:
+			groupName = "Enum";
+			break;
+		case CE::DataType::IType::Structure:
+			groupName = "Structure";
+			break;
+		case CE::DataType::IType::Class:
+			groupName = "Class";
+			break;
+		case CE::DataType::IType::FunctionSignature:
+			groupName = "FunctionSignature";
+			break;
+		}
+		return groupName;
+	}
+	
 	class DataTypeManagerController : public AbstractManagerController<CE::DataType::IType>
 	{
 	public:
@@ -15,7 +40,10 @@ namespace GUI
 		class DataTypeListModel : public ListModel
 		{
 		public:
-			using ListModel::ListModel;
+			bool m_isTable;
+			DataTypeListModel(DataTypeManagerController* controller, bool isTable)
+				: ListModel(controller), m_isTable(isTable)
+			{}
 
 		private:
 			class DataTypeIterator : public Iterator
@@ -26,28 +54,9 @@ namespace GUI
 			private:
 				std::string getText(CE::DataType::IType* item) override
 				{
-					std::string groupName = "Unknown";
-					switch (item->getGroup()) {
-					case CE::DataType::IType::Simple:
-						groupName = "Simple";
-						break;
-					case CE::DataType::IType::Typedef:
-						groupName = "Typedef";
-						break;
-					case CE::DataType::IType::Enum:
-						groupName = "Enum";
-						break;
-					case CE::DataType::IType::Structure:
-						groupName = "Structure";
-						break;
-					case CE::DataType::IType::Class:
-						groupName = "Class";
-						break;
-					case CE::DataType::IType::FunctionSignature:
-						groupName = "FunctionSignature";
-						break;
-					}
-					return item->getName() + "," + groupName;
+					if (dynamic_cast<DataTypeListModel*>(m_listModel)->m_isTable)
+						return item->getName() + "," + GetGroupName(item);
+					return item->getName();
 				}
 			};
 
@@ -60,9 +69,10 @@ namespace GUI
 
 		DataTypeFilter m_filter;
 		DataTypeListModel m_listModel;
+		DataTypeListModel m_tableListModel;
 
 		DataTypeManagerController(CE::TypeManager* manager)
-			: AbstractManagerController<CE::DataType::IType>(manager), m_listModel(this)
+			: AbstractManagerController<CE::DataType::IType>(manager), m_listModel(this, false), m_tableListModel(this, true)
 		{}
 
 	private:

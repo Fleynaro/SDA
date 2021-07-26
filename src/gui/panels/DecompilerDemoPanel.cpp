@@ -181,14 +181,6 @@ void GUI::DecompilerDemoPanel::renderPanel()
 				}
 			}
 
-			if (Button::StdButton("open func. manager").present())
-			{
-				auto panel = new FunctionManagerPanel(m_project->getFunctionManager());
-				panel->m_listView = new TableListViewSelector(panel->m_listView);
-				panel->m_listView = new TableListViewMultiSelector(panel->m_listView);
-				m_functionManagerWindow = new StdWindow(panel);
-			}
-
 			if (Button::StdButton("open item manager").present())
 			{
 				m_imageViewerWindow = new StdWindow(new ImageManagerPanel(m_project->getImageManager()));

@@ -1,4 +1,5 @@
 #pragma once
+#include "FunctionManagerPanel.h"
 #include "ImageContentViewerPanel.h"
 #include "ImageManagerPanel.h"
 #include "Program.h"
@@ -50,7 +51,9 @@ namespace GUI
 			ProjectPanel* m_projectPanel;
 			CE::Project* m_project;
 			StdWindow* m_imageViewerWindow = nullptr;
-			WindowManager m_winManager;
+			StdWindow* m_funcViewerWindow = nullptr;
+			StdWindow* m_dataTypeViewerWindow = nullptr;
+			WindowManager m_imageContentWinManager;
 			StdWindow* m_messageWindow = nullptr;
 		public:
 			StdWorkspace(ProjectPanel* projectPanel)
@@ -71,9 +74,11 @@ namespace GUI
 		
 		private:
 			void renderPanel() override {
-				m_winManager.m_dockSpaceId = m_projectPanel->m_dockSpaceId;
-				m_winManager.show();
+				m_imageContentWinManager.m_dockSpaceId = m_projectPanel->m_dockSpaceId;
+				m_imageContentWinManager.show();
 				Show(m_imageViewerWindow);
+				Show(m_funcViewerWindow);
+				Show(m_dataTypeViewerWindow);
 				Show(m_messageWindow);
 			}
 
@@ -93,6 +98,16 @@ namespace GUI
 							m_imageViewerWindow->close();
 						else createImageViewerWindow();
 					}
+					if (ImGui::MenuItem("Function Viewer", nullptr, m_funcViewerWindow != nullptr)) {
+						if (m_funcViewerWindow)
+							m_funcViewerWindow->close();
+						else createFuncViewerWindow();
+					}
+					if (ImGui::MenuItem("Data Type Viewer", nullptr, m_dataTypeViewerWindow != nullptr)) {
+						if (m_dataTypeViewerWindow)
+							m_dataTypeViewerWindow->close();
+						else createDataTypeViewerWindow();
+					}
 					ImGui::EndMenu();
 				}
 			}
@@ -106,17 +121,27 @@ namespace GUI
 				saver.load();
 				if (saver.hasWindow("ImageViewer"))
 					createImageViewerWindow();
+				if (saver.hasWindow("FunctionViewer"))
+					createFuncViewerWindow();
+				if (saver.hasWindow("DataTypeViewer"))
+					createDataTypeViewerWindow();
 			}
 
 			void saveWindows() {
 				WindowSaveProvider saver(getGuiFile());
 				if(m_imageViewerWindow)
 					saver.addWindow("ImageViewer");
+				if (m_funcViewerWindow)
+					saver.addWindow("FunctionViewer");
+				if (m_dataTypeViewerWindow)
+					saver.addWindow("DataTypeViewer");
 				saver.save();
 			}
 
 			void firstInitWindows() {
 				createImageViewerWindow();
+				createFuncViewerWindow();
+				createDataTypeViewerWindow();
 			}
 
 			void createImageViewerWindow() {
@@ -128,8 +153,22 @@ namespace GUI
 				m_imageViewerWindow = new StdWindow(panel);
 			}
 
+			void createFuncViewerWindow() {
+				const auto panel = new FunctionManagerPanel(m_project->getFunctionManager());
+				panel->selectFuncEventHandler([&](CE::Function* func)
+					{
+						selectFunction(func);
+					});
+				m_funcViewerWindow = new StdWindow(panel);
+			}
+
+			void createDataTypeViewerWindow() {
+				const auto panel = new DataTypeManagerPanel(m_project->getTypeManager());
+				m_dataTypeViewerWindow = new StdWindow(panel);
+			}
+
 			void createImageContentViewerWindow(CE::ImageDecorator* imageDec) {
-				m_winManager.addWindow((new ImageContentViewerPanel(imageDec))->createStdWindow());
+				m_imageContentWinManager.addWindow((new ImageContentViewerPanel(imageDec))->createStdWindow());
 			}
 
 			void selectImage(CE::ImageDecorator* imageDec, bool duplicate) {
@@ -139,7 +178,7 @@ namespace GUI
 					return;
 				}
 				if (!duplicate) {
-					const auto existingWindow = m_winManager.findWindow<ImageContentViewerPanel>([&](ImageContentViewerPanel* panel)
+					const auto existingWindow = m_imageContentWinManager.findWindow<ImageContentViewerPanel>([&](ImageContentViewerPanel* panel)
 						{
 							return imageDec == panel->m_imageDec;
 						});
@@ -149,6 +188,10 @@ namespace GUI
 					}
 				}
 				createImageContentViewerWindow(imageDec);
+			}
+
+			void selectFunction(CE::Function* func) {
+				selectImage(func->getImage(), false);
 			}
 		};
 

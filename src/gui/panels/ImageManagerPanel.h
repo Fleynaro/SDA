@@ -83,8 +83,7 @@ namespace GUI
 	{
 		Input::TextInput m_search_input;
 
-		class ImageListView
-			: public ImageListViewGrouping
+		class ImageListView : public ImageListViewGrouping
 		{
 			class EmptyAddrSpaceListView
 				: public AbstractListView<CE::AddressSpace*>
@@ -228,8 +227,7 @@ namespace GUI
 					if(m_imageManagerPanel->m_selectImageEventHandler.isInit())
 						m_imageManagerPanel->m_selectImageEventHandler(imageDec, false);
 				}
-				if (events.isClickedByRightMouseBtn())
-				{
+				if (events.isClickedByRightMouseBtn()) {
 					delete m_imageManagerPanel->m_imageContextWindow;
 					m_imageManagerPanel->m_imageContextWindow = new PopupContextWindow(new ImageContextPanel(imageDec, m_imageManagerPanel, GetLeftBottom()));
 					m_imageManagerPanel->m_imageContextWindow->open();

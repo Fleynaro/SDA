@@ -56,13 +56,13 @@ namespace GUI
 				CE::TypeManager* m_typeManager;
 			public:
 				DataTypePanel(SymbolContextPanel* ctx)
-					: m_controller(ctx->m_symbol->getDataType()->getTypeManager()), m_typeManager(ctx->m_symbol->getDataType()->getTypeManager())
+					: m_ctx(ctx), m_controller(ctx->m_symbol->getDataType()->getTypeManager()), m_typeManager(ctx->m_symbol->getDataType()->getTypeManager())
 				{
 					m_input.setInputText(m_ctx->m_symbol->getDataType()->getName());
 					m_input.focus();
 					m_controller.m_maxItemsCount = 10;
 					
-					auto tableListView = new TableListView(&m_controller.m_listModel, {
+					auto tableListView = new TableListView(&m_controller.m_tableListModel, {
 						ColInfo("Data type", ImGuiTableColumnFlags_WidthFixed, 150.0f),
 						ColInfo("Group", ImGuiTableColumnFlags_WidthFixed, 70.0f)
 						});
