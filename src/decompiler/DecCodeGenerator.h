@@ -633,7 +633,7 @@ namespace CE::Decompiler
 		std::set<LinearView::Block*> m_blocksToGoTo;
 
 	protected:
-		std::string m_tabs;
+		int m_tabsCount = 0;
 	
 	public:
 		enum TokenType
@@ -870,13 +870,13 @@ namespace CE::Decompiler
 
 		virtual void generateCurlyBracket(const std::string& text, LinearView::BlockList* blockList) {
 			if (text == "}") {
-				m_tabs.pop_back();
+				m_tabsCount--;
 				generateTabs();
 			}
 			generateToken(text, TOKEN_CURLY_BRACKET);
 			if (text == "{") {
 				generateEndLine();
-				m_tabs.push_back('\t');
+				m_tabsCount++;
 			}
 		}
 		
@@ -892,7 +892,8 @@ namespace CE::Decompiler
 		}
 		
 		void generateTabs() {
-			generateToken(m_tabs, TOKEN_TAB);
+			for (int i = 0; i < m_tabsCount; i++)
+				generateTab();
 		}
 
 		void generateEndLine() {

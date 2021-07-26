@@ -171,12 +171,20 @@ namespace GUI
 			class ExprTreeGenerator : public CE::Decompiler::ExprTree::ExprTreeViewGenerator
 			{
 				CodeGenerator* m_parentGen;
+				bool m_isTextAddingOnCurLine = true;
 			public:
+				std::list<void*> m_beginGroups;
+				
 				ExprTreeGenerator(CodeGenerator* parentGen)
 					: m_parentGen(parentGen)
 				{}
 
 				void generateToken(const std::string& text, TokenType tokenType) override {
+					if (text == " ") {
+						if (m_parentGen->checkToGoToNewLine())
+							return;
+					}
+					
 					ColorRGBA color = 0xe6e6e6FF;
 					if (tokenType == TOKEN_DATA_TYPE)
 						color = COLOR_DATA_TYPE;
@@ -188,10 +196,13 @@ namespace GUI
 						color = COLOR_DEBUG_INFO;
 					Text::ColoredText(text, color).show();
 					SameLine(1.0f);
+					if(m_isTextAddingOnCurLine)
+						m_parentGen->m_textOnCurLine += text;
 				}
 
 				void generateSdaSymbol(CE::Symbol::ISymbol* symbol) override {
 					RenderSdaSymbol(symbol);
+					m_parentGen->m_textOnCurLine += symbol->getName();
 					const auto events = GenericEvents(true);
 					
 					if (events.isClickedByRightMouseBtn()) {
@@ -245,7 +256,9 @@ namespace GUI
 					ExprTreeViewGenerator::generateNumberLeaf(leaf);
 					if (ImGui::IsItemHovered()) {
 						HighlightItem(COLOR_BG_TEXT_ON_HOVER);
+						m_isTextAddingOnCurLine = false;
 						ExprTreeViewGenerator::generateNumberLeaf(leaf);
+						m_isTextAddingOnCurLine = true;
 						ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 						RenderNumberPresentations(leaf->getValue());
 					}
@@ -256,7 +269,9 @@ namespace GUI
 					ExprTreeViewGenerator::generateSdaNumberLeaf(leaf);
 					if (ImGui::IsItemHovered()) {
 						HighlightItem(COLOR_BG_TEXT_ON_HOVER);
+						m_isTextAddingOnCurLine = false;
 						ExprTreeViewGenerator::generateSdaNumberLeaf(leaf);
+						m_isTextAddingOnCurLine = true;
 						ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 						RenderNumberPresentations(leaf->getValue());
 					}
@@ -288,6 +303,7 @@ namespace GUI
 				void generateRoundBracket(const std::string& text, void* obj) override {
 					if (text == "(") {
 						ImGui::BeginGroup();
+						m_beginGroups.push_back(obj);
 					}
 					
 					ExprTreeViewGenerator::generateRoundBracket(text, obj);
@@ -297,12 +313,17 @@ namespace GUI
 
 					if (text == ")") {
 						ImGui::EndGroup();
+						clickRoundBracketEvent(obj);
 						SameLine(0.0f);
-						if (!m_parentGen->m_hasNodeSelected) {
-							if (ImGui::IsItemClicked()) {
-								m_parentGen->m_decCodeViewer->m_selectedObj = obj;
-								m_parentGen->m_hasNodeSelected = true;
-							}
+						m_beginGroups.pop_back();
+					}
+				}
+
+				void clickRoundBracketEvent(void* obj) const {
+					if (!m_parentGen->m_hasNodeSelected) {
+						if (ImGui::IsItemClicked()) {
+							m_parentGen->m_decCodeViewer->m_selectedObj = obj;
+							m_parentGen->m_hasNodeSelected = true;
 						}
 					}
 				}
@@ -312,6 +333,7 @@ namespace GUI
 			DecompiledCodeViewer* m_decCodeViewer;
 			bool m_hasNodeSelected = false;
 			bool m_hasBlockListSelected = false;
+			std::string m_textOnCurLine;
 		public:
 			ExprTreeGenerator m_exprTreeGenerator;
 			
@@ -322,9 +344,41 @@ namespace GUI
 				m_SHOW_LINEAR_LEVEL_EXT = true;
 			}
 
+			bool checkToGoToNewLine() {
+				const auto curLineSize = ImGui::CalcTextSize(m_textOnCurLine.c_str()).x;
+				if (curLineSize >= std::max(m_decCodeViewer->m_maxLineSize, 400.0f)) {
+					// recreate groups because they're not friendly with NewLine()
+					for (auto it = m_exprTreeGenerator.m_beginGroups.rbegin(); it != m_exprTreeGenerator.m_beginGroups.rend(); ++it) {
+						ImGui::EndGroup();
+						m_exprTreeGenerator.clickRoundBracketEvent(*it);
+						SameLine(0.0f);
+					}
+					generateEndLine();
+					generateTabs();
+					generateTab();
+					generateTab();
+					for (const auto g : m_exprTreeGenerator.m_beginGroups) {
+						ImGui::BeginGroup();
+					}
+					return true;
+				}
+				return false;
+			}
+
 			void generateToken(const std::string& text, TokenType tokenType) override {
 				if (tokenType == TOKEN_END_LINE) {
+					m_textOnCurLine = "";
 					NewLine();
+					return;
+				}
+
+				if(text == " ") {
+					if (checkToGoToNewLine())
+						return;
+				}
+				
+				if (text == "\t") {
+					generateToken("  ", TOKEN_OTHER);
 					return;
 				}
 
@@ -339,6 +393,7 @@ namespace GUI
 					color = COLOR_DEBUG_INFO;
 				Text::ColoredText(text, color).show();
 				SameLine(1.0f);
+				m_textOnCurLine += text;
 			}
 
 			void generateBlockList(CE::Decompiler::LinearView::BlockList* blockList, bool generatingBraces) override {
@@ -422,11 +477,11 @@ namespace GUI
 					curlyBracketEvent(blockList);
 					generateEndLine();
 					ImGui::BeginGroup();
-					m_tabs.push_back('\t');
+					m_tabsCount++;
 				}
 				
 				if (text == "}") {
-					m_tabs.pop_back();
+					m_tabsCount--;
 					generateTabs();
 					generateToken(text, TOKEN_CURLY_BRACKET);
 					if (isSelected) {
@@ -475,6 +530,7 @@ namespace GUI
 			bool DebugComments = true;
 		} m_show;
 		bool m_codeChanged = false;
+		float m_maxLineSize = 0.0f;
 		
 		DecompiledCodeViewer(CE::Decompiler::LinearView::BlockList* blockList)
 			: m_blockList(blockList)
@@ -605,7 +661,7 @@ namespace GUI
 		DecompiledCodeViewer* m_decompiledCodeViewer;
 		
 		DecompiledCodeViewerPanel(CE::Decompiler::LinearView::BlockList* blockList)
-			: AbstractPanel("Decompiled code viewer"), m_blockList(blockList)
+			: AbstractPanel("Decompiled Code Viewer"), m_blockList(blockList)
 		{}
 		
 		DecompiledCodeViewerPanel(CE::Decompiler::SdaCodeGraph* sdaCodeGraph, CE::Function* function)
@@ -631,6 +687,7 @@ namespace GUI
 
 	private:
 		void renderPanel() override {
+			m_decompiledCodeViewer->m_maxLineSize = m_window->getSize().x - 200.0f;
 			m_decompiledCodeViewer->show();
 		}
 
