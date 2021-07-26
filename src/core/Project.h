@@ -23,10 +23,6 @@ namespace CE
 		class Client;
 	};
 
-	namespace Symbol {
-		class SymbolTable;
-	};
-
 	class Project
 	{
 		ProjectManager* m_projectManager;

@@ -20,10 +20,15 @@ namespace CE
 				: m_symbolTableManager(symbolTableManager), m_symbolTableMapper(symbolTableMapper), AbstractFactory(markAsNew)
 			{}
 
-			Symbol::SymbolTable* createSymbolTable(Symbol::SymbolTable::SymbolTableType type) const;
+			Symbol::GlobalSymbolTable* createGlobalSymbolTable() const;
+
+			Symbol::StackSymbolTable* createStackSymbolTable() const;
+
+		private:
+			void initSymbolTable(Symbol::AbstractSymbolTable* symbolTable) const;
 		};
 
-		using Iterator = AbstractIterator<Symbol::SymbolTable>;
+		using Iterator = AbstractIterator<Symbol::AbstractSymbolTable>;
 
 		SymbolTableManager(Project* module);
 
@@ -31,7 +36,7 @@ namespace CE
 
 		Factory getFactory(bool markAsNew = true);
 
-		Symbol::SymbolTable* findSymbolTableById(DB::Id id);
+		Symbol::AbstractSymbolTable* findSymbolTableById(DB::Id id);
 
 	private:
 		DB::SymbolTableMapper* m_symbolTableMapper;

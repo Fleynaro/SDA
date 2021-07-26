@@ -12,6 +12,7 @@ namespace GUI
 		struct SymbolFilter
 		{
 			std::string m_name;
+			CE::Symbol::Type m_type = CE::Symbol::GLOBAL_VAR;
 		};
 
 		class SymbolListModel : public ListModel
@@ -64,7 +65,8 @@ namespace GUI
 			using namespace Helper::String;
 			if (!m_filter.m_name.empty() && ToLower(item->getName()).find(ToLower(m_filter.m_name)) == std::string::npos)
 				return false;
-
+			if (m_filter.m_type != item->getType())
+				return false;
 			return true;
 		}
 	};

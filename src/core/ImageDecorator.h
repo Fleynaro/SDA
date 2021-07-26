@@ -33,8 +33,8 @@ namespace CE
 		AddressSpace* m_addressSpace;
 		AbstractImage* m_image = nullptr;
 		IMAGE_TYPE m_type;
-		Symbol::SymbolTable* m_globalSymbolTable;
-		Symbol::SymbolTable* m_funcBodySymbolTable;
+		Symbol::GlobalSymbolTable* m_globalSymbolTable;
+		Symbol::GlobalSymbolTable* m_funcBodySymbolTable;
 		Decompiler::PCode::InstructionPool* m_instrPool;
 		Decompiler::ImagePCodeGraph* m_imagePCodeGraph;
 		std::map<ComplexOffset, DataType::IFunctionSignature*>* m_vfunc_calls;
@@ -46,8 +46,8 @@ namespace CE
 			ImageManager* imageManager,
 			AddressSpace* addressSpace,
 			IMAGE_TYPE type,
-			Symbol::SymbolTable* globalSymbolTable,
-			Symbol::SymbolTable* funcBodySymbolTable,
+			Symbol::GlobalSymbolTable* globalSymbolTable,
+			Symbol::GlobalSymbolTable* funcBodySymbolTable,
 			const std::string& name,
 			const std::string& comment = "");
 
@@ -73,9 +73,9 @@ namespace CE
 
 		Function* getFunctionAt(Offset offset) const;
 
-		Symbol::SymbolTable* getGlobalSymbolTable() const;
+		Symbol::GlobalSymbolTable* getGlobalSymbolTable() const;
 
-		Symbol::SymbolTable* getFuncBodySymbolTable() const;
+		Symbol::GlobalSymbolTable* getFuncBodySymbolTable() const;
 
 		Decompiler::PCode::InstructionPool* getInstrPool() const;
 

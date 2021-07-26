@@ -26,7 +26,7 @@ namespace CE
 				: m_functionManager(functionManager), m_ghidraFunctionMapper(ghidraFunctionMapper), m_funcMapper(funcMapper), AbstractFactory(markAsNew)
 			{}
 
-			Function* createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::SymbolTable* stackSymbolTable) const;
+			Function* createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::StackSymbolTable* stackSymbolTable) const;
 
 			Function* createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec) const;
 

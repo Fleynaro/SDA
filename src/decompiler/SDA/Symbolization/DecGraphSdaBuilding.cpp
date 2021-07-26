@@ -263,11 +263,13 @@ CE::Symbol::ISymbol* SdaBuilding::findOrCreateSymbol(Symbol::Symbol* symbol, int
 		const bool isStackPointer = (reg.getType() == Register::Type::StackPointer);
 		if (isStackPointer || reg.getType() == Register::Type::InstructionPointer) {
 			//try to find USER-DEFINED symbol in mem. area
-			auto symTable = isStackPointer ? m_symbolCtx->m_stackSymbolTable : m_symbolCtx->m_globalSymbolTable;
-			const auto symbolPair = symTable->getSymbolAt(offset);
-			if (symbolPair.second != nullptr) {
-				offset -= symbolPair.first;
-				const auto sdaSymbol = symbolPair.second;
+			CE::Symbol::AbstractSymbolTable* symTable = m_symbolCtx->m_globalSymbolTable;
+			if (isStackPointer)
+				symTable = m_symbolCtx->m_stackSymbolTable;
+			const auto [tableOffset, tableSymbol] = symTable->getSymbolAt(offset);
+			if (tableSymbol != nullptr) {
+				offset -= tableOffset;
+				const auto sdaSymbol = tableSymbol;
 				m_userDefinedSymbols.insert(sdaSymbol);
 				return sdaSymbol;
 			}

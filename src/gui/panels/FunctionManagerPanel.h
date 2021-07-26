@@ -30,11 +30,11 @@ namespace GUI
 			class FunctionContextPanel : public AbstractPanel
 			{
 				FunctionManagerPanel* m_funcManagerPanel;
-				CE::Function* m_imageDec;
+				CE::Function* m_func;
 				ImVec2 m_winPos;
 			public:
-				FunctionContextPanel(CE::Function* imageDec, FunctionManagerPanel* funcManagerPanel, ImVec2 winPos)
-					: m_imageDec(imageDec), m_funcManagerPanel(funcManagerPanel), m_winPos(winPos)
+				FunctionContextPanel(CE::Function* func, FunctionManagerPanel* funcManagerPanel, ImVec2 winPos)
+					: m_func(func), m_funcManagerPanel(funcManagerPanel), m_winPos(winPos)
 				{}
 
 			private:

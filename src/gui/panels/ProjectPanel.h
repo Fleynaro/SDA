@@ -4,6 +4,7 @@
 #include "ImageManagerPanel.h"
 #include "Program.h"
 #include "Project.h"
+#include "SymbolManagerPanel.h"
 #include "imgui_wrapper/controls/AbstractPanel.h"
 #include "nlohmann/json.hpp"
 
@@ -53,6 +54,7 @@ namespace GUI
 			StdWindow* m_imageViewerWindow = nullptr;
 			StdWindow* m_funcViewerWindow = nullptr;
 			StdWindow* m_dataTypeViewerWindow = nullptr;
+			StdWindow* m_symbolViewerWindow = nullptr;
 			WindowManager m_imageContentWinManager;
 			StdWindow* m_messageWindow = nullptr;
 		public:
@@ -79,6 +81,7 @@ namespace GUI
 				Show(m_imageViewerWindow);
 				Show(m_funcViewerWindow);
 				Show(m_dataTypeViewerWindow);
+				Show(m_symbolViewerWindow);
 				Show(m_messageWindow);
 			}
 
@@ -108,6 +111,11 @@ namespace GUI
 							m_dataTypeViewerWindow->close();
 						else createDataTypeViewerWindow();
 					}
+					if (ImGui::MenuItem("Global Var Viewer", nullptr, m_symbolViewerWindow != nullptr)) {
+						if (m_symbolViewerWindow)
+							m_symbolViewerWindow->close();
+						else createSymbolViewerWindow();
+					}
 					ImGui::EndMenu();
 				}
 			}
@@ -125,6 +133,8 @@ namespace GUI
 					createFuncViewerWindow();
 				if (saver.hasWindow("DataTypeViewer"))
 					createDataTypeViewerWindow();
+				if (saver.hasWindow("SymbolViewer"))
+					createSymbolViewerWindow();
 			}
 
 			void saveWindows() {
@@ -135,6 +145,8 @@ namespace GUI
 					saver.addWindow("FunctionViewer");
 				if (m_dataTypeViewerWindow)
 					saver.addWindow("DataTypeViewer");
+				if (m_symbolViewerWindow)
+					saver.addWindow("SymbolViewer");
 				saver.save();
 			}
 
@@ -142,6 +154,7 @@ namespace GUI
 				createImageViewerWindow();
 				createFuncViewerWindow();
 				createDataTypeViewerWindow();
+				createSymbolViewerWindow();
 			}
 
 			void createImageViewerWindow() {
@@ -165,6 +178,15 @@ namespace GUI
 			void createDataTypeViewerWindow() {
 				const auto panel = new DataTypeManagerPanel(m_project->getTypeManager());
 				m_dataTypeViewerWindow = new StdWindow(panel);
+			}
+
+			void createSymbolViewerWindow() {
+				const auto panel = new SymbolManagerPanel(m_project->getSymbolManager());
+				panel->selectSymbolEventHandler([&](CE::Symbol::AbstractSymbol* symbol)
+					{
+						selectSymbol(symbol);
+					});
+				m_symbolViewerWindow = new StdWindow(panel);
 			}
 
 			void createImageContentViewerWindow(CE::ImageDecorator* imageDec) {
@@ -192,6 +214,13 @@ namespace GUI
 
 			void selectFunction(CE::Function* func) {
 				selectImage(func->getImage(), false);
+				// todo: go to func
+			}
+
+			void selectSymbol(CE::Symbol::AbstractSymbol* symbol) {
+				const auto gvar = dynamic_cast<CE::Symbol::GlobalVarSymbol*>(symbol);
+				selectImage(gvar->m_globalSymbolTable->m_imageDec, false);
+				// todo: go to gvar
 			}
 		};
 

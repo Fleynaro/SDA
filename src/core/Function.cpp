@@ -5,7 +5,7 @@
 
 using namespace CE;
 
-Function::Function(FunctionManager* manager, Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::SymbolTable* stackSymbolTable)
+Function::Function(FunctionManager* manager, Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::StackSymbolTable* stackSymbolTable)
 	: m_manager(manager), m_functionSymbol(functionSymbol), m_imageDec(imageDec), m_stackSymbolTable(stackSymbolTable)
 {
 	functionSymbol->setFunction(this);
@@ -62,7 +62,7 @@ int64_t Function::getOffset() const
 	return m_functionSymbol->getOffset();
 }
 
-Symbol::SymbolTable* Function::getStackSymbolTable() const
+Symbol::StackSymbolTable* Function::getStackSymbolTable() const
 {
 	return m_stackSymbolTable;
 }

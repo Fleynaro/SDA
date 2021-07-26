@@ -36,7 +36,7 @@ IDomainObject* FunctionMapper::doLoad(Database* db, Statement& query) {
 	const int image_id = query.getColumn("image_id");
 
 	auto funcSymbol = dynamic_cast<Symbol::FunctionSymbol*>(getManager()->getProject()->getSymbolManager()->findSymbolById(func_symbol_id));
-	const auto stackSymTable = getManager()->getProject()->getSymTableManager()->findSymbolTableById(stack_sym_table_id);
+	const auto stackSymTable = dynamic_cast<Symbol::StackSymbolTable*>(getManager()->getProject()->getSymTableManager()->findSymbolTableById(stack_sym_table_id));
 	const auto image = getManager()->getProject()->getImageManager()->findImageById(image_id);
 
 	auto function = getManager()->getFactory(false).createFunction(funcSymbol, image, stackSymTable);

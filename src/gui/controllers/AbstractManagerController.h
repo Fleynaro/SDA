@@ -69,8 +69,8 @@ namespace GUI
 			CE::AbstractItemManager::AbstractIterator<T> iterator(m_manager);
 			while (iterator.hasNext())
 			{
-				auto item = iterator.next();
-				if (filter(item)) {
+				const auto item = iterator.next();
+				if (item && filter(item)) {
 					m_items.push_back(item);
 					itemsCount++;
 					if (itemsCount == m_maxItemsCount)

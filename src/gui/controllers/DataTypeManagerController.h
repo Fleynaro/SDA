@@ -23,7 +23,7 @@ namespace GUI
 			groupName = "Class";
 			break;
 		case CE::DataType::IType::FunctionSignature:
-			groupName = "FunctionSignature";
+			groupName = "Function signature";
 			break;
 		}
 		return groupName;

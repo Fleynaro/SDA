@@ -49,7 +49,7 @@ Function* FunctionManager::findFunctionByGhidraId(Ghidra::Id id)
 	return nullptr;
 }
 
-Function* FunctionManager::Factory::createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::SymbolTable* stackSymbolTable) const
+Function* FunctionManager::Factory::createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::StackSymbolTable* stackSymbolTable) const
 {
 	auto func = new Function(m_functionManager, functionSymbol, imageDec, stackSymbolTable);
 	func->setMapper(m_funcMapper);
@@ -62,7 +62,7 @@ Function* FunctionManager::Factory::createFunction(Symbol::FunctionSymbol* funct
 Function* FunctionManager::Factory::createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec) const
 {
 	const auto factory = m_functionManager->getProject()->getSymTableManager()->getFactory();
-	const auto stackSymbolTable = factory.createSymbolTable(Symbol::SymbolTable::STACK_SPACE);
+	const auto stackSymbolTable = factory.createStackSymbolTable();
 	return createFunction(functionSymbol, imageDec, stackSymbolTable);
 }
 

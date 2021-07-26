@@ -28,6 +28,6 @@ namespace DB
 		void doRemove(TransactionContext* ctx, IDomainObject* obj) override;
 
 	private:
-		void bind(Statement& query, CE::Symbol::SymbolTable* memoryArea);
+		void bind(Statement& query, CE::Symbol::AbstractSymbolTable* symbolTable);
 	};
 };

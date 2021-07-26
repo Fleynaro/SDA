@@ -4,7 +4,8 @@
 
 namespace CE::Symbol
 {
-	class SymbolTable;
+	class GlobalSymbolTable;
+	class StackSymbolTable;
 
 	class AbstractMemorySymbol : public AbstractSymbol, public IMemorySymbol
 	{
@@ -20,6 +21,8 @@ namespace CE::Symbol
 	class GlobalVarSymbol : public AbstractMemorySymbol
 	{
 	public:
+		GlobalSymbolTable* m_globalSymbolTable = nullptr;
+		
 		GlobalVarSymbol(SymbolManager* manager, int64_t offset, DataTypePtr type, const std::string& name, const std::string& comment = "");
 
 		Type getType() override;
@@ -30,6 +33,8 @@ namespace CE::Symbol
 	class LocalStackVarSymbol : public AbstractMemorySymbol
 	{
 	public:
+		StackSymbolTable* m_stackSymbolTable = nullptr;
+		
 		LocalStackVarSymbol(SymbolManager* manager, int64_t offset, DataTypePtr type, const std::string& name, const std::string& comment = "");
 
 		Type getType() override;

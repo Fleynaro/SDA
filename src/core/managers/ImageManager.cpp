@@ -10,7 +10,7 @@ ImageManager::ImageManager(Project* project)
 	m_imageMapper = new DB::ImageMapper(this);
 }
 
-ImageDecorator* ImageManager::createImage(AddressSpace* addressSpace, ImageDecorator::IMAGE_TYPE type, Symbol::SymbolTable* globalSymbolTable, Symbol::SymbolTable* funcBodySymbolTable, const std::string& name, const std::string& comment, bool markAsNew) {
+ImageDecorator* ImageManager::createImage(AddressSpace* addressSpace, ImageDecorator::IMAGE_TYPE type, Symbol::GlobalSymbolTable* globalSymbolTable, Symbol::GlobalSymbolTable* funcBodySymbolTable, const std::string& name, const std::string& comment, bool markAsNew) {
 	auto imageDec = new ImageDecorator(this, addressSpace, type, globalSymbolTable, funcBodySymbolTable, name, comment);
 	imageDec->setMapper(m_imageMapper);
 	if (markAsNew) {
@@ -21,8 +21,8 @@ ImageDecorator* ImageManager::createImage(AddressSpace* addressSpace, ImageDecor
 
 ImageDecorator* ImageManager::createImage(AddressSpace* addressSpace, ImageDecorator::IMAGE_TYPE type, const std::string& name, const std::string& comment, bool markAsNew) {
 	const auto factory = getProject()->getSymTableManager()->getFactory();
-	const auto globalSymbolTable = factory.createSymbolTable(Symbol::SymbolTable::GLOBAL_SPACE);
-	const auto funcBodySymbolTable = factory.createSymbolTable(Symbol::SymbolTable::GLOBAL_SPACE);
+	const auto globalSymbolTable = factory.createGlobalSymbolTable();
+	const auto funcBodySymbolTable = factory.createGlobalSymbolTable();
 	return createImage(addressSpace, type, globalSymbolTable, funcBodySymbolTable, name, comment, markAsNew);
 }
 

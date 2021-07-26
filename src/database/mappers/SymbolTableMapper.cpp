@@ -1,4 +1,5 @@
 #include "SymbolTableMapper.h"
+#include "ImageDecorator.h"
 #include <managers/SymbolTableManager.h>
 #include <managers/SymbolManager.h>
 
@@ -28,12 +29,20 @@ SymbolTableManager* SymbolTableMapper::getManager() const
 
 IDomainObject* SymbolTableMapper::doLoad(Database* db, Statement& query) {
 	const int sym_table_id = query.getColumn("sym_table_id");
-	const auto type = static_cast<SymbolTable::SymbolTableType>((int)query.getColumn("type"));
+	const auto type = static_cast<AbstractSymbolTable::SymbolTableType>(static_cast<int>(query.getColumn("type")));
 	std::string json_symbols_str = query.getColumn("json_symbols");
 	auto json_symbols = json::parse(json_symbols_str);
 
 	// create a symbol table
-	auto symTable = getManager()->getFactory(false).createSymbolTable(type);
+	AbstractSymbolTable* symbolTable = nullptr;
+	switch(type) {
+	case AbstractSymbolTable::GLOBAL_SPACE:
+		symbolTable = getManager()->getFactory(false).createGlobalSymbolTable();
+		break;
+	case AbstractSymbolTable::STACK_SPACE:
+		symbolTable = getManager()->getFactory(false).createStackSymbolTable();
+		break;
+	}
 
 	// load symbols for the symbol table
 	for (const auto& json_symbol : json_symbols) {
@@ -41,11 +50,11 @@ IDomainObject* SymbolTableMapper::doLoad(Database* db, Statement& query) {
 		const auto offset = json_symbol["offset"].get<int64_t>();
 
 		const auto symbol = getManager()->getProject()->getSymbolManager()->findSymbolById(symbol_id);
-		symTable->addSymbol(symbol, offset);
+		symbolTable->addSymbol(symbol, offset);
 	}
 
-	symTable->setId(sym_table_id);
-	return symTable;
+	symbolTable->setId(sym_table_id);
+	return symbolTable;
 }
 
 void SymbolTableMapper::doInsert(TransactionContext* ctx, IDomainObject* obj) {
@@ -53,7 +62,7 @@ void SymbolTableMapper::doInsert(TransactionContext* ctx, IDomainObject* obj) {
 }
 
 void SymbolTableMapper::doUpdate(TransactionContext* ctx, IDomainObject* obj) {
-	auto symTable = dynamic_cast<SymbolTable*>(obj);
+	auto symTable = dynamic_cast<AbstractSymbolTable*>(obj);
 	Statement query(*ctx->m_db, "REPLACE INTO sda_symbol_tables (sym_table_id, type, json_symbols, save_id) VALUES(?1, ?2, ?3, ?4)");
 	query.bind(1, symTable->getId());
 	bind(query, symTable);
@@ -69,13 +78,12 @@ void SymbolTableMapper::doRemove(TransactionContext* ctx, IDomainObject* obj) {
 	query.exec();
 }
 
-void SymbolTableMapper::bind(Statement& query, SymbolTable* symbolTable) {
+void SymbolTableMapper::bind(Statement& query, AbstractSymbolTable* symbolTable) {
 	json json_symbols;
-	for (auto& pair : symbolTable->getSymbols()) {
+	for (const auto& [offset, symbol] : symbolTable->getSymbols()) {
 		json json_symbol;
-		auto symbol = pair.second;
 		json_symbol["sym_id"] = symbol->getId();
-		json_symbol["offset"] = pair.first;
+		json_symbol["offset"] = offset;
 		json_symbols.push_back(json_symbol);
 	}
 	

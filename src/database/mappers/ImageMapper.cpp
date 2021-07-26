@@ -58,8 +58,8 @@ IDomainObject* ImageMapper::doLoad(Database* db, Statement& query) {
 		imageDec->load();
 	}
 	else {
-		auto globalSymTable = project->getSymTableManager()->findSymbolTableById(global_table_id);
-		auto funcBodySymTable = project->getSymTableManager()->findSymbolTableById(func_body_table_id);
+		auto globalSymTable = dynamic_cast<Symbol::GlobalSymbolTable*>(project->getSymTableManager()->findSymbolTableById(global_table_id));
+		auto funcBodySymTable = dynamic_cast<Symbol::GlobalSymbolTable*>(project->getSymTableManager()->findSymbolTableById(func_body_table_id));
 
 		imageDec = getManager()->createImage(addrSpace, type, globalSymTable, funcBodySymTable, name, comment, false);
 		try {

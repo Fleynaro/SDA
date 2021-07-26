@@ -7,7 +7,7 @@
 
 using namespace CE;
 
-ImageDecorator::ImageDecorator(ImageManager* imageManager, AddressSpace* addressSpace, IMAGE_TYPE type, Symbol::SymbolTable* globalSymbolTable, Symbol::SymbolTable* funcBodySymbolTable, const std::string& name, const std::string& comment)
+ImageDecorator::ImageDecorator(ImageManager* imageManager, AddressSpace* addressSpace, IMAGE_TYPE type, Symbol::GlobalSymbolTable* globalSymbolTable, Symbol::GlobalSymbolTable* funcBodySymbolTable, const std::string& name, const std::string& comment)
 	:
 	m_imageManager(imageManager),
 	m_addressSpace(addressSpace),
@@ -20,6 +20,9 @@ ImageDecorator::ImageDecorator(ImageManager* imageManager, AddressSpace* address
 	m_imagePCodeGraph = new Decompiler::ImagePCodeGraph();
 	m_vfunc_calls = new std::map<ComplexOffset, DataType::IFunctionSignature*>();
 	m_addressSpace->getImageDecorators().push_back(this);
+
+	globalSymbolTable->m_imageDec = this;
+	funcBodySymbolTable->m_imageDec = this;
 }
 
 ImageDecorator::ImageDecorator(ImageManager* imageManager, AddressSpace* addressSpace, ImageDecorator* parentImageDec, const std::string& name, const std::string& comment)
@@ -102,12 +105,12 @@ Function* ImageDecorator::getFunctionAt(Offset offset) const {
 	return nullptr;
 }
 
-Symbol::SymbolTable* ImageDecorator::getGlobalSymbolTable() const
+Symbol::GlobalSymbolTable* ImageDecorator::getGlobalSymbolTable() const
 {
 	return m_globalSymbolTable;
 }
 
-Symbol::SymbolTable* ImageDecorator::getFuncBodySymbolTable() const
+Symbol::GlobalSymbolTable* ImageDecorator::getFuncBodySymbolTable() const
 {
 	return m_funcBodySymbolTable;
 }

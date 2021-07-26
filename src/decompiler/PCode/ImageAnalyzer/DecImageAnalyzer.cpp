@@ -314,9 +314,9 @@ PCodeGraphReferenceSearch::PCodeGraphReferenceSearch(Project* project, AbstractR
 {
 	const auto factory = m_project->getSymTableManager()->getFactory(false);
 	m_symbolCtx.m_signature = nullptr;
-	m_symbolCtx.m_globalSymbolTable = factory.createSymbolTable(CE::Symbol::SymbolTable::GLOBAL_SPACE);
-	m_symbolCtx.m_stackSymbolTable = factory.createSymbolTable(CE::Symbol::SymbolTable::STACK_SPACE);
-	m_symbolCtx.m_funcBodySymbolTable = factory.createSymbolTable(CE::Symbol::SymbolTable::GLOBAL_SPACE);
+	m_symbolCtx.m_globalSymbolTable = factory.createGlobalSymbolTable();
+	m_symbolCtx.m_stackSymbolTable = factory.createStackSymbolTable();
+	m_symbolCtx.m_funcBodySymbolTable = factory.createGlobalSymbolTable();
 }
 
 PCodeGraphReferenceSearch::~PCodeGraphReferenceSearch() {
