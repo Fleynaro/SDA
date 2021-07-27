@@ -215,6 +215,8 @@ void CE::DecTestSamplesPool::fillByTests() {
 		sig->addParameter("X2", findType("float", ""));
 		sig->addParameter("Y2", findType("float", ""));
 		sig->setReturnType(findType("float"));
+
+		sample->m_symbolCtx.m_globalSymbolTable->addSymbol(symFactory.createGlobalVarSymbol(0xebb650, findType("float"), "gvar"));
 	}
 
 	{
@@ -330,8 +332,14 @@ void CE::DecTestSamplesPool::fillByTests() {
 			auto vtable = typeFactory.createStructure("Vtable106", "");
 			vtable->addField(0x368, "getPos", findType("void", "[1]"));
 
+			auto EntityTypeEnum = typeFactory.createEnum("EntityType", "");
+			EntityTypeEnum->addField("ENTITY_PLAYER", 1);
+			EntityTypeEnum->addField("ENTITY_PED", 2);
+			EntityTypeEnum->addField("ENTITY_VEHICLE", 3);
+
 			auto entity = typeFactory.createStructure("Entity106", "");
 			entity->addField(0, "vtable", GetUnit(vtable, "[1]"));
+			entity->addField(8, "type", GetUnit(EntityTypeEnum));
 			entity->addField(96, "matrix", GetUnit(m_matrix4x4));
 			sample->m_symbolCtx.m_funcBodySymbolTable->addSymbol(symFactory.createLocalInstrVarSymbol(GetUnit(entity, "[1]"), "entity"), 17153);
 		}

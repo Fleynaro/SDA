@@ -74,6 +74,7 @@ void FunctionSignature::addParameter(const std::string& name, DataTypePtr dataTy
 }
 
 void FunctionSignature::removeLastParameter() {
+	// todo: remove symbol
 	m_parameters.pop_back();
 	m_hasSignatureUpdated = true;
 }

@@ -4,6 +4,21 @@
 
 namespace GUI
 {
+	class AddressSpaceController
+	{
+	public:
+		CE::AddressSpace* m_addrSpace;
+		
+		AddressSpaceController(CE::AddressSpace* addrSpace)
+			: m_addrSpace(addrSpace)
+		{}
+
+		void rename(const std::string& name) const {
+			m_addrSpace->setName(name);
+			m_addrSpace->getAddrSpaceManager()->getProject()->getTransaction()->markAsDirty(m_addrSpace);
+		}
+	};
+	
 	class AddressSpaceManagerController : public AbstractManagerController<CE::AddressSpace, CE::AddressSpaceManager>
 	{
 	public:
@@ -48,12 +63,7 @@ namespace GUI
 		CE::AddressSpace* createAddrSpace(const std::string& name) const {
 			return m_manager->createAddressSpace(name);
 		}
-
-		void rename(CE::AddressSpace* addrSpace, const std::string& name) const {
-			addrSpace->setName(name);
-			m_manager->getProject()->getTransaction()->markAsDirty(addrSpace);
-		}
-
+	
 	private:
 		bool filter(CE::AddressSpace* item) override
 		{

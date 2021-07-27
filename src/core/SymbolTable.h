@@ -79,6 +79,10 @@ namespace CE::Symbol
 			else if (const auto localInstrVarSymbol = dynamic_cast<LocalInstrVarSymbol*>(symbol))
 				localInstrVarSymbol->m_funcBodySymbolTable = this;
 		}
+
+		void addSymbol(GlobalVarSymbol* globalVar) {
+			addSymbol(globalVar, globalVar->getOffset());
+		}
 	};
 	
 	class StackSymbolTable : public AbstractSymbolTable

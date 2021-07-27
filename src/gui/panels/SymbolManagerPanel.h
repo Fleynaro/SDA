@@ -3,7 +3,7 @@
 #include "imgui_wrapper/controls/AbstractPanel.h"
 #include "imgui_wrapper/controls/Input.h"
 #include "controllers/SymbolManagerController.h"
-#include "controllers/ImageManagerController.h"
+#include "editors/SymbolEditorPanel.h"
 
 namespace GUI
 {
@@ -43,7 +43,8 @@ namespace GUI
 			private:
 				void renderPanel() override {
 					if (ImGui::MenuItem("Edit")) {
-						// todo: symbol editor
+						delete m_symManagerPanel->m_symbolEditor;
+						m_symManagerPanel->m_symbolEditor = new StdWindow(new SymbolEditorPanel(m_symbol));
 					}
 				}
 			};
@@ -100,6 +101,7 @@ namespace GUI
 		SymbolFilter m_filterControl;
 		SymbolListView* m_listView = nullptr;
 		PopupContextWindow* m_symbolContextWindow = nullptr;
+		StdWindow* m_symbolEditor = nullptr;
 		EventHandler<CE::Symbol::AbstractSymbol*> m_selectSymbolEventHandler;
 	public:
 		SymbolManagerPanel(CE::SymbolManager* manager)
@@ -125,13 +127,13 @@ namespace GUI
 	protected:
 		void renderPanel() override {
 			m_filterControl.show();
-			if (m_filterControl.m_isUpdated)
-			{
+			if (m_filterControl.m_isUpdated) {
 				m_controller.update();
 			}
 
 			m_listView->show();
 			Show(m_symbolContextWindow);
+			Show(m_symbolEditor);
 		}
 	};
 };

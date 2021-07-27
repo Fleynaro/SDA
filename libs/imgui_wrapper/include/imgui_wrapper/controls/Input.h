@@ -178,7 +178,7 @@ namespace GUI::Input
 		}
 
 	protected:
-		void renderControl() override {
+		void renderInput() override {
 			pushWidthParam();
 
 			m_isValueEntering = ImGui::InputInt(getName().c_str(), &m_value, m_step, m_fastStep, getFlags());
@@ -210,7 +210,7 @@ namespace GUI::Input
 		}
 
 	protected:
-		void renderControl() override {
+		void renderInput() override {
 			pushWidthParam();
 
 			m_isValueEntering = ImGui::InputFloat(getName().c_str(), &m_value, m_step, m_fastStep, "%.3f", getFlags());
@@ -242,7 +242,7 @@ namespace GUI::Input
 		}
 
 	protected:
-		void renderControl() override {
+		void renderInput() override {
 			pushWidthParam();
 
 			m_isValueEntering = ImGui::InputDouble(getName().c_str(), &m_value, m_step, m_fastStep, "%.6f", getFlags());

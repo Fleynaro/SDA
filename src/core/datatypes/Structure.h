@@ -26,8 +26,10 @@ namespace CE::DataType
 
 		virtual Field* getField(int bitOffset) = 0;
 
+		// todo: remove
 		virtual void addField(int bitOffset, int bitSize, const std::string& name, DataTypePtr type, const std::string& desc = "") = 0;
 
+		// todo: remove
 		virtual void addField(int offset, const std::string& name, DataTypePtr type, const std::string& desc = "") = 0;
 
 		virtual void addField(Field* field) = 0;
@@ -36,8 +38,12 @@ namespace CE::DataType
 
 		virtual bool removeField(int bitOffset) = 0;
 
+		virtual void removeAllFields() = 0;
+
+		// todo: remove
 		virtual bool moveField(int bitOffset, int bitsCount) = 0;
 
+		// todo: remove
 		virtual bool moveFields(int bitOffset, int bitsCount) = 0;
 	};
 
@@ -75,6 +81,8 @@ namespace CE::DataType
 		bool removeField(Field* field) override;
 
 		bool removeField(int bitOffset) override;
+
+		void removeAllFields() override;
 
 		bool moveField(int bitOffset, int bitsCount) override;
 

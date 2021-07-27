@@ -3,6 +3,7 @@
 #include "imgui_wrapper/controls/AbstractPanel.h"
 #include "imgui_wrapper/controls/Input.h"
 #include "controllers/DataTypeManagerController.h"
+#include "editors/DataTypeEditorPanel.h"
 
 namespace GUI
 {
@@ -19,6 +20,57 @@ namespace GUI
 
 		bool renderGroupTop(CE::DataType::IType* const& type, int group_n) override {
 			return ImGui::CollapsingHeader(GetGroupName(type).c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+		}
+	};
+
+	class DataTypeSelectorPanel : public AbstractPanel
+	{
+		Input::TextInput m_input;
+		DataTypeManagerController m_controller;
+		DataTypeListViewGrouping* m_groupingListView;
+		EventHandler<CE::DataTypePtr> m_eventHandler;
+	public:
+		DataTypeSelectorPanel(CE::TypeManager* manager, const std::string& name = "")
+			: m_controller(manager)
+		{
+			m_input.setInputText(name);
+			m_input.focus();
+			m_controller.m_maxItemsCount = 10;
+
+			const auto listView = new StdListView(&m_controller.m_listModel);
+			listView->handler([&](CE::DataType::IType* type)
+				{
+					m_input.setInputText(type->getName());
+				});
+			m_groupingListView = new DataTypeListViewGrouping(listView);
+		}
+
+		~DataTypeSelectorPanel() {
+			delete m_groupingListView;
+		}
+
+		void handler(const std::function<void(CE::DataTypePtr)>& eventHandler) {
+			m_eventHandler = eventHandler;
+		}
+	
+	private:
+		void renderPanel() override {
+			m_input.show();
+			SameLine();
+			if (Button::StdButton("Ok").present()) {
+				// todo: check new size that can overlap other symbols
+				const auto dataType = m_controller.parseDataType(m_input.getInputText());
+				if(m_eventHandler.isInit())
+					m_eventHandler(dataType);
+				m_window->close();
+			}
+			if (m_controller.hasItems())
+				m_groupingListView->show();
+
+			if (m_input.isTextEntering()) {
+				m_controller.m_filter.m_name = m_input.getInputText();
+				m_controller.update();
+			}
 		}
 	};
 	
@@ -38,8 +90,11 @@ namespace GUI
 
 			private:
 				void renderPanel() override {
-					if (ImGui::MenuItem("Edit")) {
-						// todo: type editor
+					if (const auto userDefinedType = dynamic_cast<CE::DataType::IUserDefinedType*>(m_dataType)) {
+						if (ImGui::MenuItem("Edit")) {
+							delete m_typeManagerPanel->m_dataTypeEditor;
+							m_typeManagerPanel->m_dataTypeEditor = new StdWindow(CreateDataTypeEditorPanel(userDefinedType));
+						}
 					}
 				}
 			};
@@ -91,6 +146,7 @@ namespace GUI
 		DataTypeFilter m_filterControl;
 		DataTypeListView* m_listView = nullptr;
 		PopupContextWindow* m_typeContextWindow = nullptr;
+		StdWindow* m_dataTypeEditor = nullptr;
 	public:
 		DataTypeManagerPanel(CE::TypeManager* manager)
 			: AbstractPanel("DataType manager"), m_manager(manager), m_controller(manager), m_filterControl(this)
@@ -116,6 +172,7 @@ namespace GUI
 			
 			m_listView->show();
 			Show(m_typeContextWindow);
+			Show(m_dataTypeEditor);
 		}
 	};
 };

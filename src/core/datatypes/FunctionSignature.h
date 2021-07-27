@@ -29,8 +29,10 @@ namespace CE::DataType
 
 		virtual void addParameter(Symbol::FuncParameterSymbol* symbol) = 0;
 
+		// todo: remove
 		virtual void addParameter(const std::string& name, DataTypePtr dataType, const std::string& comment = "") = 0;
 
+		// todo: remove
 		virtual void removeLastParameter() = 0;
 
 		virtual void deleteAllParameters() = 0;

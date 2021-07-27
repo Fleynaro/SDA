@@ -47,76 +47,6 @@ namespace GUI
 		
 		class SymbolContextPanel : public AbstractContextPanel
 		{
-			class DataTypePanel : public AbstractPanel
-			{
-				SymbolContextPanel* m_ctx;
-				Input::TextInput m_input;
-				DataTypeManagerController m_controller;
-				TableListViewSelector<CE::DataType::IType*>* m_tableListViewSelector;
-				CE::TypeManager* m_typeManager;
-			public:
-				DataTypePanel(SymbolContextPanel* ctx)
-					: m_ctx(ctx), m_controller(ctx->m_symbol->getDataType()->getTypeManager()), m_typeManager(ctx->m_symbol->getDataType()->getTypeManager())
-				{
-					m_input.setInputText(m_ctx->m_symbol->getDataType()->getName());
-					m_input.focus();
-					m_controller.m_maxItemsCount = 10;
-					
-					auto tableListView = new TableListView(&m_controller.m_tableListModel, {
-						ColInfo("Data type", ImGuiTableColumnFlags_WidthFixed, 150.0f),
-						ColInfo("Group", ImGuiTableColumnFlags_WidthFixed, 70.0f)
-						});
-					m_tableListViewSelector = new TableListViewSelector(tableListView);
-					m_tableListViewSelector->handler([&](CE::DataType::IType* type)
-						{
-							m_input.setInputText(type->getName());
-						});
-				}
-
-				~DataTypePanel() {
-					delete m_tableListViewSelector;
-				}
-
-			private:
-				void renderPanel() override {
-					m_input.show();
-					SameLine();
-					if (Button::StdButton("Ok").present()) {
-						// todo: check new size that can overlap other symbols
-						const auto dataType = parseDataType(m_input.getInputText());
-						m_ctx->m_symbol->setDataType(dataType);
-						m_ctx->m_decCodeViewer->m_codeChanged = true;
-						m_window->close();
-					}
-					if(m_controller.hasItems())
-						m_tableListViewSelector->show();
-
-					if (m_input.isTextEntering()) {
-						m_controller.m_filter.m_name = m_input.getInputText();
-						m_controller.update();
-					}
-				}
-
-				CE::DataTypePtr parseDataType(const std::string& text) const {
-					std::string typeName;
-					std::string typePtrLevels;
-					bool isTypeName = true;
-					for (auto c : text) {
-						if (c == '*' || c == '[')
-							isTypeName = false;
-						if (isTypeName) {
-							typeName.push_back(c);
-						}
-						else {
-							typePtrLevels.push_back(c);
-						}
-					}
-					if(const auto dataType = m_typeManager->findTypeByName(typeName))
-						return GetUnit(dataType, typePtrLevels);
-					return nullptr;
-				}
-			};
-			
 			CE::Symbol::ISymbol* m_symbol;
 			SymbolManagerController m_symbolManagerController;
 		public:
@@ -132,7 +62,7 @@ namespace GUI
 					const auto panel = new NamePanel(m_symbol->getName());
 					panel->handler([&](const std::string& name)
 						{
-							m_symbolManagerController.rename(m_symbol, name);
+							SymbolController(m_symbol).rename(name);
 							m_decCodeViewer->m_codeChanged = true;
 						});
 					builtinWin = new PopupBuiltinWindow(panel);
@@ -141,7 +71,13 @@ namespace GUI
 				}
 				if (ImGui::MenuItem("Change data type")) {
 					delete builtinWin;
-					builtinWin = new PopupBuiltinWindow(new DataTypePanel(this));
+					const auto panel = new DataTypeSelectorPanel(m_symbol->getManager()->getProject()->getTypeManager());
+					panel->handler([&](CE::DataTypePtr dataType)
+						{
+							SymbolController(m_symbol).changeDataType(dataType);
+							m_decCodeViewer->m_codeChanged = true;
+						});
+					builtinWin = new PopupBuiltinWindow(panel);
 					builtinWin->getPos() = m_winPos;
 					builtinWin->open();
 				}

@@ -103,6 +103,13 @@ bool Structure::removeField(int bitOffset) {
 	return false;
 }
 
+void Structure::removeAllFields() {
+	for(const auto& [offset, fieldSymbol] : m_fields) {
+		// todo: remove symbol
+	}
+	m_fields.clear();
+}
+
 bool Structure::moveField(int bitOffset, int bitsCount) {
 	const auto it = getFieldIterator(bitOffset);
 	if (it == m_fields.end())

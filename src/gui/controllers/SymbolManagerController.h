@@ -6,6 +6,35 @@
 
 namespace GUI
 {
+	class SymbolController
+	{
+		CE::Symbol::ISymbol* m_symbol;
+		bool m_changed = false;
+	public:
+		SymbolController(CE::Symbol::ISymbol* symbol)
+			: m_symbol(symbol)
+		{}
+
+		~SymbolController() {
+			if (m_changed) {
+				if (const auto dbSymbol = dynamic_cast<CE::Symbol::AbstractSymbol*>(m_symbol)) {
+					// todo: separate the core logic and the database logic in the way the core don't depend on db
+					m_symbol->getManager()->getProject()->getTransaction()->markAsDirty(dbSymbol);
+				}
+			}
+		}
+
+		void rename(const std::string& name) {
+			m_symbol->setName(name);
+			m_changed = true;
+		}
+
+		void changeDataType(CE::DataTypePtr dataType) {
+			m_symbol->setDataType(dataType);
+			m_changed = true;
+		}
+	};
+	
 	class SymbolManagerController : public AbstractManagerController<CE::Symbol::AbstractSymbol, CE::SymbolManager>
 	{
 	public:
@@ -49,14 +78,6 @@ namespace GUI
 
 		CE::SymbolManager::Factory getFactory() const {
 			return m_manager->getFactory();
-		}
-
-		void rename(CE::Symbol::ISymbol* symbol, const std::string& name) const {
-			symbol->setName(name);
-			if (const auto dbSymbol = dynamic_cast<CE::Symbol::AbstractSymbol*>(symbol)) {
-				// todo: separate the core logic and the database logic in the way the core don't depend on db
-				m_manager->getProject()->getTransaction()->markAsDirty(dbSymbol);
-			}
 		}
 
 	private:

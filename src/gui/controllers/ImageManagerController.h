@@ -7,6 +7,21 @@
 
 namespace GUI
 {
+	class ImageController
+	{
+	public:
+		CE::ImageDecorator* m_imageDec;
+		
+		ImageController(CE::ImageDecorator* imageDec)
+			: m_imageDec(imageDec)
+		{}
+
+		void rename(const std::string& name) const {
+			m_imageDec->setName(name);
+			m_imageDec->getImageManager()->getProject()->getTransaction()->markAsDirty(m_imageDec);
+		}
+	};
+	
 	class ImageManagerController : public AbstractManagerController<CE::ImageDecorator, CE::ImageManager>
 	{
 	public:
@@ -68,11 +83,6 @@ namespace GUI
 				throw WarningException(ex.what());
 			}
 			return imageDec;
-		}
-
-		void rename(CE::ImageDecorator* imageDec, const std::string& name) const {
-			imageDec->setName(name);
-			m_manager->getProject()->getTransaction()->markAsDirty(imageDec);
 		}
 
 	private:

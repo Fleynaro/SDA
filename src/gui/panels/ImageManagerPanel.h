@@ -163,7 +163,7 @@ namespace GUI
 						const auto panel = new NamePanel(m_addrSpace->getName());
 						panel->handler([&](const std::string& name)
 							{
-								m_imageManagerPanel->m_addrSpaceController.rename(m_addrSpace, name);
+								AddressSpaceController(m_addrSpace).rename(name);
 							});
 						m_imageManagerPanel->m_popupBuiltinWindow = new PopupBuiltinWindow(panel);
 						m_imageManagerPanel->m_popupBuiltinWindow->getPos() = m_winPos;
@@ -194,7 +194,7 @@ namespace GUI
 						const auto panel = new NamePanel(m_imageDec->getName());
 						panel->handler([&](const std::string& name)
 							{
-								m_imageManagerPanel->m_controller.rename(m_imageDec, name);
+								ImageController(m_imageDec).rename(name);
 							});
 						m_imageManagerPanel->m_popupBuiltinWindow = new PopupBuiltinWindow(panel);
 						m_imageManagerPanel->m_popupBuiltinWindow->getPos() = m_winPos;
