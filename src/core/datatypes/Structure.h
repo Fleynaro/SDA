@@ -6,11 +6,53 @@
 
 namespace CE::DataType
 {
-	class IStructure : public IUserDefinedType
+	class IStructure : virtual public IUserDefinedType
 	{
 	public:
 		using Field = Symbol::StructFieldSymbol;
-		using FieldMapType = std::map<int, Field*>;
+		class FieldMapType : public std::map<int, Field*>
+		{
+			IStructure* m_structure;
+		public:
+			FieldMapType(IStructure* structure = nullptr)
+				: m_structure(structure)
+			{}
+			
+			int getNextEmptyBitsCount(int bitOffset) {
+				const auto it = upper_bound(bitOffset);
+				if (it != end()) {
+					return it->first - bitOffset;
+				}
+				return m_structure->getSize() - bitOffset;
+			}
+
+			bool areEmptyFields(int bitOffset, int bitSize) {
+				if (bitOffset < 0 || bitSize <= 0)
+					return false;
+
+				//check free space to the next field starting at the bitOffset
+				if (getNextEmptyBitsCount(bitOffset) < bitSize)
+					return false;
+
+				//check intersecting with an existing field at the bitOffset
+				return getFieldIterator(bitOffset) == end();
+			}
+
+			bool areEmptyFieldsInBytes(int offset, int size) {
+				return areEmptyFields(offset * 0x8, size * 0x8);
+			}
+			
+			iterator getFieldIterator(int bitOffset) {
+				const auto it = std::prev(upper_bound(bitOffset));
+				if (it != end()) {
+					const auto field = it->second;
+					if (bitOffset < field->getAbsBitOffset() + field->getBitSize()) {
+						return it;
+					}
+				}
+				return end();
+			}
+		};
 
 		virtual void resize(int size) = 0;
 
@@ -18,12 +60,9 @@ namespace CE::DataType
 
 		virtual FieldMapType& getFields() = 0;
 
-		virtual int getNextEmptyBitsCount(int bitOffset) = 0;
+		virtual void setFields(const FieldMapType& fields) = 0;
 
-		virtual bool areEmptyFields(int bitOffset, int bitSize) = 0;
-
-		virtual bool areEmptyFieldsInBytes(int offset, int size) = 0;
-
+		// todo: move all below to FieldMapType
 		virtual Field* getField(int bitOffset) = 0;
 
 		// todo: remove
@@ -39,12 +78,6 @@ namespace CE::DataType
 		virtual bool removeField(int bitOffset) = 0;
 
 		virtual void removeAllFields() = 0;
-
-		// todo: remove
-		virtual bool moveField(int bitOffset, int bitsCount) = 0;
-
-		// todo: remove
-		virtual bool moveFields(int bitOffset, int bitsCount) = 0;
 	};
 
 	class Structure : public UserDefinedType, public IStructure
@@ -64,11 +97,7 @@ namespace CE::DataType
 
 		FieldMapType& getFields() override;
 
-		int getNextEmptyBitsCount(int bitOffset) override;
-
-		bool areEmptyFields(int bitOffset, int bitSize) override;
-
-		bool areEmptyFieldsInBytes(int offset, int size) override;
+		void setFields(const FieldMapType& fields) override;
 
 		Field* getField(int bitOffset) override;
 
@@ -84,13 +113,7 @@ namespace CE::DataType
 
 		void removeAllFields() override;
 
-		bool moveField(int bitOffset, int bitsCount) override;
-
-		bool moveFields(int bitOffset, int bitsCount) override;
-
 	private:
-		FieldMapType::iterator getFieldIterator(int bitOffset);
-
 		Field* getDefaultField() const;
 
 		void moveField_(int bitOffset, int bitsCount);

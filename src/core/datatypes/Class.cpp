@@ -30,27 +30,7 @@ Class* Class::getBaseClass() const
 }
 
 void Class::setBaseClass(Class* base, bool createBaseClassField) {
-	m_base = base;
 
-	if (createBaseClassField) {
-		const int baseClassOffset = 0x0;
-		/*if (m_vtable != nullptr) {
-			if (m_base != nullptr && m_base->m_vtable == nullptr) {
-				baseClassOffset = 0x8;
-			}
-		}*/
-
-		const auto oldSize = getSize();
-		if (oldSize < base->getSize()) {
-			resize(base->getSize());
-		}
-		if (!areEmptyFields(baseClassOffset, base->getSize())) {
-			resize(oldSize);
-			throw std::exception("set base class");
-		}
-
-		addField(baseClassOffset, "base", GetUnit(base), "{this field created automatically}");
-	}
 }
 
 Class::MethodIterator::MethodIterator(Class* Class)

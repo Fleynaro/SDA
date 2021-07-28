@@ -22,6 +22,8 @@ namespace CE::Symbol
 
 		int& getAbsBitOffset();
 
+		void setAbsBitOffset(int offset);
+
 		int getBitOffset();
 
 		int getOffset();

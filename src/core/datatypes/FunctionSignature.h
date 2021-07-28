@@ -6,7 +6,7 @@
 
 namespace CE::DataType
 {
-	class IFunctionSignature : public IUserDefinedType
+	class IFunctionSignature : virtual public IUserDefinedType
 	{
 	public:
 		enum CallingConvetion {

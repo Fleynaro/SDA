@@ -22,8 +22,12 @@ std::string Enum::getViewValue(uint64_t value) {
 	return it->second + " (" + UserDefinedType::getViewValue(value) + ")";
 }
 
-Enum::FieldMapType& Enum::getFields() {
+const Enum::FieldMapType& Enum::getFields() const {
 	return m_fields;
+}
+
+void Enum::setFields(const FieldMapType& fields) {
+	m_fields = fields;
 }
 
 bool Enum::removeField(int value) {

@@ -7,7 +7,7 @@ namespace CE::DataType
 	class IUserDefinedType : virtual public IType, virtual public DB::IDomainObject, virtual public Ghidra::IObject
 	{};
 
-	class UserDefinedType : public AbstractType, public DB::DomainObject, public Ghidra::Object, public IUserDefinedType
+	class UserDefinedType : public AbstractType, public DB::DomainObject, public Ghidra::Object, virtual public IUserDefinedType
 	{
 	public:
 		UserDefinedType(TypeManager* typeManager, const std::string& name, const std::string& comment = "")

@@ -1,6 +1,6 @@
 #pragma once
 #include "ItemSelector.h"
-#include "NamePanel.h"
+#include "BuiltinInputPanel.h"
 #include "controllers/AddressSpaceManagerController.h"
 #include "controllers/ImageManagerController.h"
 #include "imgui_wrapper/Window.h"
@@ -160,7 +160,7 @@ namespace GUI
 
 					if (ImGui::MenuItem("Rename")) {
 						delete m_imageManagerPanel->m_popupBuiltinWindow;
-						const auto panel = new NamePanel(m_addrSpace->getName());
+						const auto panel = new BuiltinTextInputPanel(m_addrSpace->getName());
 						panel->handler([&](const std::string& name)
 							{
 								AddressSpaceController(m_addrSpace).rename(name);
@@ -191,10 +191,11 @@ namespace GUI
 					
 					if (ImGui::MenuItem("Rename")) {
 						delete m_imageManagerPanel->m_popupBuiltinWindow;
-						const auto panel = new NamePanel(m_imageDec->getName());
+						const auto panel = new BuiltinTextInputPanel(m_imageDec->getName());
 						panel->handler([&](const std::string& name)
 							{
-								ImageController(m_imageDec).rename(name);
+								m_imageDec->setName(name);
+								m_imageDec->getImageManager()->getProject()->getTransaction()->markAsDirty(m_imageDec);
 							});
 						m_imageManagerPanel->m_popupBuiltinWindow = new PopupBuiltinWindow(panel);
 						m_imageManagerPanel->m_popupBuiltinWindow->getPos() = m_winPos;

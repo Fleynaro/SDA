@@ -6,6 +6,7 @@
 #include "../Events.h"
 #include "Control.h"
 #include "Button.h"
+#include "Text.h"
 #include "utilities/Helper.h"
 
 namespace GUI
@@ -286,7 +287,7 @@ namespace GUI
 	public:
 		using AbstractListView<T>::AbstractListView;
 
-		virtual std::list<ColInfo>& getColumnSetups() = 0;
+		virtual std::vector<ColInfo>& getColumnSetups() = 0;
 	};
 	
 	template<typename T>
@@ -295,14 +296,14 @@ namespace GUI
 		public Attribute::Id
 	{
 	public:
-		std::list<ColInfo> m_colsInfo;
+		std::vector<ColInfo> m_colsInfo;
 		
-		TableListView(IListModel<T>* listModel = nullptr, const std::list<ColInfo>& colsInfo = {})
+		TableListView(IListModel<T>* listModel = nullptr, const std::vector<ColInfo>& colsInfo = {})
 			: AbstractTableListView<T>(listModel), m_colsInfo(colsInfo)
 		{}
 
 	private:
-		std::list<ColInfo>& getColumnSetups() override
+		std::vector<ColInfo>& getColumnSetups() override
 		{
 			return m_colsInfo;
 		}
@@ -326,12 +327,17 @@ namespace GUI
 
 		void renderItem(const std::string& text, const T& data, int n) override
 		{
-			auto columns = Helper::String::Split(text, ",");
-			for (const auto& col : columns)
+			const auto columns = Helper::String::Split(text, ",");
+			for (int i = 0; i < columns.size(); i ++)
 			{
 				ImGui::TableNextColumn();
-				Text::Text(col).show();
+				renderColumn(columns[i], &m_colsInfo[i], data);
 			}
+		}
+
+	protected:
+		virtual void renderColumn(const std::string& colText, const ColInfo* colInfo, const T& data) {
+			Text::Text(colText).show();
 		}
 	};
 
@@ -361,7 +367,7 @@ namespace GUI
 			m_selectEventHandler = selectEventHandler;
 		}
 
-		std::list<ColInfo>& getColumnSetups() override
+		std::vector<ColInfo>& getColumnSetups() override
 		{
 			return m_tableListView->getColumnSetups();
 		}
@@ -417,7 +423,7 @@ namespace GUI
 		}
 	
 	protected:
-		std::list<ColInfo>& getColumnSetups() override
+		std::vector<ColInfo>& getColumnSetups() override
 		{
 			return m_tableListView->getColumnSetups();
 		}

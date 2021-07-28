@@ -10,12 +10,12 @@ namespace GUI
 {
 	class SymbolEditorPanel : public AbstractPanel
 	{
-		CE::Symbol::ISymbol* m_symbol;
+		CE::Symbol::AbstractSymbol* m_symbol;
 		Input::TextInput m_nameInput;
 		CE::DataTypePtr m_dataType;
 		PopupBuiltinWindow* m_builtinWin = nullptr;
 	public:
-		SymbolEditorPanel(CE::Symbol::ISymbol* symbol)
+		SymbolEditorPanel(CE::Symbol::AbstractSymbol* symbol)
 			: AbstractPanel("Symbol Editor"), m_symbol(symbol)
 		{
 			m_nameInput.setInputText(symbol->getName());
@@ -58,9 +58,9 @@ namespace GUI
 		}
 
 		void save() {
-			auto controller = SymbolController(m_symbol);
-			controller.rename(m_nameInput.getInputText());
-			controller.changeDataType(m_dataType);
+			m_symbol->setName(m_nameInput.getInputText());
+			m_symbol->setDataType(m_dataType);
+			m_symbol->getManager()->getProject()->getTransaction()->markAsDirty(m_symbol);
 		}
 	};
 };

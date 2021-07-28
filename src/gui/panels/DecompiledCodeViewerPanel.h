@@ -59,10 +59,13 @@ namespace GUI
 				auto& builtinWin = m_decCodeViewer->m_builtinWindow;
 				if (ImGui::MenuItem("Rename")) {
 					delete builtinWin;
-					const auto panel = new NamePanel(m_symbol->getName());
+					const auto panel = new BuiltinTextInputPanel(m_symbol->getName());
 					panel->handler([&](const std::string& name)
 						{
-							SymbolController(m_symbol).rename(name);
+							if (const auto dbSymbol = dynamic_cast<CE::Symbol::AbstractSymbol*>(m_symbol)) {
+								dbSymbol->setName(name);
+								dbSymbol->getManager()->getProject()->getTransaction()->markAsDirty(dbSymbol);
+							}
 							m_decCodeViewer->m_codeChanged = true;
 						});
 					builtinWin = new PopupBuiltinWindow(panel);
@@ -74,7 +77,10 @@ namespace GUI
 					const auto panel = new DataTypeSelectorPanel(m_symbol->getManager()->getProject()->getTypeManager());
 					panel->handler([&](CE::DataTypePtr dataType)
 						{
-							SymbolController(m_symbol).changeDataType(dataType);
+							if (const auto dbSymbol = dynamic_cast<CE::Symbol::AbstractSymbol*>(m_symbol)) {
+								dbSymbol->setDataType(dataType);
+								dbSymbol->getManager()->getProject()->getTransaction()->markAsDirty(dbSymbol);
+							}
 							m_decCodeViewer->m_codeChanged = true;
 						});
 					builtinWin = new PopupBuiltinWindow(panel);

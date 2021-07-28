@@ -3,6 +3,7 @@
 #include "imgui_wrapper/Window.h"
 #include "imgui_wrapper/controls/AbstractPanel.h"
 #include "imgui_wrapper/controls/Input.h"
+#include "managers/SymbolManager.h"
 
 
 namespace GUI
@@ -23,8 +24,8 @@ namespace GUI
 
 		virtual void save() = 0;
 
-		void saveName(UserDataTypeController* controller) {
-			controller->rename(m_nameInput.getInputText());
+		void saveName() {
+			m_dataType->setName(m_nameInput.getInputText());
 		}
 
 	private:
@@ -62,49 +63,14 @@ namespace GUI
 		void renderExtra() override;
 
 		void save() override {
-			auto controller = TypedefController(m_dataType);
-			saveName(&controller);
-			controller.changeRefType(m_refDataType);
+			saveName();
+			m_dataType->setRefType(m_refDataType);
+			m_dataType->getTypeManager()->getProject()->getTransaction()->markAsDirty(m_dataType);
 		}
 	};
 
 	class EnumEditorPanel : public UserDataTypeEditorPanel
 	{
-		class FieldListModel : public IListModel<int>
-		{
-			EnumEditorPanel* m_enumEditorPanel;
-		public:
-			class FieldIterator : public Iterator
-			{
-				CE::DataType::Enum::FieldMapType::iterator m_it;
-				CE::DataType::Enum::FieldMapType* m_fields;
-			public:
-				FieldIterator(CE::DataType::Enum::FieldMapType* fields)
-					: m_fields(fields), m_it(fields->begin())
-				{}
-
-				void getNextItem(std::string* text, int* data) override {
-					*text = m_it->second + "," + std::to_string(m_it->first);
-					*data = m_it->first;
-					++m_it;
-				}
-
-				bool hasNextItem() override {
-					return m_it != m_fields->end();
-				}
-			};
-
-			FieldListModel(EnumEditorPanel* enumEditorPanel)
-				: m_enumEditorPanel(enumEditorPanel)
-			{}
-
-			void newIterator(const IteratorCallback& callback) override
-			{
-				FieldIterator iterator(&m_enumEditorPanel->m_fields);
-				callback(&iterator);
-			}
-		};
-
 		class FieldEditorPanel : public AbstractPanel
 		{
 			CE::DataType::Enum::FieldMapType* m_fields;
@@ -154,11 +120,11 @@ namespace GUI
 		CE::DataType::Enum* m_dataType;
 		PopupModalWindow* m_fieldEditorWin = nullptr;
 		CE::DataType::Enum::FieldMapType m_fields;
-		FieldListModel m_listModel;
+		EnumFieldListModel m_listModel;
 		TableListViewSelector<int>* m_tableListView;
 	public:
 		EnumEditorPanel(CE::DataType::Enum* dataType)
-			: UserDataTypeEditorPanel(dataType, "Enum Editor"), m_dataType(dataType), m_listModel(this)
+			: UserDataTypeEditorPanel(dataType, "Enum Editor"), m_dataType(dataType), m_listModel(&m_fields)
 		{
 			m_fields = m_dataType->getFields();
 			const auto listView = new TableListView(&m_listModel, {
@@ -193,9 +159,116 @@ namespace GUI
 		}
 
 		void save() override {
-			auto controller = EnumController(m_dataType);
-			saveName(&controller);
-			controller.change(m_fields);
+			saveName();
+			m_dataType->setFields(m_fields);
+			m_dataType->getTypeManager()->getProject()->getTransaction()->markAsDirty(m_dataType);
+		}
+	};
+
+	class StructureEditorPanel : public UserDataTypeEditorPanel
+	{
+		class FieldTableListView : public TableListView<CE::DataType::IStructure::Field*>
+		{
+			StructureEditorPanel* m_structEditorPanel;
+		public:
+			FieldTableListView(StructureEditorPanel* structEditorPanel)
+				: TableListView<CE::DataType::IStructure::Field*>(&structEditorPanel->m_listModel), m_structEditorPanel(structEditorPanel)
+			{
+				m_colsInfo = {
+					ColInfo("Offset"),
+					ColInfo("Bit Offset"),
+					ColInfo("Length"),
+					ColInfo("DataType"),
+					ColInfo("Name")
+				};
+			}
+
+		private:
+			void renderColumn(const std::string& colText, const ColInfo* colInfo,
+			                  CE::DataType::IStructure::Field* const& field) override;
+
+			void createWindow(AbstractPanel* panel) {
+				delete m_structEditorPanel->m_builtinWin;
+				m_structEditorPanel->m_builtinWin = new PopupBuiltinWindow(panel);
+				m_structEditorPanel->m_builtinWin->getPos() = GetLeftBottom();
+				m_structEditorPanel->m_builtinWin->open();
+			}
+		};
+
+		CE::DataType::IStructure* m_dataType;
+		PopupModalWindow* m_fieldEditorWin = nullptr;
+		CE::DataType::IStructure::FieldMapType m_fields;
+		StructureFieldListModel m_listModel;
+		FieldTableListView* m_tableListView;
+		CE::DataType::IStructure::Field* m_selectedField = nullptr;
+		std::set<CE::DataType::IStructure::Field*> m_newFields;
+		std::set<CE::DataType::IStructure::Field*> m_removedFields;
+		PopupBuiltinWindow* m_builtinWin = nullptr;
+	public:
+		StructureEditorPanel(CE::DataType::IStructure* dataType)
+			: UserDataTypeEditorPanel(dataType, "Structure Editor"), m_dataType(dataType), m_listModel(&m_fields)
+		{
+			m_fields = m_dataType->getFields();
+			m_tableListView = new FieldTableListView(this);
+		}
+
+		~StructureEditorPanel() {
+			delete m_tableListView;
+		}
+
+	protected:
+		void renderExtra() override {
+			Text::Text("Fields:").show();
+
+			ImGui::BeginChild("fields", ImVec2(0, 200));
+			m_tableListView->show();
+			ImGui::EndChild();
+			
+			if (Button::StdButton("+").present()) {
+				int newOffset = 0;
+				if (!m_fields.empty()) {
+					const auto lastField = m_fields.rbegin()->second;
+					newOffset = lastField->getAbsBitOffset() + lastField->getBitSize();
+				}
+				const auto factory = m_dataType->getTypeManager()->getProject()->getSymbolManager()->getFactory(false);
+				const auto defType = m_dataType->getTypeManager()->getDefaultType(0x1);
+				const auto field = factory.createStructFieldSymbol(newOffset, defType->getSize() * 0x8, m_dataType, defType, "newField");
+				m_newFields.insert(field);
+				m_fields[newOffset] = field;
+			}
+			if (m_selectedField) {
+				SameLine();
+				if (Button::ButtonArrow(ImGuiDir_Up).present()) {
+
+				}
+				SameLine();
+				if (Button::ButtonArrow(ImGuiDir_Down).present()) {
+
+				}
+				SameLine();
+				if (Button::StdButton("x").present()) {
+					m_fields.erase(m_selectedField->getAbsBitOffset());
+					if (m_newFields.find(m_selectedField) != m_newFields.end()) {
+						m_newFields.erase(m_selectedField);
+						delete m_selectedField;
+					} else {
+						m_removedFields.insert(m_selectedField);
+					}
+					m_selectedField = nullptr;
+				}
+			}
+			Show(m_fieldEditorWin);
+			Show(m_builtinWin);
+		}
+
+		void save() override {
+			saveName();
+			m_dataType->setFields(m_fields);
+			for (const auto newField : m_newFields)
+				newField->getManager()->getProject()->getTransaction()->markAsNew(newField);
+			for (const auto newField : m_removedFields)
+				newField->getManager()->getProject()->getTransaction()->markAsRemoved(newField);
+			m_dataType->getTypeManager()->getProject()->getTransaction()->markAsDirty(m_dataType);
 		}
 	};
 
@@ -204,6 +277,8 @@ namespace GUI
 			return new TypedefEditorPanel(Typedef);
 		if (const auto Enum = dynamic_cast<CE::DataType::Enum*>(dataType))
 			return new EnumEditorPanel(Enum);
+		if (const auto Structure = dynamic_cast<CE::DataType::IStructure*>(dataType))
+			return new StructureEditorPanel(Structure);
 		return nullptr;
 	}
 };

@@ -84,5 +84,6 @@ namespace CE
 	private:
 		DB::DataTypeMapper* m_dataTypeMapper;
 		DataType::FunctionSignature* m_defSignature;
+		
 	};
 };

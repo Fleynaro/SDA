@@ -29,6 +29,78 @@ namespace GUI
 		return groupName;
 	}
 
+	class EnumFieldListModel : public IListModel<int>
+	{
+		CE::DataType::Enum::FieldMapType* m_fields;
+	public:
+		class FieldIterator : public Iterator
+		{
+			CE::DataType::Enum::FieldMapType::iterator m_it;
+			CE::DataType::Enum::FieldMapType* m_fields;
+		public:
+			FieldIterator(CE::DataType::Enum::FieldMapType* fields)
+				: m_fields(fields), m_it(fields->begin())
+			{}
+
+			void getNextItem(std::string* text, int* data) override {
+				const auto& [offset, name] = *m_it;
+				*text = name + "," + std::to_string(offset);
+				*data = m_it->first;
+				++m_it;
+			}
+
+			bool hasNextItem() override {
+				return m_it != m_fields->end();
+			}
+		};
+
+		EnumFieldListModel(CE::DataType::Enum::FieldMapType* fields)
+			: m_fields(fields)
+		{}
+
+		void newIterator(const IteratorCallback& callback) override
+		{
+			FieldIterator iterator(m_fields);
+			callback(&iterator);
+		}
+	};
+
+	class StructureFieldListModel : public IListModel<CE::DataType::IStructure::Field*>
+	{
+		CE::DataType::IStructure::FieldMapType* m_fields;
+	public:
+		class FieldIterator : public Iterator
+		{
+			CE::DataType::IStructure::FieldMapType::iterator m_it;
+			CE::DataType::IStructure::FieldMapType* m_fields;
+		public:
+			FieldIterator(CE::DataType::IStructure::FieldMapType* fields)
+				: m_fields(fields), m_it(fields->begin())
+			{}
+
+			void getNextItem(std::string* text, CE::DataType::IStructure::Field** data) override {
+				const auto& [offset, field] = *m_it;
+				*text = std::to_string(field->getOffset()) + "," + std::to_string(field->getBitOffset()) + "," + std::to_string(field->getSize()) + "," + field->getDataType()->getDisplayName() + "," + field->getName();
+				*data = field;
+				++m_it;
+			}
+
+			bool hasNextItem() override {
+				return m_it != m_fields->end();
+			}
+		};
+
+		StructureFieldListModel(CE::DataType::IStructure::FieldMapType* fields)
+			: m_fields(fields)
+		{}
+
+		void newIterator(const IteratorCallback& callback) override
+		{
+			FieldIterator iterator(m_fields);
+			callback(&iterator);
+		}
+	};
+
 	// todo: move all such controllers into core (implement undo, redo operations)
 	class UserDataTypeController
 	{
@@ -48,34 +120,6 @@ namespace GUI
 
 		void rename(const std::string& name) {
 			m_dataType->setName(name);
-			m_changed = true;
-		}
-	};
-
-	class TypedefController : public UserDataTypeController
-	{
-		CE::DataType::Typedef* m_dataType;
-	public:
-		TypedefController(CE::DataType::Typedef* dataType)
-			: UserDataTypeController(dataType), m_dataType(dataType)
-		{}
-
-		void changeRefType(CE::DataTypePtr dataType) {
-			m_dataType->setRefType(dataType);
-			m_changed = true;
-		}
-	};
-
-	class EnumController : public UserDataTypeController
-	{
-		CE::DataType::Enum* m_dataType;
-	public:
-		EnumController(CE::DataType::Enum* dataType)
-			: UserDataTypeController(dataType), m_dataType(dataType)
-		{}
-
-		void change(const CE::DataType::Enum::FieldMapType& fields) {
-			m_dataType->getFields() = fields;
 			m_changed = true;
 		}
 	};

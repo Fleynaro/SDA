@@ -23,7 +23,9 @@ namespace CE
 
 			std::string getViewValue(uint64_t value) override;
 
-			FieldMapType& getFields();
+			const FieldMapType& getFields() const;
+
+			void setFields(const FieldMapType& fields);
 
 			bool removeField(int value);
 

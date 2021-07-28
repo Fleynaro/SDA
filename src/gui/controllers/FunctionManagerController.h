@@ -5,21 +5,6 @@
 
 namespace GUI
 {
-	class FunctionController
-	{
-	public:
-		CE::Function* m_function;
-		
-		FunctionController(CE::Function* function)
-			: m_function(function)
-		{}
-
-		void rename(const std::string& name) const {
-			m_function->setName(name);
-			m_function->getManager()->getProject()->getTransaction()->markAsDirty(m_function);
-		}
-	};
-	
 	class FunctionManagerController : public AbstractManagerController<CE::Function>
 	{
 	public:

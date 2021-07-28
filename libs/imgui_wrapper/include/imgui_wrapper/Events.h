@@ -50,6 +50,7 @@ namespace GUI
 
 		virtual bool isImGuiFocused() = 0;
 
+	public:
 		virtual void processGenericEvents() {
 			m_isHoveredIn = false;
 			m_isHoveredOut = false;
@@ -158,7 +159,8 @@ namespace GUI
 		virtual bool isImGuiVisible() {
 			return ImGui::IsItemVisible();
 		}
-		
+
+	public:
 		void processGenericEvents() {
 			AbstractGenericEvents::processGenericEvents();
 			m_isClickedByLeftMouseBtn = false;

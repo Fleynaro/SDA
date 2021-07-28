@@ -14,6 +14,10 @@ int& CE::Symbol::StructFieldSymbol::getAbsBitOffset() {
 	return m_absBitOffset;
 }
 
+void CE::Symbol::StructFieldSymbol::setAbsBitOffset(int offset) {
+	m_absBitOffset = offset;
+}
+
 int CE::Symbol::StructFieldSymbol::getBitOffset() {
 	return m_absBitOffset - getOffset() * 0x8;
 }

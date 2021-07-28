@@ -81,20 +81,18 @@ namespace GUI
 			class DataTypeContextPanel : public AbstractPanel
 			{
 				DataTypeManagerPanel* m_typeManagerPanel;
-				CE::DataType::IType* m_dataType;
+				CE::DataType::IUserDefinedType* m_dataType;
 				ImVec2 m_winPos;
 			public:
-				DataTypeContextPanel(CE::DataType::IType* type, DataTypeManagerPanel* typeManagerPanel, ImVec2 winPos)
-					: m_dataType(type), m_typeManagerPanel(typeManagerPanel), m_winPos(winPos)
+				DataTypeContextPanel(CE::DataType::IUserDefinedType* dataType, DataTypeManagerPanel* typeManagerPanel, ImVec2 winPos)
+					: m_dataType(dataType), m_typeManagerPanel(typeManagerPanel), m_winPos(winPos)
 				{}
 
 			private:
 				void renderPanel() override {
-					if (const auto userDefinedType = dynamic_cast<CE::DataType::IUserDefinedType*>(m_dataType)) {
-						if (ImGui::MenuItem("Edit")) {
-							delete m_typeManagerPanel->m_dataTypeEditor;
-							m_typeManagerPanel->m_dataTypeEditor = new StdWindow(CreateDataTypeEditorPanel(userDefinedType));
-						}
+					if (ImGui::MenuItem("Edit")) {
+						delete m_typeManagerPanel->m_dataTypeEditor;
+						m_typeManagerPanel->m_dataTypeEditor = new StdWindow(CreateDataTypeEditorPanel(m_dataType));
 					}
 				}
 			};
@@ -110,9 +108,11 @@ namespace GUI
 				DataTypeListViewGrouping::renderItem(text, type, n);
 				const auto events = GenericEvents(true);
 				if (events.isClickedByRightMouseBtn()) {
-					delete m_typeManagerPanel->m_typeContextWindow;
-					m_typeManagerPanel->m_typeContextWindow = new PopupContextWindow(new DataTypeContextPanel(type, m_typeManagerPanel, GetLeftBottom()));
-					m_typeManagerPanel->m_typeContextWindow->open();
+					if (const auto userDefinedType = dynamic_cast<CE::DataType::IUserDefinedType*>(type)) {
+						delete m_typeManagerPanel->m_typeContextWindow;
+						m_typeManagerPanel->m_typeContextWindow = new PopupContextWindow(new DataTypeContextPanel(userDefinedType, m_typeManagerPanel, GetLeftBottom()));
+						m_typeManagerPanel->m_typeContextWindow->open();
+					}
 				}
 			}
 		};
