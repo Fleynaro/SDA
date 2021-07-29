@@ -4,6 +4,7 @@
 #include "imgui_wrapper/controls/AbstractPanel.h"
 #include "imgui_wrapper/controls/Input.h"
 #include "managers/SymbolManager.h"
+#include "panels/BuiltinInputPanel.h"
 
 
 namespace GUI
@@ -12,6 +13,7 @@ namespace GUI
 	{
 		CE::DataType::IUserDefinedType* m_dataType;
 		Input::TextInput m_nameInput;
+		PopupBuiltinWindow* m_builtinWin = nullptr;
 	public:
 		UserDataTypeEditorPanel(CE::DataType::IUserDefinedType* dataType, const std::string& name)
 			: AbstractPanel(name), m_dataType(dataType)
@@ -19,6 +21,13 @@ namespace GUI
 			m_nameInput.setInputText(m_dataType->getName());
 		}
 
+		void createWindow(AbstractPanel* panel) {
+			delete m_builtinWin;
+			m_builtinWin = new PopupBuiltinWindow(panel);
+			m_builtinWin->getPos() = GetLeftBottom();
+			m_builtinWin->open();
+		}
+	
 	protected:
 		virtual void renderExtra() = 0;
 
@@ -44,6 +53,8 @@ namespace GUI
 			if (Button::StdButton("Cancel").present()) {
 				m_window->close();
 			}
+
+			Show(m_builtinWin);
 		}
 	};
 
@@ -71,74 +82,68 @@ namespace GUI
 
 	class EnumEditorPanel : public UserDataTypeEditorPanel
 	{
-		class FieldEditorPanel : public AbstractPanel
+		class FieldTableListView : public TableListView<int>
 		{
-			CE::DataType::Enum::FieldMapType* m_fields;
-			int m_value;
-			bool m_newObject;
-			Input::TextInput m_nameInput;
-			Input::IntegerInput m_valueInput;
+			EnumEditorPanel* m_enumEditorPanel;
 		public:
-			FieldEditorPanel(CE::DataType::Enum::FieldMapType* fields, int value, bool newObject = false)
-				: AbstractPanel("Field Editor"), m_fields(fields), m_value(value), m_newObject(newObject)
+			FieldTableListView(EnumEditorPanel* enumEditorPanel)
+				: TableListView<int>(&enumEditorPanel->m_listModel), m_enumEditorPanel(enumEditorPanel)
 			{
-				if(!m_newObject)
-					m_nameInput.setInputText((*m_fields)[value]);
-				m_valueInput.setInputValue(value);
+				m_colsInfo = {
+					ColInfo("Name"),
+					ColInfo("Value", ImGuiTableColumnFlags_WidthFixed, 50.0f)
+				};
 			}
 
 		private:
-			void renderPanel() override {
-				Text::Text("Enter name:").show();
-				m_nameInput.show();
-				NewLine();
-				Text::Text("Enter value:").show();
-				m_valueInput.show();
-				NewLine();
-				if (Button::StdButton("Ok").present()) {
-					const auto value = m_valueInput.getInputValue();
-					const auto name = m_nameInput.getInputText();
-					if(!m_newObject)
-						m_fields->erase(m_value);
-					(*m_fields)[value] = name;
-					m_window->close();
+			void renderColumn(const std::string& colText, const ColInfo* colInfo, const int& value) override {
+				ImGui::BeginGroup();
+				ImGui::PushID(value);
+				if (ImGui::Selectable(colText.c_str(), m_enumEditorPanel->m_selectedValue == value,
+					ImGuiSelectableFlags_DontClosePopups | ImGuiSelectableFlags_AllowItemOverlap | ImGuiSelectableFlags_SpanAllColumns)) {
+					m_enumEditorPanel->m_selectedValue = value;
 				}
-				if (!m_newObject) {
-					SameLine();
-					if (Button::StdButton("Remove").present()) {
-						m_fields->erase(m_value);
-						m_window->close();
+				ImGui::PopID();
+				ImGui::EndGroup();
+
+				const auto events = GenericEvents(true);
+				if (events.isHovered()) {
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				}
+				if (events.isClickedByMiddleMouseBtn()) {
+					if (colInfo->m_name == "Name") {
+						const auto panel = new BuiltinTextInputPanel(colText);
+						panel->handler([&, panel, value](const std::string& name)
+							{
+								m_enumEditorPanel->m_fields[value] = name;
+								panel->m_window->close();
+							});
+						m_enumEditorPanel->createWindow(panel);
+					}
+					else if (colInfo->m_name == "Value") {
+						const auto panel = new BuiltinIntegerInputPanel(value);
+						panel->handler([&, panel, value](const int& newValue)
+							{
+								m_enumEditorPanel->m_fields[newValue] = m_enumEditorPanel->m_fields[value];
+								m_enumEditorPanel->m_fields.erase(value);
+								panel->m_window->close();
+							});
+						m_enumEditorPanel->createWindow(panel);
 					}
 				}
-				SameLine();
-				if (Button::StdButton("Cancel").present())
-					m_window->close();
-
 			}
 		};
 		
 		CE::DataType::Enum* m_dataType;
-		PopupModalWindow* m_fieldEditorWin = nullptr;
 		CE::DataType::Enum::FieldMapType m_fields;
+		int m_selectedValue = 0;
 		EnumFieldListModel m_listModel;
-		TableListViewSelector<int>* m_tableListView;
+		FieldTableListView* m_tableListView;
 	public:
 		EnumEditorPanel(CE::DataType::Enum* dataType)
-			: UserDataTypeEditorPanel(dataType, "Enum Editor"), m_dataType(dataType), m_listModel(&m_fields)
+			: UserDataTypeEditorPanel(dataType, "Enum Editor"), m_dataType(dataType), m_listModel(&m_fields), m_fields(m_dataType->getFields())
 		{
-			m_fields = m_dataType->getFields();
-			const auto listView = new TableListView(&m_listModel, {
-				ColInfo("Name"),
-				ColInfo("Value", ImGuiTableColumnFlags_WidthFixed, 50.0f)
-				});
-			m_tableListView = new TableListViewSelector<int>(listView, new Button::StdButton("Edit"));
-			m_tableListView->handler([&](int value)
-				{
-					delete m_fieldEditorWin;
-					const auto panel = new FieldEditorPanel(&m_fields, value);
-					m_fieldEditorWin = new PopupModalWindow(panel);
-					m_fieldEditorWin->open();
-				});
+			m_tableListView = new FieldTableListView(this);
 		}
 
 		~EnumEditorPanel() {
@@ -147,21 +152,36 @@ namespace GUI
 
 	protected:
 		void renderExtra() override {
+			NewLine();
 			Text::Text("Fields:").show();
+			ImGui::BeginChild("fields", ImVec2(0, 200), true);
 			m_tableListView->show();
+			ImGui::EndChild();
+			
 			if (Button::StdButton("Add new field").present()) {
-				delete m_fieldEditorWin;
-				const auto panel = new FieldEditorPanel(&m_fields, 0, true);
-				m_fieldEditorWin = new PopupModalWindow(panel);
-				m_fieldEditorWin->open();
+				addNewField();
 			}
-			Show(m_fieldEditorWin);
+			if(m_fields.find(m_selectedValue) != m_fields.end()) {
+				SameLine();
+				if (Button::StdButton("x").present()) {
+					m_fields.erase(m_selectedValue);
+				}
+			}
+			NewLine();
+			Text::Text("Click the middle mouse button hovering on a value you wish to edit.").show();
 		}
 
 		void save() override {
 			saveName();
 			m_dataType->setFields(m_fields);
 			m_dataType->getTypeManager()->getProject()->getTransaction()->markAsDirty(m_dataType);
+		}
+
+		void addNewField() {
+			int freeValue = 0;
+			if (!m_fields.empty())
+				freeValue = m_fields.rbegin()->first + 1;
+			m_fields[freeValue] = "newField_" + std::to_string(freeValue);
 		}
 	};
 
@@ -176,7 +196,6 @@ namespace GUI
 			{
 				m_colsInfo = {
 					ColInfo("Offset"),
-					ColInfo("Bit Offset"),
 					ColInfo("Length"),
 					ColInfo("DataType"),
 					ColInfo("Name")
@@ -186,89 +205,183 @@ namespace GUI
 		private:
 			void renderColumn(const std::string& colText, const ColInfo* colInfo,
 			                  CE::DataType::IStructure::Field* const& field) override;
-
-			void createWindow(AbstractPanel* panel) {
-				delete m_structEditorPanel->m_builtinWin;
-				m_structEditorPanel->m_builtinWin = new PopupBuiltinWindow(panel);
-				m_structEditorPanel->m_builtinWin->getPos() = GetLeftBottom();
-				m_structEditorPanel->m_builtinWin->open();
-			}
 		};
 
 		CE::DataType::IStructure* m_dataType;
-		PopupModalWindow* m_fieldEditorWin = nullptr;
+		Input::IntegerInput m_sizeInput;
+		Input::BoolInput m_hexView;
 		CE::DataType::IStructure::FieldMapType m_fields;
 		StructureFieldListModel m_listModel;
 		FieldTableListView* m_tableListView;
-		CE::DataType::IStructure::Field* m_selectedField = nullptr;
+		int m_selectedFieldOffset = -1;
+		CE::DataTypePtr m_selectedBitFieldDataType;
 		std::set<CE::DataType::IStructure::Field*> m_newFields;
 		std::set<CE::DataType::IStructure::Field*> m_removedFields;
+		PopupModalWindow* m_errorWindow = nullptr;
 		PopupBuiltinWindow* m_builtinWin = nullptr;
 	public:
+		// todo: slow work. solution is to use clipper
+		
 		StructureEditorPanel(CE::DataType::IStructure* dataType)
-			: UserDataTypeEditorPanel(dataType, "Structure Editor"), m_dataType(dataType), m_listModel(&m_fields)
+			: UserDataTypeEditorPanel(dataType, "Structure Editor"), m_dataType(dataType), m_listModel(&m_fields), m_fields(dataType->getFields())
 		{
-			m_fields = m_dataType->getFields();
+			m_sizeInput.setInputValue(dataType->getSize());
 			m_tableListView = new FieldTableListView(this);
+			m_hexView = Input::BoolInput("Hex view");
 		}
 
 		~StructureEditorPanel() {
 			delete m_tableListView;
+			delete m_errorWindow;
+			delete m_builtinWin;
 		}
 
-	protected:
-		void renderExtra() override {
-			Text::Text("Fields:").show();
+		CE::DataType::IStructure::Field* getSelectedField() {
+			if (m_selectedFieldOffset == -1)
+				return nullptr;
+			const auto it = m_fields.find(m_selectedFieldOffset);
+			if (it == m_fields.end())
+				return nullptr;
+			return it->second;
+		}
 
-			ImGui::BeginChild("fields", ImVec2(0, 200));
+	private:
+		void renderExtra() override {
+			Text::Text("Size of structure:").show();
+			m_sizeInput.show();
+			if(m_sizeInput.isValueEntering()) {
+				const auto minSize = m_fields.getSizeByLastField();
+				if(m_sizeInput.getInputValue() < minSize) {
+					m_sizeInput.setInputValue(minSize);
+				}
+				else {
+					m_fields.setSize(m_sizeInput.getInputValue());
+				}
+			}
+
+			NewLine();
+			Text::Text("Fields:").show();
+			ImGui::BeginChild("fields", ImVec2(0, 200), true);
 			m_tableListView->show();
 			ImGui::EndChild();
 			
 			if (Button::StdButton("+").present()) {
-				int newOffset = 0;
-				if (!m_fields.empty()) {
-					const auto lastField = m_fields.rbegin()->second;
-					newOffset = lastField->getAbsBitOffset() + lastField->getBitSize();
-				}
-				const auto factory = m_dataType->getTypeManager()->getProject()->getSymbolManager()->getFactory(false);
-				const auto defType = m_dataType->getTypeManager()->getDefaultType(0x1);
-				const auto field = factory.createStructFieldSymbol(newOffset, defType->getSize() * 0x8, m_dataType, defType, "newField");
-				m_newFields.insert(field);
-				m_fields[newOffset] = field;
+				addNewField();
 			}
-			if (m_selectedField) {
+			if (const auto selectedField = getSelectedField()) {
 				SameLine();
 				if (Button::ButtonArrow(ImGuiDir_Up).present()) {
-
+					if (moveField(selectedField, -1))
+						m_selectedFieldOffset = selectedField->getAbsBitOffset();
 				}
 				SameLine();
 				if (Button::ButtonArrow(ImGuiDir_Down).present()) {
-
+					if (moveField(selectedField, 1))
+						m_selectedFieldOffset = selectedField->getAbsBitOffset();
 				}
 				SameLine();
 				if (Button::StdButton("x").present()) {
-					m_fields.erase(m_selectedField->getAbsBitOffset());
-					if (m_newFields.find(m_selectedField) != m_newFields.end()) {
-						m_newFields.erase(m_selectedField);
-						delete m_selectedField;
-					} else {
-						m_removedFields.insert(m_selectedField);
+					removeField(selectedField);
+					m_selectedFieldOffset = -1;
+				}
+				else if(!selectedField->isBitField()) {
+					const auto fieldBaseDataType = selectedField->getDataType()->getBaseType();
+					if (fieldBaseDataType->getGroup() == CE::DataType::IType::Simple ||
+						fieldBaseDataType->getGroup() == CE::DataType::IType::Enum) {
+						SameLine();
+						if (Button::StdButton("Make bitfield").present()) {
+							selectedField->setBitSize(1);
+						}
 					}
-					m_selectedField = nullptr;
 				}
 			}
-			Show(m_fieldEditorWin);
+			SameLine();
+			m_hexView.show();
+			if(m_hexView.isClicked()) {
+				m_listModel.m_hexView = m_hexView.isSelected();
+			}
+			NewLine();
+			Text::Text("Click the middle mouse button hovering on a value you wish to edit.").show();
+			Text::Text("The offset column for bit fields is presented as: {byte offset}:{bit offset}:{bit size}").show();
+			
+			Show(m_errorWindow);
 			Show(m_builtinWin);
 		}
 
 		void save() override {
 			saveName();
+			m_dataType->resize(m_sizeInput.getInputValue());
 			m_dataType->setFields(m_fields);
 			for (const auto newField : m_newFields)
 				newField->getManager()->getProject()->getTransaction()->markAsNew(newField);
 			for (const auto newField : m_removedFields)
 				newField->getManager()->getProject()->getTransaction()->markAsRemoved(newField);
 			m_dataType->getTypeManager()->getProject()->getTransaction()->markAsDirty(m_dataType);
+		}
+
+		void addNewField() {
+			if (m_selectedFieldOffset != -1) {
+				const auto newOffset = m_selectedFieldOffset;
+				if (!m_selectedBitFieldDataType && m_fields.areEmptyFields(newOffset, 0x8)) {
+					addNewField(newOffset);
+				}
+				else if (m_fields.areEmptyFields(newOffset, 0x1)) {
+					// add bit field
+					addNewField(newOffset, 0x1, m_selectedBitFieldDataType);
+				}
+				else {
+					delete m_errorWindow;
+					m_errorWindow = CreateMessageWindow("No space to place a new field.");
+				}
+				return;
+			}
+
+			if (!m_fields.empty()) {
+				const auto lastField = m_fields.rbegin()->second;
+				const auto newOffset = lastField->getAbsBitOffset() + lastField->getBitSize();
+				if (m_fields.areEmptyFields(newOffset, 0x8)) {
+					addNewField(newOffset);
+				}
+				else {
+					delete m_errorWindow;
+					m_errorWindow = CreateMessageWindow("No space to place a new field.\nIncrease size of the structure.");
+				}
+			}
+			else {
+				addNewField(0x0);
+			}
+		}
+		
+		void addNewField(int absBitOffset, int bitSize = 0x8, CE::DataTypePtr fieldDataType = nullptr) {
+			const auto factory = m_dataType->getTypeManager()->getProject()->getSymbolManager()->getFactory(false);
+			if(!fieldDataType)
+				fieldDataType = m_dataType->getTypeManager()->getDefaultType(0x1);
+			const auto field = factory.createStructFieldSymbol(absBitOffset, bitSize, m_dataType, fieldDataType, "newField");
+			m_newFields.insert(field);
+			m_fields[absBitOffset] = field;
+		}
+		
+		void removeField(CE::DataType::IStructure::Field* field) {
+			m_fields.erase(field->getAbsBitOffset());
+			if (m_newFields.find(field) != m_newFields.end()) {
+				m_newFields.erase(field);
+				delete field;
+			}
+			else {
+				m_removedFields.insert(field);
+			}
+		}
+
+		bool moveField(CE::DataType::IStructure::Field* field, int dir) {
+			const auto newAbsBitOffset = field->getAbsBitOffset() + (field->isBitField() ? 0x1 : 0x8) * dir;
+			m_fields.erase(field->getAbsBitOffset());
+			if (!m_fields.areEmptyFields(newAbsBitOffset, field->getBitSize())) {
+				m_fields[field->getAbsBitOffset()] = field;
+				return false;
+			}
+			m_fields[newAbsBitOffset] = field;
+			field->setAbsBitOffset(newAbsBitOffset);
+			return true;
 		}
 	};
 

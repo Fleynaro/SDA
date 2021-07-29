@@ -30,6 +30,8 @@ namespace GUI
 		DataTypeListViewGrouping* m_groupingListView;
 		EventHandler<CE::DataTypePtr> m_eventHandler;
 	public:
+		std::string m_errorMessage;
+		
 		DataTypeSelectorPanel(CE::TypeManager* manager, const std::string& name = "")
 			: m_controller(manager)
 		{
@@ -62,7 +64,9 @@ namespace GUI
 				const auto dataType = m_controller.parseDataType(m_input.getInputText());
 				if(m_eventHandler.isInit())
 					m_eventHandler(dataType);
-				m_window->close();
+			}
+			if (!m_errorMessage.empty()) {
+				Text::Text("Error: " + m_errorMessage).show();
 			}
 			if (m_controller.hasItems())
 				m_groupingListView->show();

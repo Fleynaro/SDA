@@ -11,6 +11,8 @@ namespace GUI
 		Input::TextInput m_input;
 		EventHandler<const std::string&> m_eventHandler;
 	public:
+		std::string m_errorMessage;
+		
 		BuiltinTextInputPanel(const std::string& name = "")
 		{
 			m_input.setInputText(name);
@@ -26,9 +28,11 @@ namespace GUI
 			m_input.show();
 			SameLine();
 			if (Button::StdButton("Ok").present()) {
-				m_window->close();
 				if (m_eventHandler.isInit())
 					m_eventHandler(m_input.getInputText());
+			}
+			if(!m_errorMessage.empty()) {
+				Text::Text("Error: " + m_errorMessage).show();
 			}
 		}
 	};
@@ -38,6 +42,8 @@ namespace GUI
 		Input::IntegerInput m_input;
 		EventHandler<const int&> m_eventHandler;
 	public:
+		std::string m_errorMessage;
+		
 		BuiltinIntegerInputPanel(const int& value = 0)
 		{
 			m_input.setInputValue(value);
@@ -53,9 +59,11 @@ namespace GUI
 			m_input.show();
 			SameLine();
 			if (Button::StdButton("Ok").present()) {
-				m_window->close();
 				if (m_eventHandler.isInit())
 					m_eventHandler(m_input.getInputValue());
+			}
+			if (!m_errorMessage.empty()) {
+				Text::Text("Error: " + m_errorMessage).show();
 			}
 		}
 	};

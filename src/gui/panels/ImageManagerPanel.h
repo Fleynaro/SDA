@@ -161,9 +161,11 @@ namespace GUI
 					if (ImGui::MenuItem("Rename")) {
 						delete m_imageManagerPanel->m_popupBuiltinWindow;
 						const auto panel = new BuiltinTextInputPanel(m_addrSpace->getName());
-						panel->handler([&](const std::string& name)
+						panel->handler([&, panel](const std::string& name)
 							{
-								AddressSpaceController(m_addrSpace).rename(name);
+								m_addrSpace->setName(name);
+								m_addrSpace->getAddrSpaceManager()->getProject()->getTransaction()->markAsDirty(m_addrSpace);
+								panel->m_window->close();
 							});
 						m_imageManagerPanel->m_popupBuiltinWindow = new PopupBuiltinWindow(panel);
 						m_imageManagerPanel->m_popupBuiltinWindow->getPos() = m_winPos;
@@ -192,10 +194,11 @@ namespace GUI
 					if (ImGui::MenuItem("Rename")) {
 						delete m_imageManagerPanel->m_popupBuiltinWindow;
 						const auto panel = new BuiltinTextInputPanel(m_imageDec->getName());
-						panel->handler([&](const std::string& name)
+						panel->handler([&, panel](const std::string& name)
 							{
 								m_imageDec->setName(name);
 								m_imageDec->getImageManager()->getProject()->getTransaction()->markAsDirty(m_imageDec);
+								panel->m_window->close();
 							});
 						m_imageManagerPanel->m_popupBuiltinWindow = new PopupBuiltinWindow(panel);
 						m_imageManagerPanel->m_popupBuiltinWindow->getPos() = m_winPos;

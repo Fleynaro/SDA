@@ -13,9 +13,10 @@ namespace CE::DataType
 		class FieldMapType : public std::map<int, Field*>
 		{
 			IStructure* m_structure;
+			int m_size;
 		public:
-			FieldMapType(IStructure* structure = nullptr)
-				: m_structure(structure)
+			FieldMapType(IStructure* structure, int size)
+				: m_structure(structure), m_size(size)
 			{}
 			
 			int getNextEmptyBitsCount(int bitOffset) {
@@ -23,7 +24,7 @@ namespace CE::DataType
 				if (it != end()) {
 					return it->first - bitOffset;
 				}
-				return m_structure->getSize() - bitOffset;
+				return getSize() * 0x8 - bitOffset;
 			}
 
 			bool areEmptyFields(int bitOffset, int bitSize) {
@@ -52,11 +53,31 @@ namespace CE::DataType
 				}
 				return end();
 			}
+
+			int getSizeByLastField() {
+				if (empty())
+					return 0;
+				const auto lastField = std::prev(end())->second;
+				return lastField->getOffset() + lastField->getSize();
+			}
+
+			int getSize() const {
+				return m_size;
+			}
+
+			void setSize(int size) {
+				m_size = size;
+			}
+
+			Field createField(int absBitOffset, int bitSize, DataTypePtr dataType, const std::string& name, const std::string& comment = "") const {
+				return Field(nullptr, m_structure, dataType, absBitOffset, bitSize, name, comment);
+			}
+
+			Field createField(int absBitOffset, int bitSize, int dataTypeSize, const std::string& name,
+			                  const std::string& comment = "") const;
 		};
 
 		virtual void resize(int size) = 0;
-
-		virtual int getSizeByLastField() = 0;
 
 		virtual FieldMapType& getFields() = 0;
 
@@ -93,8 +114,6 @@ namespace CE::DataType
 
 		void resize(int size) override;
 
-		int getSizeByLastField() override;
-
 		FieldMapType& getFields() override;
 
 		void setFields(const FieldMapType& fields) override;
@@ -119,7 +138,6 @@ namespace CE::DataType
 		void moveField_(int bitOffset, int bitsCount);
 
 	protected:
-		int m_size = 0;
 		FieldMapType m_fields;
 		Field* m_defaultField;
 	};

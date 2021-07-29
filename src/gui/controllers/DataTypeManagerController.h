@@ -71,24 +71,70 @@ namespace GUI
 	public:
 		class FieldIterator : public Iterator
 		{
-			CE::DataType::IStructure::FieldMapType::iterator m_it;
+			StructureFieldListModel* m_model;
 			CE::DataType::IStructure::FieldMapType* m_fields;
+			int m_bitOffset = 0;
+			CE::DataTypePtr m_bitFieldDataType;
+			int m_bitFieldEndOffset = 0;
+			CE::DataType::IStructure::Field m_emptyField;
 		public:
-			FieldIterator(CE::DataType::IStructure::FieldMapType* fields)
-				: m_fields(fields), m_it(fields->begin())
+			FieldIterator(StructureFieldListModel* model)
+				: m_model(model), m_fields(model->m_fields)
 			{}
 
 			void getNextItem(std::string* text, CE::DataType::IStructure::Field** data) override {
-				const auto& [offset, field] = *m_it;
-				*text = std::to_string(field->getOffset()) + "," + std::to_string(field->getBitOffset()) + "," + std::to_string(field->getSize()) + "," + field->getDataType()->getDisplayName() + "," + field->getName();
-				*data = field;
-				++m_it;
+				if (m_bitOffset >= m_bitFieldEndOffset) {
+					m_bitFieldEndOffset = 0;
+				}
+				
+				const auto it = m_fields->getFieldIterator(m_bitOffset); // todo: slow
+				if(it != m_fields->end()) {
+					const auto& [offset, field] = *it;
+					if (field->isBitField()) {
+						if (!m_bitFieldEndOffset) {
+							m_bitFieldDataType = field->getDataType();
+							m_bitFieldEndOffset = m_bitOffset + field->getSize() * 0x8;
+						}
+					}
+					*text = getText(field);
+					*data = field;
+					m_bitOffset += field->getBitSize();
+				} else {
+					if (m_bitFieldEndOffset) {
+						m_emptyField = m_fields->createField(m_bitOffset, 0x1, m_bitFieldDataType, " ");
+						m_bitOffset += 1;
+					}
+					else if (m_fields->getNextEmptyBitsCount(m_bitOffset) < 0x8) { // todo: slow
+						m_emptyField = m_fields->createField(m_bitOffset, 0x1, 0x1, " ");
+						m_bitOffset += 1;
+					}
+					else {
+						m_emptyField = m_fields->createField(m_bitOffset, 0x8, 1, " ");
+						m_bitOffset += 8;
+					}
+					m_emptyField.m_isDefault = true;
+					*text = getText(&m_emptyField);
+					*data = &m_emptyField;
+				}
+			}
+
+			std::string getText(CE::DataType::IStructure::Field* field) {
+				using namespace Helper::String;
+				auto offsetStr = m_model->m_hexView ? "0x" + NumberToHex(field->getOffset()) : std::to_string(field->getOffset());
+				auto sizeStr = m_model->m_hexView ? "0x" + NumberToHex(field->getSize()) : std::to_string(field->getSize());
+				if (field->isBitField()) {
+					offsetStr += ":" + std::to_string(field->getBitOffset());
+					sizeStr += " (" + std::to_string(field->getBitSize()) + " bits)";
+				}
+				return offsetStr + "," + sizeStr + "," + field->getDataType()->getDisplayName() + "," + field->getName();
 			}
 
 			bool hasNextItem() override {
-				return m_it != m_fields->end();
+				return m_bitOffset < m_fields->getSize() * 0x8;
 			}
 		};
+
+		bool m_hexView = false;
 
 		StructureFieldListModel(CE::DataType::IStructure::FieldMapType* fields)
 			: m_fields(fields)
@@ -96,7 +142,7 @@ namespace GUI
 
 		void newIterator(const IteratorCallback& callback) override
 		{
-			FieldIterator iterator(m_fields);
+			FieldIterator iterator(this);
 			callback(&iterator);
 		}
 	};

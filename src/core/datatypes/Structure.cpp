@@ -5,8 +5,14 @@
 using namespace CE;
 using namespace DataType;
 
+IStructure::Field IStructure::FieldMapType::createField(int absBitOffset, int bitSize, int dataTypeSize,
+                                                        const std::string& name, const std::string& comment) const {
+	return createField(absBitOffset, bitSize, m_structure->getTypeManager()->getDefaultType(dataTypeSize), name,
+	                   comment);
+}
+
 Structure::Structure(TypeManager* typeManager, const std::string& name, const std::string& comment)
-	: UserDefinedType(typeManager, name, comment), m_fields(this)
+	: UserDefinedType(typeManager, name, comment), m_fields(this, 0)
 {
 	const auto factory = typeManager->getProject()->getSymbolManager()->getFactory(false);
 	m_defaultField = factory.createStructFieldSymbol(-1, -1, this, GetUnit(typeManager->getFactory().getDefaultType()), "undefined");
@@ -24,18 +30,11 @@ AbstractType::Group Structure::getGroup() {
 }
 
 int Structure::getSize() {
-	return m_size;
+	return m_fields.getSize();
 }
 
 void Structure::resize(int size) {
-	m_size = size;
-}
-
-int Structure::getSizeByLastField() {
-	if (m_fields.empty())
-		return 0;
-	auto lastField = std::prev(m_fields.end())->second;
-	return lastField->getOffset() + lastField->getSize();
+	m_fields.setSize(size);
 }
 
 Structure::FieldMapType& Structure::getFields() {
@@ -67,7 +66,7 @@ void Structure::addField(int bitOffset, int bitSize, const std::string& name, Da
 void Structure::addField(Field* field) {
 	field->setStructure(this);
 	m_fields.insert(std::make_pair(field->getAbsBitOffset(), field));
-	m_size = getSizeByLastField();
+	m_fields.setSize(m_fields.getSizeByLastField());
 }
 
 bool Structure::removeField(Field* field) {

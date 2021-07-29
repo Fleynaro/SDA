@@ -35,9 +35,10 @@ namespace GUI
 			if (Button::StdButton(m_dataType->getDisplayName()).present()) {
 				delete m_builtinWin;
 				const auto panel = new DataTypeSelectorPanel(m_symbol->getManager()->getProject()->getTypeManager());
-				panel->handler([&](CE::DataTypePtr dataType)
+				panel->handler([&, panel](CE::DataTypePtr dataType)
 					{
 						m_dataType = dataType;
+						panel->m_window->close();
 					});
 				m_builtinWin = new PopupBuiltinWindow(panel);
 				m_builtinWin->getPos() = GetLeftBottom();

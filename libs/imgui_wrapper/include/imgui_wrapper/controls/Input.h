@@ -177,6 +177,10 @@ namespace GUI::Input
 			return m_value;
 		}
 
+		bool isValueEntering() {
+			return m_isValueEntering;
+		}
+
 	protected:
 		void renderInput() override {
 			pushWidthParam();
@@ -209,6 +213,10 @@ namespace GUI::Input
 			return m_value;
 		}
 
+		bool isValueEntering() {
+			return m_isValueEntering;
+		}
+
 	protected:
 		void renderInput() override {
 			pushWidthParam();
@@ -239,6 +247,10 @@ namespace GUI::Input
 
 		double getInputValue() {
 			return m_value;
+		}
+
+		bool isValueEntering() {
+			return m_isValueEntering;
 		}
 
 	protected:
