@@ -385,6 +385,97 @@ namespace GUI
 		}
 	};
 
+	class FuncSigEditorPanel : public UserDataTypeEditorPanel
+	{
+		class ParamTableListView : public TableListView<CE::Symbol::FuncParameterSymbol*>
+		{
+			FuncSigEditorPanel* m_sigEditorPanel;
+		public:
+			ParamTableListView(FuncSigEditorPanel* sigEditorPanel)
+				: TableListView<CE::Symbol::FuncParameterSymbol*>(&sigEditorPanel->m_listModel), m_sigEditorPanel(sigEditorPanel)
+			{
+				m_colsInfo = {
+					ColInfo("Index", ImGuiTableColumnFlags_WidthFixed, 20.0f),
+					ColInfo("DataType"),
+					ColInfo("Name"),
+					ColInfo("Storage")
+				};
+			}
+
+		private:
+			void renderColumn(const std::string& colText, const ColInfo* colInfo,
+			                  CE::Symbol::FuncParameterSymbol* const& param) override;
+		};
+
+		CE::DataType::IFunctionSignature* m_dataType;
+		std::vector<CE::Symbol::FuncParameterSymbol*> m_params;
+		CE::Symbol::FuncParameterSymbol* m_selectedParam = nullptr;
+		ParamListModel m_listModel;
+		ParamTableListView* m_tableListView;
+	public:
+		FuncSigEditorPanel(CE::DataType::IFunctionSignature* dataType)
+			: UserDataTypeEditorPanel(dataType, "Function Signature Editor"), m_dataType(dataType), m_listModel(&m_params), m_params(m_dataType->getParameters())
+		{
+			m_tableListView = new ParamTableListView(this);
+		}
+
+		~FuncSigEditorPanel() {
+			delete m_tableListView;
+		}
+
+	protected:
+		void renderExtra() override {
+			NewLine();
+			Text::Text("Params:").show();
+			ImGui::BeginChild("params", ImVec2(0, 200), true);
+			m_tableListView->show();
+			ImGui::EndChild();
+
+			if (Button::StdButton("+").present()) {
+				addNewParam();
+			}
+			if (m_selectedParam) {
+				SameLine();
+				if (Button::ButtonArrow(ImGuiDir_Up).present()) {
+					moveParam(m_selectedParam, -1);
+				}
+				SameLine();
+				if (Button::ButtonArrow(ImGuiDir_Down).present()) {
+					moveParam(m_selectedParam, 1);
+				}
+				SameLine();
+				if (Button::StdButton("x").present()) {
+					removeParam(m_selectedParam);
+					m_selectedParam = nullptr;
+				}
+			}
+			
+			NewLine();
+			Text::Text("Click the middle mouse button hovering on a value you wish to edit.").show();
+		}
+
+		void save() override {
+			saveName();
+			m_dataType->setParameters(m_params);
+			m_dataType->getTypeManager()->getProject()->getTransaction()->markAsDirty(m_dataType);
+		}
+
+		void addNewParam() {
+			
+		}
+
+		void removeParam(CE::Symbol::FuncParameterSymbol* param) {
+			
+		}
+
+		void moveParam(CE::Symbol::FuncParameterSymbol* param, int dir) {
+			const auto newParamIdx = param->getParamIdx() + dir;
+			if (newParamIdx == 0 || newParamIdx == m_params.size() + 1)
+				return;
+			std::swap(m_params[param->getParamIdx() - 1], m_params[newParamIdx - 1]);
+		}
+	};
+
 	static UserDataTypeEditorPanel* CreateDataTypeEditorPanel(CE::DataType::IUserDefinedType* dataType) {
 		if(const auto Typedef = dynamic_cast<CE::DataType::Typedef*>(dataType))
 			return new TypedefEditorPanel(Typedef);

@@ -147,6 +147,58 @@ namespace GUI
 		}
 	};
 
+	class ParamListModel : public IListModel<CE::Symbol::FuncParameterSymbol*>
+	{
+		std::vector<CE::Symbol::FuncParameterSymbol*>* m_params;
+	public:
+		class ParamIterator : public Iterator
+		{
+			int m_paramIdx = 0;
+			std::vector<CE::Symbol::FuncParameterSymbol*>* m_params;
+		public:
+			ParamIterator(std::vector<CE::Symbol::FuncParameterSymbol*>* params)
+				: m_params(params)
+			{}
+
+			void getNextItem(std::string* text, CE::Symbol::FuncParameterSymbol** data) override {
+				const auto param = (*m_params)[m_paramIdx];
+				*text = std::to_string(m_paramIdx + 1) + "," + param->getDataType()->getDisplayName() + "," + param->getName() + "," + getStoragesText(param->getParamInfo());
+				*data = param;
+				m_paramIdx++;
+			}
+
+			bool hasNextItem() override {
+				return m_paramIdx < m_params->size();
+			}
+
+			std::string getStoragesText(const CE::Decompiler::ParameterInfo& paramInfo) const {
+				using namespace CE::Decompiler;
+				using namespace Helper::String;
+				const auto& storage = paramInfo.m_storage;
+				std::string text;
+				if (storage.getType() == Storage::STORAGE_REGISTER) {
+					const auto reg = PCode::Register(storage.getRegisterId(), 0, paramInfo.m_size);
+					text = PCode::InstructionViewGenerator::GenerateRegisterName(reg);
+				}
+				else {
+					text = storage.getType() == Storage::STORAGE_GLOBAL ? "global" : "stack";
+					text += " + 0x" + NumberToHex(storage.getOffset());
+				}
+				return text;
+			}
+		};
+
+		ParamListModel(std::vector<CE::Symbol::FuncParameterSymbol*>* params)
+			: m_params(params)
+		{}
+
+		void newIterator(const IteratorCallback& callback) override
+		{
+			ParamIterator iterator(m_params);
+			callback(&iterator);
+		}
+	};
+
 	// todo: move all such controllers into core (implement undo, redo operations)
 	class UserDataTypeController
 	{

@@ -60,6 +60,10 @@ std::vector<Symbol::FuncParameterSymbol*>& FunctionSignature::getParameters() {
 	return m_parameters;
 }
 
+void FunctionSignature::setParameters(const std::vector<Symbol::FuncParameterSymbol*>& params) {
+	m_parameters = params;
+}
+
 void FunctionSignature::addParameter(Symbol::FuncParameterSymbol* symbol) {
 	m_parameters.push_back(symbol);
 	symbol->setFuncSignature(this);

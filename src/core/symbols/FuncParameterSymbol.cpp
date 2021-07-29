@@ -4,8 +4,7 @@
 using namespace CE;
 using namespace Symbol;
 
-int FuncParameterSymbol::getParamIdx() const
-{
+int FuncParameterSymbol::getParamIdx() const {
 	return m_paramIdx;
 }
 
@@ -13,15 +12,12 @@ Type FuncParameterSymbol::getType() {
 	return FUNC_PARAMETER;
 }
 
+Decompiler::ParameterInfo FuncParameterSymbol::getParamInfo() const {
+	return m_signature->getCallInfo().findParamInfoByIndex(getParamIdx());
+}
+
 Decompiler::Storage FuncParameterSymbol::getStorage() {
-	const auto paramIdx = getParamIdx();
-	auto callInfo = m_signature->getCallInfo();
-	for (auto& paramInfo : callInfo.getParamInfos()) {
-		if (paramIdx == paramInfo.getIndex()) {
-			return paramInfo.m_storage;
-		}
-	}
-	return Decompiler::Storage();
+	return getParamInfo().m_storage;
 }
 
 void FuncParameterSymbol::setFuncSignature(DataType::IFunctionSignature* signature) {

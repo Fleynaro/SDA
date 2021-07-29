@@ -27,6 +27,8 @@ namespace CE::DataType
 
 		virtual std::vector<Symbol::FuncParameterSymbol*>& getParameters() = 0;
 
+		virtual void setParameters(const std::vector<Symbol::FuncParameterSymbol*>& params) = 0;
+
 		virtual void addParameter(Symbol::FuncParameterSymbol* symbol) = 0;
 
 		// todo: remove
@@ -70,6 +72,8 @@ namespace CE::DataType
 		DataTypePtr getReturnType() override;
 
 		std::vector<Symbol::FuncParameterSymbol*>& getParameters() override;
+
+		void setParameters(const std::vector<Symbol::FuncParameterSymbol*>& params) override;
 
 		void addParameter(Symbol::FuncParameterSymbol* symbol) override;
 

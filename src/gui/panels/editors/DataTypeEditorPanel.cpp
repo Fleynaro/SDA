@@ -119,3 +119,45 @@ void GUI::StructureEditorPanel::FieldTableListView::renderColumn(const std::stri
 		}
 	}
 }
+
+void GUI::FuncSigEditorPanel::ParamTableListView::renderColumn(const std::string& colText, const ColInfo* colInfo,
+                                                               CE::Symbol::FuncParameterSymbol* const& param) {
+	ImGui::BeginGroup();
+	ImGui::PushID(param);
+	if (ImGui::Selectable(colText.c_str(), m_sigEditorPanel->m_selectedParam == param,
+	                      ImGuiSelectableFlags_DontClosePopups | ImGuiSelectableFlags_AllowItemOverlap |
+	                      ImGuiSelectableFlags_SpanAllColumns)) {
+		m_sigEditorPanel->m_selectedParam = param;
+	}
+	ImGui::PopID();
+	ImGui::EndGroup();
+
+	const auto events = GenericEvents(true);
+	if (events.isHovered()) {
+		if (colInfo->m_name != "Index")
+			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+	}
+	if (events.isClickedByMiddleMouseBtn()) {
+		if (colInfo->m_name == "DataType") {
+			const auto panel = new DataTypeSelectorPanel(param->getManager()->getProject()->getTypeManager(),
+			                                             param->getDataType()->getDisplayName());
+			panel->handler([&, panel, param](CE::DataTypePtr dataType)
+				{
+					param->setDataType(dataType);
+					param->getManager()->getProject()->getTransaction()->markAsDirty(param);
+					panel->m_window->close();
+				});
+			m_sigEditorPanel->createWindow(panel);
+		}
+		else if (colInfo->m_name == "Name") {
+			const auto panel = new BuiltinTextInputPanel(param->getName());
+			panel->handler([&, panel, param](const std::string& name)
+				{
+					param->setName(name);
+					param->getManager()->getProject()->getTransaction()->markAsDirty(param);
+					panel->m_window->close();
+				});
+			m_sigEditorPanel->createWindow(panel);
+		}
+	}
+}

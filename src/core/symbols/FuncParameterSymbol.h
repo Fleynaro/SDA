@@ -21,6 +21,8 @@ namespace CE::Symbol
 
 		Type getType() override;
 
+		Decompiler::ParameterInfo getParamInfo() const;
+		
 		Decompiler::Storage getStorage() override;
 
 		void setFuncSignature(DataType::IFunctionSignature* signature);

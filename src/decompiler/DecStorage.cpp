@@ -20,7 +20,7 @@ ParameterInfo FunctionCallInfo::findParamInfoByIndex(int idx) {
 			return paramInfo;
 		}
 	}
-	return ParameterInfo(0, 0, Storage());
+	return ParameterInfo();
 }
 
 ReturnInfo FunctionCallInfo::getReturnInfo() {
