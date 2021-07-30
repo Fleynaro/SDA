@@ -31,14 +31,18 @@ namespace DB
 		void doRemove(TransactionContext* ctx, IDomainObject* obj) override;
 
 	private:
-		CE::DataTypePtr loadDataTypeJson(json json_dataType);
-
-		json createDataTypeJson(CE::DataTypePtr dataType);
-
 		void loadExtraJson(CE::DataType::UserDefinedType* userDefType, json json_extra);
 
 		json createExtraJson(CE::DataType::UserDefinedType* userDefType);
 
+		void loadParamsListJson(json json_params, CE::DataType::ParameterList& params);
+
+		json createParamsListJson(CE::DataType::ParameterList& params);
+
 		void bind(Statement& query, CE::DataType::UserDefinedType* userDefType);
 	};
+
+	CE::DataTypePtr DeserializeDataType(json json_dataType, CE::TypeManager* manager);
+
+	json SerializeDataType(CE::DataTypePtr dataType);
 };

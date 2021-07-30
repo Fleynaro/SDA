@@ -13,13 +13,9 @@ Type FuncParameterSymbol::getType() {
 }
 
 Decompiler::ParameterInfo FuncParameterSymbol::getParamInfo() const {
-	return m_signature->getCallInfo().findParamInfoByIndex(getParamIdx());
+	return m_paramsList->getCallInfo().findParamInfoByIndex(getParamIdx());
 }
 
 Decompiler::Storage FuncParameterSymbol::getStorage() {
 	return getParamInfo().m_storage;
-}
-
-void FuncParameterSymbol::setFuncSignature(DataType::IFunctionSignature* signature) {
-	m_signature = signature;
 }

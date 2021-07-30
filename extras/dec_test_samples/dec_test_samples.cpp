@@ -22,7 +22,7 @@ void CE::DecTestSamplesPool::Sample::decode() {
 
 CE::Function* CE::DecTestSamplesPool::Sample::createFunc(Offset offset, const std::string& name) const {
 	auto sig = m_pool->m_project->getTypeManager()->getFactory().createSignature(
-		DataType::IFunctionSignature::FASTCALL, name + "_sig");
+		DataType::CallingConvetion::FASTCALL, name + "_sig");
 	return m_pool->m_project->getFunctionManager()->getFactory().createFunction(
 		offset, sig, m_imageDec, name);
 }
@@ -54,7 +54,7 @@ CE::DecTestSamplesPool::DecTestSamplesPool(Project* project)
 	m_matrix4x4->addField(m_vec4D->getSize() * 3, "vec4", GetUnit(m_vec4D));
 
 	m_defSignature = m_project->getTypeManager()->getFactory().createSignature(
-		DataType::IFunctionSignature::FASTCALL, "defSignature");
+		DataType::CallingConvetion::FASTCALL, "defSignature");
 	m_defSignature->addParameter("param1", findType("uint32_t"));
 	m_defSignature->addParameter("param2", findType("uint32_t"));
 	m_defSignature->addParameter("param3", findType("uint32_t"));
@@ -552,7 +552,7 @@ CE::DecTestSamplesPool::Sample* CE::DecTestSamplesPool::createSampleTest(int tes
 	sample.m_pool = this;
 
 	auto sig = m_project->getTypeManager()->getFactory().createSignature(
-		DataType::IFunctionSignature::FASTCALL, "sig_" + suffix);
+		DataType::CallingConvetion::FASTCALL, "sig_" + suffix);
 	sample.m_func = m_project->getFunctionManager()->getFactory().createFunction(
 		0x0, sig, sample.m_imageDec, "func_" + suffix);
 	sample.m_symbolCtx = sample.m_func->getSymbolContext();

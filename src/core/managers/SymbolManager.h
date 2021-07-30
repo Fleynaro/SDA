@@ -21,7 +21,7 @@ namespace CE
 				: m_symbolManager(symbolManager), m_symbolMapper(symbolMapper), AbstractFactory(markAsNew)
 			{}
 
-			Symbol::FuncParameterSymbol* createFuncParameterSymbol(int paramIdx, DataType::IFunctionSignature* signature, DataTypePtr type, const std::string& name, const std::string& comment = "") const;
+			Symbol::FuncParameterSymbol* createFuncParameterSymbol(int paramIdx, DataTypePtr type, const std::string& name, const std::string& comment = "") const;
 
 			Symbol::StructFieldSymbol* createStructFieldSymbol(int absBitOffset, int bitSize, DataType::IStructure* structure, DataTypePtr type, const std::string& name, const std::string& comment = "") const;
 

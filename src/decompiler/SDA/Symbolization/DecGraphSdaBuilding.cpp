@@ -6,7 +6,7 @@ using namespace Decompiler;
 using namespace ExprTree;
 using namespace Symbolization;
 
-SdaBuilding::SdaBuilding(SdaCodeGraph* sdaCodeGraph, SymbolContext* symbolCtx, Project* project, DataType::IFunctionSignature::CallingConvetion callingConvention)
+SdaBuilding::SdaBuilding(SdaCodeGraph* sdaCodeGraph, SymbolContext* symbolCtx, Project* project, DataType::CallingConvetion callingConvention)
 	: SdaGraphModification(sdaCodeGraph), m_symbolCtx(symbolCtx), m_project(project), m_callingConvention(callingConvention), m_symbolFactory(m_project->getSymbolManager()->getFactory(false))
 {}
 
@@ -232,10 +232,10 @@ CE::Symbol::ISymbol* SdaBuilding::findOrCreateSymbol(Symbol::Symbol* symbol, int
 		int paramIdx = 0;
 
 		if (m_symbolCtx->m_signature) {
-			paramIdx = m_symbolCtx->m_signature->getCallInfo().findIndex(reg, offset);
+			paramIdx = m_symbolCtx->m_signature->getParameters().getCallInfo().findIndex(reg, offset);
 			if (paramIdx > 0) {
 				auto& funcParams = m_symbolCtx->m_signature->getParameters();
-				if (paramIdx <= funcParams.size()) {
+				if (paramIdx <= funcParams.getParamsCount()) {
 					//USER-DEFINED func. parameter
 					const auto sdaSymbol = funcParams[paramIdx - 1];
 					storeSdaSymbolIfMem(sdaSymbol, symbol, offset);
@@ -245,7 +245,7 @@ CE::Symbol::ISymbol* SdaBuilding::findOrCreateSymbol(Symbol::Symbol* symbol, int
 			}
 		}
 		else {
-			if (m_callingConvention == DataType::IFunctionSignature::FASTCALL) {
+			if (m_callingConvention == DataType::CallingConvetion::FASTCALL) {
 				paramIdx = GetIndex_FASTCALL(reg, offset);
 			}
 		}
@@ -253,7 +253,7 @@ CE::Symbol::ISymbol* SdaBuilding::findOrCreateSymbol(Symbol::Symbol* symbol, int
 		if (paramIdx > 0) {
 			//auto func. parameter
 			const auto defType = m_project->getTypeManager()->getDefaultType(size);
-			auto funcParamSymbol = m_symbolFactory.createFuncParameterSymbol(paramIdx, m_symbolCtx->m_signature, defType, "param" + std::to_string(paramIdx));
+			auto funcParamSymbol = m_symbolFactory.createFuncParameterSymbol(paramIdx, defType, "param" + std::to_string(paramIdx));
 			funcParamSymbol->setAutoSymbol(true);
 			storeSdaSymbolIfMem(funcParamSymbol, symbol, offset);
 			return funcParamSymbol;

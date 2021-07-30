@@ -562,17 +562,17 @@ namespace GUI
 
 			void renderFunctionSignature(CodeGenerator::ExprTreeGenerator& gen) const {
 				const auto funcSig = m_function->getSignature();
-				gen.generateDataType(funcSig->getReturnType());
+				gen.generateDataType(funcSig->getParameters().getReturnType());
 				gen.generateToken(" ", CodeGenerator::ExprTreeGenerator::TOKEN_OTHER);
 				gen.generateSdaSymbol(m_function->getFunctionSymbol());
 				gen.generateRoundBracket("(", funcSig);
 				const auto params = funcSig->getParameters();
-				for (auto it = params.begin(); it != params.end(); ++it) {
-					const auto paramSymbol = *it;
+				for (int i = 0; i < funcSig->getParameters().getParamsCount(); i ++) {
+					const auto paramSymbol = funcSig->getParameters()[i];
 					gen.generateDataType(paramSymbol->getDataType());
 					gen.generateToken(" ", CodeGenerator::ExprTreeGenerator::TOKEN_OTHER);
 					gen.generateSdaSymbol(paramSymbol);
-					if(it != std::prev(params.end()))
+					if(i != funcSig->getParameters().getParamsCount() - 1)
 						gen.generateToken(", ", CodeGenerator::ExprTreeGenerator::TOKEN_OTHER);
 				}
 				gen.generateRoundBracket(")", funcSig);

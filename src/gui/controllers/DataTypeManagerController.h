@@ -149,14 +149,14 @@ namespace GUI
 
 	class ParamListModel : public IListModel<CE::Symbol::FuncParameterSymbol*>
 	{
-		std::vector<CE::Symbol::FuncParameterSymbol*>* m_params;
+		CE::DataType::ParameterList* m_params;
 	public:
 		class ParamIterator : public Iterator
 		{
 			int m_paramIdx = 0;
-			std::vector<CE::Symbol::FuncParameterSymbol*>* m_params;
+			CE::DataType::ParameterList* m_params;
 		public:
-			ParamIterator(std::vector<CE::Symbol::FuncParameterSymbol*>* params)
+			ParamIterator(CE::DataType::ParameterList* params)
 				: m_params(params)
 			{}
 
@@ -168,7 +168,7 @@ namespace GUI
 			}
 
 			bool hasNextItem() override {
-				return m_paramIdx < m_params->size();
+				return m_paramIdx < m_params->getParamsCount();
 			}
 
 			std::string getStoragesText(const CE::Decompiler::ParameterInfo& paramInfo) const {
@@ -188,7 +188,7 @@ namespace GUI
 			}
 		};
 
-		ParamListModel(std::vector<CE::Symbol::FuncParameterSymbol*>* params)
+		ParamListModel(CE::DataType::ParameterList* params)
 			: m_params(params)
 		{}
 
@@ -196,78 +196,6 @@ namespace GUI
 		{
 			ParamIterator iterator(m_params);
 			callback(&iterator);
-		}
-	};
-
-	// todo: move all such controllers into core (implement undo, redo operations)
-	class UserDataTypeController
-	{
-		CE::DataType::IUserDefinedType* m_dataType;
-	protected:
-		bool m_changed = false;
-	public:
-		UserDataTypeController(CE::DataType::IUserDefinedType* dataType)
-			: m_dataType(dataType)
-		{}
-
-		~UserDataTypeController() {
-			if (m_changed) {
-				m_dataType->getTypeManager()->getProject()->getTransaction()->markAsDirty(m_dataType);
-			}
-		}
-
-		void rename(const std::string& name) {
-			m_dataType->setName(name);
-			m_changed = true;
-		}
-	};
-
-	class StructureController : public UserDataTypeController
-	{
-		CE::DataType::IStructure* m_dataType;
-		using Field = CE::DataType::IStructure::Field;
-	public:
-		StructureController(CE::DataType::IStructure* dataType)
-			: UserDataTypeController(dataType), m_dataType(dataType)
-		{}
-
-		void addField(Field* field) {
-			m_dataType->addField(field);
-			m_changed = true;
-		}
-
-		void removeField(Field* field) {
-			m_dataType->removeField(field);
-			m_changed = true;
-		}
-
-		void removeAllFields() {
-			m_dataType->removeAllFields();
-			m_changed = true;
-		}
-	};
-
-	class FunctionSingautreController : public UserDataTypeController
-	{
-		CE::DataType::IFunctionSignature* m_dataType;
-	public:
-		FunctionSingautreController(CE::DataType::IFunctionSignature* dataType)
-			: UserDataTypeController(dataType), m_dataType(dataType)
-		{}
-
-		void addParameter(CE::Symbol::FuncParameterSymbol* symbol) {
-			m_dataType->addParameter(symbol);
-			m_changed = true;
-		}
-
-		void removeLastParameter() {
-			m_dataType->removeLastParameter();
-			m_changed = true;
-		}
-
-		void removeAllParameters() {
-			m_dataType->deleteAllParameters();
-			m_changed = true;
 		}
 	};
 	

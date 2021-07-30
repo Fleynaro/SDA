@@ -395,7 +395,7 @@ namespace GUI
 				: TableListView<CE::Symbol::FuncParameterSymbol*>(&sigEditorPanel->m_listModel), m_sigEditorPanel(sigEditorPanel)
 			{
 				m_colsInfo = {
-					ColInfo("Index", ImGuiTableColumnFlags_WidthFixed, 20.0f),
+					ColInfo("Index", ImGuiTableColumnFlags_WidthFixed, 50.0f),
 					ColInfo("DataType"),
 					ColInfo("Name"),
 					ColInfo("Storage")
@@ -408,7 +408,7 @@ namespace GUI
 		};
 
 		CE::DataType::IFunctionSignature* m_dataType;
-		std::vector<CE::Symbol::FuncParameterSymbol*> m_params;
+		CE::DataType::ParameterList m_params;
 		CE::Symbol::FuncParameterSymbol* m_selectedParam = nullptr;
 		ParamListModel m_listModel;
 		ParamTableListView* m_tableListView;
@@ -437,15 +437,18 @@ namespace GUI
 			if (m_selectedParam) {
 				SameLine();
 				if (Button::ButtonArrow(ImGuiDir_Up).present()) {
-					moveParam(m_selectedParam, -1);
+					m_params.moveParameter(m_selectedParam->getParamIdx(), -1);
+					m_params.updateParameterStorages();
 				}
 				SameLine();
 				if (Button::ButtonArrow(ImGuiDir_Down).present()) {
-					moveParam(m_selectedParam, 1);
+					m_params.moveParameter(m_selectedParam->getParamIdx(), 1);
+					m_params.updateParameterStorages();
 				}
 				SameLine();
 				if (Button::StdButton("x").present()) {
-					removeParam(m_selectedParam);
+					m_params.removeParameter(m_selectedParam->getParamIdx());
+					m_params.updateParameterStorages();
 					m_selectedParam = nullptr;
 				}
 			}
@@ -461,18 +464,10 @@ namespace GUI
 		}
 
 		void addNewParam() {
-			
-		}
-
-		void removeParam(CE::Symbol::FuncParameterSymbol* param) {
-			
-		}
-
-		void moveParam(CE::Symbol::FuncParameterSymbol* param, int dir) {
-			const auto newParamIdx = param->getParamIdx() + dir;
-			if (newParamIdx == 0 || newParamIdx == m_params.size() + 1)
-				return;
-			std::swap(m_params[param->getParamIdx() - 1], m_params[newParamIdx - 1]);
+			const auto name = "newParam_" + std::to_string(m_params.getParamsCount() + 1);
+			const auto dataType = m_dataType->getTypeManager()->getDefaultType(0x4);
+			m_params.addParameter(m_params.createParameter(name, dataType));
+			m_params.updateParameterStorages();
 		}
 	};
 
@@ -483,6 +478,8 @@ namespace GUI
 			return new EnumEditorPanel(Enum);
 		if (const auto Structure = dynamic_cast<CE::DataType::IStructure*>(dataType))
 			return new StructureEditorPanel(Structure);
+		if (const auto Signature = dynamic_cast<CE::DataType::IFunctionSignature*>(dataType))
+			return new FuncSigEditorPanel(Signature);
 		return nullptr;
 	}
 };

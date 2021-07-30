@@ -42,7 +42,7 @@ void SdaDataTypesCalculater::pass_up(const std::list<DecBlock::BlockTopNode*>& t
 		if (m_signature) {
 			if (const auto returnTopNode = dynamic_cast<DecBlock::ReturnTopNode*>(topNode)) {
 				if (const auto returnNode = dynamic_cast<ISdaNode*>(returnTopNode->getNode())) {
-					const auto retDataType = m_signature->getReturnType();
+					const auto retDataType = m_signature->getParameters().getReturnType();
 					cast(returnNode, retDataType);
 				}
 			}
@@ -320,7 +320,7 @@ void SdaDataTypesCalculater::handleFunctionNode(SdaFunctionNode* sdaFunctionNode
 	if (funcSignature)
 	{
 		// iterate over all params of the signature
-		const auto paramsCount = static_cast<int>(std::min(funcSignature->getParameters().size(), sdaFunctionNode->getParamNodes().size()));
+		const auto paramsCount = static_cast<int>(std::min(funcSignature->getParameters().getParamsCount(), static_cast<int>(sdaFunctionNode->getParamNodes().size())));
 		for (int paramIdx = 0; paramIdx < paramsCount; paramIdx++) {
 			const auto paramNode = sdaFunctionNode->getParamNodes()[paramIdx];
 			if (auto paramSdaNode = dynamic_cast<ISdaNode*>(paramNode)) {

@@ -1,4 +1,5 @@
 #include "DataTypeMapper.h"
+#include "SymbolMapper.h"
 #include <managers/TypeManager.h>
 #include <managers/SymbolManager.h>
 
@@ -62,8 +63,7 @@ IDomainObject* DataTypeMapper::doLoad(Database* db, Statement& query) {
 		obj = factory.createStructure(name, comment);
 		break;
 	case AbstractType::Group::FunctionSignature:
-		const auto calling_convention = json_extra["calling_convention"].get<FunctionSignature::CallingConvetion>();
-		obj = factory.createSignature(calling_convention, name, comment);
+		obj = factory.createSignature(name, comment);
 		break;
 	}
 
@@ -93,25 +93,10 @@ void DataTypeMapper::doRemove(TransactionContext* ctx, IDomainObject* obj) {
 	query.exec();
 }
 
-DataTypePtr DataTypeMapper::loadDataTypeJson(json json_dataType) {
-	const auto id = json_dataType["id"].get<Id>();
-	const auto ptr_lvl = json_dataType["ptr_lvl"].get<std::string>();
-	const auto type = getManager()->findTypeById(id);
-	return GetUnit(type, ptr_lvl);
-}
-
-json DataTypeMapper::createDataTypeJson(DataTypePtr dataType) {
-	auto refType = dynamic_cast<IDomainObject*>(dataType->getType());
-	json json_dataType;
-	json_dataType["id"] = refType->getId();
-	json_dataType["ptr_lvl"] = GetPointerLevelStr(dataType);
-	return json_dataType;
-}
-
 void DataTypeMapper::loadExtraJson(UserDefinedType* userDefType, json json_extra) {
 	if (auto Typedef = dynamic_cast<DataType::Typedef*>(userDefType))
 	{
-		const auto refDataType = loadDataTypeJson(json_extra["ref_type"]);
+		const auto refDataType = DeserializeDataType(json_extra["ref_type"], getManager());
 		Typedef->setRefType(refDataType);
 	}
 	else if (auto Enum = dynamic_cast<DataType::Enum*>(userDefType))
@@ -138,27 +123,10 @@ void DataTypeMapper::loadExtraJson(UserDefinedType* userDefType, json json_extra
 	}
 	else if (auto FunctionSignature = dynamic_cast<DataType::FunctionSignature*>(userDefType))
 	{
-		// load storages
-		for (const auto& json_storage : json_extra["storages"]) {
-			auto idx = json_storage["idx"].get<int>();
-			const auto storage_type = json_storage["type"].get<Decompiler::Storage::StorageType>();
-			const auto register_id = json_storage["reg_id"].get<int>();
-			const auto offset = json_storage["offset"].get<int64_t>();
-			auto storage = Decompiler::Storage(storage_type, register_id, offset);
-			FunctionSignature->getCustomStorages().emplace_back(idx, storage);
-		}
-
-		// load parameters
-		auto symbolManager = getManager()->getProject()->getSymbolManager();
-		for (const auto& json_param_symbol : json_extra["param_symbols"]) {
-			const auto paramSymbolId = json_param_symbol.get<Id>();
-			const auto paramSymbol = dynamic_cast<Symbol::FuncParameterSymbol*>(symbolManager->findSymbolById(paramSymbolId));
-			FunctionSignature->addParameter(paramSymbol);
-		}
-
-		// load other
-		const auto retDataType = loadDataTypeJson(json_extra["ret_type"]);
-		FunctionSignature->setReturnType(retDataType);
+		auto params = FunctionSignature->getParameters();
+		loadParamsListJson(json_extra["params"], params);
+		params.updateParameterStorages();
+		FunctionSignature->setParameters(params);
 	}
 }
 
@@ -167,7 +135,7 @@ json DataTypeMapper::createExtraJson(UserDefinedType* userDefType) {
 
 	if (const auto Typedef = dynamic_cast<DataType::Typedef*>(userDefType))
 	{
-		json_extra["ref_type"] = createDataTypeJson(Typedef->getRefType());
+		json_extra["ref_type"] = SerializeDataType(Typedef->getRefType());
 	}
 	else if (auto Enum = dynamic_cast<DataType::Enum*>(userDefType))
 	{
@@ -194,31 +162,65 @@ json DataTypeMapper::createExtraJson(UserDefinedType* userDefType) {
 	}
 	else if (auto FuncSignature = dynamic_cast<FunctionSignature*>(userDefType))
 	{
-		// save storages
-		json json_storages;
-		for (const auto& [idx, storage]: FuncSignature->getCustomStorages()) {
-			json json_storage;
-			json_storage["idx"] = idx;
-			json_storage["type"] = storage.getType();
-			json_storage["reg_id"] = storage.getRegisterId();
-			json_storage["offset"] = storage.getOffset();
-			json_storages.push_back(json_storage);
-		}
-		json_extra["storages"] = json_storages;
-
-		// save parameters
-		json json_params;
-		for (auto paramSymbol : FuncSignature->getParameters()) {
-			json_params.push_back(paramSymbol->getId());
-		}
-		json_extra["param_symbols"] = json_params;
-
-		// save other
-		json_extra["calling_convention"] = FuncSignature->getCallingConvetion();
-		json_extra["ret_type"] = createDataTypeJson(FuncSignature->getReturnType());
+		auto params = FuncSignature->getParameters();
+		json_extra["params"] = createParamsListJson(params);
 	}
 
 	return json_extra;
+}
+
+void DataTypeMapper::loadParamsListJson(json json_params, ParameterList& params) {
+	// load storages
+	for (const auto& json_storage : json_params["storages"]) {
+		auto idx = json_storage["idx"].get<int>();
+		const auto storage_type = json_storage["type"].get<Decompiler::Storage::StorageType>();
+		const auto register_id = json_storage["reg_id"].get<int>();
+		const auto offset = json_storage["offset"].get<int64_t>();
+		auto storage = Decompiler::Storage(storage_type, register_id, offset);
+		params.m_customStorages.emplace_back(idx, storage);
+	}
+
+	// load parameters
+	auto symbolManager = getManager()->getProject()->getSymbolManager();
+	for (const auto& json_param_symbol : json_params["param_symbols"]) {
+		auto param = params.createParameter("", nullptr);
+		DeserializeSymbol(&param, json_param_symbol);
+		params.addParameter(param);
+	}
+
+	// load other
+	params.m_callingConvetion = json_params["calling_convention"].get<CallingConvetion>();
+	const auto retDataType = DeserializeDataType(json_params["ret_type"], getManager());
+	params.setReturnType(retDataType);
+}
+
+json DataTypeMapper::createParamsListJson(CE::DataType::ParameterList& params) {
+	json json_params;
+	
+	// save storages
+	json json_storages;
+	for (const auto& [idx, storage] : params.m_customStorages) {
+		json json_storage;
+		json_storage["idx"] = idx;
+		json_storage["type"] = storage.getType();
+		json_storage["reg_id"] = storage.getRegisterId();
+		json_storage["offset"] = storage.getOffset();
+		json_storages.push_back(json_storage);
+	}
+	json_params["storages"] = json_storages;
+
+	// save parameters
+	json json_paramSymbols;
+	for (int i = 0; i < params.getParamsCount(); i ++) {
+		json json_paramSymbol = SerializeSymbol(params[i]);
+		json_paramSymbols.push_back(json_paramSymbol);
+	}
+	json_params["param_symbols"] = json_paramSymbols;
+
+	// save other
+	json_params["calling_convention"] = params.getCallingConvetion();
+	json_params["ret_type"] = SerializeDataType(params.getReturnType());
+	return json_params;
 }
 
 void DataTypeMapper::bind(Statement& query, UserDefinedType* userDefType)
@@ -228,4 +230,19 @@ void DataTypeMapper::bind(Statement& query, UserDefinedType* userDefType)
 	query.bind(3, userDefType->getName());
 	query.bind(4, userDefType->getComment());
 	query.bind(5, json_extra.dump());
+}
+
+CE::DataTypePtr DB::DeserializeDataType(json json_dataType, CE::TypeManager* manager) {
+	const auto id = json_dataType["id"].get<Id>();
+	const auto ptr_lvl = json_dataType["ptr_lvl"].get<std::string>();
+	const auto type = manager->findTypeById(id);
+	return CE::DataType::GetUnit(type, ptr_lvl);
+}
+
+json DB::SerializeDataType(CE::DataTypePtr dataType) {
+	auto refType = dynamic_cast<IDomainObject*>(dataType->getType());
+	json json_dataType;
+	json_dataType["id"] = refType->getId();
+	json_dataType["ptr_lvl"] = GetPointerLevelStr(dataType);
+	return json_dataType;
 }

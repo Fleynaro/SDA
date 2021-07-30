@@ -38,7 +38,7 @@ DataTypePtr SdaFunctionNode::getSrcDataType() {
 	if (!sig)
 		// todo: return DataType::GetUnit(sig->getTypeManager()->findTypeById(DataType::SystemType::Byte));
 		return GetUnit(new DataType::Byte);
-	return getSignature()->getReturnType();
+	return getSignature()->getParameters().getReturnType();
 }
 
 void SdaFunctionNode::setDataType(DataTypePtr dataType) {

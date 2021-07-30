@@ -305,7 +305,7 @@ void GUI::DecompilerDemoPanel::initProgram() {
 	m_project->getImageManager()->createImage(testAddrSpace, ImageDecorator::IMAGE_PE, "testImage12");
 	m_project->getImageManager()->createImage(testAddrSpace2, ImageDecorator::IMAGE_PE, "testImage21");
 	
-	auto sig = m_project->getTypeManager()->getFactory().createSignature(DataType::IFunctionSignature::FASTCALL, "sig");
+	auto sig = m_project->getTypeManager()->getFactory().createSignature(DataType::CallingConvetion::FASTCALL, "sig");
 	
 	auto factory = m_project->getFunctionManager()->getFactory();
 	factory.createFunction(0, sig, testImageDec, "createPlayer");

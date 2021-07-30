@@ -515,17 +515,17 @@ namespace GUI
 					auto funcCallInfoCallback = [&](Instruction* instr, int offset)
 					{
 						if(const auto func = m_imageDec->getFunctionAt(offset)) {
-							return func->getSignature()->getCallInfo();
+							return func->getSignature()->getParameters().getCallInfo();
 						}
 						const auto it = m_imageDec->getVirtFuncCalls().find(instr->getOffset());
 						if(it != m_imageDec->getVirtFuncCalls().end())
-							return it->second->getCallInfo();
-						return project->getTypeManager()->getDefaultFuncSignature()->getCallInfo();
+							return it->second->getParameters().getCallInfo();
+						return project->getTypeManager()->getDefaultFuncSignature()->getParameters().getCallInfo();
 					};
 					SdaCodeGraph* sdaCodeGraph = nullptr;
 					auto decCodeGraph = new DecompiledCodeGraph(functionPCodeGraph);
 					auto primaryDecompiler = new PrimaryDecompiler(decCodeGraph, &registerFactoryX86,
-						function->getSignature()->getCallInfo().getReturnInfo(), funcCallInfoCallback);
+						function->getSignature()->getParameters().getCallInfo().getReturnInfo(), funcCallInfoCallback);
 					primaryDecompiler->start();
 
 					if (m_decompilerStep >= DecompilerStep::PROCESSING)

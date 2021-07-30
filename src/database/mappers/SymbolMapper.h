@@ -30,4 +30,8 @@ namespace DB
 	private:
 		void bind(Statement& query, CE::Symbol::AbstractSymbol& symbol);
 	};
+
+	json SerializeSymbol(CE::Symbol::ISymbol* symbol);
+
+	void DeserializeSymbol(CE::Symbol::ISymbol* symbol, json symbol_json);
 };

@@ -1,4 +1,5 @@
 #include "SymbolMapper.h"
+#include "DataTypeMapper.h"
 #include <managers/TypeManager.h>
 #include <managers/SymbolManager.h>
 
@@ -67,11 +68,6 @@ IDomainObject* SymbolMapper::doLoad(Database* db, Statement& query) {
 		symbol = factory.createLocalStackVarSymbol(offset, dataTypeUnit, name, comment);
 		break;
 	}
-	case FUNC_PARAMETER: {
-		const auto paramIdx = json_extra["param_idx"].get<int>();
-		symbol = factory.createFuncParameterSymbol(paramIdx, nullptr, dataTypeUnit, name, comment);
-		break;
-	}
 	case STRUCT_FIELD: {
 		const auto absBitOffset = json_extra["abs_bit_offset"].get<int>();
 		const auto bitSize = json_extra["bit_size"].get<int>();
@@ -117,12 +113,23 @@ void SymbolMapper::bind(Statement& query, AbstractSymbol& symbol) {
 	if (const auto memSymbol = dynamic_cast<AbstractMemorySymbol*>(&symbol)) {
 		json_extra["offset"] = memSymbol->getOffset();
 	}
-	else if (const auto funcParamSymbol = dynamic_cast<FuncParameterSymbol*>(&symbol)) {
-		json_extra["param_idx"] = funcParamSymbol->getParamIdx();
-	} 
 	else if(auto structFieldSymbol = dynamic_cast<StructFieldSymbol*>(&symbol)) {
 		json_extra["abs_bit_offset"] = structFieldSymbol->getAbsBitOffset();
 		json_extra["bit_size"] = structFieldSymbol->getBitSize();
 	}
 	query.bind(7, json_extra.dump());
+}
+
+json DB::SerializeSymbol(CE::Symbol::ISymbol* symbol) {
+	json symbol_json;
+	symbol_json["name"] = symbol->getName();
+	symbol_json["comment"] = symbol->getComment();
+	symbol_json["data_type"] = SerializeDataType(symbol->getDataType());
+	return symbol_json;
+}
+
+void DB::DeserializeSymbol(CE::Symbol::ISymbol* symbol, json symbol_json) {
+	symbol->setName(symbol_json["name"].get<std::string>());
+	symbol->setComment(symbol_json["comment"].get<std::string>());
+	symbol->setDataType(DeserializeDataType(symbol_json["data_type"], symbol->getManager()->getProject()->getTypeManager()));
 }

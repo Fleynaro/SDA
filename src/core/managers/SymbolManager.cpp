@@ -30,9 +30,10 @@ SymbolManager::Factory SymbolManager::getFactory(bool markAsNew) {
 	return Factory(this, m_symbolMapper, markAsNew);
 }
 
-FuncParameterSymbol* SymbolManager::Factory::createFuncParameterSymbol(int paramIdx, DataType::IFunctionSignature* signature, DataTypePtr type, const std::string& name, const std::string& comment) const
+FuncParameterSymbol* SymbolManager::Factory::createFuncParameterSymbol(int paramIdx, DataTypePtr type, const std::string& name, const std::string& comment) const
 {
-	const auto symbol = new FuncParameterSymbol(m_symbolManager, paramIdx, signature, type, name, comment);
+	const auto symbol = new FuncParameterSymbol(m_symbolManager, type, name, comment);
+	symbol->m_paramIdx = paramIdx;
 	bind(symbol);
 	return symbol;
 }

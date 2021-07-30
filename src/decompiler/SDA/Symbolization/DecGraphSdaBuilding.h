@@ -11,7 +11,7 @@ namespace CE::Decompiler::Symbolization
 	{
 		SymbolContext* m_symbolCtx;
 		Project* m_project;
-		DataType::IFunctionSignature::CallingConvetion m_callingConvention;
+		DataType::CallingConvetion m_callingConvention;
 		std::map<Symbol::Symbol*, SdaSymbolLeaf*> m_replacedSymbols; //for cache purposes
 		std::map<int64_t, CE::Symbol::ISymbol*> m_stackToSymbols; //stackVar1
 		std::map<int64_t, CE::Symbol::ISymbol*> m_globalToSymbols; //globalVar1
@@ -20,7 +20,7 @@ namespace CE::Decompiler::Symbolization
 		SymbolManager::Factory m_symbolFactory;
 	public:
 
-		SdaBuilding(SdaCodeGraph* sdaCodeGraph, SymbolContext* symbolCtx, Project* project, DataType::IFunctionSignature::CallingConvetion callingConvention = DataType::IFunctionSignature::FASTCALL);
+		SdaBuilding(SdaCodeGraph* sdaCodeGraph, SymbolContext* symbolCtx, Project* project, DataType::CallingConvetion callingConvention = DataType::CallingConvetion::FASTCALL);
 
 		void start() override;
 

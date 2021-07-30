@@ -19,7 +19,7 @@ TypeManager::TypeManager(Project* module)
 	m_ghidraDataTypeMapper = new Ghidra::DataTypeMapper(this);
 	addSystemTypes();
 	addGhidraTypedefs();
-	m_defSignature = getFactory(false).createSignature(DataType::IFunctionSignature::FASTCALL, "defSignature");
+	m_defSignature = getFactory(false).createSignature(DataType::CallingConvetion::FASTCALL, "defSignature");
 }
 
 TypeManager::~TypeManager() {
@@ -227,7 +227,7 @@ Class* TypeManager::Factory::createClass(const std::string& name, const std::str
 	return type;
 }
 
-FunctionSignature* TypeManager::Factory::createSignature(FunctionSignature::CallingConvetion callingConvetion, const std::string& name, const std::string& desc) const
+FunctionSignature* TypeManager::Factory::createSignature(CallingConvetion callingConvetion, const std::string& name, const std::string& desc) const
 {
 	auto type = new FunctionSignature(m_typeManager, name, desc, callingConvetion);
 	type->setMapper(m_typeManager->m_dataTypeMapper);
@@ -239,7 +239,7 @@ FunctionSignature* TypeManager::Factory::createSignature(FunctionSignature::Call
 
 FunctionSignature* TypeManager::Factory::createSignature(const std::string& name, const std::string& desc) const
 {
-	return createSignature(FunctionSignature::FASTCALL, name, desc);
+	return createSignature(CallingConvetion::FASTCALL, name, desc);
 }
 
 IType* TypeManager::Factory::getDefaultType() const

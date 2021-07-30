@@ -144,7 +144,7 @@ void GUI::FuncSigEditorPanel::ParamTableListView::renderColumn(const std::string
 			panel->handler([&, panel, param](CE::DataTypePtr dataType)
 				{
 					param->setDataType(dataType);
-					param->getManager()->getProject()->getTransaction()->markAsDirty(param);
+					m_sigEditorPanel->m_params.updateParameterStorages();
 					panel->m_window->close();
 				});
 			m_sigEditorPanel->createWindow(panel);
@@ -154,7 +154,6 @@ void GUI::FuncSigEditorPanel::ParamTableListView::renderColumn(const std::string
 			panel->handler([&, panel, param](const std::string& name)
 				{
 					param->setName(name);
-					param->getManager()->getProject()->getTransaction()->markAsDirty(param);
 					panel->m_window->close();
 				});
 			m_sigEditorPanel->createWindow(panel);
