@@ -127,28 +127,9 @@ namespace CE::DataType
 
 		void updateParameterStorages() override;
 
-		IFunctionSignature* clone() override {
-			const auto funcSig = new FunctionSignature(getTypeManager(), getName(), getComment(), getCallingConvetion());
-			for(int i = 0; i < m_parameters.getParamsCount(); i ++) {
-				funcSig->m_parameters.addParameter(m_parameters[i]->clone());
-			}
-			funcSig->m_paramInfos = m_paramInfos;
-			funcSig->m_customStorages = m_customStorages;
-			funcSig->m_returnType = m_returnType;
-			return funcSig;
-		}
+		IFunctionSignature* clone() override;
 
-		void apply(IFunctionSignature* funcSignature) override {
-			m_parameters = funcSignature->getParameters();
-			funcSignature->getParameters().clear();
-			m_parameters.m_funcSignature = this;
-			m_customStorages = funcSignature->getCustomStorages();
-			updateParameterStorages();
-
-			for (int i = 0; i < m_parameters.getParamsCount(); i++) {
-				m_parameters[i]->m_signature = this;
-			}
-		}
+		void apply(IFunctionSignature* funcSignature) override;
 
 	private:
 		bool m_isAuto = false;

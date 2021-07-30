@@ -4,6 +4,7 @@
 #include "imgui_wrapper/controls/Input.h"
 #include "controllers/FunctionManagerController.h"
 #include "controllers/ImageManagerController.h"
+#include "editors/FunctionEditorPanel.h"
 
 namespace GUI
 {
@@ -30,17 +31,18 @@ namespace GUI
 			class FunctionContextPanel : public AbstractPanel
 			{
 				FunctionManagerPanel* m_funcManagerPanel;
-				CE::Function* m_func;
+				CE::Function* m_function;
 				ImVec2 m_winPos;
 			public:
-				FunctionContextPanel(CE::Function* func, FunctionManagerPanel* funcManagerPanel, ImVec2 winPos)
-					: m_func(func), m_funcManagerPanel(funcManagerPanel), m_winPos(winPos)
+				FunctionContextPanel(CE::Function* function, FunctionManagerPanel* funcManagerPanel, ImVec2 winPos)
+					: m_function(function), m_funcManagerPanel(funcManagerPanel), m_winPos(winPos)
 				{}
 
 			private:
 				void renderPanel() override {
 					if (ImGui::MenuItem("Edit")) {
-						// todo: func editor
+						delete m_funcManagerPanel->m_functionEditor;
+						m_funcManagerPanel->m_functionEditor = new StdWindow(new FunctionEditorPanel(m_function));
 					}
 				}
 			};
@@ -106,6 +108,7 @@ namespace GUI
 		FunctionFilter m_filterControl;
 		FunctionListView* m_listView = nullptr;
 		PopupContextWindow* m_funcContextWindow = nullptr;
+		StdWindow* m_functionEditor = nullptr;
 		EventHandler<CE::Function*> m_selectFuncEventHandler;
 	public:
 		FunctionManagerPanel(CE::FunctionManager* manager)
@@ -137,6 +140,7 @@ namespace GUI
 			}
 			
 			m_listView->show();
+			Show(m_functionEditor);
 			Show(m_funcContextWindow);
 		}
 	};

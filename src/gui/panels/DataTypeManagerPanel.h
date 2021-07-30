@@ -26,10 +26,10 @@ namespace GUI
 	class DataTypeSelectorPanel : public AbstractPanel
 	{
 		Input::TextInput m_input;
-		DataTypeManagerController m_controller;
 		DataTypeListViewGrouping* m_groupingListView;
 		EventHandler<CE::DataTypePtr> m_eventHandler;
 	public:
+		DataTypeManagerController m_controller;
 		std::string m_errorMessage;
 		
 		DataTypeSelectorPanel(CE::TypeManager* manager, const std::string& name = "")

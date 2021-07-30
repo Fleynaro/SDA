@@ -26,6 +26,8 @@ namespace CE::Symbol
 
 		DataType::IFunctionSignature* getSignature() const;
 
+		void setSignature(DataType::IFunctionSignature* funcSignature);
+
 		void setFunction(Function* function);
 	};
 };

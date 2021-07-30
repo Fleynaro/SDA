@@ -25,6 +25,10 @@ DataType::IFunctionSignature* Symbol::FunctionSymbol::getSignature() const
 	return m_funcSignature;
 }
 
+void Symbol::FunctionSymbol::setSignature(DataType::IFunctionSignature* funcSignature) {
+	m_funcSignature = funcSignature;
+}
+
 void Symbol::FunctionSymbol::setFunction(Function* function) {
 	m_function = function;
 }

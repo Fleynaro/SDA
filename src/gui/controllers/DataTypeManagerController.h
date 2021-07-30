@@ -204,6 +204,7 @@ namespace GUI
 		struct DataTypeFilter
 		{
 			std::string m_name;
+			std::set<CE::DataType::AbstractType::Group> m_groups;
 		};
 
 		class DataTypeListModel : public ListModel
@@ -266,6 +267,8 @@ namespace GUI
 	private:
 		bool filter(CE::DataType::IType* item) override
 		{
+			if (!m_filter.m_groups.empty() && m_filter.m_groups.find(item->getGroup()) == m_filter.m_groups.end())
+				return false;
 			using namespace Helper::String;
 			if (!m_filter.m_name.empty() && ToLower(item->getName()).find(ToLower(m_filter.m_name)) == std::string::npos)
 				return false;

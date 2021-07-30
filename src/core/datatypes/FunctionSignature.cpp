@@ -62,6 +62,7 @@ void FunctionSignature::addParameter(const std::string& name, DataTypePtr dataTy
 	auto symbolManager = getTypeManager()->getProject()->getSymbolManager();
 	const auto paramSymbol = symbolManager->getFactory().createFuncParameterSymbol(dataType, name, comment);
 	m_parameters.addParameter(paramSymbol);
+	updateParameterStorages();
 }
 
 FunctionCallInfo FunctionSignature::getCallInfo() {
@@ -69,6 +70,7 @@ FunctionCallInfo FunctionSignature::getCallInfo() {
 }
 
 void FunctionSignature::updateParameterStorages() {
+	// todo: return lazy calling
 	m_paramInfos.clear();
 	
 	for (const auto pair : getCustomStorages()) {
@@ -120,5 +122,28 @@ void FunctionSignature::updateParameterStorages() {
 			const auto storage = Storage(Storage::STORAGE_REGISTER, regId, 0x0);
 			m_paramInfos.emplace_back(retType->getSize(), storage);
 		}
+	}
+}
+
+IFunctionSignature* FunctionSignature::clone() {
+	const auto funcSig = new FunctionSignature(getTypeManager(), getName(), getComment(), getCallingConvetion());
+	for (int i = 0; i < m_parameters.getParamsCount(); i ++) {
+		funcSig->m_parameters.addParameter(m_parameters[i]->clone());
+	}
+	funcSig->m_paramInfos = m_paramInfos;
+	funcSig->m_customStorages = m_customStorages;
+	funcSig->m_returnType = m_returnType;
+	return funcSig;
+}
+
+void FunctionSignature::apply(IFunctionSignature* funcSignature) {
+	m_parameters = funcSignature->getParameters();
+	funcSignature->getParameters().clear();
+	m_parameters.m_funcSignature = this;
+	m_customStorages = funcSignature->getCustomStorages();
+	updateParameterStorages();
+
+	for (int i = 0; i < m_parameters.getParamsCount(); i++) {
+		m_parameters[i]->m_signature = this;
 	}
 }
