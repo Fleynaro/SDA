@@ -20,7 +20,7 @@ void GUI::TypedefEditorPanel::renderExtra() {
 }
 
 void GUI::StructureEditorPanel::FieldTableListView::renderColumn(const std::string& colText, const ColInfo* colInfo,
-                                                                 CE::DataType::IStructure::Field* const& field) {
+	CE::Symbol::StructFieldSymbol* const& field) {
 	ImGui::BeginGroup();
 	ImGui::PushID(field->getAbsBitOffset());
 	if (ImGui::Selectable(colText.c_str(), m_structEditorPanel->m_selectedFieldOffset == field->getAbsBitOffset(),
@@ -55,17 +55,17 @@ void GUI::StructureEditorPanel::FieldTableListView::renderColumn(const std::stri
 					if (parts.size() == 3)
 						bitSize = std::stoi(parts[2]);
 
-					m_structEditorPanel->m_fields.erase(field->getAbsBitOffset());
+					m_structEditorPanel->m_clonedDataType->getFields().removeField(field->getAbsBitOffset());
 
 					const auto newAbsBitOffset = byteOffset * 0x8 + bitOffset;
 					panel->m_errorMessage = "";
-					if(!m_structEditorPanel->m_fields.areEmptyFields(newAbsBitOffset, bitSize)) {
+					if(!m_structEditorPanel->m_clonedDataType->getFields().areEmptyFields(newAbsBitOffset, bitSize)) {
 						panel->m_errorMessage = "the field overlaps the next field";
-						m_structEditorPanel->m_fields[field->getAbsBitOffset()] = field;
+						m_structEditorPanel->m_clonedDataType->getFields().addField(field->getAbsBitOffset(), field);
 						return;
 					}
 				
-					m_structEditorPanel->m_fields[newAbsBitOffset] = field;
+					m_structEditorPanel->m_clonedDataType->getFields().addField(newAbsBitOffset, field);
 					field->setAbsBitOffset(newAbsBitOffset);
 					field->setBitSize(bitSize);
 					panel->m_window->close();
@@ -83,18 +83,21 @@ void GUI::StructureEditorPanel::FieldTableListView::renderColumn(const std::stri
 				
 					panel->m_errorMessage = "";
 					if (deltaSize != 0) {
-						if (!m_structEditorPanel->m_fields.areEmptyFields(baseAbsBitOffset + prevBitSize, deltaSize)) {
+						if (!m_structEditorPanel->m_clonedDataType->getFields().areEmptyFields(baseAbsBitOffset + prevBitSize, deltaSize)) {
 							panel->m_errorMessage = "the field overlaps the next field";
 							return;
 						}
 					}
 					
 					if (field->isBitField()) {
-						for(int i = 0; i < prevBitSize; i ++) {
-							const auto it = m_structEditorPanel->m_fields.find(baseAbsBitOffset + i);
-							if(it != m_structEditorPanel->m_fields.end()) {
-								it->second->setDataType(dataType);
+						int i = 0;
+						while(i < prevBitSize) {
+							const auto field = m_structEditorPanel->m_clonedDataType->getFields()[baseAbsBitOffset + i];
+							if (field) {
+								field->setDataType(dataType);
+								i += field->getBitSize();
 							}
+							else i++;
 						}
 					}
 					else {
@@ -102,7 +105,6 @@ void GUI::StructureEditorPanel::FieldTableListView::renderColumn(const std::stri
 						field->setDataType(dataType);
 					}
 					// todo: not good to save here. Field symbol should be owned by IStructure::FieldMapType, no symbol manager
-					field->getManager()->getProject()->getTransaction()->markAsDirty(field);
 					panel->m_window->close();
 				});
 			m_structEditorPanel->createWindow(panel);
@@ -112,7 +114,6 @@ void GUI::StructureEditorPanel::FieldTableListView::renderColumn(const std::stri
 			panel->handler([&, panel, field](const std::string& name)
 				{
 					field->setName(name);
-					field->getManager()->getProject()->getTransaction()->markAsDirty(field);
 					panel->m_window->close();
 				});
 			m_structEditorPanel->createWindow(panel);
@@ -144,7 +145,7 @@ void GUI::FuncSigEditorPanel::ParamTableListView::renderColumn(const std::string
 			panel->handler([&, panel, param](CE::DataTypePtr dataType)
 				{
 					param->setDataType(dataType);
-					m_sigEditorPanel->m_params.updateParameterStorages();
+					m_sigEditorPanel->m_clonedDataType->updateParameterStorages();
 					panel->m_window->close();
 				});
 			m_sigEditorPanel->createWindow(panel);

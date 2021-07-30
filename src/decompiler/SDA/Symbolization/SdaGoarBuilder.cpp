@@ -60,8 +60,8 @@ bool SdaGoarBuilding::buildSingleGoar(ISdaNode*& sdaNode, int64_t& bitOffset, st
 	if (ptrLevels.empty() || ptrLevels.size() == 1 && *ptrLevels.begin() == 1) {
 		//try making a field
 		if (auto structure = dynamic_cast<DataType::Structure*>(baseDataType)) {
-			auto field = structure->getField(static_cast<int>(bitOffset));
-			if (field->isDefault())
+			auto field = structure->getFields()[static_cast<int>(bitOffset)];
+			if (!field)
 				return false;
 			sdaNode = new GoarFieldNode(sdaNode, field);
 			bitOffset -= field->getAbsBitOffset();

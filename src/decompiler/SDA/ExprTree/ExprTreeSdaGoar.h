@@ -54,9 +54,9 @@ namespace CE::Decompiler::ExprTree
 	class GoarFieldNode : public GoarNode
 	{
 	public:
-		DataType::Structure::Field* m_field;
+		CE::Symbol::StructFieldSymbol* m_field;
 
-		GoarFieldNode(ISdaNode* base, DataType::Structure::Field* field);
+		GoarFieldNode(ISdaNode* base, CE::Symbol::StructFieldSymbol* field);
 
 		DataTypePtr getSrcDataType() override;
 

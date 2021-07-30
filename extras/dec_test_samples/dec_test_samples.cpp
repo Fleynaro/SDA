@@ -32,26 +32,26 @@ CE::DecTestSamplesPool::DecTestSamplesPool(Project* project)
 {
 	const auto typeFactory = m_project->getTypeManager()->getFactory();
 	m_vec3D = typeFactory.createStructure("testVector3D", "");
-	m_vec3D->addField(0x4 * 0, "x", findType("float", ""));
-	m_vec3D->addField(0x4 * 1, "y", findType("float", ""));
-	m_vec3D->addField(0x4 * 2, "z", findType("float", ""));
+	m_vec3D->getFields().addField(0x4 * 0, "x", findType("float", ""));
+	m_vec3D->getFields().addField(0x4 * 1, "y", findType("float", ""));
+	m_vec3D->getFields().addField(0x4 * 2, "z", findType("float", ""));
 
 	m_vecExt3D = typeFactory.createStructure("testVectorExt3D", "");
-	m_vecExt3D->addField(0x8 * 0, "x", findType("float", ""));
-	m_vecExt3D->addField(0x8 * 1, "y", findType("float", ""));
-	m_vecExt3D->addField(0x8 * 2, "z", findType("float", ""));
+	m_vecExt3D->getFields().addField(0x8 * 0, "x", findType("float", ""));
+	m_vecExt3D->getFields().addField(0x8 * 1, "y", findType("float", ""));
+	m_vecExt3D->getFields().addField(0x8 * 2, "z", findType("float", ""));
 
 	m_vec4D = typeFactory.createStructure("testVector4D", "");
-	m_vec4D->addField(0x4 * 0, "x", findType("float", ""));
-	m_vec4D->addField(0x4 * 1, "y", findType("float", ""));
-	m_vec4D->addField(0x4 * 2, "z", findType("float", ""));
-	m_vec4D->addField(0x4 * 3, "w", findType("float", ""));
+	m_vec4D->getFields().addField(0x4 * 0, "x", findType("float", ""));
+	m_vec4D->getFields().addField(0x4 * 1, "y", findType("float", ""));
+	m_vec4D->getFields().addField(0x4 * 2, "z", findType("float", ""));
+	m_vec4D->getFields().addField(0x4 * 3, "w", findType("float", ""));
 
 	m_matrix4x4 = typeFactory.createStructure("testMatrix4x4", "");
-	m_matrix4x4->addField(m_vec4D->getSize() * 0, "vec1", GetUnit(m_vec4D));
-	m_matrix4x4->addField(m_vec4D->getSize() * 1, "vec2", GetUnit(m_vec4D));
-	m_matrix4x4->addField(m_vec4D->getSize() * 2, "vec3", GetUnit(m_vec4D));
-	m_matrix4x4->addField(m_vec4D->getSize() * 3, "vec4", GetUnit(m_vec4D));
+	m_matrix4x4->getFields().addField(m_vec4D->getSize() * 0, "vec1", GetUnit(m_vec4D));
+	m_matrix4x4->getFields().addField(m_vec4D->getSize() * 1, "vec2", GetUnit(m_vec4D));
+	m_matrix4x4->getFields().addField(m_vec4D->getSize() * 2, "vec3", GetUnit(m_vec4D));
+	m_matrix4x4->getFields().addField(m_vec4D->getSize() * 3, "vec4", GetUnit(m_vec4D));
 
 	m_defSignature = m_project->getTypeManager()->getFactory().createSignature(
 		DataType::CallingConvetion::FASTCALL, "defSignature");
@@ -179,10 +179,10 @@ void CE::DecTestSamplesPool::fillByTests() {
 
 		{
 			auto pos = typeFactory.createStructure("Pos100", "");
-			pos->addField(0x0, "vec", GetUnit(m_vec3D));
-			pos->addField(0xC, "w", findType("uint32_t", ""));
+			pos->getFields().addField(0x0, "vec", GetUnit(m_vec3D));
+			pos->getFields().addField(0xC, "w", findType("uint32_t", ""));
 			auto entity = typeFactory.createStructure("Entity100", "");
-			entity->addField(0x70, "pos", GetUnit(pos));
+			entity->getFields().addField(0x70, "pos", GetUnit(pos));
 
 			auto sig = sample->createFunc(0xfffffffffffde098, "getEntitySig")->getSignature();
 			sig->addParameter("param1", findType("uint32_t"));
@@ -330,7 +330,7 @@ void CE::DecTestSamplesPool::fillByTests() {
 
 		{
 			auto vtable = typeFactory.createStructure("Vtable106", "");
-			vtable->addField(0x368, "getPos", findType("void", "[1]"));
+			vtable->getFields().addField(0x368, "getPos", findType("void", "[1]"));
 
 			auto EntityTypeEnum = typeFactory.createEnum("EntityType", "");
 			EntityTypeEnum->addField("ENTITY_PLAYER", 1);
@@ -338,9 +338,9 @@ void CE::DecTestSamplesPool::fillByTests() {
 			EntityTypeEnum->addField("ENTITY_VEHICLE", 3);
 
 			auto entity = typeFactory.createStructure("Entity106", "");
-			entity->addField(0, "vtable", GetUnit(vtable, "[1]"));
-			entity->addField(8, "type", GetUnit(EntityTypeEnum));
-			entity->addField(96, "matrix", GetUnit(m_matrix4x4));
+			entity->getFields().addField(0, "vtable", GetUnit(vtable, "[1]"));
+			entity->getFields().addField(8, "type", GetUnit(EntityTypeEnum));
+			entity->getFields().addField(96, "matrix", GetUnit(m_matrix4x4));
 			sample->m_symbolCtx.m_funcBodySymbolTable->addSymbol(symFactory.createLocalInstrVarSymbol(GetUnit(entity, "[1]"), "entity"), 17153);
 		}
 
@@ -373,10 +373,10 @@ void CE::DecTestSamplesPool::fillByTests() {
 
 		{
 			auto valueUI = typeFactory.createStructure("ValueUI107", "");
-			valueUI->addField(0x0, "m_value", findType("uint64_t", ""));
-			valueUI->addField(0x8, "m_type", findType("uint32_t", ""));
-			valueUI->addField(0xC, "m_unk", findType("uint32_t", ""));
-			valueUI->addField(0x10, "m_formatText", findType("uint64_t", ""));
+			valueUI->getFields().addField(0x0, "m_value", findType("uint64_t", ""));
+			valueUI->getFields().addField(0x8, "m_type", findType("uint32_t", ""));
+			valueUI->getFields().addField(0xC, "m_unk", findType("uint32_t", ""));
+			valueUI->getFields().addField(0x10, "m_formatText", findType("uint64_t", ""));
 			//todo: test this sample without these definitions
 			sample->m_symbolCtx.m_stackSymbolTable->addSymbol(symFactory.createLocalStackVarSymbol(-0xA8, GetUnit(valueUI), "value1"), -0xA8);
 			sample->m_symbolCtx.m_stackSymbolTable->addSymbol(symFactory.createLocalStackVarSymbol(-0x88, GetUnit(valueUI), "value2"), -0x88);

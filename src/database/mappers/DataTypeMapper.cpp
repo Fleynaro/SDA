@@ -63,7 +63,8 @@ IDomainObject* DataTypeMapper::doLoad(Database* db, Statement& query) {
 		obj = factory.createStructure(name, comment);
 		break;
 	case AbstractType::Group::FunctionSignature:
-		obj = factory.createSignature(name, comment);
+		const auto calling_convention = json_extra["calling_convention"].get<CallingConvetion>();
+		obj = factory.createSignature(calling_convention, name, comment);
 		break;
 	}
 
@@ -112,9 +113,10 @@ void DataTypeMapper::loadExtraJson(UserDefinedType* userDefType, json json_extra
 		// load fields
 		auto symbolManager = getManager()->getProject()->getSymbolManager();
 		for (const auto& json_field_symbol : json_extra["field_symbols"]) {
-			const auto fieldSymbolId = json_field_symbol.get<Id>();
+			const auto fieldSymbolId = json_field_symbol["id"].get<Id>();
+			const auto fieldOffset = json_field_symbol["offset"].get<int>();
 			const auto fieldSymbol = dynamic_cast<Symbol::StructFieldSymbol*>(symbolManager->findSymbolById(fieldSymbolId));
-			Structure->addField(fieldSymbol);
+			Structure->getFields().addField(fieldOffset, fieldSymbol);
 		}
 
 		// load other
@@ -123,10 +125,27 @@ void DataTypeMapper::loadExtraJson(UserDefinedType* userDefType, json json_extra
 	}
 	else if (auto FunctionSignature = dynamic_cast<DataType::FunctionSignature*>(userDefType))
 	{
-		auto params = FunctionSignature->getParameters();
-		loadParamsListJson(json_extra["params"], params);
-		params.updateParameterStorages();
-		FunctionSignature->setParameters(params);
+		// load storages
+		for (const auto& json_storage : json_extra["storages"]) {
+			auto idx = json_storage["idx"].get<int>();
+			const auto storage_type = json_storage["type"].get<Decompiler::Storage::StorageType>();
+			const auto register_id = json_storage["reg_id"].get<int>();
+			const auto offset = json_storage["offset"].get<int64_t>();
+			auto storage = Decompiler::Storage(storage_type, register_id, offset);
+			FunctionSignature->getCustomStorages().emplace_back(idx, storage);
+		}
+
+		// load parameters
+		auto symbolManager = getManager()->getProject()->getSymbolManager();
+		for (const auto& json_param_symbol : json_extra["param_symbols"]) {
+			const auto paramSymbolId = json_param_symbol.get<Id>();
+			const auto paramSymbol = dynamic_cast<Symbol::FuncParameterSymbol*>(symbolManager->findSymbolById(paramSymbolId));
+			FunctionSignature->getParameters().addParameter(paramSymbol);
+		}
+
+		// load other
+		const auto retDataType = DeserializeDataType(json_extra["ret_type"], getManager());
+		FunctionSignature->setReturnType(retDataType);
 	}
 }
 
@@ -153,7 +172,10 @@ json DataTypeMapper::createExtraJson(UserDefinedType* userDefType) {
 		// save fields
 		json json_fields;
 		for (const auto& [offset, fieldSymbol] : Structure->getFields()) {
-			json_fields.push_back(fieldSymbol->getId());
+			json json_field;
+			json_field["id"] = fieldSymbol->getId();
+			json_field["offset"] = fieldSymbol->getAbsBitOffset();
+			json_fields.push_back(json_field);
 		}
 		json_extra["field_symbols"] = json_fields;
 
@@ -162,65 +184,32 @@ json DataTypeMapper::createExtraJson(UserDefinedType* userDefType) {
 	}
 	else if (auto FuncSignature = dynamic_cast<FunctionSignature*>(userDefType))
 	{
-		auto params = FuncSignature->getParameters();
-		json_extra["params"] = createParamsListJson(params);
+		// save storages
+		json json_storages;
+		for (const auto& [idx, storage] : FuncSignature->getCustomStorages()) {
+			json json_storage;
+			json_storage["idx"] = idx;
+			json_storage["type"] = storage.getType();
+			json_storage["reg_id"] = storage.getRegisterId();
+			json_storage["offset"] = storage.getOffset();
+			json_storages.push_back(json_storage);
+		}
+		json_extra["storages"] = json_storages;
+
+		// save parameters
+		json json_params;
+		for (int i = 0; i < FuncSignature->getParameters().getParamsCount(); i++) {
+			const auto param = FuncSignature->getParameters()[i];
+			json_params.push_back(param->getId());
+		}
+		json_extra["param_symbols"] = json_params;
+
+		// save other
+		json_extra["calling_convention"] = FuncSignature->getCallingConvetion();
+		json_extra["ret_type"] = SerializeDataType(FuncSignature->getReturnType());
 	}
 
 	return json_extra;
-}
-
-void DataTypeMapper::loadParamsListJson(json json_params, ParameterList& params) {
-	// load storages
-	for (const auto& json_storage : json_params["storages"]) {
-		auto idx = json_storage["idx"].get<int>();
-		const auto storage_type = json_storage["type"].get<Decompiler::Storage::StorageType>();
-		const auto register_id = json_storage["reg_id"].get<int>();
-		const auto offset = json_storage["offset"].get<int64_t>();
-		auto storage = Decompiler::Storage(storage_type, register_id, offset);
-		params.m_customStorages.emplace_back(idx, storage);
-	}
-
-	// load parameters
-	auto symbolManager = getManager()->getProject()->getSymbolManager();
-	for (const auto& json_param_symbol : json_params["param_symbols"]) {
-		auto param = params.createParameter("", nullptr);
-		DeserializeSymbol(&param, json_param_symbol);
-		params.addParameter(param);
-	}
-
-	// load other
-	params.m_callingConvetion = json_params["calling_convention"].get<CallingConvetion>();
-	const auto retDataType = DeserializeDataType(json_params["ret_type"], getManager());
-	params.setReturnType(retDataType);
-}
-
-json DataTypeMapper::createParamsListJson(CE::DataType::ParameterList& params) {
-	json json_params;
-	
-	// save storages
-	json json_storages;
-	for (const auto& [idx, storage] : params.m_customStorages) {
-		json json_storage;
-		json_storage["idx"] = idx;
-		json_storage["type"] = storage.getType();
-		json_storage["reg_id"] = storage.getRegisterId();
-		json_storage["offset"] = storage.getOffset();
-		json_storages.push_back(json_storage);
-	}
-	json_params["storages"] = json_storages;
-
-	// save parameters
-	json json_paramSymbols;
-	for (int i = 0; i < params.getParamsCount(); i ++) {
-		json json_paramSymbol = SerializeSymbol(params[i]);
-		json_paramSymbols.push_back(json_paramSymbol);
-	}
-	json_params["param_symbols"] = json_paramSymbols;
-
-	// save other
-	json_params["calling_convention"] = params.getCallingConvetion();
-	json_params["ret_type"] = SerializeDataType(params.getReturnType());
-	return json_params;
 }
 
 void DataTypeMapper::bind(Statement& query, UserDefinedType* userDefType)

@@ -42,7 +42,7 @@ void SdaDataTypesCalculater::pass_up(const std::list<DecBlock::BlockTopNode*>& t
 		if (m_signature) {
 			if (const auto returnTopNode = dynamic_cast<DecBlock::ReturnTopNode*>(topNode)) {
 				if (const auto returnNode = dynamic_cast<ISdaNode*>(returnTopNode->getNode())) {
-					const auto retDataType = m_signature->getParameters().getReturnType();
+					const auto retDataType = m_signature->getReturnType();
 					cast(returnNode, retDataType);
 				}
 			}

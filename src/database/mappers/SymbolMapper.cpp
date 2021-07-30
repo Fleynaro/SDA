@@ -68,10 +68,15 @@ IDomainObject* SymbolMapper::doLoad(Database* db, Statement& query) {
 		symbol = factory.createLocalStackVarSymbol(offset, dataTypeUnit, name, comment);
 		break;
 	}
+	case FUNC_PARAMETER: {
+		const auto paramIdx = json_extra["param_idx"].get<int>();
+		symbol = factory.createFuncParameterSymbol(dataTypeUnit, name, comment);
+		break;
+	}
 	case STRUCT_FIELD: {
 		const auto absBitOffset = json_extra["abs_bit_offset"].get<int>();
 		const auto bitSize = json_extra["bit_size"].get<int>();
-		symbol = factory.createStructFieldSymbol(absBitOffset, bitSize, nullptr, dataTypeUnit, name, comment);
+		symbol = factory.createStructFieldSymbol(bitSize, dataTypeUnit, name, comment);
 		break;
 	}
 	}

@@ -30,17 +30,16 @@ SymbolManager::Factory SymbolManager::getFactory(bool markAsNew) {
 	return Factory(this, m_symbolMapper, markAsNew);
 }
 
-FuncParameterSymbol* SymbolManager::Factory::createFuncParameterSymbol(int paramIdx, DataTypePtr type, const std::string& name, const std::string& comment) const
+FuncParameterSymbol* SymbolManager::Factory::createFuncParameterSymbol(DataTypePtr type, const std::string& name, const std::string& comment) const
 {
 	const auto symbol = new FuncParameterSymbol(m_symbolManager, type, name, comment);
-	symbol->m_paramIdx = paramIdx;
 	bind(symbol);
 	return symbol;
 }
 
-StructFieldSymbol* SymbolManager::Factory::createStructFieldSymbol(int absBitOffset, int bitSize, DataType::IStructure* structure, DataTypePtr type, const std::string& name, const std::string& comment) const
+StructFieldSymbol* SymbolManager::Factory::createStructFieldSymbol(int bitSize, DataTypePtr type, const std::string& name, const std::string& comment) const
 {
-	const auto symbol = new StructFieldSymbol(m_symbolManager, structure, type, absBitOffset, bitSize, name, comment);
+	const auto symbol = new StructFieldSymbol(m_symbolManager, type, bitSize, name, comment);
 	bind(symbol);
 	return symbol;
 }

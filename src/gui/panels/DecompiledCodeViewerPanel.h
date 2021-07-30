@@ -562,7 +562,7 @@ namespace GUI
 
 			void renderFunctionSignature(CodeGenerator::ExprTreeGenerator& gen) const {
 				const auto funcSig = m_function->getSignature();
-				gen.generateDataType(funcSig->getParameters().getReturnType());
+				gen.generateDataType(funcSig->getReturnType());
 				gen.generateToken(" ", CodeGenerator::ExprTreeGenerator::TOKEN_OTHER);
 				gen.generateSdaSymbol(m_function->getFunctionSymbol());
 				gen.generateRoundBracket("(", funcSig);

@@ -140,7 +140,7 @@ ISdaNode* GoarArrayNode::cloneSdaNode(NodeCloneContext* ctx) {
 	return new GoarArrayNode(dynamic_cast<ISdaNode*>(m_base->clone()), dynamic_cast<ISdaNode*>(m_indexNode->clone(ctx)), CloneUnit(m_outDataType), m_itemsMaxCount);
 }
 
-GoarFieldNode::GoarFieldNode(ISdaNode* base, DataType::Structure::Field* field)
+GoarFieldNode::GoarFieldNode(ISdaNode* base, CE::Symbol::StructFieldSymbol* field)
 	: GoarNode(base), m_field(field)
 {}
 

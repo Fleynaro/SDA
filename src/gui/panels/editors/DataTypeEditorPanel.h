@@ -187,16 +187,16 @@ namespace GUI
 
 	class StructureEditorPanel : public UserDataTypeEditorPanel
 	{
-		class FieldTableListView : public TableListView<CE::DataType::IStructure::Field*>
+		class FieldTableListView : public TableListView<CE::Symbol::StructFieldSymbol*>
 		{
 			StructureEditorPanel* m_structEditorPanel;
 		public:
 			FieldTableListView(StructureEditorPanel* structEditorPanel)
-				: TableListView<CE::DataType::IStructure::Field*>(&structEditorPanel->m_listModel), m_structEditorPanel(structEditorPanel)
+				: TableListView<CE::Symbol::StructFieldSymbol*>(&structEditorPanel->m_listModel), m_structEditorPanel(structEditorPanel)
 			{
 				m_colsInfo = {
-					ColInfo("Offset"),
-					ColInfo("Length"),
+					ColInfo("Offset", ImGuiTableColumnFlags_WidthFixed, 60.0f),
+					ColInfo("Length", ImGuiTableColumnFlags_WidthFixed, 60.0f),
 					ColInfo("DataType"),
 					ColInfo("Name")
 				};
@@ -204,26 +204,25 @@ namespace GUI
 
 		private:
 			void renderColumn(const std::string& colText, const ColInfo* colInfo,
-			                  CE::DataType::IStructure::Field* const& field) override;
+				CE::Symbol::StructFieldSymbol* const& field) override;
 		};
 
 		CE::DataType::IStructure* m_dataType;
+		CE::DataType::IStructure* m_clonedDataType;
 		Input::IntegerInput m_sizeInput;
 		Input::BoolInput m_hexView;
-		CE::DataType::IStructure::FieldMapType m_fields;
 		StructureFieldListModel m_listModel;
 		FieldTableListView* m_tableListView;
 		int m_selectedFieldOffset = -1;
 		CE::DataTypePtr m_selectedBitFieldDataType;
-		std::set<CE::DataType::IStructure::Field*> m_newFields;
-		std::set<CE::DataType::IStructure::Field*> m_removedFields;
 		PopupModalWindow* m_errorWindow = nullptr;
 		PopupBuiltinWindow* m_builtinWin = nullptr;
 	public:
 		// todo: slow work. solution is to use clipper
 		
 		StructureEditorPanel(CE::DataType::IStructure* dataType)
-			: UserDataTypeEditorPanel(dataType, "Structure Editor"), m_dataType(dataType), m_listModel(&m_fields), m_fields(dataType->getFields())
+			: UserDataTypeEditorPanel(dataType, "Structure Editor"),
+		m_dataType(dataType), m_clonedDataType(dataType->clone()), m_listModel(&m_clonedDataType->getFields())
 		{
 			m_sizeInput.setInputValue(dataType->getSize());
 			m_tableListView = new FieldTableListView(this);
@@ -234,15 +233,13 @@ namespace GUI
 			delete m_tableListView;
 			delete m_errorWindow;
 			delete m_builtinWin;
+			delete m_clonedDataType;
 		}
 
-		CE::DataType::IStructure::Field* getSelectedField() {
+		CE::Symbol::StructFieldSymbol* getSelectedField() {
 			if (m_selectedFieldOffset == -1)
 				return nullptr;
-			const auto it = m_fields.find(m_selectedFieldOffset);
-			if (it == m_fields.end())
-				return nullptr;
-			return it->second;
+			return m_clonedDataType->getFields()[m_selectedFieldOffset];
 		}
 
 	private:
@@ -250,12 +247,12 @@ namespace GUI
 			Text::Text("Size of structure:").show();
 			m_sizeInput.show();
 			if(m_sizeInput.isValueEntering()) {
-				const auto minSize = m_fields.getSizeByLastField();
+				const auto minSize = m_clonedDataType->getFields().getSizeByLastField();
 				if(m_sizeInput.getInputValue() < minSize) {
 					m_sizeInput.setInputValue(minSize);
 				}
 				else {
-					m_fields.setSize(m_sizeInput.getInputValue());
+					m_clonedDataType->getFields().setSize(m_sizeInput.getInputValue());
 				}
 			}
 
@@ -281,7 +278,8 @@ namespace GUI
 				}
 				SameLine();
 				if (Button::StdButton("x").present()) {
-					removeField(selectedField);
+					m_clonedDataType->getFields().removeField(selectedField->getAbsBitOffset());
+					delete selectedField;
 					m_selectedFieldOffset = -1;
 				}
 				else if(!selectedField->isBitField()) {
@@ -310,22 +308,25 @@ namespace GUI
 
 		void save() override {
 			saveName();
-			m_dataType->resize(m_sizeInput.getInputValue());
-			m_dataType->setFields(m_fields);
-			for (const auto newField : m_newFields)
-				newField->getManager()->getProject()->getTransaction()->markAsNew(newField);
-			for (const auto newField : m_removedFields)
-				newField->getManager()->getProject()->getTransaction()->markAsRemoved(newField);
+
+			for (const auto& [offset, field] : m_dataType->getFields())
+				field->getManager()->getProject()->getTransaction()->markAsRemoved(field);
+			
+			for (const auto& [offset, field] : m_clonedDataType->getFields()) {
+				field->getManager()->getProject()->getTransaction()->markAsNew(field);
+			}
+			
+			m_dataType->apply(m_clonedDataType);
 			m_dataType->getTypeManager()->getProject()->getTransaction()->markAsDirty(m_dataType);
 		}
 
 		void addNewField() {
 			if (m_selectedFieldOffset != -1) {
 				const auto newOffset = m_selectedFieldOffset;
-				if (!m_selectedBitFieldDataType && m_fields.areEmptyFields(newOffset, 0x8)) {
+				if (!m_selectedBitFieldDataType && m_clonedDataType->getFields().areEmptyFields(newOffset, 0x8)) {
 					addNewField(newOffset);
 				}
-				else if (m_fields.areEmptyFields(newOffset, 0x1)) {
+				else if (m_clonedDataType->getFields().areEmptyFields(newOffset, 0x1)) {
 					// add bit field
 					addNewField(newOffset, 0x1, m_selectedBitFieldDataType);
 				}
@@ -336,10 +337,10 @@ namespace GUI
 				return;
 			}
 
-			if (!m_fields.empty()) {
-				const auto lastField = m_fields.rbegin()->second;
+			const auto lastField = m_clonedDataType->getFields().getLastField();
+			if (lastField) {
 				const auto newOffset = lastField->getAbsBitOffset() + lastField->getBitSize();
-				if (m_fields.areEmptyFields(newOffset, 0x8)) {
+				if (m_clonedDataType->getFields().areEmptyFields(newOffset, 0x8)) {
 					addNewField(newOffset);
 				}
 				else {
@@ -356,32 +357,12 @@ namespace GUI
 			const auto factory = m_dataType->getTypeManager()->getProject()->getSymbolManager()->getFactory(false);
 			if(!fieldDataType)
 				fieldDataType = m_dataType->getTypeManager()->getDefaultType(0x1);
-			const auto field = factory.createStructFieldSymbol(absBitOffset, bitSize, m_dataType, fieldDataType, "newField");
-			m_newFields.insert(field);
-			m_fields[absBitOffset] = field;
-		}
-		
-		void removeField(CE::DataType::IStructure::Field* field) {
-			m_fields.erase(field->getAbsBitOffset());
-			if (m_newFields.find(field) != m_newFields.end()) {
-				m_newFields.erase(field);
-				delete field;
-			}
-			else {
-				m_removedFields.insert(field);
-			}
+			const auto field = factory.createStructFieldSymbol(bitSize, fieldDataType, "newField");
+			m_clonedDataType->getFields().addField(absBitOffset, field);
 		}
 
-		bool moveField(CE::DataType::IStructure::Field* field, int dir) {
-			const auto newAbsBitOffset = field->getAbsBitOffset() + (field->isBitField() ? 0x1 : 0x8) * dir;
-			m_fields.erase(field->getAbsBitOffset());
-			if (!m_fields.areEmptyFields(newAbsBitOffset, field->getBitSize())) {
-				m_fields[field->getAbsBitOffset()] = field;
-				return false;
-			}
-			m_fields[newAbsBitOffset] = field;
-			field->setAbsBitOffset(newAbsBitOffset);
-			return true;
+		bool moveField(CE::Symbol::StructFieldSymbol* field, int dir) const {
+			return m_clonedDataType->getFields().moveField(field, (field->isBitField() ? 0x1 : 0x8) * dir);
 		}
 	};
 
@@ -408,19 +389,21 @@ namespace GUI
 		};
 
 		CE::DataType::IFunctionSignature* m_dataType;
-		CE::DataType::ParameterList m_params;
+		CE::DataType::IFunctionSignature* m_clonedDataType;
 		CE::Symbol::FuncParameterSymbol* m_selectedParam = nullptr;
 		ParamListModel m_listModel;
 		ParamTableListView* m_tableListView;
 	public:
 		FuncSigEditorPanel(CE::DataType::IFunctionSignature* dataType)
-			: UserDataTypeEditorPanel(dataType, "Function Signature Editor"), m_dataType(dataType), m_listModel(&m_params), m_params(m_dataType->getParameters())
+			: UserDataTypeEditorPanel(dataType, "Function Signature Editor"),
+		m_dataType(dataType), m_clonedDataType(dataType->clone()), m_listModel(&m_clonedDataType->getParameters())
 		{
 			m_tableListView = new ParamTableListView(this);
 		}
 
 		~FuncSigEditorPanel() {
 			delete m_tableListView;
+			delete m_clonedDataType;
 		}
 
 	protected:
@@ -437,18 +420,19 @@ namespace GUI
 			if (m_selectedParam) {
 				SameLine();
 				if (Button::ButtonArrow(ImGuiDir_Up).present()) {
-					m_params.moveParameter(m_selectedParam->getParamIdx(), -1);
-					m_params.updateParameterStorages();
+					m_clonedDataType->getParameters().moveParameter(m_selectedParam->getParamIdx(), -1);
+					m_clonedDataType->updateParameterStorages();
 				}
 				SameLine();
 				if (Button::ButtonArrow(ImGuiDir_Down).present()) {
-					m_params.moveParameter(m_selectedParam->getParamIdx(), 1);
-					m_params.updateParameterStorages();
+					m_clonedDataType->getParameters().moveParameter(m_selectedParam->getParamIdx(), 1);
+					m_clonedDataType->updateParameterStorages();
 				}
 				SameLine();
 				if (Button::StdButton("x").present()) {
-					m_params.removeParameter(m_selectedParam->getParamIdx());
-					m_params.updateParameterStorages();
+					m_clonedDataType->getParameters().removeParameter(m_selectedParam->getParamIdx());
+					delete m_selectedParam;
+					m_clonedDataType->updateParameterStorages();
 					m_selectedParam = nullptr;
 				}
 			}
@@ -459,15 +443,28 @@ namespace GUI
 
 		void save() override {
 			saveName();
-			m_dataType->setParameters(m_params);
+			
+			for (int i = 0; i < m_dataType->getParameters().getParamsCount(); i++) {
+				// todo: params could be owned by other objects then mark as removed(no delete). think about removing it correctly
+				m_dataType->getTypeManager()->getProject()->getTransaction()->markAsRemoved(m_dataType->getParameters()[i]);
+			}
+
+			for (int i = 0; i < m_clonedDataType->getParameters().getParamsCount(); i++) {
+				const auto param = m_clonedDataType->getParameters()[i];
+				m_dataType->getTypeManager()->getProject()->getTransaction()->markAsNew(param);
+			}
+			
+			m_dataType->apply(m_clonedDataType);
 			m_dataType->getTypeManager()->getProject()->getTransaction()->markAsDirty(m_dataType);
 		}
 
 		void addNewParam() {
-			const auto name = "newParam_" + std::to_string(m_params.getParamsCount() + 1);
+			const auto name = "param_" + std::to_string(m_clonedDataType->getParameters().getParamsCount() + 1);
 			const auto dataType = m_dataType->getTypeManager()->getDefaultType(0x4);
-			m_params.addParameter(m_params.createParameter(name, dataType));
-			m_params.updateParameterStorages();
+			const auto factory = m_clonedDataType->getTypeManager()->getProject()->getSymbolManager()->getFactory(false);
+			const auto param = factory.createFuncParameterSymbol(dataType, name);
+			m_clonedDataType->getParameters().addParameter(param);
+			m_clonedDataType->updateParameterStorages();
 		}
 	};
 

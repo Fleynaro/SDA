@@ -1,5 +1,4 @@
 #include "StructFieldSymbol.h"
-#include <datatypes/Structure.h>
 
 CE::Symbol::Type CE::Symbol::StructFieldSymbol::getType() {
 	return STRUCT_FIELD;
@@ -13,7 +12,7 @@ void CE::Symbol::StructFieldSymbol::setBitSize(int size) {
 	m_bitSize = size;
 }
 
-int& CE::Symbol::StructFieldSymbol::getAbsBitOffset() {
+int CE::Symbol::StructFieldSymbol::getAbsBitOffset() const {
 	return m_absBitOffset;
 }
 
@@ -32,10 +31,6 @@ int CE::Symbol::StructFieldSymbol::getOffset() {
 
 bool CE::Symbol::StructFieldSymbol::isBitField() {
 	return m_bitSize != getSize() * 0x8;
-}
-
-void CE::Symbol::StructFieldSymbol::setStructure(DataType::IStructure* structure) {
-	m_structure = structure;
 }
 
 bool CE::Symbol::StructFieldSymbol::isDefault() const

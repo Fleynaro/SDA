@@ -232,7 +232,7 @@ CE::Symbol::ISymbol* SdaBuilding::findOrCreateSymbol(Symbol::Symbol* symbol, int
 		int paramIdx = 0;
 
 		if (m_symbolCtx->m_signature) {
-			paramIdx = m_symbolCtx->m_signature->getParameters().getCallInfo().findIndex(reg, offset);
+			paramIdx = m_symbolCtx->m_signature->getCallInfo().findIndex(reg, offset);
 			if (paramIdx > 0) {
 				auto& funcParams = m_symbolCtx->m_signature->getParameters();
 				if (paramIdx <= funcParams.getParamsCount()) {
@@ -253,7 +253,8 @@ CE::Symbol::ISymbol* SdaBuilding::findOrCreateSymbol(Symbol::Symbol* symbol, int
 		if (paramIdx > 0) {
 			//auto func. parameter
 			const auto defType = m_project->getTypeManager()->getDefaultType(size);
-			auto funcParamSymbol = m_symbolFactory.createFuncParameterSymbol(paramIdx, defType, "param" + std::to_string(paramIdx));
+			auto funcParamSymbol = m_symbolFactory.createFuncParameterSymbol(defType, "param" + std::to_string(paramIdx));
+			funcParamSymbol->m_paramIdx = paramIdx;
 			funcParamSymbol->setAutoSymbol(true);
 			storeSdaSymbolIfMem(funcParamSymbol, symbol, offset);
 			return funcParamSymbol;

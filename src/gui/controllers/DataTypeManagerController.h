@@ -65,31 +65,30 @@ namespace GUI
 		}
 	};
 
-	class StructureFieldListModel : public IListModel<CE::DataType::IStructure::Field*>
+	class StructureFieldListModel : public IListModel<CE::Symbol::StructFieldSymbol*>
 	{
-		CE::DataType::IStructure::FieldMapType* m_fields;
+		CE::DataType::FieldList* m_fields;
 	public:
 		class FieldIterator : public Iterator
 		{
 			StructureFieldListModel* m_model;
-			CE::DataType::IStructure::FieldMapType* m_fields;
+			CE::DataType::FieldList* m_fields;
 			int m_bitOffset = 0;
 			CE::DataTypePtr m_bitFieldDataType;
 			int m_bitFieldEndOffset = 0;
-			CE::DataType::IStructure::Field m_emptyField;
+			CE::Symbol::StructFieldSymbol m_emptyField;
 		public:
 			FieldIterator(StructureFieldListModel* model)
 				: m_model(model), m_fields(model->m_fields)
 			{}
 
-			void getNextItem(std::string* text, CE::DataType::IStructure::Field** data) override {
+			void getNextItem(std::string* text, CE::Symbol::StructFieldSymbol** data) override {
 				if (m_bitOffset >= m_bitFieldEndOffset) {
 					m_bitFieldEndOffset = 0;
 				}
 				
-				const auto it = m_fields->getFieldIterator(m_bitOffset); // todo: slow
-				if(it != m_fields->end()) {
-					const auto& [offset, field] = *it;
+				const auto field = (*m_fields)[m_bitOffset]; // todo: slow
+				if(field) {
 					if (field->isBitField()) {
 						if (!m_bitFieldEndOffset) {
 							m_bitFieldDataType = field->getDataType();
@@ -118,7 +117,7 @@ namespace GUI
 				}
 			}
 
-			std::string getText(CE::DataType::IStructure::Field* field) {
+			std::string getText(CE::Symbol::StructFieldSymbol* field) {
 				using namespace Helper::String;
 				auto offsetStr = m_model->m_hexView ? "0x" + NumberToHex(field->getOffset()) : std::to_string(field->getOffset());
 				auto sizeStr = m_model->m_hexView ? "0x" + NumberToHex(field->getSize()) : std::to_string(field->getSize());
@@ -136,7 +135,7 @@ namespace GUI
 
 		bool m_hexView = false;
 
-		StructureFieldListModel(CE::DataType::IStructure::FieldMapType* fields)
+		StructureFieldListModel(CE::DataType::FieldList* fields)
 			: m_fields(fields)
 		{}
 
