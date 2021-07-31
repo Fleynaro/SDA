@@ -1,7 +1,5 @@
 #pragma once
 #include "ImageDecorator.h"
-#define IMGUI_DEFINE_MATH_OPERATORS
-#include "imgui_internal.h"
 #include "imgui_wrapper/controls/AbstractPanel.h"
 #include "imgui_wrapper/controls/List.h"
 #include "imgui_wrapper/controls/Text.h"
@@ -60,14 +58,82 @@ namespace GUI
 	{
 		inline const static ImGuiTableFlags TableFlags = ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
 
+		class GoToPanel : public AbstractPanel
+		{
+			ImageContentViewerPanel* m_imageContentViewerPanel;
+			Input::TextInput m_offsetInput;
+			std::string m_errorMessage;
+		public:
+			GoToPanel(ImageContentViewerPanel* imageContentViewerPanel)
+				: AbstractPanel("Go to"), m_imageContentViewerPanel(imageContentViewerPanel)
+			{}
+
+		private:
+			void renderPanel() override {
+				if(!m_errorMessage.empty())
+					Text::Text("Error: " + m_errorMessage).show();
+				m_offsetInput.show();
+				SameLine();
+				if (Button::StdButton("Go").present()) {
+					const auto offsetStr = m_offsetInput.getInputText();
+					const auto offset = ParseOffset(offsetStr);
+					try {
+						m_imageContentViewerPanel->goToOffset(offset);
+						m_window->close();
+					} catch (WarningException& ex) {
+						m_errorMessage = ex.what();
+					}
+				}
+			}
+
+			static CE::Offset ParseOffset(const std::string& offsetStr) {
+				using namespace Helper::String;
+				return offsetStr[1] == 'x' ? static_cast<int>(HexToNumber(offsetStr)) : std::stoi(offsetStr);
+			}
+		};
+		
 		class AbstractSectionViewer : public Control
 		{
+		protected:
+			ImGuiListClipper m_clipper;
+			int m_scrollToRowIdx = -1;
+			bool m_selectCurRow = false;
 		public:
 			AbstractSectionController* m_sectionController;
 			
 			AbstractSectionViewer(AbstractSectionController* controller)
 				: m_sectionController(controller)
 			{}
+
+			void goToOffset(CE::Offset offset) {
+				const auto rowIdx = getRowIdxByOffset(offset);
+				if (rowIdx == -1)
+					throw WarningException("Offset not found.");
+				m_scrollToRowIdx = rowIdx;
+			}
+		protected:
+			virtual int getRowIdxByOffset(CE::Offset offset) = 0;
+			
+			void scroll() {
+				if (m_scrollToRowIdx != -1) {
+					ImGui::SetScrollY(m_scrollToRowIdx * m_clipper.ItemsHeight);
+					m_scrollToRowIdx = -1;
+				}
+			}
+
+			void tableNextRow() {
+				const auto Color = ToImGuiColorU32(0x1d333dFF);
+				if (m_selectCurRow) {
+					ImGui::PushStyleColor(ImGuiCol_TableRowBg, Color);
+					ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, Color);
+				}
+				ImGui::TableNextRow();
+				if (m_selectCurRow) {
+					ImGui::PopStyleColor();
+					ImGui::PopStyleColor();
+					m_selectCurRow = false;
+				}
+			}
 		};
 
 		class DataSectionViewer : public AbstractSectionViewer
@@ -88,18 +154,19 @@ namespace GUI
 					ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_None);
 					ImGui::TableHeadersRow();
 
-					ImGuiListClipper clipper;
-					clipper.Begin(m_dataSectionController->getRowsCount());
-					while (clipper.Step())
+					m_clipper.Begin(m_dataSectionController->getRowsCount());
+					while (m_clipper.Step())
 					{
-						for (auto rowIdx = clipper.DisplayStart; rowIdx < clipper.DisplayEnd; rowIdx++) {
-							ImGui::TableNextRow();
+						for (auto rowIdx = m_clipper.DisplayStart; rowIdx < m_clipper.DisplayEnd; rowIdx++) {
+							tableNextRow();
 							const auto offset = m_dataSectionController->getRow(rowIdx);
 							ImGui::TableNextColumn();
 							RenderAddress(offset);
 							renderSpecificColumns(offset);
 						}
 					}
+
+					scroll();
 					ImGui::EndTable();
 				}
 			}
@@ -114,10 +181,99 @@ namespace GUI
 				ImGui::TableNextColumn();
 				Text::Text(symbol->getDataType()->getViewValue(*pValue)).show();
 			}
+
+			int getRowIdxByOffset(CE::Offset offset) override {
+				return m_dataSectionController->getRowIdx(offset);
+			}
 		};
 		
 		class CodeSectionViewer : public AbstractSectionViewer
 		{
+			class FunctionReferencesPanel : public AbstractPanel
+			{
+				class FuncCallListModel : public IListModel<CE::Function*>
+				{
+					CE::Decompiler::FunctionPCodeGraph* m_funcPCodeGraph;
+					CE::ImageDecorator* m_imageDec;
+				public:
+					FuncCallListModel(CE::Function* function)
+						: m_funcPCodeGraph(function->getFuncGraph()), m_imageDec(function->getImage())
+					{}
+
+					bool empty() const {
+						return m_funcPCodeGraph->getRefFuncCalls().empty();
+					}
+				private:
+					class FuncCallIterator : public Iterator
+					{
+						std::set<CE::Decompiler::FunctionPCodeGraph*>::iterator m_it;
+						const std::set<CE::Decompiler::FunctionPCodeGraph*>* m_list;
+						CE::ImageDecorator* m_imageDec;
+					public:
+						FuncCallIterator(const std::set<CE::Decompiler::FunctionPCodeGraph*>* list, CE::ImageDecorator* imageDec)
+							: m_list(list), m_it(list->begin()), m_imageDec(imageDec)
+						{}
+
+						void getNextItem(std::string* text, CE::Function** data) override {
+							const auto funcGraph = *m_it;
+							++m_it;
+							if (const auto function = m_imageDec->getFunctionAt(funcGraph->getStartBlock()->getMinOffset().getByteOffset())) {
+								*text = function->getName();
+								*data = function;
+							} else {
+								if(hasNextItem())
+									getNextItem(text, data);
+							}
+						}
+
+						bool hasNextItem() override {
+							return m_it != m_list->end();
+						}
+					};
+
+					void newIterator(const IteratorCallback& callback) override {
+						FuncCallIterator iterator(&m_funcPCodeGraph->getRefFuncCalls(), m_imageDec);
+						callback(&iterator);
+					}
+				};
+				
+				CE::Function* m_function;
+				CodeSectionViewer* m_codeSectionViewer;
+				FuncCallListModel m_listModel;
+				SelectableTableListView<CE::Function*>* m_listView;
+				std::string m_errorMessage;
+			public:
+				FunctionReferencesPanel(CE::Function* function, CodeSectionViewer* codeSectionViewer)
+					: AbstractPanel("Function References"), m_function(function), m_codeSectionViewer(codeSectionViewer), m_listModel(function)
+				{
+					m_listView = new SelectableTableListView(&m_listModel, {
+						ColInfo("Function")
+					});
+					m_listView->handler([&](CE::Function* function)
+						{
+							try {
+								m_codeSectionViewer->goToOffset(function->getOffset());
+								m_window->close();
+							}
+							catch (WarningException& ex) {
+								m_errorMessage = ex.what();
+							}
+						});
+				}
+
+			private:
+				void renderPanel() override {
+					if (!m_errorMessage.empty())
+						Text::Text("Error: " + m_errorMessage).show();
+					
+					if (!m_listModel.empty()) {
+						m_listView->show();
+					} else {
+						Text::Text("No functions referenced to.").show();
+					}
+				}
+			};
+			
 			class CodeSectionInstructionViewer : public InstructionTableRowViewer
 			{
 				EventHandler<> m_renderJmpArrow;
@@ -135,33 +291,63 @@ namespace GUI
 					m_renderJmpArrow();
 				}
 			};
+
+			class RowContextPanel : public AbstractPanel
+			{
+				CodeSectionViewer* m_codeSectionViewer;
+				CodeSectionRow m_codeSectionRow;
+			public:
+				RowContextPanel(CodeSectionViewer* codeSectionViewer, CodeSectionRow codeSectionRow)
+					: m_codeSectionViewer(codeSectionViewer), m_codeSectionRow(codeSectionRow)
+				{}
+
+			private:
+				void renderPanel() override {
+					if (ImGui::MenuItem("Analyze")) {
+						delete m_codeSectionViewer->m_popupModalWindow;
+						const auto panel = new ImageAnalyzerPanel(m_codeSectionViewer->m_codeSectionController->m_imageDec, m_codeSectionRow.m_byteOffset);
+						m_codeSectionViewer->m_popupModalWindow = new PopupModalWindow(panel);
+						m_codeSectionViewer->m_popupModalWindow->open();
+					}
+				}
+			};
 			
 			std::set<CodeSectionController::Jmp*> m_shownJmps;
 			ImGuiWindow* m_window = nullptr;
 			PopupBuiltinWindow* m_builtinWindow = nullptr;
+			PopupModalWindow* m_popupModalWindow = nullptr;
+			PopupContextWindow* m_ctxWindow = nullptr;
 		public:
 			CodeSectionController* m_codeSectionController;
 			AbstractInstructionViewDecoder* m_instructionViewDecoder;
 			CE::Decompiler::FunctionPCodeGraph* m_curFuncPCodeGraph = nullptr;
+			bool m_obscureUnknownLocation = true;
+			CodeSectionRow m_selectedRow;
+			bool m_isRowSelected = false;
 			
 			CodeSectionViewer(CodeSectionController* codeSectionController, AbstractInstructionViewDecoder* instructionViewDecoder)
-				: AbstractSectionViewer(codeSectionController), m_codeSectionController(codeSectionController), m_instructionViewDecoder(instructionViewDecoder)
+				: AbstractSectionViewer(codeSectionController), m_codeSectionController(codeSectionController), m_instructionViewDecoder(instructionViewDecoder), m_selectedRow(0)
 			{}
 
 			~CodeSectionViewer() override {
 				delete m_instructionViewDecoder;
 				delete m_builtinWindow;
+				delete m_popupModalWindow;
+				delete m_ctxWindow;
 			}
 
 		private:
 			void renderControl() override {
 				m_shownJmps.clear();
 				m_curFuncPCodeGraph = nullptr;
-				m_window = ImGui::GetCurrentWindow();
 				
-				auto goToFunc = Button::StdButton("go to func").present();
+				if(Button::StdButton("go to func").present()) {
+					goToOffset(0x20c80);
+				}
+				
 				if (ImGui::BeginTable("content_table", 3, TableFlags))
 				{
+					m_window = ImGui::GetCurrentWindow();
 					const auto tableSize = ImGui::GetItemRectSize();
 					ImGui::TableSetupScrollFreeze(0, 1);
 					ImGui::TableSetupColumn("Address", ImGuiTableColumnFlags_None);
@@ -169,41 +355,48 @@ namespace GUI
 					ImGui::TableSetupColumn("Operands", ImGuiTableColumnFlags_None);
 					ImGui::TableHeadersRow();
 
-					ImGuiListClipper clipper;
-					clipper.Begin(m_codeSectionController->getRowsCount());
-					while (clipper.Step())
+					m_clipper.Begin(m_codeSectionController->getRowsCount());
+					while (m_clipper.Step())
 					{
-						for (auto rowIdx = clipper.DisplayStart; rowIdx < clipper.DisplayEnd; rowIdx++) {
-							ImGui::TableNextRow();
-							const auto codeSectionRow = m_codeSectionController->getRow(rowIdx);
-							if (rowIdx == (clipper.DisplayStart + clipper.DisplayEnd) / 2) {
-								if (const auto pcodeBlock = m_codeSectionController->m_imageDec->getPCodeGraph()->getBlockAtOffset(codeSectionRow.m_fullOffset)) {
-									m_curFuncPCodeGraph = pcodeBlock->m_funcPCodeGraph;
-								}
-							}
+						for (auto rowIdx = m_clipper.DisplayStart; rowIdx < m_clipper.DisplayEnd; rowIdx++) {
+							bool obscure = false;
+							tableNextRow();
 
+							// getting info about the current row
+							const auto codeSectionRow = m_codeSectionController->getRow(rowIdx);
+							if (const auto pcodeBlock = m_codeSectionController->m_imageDec->getPCodeGraph()->getBlockAtOffset(codeSectionRow.m_fullOffset)) {
+								if (rowIdx == (m_clipper.DisplayStart + m_clipper.DisplayEnd) / 2)
+									m_curFuncPCodeGraph = pcodeBlock->m_funcPCodeGraph;
+								if(m_obscureUnknownLocation)
+									obscure = true;
+							}
+							m_selectCurRow = m_isRowSelected && m_selectedRow == codeSectionRow;
+
+							if(!obscure)
+								ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.7f);
+
+							ImVec2 startRowPos;
 							if (!codeSectionRow.m_isPCode) {
 								const auto instrOffset = codeSectionRow.m_byteOffset;
 								ImGui::TableNextColumn();
-								const auto startRowPos = ImGui::GetCursorScreenPos();
+								startRowPos = ImGui::GetCursorScreenPos();
 								RenderAddress(instrOffset);
 
+								// Asm
 								InstructionViewInfo instrViewInfo;
 								m_instructionViewDecoder->decode(m_codeSectionController->getImageDataByOffset(instrOffset), &instrViewInfo);
 								CodeSectionInstructionViewer instructionViewer(&instrViewInfo);
 								instructionViewer.renderJmpArrow([&]()
 									{
-										renderJmpLines(rowIdx, clipper);
+										renderJmpLines(rowIdx, m_clipper);
 									});
 								instructionViewer.show();
-
-								if (const auto function = m_codeSectionController->m_imageDec->getFunctionAt(instrOffset)) {
-									renderFunctionHeader(function, startRowPos, startRowPos + ImVec2(tableSize.x - 25, 0));
-								}
 							} else {
+								// PCode
 								const auto instrOffset = codeSectionRow.m_fullOffset;
 								if (const auto instr = m_codeSectionController->m_imageDec->getInstrPool()->getPCodeInstructionAt(instrOffset)) {
 									ImGui::TableNextColumn();
+									startRowPos = ImGui::GetCursorScreenPos();
 									Text::Text("").show();
 									ImGui::TableNextColumn();
 									Text::Text("").show();
@@ -212,21 +405,57 @@ namespace GUI
 									instrRender.generate(instr);
 								}
 							}
+
+							// decorate the current row
+							const auto rowSize = ImVec2(tableSize.x - 25, m_clipper.ItemsHeight);
+							decorateRow(startRowPos, rowSize, codeSectionRow);
+
+							if (!obscure)
+								ImGui::PopStyleVar();
 						}
 					}
-					if(goToFunc) {
-						ImGui::SetScrollY(m_codeSectionController->getRowIdx(CodeSectionRow(0x20c8000)) * clipper.ItemsHeight);
-					}
+
+					scroll();
 					ImGui::EndTable();
 				}
 
 				Show(m_builtinWindow);
+				Show(m_popupModalWindow);
+				Show(m_ctxWindow);
 			}
 
-			void renderFunctionHeader(CE::Function* function, const ImVec2& startRowPos, const ImVec2& endRowPos) {
+			void decorateRow(const ImVec2& startRowPos, const ImVec2& rowSize, CodeSectionRow row) {
+				// function header
+				bool isEventProcessed = false;
+				if (!row.m_isPCode) {
+					if (const auto function = m_codeSectionController->m_imageDec->getFunctionAt(row.m_byteOffset)) {
+						renderFunctionHeader(function, startRowPos, startRowPos + ImVec2(rowSize.x, 0), isEventProcessed);
+					}
+				}
+
+				// process events
+				if (!isEventProcessed && ImGui::IsWindowHovered()) {
+					ImGuiContext& g = *GImGui;
+					if (ImGui::IsMousePosValid(&g.IO.MousePos)) {
+						if (ImRect(startRowPos, startRowPos + rowSize).Contains(g.IO.MousePos)) {
+							if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+								m_selectedRow = row;
+								m_isRowSelected = true;
+							}
+							else if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+								delete m_ctxWindow;
+								m_ctxWindow = new PopupContextWindow(new RowContextPanel(this, row));
+								m_ctxWindow->open();
+							}
+						}
+					}
+				}
+			}
+
+			void renderFunctionHeader(CE::Function* function, const ImVec2& startRowPos, const ImVec2& endRowPos, bool& isEventProcessed) {
 				const auto Color = ToImGuiColorU32(0xc9c59fFF);
 				m_window->DrawList->AddLine(startRowPos, endRowPos, Color, 0.7f);
-
+				
 				// function name
 				{
 					const auto text = function->getName();
@@ -240,11 +469,12 @@ namespace GUI
 							ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 							if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
 								delete m_builtinWindow;
-								m_builtinWindow = new PopupBuiltinWindow(new FunctionEditorPanel(function));
-								m_builtinWindow->getSize() = ImVec2(500.0f, 200.0f);
+								m_builtinWindow = new PopupBuiltinWindow(new FunctionReferencesPanel(function, this));
+								m_builtinWindow->getSize() = ImVec2(300.0f, 200.0f);
 								m_builtinWindow->getPos() = endRowPos - ImVec2(m_builtinWindow->getSize().x, 0);
 								m_builtinWindow->addFlags(ImGuiWindowFlags_AlwaysAutoResize, false);
 								m_builtinWindow->open();
+								isEventProcessed = true;
 							}
 						}
 					}
@@ -306,6 +536,10 @@ namespace GUI
 				arrowPos -= ImVec2(7.0f, 3.0f);
 				ImGui::RenderArrow(window->DrawList, arrowPos, lineColor, ImGuiDir_Right, 0.7f);
 			}
+
+			int getRowIdxByOffset(CE::Offset offset) override {
+				return m_codeSectionController->getRowIdx(CodeSectionRow(CE::ComplexOffset(offset, 0)));
+			}
 		};
 
 		enum class DecompilerStep
@@ -349,6 +583,7 @@ namespace GUI
 		MenuListView<const CE::ImageSection*> m_imageSectionMenuListView;
 		StdWindow* m_funcGraphViewerWindow = nullptr;
 		StdWindow* m_decompiledCodeViewerWindow = nullptr;
+		PopupModalWindow* m_popupModalWindow = nullptr;
 
 		DecompilerStep m_decompilerStep = DecompilerStep::DEFAULT;
 		ProcessingStep m_processingStep = ProcessingStep::DEFAULT;
@@ -380,6 +615,8 @@ namespace GUI
 			for (const auto& pair : m_imageSectionControllers)
 				delete pair.second;
 			delete m_funcGraphViewerWindow;
+			delete m_decompiledCodeViewerWindow;
+			delete m_popupModalWindow;
 		}
 
 		StdWindow* createStdWindow() {
@@ -388,11 +625,13 @@ namespace GUI
 
 	private:
 		void renderPanel() override {
-			Show(m_funcGraphViewerWindow);
-			Show(m_decompiledCodeViewerWindow);
 			m_imageSectionViewer->show();
 
-			checkDecompiledCodeChanged();
+			processDecompiledCodeViewerEvents();
+
+			Show(m_funcGraphViewerWindow);
+			Show(m_decompiledCodeViewerWindow);
+			Show(m_popupModalWindow);
 		}
 
 		void renderMenuBar() override {
@@ -407,7 +646,9 @@ namespace GUI
 			if (ImGui::BeginMenu("Navigation"))
 			{
 				if (ImGui::MenuItem("Go to")) {
-
+					delete m_popupModalWindow;
+					m_popupModalWindow = new PopupModalWindow(new GoToPanel(this));
+					m_popupModalWindow->open();
 				}
 				ImGui::EndMenu();
 			}
@@ -435,6 +676,9 @@ namespace GUI
 								}
 							}
 						}
+					}
+					if (ImGui::MenuItem("Obscure unknown location", nullptr, codeSectionViewer->m_obscureUnknownLocation)) {
+						codeSectionViewer->m_obscureUnknownLocation ^= true;
 					}
 				}
 				ImGui::EndMenu();
@@ -538,6 +782,14 @@ namespace GUI
 				if (!dataController)
 					m_imageSectionControllers[imageSection] = dataController = new DataSectionController(m_imageDec, imageSection);
 				m_imageSectionViewer = new DataSectionViewer(dataController);
+			}
+		}
+
+		void goToOffset(CE::Offset offset) {
+			const auto section = m_imageDec->getImage()->getSectionByOffset(offset);
+			if(section->m_type != CE::ImageSection::NONE_SEGMENT) {
+				selectImageSection(section);
+				m_imageSectionViewer->goToOffset(offset);
 			}
 		}
 
@@ -660,14 +912,23 @@ namespace GUI
 		}
 
 		// e.g. if a symbol was renamed then redecompile
-		void checkDecompiledCodeChanged() {
-			if (m_decompiledCodeViewerWindow) {
-				if (auto prevPanel = dynamic_cast<DecompiledCodeViewerPanel*>(m_decompiledCodeViewerWindow->getPanel())) {
+		void processDecompiledCodeViewerEvents() {
+			if (!m_decompiledCodeViewerWindow)
+				return;
+			
+			if (const auto prevPanel = dynamic_cast<DecompiledCodeViewerPanel*>(m_decompiledCodeViewerWindow->getPanel())) {
+				if (const auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer)) {
 					if (prevPanel->m_decompiledCodeViewer->m_codeChanged) {
-						if (auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer)) {
-							decompile(codeSectionViewer->m_curFuncPCodeGraph);
-						}
+						decompile(codeSectionViewer->m_curFuncPCodeGraph);
 					}
+				}
+				
+				if (const auto function = prevPanel->m_decompiledCodeViewer->m_clickedFunction) {
+					goToOffset(function->getOffset());
+					prevPanel->m_decompiledCodeViewer->m_codeChanged = true;
+				}
+				else if (const auto globalVar = prevPanel->m_decompiledCodeViewer->m_clickedGlobalVar) {
+					goToOffset(globalVar->getOffset());
 				}
 			}
 		}

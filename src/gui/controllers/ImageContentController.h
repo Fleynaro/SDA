@@ -64,9 +64,9 @@ namespace GUI
 
 		int getRowIdx(T row) const {
 			using namespace Helper::Algorithm;
-			size_t index = -1;
+			int index = -1;
 			BinarySearch<T>(m_rows, row, index);
-			return static_cast<int>(index);
+			return index;
 		}
 	};
 

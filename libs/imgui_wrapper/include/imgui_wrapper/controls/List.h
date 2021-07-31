@@ -288,6 +288,8 @@ namespace GUI
 		using AbstractListView<T>::AbstractListView;
 
 		virtual std::vector<ColInfo>& getColumnSetups() = 0;
+
+		virtual void renderColumn(const std::string& colText, const ColInfo* colInfo, const T& data) = 0;
 	};
 	
 	template<typename T>
@@ -336,8 +338,30 @@ namespace GUI
 		}
 
 	protected:
-		virtual void renderColumn(const std::string& colText, const ColInfo* colInfo, const T& data) {
+		void renderColumn(const std::string& colText, const ColInfo* colInfo, const T& data) override {
 			Text::Text(colText).show();
+		}
+	};
+
+	template<typename T>
+	class SelectableTableListView
+		: public TableListView<T>
+	{
+		EventHandler<T> m_selectEventHandler;
+	public:
+		SelectableTableListView(IListModel<T>* listModel = nullptr, const std::vector<ColInfo>& colsInfo = {})
+			: TableListView<T>(listModel, colsInfo)
+		{}
+
+		void handler(const std::function<void(T)>& selectEventHandler) {
+			m_selectEventHandler = selectEventHandler;
+		}
+
+	protected:
+		void renderColumn(const std::string& colText, const ColInfo* colInfo, const T& data) override {
+			if (ImGui::Selectable(colText.c_str(), false, ImGuiSelectableFlags_SpanAllColumns)) {
+				m_selectEventHandler(data);
+			}
 		}
 	};
 
@@ -393,6 +417,10 @@ namespace GUI
 			{
 				m_selectEventHandler(data);
 			}
+		}
+
+		void renderColumn(const std::string& colText, const ColInfo* colInfo, const T& data) override {
+			m_tableListView->renderColumn(colText, colInfo, data);
 		}
 	};
 
@@ -461,6 +489,10 @@ namespace GUI
 					m_selectedItems.insert(data);
 				else m_selectedItems.erase(data);
 			}
+		}
+
+		void renderColumn(const std::string& colText, const ColInfo* colInfo, const T& data) override {
+			m_tableListView->renderColumn(colText, colInfo, data);
 		}
 	};
 };

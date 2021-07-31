@@ -184,7 +184,7 @@ void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, Fu
 					targetOffset = ComplexOffset(it->second, 0);
 			}
 
-			if (targetOffset == InvalidOffset || m_image->getSectionByRva(targetOffset >> 8)->m_type != ImageSection::CODE_SEGMENT) {
+			if (targetOffset == InvalidOffset || m_image->getSectionByOffset(targetOffset.getByteOffset())->m_type != ImageSection::CODE_SEGMENT) {
 				offset = InvalidOffset;
 				m_decoder->getWarningContainer()->addWarning(
 					"rva " + std::to_string(targetOffset >> 8) + " is not correct in the jump instruction " + instr->m_origInstruction->m_originalView + " (at 0x" + Helper::String::NumberToHex(instr->m_origInstruction->m_offset) + ")");
@@ -338,9 +338,9 @@ void PCodeGraphReferenceSearch::findNewFunctionOffsets(FunctionPCodeGraph* funcG
 	for (auto symbol : sdaBuilding.getNewAutoSymbols()) {
 		if (auto memSymbol = dynamic_cast<CE::Symbol::IMemorySymbol*>(symbol)) {
 			auto storage = memSymbol->getStorage();
-			const auto offset = static_cast<uint64_t>(storage.getOffset());
+			const auto offset = static_cast<Offset>(storage.getOffset());
 			if (storage.getType() == Storage::STORAGE_GLOBAL) {
-				const auto segmentType = m_image->getSectionByRva(offset)->m_type;
+				const auto segmentType = m_image->getSectionByOffset(offset)->m_type;
 				if (segmentType == ImageSection::CODE_SEGMENT) {
 					nonVirtFuncOffsets.push_back(offset);
 				}
@@ -373,7 +373,7 @@ void PCodeGraphReferenceSearch::checkOnVTable(uint64_t startOffset, VTable* pVta
 		if (funcAddr == 0x0)
 			break;
 		const auto funcRva = m_image->addrToRva(funcAddr);
-		if (m_image->getSectionByRva(funcRva)->m_type != ImageSection::CODE_SEGMENT)
+		if (m_image->getSectionByOffset(funcRva)->m_type != ImageSection::CODE_SEGMENT)
 			break;
 		funcOffsets.push_back(funcRva);
 	}

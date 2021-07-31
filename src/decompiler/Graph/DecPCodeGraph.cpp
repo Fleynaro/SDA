@@ -38,11 +38,12 @@ FunctionPCodeGraph* ImagePCodeGraph::getEntryFunctionGraph() {
 
 PCodeBlock* ImagePCodeGraph::getBlockAtOffset(ComplexOffset offset, bool halfInterval) {
 	if (!m_blocks.empty()) {
-		auto it = std::prev(m_blocks.upper_bound(offset));
+		const auto it = std::prev(m_blocks.upper_bound(offset));
 		if (it != m_blocks.end()) {
-			const bool boundUp = halfInterval ? (offset < it->second.getMaxOffset()) : (offset <= it->second.getMaxOffset());
-			if (boundUp && offset >= it->second.getMinOffset()) {
-				return &it->second;
+			auto& block = it->second;
+			const bool boundUp = halfInterval ? (offset < block.getMaxOffset()) : (offset <= block.getMaxOffset());
+			if (boundUp && offset >= block.getMinOffset()) {
+				return &block;
 			}
 		}
 	}
@@ -50,8 +51,9 @@ PCodeBlock* ImagePCodeGraph::getBlockAtOffset(ComplexOffset offset, bool halfInt
 }
 
 FunctionPCodeGraph* ImagePCodeGraph::getFuncGraphAt(ComplexOffset offset, bool halfInterval) {
-	const auto block = getBlockAtOffset(offset, halfInterval);
-	return block->m_funcPCodeGraph;
+	if(const auto block = getBlockAtOffset(offset, halfInterval))
+		return block->m_funcPCodeGraph;
+	return nullptr;
 }
 
 void ImagePCodeGraph::fillHeadFuncGraphs() {

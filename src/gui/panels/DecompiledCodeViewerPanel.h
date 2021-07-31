@@ -169,9 +169,19 @@ namespace GUI
 					}
 
 					if (events.isHovered()) {
-						if (!dynamic_cast<CE::Symbol::FunctionSymbol*>(symbol)) {
-							ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+						ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+						if (const auto funcSymbol = dynamic_cast<CE::Symbol::FunctionSymbol*>(symbol)) {
+							if (events.isDoubleClickedByMiddleMouseBtn()) {
+								m_parentGen->m_decCodeViewer->m_clickedFunction = funcSymbol->getFunction();
+							}
+						} else {
 							ImGui::SetTooltip(("Data type: " + symbol->getDataType()->getDisplayName()).c_str());
+						}
+
+						if (const auto globalVarSymbol = dynamic_cast<CE::Symbol::GlobalVarSymbol*>(symbol)) {
+							if (events.isDoubleClickedByMiddleMouseBtn()) {
+								m_parentGen->m_decCodeViewer->m_clickedGlobalVar = globalVarSymbol;
+							}
 						}
 					}
 				}
@@ -471,6 +481,8 @@ namespace GUI
 			bool ExecCtxs = false;
 			bool DebugComments = true;
 		} m_show;
+		CE::Function* m_clickedFunction = nullptr;
+		CE::Symbol::GlobalVarSymbol* m_clickedGlobalVar = nullptr;
 		bool m_codeChanged = false;
 		float m_maxLineSize = 0.0f;
 		
@@ -500,6 +512,7 @@ namespace GUI
 
 	private:
 		void renderControl() override {
+			m_clickedFunction = nullptr;
 			m_codeChanged = false;
 			Show(m_ctxWindow);
 			Show(m_builtinWindow);

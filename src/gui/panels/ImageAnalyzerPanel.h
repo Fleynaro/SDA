@@ -13,21 +13,30 @@ namespace GUI
 	class ImageAnalyzerPanel : public AbstractPanel
 	{
 		CE::ImageDecorator* m_imageDec;
+		CE::Offset m_startOffset;
 	public:
+		ImageAnalyzerPanel(CE::ImageDecorator* imageDec, CE::Offset startOffset)
+			: AbstractPanel("Image Analyzer Master"), m_imageDec(imageDec), m_startOffset(startOffset)
+		{}
+
 		ImageAnalyzerPanel(CE::ImageDecorator* imageDec)
-			: AbstractPanel("Image Analyzer Master"), m_imageDec(imageDec)
+			: ImageAnalyzerPanel(imageDec, imageDec->getImage()->getOffsetOfEntryPoint())
 		{}
 
 	private:
 		void renderPanel() override {
 			Text::Text(std::string("Image: ") + m_imageDec->getName()).show();
-			
+
+			using namespace Helper::String;
+			Text::Text("Offset: 0x" + NumberToHex(m_startOffset)).show();
+
+			NewLine();
 			if (Button::StdButton("Start").present()) {
-				
+				startAnalysis();
 			}
 		}
 
-		void startAnalysis() {
+		void startAnalysis() const {
 			using namespace CE;
 			using namespace Decompiler;
 
@@ -36,7 +45,7 @@ namespace GUI
 			DecoderX86 decoder(&registerFactoryX86, m_imageDec->getInstrPool(), &warningContainer);
 
 			const ImageAnalyzer imageAnalyzer(m_imageDec->getImage(), m_imageDec->getPCodeGraph(), &decoder, &registerFactoryX86);
-			imageAnalyzer.start(m_imageDec->getImage()->getOffsetOfEntryPoint());
+			imageAnalyzer.start(m_startOffset);
 		}
 	};
 };

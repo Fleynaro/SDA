@@ -33,7 +33,7 @@ ImageDecorator* Function::getImage() const
 
 Decompiler::FunctionPCodeGraph* Function::getFuncGraph() const
 {
-	return m_imageDec->getPCodeGraph()->getFuncGraphAt(getOffset());
+	return m_imageDec->getPCodeGraph()->getFuncGraphAt(ComplexOffset(getOffset(), 0));
 }
 
 const char* Function::getName() {

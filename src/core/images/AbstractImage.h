@@ -26,14 +26,18 @@ namespace CE
 			return m_relVirtualAddress + m_virtualSize;
 		}
 
-		// image offset to rva (ghidra makes this transform automatically)
-		uint64_t toRva(uint64_t offset) const {
+		bool contains(Offset offset) const {
+			return offset >= getMinOffset() && offset < getMaxOffset();
+		}
+
+		// image file offset to rva(=offset) (ghidra makes this transform automatically)
+		Offset toOffset(uint64_t offset) const {
 			return offset - m_pointerToRawData + m_relVirtualAddress;
 		}
 
-		// rva to image offset (ghidra makes this transform automatically)
-		uint64_t toImageOffset(uint64_t rva) const {
-			return rva - m_relVirtualAddress + m_pointerToRawData;
+		// rva(=offset) to image file offset (ghidra makes this transform automatically)
+		uint64_t toImageOffset(Offset offset) const {
+			return offset - m_relVirtualAddress + m_pointerToRawData;
 		}
 	};
 	
@@ -63,20 +67,17 @@ namespace CE
 			return addr - getAddress();
 		}
 
-		// rva to image offset (ghidra makes this transform automatically)
-		uint64_t toImageOffset(uint64_t rva) const {
-			const auto section = getSectionByRva(rva);
+		// rva(=offset) to image file offset (ghidra makes this transform automatically)
+		uint64_t toImageOffset(Offset offset) const {
+			const auto section = getSectionByOffset(offset);
 			if (!section)
-				return rva;
-			return section->toImageOffset(rva);
+				return offset;
+			return section->toImageOffset(offset);
 		}
 
-		const ImageSection* getSectionByRva(uint64_t rva) const
-		{
-			for (auto& section : m_imageSections)
-			{
-				if (rva >= section.m_relVirtualAddress && rva < section.m_relVirtualAddress + section.m_virtualSize)
-				{
+		const ImageSection* getSectionByOffset(Offset offset) const {
+			for (auto& section : m_imageSections) {
+				if (section.contains(offset)) {
 					return &section;
 				}
 			}

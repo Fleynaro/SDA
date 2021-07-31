@@ -4,9 +4,11 @@
 namespace CE
 {
 	inline const static uint64_t InvalidOffset = -1;
-	
+
+	// it is a pseudonym of RVA (relative virtual address)
 	using Offset = uint64_t;
 
+	// it consists of {byte offset} and {item order id} parts (used for pcode instructions)
 	class ComplexOffset
 	{
 		union {

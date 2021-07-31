@@ -10,17 +10,18 @@ namespace Helper
 	namespace Algorithm
 	{
 		template<typename T>
-		static bool BinarySearch(const std::vector<T>& vector, T value, size_t& index) {
+		static bool BinarySearch(const std::vector<T>& vector, T value, int& index) {
 
-			auto lower = vector.begin();
-			auto upper = vector.end() - 1;
+			int lower = 0;
+			int upper = static_cast<int>(vector.size()) - 1;
 			while (lower <= upper) {
-				auto mid = lower + (upper - lower) / 2;
-				if (value == *mid) {
-					index = std::distance(vector.begin(), mid);
+				auto mid = (upper + lower) / 2;
+				const auto mid_value = vector[mid];
+				if (value == mid_value) {
+					index = mid;
 					return true;
 				}
-				if (value < *mid)
+				if (value < mid_value)
 					upper = mid - 1;
 				else
 					lower = mid + 1;

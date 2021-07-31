@@ -94,6 +94,8 @@ namespace GUI
 		bool m_isClickedByRightMouseBtn = false;
 		bool m_isClickedByMiddleMouseBtn = false;
 
+		bool m_isDoubleClickedByLeftMouseBtn = false;
+
 		bool m_isActive = false;
 		bool m_isActiveOn = false;
 		bool m_isActiveOff = false;
@@ -121,6 +123,11 @@ namespace GUI
 		bool isClickedByMiddleMouseBtn() const
 		{
 			return m_isClickedByMiddleMouseBtn;
+		}
+
+		bool isDoubleClickedByMiddleMouseBtn() const
+		{
+			return m_isDoubleClickedByLeftMouseBtn;
 		}
 
 		bool isActive() const
@@ -161,7 +168,7 @@ namespace GUI
 		}
 
 	public:
-		void processGenericEvents() {
+		void processGenericEvents() override {
 			AbstractGenericEvents::processGenericEvents();
 			m_isClickedByLeftMouseBtn = false;
 			m_isClickedByRightMouseBtn = false;
@@ -172,15 +179,17 @@ namespace GUI
 			m_isVisibleOff = false;
 			
 			// mouse
-			if (isImGuiHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-				m_isClickedByLeftMouseBtn = true;
-
-			if (isImGuiHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
-				m_isClickedByRightMouseBtn = true;
-
-			if (isImGuiHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
-				m_isClickedByMiddleMouseBtn = true;
-
+			if(isImGuiHovered()) {
+				if(ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+					m_isClickedByLeftMouseBtn = true;
+				if(ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+					m_isClickedByRightMouseBtn = true;
+				if(ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
+					m_isClickedByMiddleMouseBtn = true;
+				if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+					m_isDoubleClickedByLeftMouseBtn = true;
+			}
+			
 			// active
 			if(isImGuiActive())
 			{
