@@ -757,7 +757,7 @@ namespace CE::Decompiler
 				generateBlockList(block->m_mainBranch);
 			}
 			if (m_SHOW_ALL_GOTO || !block->m_elseBranch->isEmpty()) {
-				generateTabs();
+				generateToken(" ", TOKEN_OTHER);
 				generateToken("else", TOKEN_OPERATOR);
 				generateToken(" ", TOKEN_OTHER);
 				generateBlockList(block->m_elseBranch);
@@ -785,6 +785,7 @@ namespace CE::Decompiler
 				generateToken("do", TOKEN_OPERATOR);
 				generateToken(" ", TOKEN_OTHER);
 				generateBlockList(block->m_mainBranch);
+				generateToken(" ", TOKEN_OTHER);
 				generateToken("while", TOKEN_OPERATOR);
 				generateToken(" ", TOKEN_OTHER);
 				{

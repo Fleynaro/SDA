@@ -110,7 +110,7 @@ namespace GUI
 				if (events.isHovered()) {
 					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 				}
-				if (events.isClickedByMiddleMouseBtn()) {
+				if (events.isClickedByLeftMouseBtn()) {
 					if (colInfo->m_name == "Name") {
 						const auto panel = new BuiltinTextInputPanel(colText);
 						panel->handler([&, panel, value](const std::string& name)
@@ -168,7 +168,7 @@ namespace GUI
 				}
 			}
 			NewLine();
-			Text::Text("Click the middle mouse button hovering on a value you wish to edit.").show();
+			Text::Text("Click the left mouse button hovering on a value you wish to edit.").show();
 		}
 
 		void save() override {

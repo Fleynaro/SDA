@@ -113,8 +113,8 @@ namespace GUI
 			class ExprTreeGenerator : public CE::Decompiler::ExprTree::ExprTreeViewGenerator
 			{
 				CodeGenerator* m_parentGen;
-				bool m_isTextAddingOnCurLine = true;
 			public:
+				bool m_isTextAddingOnCurLine = true;
 				std::list<void*> m_beginGroups;
 				
 				ExprTreeGenerator(CodeGenerator* parentGen)
@@ -284,8 +284,8 @@ namespace GUI
 		private:
 			DecompiledCodeViewer* m_decCodeViewer;
 			bool m_hasNodeSelected = false;
-			bool m_hasBlockListSelected = false;
 			std::string m_textOnCurLine;
+			int m_curLineIdx = 0;
 		public:
 			ExprTreeGenerator m_exprTreeGenerator;
 			
@@ -319,8 +319,43 @@ namespace GUI
 
 			void generateToken(const std::string& text, TokenType tokenType) override {
 				if (tokenType == TOKEN_END_LINE) {
+					m_curLineIdx++;
 					m_textOnCurLine = "";
-					NewLine();
+
+					// line selection
+					auto rowColor = ToImGuiColorU32(0x141414FF);
+					if(m_decCodeViewer->m_selectedLineIdx == m_curLineIdx - 1) {
+						rowColor = ToImGuiColorU32(0x1d333dFF);
+					}
+					ImGui::PushStyleColor(ImGuiCol_TableRowBg, rowColor);
+					ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, rowColor);
+					ImGui::TableNextRow(0, 10.0f);
+					ImGui::PopStyleColor();
+					ImGui::PopStyleColor();
+
+					// line index
+					ImGui::TableNextColumn();
+					{
+						// process event for line
+						if (ImGui::IsWindowHovered()) {
+							ImGuiContext& g = *GImGui;
+							if (ImGui::IsMousePosValid(&g.IO.MousePos)) {
+								const auto table = ImGui::GetCurrentTable();
+								const auto startRowPos = ImGui::GetCursorScreenPos();
+								const auto rowSize = ImVec2(table->InnerRect.GetSize().x, 17.0f);
+								if (ImRect(startRowPos, startRowPos + rowSize).Contains(g.IO.MousePos)) {
+									// select line
+									if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+										m_decCodeViewer->m_selectedLineIdx = m_curLineIdx;
+									}
+								}
+							}
+						}
+					}
+					Text::ColoredText(std::to_string(m_curLineIdx), 0x7d7d7dFF).show();
+
+					// code
+					ImGui::TableNextColumn();
 					return;
 				}
 
@@ -362,6 +397,7 @@ namespace GUI
 					if (ImGui::IsItemClicked()) {
 						m_decCodeViewer->m_hidedBlockLists.erase(blockList);
 					}
+					generateEndLine();
 					return;
 				}
 				
@@ -380,6 +416,7 @@ namespace GUI
 						RenderAsmListing(pcodeBlock, m_decCodeViewer->m_image, m_decCodeViewer->m_instructionViewDecoder, m_decCodeViewer->m_show.PCode);
 						ImGui::EndTable();
 					}
+					generateEndLine();
 				}
 				
 				CodeViewGenerator::generateCode(decBlock);
@@ -411,53 +448,45 @@ namespace GUI
 								Text::Text(usingType).show();
 								
 								ImGui::TableNextColumn();
+								m_exprTreeGenerator.m_isTextAddingOnCurLine = false;
 								m_exprTreeGenerator.generate(regInfo.m_expr->getNode());
+								m_exprTreeGenerator.m_isTextAddingOnCurLine = true;
 							}
 						}
 						ImGui::EndTable();
 					}
+					generateEndLine();
 				}
 			}
 
 			void generateCurlyBracket(const std::string& text, CE::Decompiler::LinearView::BlockList* blockList) override {
-				const auto isSelected = blockList == m_decCodeViewer->m_selectedBlockList;
-				if (text == "{") {
-					generateToken(text, TOKEN_CURLY_BRACKET);
-					if (isSelected) {
-						FrameItem(COLOR_FRAME_SELECTED_TEXT);
-					}
-					curlyBracketEvent(blockList);
-					generateEndLine();
-					ImGui::BeginGroup();
-					m_tabsCount++;
-				}
-				
 				if (text == "}") {
 					m_tabsCount--;
 					generateTabs();
-					generateToken(text, TOKEN_CURLY_BRACKET);
-					if (isSelected) {
-						FrameItem(COLOR_FRAME_SELECTED_TEXT);
-					}
-					ImGui::EndGroup();
-					curlyBracketEvent(blockList);
+				}
+				
+				generateToken(text, TOKEN_CURLY_BRACKET);
+				if (blockList == m_decCodeViewer->m_selectedBlockList) {
+					FrameItem(COLOR_FRAME_SELECTED_TEXT);
+				}
+				curlyBracketEvent(blockList);
+
+				if (text == "{") {
+					generateEndLine();
+					m_tabsCount++;
 				}
 			}
 
-			void curlyBracketEvent(CE::Decompiler::LinearView::BlockList* blockList) {
-				if (!m_hasBlockListSelected) {
-					const auto events = GenericEvents(true);
-					if (events.isClickedByLeftMouseBtn()) {
-						m_decCodeViewer->m_selectedBlockList = blockList;
-						m_hasBlockListSelected = true;
-					}
-					if (events.isClickedByRightMouseBtn() && !m_hasNodeSelected) {
-						auto& ctxWin = m_decCodeViewer->m_ctxWindow;
-						delete ctxWin;
-						ctxWin = new PopupContextWindow(new BlockListContextPanel(blockList, m_decCodeViewer));
-						ctxWin->open();
-						m_hasBlockListSelected = true;
-					}
+			void curlyBracketEvent(CE::Decompiler::LinearView::BlockList* blockList) const {
+				const auto events = GenericEvents(true);
+				if (events.isClickedByLeftMouseBtn()) {
+					m_decCodeViewer->m_selectedBlockList = blockList;
+				}
+				if (events.isClickedByRightMouseBtn() && !m_hasNodeSelected) {
+					auto& ctxWin = m_decCodeViewer->m_ctxWindow;
+					delete ctxWin;
+					ctxWin = new PopupContextWindow(new BlockListContextPanel(blockList, m_decCodeViewer));
+					ctxWin->open();
 				}
 			}
 		};
@@ -484,6 +513,7 @@ namespace GUI
 		CE::Function* m_clickedFunction = nullptr;
 		CE::Symbol::GlobalVarSymbol* m_clickedGlobalVar = nullptr;
 		bool m_codeChanged = false;
+		int m_selectedLineIdx = -1;
 		float m_maxLineSize = 0.0f;
 		
 		DecompiledCodeViewer(CE::Decompiler::LinearView::BlockList* blockList)
@@ -507,12 +537,14 @@ namespace GUI
 		virtual void renderCode() {
 			CodeGenerator generator(this);
 			generator.m_SHOW_ALL_COMMENTS = m_show.DebugComments;
+			generator.generateEndLine();
 			generator.generate(m_blockList);
 		}
 
 	private:
 		void renderControl() override {
 			m_clickedFunction = nullptr;
+			m_clickedGlobalVar = nullptr;
 			m_codeChanged = false;
 			Show(m_ctxWindow);
 			Show(m_builtinWindow);
@@ -526,8 +558,14 @@ namespace GUI
 				}
 			}
 			removeSingleSelectedSymbols();
-			
-			renderCode();
+
+			if (ImGui::BeginTable("dec_code_table", 2, ImGuiTableFlags_RowBg))
+			{
+				ImGui::TableSetupColumn("1", ImGuiTableColumnFlags_WidthFixed, 20.0f);
+				ImGui::TableSetupColumn("2", ImGuiTableColumnFlags_None);
+				renderCode();
+				ImGui::EndTable();
+			}
 			ImGui::EndChild();
 		}
 
@@ -564,6 +602,7 @@ namespace GUI
 			void renderCode() override {
 				CodeGenerator generator(this);
 				generator.m_SHOW_ALL_COMMENTS = m_show.DebugComments;
+				generator.generateEndLine();
 				renderFunctionSignature(generator.m_exprTreeGenerator);
 				generator.generateEndLine();
 				generator.generateCurlyBracket("{", m_blockList);
@@ -571,6 +610,7 @@ namespace GUI
 				generator.generateEndLine();
 				generator.generate(m_blockList);
 				generator.generateCurlyBracket("}", m_blockList);
+				generator.generateEndLine();
 			}
 
 			void renderFunctionSignature(CodeGenerator::ExprTreeGenerator& gen) const {

@@ -367,12 +367,13 @@ namespace GUI
 							if (const auto pcodeBlock = m_codeSectionController->m_imageDec->getPCodeGraph()->getBlockAtOffset(codeSectionRow.m_fullOffset)) {
 								if (rowIdx == (m_clipper.DisplayStart + m_clipper.DisplayEnd) / 2)
 									m_curFuncPCodeGraph = pcodeBlock->m_funcPCodeGraph;
-								if(m_obscureUnknownLocation)
+							} else {
+								if (m_obscureUnknownLocation)
 									obscure = true;
 							}
 							m_selectCurRow = m_isRowSelected && m_selectedRow == codeSectionRow;
 
-							if(!obscure)
+							if(obscure)
 								ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.7f);
 
 							ImVec2 startRowPos;
@@ -410,7 +411,7 @@ namespace GUI
 							const auto rowSize = ImVec2(tableSize.x - 25, m_clipper.ItemsHeight);
 							decorateRow(startRowPos, rowSize, codeSectionRow);
 
-							if (!obscure)
+							if (obscure)
 								ImGui::PopStyleVar();
 						}
 					}
@@ -787,10 +788,10 @@ namespace GUI
 
 		void goToOffset(CE::Offset offset) {
 			const auto section = m_imageDec->getImage()->getSectionByOffset(offset);
-			if(section->m_type != CE::ImageSection::NONE_SEGMENT) {
-				selectImageSection(section);
-				m_imageSectionViewer->goToOffset(offset);
-			}
+			if (section->m_type == CE::ImageSection::NONE_SEGMENT)
+				throw WarningException("Offset not found.");
+			selectImageSection(section);
+			m_imageSectionViewer->goToOffset(offset);
 		}
 
 		void decompile(CE::Decompiler::FunctionPCodeGraph* functionPCodeGraph) {
