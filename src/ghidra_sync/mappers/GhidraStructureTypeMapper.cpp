@@ -47,9 +47,9 @@ SDataTypeStructure StructureTypeMapper::buildDesc(DataType::Structure* Struct) c
 
 void StructureTypeMapper::changeStructureByDesc(DataType::Structure* Struct, const SDataTypeStructure& structDesc) const
 {
-	m_dataTypeMapper->changeUserTypeByDesc(Struct, structDesc.type);
+	/*m_dataTypeMapper->changeUserTypeByDesc(Struct, structDesc.type);
 	Struct->getFields().clear();
 	for (auto fieldDesc : structDesc.fields) {
 		Struct->addField(fieldDesc.offset, fieldDesc.name, m_dataTypeMapper->getTypeByDesc(fieldDesc.type), fieldDesc.comment);
-	}
+	}*/
 }

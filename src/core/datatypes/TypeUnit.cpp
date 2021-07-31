@@ -118,11 +118,11 @@ int Unit::getConversionPriority() {
 	return -1;
 }
 
-const std::string Unit::getName() {
+const char* Unit::getName() {
 	return m_type->getName();
 }
 
-const std::string Unit::getComment() {
+const char* Unit::getComment() {
 	return m_type->getComment();
 }
 

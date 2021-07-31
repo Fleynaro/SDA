@@ -32,11 +32,11 @@ namespace GUI
 			private:
 				std::string getText(CE::ImageDecorator* item) override
 				{
-					auto name = item->getName();
+					std::string name = item->getName();
 					if (!item->hasLoaded())
 						name += " (not loaded)";
 					if(static_cast<ImageListModel*>(m_listModel)->m_isTable)
-						return item->getAddressSpace()->getName() + "," + name;
+						return std::string(item->getAddressSpace()->getName()) + "," + name;
 					return name;
 				}
 			};

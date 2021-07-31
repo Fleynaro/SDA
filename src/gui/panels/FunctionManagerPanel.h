@@ -20,7 +20,7 @@ namespace GUI
 		}
 
 		bool renderGroupTop(CE::Function* const& func, int group_n) override {
-			return ImGui::CollapsingHeader(func->getImage()->getName().c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+			return ImGui::CollapsingHeader(func->getImage()->getName(), ImGuiTreeNodeFlags_DefaultOpen);
 		}
 	};
 	

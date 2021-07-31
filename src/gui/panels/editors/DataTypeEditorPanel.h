@@ -299,7 +299,7 @@ namespace GUI
 				m_listModel.m_hexView = m_hexView.isSelected();
 			}
 			NewLine();
-			Text::Text("Click the middle mouse button hovering on a value you wish to edit.").show();
+			Text::Text("Click the left mouse button hovering on a value you wish to edit.").show();
 			Text::Text("The offset column for bit fields is presented as: {byte offset}:{bit offset}:{bit size}").show();
 			
 			Show(m_errorWindow);
@@ -438,7 +438,7 @@ namespace GUI
 			}
 			
 			NewLine();
-			Text::Text("Click the middle mouse button hovering on a value you wish to edit.").show();
+			Text::Text("Click the left mouse button hovering on a value you wish to edit.").show();
 		}
 
 		void save() override {

@@ -1,6 +1,7 @@
 #pragma once
 #include "ItemSelector.h"
 #include "BuiltinInputPanel.h"
+#include "ImageAnalyzerPanel.h"
 #include "controllers/AddressSpaceManagerController.h"
 #include "controllers/ImageManagerController.h"
 #include "imgui_wrapper/Window.h"
@@ -28,7 +29,7 @@ namespace GUI
 		}
 
 		virtual bool renderGroupHeader(CE::AddressSpace* addrSpace) {
-			return ImGui::CollapsingHeader(addrSpace->getName().c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+			return ImGui::CollapsingHeader(addrSpace->getName(), ImGuiTreeNodeFlags_DefaultOpen);
 		}
 	};
 
@@ -111,7 +112,7 @@ namespace GUI
 					Widget::FileDialog m_fileDialog;
 				public:
 					ImageCreatorPanel(AddrSpaceContextPanel* ctx)
-						: AbstractPanel("Image Creator (Address space: " + ctx->m_addrSpace->getName() + ")###ImageCreator"), m_ctx(ctx)
+						: AbstractPanel(std::string("Image Creator (Address space: ") + ctx->m_addrSpace->getName() + ")###ImageCreator"), m_ctx(ctx)
 					{
 						m_fileDialog = Widget::FileDialog("Choose Image File", ".*");
 						m_nameInput.focus();
@@ -203,6 +204,12 @@ namespace GUI
 						m_imageManagerPanel->m_popupBuiltinWindow = new PopupBuiltinWindow(panel);
 						m_imageManagerPanel->m_popupBuiltinWindow->getPos() = m_winPos;
 						m_imageManagerPanel->m_popupBuiltinWindow->open();
+					}
+
+					if (ImGui::MenuItem("Analyze...")) {
+						delete m_imageManagerPanel->m_popupModalWindow;
+						m_imageManagerPanel->m_popupModalWindow = new PopupModalWindow(new ImageAnalyzerPanel(m_imageDec));
+						m_imageManagerPanel->m_popupModalWindow->open();
 					}
 				}
 			};

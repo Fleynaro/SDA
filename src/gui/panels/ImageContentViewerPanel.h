@@ -68,12 +68,6 @@ namespace GUI
 			AbstractSectionViewer(AbstractSectionController* controller)
 				: m_sectionController(controller)
 			{}
-		
-		protected:
-			void renderAddressColumn(uint64_t offset) {
-				ImGui::TableNextColumn();
-				RenderAddress(offset);
-			}
 		};
 
 		class DataSectionViewer : public AbstractSectionViewer
@@ -101,7 +95,8 @@ namespace GUI
 						for (auto rowIdx = clipper.DisplayStart; rowIdx < clipper.DisplayEnd; rowIdx++) {
 							ImGui::TableNextRow();
 							const auto offset = m_dataSectionController->getRow(rowIdx);
-							renderAddressColumn(offset);
+							ImGui::TableNextColumn();
+							RenderAddress(offset);
 							renderSpecificColumns(offset);
 						}
 					}
@@ -142,6 +137,8 @@ namespace GUI
 			};
 			
 			std::set<CodeSectionController::Jmp*> m_shownJmps;
+			ImGuiWindow* m_window = nullptr;
+			PopupBuiltinWindow* m_builtinWindow = nullptr;
 		public:
 			CodeSectionController* m_codeSectionController;
 			AbstractInstructionViewDecoder* m_instructionViewDecoder;
@@ -153,16 +150,19 @@ namespace GUI
 
 			~CodeSectionViewer() override {
 				delete m_instructionViewDecoder;
+				delete m_builtinWindow;
 			}
 
 		private:
 			void renderControl() override {
 				m_shownJmps.clear();
 				m_curFuncPCodeGraph = nullptr;
+				m_window = ImGui::GetCurrentWindow();
 				
 				auto goToFunc = Button::StdButton("go to func").present();
 				if (ImGui::BeginTable("content_table", 3, TableFlags))
 				{
+					const auto tableSize = ImGui::GetItemRectSize();
 					ImGui::TableSetupScrollFreeze(0, 1);
 					ImGui::TableSetupColumn("Address", ImGuiTableColumnFlags_None);
 					ImGui::TableSetupColumn("Command", ImGuiTableColumnFlags_None);
@@ -184,7 +184,9 @@ namespace GUI
 
 							if (!codeSectionRow.m_isPCode) {
 								const auto instrOffset = codeSectionRow.m_byteOffset;
-								renderAddressColumn(instrOffset);
+								ImGui::TableNextColumn();
+								const auto startRowPos = ImGui::GetCursorScreenPos();
+								RenderAddress(instrOffset);
 
 								InstructionViewInfo instrViewInfo;
 								m_instructionViewDecoder->decode(m_codeSectionController->getImageDataByOffset(instrOffset), &instrViewInfo);
@@ -194,6 +196,10 @@ namespace GUI
 										renderJmpLines(rowIdx, clipper);
 									});
 								instructionViewer.show();
+
+								if (const auto function = m_codeSectionController->m_imageDec->getFunctionAt(instrOffset)) {
+									renderFunctionHeader(function, startRowPos, startRowPos + ImVec2(tableSize.x - 25, 0));
+								}
 							} else {
 								const auto instrOffset = codeSectionRow.m_fullOffset;
 								if (const auto instr = m_codeSectionController->m_imageDec->getInstrPool()->getPCodeInstructionAt(instrOffset)) {
@@ -212,6 +218,39 @@ namespace GUI
 						ImGui::SetScrollY(m_codeSectionController->getRowIdx(CodeSectionRow(0x20c8000)) * clipper.ItemsHeight);
 					}
 					ImGui::EndTable();
+				}
+
+				Show(m_builtinWindow);
+			}
+
+			void renderFunctionHeader(CE::Function* function, const ImVec2& startRowPos, const ImVec2& endRowPos) {
+				const auto Color = ToImGuiColorU32(0xc9c59fFF);
+				m_window->DrawList->AddLine(startRowPos, endRowPos, Color, 0.7f);
+
+				// function name
+				{
+					const auto text = function->getName();
+					const auto textSize = ImGui::CalcTextSize(text);
+					const auto textPos = endRowPos - ImVec2(textSize.x, 0.0);
+
+					// click event
+					ImGuiContext& g = *GImGui;
+					if (ImGui::IsMousePosValid(&g.IO.MousePos)) {
+						if (ImRect(textPos, textPos + textSize).Contains(g.IO.MousePos)) {
+							ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+							if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+								delete m_builtinWindow;
+								m_builtinWindow = new PopupBuiltinWindow(new FunctionEditorPanel(function));
+								m_builtinWindow->getSize() = ImVec2(500.0f, 200.0f);
+								m_builtinWindow->getPos() = endRowPos - ImVec2(m_builtinWindow->getSize().x, 0);
+								m_builtinWindow->addFlags(ImGuiWindowFlags_AlwaysAutoResize, false);
+								m_builtinWindow->open();
+							}
+						}
+					}
+
+					// render
+					m_window->DrawList->AddText(textPos, Color, text);
 				}
 			}
 
@@ -319,7 +358,7 @@ namespace GUI
 		CE::ImageDecorator* m_imageDec;
 		
 		ImageContentViewerPanel(CE::ImageDecorator* imageDec)
-			: AbstractPanel("Image: " + imageDec->getName() + "###ImageContentViewer"), m_imageDec(imageDec), m_imageSectionListModel(imageDec->getImage())
+			: AbstractPanel(std::string("Image: ") + imageDec->getName() + "###ImageContentViewer"), m_imageDec(imageDec), m_imageSectionListModel(imageDec->getImage())
 		{
 			m_imageSectionMenuListView = MenuListView(&m_imageSectionListModel);
 			m_imageSectionMenuListView.handler([&](const CE::ImageSection* imageSection)

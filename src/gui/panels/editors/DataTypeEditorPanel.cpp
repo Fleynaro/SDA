@@ -39,7 +39,7 @@ void GUI::StructureEditorPanel::FieldTableListView::renderColumn(const std::stri
 		if (colInfo->m_name != "Length")
 			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 	}
-	if (events.isClickedByMiddleMouseBtn()) {
+	if (events.isClickedByLeftMouseBtn()) {
 		if (colInfo->m_name == "Offset") {
 			const auto panel = new BuiltinTextInputPanel(colText);
 			panel->handler([&, panel, field](const std::string& offset)
@@ -138,7 +138,7 @@ void GUI::FuncSigEditorPanel::ParamTableListView::renderColumn(const std::string
 		if (colInfo->m_name != "Index")
 			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 	}
-	if (events.isClickedByMiddleMouseBtn()) {
+	if (events.isClickedByLeftMouseBtn()) {
 		if (colInfo->m_name == "DataType") {
 			const auto panel = new DataTypeSelectorPanel(param->getManager()->getProject()->getTypeManager(),
 			                                             param->getDataType()->getDisplayName());

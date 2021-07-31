@@ -22,7 +22,7 @@ namespace GUI
 
 		bool renderGroupTop(CE::Symbol::AbstractSymbol* const& symbol, int group_n) override {
 			const auto gvar = dynamic_cast<CE::Symbol::GlobalVarSymbol*>(symbol);
-			return ImGui::CollapsingHeader(gvar->m_globalSymbolTable->m_imageDec->getName().c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+			return ImGui::CollapsingHeader(gvar->m_globalSymbolTable->m_imageDec->getName(), ImGuiTreeNodeFlags_DefaultOpen);
 		}
 	};
 

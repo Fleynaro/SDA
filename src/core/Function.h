@@ -35,9 +35,9 @@ namespace CE
 
 		Decompiler::FunctionPCodeGraph* getFuncGraph() const;
 
-		const std::string getName() override;
+		const char* getName() override;
 
-		const std::string getComment() override;
+		const char* getComment() override;
 
 		void setName(const std::string& name) override;
 

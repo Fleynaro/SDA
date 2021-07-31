@@ -200,7 +200,7 @@ void GUI::DecompilerDemoPanel::renderPanel()
 					{
 						Text::Text("opened!").show();
 					});
-				m_popupBuiltinWindow = new PopupBuiltinWindow(panel, true, true);
+				m_popupBuiltinWindow = new PopupBuiltinWindow(panel, true);
 				m_popupBuiltinWindow->open();
 			}
 
@@ -270,7 +270,7 @@ void GUI::DecompilerDemoPanel::renderPanel()
 #include <managers/Managers.h>
 
 void GUI::DecompilerDemoPanel::initProgram() {
-	auto prj_dir = m_program->getExecutableDirectory() / "demo";
+	auto prj_dir = m_program->getExecutableDirectory() / "demo2";
 	fs::remove_all(prj_dir);
 	
     m_program = new Program;

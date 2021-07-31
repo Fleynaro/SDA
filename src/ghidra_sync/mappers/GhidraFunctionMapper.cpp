@@ -53,7 +53,7 @@ SFunction FunctionMapper::buildDesc(Function* function) {
 	SFunction funcDesc;
 	funcDesc.__set_id(function->getGhidraId());
 
-	const auto spliter = function->getName().find("::");
+	/*const auto spliter = function->getName().find("::");
 	if (spliter != std::string::npos) {
 		std::string funcName = function->getName();
 		funcName[spliter] = '_';
@@ -63,7 +63,7 @@ SFunction FunctionMapper::buildDesc(Function* function) {
 	else {
 		funcDesc.__set_name(function->getName());
 	}
-	funcDesc.__set_comment(function->getComment());
+	funcDesc.__set_comment(function->getComment());*/
 
 	/*for (auto& range : function->getAddressRangeList()) {
 		function::SFunctionRange rangeDesc;

@@ -1,5 +1,7 @@
 #pragma once
 #include "Events.h"
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui_internal.h"
 #include "controls/Control.h"
 #include "controls/AbstractPanel.h"
 #include "controls/Text.h"
@@ -104,7 +106,7 @@ namespace GUI
 					ImGui::SetNextWindowPos(m_pos);
 				}
 
-				if (isFlags(ImGuiWindowFlags_NoResize)) {
+				if (isFlags(ImGuiWindowFlags_NoResize) && !isFlags(ImGuiWindowFlags_AlwaysAutoResize)) {
 					ImGui::SetNextWindowSize(m_size);
 				}
 			}
@@ -129,21 +131,22 @@ namespace GUI
 		: public StdWindow,
 		public Attribute::Id
 	{
-		bool m_closeByClickOutside;
 		bool m_closeByTimer;
 		uint64_t m_lastHoveredOutTime = 0;
+		bool m_isOpenPopup = false;
 	public:
-		PopupBuiltinWindow(AbstractPanel* panel, bool closeByClickOutside = true, bool closeByTimer = false)
-			: StdWindow(panel), m_closeByClickOutside(closeByClickOutside), m_closeByTimer(closeByTimer)
+		PopupBuiltinWindow(AbstractPanel* panel,bool closeByTimer = false)
+			: StdWindow(panel), m_closeByTimer(closeByTimer)
 		{
 			m_isOpened = false;
-			setFlags(ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+			setFlags(ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
 		}
 
 		void open() override
 		{
 			StdWindow::open();
 			m_lastHoveredOutTime = 0;
+			m_isOpenPopup = true;
 		}
 
 		void placeAfterItem()
@@ -154,18 +157,17 @@ namespace GUI
 	private:
 		void renderControl() override {
 			if (m_isOpened) {
+				if (m_isOpenPopup) {
+					ImGui::OpenPopup(getId().c_str());
+					m_isOpenPopup = false;
+				}
+				
 				pushParams();
-				if (ImGui::Begin(getId().c_str(), nullptr, getFlags()))
+				ImGuiContext& g = *GImGui;
+				ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
+				if (ImGui::BeginPopupEx(g.CurrentWindow->GetID(getId().c_str()), getFlags()))
 				{
 					processGenericEvents();
-					if (m_closeByClickOutside)
-					{
-						if (!isHovered()) {
-							if (ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1)) {
-								close();
-							}
-						}
-					}
 					if(m_closeByTimer)
 					{
 						if ((!m_lastHoveredOutTime && !isHovered()) || isHoveredOut()) {
@@ -178,8 +180,9 @@ namespace GUI
 					}
 					
 					m_panel->show();
+					ImGui::EndPopup();
 				}
-				ImGui::End();
+				ImGui::PopItemFlag();
 			}
 		}
 

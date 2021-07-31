@@ -36,11 +36,11 @@ Decompiler::FunctionPCodeGraph* Function::getFuncGraph() const
 	return m_imageDec->getPCodeGraph()->getFuncGraphAt(getOffset());
 }
 
-const std::string Function::getName() {
+const char* Function::getName() {
 	return m_functionSymbol->getName();
 }
 
-const std::string Function::getComment() {
+const char* Function::getComment() {
 	return m_functionSymbol->getComment();
 }
 

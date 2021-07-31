@@ -136,5 +136,5 @@ ImageDecorator* ImageDecorator::getParentImage() const
 }
 
 fs::path ImageDecorator::getFile() {
-	return m_addressSpace->getImagesDirectory() / fs::path(getName() + ".bin");
+	return m_addressSpace->getImagesDirectory() / fs::path(std::string(getName()) + ".bin");
 }

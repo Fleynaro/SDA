@@ -225,7 +225,7 @@ namespace GUI
 				std::string getText(CE::DataType::IType* item) override
 				{
 					if (dynamic_cast<DataTypeListModel*>(m_listModel)->m_isTable)
-						return item->getName() + "," + GetGroupName(item);
+						return std::string(item->getName()) + "," + GetGroupName(item);
 					return item->getName();
 				}
 			};
