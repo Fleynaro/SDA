@@ -98,6 +98,7 @@ namespace GUI
 			ImGuiListClipper m_clipper;
 			int m_scrollToRowIdx = -1;
 			bool m_selectCurRow = false;
+			int m_startSelectionRowIdx = -1;
 		public:
 			AbstractSectionController* m_sectionController;
 			
@@ -146,7 +147,8 @@ namespace GUI
 
 		private:
 			void renderControl() override {
-				if (ImGui::BeginTable("content_table", 3, TableFlags))
+				ImGui::BeginChild("##empty", ImVec2(0, 0), false, ImGuiWindowFlags_NoMove);
+				if (ImGui::BeginTable("##empty", 3, TableFlags))
 				{
 					ImGui::TableSetupScrollFreeze(0, 1);
 					ImGui::TableSetupColumn("Address", ImGuiTableColumnFlags_None);
@@ -169,6 +171,7 @@ namespace GUI
 					scroll();
 					ImGui::EndTable();
 				}
+				ImGui::EndChild();
 			}
 
 			void renderSpecificColumns(uint64_t offset) const {
@@ -322,11 +325,10 @@ namespace GUI
 			AbstractInstructionViewDecoder* m_instructionViewDecoder;
 			CE::Decompiler::FunctionPCodeGraph* m_curFuncPCodeGraph = nullptr;
 			bool m_obscureUnknownLocation = true;
-			CodeSectionRow m_selectedRow;
-			bool m_isRowSelected = false;
+			std::list<CodeSectionRow> m_selectedRows;
 			
 			CodeSectionViewer(CodeSectionController* codeSectionController, AbstractInstructionViewDecoder* instructionViewDecoder)
-				: AbstractSectionViewer(codeSectionController), m_codeSectionController(codeSectionController), m_instructionViewDecoder(instructionViewDecoder), m_selectedRow(0)
+				: AbstractSectionViewer(codeSectionController), m_codeSectionController(codeSectionController), m_instructionViewDecoder(instructionViewDecoder)
 			{}
 
 			~CodeSectionViewer() override {
@@ -344,8 +346,9 @@ namespace GUI
 				if(Button::StdButton("go to func").present()) {
 					goToOffset(0x20c80);
 				}
-				
-				if (ImGui::BeginTable("content_table", 3, TableFlags))
+
+				ImGui::BeginChild("##empty", ImVec2(0, 0), false, ImGuiWindowFlags_NoMove);
+				if (ImGui::BeginTable("##empty", 3, TableFlags))
 				{
 					m_window = ImGui::GetCurrentWindow();
 					const auto tableSize = ImGui::GetItemRectSize();
@@ -372,9 +375,12 @@ namespace GUI
 									obscure = true;
 							}
 
-							if (m_isRowSelected) {
-								m_selectCurRow =
-									codeSectionRow.m_isPCode ? m_selectedRow == codeSectionRow : m_selectedRow.m_byteOffset == codeSectionRow.m_byteOffset;
+							// select rows
+							for(auto selRow : m_selectedRows) {
+								if(codeSectionRow.m_isPCode ? selRow == codeSectionRow : selRow.m_byteOffset == codeSectionRow.m_byteOffset) {
+									m_selectCurRow = true;
+									break;
+								}
 							}
 
 							if(obscure)
@@ -413,7 +419,7 @@ namespace GUI
 
 							// decorate the current row
 							const auto rowSize = ImVec2(tableSize.x - 25, m_clipper.ItemsHeight);
-							decorateRow(startRowPos, rowSize, codeSectionRow);
+							decorateRow(startRowPos, rowSize, codeSectionRow, rowIdx);
 
 							if (obscure)
 								ImGui::PopStyleVar();
@@ -423,13 +429,14 @@ namespace GUI
 					scroll();
 					ImGui::EndTable();
 				}
+				ImGui::EndChild();
 
 				Show(m_builtinWindow);
 				Show(m_popupModalWindow);
 				Show(m_ctxWindow);
 			}
 
-			void decorateRow(const ImVec2& startRowPos, const ImVec2& rowSize, CodeSectionRow row) {
+			void decorateRow(const ImVec2& startRowPos, const ImVec2& rowSize, CodeSectionRow row, int rowIdx) {
 				// function header
 				bool isEventProcessed = false;
 				if (!row.m_isPCode) {
@@ -443,9 +450,26 @@ namespace GUI
 					ImGuiContext& g = *GImGui;
 					if (ImGui::IsMousePosValid(&g.IO.MousePos)) {
 						if (ImRect(startRowPos, startRowPos + rowSize).Contains(g.IO.MousePos)) {
-							if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-								m_selectedRow = row;
-								m_isRowSelected = true;
+							if (ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+								// row's multi-selection
+								if(m_startSelectionRowIdx != -1) {
+									auto curRowIdx = m_startSelectionRowIdx;
+									auto lastRowIdx = rowIdx;
+									if (curRowIdx > lastRowIdx)
+										std::swap(curRowIdx, lastRowIdx);
+									m_selectedRows.clear();
+									while(curRowIdx <= lastRowIdx)
+										m_selectedRows.push_back(m_codeSectionController->getRow(curRowIdx++));
+								}
+								else {
+									m_startSelectionRowIdx = rowIdx;
+								}
+							}
+							else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+								m_startSelectionRowIdx = -1;
+							}
+							else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+								m_selectedRows = { row };
 							}
 							else if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
 								delete m_ctxWindow;
@@ -926,6 +950,12 @@ namespace GUI
 					if (prevPanel->m_decompiledCodeViewer->m_codeChanged) {
 						decompile(codeSectionViewer->m_curFuncPCodeGraph);
 					}
+					if (!prevPanel->m_decompiledCodeViewer->m_selectedInstrs.empty()) {
+						codeSectionViewer->m_selectedRows.clear();
+						for(const auto instr : prevPanel->m_decompiledCodeViewer->m_selectedInstrs) {
+							codeSectionViewer->m_selectedRows.emplace_back(instr->getOffset(), true);
+						}
+					}
 				}
 				
 				if (const auto function = prevPanel->m_decompiledCodeViewer->m_clickedFunction) {
@@ -934,13 +964,6 @@ namespace GUI
 				}
 				else if (const auto globalVar = prevPanel->m_decompiledCodeViewer->m_clickedGlobalVar) {
 					goToOffset(globalVar->getOffset());
-				}
-				else if (const auto instr = prevPanel->m_decompiledCodeViewer->m_clickedInstr) {
-					goToOffset(instr->getOffset().getByteOffset());
-					if (const auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer)) {
-						codeSectionViewer->m_selectedRow = CodeSectionRow(instr->getOffset(), true);
-						codeSectionViewer->m_isRowSelected = true;
-					}
 				}
 			}
 		}

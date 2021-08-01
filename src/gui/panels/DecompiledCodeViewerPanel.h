@@ -92,22 +92,29 @@ namespace GUI
 		
 		class CodeGenerator : public CE::Decompiler::CodeViewGenerator
 		{
+			static void HighlightItem(ColorRGBA color) {
+				ImGui::GetWindowDrawList()->AddRectFilled(
+					ImGui::GetItemRectMin() - ImVec2(2.0f, 1.0f), ImGui::GetItemRectMax() + ImVec2(2.0f, 1.0f), ToImGuiColorU32(color));
+				ImGui::SetCursorScreenPos(ImGui::GetItemRectMin());
+			}
+
+			static void FrameItem(ColorRGBA color) {
+				ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin() - ImVec2(1.0f, 1.0f), ImGui::GetItemRectMax() + ImVec2(1.0f, 1.0f), ToImGuiColorU32(color));
+			}
+		public:
 			inline const static ColorRGBA COLOR_DEBUG_INFO = 0xd982c2FF;
 			inline const static ColorRGBA COLOR_BG_TEXT_ON_HOVER = 0x212e40FF;
-			inline const static ColorRGBA COLOR_BG_TEXT_ON_HOVER2 = 0x3d0000FF;
+			inline const static ColorRGBA COLOR_BG_USER_SELECTED_TEXT = 0x3d0000FF;
 			inline const static ColorRGBA COLOR_BG_SELECTED_TEXT = 0x374559FF;
 			inline const static ColorRGBA COLOR_FRAME_SELECTED_TEXT = 0x8c8c8cFF;
 			inline const static ColorRGBA COLOR_DATA_TYPE = 0xd9c691FF;
 			inline const static ColorRGBA COLOR_NUMBER = 0xe6e6e6FF;
-
-		public:
+		
 			class ExprTreeGenerator : public CE::Decompiler::ExprTree::ExprTreeViewGenerator
 			{
 				CodeGenerator* m_parentGen;
-				bool m_isNodeHovered = false;
 			public:
 				MultiLineGroup m_groups;
-				int m_isTextAddingOnCurLine = 0;
 				
 				ExprTreeGenerator(CodeGenerator* parentGen)
 					: m_parentGen(parentGen)
@@ -128,17 +135,12 @@ namespace GUI
 						color = 0xdedac5FF;
 					else if (tokenType == TOKEN_DEBUG_INFO)
 						color = COLOR_DEBUG_INFO;
-					Text::ColoredText(text, color).show();
-					SameLine(1.0f);
-					if(!m_isTextAddingOnCurLine)
-						m_parentGen->m_textOnCurLine += text;
+
+					m_parentGen->renderToken(text, color);
 				}
 
 				void generateSdaSymbol(CE::Symbol::ISymbol* symbol) override {
-					if (!m_isTextAddingOnCurLine)
-						m_parentGen->m_textOnCurLine += symbol->getName();
-
-					RenderSdaSymbol(symbol);
+					renderSdaSymbol(symbol);
 					const auto events = GenericEvents(true);
 
 					if (events.isClickedByRightMouseBtn()) {
@@ -149,17 +151,19 @@ namespace GUI
 						m_parentGen->m_hasNodeSelected = true;
 					}
 
-					auto& selSymbols = m_parentGen->m_decCodeViewer->m_selectedSymbols;
 					if (events.isClickedByLeftMouseBtn()) {
-						selSymbols[symbol] = 1000;
+						m_parentGen->m_decCodeViewer->m_selectedSymbol = symbol;
+						m_parentGen->m_decCodeViewer->m_selectedSymbolCount = -2;
 					}
 
-					const auto hasSymbolSelected = selSymbols.find(symbol) != selSymbols.end();
+					const auto hasSymbolSelected = m_parentGen->m_decCodeViewer->m_selectedSymbol == symbol;
 					if (events.isHovered() || hasSymbolSelected) {
 						HighlightItem(events.isHovered() ? COLOR_BG_TEXT_ON_HOVER : COLOR_BG_SELECTED_TEXT);
-						RenderSdaSymbol(symbol);
-						if (hasSymbolSelected)
-							selSymbols[symbol]++;
+						m_parentGen->m_isTextAddingOnCurLine++;
+						renderSdaSymbol(symbol);
+						m_parentGen->m_isTextAddingOnCurLine--;
+						if (hasSymbolSelected && m_parentGen->m_decCodeViewer->m_selectedSymbolCount != -2)
+							m_parentGen->m_decCodeViewer->m_selectedSymbolCount ++;
 					}
 
 					if (events.isHovered()) {
@@ -181,7 +185,7 @@ namespace GUI
 					}
 				}
 
-				static void RenderSdaSymbol(CE::Symbol::ISymbol* symbol) {
+				void renderSdaSymbol(CE::Symbol::ISymbol* symbol) const {
 					ColorRGBA color = 0x0;
 					if (symbol->getType() == CE::Symbol::FUNC_PARAMETER)
 						color = 0xcf7e7eFF;
@@ -195,17 +199,16 @@ namespace GUI
 						color = 0xcacc9fFF;
 					else if (symbol->getType() == CE::Symbol::STRUCT_FIELD)
 						color = 0xdbdbdbFF;
-					Text::ColoredText(symbol->getName(), color).show();
-					SameLine(1.0f);
+					m_parentGen->renderToken(symbol->getName(), color);
 				}
 
 				void generateNumberLeaf(CE::Decompiler::NumberLeaf* leaf) override {
 					ExprTreeViewGenerator::generateNumberLeaf(leaf);
 					if (ImGui::IsItemHovered()) {
 						HighlightItem(COLOR_BG_TEXT_ON_HOVER);
-						m_isTextAddingOnCurLine ++;
+						m_parentGen->m_isTextAddingOnCurLine ++;
 						ExprTreeViewGenerator::generateNumberLeaf(leaf);
-						m_isTextAddingOnCurLine --;
+						m_parentGen->m_isTextAddingOnCurLine --;
 						ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 						RenderNumberPresentations(leaf->getValue());
 					}
@@ -216,9 +219,9 @@ namespace GUI
 					ExprTreeViewGenerator::generateSdaNumberLeaf(leaf);
 					if (ImGui::IsItemHovered()) {
 						HighlightItem(COLOR_BG_TEXT_ON_HOVER);
-						m_isTextAddingOnCurLine ++;
+						m_parentGen->m_isTextAddingOnCurLine ++;
 						ExprTreeViewGenerator::generateSdaNumberLeaf(leaf);
-						m_isTextAddingOnCurLine --;
+						m_parentGen->m_isTextAddingOnCurLine --;
 						ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 						RenderNumberPresentations(leaf->getValue());
 					}
@@ -271,25 +274,29 @@ namespace GUI
 				void generateNode(CE::Decompiler::INode* node) override {
 					if(const auto instrNode = dynamic_cast<CE::Decompiler::IRelatedToInstruction*>(node)) {
 						if(!instrNode->getInstructionsRelatedTo().empty()) {
-							const auto instr = *instrNode->getInstructionsRelatedTo().begin();
-
-							auto& hoveredNode = m_parentGen->m_decCodeViewer->m_hoveredNode;
-							if (hoveredNode.draw(node))
-								hoveredNode.clear();
-							m_groups.beginGroup(node);
-							ExprTreeViewGenerator::generateNode(node);
-							const auto group = m_groups.endGroup();
-	
-							if (!m_isNodeHovered) {
-								if (group.m_events.isHovered()) {
-									if (group.m_events.isClickedByMiddleMouseBtn()) {
-										m_parentGen->m_decCodeViewer->m_clickedInstr = instr;
-									}
-									hoveredNode.set(node, group.m_rects, COLOR_BG_TEXT_ON_HOVER2);
-									m_isNodeHovered = true;
+							if (m_parentGen->m_decCodeViewer->m_isCodeSelecting) {
+								if (m_parentGen->isSelected()) {
+									for (const auto instr : instrNode->getInstructionsRelatedTo())
+										m_parentGen->m_decCodeViewer->m_selectedInstrs.push_back(instr);
 								}
+							} else {
+								const auto isSelected = m_parentGen->m_decCodeViewer->m_hoveredNodeOnPrevFrame == node;
+								if (isSelected)
+									m_parentGen->beginSelecting();
+								m_groups.beginGroup(node);
+								ExprTreeViewGenerator::generateNode(node);
+								const auto group = m_groups.endGroup();
+								if (isSelected)
+									m_parentGen->endSelecting();
+								
+								if (!m_parentGen->m_decCodeViewer->m_hoveredNode) {
+									if (group.m_events.isHovered() && ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.0f)) {
+										m_parentGen->m_decCodeViewer->m_hoveredNode = node;
+										m_parentGen->m_decCodeViewer->m_selectedInstrs = instrNode->getInstructionsRelatedTo();
+									}
+								}
+								return;
 							}
-							return;
 						}
 					}
 					ExprTreeViewGenerator::generateNode(node);
@@ -301,14 +308,66 @@ namespace GUI
 			bool m_hasNodeSelected = false;
 			std::string m_textOnCurLine;
 			int m_curLineIdx = 0;
+			int m_curTokenIdx = 0;
+			std::list<ColorRGBA> m_selectedCodeColors;
 		public:
 			ExprTreeGenerator m_exprTreeGenerator;
+			int m_isTextAddingOnCurLine = 0;
 			
 			CodeGenerator(DecompiledCodeViewer* decompiledCodeViewer)
 				: CodeViewGenerator(&m_exprTreeGenerator), m_decCodeViewer(decompiledCodeViewer), m_exprTreeGenerator(this)
 			{
 				setMinInfoToShow();
 				m_SHOW_LINEAR_LEVEL_EXT = true;
+			}
+
+			void renderToken(const std::string& text, ColorRGBA color) {
+				Text::ColoredText(text, color).show();
+				if (isSelected()) {
+					HighlightItem(COLOR_BG_USER_SELECTED_TEXT);
+					Text::ColoredText(text, color).show();
+					m_decCodeViewer->m_selectedText += text;
+				} else {
+					if (!m_selectedCodeColors.empty()) {
+						HighlightItem(*m_selectedCodeColors.rbegin());
+						Text::ColoredText(text, color).show();
+					}
+				}
+
+				const auto events = GenericEvents(true);
+				if (events.isMouseDragging()) {
+					if (m_decCodeViewer->m_isCodeSelecting) {
+						m_decCodeViewer->m_endSelectionTokenIdx = m_curTokenIdx;
+					}
+					else {
+						m_decCodeViewer->m_startSelectionTokenIdx = m_curTokenIdx;
+						m_decCodeViewer->m_isCodeSelecting = true;
+					}
+				}
+				SameLine(1.0f);
+
+				if (!m_isTextAddingOnCurLine) {
+					m_textOnCurLine += text;
+					m_curTokenIdx++;
+				}
+			}
+
+			bool isSelected() const {
+				if (m_decCodeViewer->m_startSelectionTokenIdx == -1 ||
+					m_decCodeViewer->m_endSelectionTokenIdx == -1)
+					return false;
+				return m_curTokenIdx >= m_decCodeViewer->m_startSelectionTokenIdx &&
+					m_curTokenIdx <= m_decCodeViewer->m_endSelectionTokenIdx ||
+					m_curTokenIdx <= m_decCodeViewer->m_startSelectionTokenIdx &&
+					m_curTokenIdx >= m_decCodeViewer->m_endSelectionTokenIdx;
+			}
+
+			void beginSelecting(ColorRGBA color = COLOR_BG_USER_SELECTED_TEXT) {
+				m_selectedCodeColors.push_back(color);
+			}
+
+			void endSelecting() {
+				m_selectedCodeColors.pop_back();
 			}
 
 			bool checkToGoToNewLine() {
@@ -386,9 +445,9 @@ namespace GUI
 					color = 0x51e066FF;
 				else if (tokenType == TOKEN_DEBUG_INFO)
 					color = COLOR_DEBUG_INFO;
-				Text::ColoredText(text, color).show();
-				SameLine(1.0f);
+				renderToken(text, color);
 				m_textOnCurLine += text;
+				m_curTokenIdx++;
 			}
 
 			void generateBlockList(CE::Decompiler::LinearView::BlockList* blockList, bool generatingBraces) override {
@@ -456,9 +515,9 @@ namespace GUI
 								Text::Text(usingType).show();
 								
 								ImGui::TableNextColumn();
-								m_exprTreeGenerator.m_isTextAddingOnCurLine ++;
+								m_isTextAddingOnCurLine ++;
 								m_exprTreeGenerator.generate(regInfo.m_expr->getNode());
-								m_exprTreeGenerator.m_isTextAddingOnCurLine --;
+								m_isTextAddingOnCurLine --;
 							}
 						}
 						ImGui::EndTable();
@@ -500,14 +559,18 @@ namespace GUI
 		};
 
 		CE::Decompiler::LinearView::BlockList* m_blockList;
-		std::map<CE::Symbol::ISymbol*, int> m_selectedSymbols; // todo: create a controller?
+		CE::Symbol::ISymbol* m_selectedSymbol = nullptr;
+		int m_selectedSymbolCount = -1;
+		CE::Decompiler::INode* m_selectedNode = nullptr;
+		CE::Decompiler::INode* m_hoveredNode = nullptr;
+		CE::Decompiler::INode* m_hoveredNodeOnPrevFrame = nullptr;
 		void* m_selectedObj = nullptr;
 		CE::Decompiler::LinearView::BlockList* m_selectedBlockList = nullptr;
+		
 		std::set<CE::Decompiler::LinearView::BlockList*> m_hidedBlockLists;
 		CE::AbstractImage* m_image = nullptr;
 		AbstractInstructionViewDecoder* m_instructionViewDecoder = nullptr;
 		CE::Decompiler::PrimaryDecompiler* m_primaryDecompiler = nullptr;
-		HighlightedItem<CE::Decompiler::INode> m_hoveredNode;
 
 		PopupContextWindow* m_ctxWindow = nullptr;
 		PopupBuiltinWindow* m_builtinWindow = nullptr;
@@ -521,9 +584,13 @@ namespace GUI
 		} m_show;
 		CE::Function* m_clickedFunction = nullptr;
 		CE::Symbol::GlobalVarSymbol* m_clickedGlobalVar = nullptr;
-		CE::Decompiler::Instruction* m_clickedInstr = nullptr;
+		std::list<CE::Decompiler::Instruction*> m_selectedInstrs;
+		std::string m_selectedText;
 		bool m_codeChanged = false;
 		int m_selectedLineIdx = -1;
+		bool m_isCodeSelecting = false;
+		int m_startSelectionTokenIdx = -1;
+		int m_endSelectionTokenIdx = -1;
 		float m_maxLineSize = 0.0f;
 		
 		DecompiledCodeViewer(CE::Decompiler::LinearView::BlockList* blockList)
@@ -553,22 +620,32 @@ namespace GUI
 
 	private:
 		void renderControl() override {
+			m_selectedInstrs.clear();
+			m_selectedText.clear();
+			m_hoveredNodeOnPrevFrame = m_hoveredNode;
+			m_hoveredNode = nullptr;
 			m_clickedFunction = nullptr;
 			m_clickedGlobalVar = nullptr;
-			m_clickedInstr = nullptr;
 			m_codeChanged = false;
 			Show(m_ctxWindow);
 			Show(m_builtinWindow);
 			
-			ImGui::BeginChild(getId().c_str());
+			ImGui::BeginChild(getId().c_str(), ImVec2(0, 0), false, ImGuiWindowFlags_NoMove);
 			if (ImGui::IsWindowHovered()) {
 				if (ImGui::IsMouseClicked(0)) {
-					m_selectedSymbols.clear();
+					m_selectedSymbol = nullptr;
+					m_selectedSymbolCount = -1;
 					m_selectedObj = nullptr;
 					m_selectedBlockList = nullptr;
+					m_selectedNode = nullptr;
+					m_startSelectionTokenIdx = -1;
+					m_endSelectionTokenIdx = -1;
+				}
+
+				if (ImGui::IsMouseReleased(0)) {
+					m_isCodeSelecting = false;
 				}
 			}
-			removeSingleSelectedSymbols();
 
 			if (ImGui::BeginTable("dec_code_table", 2, ImGuiTableFlags_RowBg))
 			{
@@ -578,18 +655,14 @@ namespace GUI
 				ImGui::EndTable();
 			}
 			ImGui::EndChild();
-		}
 
-		void removeSingleSelectedSymbols() {
-			auto it = m_selectedSymbols.begin();
-			while (it != m_selectedSymbols.end()) {
-				auto& leafsCount = it->second;
-				if (leafsCount == 1) {
-					it = m_selectedSymbols.erase(it);
+			if(m_selectedSymbolCount != -1) {
+				if (m_selectedSymbolCount == -2) {
+					m_selectedSymbolCount = 0;
 				}
-				else {
-					leafsCount = 0;
-					++it;
+				else if(m_selectedSymbolCount == 1) {
+					m_selectedSymbol = nullptr;
+					m_selectedSymbolCount = -1;
 				}
 			}
 		}

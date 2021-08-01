@@ -101,6 +101,8 @@ namespace GUI
 
 		bool m_isDoubleClickedByLeftMouseBtn = false;
 
+		bool m_isMouseDragging = false;
+
 		bool m_isActive = false;
 		bool m_isActiveOn = false;
 		bool m_isActiveOff = false;
@@ -133,6 +135,11 @@ namespace GUI
 		bool isDoubleClickedByMiddleMouseBtn() const
 		{
 			return m_isDoubleClickedByLeftMouseBtn;
+		}
+
+		bool isMouseDragging() const
+		{
+			return m_isMouseDragging;
 		}
 
 		bool isActive() const
@@ -203,6 +210,8 @@ namespace GUI
 					m_isClickedByMiddleMouseBtn = true;
 				if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 					m_isDoubleClickedByLeftMouseBtn = true;
+				if (ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+					m_isMouseDragging = true;
 			}
 			
 			// active

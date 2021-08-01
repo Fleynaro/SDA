@@ -93,44 +93,4 @@ namespace GUI
 			}
 		}
 	};
-
-	static void HighlightItem(ColorRGBA color) {
-		ImGui::GetWindowDrawList()->AddRectFilled(
-			ImGui::GetItemRectMin() - ImVec2(2.0f, 1.0f), ImGui::GetItemRectMax() + ImVec2(2.0f, 1.0f), ToImGuiColorU32(color));
-		ImGui::SetCursorScreenPos(ImGui::GetItemRectMin());
-	}
-
-	static void FrameItem(ColorRGBA color) {
-		ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin() - ImVec2(1.0f, 1.0f), ImGui::GetItemRectMax() + ImVec2(1.0f, 1.0f), ToImGuiColorU32(color));
-	}
-
-	template<typename T>
-	class HighlightedItem
-	{
-		T* m_item = nullptr;
-		std::list<ImRect> m_rects;
-		ColorRGBA m_color = -1;
-	public:
-		void set(T* item, const std::list<ImRect>& rects, ColorRGBA color) {
-			m_item = item;
-			m_rects = rects;
-			m_color = color;
-		}
-
-		void clear() {
-			m_item = nullptr;
-			m_rects = {};
-			m_color = -1;
-		}
-
-		bool draw(T* item) {
-			if (item != m_item)
-				return false;
-			for (const auto& rect : m_rects) {
-				ImGui::GetWindowDrawList()->AddRectFilled(
-					rect.Min - ImVec2(2.0f, 1.0f), rect.Max + ImVec2(2.0f, 1.0f), ToImGuiColorU32(m_color));
-			}
-			return true;
-		}
-	};
 };
