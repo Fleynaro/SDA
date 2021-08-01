@@ -1,7 +1,5 @@
 #pragma once
 #include "Events.h"
-#define IMGUI_DEFINE_MATH_OPERATORS
-#include "imgui_internal.h"
 #include "controls/Control.h"
 #include "controls/AbstractPanel.h"
 #include "controls/Text.h"

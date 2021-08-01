@@ -248,6 +248,7 @@ namespace CE::Decompiler::PCode
 		static bool IsAnyJmup(InstructionId id);
 	};
 
+	// todo: move into operational node (assignment, condition, operations)
 	class IRelatedToInstruction
 	{
 	public:

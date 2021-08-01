@@ -41,4 +41,96 @@ namespace GUI
 		ImGui::Separator();
 	}
 
+	class MultiLineGroup
+	{
+	public:
+		struct Group
+		{
+			void* m_obj = nullptr;
+			GenericEvents m_events;
+			std::list<ImRect> m_rects;
+
+			void update() {
+				auto events = GenericEvents(true);
+				m_events.join(&events);
+				m_rects.push_back(ImGui::GetCurrentWindowRead()->DC.LastItemRect);
+			}
+		};
+	private:
+		std::list<Group> m_groups;
+	public:
+		MultiLineGroup()
+		{}
+
+		void beginGroup(void* obj) {
+			ImGui::BeginGroup();
+			Group group;
+			group.m_obj = obj;
+			m_groups.push_back(group);
+		}
+
+		Group endGroup() {
+			ImGui::EndGroup();
+			SameLine(0.0f);
+			auto group = *m_groups.rbegin();
+			group.update();
+			m_groups.pop_back();
+			return group;
+		}
+
+		// used when NewLine()/... called
+		void beginSeparator() {
+			for (auto it = m_groups.rbegin(); it != m_groups.rend(); ++it) {
+				ImGui::EndGroup();
+				SameLine(0.0f);
+				it->update();
+			}
+		}
+
+		void endSeparator() {
+			for (auto it = m_groups.begin(); it != m_groups.end(); ++it) {
+				ImGui::BeginGroup();
+			}
+		}
+	};
+
+	static void HighlightItem(ColorRGBA color) {
+		ImGui::GetWindowDrawList()->AddRectFilled(
+			ImGui::GetItemRectMin() - ImVec2(2.0f, 1.0f), ImGui::GetItemRectMax() + ImVec2(2.0f, 1.0f), ToImGuiColorU32(color));
+		ImGui::SetCursorScreenPos(ImGui::GetItemRectMin());
+	}
+
+	static void FrameItem(ColorRGBA color) {
+		ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin() - ImVec2(1.0f, 1.0f), ImGui::GetItemRectMax() + ImVec2(1.0f, 1.0f), ToImGuiColorU32(color));
+	}
+
+	template<typename T>
+	class HighlightedItem
+	{
+		T* m_item = nullptr;
+		std::list<ImRect> m_rects;
+		ColorRGBA m_color = -1;
+	public:
+		void set(T* item, const std::list<ImRect>& rects, ColorRGBA color) {
+			m_item = item;
+			m_rects = rects;
+			m_color = color;
+		}
+
+		void clear() {
+			m_item = nullptr;
+			m_rects = {};
+			m_color = -1;
+		}
+
+		bool draw(T* item) {
+			if (item != m_item)
+				return false;
+			for (const auto& rect : m_rects) {
+				ImGui::GetWindowDrawList()->AddRectFilled(
+					rect.Min - ImVec2(2.0f, 1.0f), rect.Max + ImVec2(2.0f, 1.0f), ToImGuiColorU32(m_color));
+			}
+			return true;
+		}
+	};
 };

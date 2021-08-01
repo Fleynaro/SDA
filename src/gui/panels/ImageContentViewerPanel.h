@@ -371,7 +371,11 @@ namespace GUI
 								if (m_obscureUnknownLocation)
 									obscure = true;
 							}
-							m_selectCurRow = m_isRowSelected && m_selectedRow == codeSectionRow;
+
+							if (m_isRowSelected) {
+								m_selectCurRow =
+									codeSectionRow.m_isPCode ? m_selectedRow == codeSectionRow : m_selectedRow.m_byteOffset == codeSectionRow.m_byteOffset;
+							}
 
 							if(obscure)
 								ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.7f);
@@ -930,6 +934,13 @@ namespace GUI
 				}
 				else if (const auto globalVar = prevPanel->m_decompiledCodeViewer->m_clickedGlobalVar) {
 					goToOffset(globalVar->getOffset());
+				}
+				else if (const auto instr = prevPanel->m_decompiledCodeViewer->m_clickedInstr) {
+					goToOffset(instr->getOffset().getByteOffset());
+					if (const auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer)) {
+						codeSectionViewer->m_selectedRow = CodeSectionRow(instr->getOffset(), true);
+						codeSectionViewer->m_isRowSelected = true;
+					}
 				}
 			}
 		}

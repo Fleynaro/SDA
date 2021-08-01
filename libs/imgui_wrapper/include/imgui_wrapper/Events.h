@@ -50,6 +50,11 @@ namespace GUI
 
 		virtual bool isImGuiFocused() = 0;
 
+		void join(AbstractGenericEvents* events) {
+			m_isHovered |= events->m_isHovered;
+			m_isFocused |= events->m_isFocused;
+		}
+
 	public:
 		virtual void processGenericEvents() {
 			m_isHoveredIn = false;
@@ -150,6 +155,16 @@ namespace GUI
 			return m_isVisibleOff;
 		}
 
+		void join(GenericEvents* events) {
+			AbstractGenericEvents::join(events);
+			m_isActive |= events->m_isActive;
+			m_isVisible |= events->m_isVisible;
+			m_isClickedByLeftMouseBtn |= events->m_isClickedByLeftMouseBtn;
+			m_isClickedByRightMouseBtn |= events->m_isClickedByRightMouseBtn;
+			m_isClickedByMiddleMouseBtn |= events->m_isClickedByMiddleMouseBtn;
+			m_isDoubleClickedByLeftMouseBtn |= events->m_isDoubleClickedByLeftMouseBtn;
+		}
+	
 	protected:
 		virtual bool isImGuiActive() {
 			return ImGui::IsItemActive();
