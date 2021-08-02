@@ -113,11 +113,12 @@ namespace GUI
 			class ExprTreeGenerator : public CE::Decompiler::ExprTree::ExprTreeViewGenerator
 			{
 				CodeGenerator* m_parentGen;
+				DecompiledCodeViewer* m_decCodeViewer;
 			public:
 				MultiLineGroup m_groups;
 				
 				ExprTreeGenerator(CodeGenerator* parentGen)
-					: m_parentGen(parentGen)
+					: m_parentGen(parentGen), m_decCodeViewer(parentGen->m_decCodeViewer)
 				{}
 
 				void generateToken(const std::string& text, TokenType tokenType) override {
@@ -144,33 +145,33 @@ namespace GUI
 					const auto events = GenericEvents(true);
 
 					if (events.isClickedByRightMouseBtn()) {
-						auto& ctxWin = m_parentGen->m_decCodeViewer->m_ctxWindow;
+						auto& ctxWin = m_decCodeViewer->m_ctxWindow;
 						delete ctxWin;
-						ctxWin = new PopupContextWindow(new SymbolContextPanel(symbol, m_parentGen->m_decCodeViewer, GetLeftBottom()));
+						ctxWin = new PopupContextWindow(new SymbolContextPanel(symbol, m_decCodeViewer, GetLeftBottom()));
 						ctxWin->open();
 						m_parentGen->m_hasNodeSelected = true;
 					}
 
 					if (events.isClickedByLeftMouseBtn()) {
-						m_parentGen->m_decCodeViewer->m_selectedSymbol = symbol;
-						m_parentGen->m_decCodeViewer->m_selectedSymbolCount = -2;
+						m_decCodeViewer->m_selectedSymbol = symbol;
+						m_decCodeViewer->m_selectedSymbolCount = -2;
 					}
 
-					const auto hasSymbolSelected = m_parentGen->m_decCodeViewer->m_selectedSymbol == symbol;
+					const auto hasSymbolSelected = m_decCodeViewer->m_selectedSymbol == symbol;
 					if (events.isHovered() || hasSymbolSelected) {
 						HighlightItem(events.isHovered() ? COLOR_BG_TEXT_ON_HOVER : COLOR_BG_SELECTED_TEXT);
 						m_parentGen->m_isTextAddingOnCurLine++;
 						renderSdaSymbol(symbol);
 						m_parentGen->m_isTextAddingOnCurLine--;
-						if (hasSymbolSelected && m_parentGen->m_decCodeViewer->m_selectedSymbolCount != -2)
-							m_parentGen->m_decCodeViewer->m_selectedSymbolCount ++;
+						if (hasSymbolSelected && m_decCodeViewer->m_selectedSymbolCount != -2)
+							m_decCodeViewer->m_selectedSymbolCount ++;
 					}
 
 					if (events.isHovered()) {
 						ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 						if (const auto funcSymbol = dynamic_cast<CE::Symbol::FunctionSymbol*>(symbol)) {
 							if (events.isDoubleClickedByMiddleMouseBtn()) {
-								m_parentGen->m_decCodeViewer->m_clickedFunction = funcSymbol->getFunction();
+								m_decCodeViewer->m_clickedFunction = funcSymbol->getFunction();
 							}
 						}
 						else {
@@ -179,7 +180,7 @@ namespace GUI
 
 						if (const auto globalVarSymbol = dynamic_cast<CE::Symbol::GlobalVarSymbol*>(symbol)) {
 							if (events.isDoubleClickedByMiddleMouseBtn()) {
-								m_parentGen->m_decCodeViewer->m_clickedGlobalVar = globalVarSymbol;
+								m_decCodeViewer->m_clickedGlobalVar = globalVarSymbol;
 							}
 						}
 					}
@@ -256,7 +257,7 @@ namespace GUI
 					}
 					
 					ExprTreeViewGenerator::generateRoundBracket(text, obj);
-					if(obj == m_parentGen->m_decCodeViewer->m_selectedObj) {
+					if(obj == m_decCodeViewer->m_selectedObj) {
 						FrameItem(COLOR_FRAME_SELECTED_TEXT);
 					}
 
@@ -264,7 +265,7 @@ namespace GUI
 						const auto group = m_groups.endGroup();
 						if (!m_parentGen->m_hasNodeSelected) {
 							if (group.m_events.isClickedByLeftMouseBtn()) {
-								m_parentGen->m_decCodeViewer->m_selectedObj = obj;
+								m_decCodeViewer->m_selectedObj = obj;
 								m_parentGen->m_hasNodeSelected = true;
 							}
 						}
@@ -274,13 +275,30 @@ namespace GUI
 				void generateNode(CE::Decompiler::INode* node) override {
 					if(const auto instrNode = dynamic_cast<CE::Decompiler::IRelatedToInstruction*>(node)) {
 						if(!instrNode->getInstructionsRelatedTo().empty()) {
-							if (m_parentGen->m_decCodeViewer->m_isCodeSelecting) {
+							if (m_decCodeViewer->m_isCodeSelecting) {
+								// select code and instructions at the same time
 								if (m_parentGen->isSelected()) {
 									for (const auto instr : instrNode->getInstructionsRelatedTo())
-										m_parentGen->m_decCodeViewer->m_selectedInstrs.push_back(instr);
+										m_decCodeViewer->m_selectedInstrs.push_back(instr);
 								}
 							} else {
-								const auto isSelected = m_parentGen->m_decCodeViewer->m_hoveredNodeOnPrevFrame == node;
+								auto isSelected = false;
+								// select nodes by the middle mouse button
+								if(m_decCodeViewer->m_hoveredNodeOnPrevFrame) {
+									isSelected = node->getHash().getHashValue() == m_decCodeViewer->m_hoveredNodeOnPrevFrame->getHash().getHashValue();
+								}
+								// select code by instruction selection in image viewer
+								if(!m_decCodeViewer->m_selectedCodeByInstr.empty()) {
+									const auto& instrs = m_decCodeViewer->m_selectedCodeByInstr;
+									for(const auto instr : instrNode->getInstructionsRelatedTo()) {
+										if(instrs.find(instr) != instrs.end()) {
+											isSelected = true;
+											break;
+										}
+									}
+								}
+
+								// generate node
 								if (isSelected)
 									m_parentGen->beginSelecting();
 								m_groups.beginGroup(node);
@@ -288,11 +306,12 @@ namespace GUI
 								const auto group = m_groups.endGroup();
 								if (isSelected)
 									m_parentGen->endSelecting();
-								
-								if (!m_parentGen->m_decCodeViewer->m_hoveredNode) {
+
+								// select nodes by the middle mouse button
+								if (!m_decCodeViewer->m_hoveredNode) {
 									if (group.m_events.isHovered() && ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.0f)) {
-										m_parentGen->m_decCodeViewer->m_hoveredNode = node;
-										m_parentGen->m_decCodeViewer->m_selectedInstrs = instrNode->getInstructionsRelatedTo();
+										m_decCodeViewer->m_hoveredNode = node;
+										m_decCodeViewer->m_selectedInstrs = instrNode->getInstructionsRelatedTo();
 									}
 								}
 								return;
@@ -322,7 +341,10 @@ namespace GUI
 			}
 
 			void renderToken(const std::string& text, ColorRGBA color) {
+				// render token
 				Text::ColoredText(text, color).show();
+
+				// selection highlighting
 				if (isSelected()) {
 					HighlightItem(COLOR_BG_USER_SELECTED_TEXT);
 					Text::ColoredText(text, color).show();
@@ -334,6 +356,7 @@ namespace GUI
 					}
 				}
 
+				// selection event
 				const auto events = GenericEvents(true);
 				if (events.isMouseDragging()) {
 					if (m_decCodeViewer->m_isCodeSelecting) {
@@ -346,12 +369,15 @@ namespace GUI
 				}
 				SameLine(1.0f);
 
+				// other
 				if (!m_isTextAddingOnCurLine) {
 					m_textOnCurLine += text;
 					m_curTokenIdx++;
 				}
 			}
 
+
+			// is the next generated item in the user selection
 			bool isSelected() const {
 				if (m_decCodeViewer->m_startSelectionTokenIdx == -1 ||
 					m_decCodeViewer->m_endSelectionTokenIdx == -1)
@@ -370,6 +396,7 @@ namespace GUI
 				m_selectedCodeColors.pop_back();
 			}
 
+			// if the current line is longer than the window then go to a new line
 			bool checkToGoToNewLine() {
 				const auto curLineSize = ImGui::CalcTextSize(m_textOnCurLine.c_str()).x;
 				if (curLineSize >= std::max(m_decCodeViewer->m_maxLineSize, 400.0f)) {
@@ -386,43 +413,7 @@ namespace GUI
 
 			void generateToken(const std::string& text, TokenType tokenType) override {
 				if (tokenType == TOKEN_END_LINE) {
-					m_curLineIdx++;
-					m_textOnCurLine = "";
-
-					// line selection
-					auto rowColor = ToImGuiColorU32(0x141414FF);
-					if(m_decCodeViewer->m_selectedLineIdx == m_curLineIdx - 1) {
-						rowColor = ToImGuiColorU32(0x1d333dFF);
-					}
-					ImGui::PushStyleColor(ImGuiCol_TableRowBg, rowColor);
-					ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, rowColor);
-					ImGui::TableNextRow(0, 10.0f);
-					ImGui::PopStyleColor();
-					ImGui::PopStyleColor();
-
-					// line index
-					ImGui::TableNextColumn();
-					{
-						// process event for line
-						if (ImGui::IsWindowHovered()) {
-							ImGuiContext& g = *GImGui;
-							if (ImGui::IsMousePosValid(&g.IO.MousePos)) {
-								const auto table = ImGui::GetCurrentTable();
-								const auto startRowPos = ImGui::GetCursorScreenPos();
-								const auto rowSize = ImVec2(table->InnerRect.GetSize().x, 17.0f);
-								if (ImRect(startRowPos, startRowPos + rowSize).Contains(g.IO.MousePos)) {
-									// select line
-									if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-										m_decCodeViewer->m_selectedLineIdx = m_curLineIdx;
-									}
-								}
-							}
-						}
-					}
-					Text::ColoredText(std::to_string(m_curLineIdx), 0x7d7d7dFF).show();
-
-					// code
-					ImGui::TableNextColumn();
+					generateNewLine();
 					return;
 				}
 
@@ -450,8 +441,49 @@ namespace GUI
 				m_curTokenIdx++;
 			}
 
+			void generateNewLine() {
+				m_curLineIdx++;
+				m_textOnCurLine = "";
+
+				// line selection
+				auto rowColor = ToImGuiColorU32(0x141414FF);
+				if (m_decCodeViewer->m_selectedLineIdx == m_curLineIdx - 1) {
+					rowColor = ToImGuiColorU32(0x1d333dFF);
+				}
+				ImGui::PushStyleColor(ImGuiCol_TableRowBg, rowColor);
+				ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, rowColor);
+				ImGui::TableNextRow(0, 10.0f);
+				ImGui::PopStyleColor();
+				ImGui::PopStyleColor();
+
+				// line index
+				ImGui::TableNextColumn();
+				{
+					// process event for line
+					if (ImGui::IsWindowHovered()) {
+						ImGuiContext& g = *GImGui;
+						if (ImGui::IsMousePosValid(&g.IO.MousePos)) {
+							const auto table = ImGui::GetCurrentTable();
+							const auto startRowPos = ImGui::GetCursorScreenPos();
+							const auto rowSize = ImVec2(table->InnerRect.GetSize().x, 17.0f);
+							if (ImRect(startRowPos, startRowPos + rowSize).Contains(g.IO.MousePos)) {
+								// select line
+								if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+									m_decCodeViewer->m_selectedLineIdx = m_curLineIdx;
+								}
+							}
+						}
+					}
+				}
+				Text::ColoredText(std::to_string(m_curLineIdx), 0x7d7d7dFF).show();
+
+				// code
+				ImGui::TableNextColumn();
+			}
+
 			void generateBlockList(CE::Decompiler::LinearView::BlockList* blockList, bool generatingBraces) override {
 				if (m_decCodeViewer->m_hidedBlockLists.find(blockList) != m_decCodeViewer->m_hidedBlockLists.end()) {
+					// if the block list is hided by user
 					ImGui::BeginGroup();
 					generateToken("{", TOKEN_CURLY_BRACKET);
 					generateToken("...", TOKEN_OTHER);
@@ -585,6 +617,7 @@ namespace GUI
 		CE::Function* m_clickedFunction = nullptr;
 		CE::Symbol::GlobalVarSymbol* m_clickedGlobalVar = nullptr;
 		std::list<CE::Decompiler::Instruction*> m_selectedInstrs;
+		std::set<CE::Decompiler::Instruction*> m_selectedCodeByInstr;
 		std::string m_selectedText;
 		bool m_codeChanged = false;
 		int m_selectedLineIdx = -1;
@@ -610,6 +643,14 @@ namespace GUI
 			m_primaryDecompiler = primaryDecompiler;
 		}
 
+		bool selectBlockList(CE::Decompiler::DecBlock* decBlock) {
+			if(const auto block = m_blockList->findBlock(decBlock)) {
+				m_selectedBlockList = block->m_blockList;
+				return true;
+			}
+			return false;
+		}
+
 	protected:
 		virtual void renderCode() {
 			CodeGenerator generator(this);
@@ -632,7 +673,7 @@ namespace GUI
 			
 			ImGui::BeginChild(getId().c_str(), ImVec2(0, 0), false, ImGuiWindowFlags_NoMove);
 			if (ImGui::IsWindowHovered()) {
-				if (ImGui::IsMouseClicked(0)) {
+				if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
 					m_selectedSymbol = nullptr;
 					m_selectedSymbolCount = -1;
 					m_selectedObj = nullptr;
@@ -640,9 +681,10 @@ namespace GUI
 					m_selectedNode = nullptr;
 					m_startSelectionTokenIdx = -1;
 					m_endSelectionTokenIdx = -1;
+					m_selectedCodeByInstr.clear();
 				}
 
-				if (ImGui::IsMouseReleased(0)) {
+				if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
 					m_isCodeSelecting = false;
 				}
 			}
@@ -686,13 +728,21 @@ namespace GUI
 			void renderCode() override {
 				CodeGenerator generator(this);
 				generator.m_SHOW_ALL_COMMENTS = m_show.DebugComments;
+
+				// function signature
 				generator.generateEndLine();
 				renderFunctionSignature(generator.m_exprTreeGenerator);
 				generator.generateEndLine();
 				generator.generateCurlyBracket("{", m_blockList);
+
+				// header (local variables)
 				generator.generateHeader(m_symbols);
 				generator.generateEndLine();
+
+				// code
 				generator.generate(m_blockList);
+
+				// end
 				generator.generateCurlyBracket("}", m_blockList);
 				generator.generateEndLine();
 			}

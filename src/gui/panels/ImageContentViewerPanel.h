@@ -112,6 +112,10 @@ namespace GUI
 					throw WarningException("Offset not found.");
 				m_scrollToRowIdx = rowIdx;
 			}
+
+			bool isRowsMultiSelecting() const {
+				return m_startSelectionRowIdx != -1;
+			}
 		protected:
 			virtual int getRowIdxByOffset(CE::Offset offset) = 0;
 			
@@ -326,6 +330,7 @@ namespace GUI
 			CE::Decompiler::FunctionPCodeGraph* m_curFuncPCodeGraph = nullptr;
 			bool m_obscureUnknownLocation = true;
 			std::list<CodeSectionRow> m_selectedRows;
+			CE::Decompiler::PCodeBlock* m_clickedPCodeBlock = nullptr;
 			
 			CodeSectionViewer(CodeSectionController* codeSectionController, AbstractInstructionViewDecoder* instructionViewDecoder)
 				: AbstractSectionViewer(codeSectionController), m_codeSectionController(codeSectionController), m_instructionViewDecoder(instructionViewDecoder)
@@ -342,6 +347,7 @@ namespace GUI
 			void renderControl() override {
 				m_shownJmps.clear();
 				m_curFuncPCodeGraph = nullptr;
+				m_clickedPCodeBlock = nullptr;
 				
 				if(Button::StdButton("go to func").present()) {
 					goToOffset(0x20c80);
@@ -367,7 +373,8 @@ namespace GUI
 
 							// getting info about the current row
 							const auto codeSectionRow = m_codeSectionController->getRow(rowIdx);
-							if (const auto pcodeBlock = m_codeSectionController->m_imageDec->getPCodeGraph()->getBlockAtOffset(codeSectionRow.m_fullOffset)) {
+							const auto pcodeBlock = m_codeSectionController->m_imageDec->getPCodeGraph()->getBlockAtOffset(codeSectionRow.m_fullOffset);
+							if (pcodeBlock) {
 								if (rowIdx == (m_clipper.DisplayStart + m_clipper.DisplayEnd) / 2)
 									m_curFuncPCodeGraph = pcodeBlock->m_funcPCodeGraph;
 							} else {
@@ -377,7 +384,7 @@ namespace GUI
 
 							// select rows
 							for(auto selRow : m_selectedRows) {
-								if(codeSectionRow.m_isPCode ? selRow == codeSectionRow : selRow.m_byteOffset == codeSectionRow.m_byteOffset) {
+								if(m_codeSectionController->m_showPCode ? selRow == codeSectionRow : selRow.m_byteOffset == codeSectionRow.m_byteOffset) {
 									m_selectCurRow = true;
 									break;
 								}
@@ -419,7 +426,7 @@ namespace GUI
 
 							// decorate the current row
 							const auto rowSize = ImVec2(tableSize.x - 25, m_clipper.ItemsHeight);
-							decorateRow(startRowPos, rowSize, codeSectionRow, rowIdx);
+							decorateRow(startRowPos, rowSize, codeSectionRow, rowIdx, pcodeBlock);
 
 							if (obscure)
 								ImGui::PopStyleVar();
@@ -436,7 +443,7 @@ namespace GUI
 				Show(m_ctxWindow);
 			}
 
-			void decorateRow(const ImVec2& startRowPos, const ImVec2& rowSize, CodeSectionRow row, int rowIdx) {
+			void decorateRow(const ImVec2& startRowPos, const ImVec2& rowSize, CodeSectionRow row, int rowIdx, CE::Decompiler::PCodeBlock* pcodeBlock) {
 				// function header
 				bool isEventProcessed = false;
 				if (!row.m_isPCode) {
@@ -470,6 +477,7 @@ namespace GUI
 							}
 							else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
 								m_selectedRows = { row };
+								m_clickedPCodeBlock = pcodeBlock;
 							}
 							else if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
 								delete m_ctxWindow;
@@ -614,6 +622,8 @@ namespace GUI
 		StdWindow* m_decompiledCodeViewerWindow = nullptr;
 		PopupModalWindow* m_popupModalWindow = nullptr;
 
+		CE::Decompiler::DecompiledCodeGraph* m_curDecGraph = nullptr;
+
 		DecompilerStep m_decompilerStep = DecompilerStep::DEFAULT;
 		ProcessingStep m_processingStep = ProcessingStep::DEFAULT;
 		SymbolizingStep m_symbolizingStep = SymbolizingStep::DEFAULT;
@@ -656,6 +666,7 @@ namespace GUI
 		void renderPanel() override {
 			m_imageSectionViewer->show();
 
+			processSectionViewerEvents();
 			processDecompiledCodeViewerEvents();
 
 			Show(m_funcGraphViewerWindow);
@@ -928,6 +939,7 @@ namespace GUI
 					} else {
 						panel = new DecompiledCodeViewerPanel(decCodeGraph);
 					}
+					m_curDecGraph = decCodeGraph;
 					panel->m_decompiledCodeViewer->setInfoToShowAsm(m_imageDec->getImage(), new InstructionViewDecoderX86);
 					panel->m_decompiledCodeViewer->setInfoToShowExecCtxs(primaryDecompiler);
 					if (m_decompiledCodeViewerWindow) {
@@ -940,29 +952,80 @@ namespace GUI
 			}
 		}
 
-		// e.g. if a symbol was renamed then redecompile
+		// e.g. if rows were selected
+		void processSectionViewerEvents() {
+			if (const auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer))
+			{
+				if (m_decompiledCodeViewerWindow) {
+					if (const auto decCodeViewerPanel = dynamic_cast<DecompiledCodeViewerPanel*>(m_decompiledCodeViewerWindow->getPanel())) {
+						auto& instrs = decCodeViewerPanel->m_decompiledCodeViewer->m_selectedCodeByInstr;
+						
+						// select block list by instruction selection
+						if (codeSectionViewer->m_clickedPCodeBlock && m_curDecGraph) {
+							CE::Decompiler::DecBlock* selDecBlock = nullptr;
+							for (const auto decBlock : m_curDecGraph->getDecompiledBlocks()) {
+								if (decBlock->m_pcodeBlock == codeSectionViewer->m_clickedPCodeBlock) {
+									selDecBlock = decBlock;
+									break;
+								}
+							}
+							if (selDecBlock) {
+								decCodeViewerPanel->m_decompiledCodeViewer->selectBlockList(selDecBlock);
+							}
+							instrs.clear();
+						}
+						// select dec. code by row's multi-selection
+						if (codeSectionViewer->isRowsMultiSelecting()) {
+							instrs.clear();
+							for (const auto row : codeSectionViewer->m_selectedRows) {
+								if (row.m_isPCode) {
+									if (const auto instr = m_imageDec->getInstrPool()->getPCodeInstructionAt(row.getOffset())) {
+										instrs.insert(instr);
+									}
+								} else {
+									if (const auto origInstr = m_imageDec->getInstrPool()->getOrigInstructionAt(row.m_byteOffset)) {
+										for(auto& [orderId, instr] : origInstr->m_pcodeInstructions)
+											instrs.insert(&instr);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			else if (const auto dataSectionViewer = dynamic_cast<DataSectionViewer*>(m_imageSectionViewer))
+			{
+
+			}
+		}
+		
+		// e.g. if a symbol was renamed
 		void processDecompiledCodeViewerEvents() {
 			if (!m_decompiledCodeViewerWindow)
 				return;
 			
-			if (const auto prevPanel = dynamic_cast<DecompiledCodeViewerPanel*>(m_decompiledCodeViewerWindow->getPanel())) {
+			if (const auto decCodeViewerPanel = dynamic_cast<DecompiledCodeViewerPanel*>(m_decompiledCodeViewerWindow->getPanel())) {
 				if (const auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer)) {
-					if (prevPanel->m_decompiledCodeViewer->m_codeChanged) {
+					// symbol was changed
+					if (decCodeViewerPanel->m_decompiledCodeViewer->m_codeChanged) {
 						decompile(codeSectionViewer->m_curFuncPCodeGraph);
 					}
-					if (!prevPanel->m_decompiledCodeViewer->m_selectedInstrs.empty()) {
+					// select instructions by code selection
+					if (!decCodeViewerPanel->m_decompiledCodeViewer->m_selectedInstrs.empty()) {
 						codeSectionViewer->m_selectedRows.clear();
-						for(const auto instr : prevPanel->m_decompiledCodeViewer->m_selectedInstrs) {
+						for(const auto instr : decCodeViewerPanel->m_decompiledCodeViewer->m_selectedInstrs) {
 							codeSectionViewer->m_selectedRows.emplace_back(instr->getOffset(), true);
 						}
 					}
 				}
-				
-				if (const auto function = prevPanel->m_decompiledCodeViewer->m_clickedFunction) {
+
+				// click function
+				if (const auto function = decCodeViewerPanel->m_decompiledCodeViewer->m_clickedFunction) {
 					goToOffset(function->getOffset());
-					prevPanel->m_decompiledCodeViewer->m_codeChanged = true;
+					decCodeViewerPanel->m_decompiledCodeViewer->m_codeChanged = true;
 				}
-				else if (const auto globalVar = prevPanel->m_decompiledCodeViewer->m_clickedGlobalVar) {
+				// click global var
+				else if (const auto globalVar = decCodeViewerPanel->m_decompiledCodeViewer->m_clickedGlobalVar) {
 					goToOffset(globalVar->getOffset());
 				}
 			}

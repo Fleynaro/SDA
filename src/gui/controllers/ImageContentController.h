@@ -127,6 +127,10 @@ namespace GUI
 		CodeSectionRow(CE::ComplexOffset offset, bool isPCode = false)
 			: m_fullOffset(offset), m_isPCode(isPCode)
 		{}
+
+		CE::ComplexOffset getOffset() const {
+			return CE::ComplexOffset(m_byteOffset, m_orderId);
+		}
 	};
 	
 	class CodeSectionController : public AbstractSectionControllerWithRows<CodeSectionRow>
