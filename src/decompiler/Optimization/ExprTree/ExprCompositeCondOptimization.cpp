@@ -9,28 +9,31 @@ Optimization::ExprCompositeConditionOptimization::ExprCompositeConditionOptimiza
 {}
 
 void Optimization::ExprCompositeConditionOptimization::start() {
-	inverseConditions(getCompCondition());
+	inverseConditions();
 	if (getCompCondition()) { // check if this node continue being comp. condition during replacing
-		makeOrderInCompositeCondition(getCompCondition());
+		MakeOrderInCompositeCondition(getCompCondition());
 	}
 	if (getCompCondition()) {
-		optimizeCompositeCondition(getCompCondition());
+		optimizeCompositeCondition();
 	}
 }
 
-CompositeCondition* Optimization::ExprCompositeConditionOptimization::getCompCondition() {
+CompositeCondition* Optimization::ExprCompositeConditionOptimization::getCompCondition() const {
 	return dynamic_cast<CompositeCondition*>(getNode());
 }
 
 //!(x == 2)	-> (x != 2)
 
-bool Optimization::ExprCompositeConditionOptimization::inverseConditions(CompositeCondition* compCond) {
+bool Optimization::ExprCompositeConditionOptimization::inverseConditions() {
+	const auto compCond = getCompCondition();
 	if (compCond->m_cond == CompositeCondition::Not) {
 		compCond->m_leftCond->inverse();
+		compCond->m_leftCond->addInstructions(compCond->getInstructionsRelatedTo());
 		replace(compCond->m_leftCond);
 		return true;
 	}
-	else if (compCond->m_cond == CompositeCondition::None) {
+	if (compCond->m_cond == CompositeCondition::None) {
+		compCond->m_leftCond->addInstructions(compCond->getInstructionsRelatedTo());
 		replace(compCond->m_leftCond);
 		return true;
 	}
@@ -39,7 +42,7 @@ bool Optimization::ExprCompositeConditionOptimization::inverseConditions(Composi
 
 //x > 2 && x == 3 -> x == 3 && x > 2
 
-void Optimization::ExprCompositeConditionOptimization::makeOrderInCompositeCondition(CompositeCondition* compCond) const
+void Optimization::ExprCompositeConditionOptimization::MakeOrderInCompositeCondition(CompositeCondition* compCond)
 {
 	if (!compCond->m_rightCond)
 		return;
@@ -62,12 +65,14 @@ void Optimization::ExprCompositeConditionOptimization::makeOrderInCompositeCondi
 
 	for (auto it : { compCond->m_leftCond, compCond->m_rightCond }) {
 		if (const auto compCond = dynamic_cast<CompositeCondition*>(it)) {
-			makeOrderInCompositeCondition(compCond);
+			MakeOrderInCompositeCondition(compCond);
 		}
 	}
 }
 
-void Optimization::ExprCompositeConditionOptimization::optimizeCompositeCondition(CompositeCondition* compCond) {
+void Optimization::ExprCompositeConditionOptimization::optimizeCompositeCondition() {
+	const auto compCond = getCompCondition();
+	
 	if (auto leftSimpleCond = dynamic_cast<Condition*>(compCond->m_leftCond)) {
 		if (auto rightSimpleCond = dynamic_cast<Condition*>(compCond->m_rightCond)) {
 			if (leftSimpleCond->m_leftNode->getHash().getHashValue() == rightSimpleCond->m_leftNode->getHash().getHashValue()
@@ -95,7 +100,9 @@ void Optimization::ExprCompositeConditionOptimization::optimizeCompositeConditio
 				}
 
 				if (newCondType != Condition::None) {
-					const auto newSimpleCond = new Condition(leftSimpleCond->m_leftNode, leftSimpleCond->m_rightNode, newCondType);
+					const auto newSimpleCond = new Condition(leftSimpleCond->m_leftNode, leftSimpleCond->m_rightNode, newCondType, false);
+					newSimpleCond->addInstructions(rightSimpleCond->getInstructionsRelatedTo()); //todo: recusrive adding
+					newSimpleCond->addInstructions(compCond->getInstructionsRelatedTo());
 					replace(newSimpleCond);
 				}
 			}

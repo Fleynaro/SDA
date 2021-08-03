@@ -87,6 +87,12 @@ void Optimization::GraphParAssignmentCreator::createParAssignmentsForLocalVars()
 		// iterate over all ctxs and create assignments: localVar1 = 0x5
 		for (auto execCtx : localVarInfo.m_parentExecCtxs) {
 			const auto expr = execCtx->m_registerExecCtx.requestRegister(localVarInfo.m_register);
+			Instruction* instr = nullptr;
+			if(const auto relToInstr = dynamic_cast<IRelatedToInstruction*>(expr)) {
+				if(!relToInstr->getInstructionsRelatedTo().empty()) {
+					instr = *relToInstr->getInstructionsRelatedTo().begin();
+				}
+			}
 
 			// to avoide: localVar1 = localVar1
 			if (const auto symbolLeaf = dynamic_cast<SymbolLeaf*>(expr))
@@ -101,7 +107,7 @@ void Optimization::GraphParAssignmentCreator::createParAssignmentsForLocalVars()
 
 			// create assignment: localVar = {expr}
 			auto& blockInfo = m_decompiler->m_decompiledBlocks[execCtx->m_pcodeBlock];
-			blockInfo.m_decBlock->addSymbolParallelAssignmentLine(new SymbolLeaf(localVar), expr);
+			blockInfo.m_decBlock->addSymbolParallelAssignmentLine(new SymbolLeaf(localVar), expr, instr);
 		}
 
 		m_decGraph->addSymbol(localVar);

@@ -35,7 +35,11 @@ std::list<INode*> CompositeCondition::getNodesList() {
 }
 
 INode* CompositeCondition::clone(NodeCloneContext* ctx) {
-	return new CompositeCondition(dynamic_cast<AbstractCondition*>(m_leftCond->clone(ctx)), m_rightCond ? dynamic_cast<AbstractCondition*>(m_rightCond->clone(ctx)) : nullptr, m_cond);
+	const auto leftCond = dynamic_cast<AbstractCondition*>(m_leftCond->clone(ctx));
+	const auto rightCond = m_rightCond ? dynamic_cast<AbstractCondition*>(m_rightCond->clone(ctx)) : nullptr;
+	const auto compCond = new CompositeCondition(leftCond, rightCond, m_cond);
+	compCond->m_instructions = m_instructions;
+	return compCond;
 }
 
 HS CompositeCondition::getHash() {
@@ -70,8 +74,8 @@ void CompositeCondition::inverse() {
 		m_rightCond->inverse();
 }
 
-Condition::Condition(INode* leftNode, INode* rightNode, ConditionType cond, PCode::Instruction* instr)
-	: m_leftNode(leftNode), m_rightNode(rightNode), m_cond(cond), AbstractCondition(instr)
+Condition::Condition(INode* leftNode, INode* rightNode, ConditionType cond, bool isFloatingPoint, PCode::Instruction* instr)
+	: m_leftNode(leftNode), m_rightNode(rightNode), m_cond(cond), m_isFloatingPoint(isFloatingPoint), AbstractCondition(instr)
 {
 	leftNode->addParentNode(this);
 	rightNode->addParentNode(this);
@@ -98,7 +102,9 @@ std::list<INode*> Condition::getNodesList() {
 }
 
 INode* Condition::clone(NodeCloneContext* ctx) {
-	return new Condition(m_leftNode->clone(ctx), m_rightNode->clone(ctx), m_cond);
+	const auto cond = new Condition(m_leftNode->clone(ctx), m_rightNode->clone(ctx), m_cond, m_isFloatingPoint);
+	cond->m_instructions = m_instructions;
+	return cond;
 }
 
 HS Condition::getHash() {
@@ -140,7 +146,9 @@ void BooleanValue::inverse() {
 }
 
 INode* BooleanValue::clone(NodeCloneContext* ctx) {
-	return new BooleanValue(m_value);
+	const auto value = new BooleanValue(m_value);
+	value->m_instructions = m_instructions;
+	return value;
 }
 
 HS BooleanValue::getHash() {
@@ -148,15 +156,19 @@ HS BooleanValue::getHash() {
 }
 
 AbstractCondition::AbstractCondition(PCode::Instruction* instr)
-	: m_instr(instr)
-{}
+{
+	if (instr)
+		m_instructions.push_back(instr);
+}
 
 int AbstractCondition::getSize() {
 	return 1;
 }
 
+void AbstractCondition::addInstructions(const std::list<PCode::Instruction*>& instructions) {
+	m_instructions.insert(m_instructions.begin(), instructions.begin(), instructions.end());
+}
+
 std::list<PCode::Instruction*> AbstractCondition::getInstructionsRelatedTo() {
-	if (m_instr)
-		return { m_instr };
-	return {};
+	return m_instructions;
 }

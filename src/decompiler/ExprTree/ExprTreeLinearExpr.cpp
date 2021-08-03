@@ -61,7 +61,7 @@ std::list<INode*> LinearExpr::getNodesList() {
 }
 
 std::list<PCode::Instruction*> LinearExpr::getInstructionsRelatedTo() {
-	return {};
+	return m_instructions;
 }
 
 int LinearExpr::getSize() {
@@ -79,6 +79,7 @@ bool LinearExpr::isFloatingPoint() {
 INode* LinearExpr::clone(NodeCloneContext* ctx) {
 	const auto clonedConstTerm = dynamic_cast<INumberLeaf*>(m_constTerm->clone());
 	auto newLinearExpr = new LinearExpr(clonedConstTerm, m_operation);
+	newLinearExpr->m_instructions = m_instructions;
 	for (auto term : m_terms) {
 		newLinearExpr->addTerm(term->clone(ctx));
 	}

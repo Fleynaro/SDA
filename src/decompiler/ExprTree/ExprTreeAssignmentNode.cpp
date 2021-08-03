@@ -26,15 +26,15 @@ std::list<INode*> AssignmentNode::getNodesList() {
 std::list<PCode::Instruction*> AssignmentNode::getInstructionsRelatedTo() {
 	if (m_instr)
 		return { m_instr };
-	//return {};
+	return {};
 
 	// upd: this code down is placed from the class GraphLocalVarsRelToInstructions
-	std::list<PCode::Instruction*> list;
+	/*std::list<PCode::Instruction*> list;
 	if (auto nodeRelToInstr = dynamic_cast<IRelatedToInstruction*>(getSrcNode())) {
 		auto list2 = nodeRelToInstr->getInstructionsRelatedTo();
 		list.insert(list.end(), list2.begin(), list2.end());
 	}
-	return list;
+	return list;*/
 }
 
 INode* AssignmentNode::getDstNode() const
@@ -68,5 +68,5 @@ HS AssignmentNode::getHash() {
 }
 
 INode* AssignmentNode::clone(NodeCloneContext* ctx) {
-	return new AssignmentNode(m_dstNode->clone(ctx), m_srcNode->clone(ctx));
+	return new AssignmentNode(m_dstNode->clone(ctx), m_srcNode->clone(ctx), m_instr);
 }

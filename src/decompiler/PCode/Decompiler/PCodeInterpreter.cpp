@@ -131,7 +131,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 		auto expr = requestVarnode(m_instr->m_input0);
 		if (m_instr->m_output->getSize() <= 8) {
 			// todo: increase from 8 to 16 bytes (it requires 128-bit arithmetic implementation)
-			expr = new ExprTree::CastNode(expr, m_instr->m_output->getSize(), m_instr->m_id == InstructionId::INT_SEXT);
+			expr = new ExprTree::CastNode(expr, m_instr->m_output->getSize(), m_instr->m_id == InstructionId::INT_SEXT, m_instr);
 		}
 		m_ctx->setVarnode(m_instr->m_output, expr);
 		break;
@@ -238,7 +238,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 		}
 
 		bool isFloatingPoint = (InstructionId::FLOAT_EQUAL <= m_instr->m_id && m_instr->m_id <= InstructionId::FLOAT_LESSEQUAL);
-		auto result = new ExprTree::Condition(op1, op2, condType, m_instr);
+		auto result = new ExprTree::Condition(op1, op2, condType, isFloatingPoint, m_instr);
 		m_ctx->setVarnode(m_instr->m_output, result);
 		break;
 	}
@@ -310,7 +310,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 	{
 		auto flagCond = toBoolean(requestVarnode(m_instr->m_input1));
 		if (flagCond) {
-			auto notFlagCond = new ExprTree::CompositeCondition(flagCond, nullptr, ExprTree::CompositeCondition::Not, m_instr);
+			auto notFlagCond = new ExprTree::CompositeCondition(flagCond, nullptr, ExprTree::CompositeCondition::Not);
 			m_block->setNoJumpCondition(notFlagCond);
 		}
 		break;
@@ -344,7 +344,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 		funcCallCtx->m_functionResultVar = funcResultVar;
 		m_block->m_decompiledGraph->addSymbol(funcResultVar);
 		auto symbolLeaf = new ExprTree::SymbolLeaf(funcResultVar);
-		m_block->addSeqLine(symbolLeaf, funcCallCtx);
+		m_block->addSeqLine(symbolLeaf, funcCallCtx, m_instr);
 		if (dstRegister.isValid()) {
 			m_ctx->m_registerExecCtx.setRegister(dstRegister, symbolLeaf);
 		}
@@ -396,7 +396,7 @@ ExprTree::AbstractCondition* InstructionInterpreter::toBoolean(ExprTree::INode* 
 		return cond;
 	}
 	// otherwise make condition yourself: x != 0
-	return new ExprTree::Condition(node, new ExprTree::NumberLeaf(static_cast<uint64_t>(0x0), 1), ExprTree::Condition::Ne);
+	return new ExprTree::Condition(node, new ExprTree::NumberLeaf(static_cast<uint64_t>(0x0), 1), ExprTree::Condition::Ne, false);
 }
 
 ExprTree::SymbolLeaf* InstructionInterpreter::createMemSymbol(ExprTree::ReadValueNode* readValueNode, Instruction* instr) const

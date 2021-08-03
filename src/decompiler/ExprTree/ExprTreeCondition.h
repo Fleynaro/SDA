@@ -6,14 +6,16 @@ namespace CE::Decompiler::ExprTree
 	// todo: inherit from OperationalNode to make its processing single through one interface
 	class AbstractCondition : public Node, public PCode::IRelatedToInstruction
 	{
+	protected:
+		std::list<PCode::Instruction*> m_instructions;
 	public:
-		PCode::Instruction* m_instr;
-
 		AbstractCondition(PCode::Instruction* instr = nullptr);
 
 		virtual void inverse() = 0;
 
 		int getSize() override;
+
+		void addInstructions(const std::list<PCode::Instruction*>& instructions);
 
 		std::list<PCode::Instruction*> getInstructionsRelatedTo() override;
 	};
@@ -49,8 +51,9 @@ namespace CE::Decompiler::ExprTree
 		INode* m_leftNode;
 		INode* m_rightNode;
 		ConditionType m_cond;
+		bool m_isFloatingPoint;
 
-		Condition(INode* leftNode, INode* rightNode, ConditionType cond, PCode::Instruction* instr = nullptr);
+		Condition(INode* leftNode, INode* rightNode, ConditionType cond, bool isFloatingPoint, PCode::Instruction* instr = nullptr);
 
 		~Condition();
 

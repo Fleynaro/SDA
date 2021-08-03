@@ -234,8 +234,9 @@ std::list<RegisterExecContext::RegisterPart> RegisterExecContext::findRegisterPa
 	//gather need parts
 	std::list<RegisterPart> regParts;
 	for (auto sameRegInfo : sameRegisters) {
-		auto sameRegExceptionMask = GetValueRangeMaskWithException(sameRegInfo->m_register); //for x86 only!!!
-																							 //if the masks intersected
+		auto sameRegExceptionMask = GetValueRangeMaskWithException(sameRegInfo->m_register); // todo: for x86 only!!!
+
+		//if the masks intersected
 		if (!(needReadMask & sameRegExceptionMask).isZero()) {
 			sameRegInfo->m_using = RegisterInfo::REGISTER_FULLY_USING;
 

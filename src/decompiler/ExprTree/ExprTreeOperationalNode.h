@@ -131,8 +131,8 @@ namespace CE::Decompiler::ExprTree
 		int m_size;
 		bool m_isSigned;
 	public:
-		CastNode(INode* node, int size, bool isSigned)
-			: OperationalNode(node, nullptr, Cast), m_size(size), m_isSigned(isSigned)
+		CastNode(INode* node, int size, bool isSigned, PCode::Instruction* instr = nullptr)
+			: OperationalNode(node, nullptr, Cast, instr), m_size(size), m_isSigned(isSigned)
 		{}
 
 		HS getHash() override;

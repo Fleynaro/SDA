@@ -20,6 +20,9 @@ namespace CE::Decompiler::Optimization
 
 		// is there a sense to build LinearExpr? (yes for {(5x + 2) * 2}, but no for {5x + 2})
 		bool m_doBuilding = false;
+
+		// gather instructions
+		std::list<PCode::Instruction*> m_instructions;
 	public:
 		ExprExpandingToLinearExpr(OperationalNode* node);
 
@@ -35,5 +38,7 @@ namespace CE::Decompiler::Optimization
 
 		// arithmetic/logic/floating operation state
 		bool defineOperationState(OperationType op);
+
+		void addInstruction(OperationalNode* node);
 	};
 };

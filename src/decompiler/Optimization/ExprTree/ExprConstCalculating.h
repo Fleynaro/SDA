@@ -17,7 +17,7 @@ namespace CE::Decompiler::Optimization
 		OperationalNode* getOpNode();
 	private:
 		//5 + 2 => 7
-		bool processConstOperands(OperationalNode* opNode);
+		bool processConstOperands();
 
 		//[var_2_32] * 0							=>		0
 		//[var_2_32] ^ [var_2_32]					=>		0
@@ -25,14 +25,14 @@ namespace CE::Decompiler::Optimization
 		//[var_2_32] * 1							=>		[var_2_32]
 		//[var_2_32] & 0xffffffff00000000{0}		=>		0x0
 		//[var_2_32] & 0xffffffff{-1}				=>		[var_2_32]	
-		bool processConstRightOperand(OperationalNode* opNode);
+		bool processConstRightOperand();
 
 		//[sym1] & [sym1] => [sym1]
 		//[sym1] | [sym1] => [sym1]
 		//[sym1] ^ [sym1] => 0x0
-		bool processEqualOperands(OperationalNode* opNode);
+		bool processEqualOperands();
 
 		//a << 0x2{2} => a * 4
-		bool processShl(OperationalNode* opNode);
+		bool processShl();
 	};
 };

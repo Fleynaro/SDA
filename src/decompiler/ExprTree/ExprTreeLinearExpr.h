@@ -11,6 +11,7 @@ namespace CE::Decompiler::ExprTree
 		INumberLeaf* m_constTerm;
 	public:
 		OperationType m_operation;
+		std::list<PCode::Instruction*> m_instructions;
 		
 		LinearExpr(INumberLeaf* constTerm, OperationType operation = Add);
 

@@ -170,7 +170,7 @@ bool CastNode::isSigned() const
 }
 
 INode* CastNode::clone(NodeCloneContext* ctx) {
-	return new CastNode(m_leftNode->clone(ctx), m_size, m_isSigned);
+	return new CastNode(m_leftNode->clone(ctx), m_size, m_isSigned, m_instr);
 }
 
 int FunctionalNode::getSize() {

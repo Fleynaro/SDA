@@ -497,6 +497,7 @@ namespace GUI
 						m_decCodeViewer->m_hidedBlockLists.erase(blockList);
 					}
 					generateEndLine();
+					generateTabs();
 					return;
 				}
 				

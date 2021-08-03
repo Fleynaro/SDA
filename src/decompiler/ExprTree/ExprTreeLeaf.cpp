@@ -35,8 +35,6 @@ HS SymbolLeaf::getHash() {
 }
 
 std::list<PCode::Instruction*> SymbolLeaf::getInstructionsRelatedTo() {
-	if (auto symbolRelToInstr = dynamic_cast<IRelatedToInstruction*>(m_symbol))
-		return symbolRelToInstr->getInstructionsRelatedTo();
 	return {};
 }
 

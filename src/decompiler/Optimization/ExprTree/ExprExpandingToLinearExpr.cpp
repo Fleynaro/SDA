@@ -33,8 +33,15 @@ OperationalNode* Optimization::ExprExpandingToLinearExpr::getOpNode() {
 LinearExpr* Optimization::ExprExpandingToLinearExpr::buildLinearExpr() {
 	const auto constTerm = new NumberLeaf((uint64_t&)m_constTerm, m_constTermSize);
 	auto linearExpr = new LinearExpr(constTerm, m_operationAdd); // todo: change size for number
-																 // iterate over all terms
-	for (auto termInfo : m_terms) {
+
+	m_instructions.sort([](PCode::Instruction* instr1, PCode::Instruction* instr2)
+		{
+			return instr1->getOffset() < instr2->getOffset();
+		});
+	linearExpr->m_instructions = m_instructions;
+
+	// iterate over all terms
+	for (auto& termInfo : m_terms) {
 		auto node = termInfo.second.first;
 		auto mask = CalculateMask(node);
 		const auto multiplier = (uint64_t&)termInfo.second.second;
@@ -87,9 +94,10 @@ void Optimization::ExprExpandingToLinearExpr::defineTerms(INode* node, int64_t k
 		if (opNode->m_operation == m_operationAdd) {
 			defineTerms(opNode->m_leftNode, k, level + 1);
 			defineTerms(opNode->m_rightNode, k, level + 1);
+			addInstruction(opNode);
 			return;
 		}
-		else if (opNode->m_operation == m_operationMul) {
+		if (opNode->m_operation == m_operationMul) {
 			if (auto rightNumberLeaf = dynamic_cast<INumberLeaf*>(opNode->m_rightNode)) {
 				const auto newK = ExprConstCalculating::Calculate( // e.g. 5x * 5 -> 25x
 					rightNumberLeaf->getValue(),
@@ -98,6 +106,7 @@ void Optimization::ExprExpandingToLinearExpr::defineTerms(INode* node, int64_t k
 					size
 				);
 				defineTerms(opNode->m_leftNode, newK, level + 1);
+				addInstruction(opNode);
 				return;
 			}
 		}
@@ -139,4 +148,9 @@ bool Optimization::ExprExpandingToLinearExpr::defineOperationState(OperationType
 	//	return true;
 	//}
 	return false;
+}
+
+void Optimization::ExprExpandingToLinearExpr::addInstruction(OperationalNode* node) {
+	const auto instrs = node->getInstructionsRelatedTo();
+	m_instructions.insert(m_instructions.begin(), instrs.begin(), instrs.end());
 }

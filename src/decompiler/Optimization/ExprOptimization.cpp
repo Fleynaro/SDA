@@ -74,10 +74,33 @@ void Optimization::ExprOptimization::linearExprToOpNodes(INode* node) {
 		linearExprToOpNodes(childNode);
 		});
 
+	// a kind of crutch (need for saving instructions of linear expr.)
+	class OperationalNode2 : public OperationalNode
+	{
+	public:
+		std::list<PCode::Instruction*> m_instructions;
+		OperationalNode2(INode* leftNode, INode* rightNode, OperationType operation)
+			: OperationalNode(leftNode, rightNode, operation)
+		{}
+
+		std::list<PCode::Instruction*> getInstructionsRelatedTo() override {
+			return m_instructions;
+		}
+	};
+
 	if (auto linearExpr = dynamic_cast<LinearExpr*>(node)) {
 		node = linearExpr->getConstTerm();
-		for (auto term : linearExpr->getTerms()) {
-			node = new OperationalNode(node, term, linearExpr->m_operation);
+		auto terms = linearExpr->getTerms();
+		for (auto it = terms.begin(); it != terms.end(); ++it) {
+			if (it != std::prev(terms.end())) {
+				node = new OperationalNode(node, *it, linearExpr->m_operation);
+			}
+			else {
+				// a kind of crutch (need for saving instructions of linear expr.)
+				auto opNode2 = new OperationalNode2(node, *it, linearExpr->m_operation);
+				opNode2->m_instructions = linearExpr->getInstructionsRelatedTo();
+				node = opNode2;
+			}
 		}
 		linearExpr->replaceWith(node);
 		delete linearExpr;
