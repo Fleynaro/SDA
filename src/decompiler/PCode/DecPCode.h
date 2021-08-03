@@ -185,9 +185,9 @@ namespace CE::Decompiler::PCode
 		FLOAT2INT,
 		FLOAT2FLOAT,
 		TRUNC,
-		CEIL,
-		FLOOR,
-		ROUND,
+		FLOAT_CEIL,
+		FLOAT_FLOOR,
+		FLOAT_ROUND,
 		//Branching
 		BRANCH,
 		CBRANCH,
@@ -247,6 +247,9 @@ namespace CE::Decompiler::PCode
 		// check if the instruction is some kind of jump (BRANCH/CALL/RETURN)
 		static bool IsAnyJmup(InstructionId id);
 	};
+
+	// sort instruction list
+	extern void Sort(std::list<Instruction*>& instructions);
 
 	// todo: move into operational node (assignment, condition, operations)
 	class IRelatedToInstruction

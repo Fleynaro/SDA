@@ -163,9 +163,9 @@ void InstructionInterpreter::execute(Instruction* instr) {
 	case InstructionId::FLOAT2INT:
 	case InstructionId::FLOAT2FLOAT:
 	case InstructionId::TRUNC:
-	case InstructionId::CEIL:
-	case InstructionId::FLOOR:
-	case InstructionId::ROUND:
+	case InstructionId::FLOAT_CEIL:
+	case InstructionId::FLOAT_FLOOR:
+	case InstructionId::FLOAT_ROUND:
 	{
 		auto expr = requestVarnode(m_instr->m_input0);
 		auto id = ExprTree::FloatFunctionalNode::Id::FABS;
@@ -184,13 +184,13 @@ void InstructionInterpreter::execute(Instruction* instr) {
 		case InstructionId::TRUNC:
 			id = ExprTree::FloatFunctionalNode::Id::TRUNC;
 			break;
-		case InstructionId::CEIL:
+		case InstructionId::FLOAT_CEIL:
 			id = ExprTree::FloatFunctionalNode::Id::CEIL;
 			break;
-		case InstructionId::FLOOR:
+		case InstructionId::FLOAT_FLOOR:
 			id = ExprTree::FloatFunctionalNode::Id::FLOOR;
 			break;
-		case InstructionId::ROUND:
+		case InstructionId::FLOAT_ROUND:
 			id = ExprTree::FloatFunctionalNode::Id::ROUND;
 			break;
 		}

@@ -15,7 +15,7 @@ namespace CE::Decompiler::ExprTree
 
 		int getSize() override;
 
-		void addInstructions(const std::list<PCode::Instruction*>& instructions);
+		void addInstructions(const std::list<PCode::Instruction*>& instructions, bool sort = false);
 
 		std::list<PCode::Instruction*> getInstructionsRelatedTo() override;
 	};

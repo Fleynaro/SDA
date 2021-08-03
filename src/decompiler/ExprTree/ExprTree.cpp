@@ -94,3 +94,16 @@ ExprBitMask ExprTree::CalculateFullMask(INode* node) {
 ExprBitMask ExprTree::CalculateMask(INode* node) {
 	return CalculateFullMask(node) & ExprBitMask(node->getSize());
 }
+
+void ExprTree::GetInstructions(INode* node, std::list<PCode::Instruction*>& instructions) {
+	node->iterateChildNodes([&](INode* node)
+		{
+			GetInstructions(node, instructions);
+		});
+	if(const auto relToInstr = dynamic_cast<PCode::IRelatedToInstruction*>(node)) {
+		const auto nodeInstructions = relToInstr->getInstructionsRelatedTo();
+		if (!nodeInstructions.empty()) {
+			instructions.insert(instructions.begin(), nodeInstructions.begin(), nodeInstructions.end());
+		}
+	}
+}

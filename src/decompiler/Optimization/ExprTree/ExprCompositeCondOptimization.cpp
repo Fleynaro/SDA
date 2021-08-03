@@ -101,7 +101,10 @@ void Optimization::ExprCompositeConditionOptimization::optimizeCompositeConditio
 
 				if (newCondType != Condition::None) {
 					const auto newSimpleCond = new Condition(leftSimpleCond->m_leftNode, leftSimpleCond->m_rightNode, newCondType, false);
-					newSimpleCond->addInstructions(rightSimpleCond->getInstructionsRelatedTo()); //todo: recusrive adding
+					std::list<PCode::Instruction*> instructions;
+					GetInstructions(rightSimpleCond, instructions);
+					newSimpleCond->addInstructions(instructions);
+					newSimpleCond->addInstructions(leftSimpleCond->getInstructionsRelatedTo(), true);
 					newSimpleCond->addInstructions(compCond->getInstructionsRelatedTo());
 					replace(newSimpleCond);
 				}

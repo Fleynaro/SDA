@@ -3,109 +3,420 @@
 
 namespace CE::Decompiler::PCode
 {
-	class VirtualMachineContext
+	class VmException : public std::exception {
+	public: VmException(const std::string& message) : std::exception(message.c_str()) {}
+	};
+	
+	class VmExecutionContext
 	{
-		struct RegisterStorage {
-			DataValue m_data[4] = { 0x0, 0x0, 0x0, 0x0 };
-		};
-
-		std::map<RegisterId, RegisterStorage> m_registers;
+		std::map<int, DataValue> m_registers;
 		std::map<SymbolVarnode*, DataValue> m_symbolVarnodes;
 	public:
-		VirtualMachineContext()
+		DataValue m_nextInstrOffset = 0;
+		
+		VmExecutionContext()
 		{}
 
-		void setConstantValue(const Register& reg, DataValue value) {
-			RegisterStorage regStorage;
-			auto& dataCell = regStorage.m_data[reg.getIndex()];
-			dataCell = dataCell & ~GetValueRangeMaskWithException(reg).getValue() | value;
-			m_registers[reg.getId()] = regStorage;
-		}
-
-		void setConstantValue(Varnode* varnode, DataValue value) {
+		void setValue(Varnode* varnode, DataValue value) {
 			if (const auto varnodeRegister = dynamic_cast<RegisterVarnode*>(varnode)) {
-				setConstantValue(varnodeRegister->m_register, value);
+				const auto reg = varnodeRegister->m_register;
+				auto& dataCell = m_registers[reg.getId()];
+				dataCell &= ~GetValueRangeMaskWithException(reg).getValue();
+				dataCell |= value << reg.m_valueRangeMask.getOffset();
 			}
 			else if (const auto varnodeSymbol = dynamic_cast<SymbolVarnode*>(varnode)) {
 				m_symbolVarnodes[varnodeSymbol] = value;
 			}
 		}
 
-		bool tryGetConstantValue(Varnode* varnode, DataValue& value) {
-			if (auto varnodeRegister = dynamic_cast<RegisterVarnode*>(varnode)) {
-				auto& reg = varnodeRegister->m_register;
-				auto it = m_registers.find(reg.getId());
+		DataValue getValue(Varnode* varnode) const {
+			if (const auto varnodeRegister = dynamic_cast<RegisterVarnode*>(varnode)) {
+				const auto& reg = varnodeRegister->m_register;
+				const auto it = m_registers.find(reg.getId());
 				if (it != m_registers.end()) {
-					value = it->second.m_data[reg.getIndex()] >> reg.m_valueRangeMask.getOffset();
-					return true;
+					const auto value = it->second & GetValueRangeMaskWithException(reg).getValue();
+					return value >> reg.m_valueRangeMask.getOffset();
 				}
 			}
-			else if(const auto varnodeSymbol = dynamic_cast<SymbolVarnode*>(varnode)) {
+			else if (const auto varnodeSymbol = dynamic_cast<SymbolVarnode*>(varnode)) {
 				const auto it = m_symbolVarnodes.find(varnodeSymbol);
 				if (it != m_symbolVarnodes.end()) {
-					value = it->second;
-					return true;
+					return it->second;
 				}
 			}
 			else if (const auto varnodeConstant = dynamic_cast<ConstantVarnode*>(varnode)) {
-				value = varnodeConstant->m_value;
-				return true;
+				return varnodeConstant->m_value;
 			}
-			return false;
+			
+			throw VmException("data not found");
 		}
 
-		void clear(Varnode* varnode) {
-			if (const auto varnodeRegister = dynamic_cast<RegisterVarnode*>(varnode)) {
-				m_registers.erase(varnodeRegister->m_register.getId());
+		void syncWith(const std::map<int, DataValue>& registers) {
+			m_registers = registers;
+			m_symbolVarnodes.clear();
+		}
+	};
+
+	class VmMemoryContext
+	{
+		std::map<std::uintptr_t, DataValue> m_values;
+		std::function<bool(std::uintptr_t, DataValue&)> m_addressSpaceCallaback;
+	public:
+		VmMemoryContext()
+		{}
+
+		void setValue(std::uintptr_t address, DataValue value) {
+			m_values[address] = value;
+		}
+
+		DataValue getValue(std::uintptr_t address) {
+			const auto it = m_values.find(address);
+			if (it != m_values.end()) {
+				return it->second;
 			}
-			else if (const auto varnodeSymbol = dynamic_cast<SymbolVarnode*>(varnode)) {
-				m_symbolVarnodes.erase(varnodeSymbol);
-			}
+			DataValue value;
+			if (m_addressSpaceCallaback(address, value))
+				return value;
+			throw VmException("data not found");
+		}
+
+		// after sync
+		void clear() {
+			m_values.clear();
+		}
+
+		void setAddressSpaceCallaback(const std::function<bool(std::uintptr_t, DataValue&)>& addressSpaceCallaback) {
+			m_addressSpaceCallaback = addressSpaceCallaback;
 		}
 	};
 
 	class VirtualMachine
 	{
-		VirtualMachineContext* m_virtualMachineCtx;
+		VmExecutionContext* m_execCtx;
+		VmMemoryContext* m_memCtx;
 	public:
-		VirtualMachine(VirtualMachineContext* virtualMachineContext)
-			: m_virtualMachineCtx(virtualMachineContext)
+		VirtualMachine(VmExecutionContext* execCtx, VmMemoryContext* memCtx)
+			: m_execCtx(execCtx), m_memCtx(memCtx)
 		{}
 
-		void execute(Instruction* instr) const
-		{
+		void execute(Instruction* instr) const {
+			if(instr->m_id >= InstructionId::INT_ADD && instr->m_id <= InstructionId::INT_SREM) {
+				executeArithmetic(instr);
+			}
+		}
+
+	private:
+		void executeArithmetic(Instruction* instr) const {
+			DataValue result = 0;
+			const auto op1 = m_execCtx->getValue(instr->m_input0);
+			if(instr->m_id == InstructionId::INT_2COMP) {
+				result = -op1;
+			}
+			else {
+				const auto op2 = m_execCtx->getValue(instr->m_input1);
+				switch (instr->m_id)
+				{
+				case InstructionId::INT_ADD: {
+					result = op1 + op2;
+					break;
+				}
+				case InstructionId::INT_SUB: {
+					result = op1 - op2;
+					break;
+				}
+				case InstructionId::INT_MULT: {
+					result = op1 * op2;
+					break;
+				}
+				case InstructionId::INT_DIV: {
+					result = op1 / op2;
+					break;
+				}
+				case InstructionId::INT_SDIV: {
+					result = (int64_t&)op1 / (int64_t&)op2;
+					break;
+				}
+				case InstructionId::INT_REM: {
+					result = op1 % op2;
+					break;
+				}
+				case InstructionId::INT_SREM: {
+					result = (int64_t&)op1 % (int64_t&)op2;
+					break;
+				}
+				case InstructionId::INT_CARRY: {
+					// todo: add
+					break;
+				}
+				case InstructionId::INT_SCARRY: {
+					// todo: add
+					break;
+				}
+				case InstructionId::INT_SBORROW: {
+					// todo: add
+					break;
+				}
+				}
+			}
+			m_execCtx->setValue(instr->m_output, result);
+		}
+
+		void executeLogical(Instruction* instr) const {
+			DataValue result = 0;
+			const auto op1 = m_execCtx->getValue(instr->m_input0);
+			if (instr->m_id == InstructionId::INT_NEGATE) {
+				result = ~op1;
+			}
+			else {
+				const auto op2 = m_execCtx->getValue(instr->m_input1);
+				switch (instr->m_id)
+				{
+				case InstructionId::INT_XOR: {
+					result = op1 ^ op2;
+					break;
+				}
+				case InstructionId::INT_AND: {
+					result = op1 & op2;
+					break;
+				}
+				case InstructionId::INT_OR: {
+					result = op1 | op2;
+					break;
+				}
+				case InstructionId::INT_LEFT: {
+					result = op1 >> op2;
+					break;
+				}
+				case InstructionId::INT_RIGHT: {
+					result = op1 << op2;
+					break;
+				}
+				case InstructionId::INT_SRIGHT: {
+					result = op1 << op2;
+					// todo: add
+					break;
+				}
+				}
+			}
+			m_execCtx->setValue(instr->m_output, result);
+		}
+
+		void executeIntegerComp(Instruction* instr) const {
+			DataValue result = 0;
+			const auto op1 = m_execCtx->getValue(instr->m_input0);
+			const auto op2 = m_execCtx->getValue(instr->m_input1);
 			switch (instr->m_id)
 			{
-			case InstructionId::INT_ADD:
-			case InstructionId::INT_SUB:
-			case InstructionId::INT_MULT:
-				DataValue op1;
-				DataValue op2;
-				if (m_virtualMachineCtx->tryGetConstantValue(instr->m_input0, op1)) {
-					if (m_virtualMachineCtx->tryGetConstantValue(instr->m_input1, op2)) {
-						DataValue result;
-						switch (instr->m_id)
-						{
-						case InstructionId::INT_ADD:
-							result = op1 + op2;
-							break;
-						case InstructionId::INT_SUB:
-							result = op1 - op2;
-							break;
-						case InstructionId::INT_MULT:
-							result = op1 * op2;
-							break;
-						}
-						m_virtualMachineCtx->setConstantValue(instr->m_output, result);
-						return;
-					}
-				}
+			case InstructionId::INT_EQUAL: {
+				result = op1 == op2;
 				break;
 			}
-
-			if (instr->m_output) {
-				m_virtualMachineCtx->clear(instr->m_output);
+			case InstructionId::INT_NOTEQUAL: {
+				result = op1 != op2;
+				break;
 			}
+			case InstructionId::INT_SLESS: {
+				result = (int64_t&)op1 < (int64_t&)op2;
+				break;
+			}
+			case InstructionId::INT_SLESSEQUAL: {
+				result = (int64_t&)op1 <= (int64_t&)op2;
+				break;
+			}
+			case InstructionId::INT_LESS: {
+				result = op1 < op2;
+				break;
+			}
+			case InstructionId::INT_LESSEQUAL: {
+				result = op1 <= op2;
+				break;
+			}
+			}
+			m_execCtx->setValue(instr->m_output, result);
+		}
+
+		void executeBoolean(Instruction* instr) const {
+			DataValue result = 0;
+			const auto op1 = m_execCtx->getValue(instr->m_input0);
+			if (instr->m_id == InstructionId::INT_NEGATE) {
+				result = !op1;
+			}
+			else {
+				const auto op2 = m_execCtx->getValue(instr->m_input1);
+				switch (instr->m_id)
+				{
+				case InstructionId::BOOL_XOR: {
+					result = op1 ^ op2;
+					break;
+				}
+				case InstructionId::BOOL_AND: {
+					result = op1 & op2;
+					break;
+				}
+				case InstructionId::BOOL_OR: {
+					result = op1 | op2;
+					break;
+				}
+				}
+			}
+			m_execCtx->setValue(instr->m_output, result);
+		}
+
+		template<typename T>
+		void executeFloatingPoint(Instruction* instr) const {
+			T fresult = 0;
+			if (instr->m_id == InstructionId::FLOAT_NAN) {
+				fresult = std::numeric_limits<T>::quiet_NaN();
+			}
+			else {
+				const auto op1 = m_execCtx->getValue(instr->m_input0);
+				const auto fop1 = (T&)op1;
+				
+				if (instr->m_id >= InstructionId::FLOAT_NEG) {
+					switch (instr->m_id)
+					{
+					case InstructionId::FLOAT_NEG: {
+						fresult = -fop1;
+						break;
+					}
+					case InstructionId::FLOAT_ABS: {
+						fresult = abs(fop1);
+						break;
+					}
+					case InstructionId::FLOAT_SQRT: {
+						fresult = sqrt(fop1);
+						break;
+					}
+					}
+				}
+				else {
+					const auto op2 = m_execCtx->getValue(instr->m_input1);
+					const auto fop2 = (T&)op2;
+					
+					switch (instr->m_id)
+					{
+					case InstructionId::FLOAT_ADD: {
+						fresult = fop1 + fop2;
+						break;
+					}
+					case InstructionId::FLOAT_SUB: {
+						fresult = fop1 - fop2;
+						break;
+					}
+					case InstructionId::FLOAT_MULT: {
+						fresult = fop1 * fop2;
+						break;
+					}
+					case InstructionId::FLOAT_DIV: {
+						fresult = fop1 / fop2;
+						break;
+					}
+					}
+				}
+			}
+
+			DataValue result = 0;
+			(T&)result = fresult;
+			m_execCtx->setValue(instr->m_output, result);
+		}
+
+		template<typename T>
+		void executeFloatingPointComp(Instruction* instr) const {
+			DataValue result = 0;
+			const auto op1 = m_execCtx->getValue(instr->m_input0);
+			const auto fop1 = (T&)op1;
+			const auto op2 = m_execCtx->getValue(instr->m_input1);
+			const auto fop2 = (T&)op2;
+			switch (instr->m_id)
+			{
+			case InstructionId::FLOAT_EQUAL: {
+				result = fop1 == fop2;
+				break;
+			}
+			case InstructionId::FLOAT_NOTEQUAL: {
+				result = fop1 != fop2;
+				break;
+			}
+			case InstructionId::FLOAT_LESS: {
+				result = fop1 < fop2;
+				break;
+			}
+			case InstructionId::FLOAT_LESSEQUAL: {
+				result = fop1 <= fop2;
+				break;
+			}
+			}
+			m_execCtx->setValue(instr->m_output, result);
+		}
+
+		template<typename T_in = float, typename T_out = float, typename T2_out = int>
+		void executeFloatingPointConversion(Instruction* instr) const {
+			DataValue result = 0;
+			const auto op1 = m_execCtx->getValue(instr->m_input0);
+			if (instr->m_id == InstructionId::INT2FLOAT) {
+				(T_out&)result = (T_out)op1;
+			}
+			else {
+				const auto fop1 = (T_in&)op1;
+				if (instr->m_id == InstructionId::FLOAT2FLOAT) {
+					(T_out&)result = (T_out)fop1;
+				}
+				else {
+					switch (instr->m_id)
+					{
+					case InstructionId::FLOAT2INT: {
+						(T2_out&)result = (T2_out)fop1;
+						break;
+					}
+					case InstructionId::TRUNC: {
+						(T2_out&)result = (T2_out)trunc(fop1);
+						break;
+					}
+					case InstructionId::FLOAT_CEIL: {
+						result = ceil(fop1);
+						break;
+					}
+					case InstructionId::FLOAT_FLOOR: {
+						result = floor(fop1);
+						break;
+					}
+					case InstructionId::FLOAT_ROUND: {
+						result = round(fop1);
+						break;
+					}
+					}
+				}
+			}
+			m_execCtx->setValue(instr->m_output, result);
+		}
+
+		void executeBranching(Instruction* instr) const {
+			const auto op1 = m_execCtx->getValue(instr->m_input0);
+			if(instr->m_id == InstructionId::CBRANCH) {
+				const auto op2 = m_execCtx->getValue(instr->m_input1);
+				if (!op2)
+					return;
+			}
+			/*
+			 * case InstructionId::BRANCH:
+			 * case InstructionId::BRANCHIND:
+			 * case InstructionId::CALL:
+			 * case InstructionId::CALLIND:
+			 * case InstructionId::RETURN:
+			 */
+			m_execCtx->m_nextInstrOffset = op1;
+		}
+
+		template<typename T_in = int, typename T_out = int64_t>
+		void executeExtension(Instruction* instr) const {
+			DataValue result = 0;
+			const auto op1 = m_execCtx->getValue(instr->m_input0);
+			if (instr->m_id == InstructionId::INT_SEXT) {
+				(T_out&)result = (T_out)(T_in&)op1;
+			} else {
+				result = op1;
+			}
+			m_execCtx->setValue(instr->m_output, result);
 		}
 	};
 };

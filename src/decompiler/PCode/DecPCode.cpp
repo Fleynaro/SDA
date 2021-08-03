@@ -86,6 +86,13 @@ bool Instruction::IsAnyJmup(InstructionId id) {
 	return id >= InstructionId::BRANCH && id <= InstructionId::RETURN;
 }
 
+void PCode::Sort(std::list<Instruction*>& instructions) {
+	instructions.sort([](Instruction* instr1, Instruction* instr2)
+	{
+		return instr1->getOffset() < instr2->getOffset();
+	});
+}
+
 int SymbolVarnode::getSize() {
 	return m_size;
 }

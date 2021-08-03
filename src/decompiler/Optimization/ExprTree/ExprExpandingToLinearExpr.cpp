@@ -34,10 +34,7 @@ LinearExpr* Optimization::ExprExpandingToLinearExpr::buildLinearExpr() {
 	const auto constTerm = new NumberLeaf((uint64_t&)m_constTerm, m_constTermSize);
 	auto linearExpr = new LinearExpr(constTerm, m_operationAdd); // todo: change size for number
 
-	m_instructions.sort([](PCode::Instruction* instr1, PCode::Instruction* instr2)
-		{
-			return instr1->getOffset() < instr2->getOffset();
-		});
+	Sort(m_instructions);
 	linearExpr->m_instructions = m_instructions;
 
 	// iterate over all terms

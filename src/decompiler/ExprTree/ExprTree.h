@@ -18,4 +18,7 @@ namespace CE::Decompiler::ExprTree
 
 	// calculate a mask for node
 	extern ExprBitMask CalculateMask(INode* node);
+
+	// get all pcode instructions the node depends on
+	extern void GetInstructions(INode* node, std::list<PCode::Instruction*>& instructions);
 };

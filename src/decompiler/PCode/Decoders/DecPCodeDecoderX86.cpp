@@ -146,12 +146,12 @@ void DecoderX86::translateCurInstruction() {
 			srcSize = 0x4;
 			break;
 		case ZYDIS_MNEMONIC_CVTPS2PI:
-			instrId = InstructionId::ROUND;
+			instrId = InstructionId::FLOAT_ROUND;
 			dstSize = 0x4;
 			srcSize = 0x4;
 			break;
 		case ZYDIS_MNEMONIC_CVTSD2SI:
-			instrId = InstructionId::ROUND;
+			instrId = InstructionId::FLOAT_ROUND;
 			dstSize = size;
 			srcSize = 0x8;
 			float2intForNonVector = true;
@@ -176,7 +176,7 @@ void DecoderX86::translateCurInstruction() {
 			srcSize = 0x4;
 			break;
 		case ZYDIS_MNEMONIC_CVTSS2SI:
-			instrId = InstructionId::ROUND;
+			instrId = InstructionId::FLOAT_ROUND;
 			dstSize = size;
 			srcSize = 0x4;
 			float2intForNonVector = true;

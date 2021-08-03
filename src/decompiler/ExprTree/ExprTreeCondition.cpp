@@ -165,8 +165,10 @@ int AbstractCondition::getSize() {
 	return 1;
 }
 
-void AbstractCondition::addInstructions(const std::list<PCode::Instruction*>& instructions) {
+void AbstractCondition::addInstructions(const std::list<PCode::Instruction*>& instructions, bool sort) {
 	m_instructions.insert(m_instructions.begin(), instructions.begin(), instructions.end());
+	if(sort)
+		Sort(m_instructions);
 }
 
 std::list<PCode::Instruction*> AbstractCondition::getInstructionsRelatedTo() {
