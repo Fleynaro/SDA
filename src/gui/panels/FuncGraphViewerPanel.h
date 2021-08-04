@@ -4,8 +4,7 @@ namespace GUI
 {
 	static void RenderAddress(uint64_t offset) {
 		using namespace Helper::String;
-		const auto offsetStr = NumberToHex(offset + (static_cast<uint64_t>(1) << 63)).substr(1);
-		Text::Text("base + " + offsetStr).show();
+		Text::Text("base + 0x" + NumberToHex(offset, false)).show();
 	}
 
 	class Canvas

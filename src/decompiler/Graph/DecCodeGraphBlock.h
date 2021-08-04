@@ -48,6 +48,8 @@ namespace CE::Decompiler
 		class SeqAssignmentLine : public BlockTopNode // consequent
 		{
 		public:
+			PCode::Instruction* m_lastRequiredInstruction = nullptr;
+			
 			SeqAssignmentLine(DecBlock* block, ExprTree::AssignmentNode* assignmentNode);
 
 			SeqAssignmentLine(DecBlock* block, ExprTree::INode* dstNode, ExprTree::INode* srcNode, PCode::Instruction* instr);

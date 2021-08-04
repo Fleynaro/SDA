@@ -309,22 +309,12 @@ namespace CE::Decompiler::PCode
 
 		virtual void generateToken(const std::string& text, TokenType tokenType) = 0;
 
-		static std::string GenerateRegisterName(const Register& reg) {
-			const auto regId = static_cast<ZydisRegister>(reg.m_genericId);
+		static std::string GetRegisterName(int genericId) {
+			return ZydisRegisterGetString(static_cast<ZydisRegister>(genericId));
+		}
 
-			const auto size = reg.getSize();
-			std::string maskStr = std::to_string(size);
-			if (reg.isVector()) {
-				if (size == 4 || size == 8) {
-					maskStr = std::string(size == 4 ? "D" : "Q") + static_cast<char>('a' + static_cast<char>(reg.getOffset() / (size * 8)));
-				}
-			}
-
-			if (regId != ZYDIS_REGISTER_RFLAGS)
-				return std::string(ZydisRegisterGetString(regId)) + ":" + maskStr;
-
+		static std::string GetFlagName(int flag) {
 			std::string flagName = "flag";
-			const auto flag = static_cast<ZydisCPUFlag>(reg.m_valueRangeMask.getOffset());
 			if (flag == ZYDIS_CPUFLAG_CF)
 				flagName = "CF";
 			else if (flag == ZYDIS_CPUFLAG_OF)
@@ -337,7 +327,25 @@ namespace CE::Decompiler::PCode
 				flagName = "AF";
 			else if (flag == ZYDIS_CPUFLAG_PF)
 				flagName = "PF";
-			return flagName + ":1";
+			return flagName;
+		}
+
+		static std::string GenerateRegisterName(const Register& reg) {
+			const auto regId = static_cast<ZydisRegister>(reg.m_genericId);
+
+			const auto size = reg.getSize();
+			std::string maskStr = std::to_string(size);
+			if (reg.isVector()) {
+				if (size == 4 || size == 8) {
+					maskStr = std::string(size == 4 ? "D" : "Q") + static_cast<char>('a' + static_cast<char>(reg.getOffset() / (size * 8)));
+				}
+			}
+
+			if (regId != ZYDIS_REGISTER_RFLAGS)
+				return std::string(GetRegisterName(regId)) + ":" + maskStr;
+
+			const auto flag = static_cast<ZydisCPUFlag>(reg.m_valueRangeMask.getOffset());
+			return GetFlagName(flag) + ":1";
 		}
 	};
 

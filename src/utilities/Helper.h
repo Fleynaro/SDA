@@ -54,7 +54,7 @@ namespace Helper
 		extern bool Contains(const std::string& str, const std::string& keyword);
 
 		extern uint64_t HexToNumber(std::string source);
-		extern std::string NumberToHex(uint64_t number);
+		extern std::string NumberToHex(uint64_t number, bool leadingZeroes = false);
 
 		extern bool is_number(const std::string& s);
 

@@ -1,4 +1,5 @@
 #pragma once
+#include "DebugerPanel.h"
 #include "ImageDecorator.h"
 #include "imgui_wrapper/controls/AbstractPanel.h"
 #include "imgui_wrapper/controls/List.h"
@@ -7,6 +8,7 @@
 #include "InstructionViewer.h"
 #include "decompiler/Decompiler.h"
 #include "decompiler/Graph/DecPCodeGraph.h"
+#include "decompiler/Optimization/Graph/DecGraphDebugProcessing.h"
 #include "decompiler/SDA/Optimizaton/SdaGraphMemoryOptimization.h"
 #include "decompiler/SDA/Optimizaton/SdaGraphUselessLineOptimization.h"
 #include "decompiler/SDA/Symbolization/DecGraphSdaBuilding.h"
@@ -98,6 +100,7 @@ namespace GUI
 			ImGuiListClipper m_clipper;
 			int m_scrollToRowIdx = -1;
 			bool m_selectCurRow = false;
+			ColorRGBA m_selectedRowColor = 0;
 			int m_startSelectionRowIdx = -1;
 		public:
 			AbstractSectionController* m_sectionController;
@@ -127,7 +130,7 @@ namespace GUI
 			}
 
 			void tableNextRow() {
-				const auto Color = ToImGuiColorU32(0x1d333dFF);
+				const auto Color = ToImGuiColorU32(m_selectedRowColor ? m_selectedRowColor : 0x1d333dFF);
 				if (m_selectCurRow) {
 					ImGui::PushStyleColor(ImGuiCol_TableRowBg, Color);
 					ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, Color);
@@ -137,6 +140,7 @@ namespace GUI
 					ImGui::PopStyleColor();
 					ImGui::PopStyleColor();
 					m_selectCurRow = false;
+					m_selectedRowColor = 0;
 				}
 			}
 		};
@@ -316,6 +320,12 @@ namespace GUI
 						m_codeSectionViewer->m_popupModalWindow = new PopupModalWindow(panel);
 						m_codeSectionViewer->m_popupModalWindow->open();
 					}
+
+					if (ImGui::MenuItem("Debug")) {
+						delete m_codeSectionViewer->m_debuger;
+						m_codeSectionViewer->m_debuger = new Debuger(m_codeSectionViewer->m_codeSectionController->m_imageDec, m_codeSectionRow.getOffset());
+						m_codeSectionViewer->m_debuger->m_executePCode = m_codeSectionRow.m_isPCode;
+					}
 				}
 			};
 			
@@ -325,6 +335,7 @@ namespace GUI
 			PopupModalWindow* m_popupModalWindow = nullptr;
 			PopupContextWindow* m_ctxWindow = nullptr;
 		public:
+			Debuger* m_debuger = nullptr;
 			CodeSectionController* m_codeSectionController;
 			AbstractInstructionViewDecoder* m_instructionViewDecoder;
 			CE::Decompiler::FunctionPCodeGraph* m_curFuncPCodeGraph = nullptr;
@@ -383,6 +394,18 @@ namespace GUI
 							}
 
 							// select rows
+							if (m_debuger) {
+								if (const auto instr = m_debuger->getCurInstr()) {
+									bool isSelected;
+									if (m_codeSectionController->m_showPCode)
+										isSelected = codeSectionRow.m_isPCode && instr->getOffset() == codeSectionRow.getOffset();
+									else isSelected = instr->getOffset().getByteOffset() == codeSectionRow.getOffset().getByteOffset();
+									if (isSelected) {
+										m_selectCurRow = true;
+										m_selectedRowColor = 0x420001FF;
+									}
+								}
+							}
 							for(auto selRow : m_selectedRows) {
 								if(m_codeSectionController->m_showPCode ? selRow == codeSectionRow : selRow.m_byteOffset == codeSectionRow.m_byteOffset) {
 									m_selectCurRow = true;
@@ -441,6 +464,7 @@ namespace GUI
 				Show(m_builtinWindow);
 				Show(m_popupModalWindow);
 				Show(m_ctxWindow);
+				Show(m_debuger);
 			}
 
 			void decorateRow(const ImVec2& startRowPos, const ImVec2& rowSize, CodeSectionRow row, int rowIdx, CE::Decompiler::PCodeBlock* pcodeBlock) {
@@ -598,6 +622,7 @@ namespace GUI
 			VIEW_OPTIMIZING				= 1 << 4,
 			LINE_EXPANDING				= 1 << 5,
 			USELESS_LINES_REMOVING		= 1 << 6,
+			DEBUG_PROCESSING			= 1 << 7,
 			DEFAULT = -1 & ~USELESS_LINES_REMOVING
 		};
 
@@ -693,37 +718,6 @@ namespace GUI
 				}
 				ImGui::EndMenu();
 			}
-			
-			if (ImGui::BeginMenu("View"))
-			{
-				if(ImGui::MenuItem("Update")) {
-					m_imageSectionViewer->m_sectionController->update();
-				}
-				if(codeSectionViewer) {
-					if (ImGui::MenuItem("Show PCode", nullptr, codeSectionViewer->m_codeSectionController->m_showPCode)) {
-						codeSectionViewer->m_codeSectionController->m_showPCode ^= true;
-						codeSectionViewer->m_codeSectionController->update();
-					}
-					if (codeSectionViewer->m_curFuncPCodeGraph) {
-						if (ImGui::MenuItem("Show function graph", nullptr)) {
-							if (!m_funcGraphViewerWindow) {
-								auto funcGraphViewerPanel = new FuncGraphViewerPanel(m_imageDec, new InstructionViewDecoderX86);
-								funcGraphViewerPanel->setFuncGraph(codeSectionViewer->m_curFuncPCodeGraph);
-								m_funcGraphViewerWindow = funcGraphViewerPanel->createStdWindow();
-							}
-							else {
-								if (auto funcGraphViewerPanel = dynamic_cast<FuncGraphViewerPanel*>(m_funcGraphViewerWindow->getPanel())) {
-									funcGraphViewerPanel->setFuncGraph(codeSectionViewer->m_curFuncPCodeGraph);
-								}
-							}
-						}
-					}
-					if (ImGui::MenuItem("Obscure unknown location", nullptr, codeSectionViewer->m_obscureUnknownLocation)) {
-						codeSectionViewer->m_obscureUnknownLocation ^= true;
-					}
-				}
-				ImGui::EndMenu();
-			}
 
 			if (codeSectionViewer) {
 				if (codeSectionViewer->m_curFuncPCodeGraph) {
@@ -771,6 +765,9 @@ namespace GUI
 							if (ImGui::MenuItem("Useless lines removing step", nullptr, (m_processingStep | ProcessingStep::USELESS_LINES_REMOVING) == m_processingStep)) {
 								m_processingStep ^= ProcessingStep::USELESS_LINES_REMOVING;
 							}
+							if (ImGui::MenuItem("Debug processing step", nullptr, (m_processingStep | ProcessingStep::DEBUG_PROCESSING) == m_processingStep)) {
+								m_processingStep ^= ProcessingStep::DEBUG_PROCESSING;
+							}
 							ImGui::EndMenu();
 						}
 						
@@ -800,6 +797,45 @@ namespace GUI
 						ImGui::EndMenu();
 					}
 				}
+
+				if(codeSectionViewer->m_debuger) {
+					if (ImGui::BeginMenu("Debug"))
+					{
+						codeSectionViewer->m_debuger->renderDebugMenu();
+						ImGui::EndMenu();
+					}
+				}
+			}
+
+			if (ImGui::BeginMenu("View"))
+			{
+				if (ImGui::MenuItem("Update")) {
+					m_imageSectionViewer->m_sectionController->update();
+				}
+				if (codeSectionViewer) {
+					if (ImGui::MenuItem("Show PCode", nullptr, codeSectionViewer->m_codeSectionController->m_showPCode)) {
+						codeSectionViewer->m_codeSectionController->m_showPCode ^= true;
+						codeSectionViewer->m_codeSectionController->update();
+					}
+					if (codeSectionViewer->m_curFuncPCodeGraph) {
+						if (ImGui::MenuItem("Show function graph", nullptr)) {
+							if (!m_funcGraphViewerWindow) {
+								auto funcGraphViewerPanel = new FuncGraphViewerPanel(m_imageDec, new InstructionViewDecoderX86);
+								funcGraphViewerPanel->setFuncGraph(codeSectionViewer->m_curFuncPCodeGraph);
+								m_funcGraphViewerWindow = funcGraphViewerPanel->createStdWindow();
+							}
+							else {
+								if (auto funcGraphViewerPanel = dynamic_cast<FuncGraphViewerPanel*>(m_funcGraphViewerWindow->getPanel())) {
+									funcGraphViewerPanel->setFuncGraph(codeSectionViewer->m_curFuncPCodeGraph);
+								}
+							}
+						}
+					}
+					if (ImGui::MenuItem("Obscure unknown location", nullptr, codeSectionViewer->m_obscureUnknownLocation)) {
+						codeSectionViewer->m_obscureUnknownLocation ^= true;
+					}
+				}
+				ImGui::EndMenu();
 			}
 		}
 
@@ -899,6 +935,11 @@ namespace GUI
 							if ((m_processingStep | ProcessingStep::USELESS_LINES_REMOVING) == m_processingStep) {
 								Optimization::GraphUselessLineDeleting graphUselessLineDeleting(decCodeGraph);
 								graphUselessLineDeleting.start();
+							}
+
+							if ((m_processingStep | ProcessingStep::DEBUG_PROCESSING) == m_processingStep) {
+								Optimization::GraphDebugProcessing graphDebugProcessing(decCodeGraph);
+								graphDebugProcessing.start();
 							}
 							
 							DecompiledCodeGraph::CalculateHeightForDecBlocks(decCodeGraph->getStartBlock());

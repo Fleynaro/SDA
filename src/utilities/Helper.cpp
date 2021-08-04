@@ -69,10 +69,13 @@ uint64_t String::HexToNumber(std::string source)
 	return value;
 }
 
-std::string String::NumberToHex(uint64_t number)
+std::string String::NumberToHex(uint64_t number, bool leadingZeroes)
 {
 	std::stringstream stream;
-	stream << std::hex << number;
+	stream << std::hex;
+	if(leadingZeroes)
+		stream << std::setfill('0') << std::setw(16) << std::right << number;
+	else stream << number;
 	return stream.str();
 }
 
