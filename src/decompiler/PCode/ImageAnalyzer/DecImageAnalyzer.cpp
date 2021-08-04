@@ -165,8 +165,7 @@ void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, Fu
 
 		// fill const values
 		if (Instruction::IsAnyJmup(instr->m_id)) {
-			VirtualMachineContext vmCtx;
-			ConstValueCalculating constValueCalculating(curBlock->getInstructions(), &vmCtx, m_registerFactory);
+			ConstValueCalculating constValueCalculating(curBlock->getInstructions(), m_registerFactory);
 			constValueCalculating.start(funcGraph->getConstValues());
 		}
 

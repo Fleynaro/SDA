@@ -47,7 +47,7 @@ public:
 	// execute pcode on the virtual machine
 	std::map<PCode::Instruction*, DataValue> executeAndCalcConstValue(std::list<Instruction*> decodedInstructions) {
 		std::map<PCode::Instruction*, DataValue> constValues;
-		PCode::ConstValueCalculating constValueCalculating(decodedInstructions, &m_vmCtx, &m_registerFactoryX86);
+		PCode::ConstValueCalculating constValueCalculating(decodedInstructions, &m_registerFactoryX86);
 		constValueCalculating.start(constValues);
 		return constValues;
 	}
