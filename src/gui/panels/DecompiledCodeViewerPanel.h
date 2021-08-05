@@ -447,11 +447,11 @@ namespace GUI
 
 				// line selection
 				auto rowColor = ToImGuiColorU32(0x141414FF);
-				if (m_decCodeViewer->m_selectedLineIdx == m_curLineIdx - 1) {
-					rowColor = ToImGuiColorU32(0x1d333dFF);
-				}
-				else if(m_decCodeViewer->m_debugSelectedLineIdx == m_curLineIdx - 1) {
+				if(m_decCodeViewer->m_debugSelectedLineIdx == m_curLineIdx - 1) {
 					rowColor = ToImGuiColorU32(0x420001FF);
+				}
+				else if (m_decCodeViewer->m_selectedLineIdx == m_curLineIdx - 1) {
+					rowColor = ToImGuiColorU32(0x1d333dFF);
 				}
 				ImGui::PushStyleColor(ImGuiCol_TableRowBg, rowColor);
 				ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, rowColor);
@@ -563,8 +563,11 @@ namespace GUI
 			}
 
 			void generateBlockTopNode(CE::Decompiler::DecBlock::BlockTopNode* blockTopNode, CE::Decompiler::INode* node) override {
-				if (m_decCodeViewer->m_debugger && m_decCodeViewer->m_debugger->m_curBlockTopNode == blockTopNode) {
-					m_decCodeViewer->m_debugSelectedLineIdx = m_curLineIdx;
+				const auto debugger = m_decCodeViewer->m_debugger;
+				if (debugger && !debugger->m_isStopped) {
+					if (debugger->m_curBlockTopNode == blockTopNode) {
+						m_decCodeViewer->m_debugSelectedLineIdx = m_curLineIdx;
+					}
 				}
 				CodeViewGenerator::generateBlockTopNode(blockTopNode, node);
 			}
@@ -843,7 +846,7 @@ namespace GUI
 				if (ImGui::MenuItem("Start Debug")) {
 					m_startDebug = true;
 				}
-				if (m_decompiledCodeViewer->m_debugger)
+				if (m_decompiledCodeViewer->m_debugger && !m_decompiledCodeViewer->m_debugger->m_isStopped)
 					m_decompiledCodeViewer->m_debugger->renderDebugMenu();
 				ImGui::EndMenu();
 			}

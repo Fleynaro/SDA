@@ -36,10 +36,6 @@ namespace CE::Decompiler
 			: m_index(index), m_size(size), m_storage(storage)
 		{}
 
-		ParameterInfo(int size, Storage storage)
-			: m_size(size), m_storage(storage)
-		{}
-
 		int getIndex() const;
 	};
 	using ReturnInfo = ParameterInfo;

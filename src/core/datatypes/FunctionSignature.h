@@ -133,6 +133,7 @@ namespace CE::DataType
 
 	private:
 		bool m_isAuto = false;
+		bool m_areCustomStoragesUpdated = false;
 		CallingConvetion m_callingConvetion;
 		std::list<Decompiler::ParameterInfo> m_paramInfos;
 		std::list<std::pair<int, Decompiler::Storage>> m_customStorages;

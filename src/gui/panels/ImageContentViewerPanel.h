@@ -322,9 +322,7 @@ namespace GUI
 					}
 
 					if (ImGui::MenuItem("Debug")) {
-						delete m_codeSectionViewer->m_debugger;
-						m_codeSectionViewer->m_debugger = new Debugger(m_codeSectionViewer->m_codeSectionController->m_imageDec, m_codeSectionRow.getOffset());
-						m_codeSectionViewer->m_debugger->m_stepWidth = m_codeSectionRow.m_isPCode ? Debugger::StepWidth::STEP_PCODE_INSTR : Debugger::StepWidth::STEP_ORIGINAL_INSTR;
+						
 						m_codeSectionViewer->m_startDebug = true;
 					}
 				}
@@ -397,7 +395,7 @@ namespace GUI
 							}
 
 							// select rows
-							if (m_debugger) {
+							if (m_debugger && !m_debugger->m_isStopped) {
 								if (const auto instr = m_debugger->m_curInstr) {
 									bool isSelected;
 									if (m_codeSectionController->m_showPCode)
@@ -456,7 +454,7 @@ namespace GUI
 
 							if (obscure)
 								ImGui::PopStyleVar();
-						}
+						}					
 					}
 
 					scroll();
@@ -467,7 +465,6 @@ namespace GUI
 				Show(m_builtinWindow);
 				Show(m_popupModalWindow);
 				Show(m_ctxWindow);
-				Show(m_debugger);
 			}
 
 			void decorateRow(const ImVec2& startRowPos, const ImVec2& rowSize, CodeSectionRow row, int rowIdx, CE::Decompiler::PCodeBlock* pcodeBlock) {
@@ -649,6 +646,7 @@ namespace GUI
 		std::map<const CE::ImageSection*, AbstractSectionController*> m_imageSectionControllers; // todo: move out of the scope
 		ImageSectionListModel m_imageSectionListModel;
 		MenuListView<const CE::ImageSection*> m_imageSectionMenuListView;
+		Debugger* m_debugger = nullptr;
 		StdWindow* m_funcGraphViewerWindow = nullptr;
 		StdWindow* m_decompiledCodeViewerWindow = nullptr;
 		PopupModalWindow* m_popupModalWindow = nullptr;
@@ -686,6 +684,7 @@ namespace GUI
 				delete pair.second;
 			delete m_funcGraphViewerWindow;
 			delete m_decompiledCodeViewerWindow;
+			delete m_debugger;
 			delete m_popupModalWindow;
 		}
 
@@ -699,7 +698,10 @@ namespace GUI
 
 			processSectionViewerEvents();
 			processDecompiledCodeViewerEvents();
+			processDebuggerEvents();
 
+			if (m_debugger && !m_debugger->m_isStopped)
+				m_debugger->show();
 			Show(m_funcGraphViewerWindow);
 			Show(m_decompiledCodeViewerWindow);
 			Show(m_popupModalWindow);
@@ -725,6 +727,19 @@ namespace GUI
 			}
 
 			if (codeSectionViewer) {
+				if (ImGui::BeginMenu("Debug"))
+				{
+					if (codeSectionViewer->m_curFuncPCodeGraph) {
+						if (ImGui::MenuItem("Start Debug")) {
+							createDebugger(codeSectionViewer->m_curFuncPCodeGraph->getStartBlock()->getMinOffset(), Debugger::StepWidth::STEP_ORIGINAL_INSTR);
+						}
+					}
+					if (m_debugger && !m_debugger->m_isStopped) {
+						m_debugger->renderDebugMenu();
+					}
+					ImGui::EndMenu();
+				}
+				
 				if (codeSectionViewer->m_curFuncPCodeGraph) {
 					if (ImGui::BeginMenu("Decompiler"))
 					{
@@ -802,14 +817,6 @@ namespace GUI
 						ImGui::EndMenu();
 					}
 				}
-
-				if(codeSectionViewer->m_debugger) {
-					if (ImGui::BeginMenu("Debug"))
-					{
-						codeSectionViewer->m_debugger->renderDebugMenu();
-						ImGui::EndMenu();
-					}
-				}
 			}
 
 			if (ImGui::BeginMenu("View"))
@@ -875,7 +882,7 @@ namespace GUI
 			m_imageSectionViewer->goToOffset(offset);
 		}
 
-		void decompile(CE::Decompiler::FunctionPCodeGraph* functionPCodeGraph) {
+		void decompile(CE::Decompiler::FunctionPCodeGraph* functionPCodeGraph, bool updateDebug = true) {
 			using namespace CE::Decompiler;
 
 			RegisterFactoryX86 registerFactoryX86;
@@ -995,6 +1002,12 @@ namespace GUI
 					}
 					delete m_decompiledCodeViewerWindow;
 					m_decompiledCodeViewerWindow = panel->createStdWindow();
+
+					if(updateDebug) {
+						if (m_debugger && !m_debugger->m_isStopped) {
+							instrHandler(false);
+						}
+					}
 				}
 			}
 		}
@@ -1003,50 +1016,47 @@ namespace GUI
 		void processSectionViewerEvents() {
 			if (const auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer))
 			{
-				if (m_decompiledCodeViewerWindow) {
-					if (const auto decCodeViewerPanel = dynamic_cast<DecompiledCodeViewerPanel*>(m_decompiledCodeViewerWindow->getPanel())) {
-						auto& instrs = decCodeViewerPanel->m_decompiledCodeViewer->m_selectedCodeByInstr;
-						
-						// select block list by instruction selection
-						if (codeSectionViewer->m_clickedPCodeBlock && m_curDecGraph) {
-							CE::Decompiler::DecBlock* selDecBlock = nullptr;
-							for (const auto decBlock : m_curDecGraph->getDecompiledBlocks()) {
-								if (decBlock->m_pcodeBlock == codeSectionViewer->m_clickedPCodeBlock) {
-									selDecBlock = decBlock;
-									break;
-								}
-							}
-							if (selDecBlock) {
-								decCodeViewerPanel->m_decompiledCodeViewer->selectBlockList(selDecBlock);
-							}
-							instrs.clear();
-						}
-						// select dec. code by row's multi-selection
-						if (codeSectionViewer->isRowsMultiSelecting()) {
-							instrs.clear();
-							for (const auto row : codeSectionViewer->m_selectedRows) {
-								if (row.m_isPCode) {
-									if (const auto instr = m_imageDec->getInstrPool()->getPCodeInstructionAt(row.getOffset())) {
-										instrs.insert(instr);
-									}
-								} else {
-									if (const auto origInstr = m_imageDec->getInstrPool()->getOrigInstructionAt(row.m_byteOffset)) {
-										for(auto& [orderId, instr] : origInstr->m_pcodeInstructions)
-											instrs.insert(&instr);
-									}
-								}
+				const auto decCodeViewerPanel = m_decompiledCodeViewerWindow ? dynamic_cast<DecompiledCodeViewerPanel*>(m_decompiledCodeViewerWindow->getPanel()) : nullptr;
+				if (decCodeViewerPanel) {
+					auto& instrs = decCodeViewerPanel->m_decompiledCodeViewer->m_selectedCodeByInstr;
+					
+					// select block list by instruction selection
+					if (codeSectionViewer->m_clickedPCodeBlock && m_curDecGraph) {
+						CE::Decompiler::DecBlock* selDecBlock = nullptr;
+						for (const auto decBlock : m_curDecGraph->getDecompiledBlocks()) {
+							if (decBlock->m_pcodeBlock == codeSectionViewer->m_clickedPCodeBlock) {
+								selDecBlock = decBlock;
+								break;
 							}
 						}
-						// start debug
-						if(codeSectionViewer->m_startDebug) {
-							const auto debugger = codeSectionViewer->m_debugger;
-							debugger->instrHandler([&, debugger](bool isNewGraph)
-								{
-									instrHandler(debugger, isNewGraph);
-								});
-							decCodeViewerPanel->m_decompiledCodeViewer->m_debugger = debugger;
+						if (selDecBlock) {
+							decCodeViewerPanel->m_decompiledCodeViewer->selectBlockList(selDecBlock);
+						}
+						instrs.clear();
+					}
+					// select dec. code by row's multi-selection
+					if (codeSectionViewer->isRowsMultiSelecting()) {
+						instrs.clear();
+						for (const auto row : codeSectionViewer->m_selectedRows) {
+							if (row.m_isPCode) {
+								if (const auto instr = m_imageDec->getInstrPool()->getPCodeInstructionAt(row.getOffset())) {
+									instrs.insert(instr);
+								}
+							} else {
+								if (const auto origInstr = m_imageDec->getInstrPool()->getOrigInstructionAt(row.m_byteOffset)) {
+									for(auto& [orderId, instr] : origInstr->m_pcodeInstructions)
+										instrs.insert(&instr);
+								}
+							}
 						}
 					}
+				}
+
+				// start debug
+				if (codeSectionViewer->m_startDebug) {
+					const auto codeSectionRow = *codeSectionViewer->m_selectedRows.begin();
+					const auto stepWidth = codeSectionRow.m_isPCode ? Debugger::StepWidth::STEP_PCODE_INSTR : Debugger::StepWidth::STEP_ORIGINAL_INSTR;
+					createDebugger(codeSectionRow.getOffset(), stepWidth);
 				}
 			}
 			else if (const auto dataSectionViewer = dynamic_cast<DataSectionViewer*>(m_imageSectionViewer))
@@ -1086,34 +1096,51 @@ namespace GUI
 				}
 				// start debug
 				else if(decCodeViewerPanel->m_startDebug) {
-					const auto debugger = new Debugger(m_imageDec, m_curDecGraph->getStartBlock()->m_pcodeBlock->getMinOffset());
-					debugger->m_stepWidth = Debugger::StepWidth::STEP_CODE_LINE;
-					debugger->instrHandler([&, debugger](bool isNewGraph)
-						{
-							instrHandler(debugger, isNewGraph);
-						});
-					decCodeViewerPanel->m_decompiledCodeViewer->m_debugger = debugger;
-					if (const auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer))
-						codeSectionViewer->m_debugger = debugger;
+					createDebugger(m_curDecGraph->getStartBlock()->m_pcodeBlock->getMinOffset(), Debugger::StepWidth::STEP_CODE_LINE);
 				}
 			}
 		}
 
-		void instrHandler(Debugger* debugger, bool isNewGraph) {
+		void processDebuggerEvents() const {
+			if (!m_debugger || m_debugger->m_isStopped)
+				return;
+
+			if(m_decompiledCodeViewerWindow) {
+				if(const auto decCodeViewerPanel = dynamic_cast<DecompiledCodeViewerPanel*>(m_decompiledCodeViewerWindow->getPanel())) {
+					decCodeViewerPanel->m_decompiledCodeViewer->m_debugger = m_debugger;
+				}
+			}
+			if(const auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer)) {
+				codeSectionViewer->m_debugger = m_debugger;
+			}
+		}
+
+		void createDebugger(CE::ComplexOffset startOffset, Debugger::StepWidth stepWidth) {
+			delete m_debugger;
+			m_debugger = new Debugger(m_imageDec, startOffset);
+			m_debugger->m_stepWidth = stepWidth;
+			m_debugger->instrHandler([&](bool isNewGraph)
+				{
+					instrHandler(isNewGraph);
+				});
+			m_debugger->defineCurInstrutction();
+		}
+
+		void instrHandler(bool isNewGraph) {
 			if (isNewGraph) {
 				if (const auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer))
-					codeSectionViewer->goToOffset(debugger->m_curInstr->getOffset().getByteOffset());
-				if (debugger->m_stepWidth == Debugger::StepWidth::STEP_CODE_LINE) {
-					if (!m_curDecGraph || debugger->m_curPCodeBlock->m_funcPCodeGraph != m_curDecGraph->getFuncGraph()) {
-						decompile(debugger->m_curPCodeBlock->m_funcPCodeGraph);
+					codeSectionViewer->goToOffset(m_debugger->m_curInstr->getOffset().getByteOffset());
+				if (m_debugger->m_stepWidth == Debugger::StepWidth::STEP_CODE_LINE) {
+					if (!m_curDecGraph || m_debugger->m_curPCodeBlock->m_funcPCodeGraph != m_curDecGraph->getFuncGraph()) {
+						decompile(m_debugger->m_curPCodeBlock->m_funcPCodeGraph, false);
 					}
 				} else {
-					debugger->m_curBlockTopNode = nullptr;
+					m_debugger->m_curBlockTopNode = nullptr;
 				}
 			}
 
 			if (m_curDecGraph) {
-				debugger->m_curBlockTopNode = m_curDecGraph->findBlockTopNodeByOffset(debugger->m_curInstr->getOffset());
+				m_debugger->m_curBlockTopNode = m_curDecGraph->findBlockTopNodeByOffset(m_debugger->m_curInstr->getOffset());
 			}
 		}
 	};

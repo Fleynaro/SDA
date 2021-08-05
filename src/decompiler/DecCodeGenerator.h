@@ -789,7 +789,11 @@ namespace CE::Decompiler
 				generateToken("while", TOKEN_OPERATOR);
 				generateToken(" ", TOKEN_OTHER);
 				{
-					generateBlockTopNode(block->m_decBlock->getJumpTopNode(), block->m_cond);
+					if (block->m_decBlock) {
+						generateBlockTopNode(block->m_decBlock->getJumpTopNode(), block->m_cond);
+					} else {
+						m_exprTreeViewGenerator->generateNode(block->m_cond);
+					}
 				}
 				generateSemicolon();
 				generateEndLine();

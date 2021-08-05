@@ -18,11 +18,11 @@ namespace CE::Decompiler::PCode
 		VmExecutionContext()
 		{}
 
-		const std::map<int, DataValue>& getRegisters() {
+		const std::map<int, DataValue>& getRegisters() const {
 			return m_registers;
 		}
 
-		const std::map<SymbolVarnode*, DataValue>& getSymbolVarnodes() {
+		const std::map<SymbolVarnode*, DataValue>& getSymbolVarnodes() const {
 			return m_symbolVarnodes;
 		}
 
@@ -209,5 +209,7 @@ namespace CE::Decompiler::PCode
 		}
 
 		void executeTruncation();
+
+		DataValue getValue(Varnode* varnode) const;
 	};
 };

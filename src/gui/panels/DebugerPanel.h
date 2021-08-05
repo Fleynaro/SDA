@@ -8,6 +8,7 @@
 #include "imgui_wrapper/Window.h"
 #include "imgui_wrapper/controls/AbstractPanel.h"
 #include "imgui_wrapper/controls/Text.h"
+#include "panels/BuiltinInputPanel.h"
 #include "utilities/Helper.h"
 
 namespace GUI
@@ -18,10 +19,15 @@ namespace GUI
 		{
 			CE::Decompiler::PCode::VmExecutionContext* m_execCtx;
 			CE::Decompiler::AbstractRegisterFactory* m_registerFactory;
+			PopupBuiltinWindow* m_builtinWindow = nullptr;
 		public:
 			ExecContextViewerPanel(CE::Decompiler::PCode::VmExecutionContext* execCtx, CE::Decompiler::AbstractRegisterFactory* registerFactory)
 				: AbstractPanel("Execution Context Viewer"), m_execCtx(execCtx), m_registerFactory(registerFactory)
 			{}
+
+			~ExecContextViewerPanel() {
+				delete m_builtinWindow;
+			}
 
 		private:
 			void renderPanel() override {
@@ -45,6 +51,8 @@ namespace GUI
 
 					ImGui::EndTable();
 				}
+
+				Show(m_builtinWindow);
 			}
 
 			void renderSymbolVarnodeRows() {
@@ -56,7 +64,13 @@ namespace GUI
 					instrTextGenerator.generateVarnode(symbolVarnode);
 					Text::Text(instrTextGenerator.m_text).show();
 					ImGui::TableNextColumn();
-					Text::Text("0x" + Helper::String::NumberToHex(value, false)).show();
+					const auto hexValue = Helper::String::NumberToHex(value, false);
+					Text::Text("0x" + hexValue).show();
+					const auto varnode = symbolVarnode;
+					renderValueEditor(hexValue, [&, varnode](uint64_t value)
+						{
+							m_execCtx->setValue(varnode, value);
+						});
 				}
 			}
 
@@ -73,11 +87,18 @@ namespace GUI
 					offset -= 0x8;
 					const auto reg = m_registerFactory->createRegister(regId, size, offset);
 					CE::Decompiler::DataValue regValue;
-					if (getRegisterValue(reg.getId(), regValue)) {
-						Text::Text(NumberToHex(regValue, true)).show();
+					std::string hexValue;
+					bool hasValue;
+					if ((hasValue = getRegisterValue(reg, regValue))) {
+						hexValue = NumberToHex(regValue, true);
 					} else {
-						Text::Text("----------------").show();
+						hexValue = "----------------";
 					}
+					Text::Text(hexValue).show();
+					renderValueEditor(hasValue ? hexValue : "0000000000000000", [&, reg](uint64_t value)
+						{
+							m_execCtx->setRegisterValue(reg, value);
+						});
 					SameLine(5.0f);
 				}
 			}
@@ -98,26 +119,65 @@ namespace GUI
 				ImGui::TableNextColumn();
 
 				CE::Decompiler::DataValue regValue;
-				if (getRegisterValue(ZYDIS_REGISTER_RFLAGS << 8, regValue)) {
+				const auto reg = CE::Decompiler::Register(ZYDIS_REGISTER_RFLAGS, 0, 0x8);
+				if (getRegisterValue(reg, regValue)) {
 					for (const auto flag : flags) {
 						const auto flagName = CE::Decompiler::PCode::InstructionViewGenerator::GetFlagName(flag);
 						const auto value = regValue >> flag & 0b1;
 						Text::Text(flagName + ": " + std::to_string(value)).show();
+						const auto events = GenericEvents(true);
+						if (events.isHovered()) {
+							ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+							ImGui::SetTooltip("Click to switch");
+						}
+						if (events.isClickedByLeftMouseBtn()) {
+							m_execCtx->setRegisterValue(reg, regValue ^ static_cast<CE::Decompiler::DataValue>(0b1) << flag);
+						}
 						SameLine(5.0f);
 					}
 				}
 				else {
 					Text::Text("-").show();
+					const auto events = GenericEvents(true);
+					if (events.isHovered()) {
+						ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+						ImGui::SetTooltip("Click to fill");
+					}
+					if (events.isClickedByLeftMouseBtn()) {
+						m_execCtx->setRegisterValue(reg, 0x0);
+					}
 				}
 			}
 
-			bool getRegisterValue(int regId, CE::Decompiler::DataValue& value) const {
+			bool getRegisterValue(const CE::Decompiler::Register& reg, CE::Decompiler::DataValue& value) const {
 				const auto& registers = m_execCtx->getRegisters();
-				const auto it = registers.find(regId);
+				const auto it = registers.find(reg.getId());
 				if (it == registers.end())
 					return false;
 				value = it->second;
 				return true;
+			}
+
+			void renderValueEditor(const std::string& hexValue, const std::function<void(uint64_t)>& callback) {
+				const auto events = GenericEvents(true);
+				if (events.isHovered()) {
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				}
+				if (events.isClickedByLeftMouseBtn()) {
+					const auto panel = new BuiltinTextInputPanel("0x" + hexValue);
+					panel->handler([&, panel, callback](const std::string& inputValue)
+						{
+							// todo: special input with various types of values
+							const auto value =
+								inputValue[1] == 'x' ? Helper::String::HexToNumber(inputValue) : std::stoull(inputValue);
+							callback(value);
+							panel->m_window->close();
+						});
+					delete m_builtinWindow;
+					m_builtinWindow = new PopupBuiltinWindow(panel);
+					m_builtinWindow->placeAfterItem();
+					m_builtinWindow->open();
+				}
 			}
 		};
 
@@ -141,12 +201,11 @@ namespace GUI
 		CE::Decompiler::PCode::Instruction* m_curInstr = nullptr;
 		CE::Decompiler::PCodeBlock* m_curPCodeBlock = nullptr;
 		CE::Decompiler::DecBlock::BlockTopNode* m_curBlockTopNode = nullptr;
+		bool m_isStopped = false;
 		
 		Debugger(CE::ImageDecorator* imageDec, CE::ComplexOffset startOffset)
 			: m_imageDec(imageDec), m_offset(startOffset), m_vm(&m_execCtx, &m_memCtx, false)
 		{
-			defineCurInstrutction();
-			
 			m_execCtxViewerWin = new StdWindow(new ExecContextViewerPanel(&m_execCtx, &m_registerFactoryX86));
 		}
 
@@ -154,11 +213,29 @@ namespace GUI
 			m_instrHandler = handler;
 		}
 
-		bool isNewOrigInstruction() const {
-			return m_curInstr->m_orderId == 0;
+		void defineCurInstrutction() {
+			const auto prevPCodeGraph = m_curPCodeBlock ? m_curPCodeBlock->m_funcPCodeGraph : nullptr;
+
+			m_curInstr = m_imageDec->getInstrPool()->getPCodeInstructionAt(m_offset);
+			if (!m_curInstr) {
+				m_curPCodeBlock = nullptr;
+				m_curBlockTopNode = nullptr;
+				m_isStopped = true;
+				return;
+			}
+			m_curPCodeBlock = m_imageDec->getPCodeGraph()->getBlockAtOffset(m_offset);
+
+			if (m_instrHandler.isInit()) {
+				const auto isNewGraph = prevPCodeGraph != m_curPCodeBlock->m_funcPCodeGraph;
+				m_instrHandler(isNewGraph);
+			}
 		}
 
 		void renderDebugMenu() {
+			if (ImGui::MenuItem("Stop Debug")) {
+				m_isStopped = true;
+			}
+			
 			if (ImGui::MenuItem("Step Over", "F8")) {
 				stepOver(true);
 			}
@@ -193,21 +270,10 @@ namespace GUI
 			Show(m_execCtxViewerWin);
 		}
 
-		void defineCurInstrutction() {
-			const auto prevPCodeGraph = m_curPCodeBlock ? m_curPCodeBlock->m_funcPCodeGraph : nullptr;
-			
-			m_curInstr = m_imageDec->getInstrPool()->getPCodeInstructionAt(m_offset);
-			m_curPCodeBlock = m_imageDec->getPCodeGraph()->getBlockAtOffset(m_offset);
-			
-			if (m_instrHandler.isInit()) {
-				const auto isNewGraph = prevPCodeGraph != m_curPCodeBlock->m_funcPCodeGraph;
-				m_instrHandler(isNewGraph);
-			}
-		}
-
 		void defineNextInstrOffset(bool jmp) {
 			if (jmp && m_execCtx.m_nextInstrOffset != 0) {
 				m_offset = m_execCtx.m_nextInstrOffset;
+				m_execCtx.m_nextInstrOffset = 0;
 				return;
 			}
 			
@@ -224,6 +290,8 @@ namespace GUI
 			m_vm.execute(m_curInstr);
 			defineNextInstrOffset(into ? true : m_curInstr->m_id != CE::Decompiler::PCode::InstructionId::CALL);
 			defineCurInstrutction();
+			if (m_isStopped)
+				return;
 			if (isNewOrigInstruction())
 				sync();
 		}
@@ -231,6 +299,8 @@ namespace GUI
 		void stepNextOrigInstr(bool into) {
 			do {
 				stepNextPCodeInstr(into);
+				if (m_isStopped)
+					return;
 			} while (!isNewOrigInstruction());
 		}
 
@@ -239,8 +309,10 @@ namespace GUI
 			do {
 				const auto prevBlockTopNode = m_curBlockTopNode;
 				stepNextPCodeInstr(into);
+				if (m_isStopped)
+					return;
 				isNewBlockTopNode = m_curBlockTopNode != prevBlockTopNode;
-			} while (!isNewBlockTopNode);
+			} while (m_curBlockTopNode && !isNewBlockTopNode);
 		}
 		
 		void stepOver(bool into) {
@@ -252,9 +324,7 @@ namespace GUI
 				stepNextOrigInstr(into);
 				break;
 			case StepWidth::STEP_CODE_LINE:
-				if(m_curBlockTopNode)
-					stepNextBlockTopNode(into);
-				else stepNextOrigInstr(into);
+				stepNextBlockTopNode(into);
 				break;
 			}
 		}
@@ -263,6 +333,10 @@ namespace GUI
 			stepOver(true);
 		}
 
+		bool isNewOrigInstruction() const {
+			return m_curInstr->m_orderId == 0;
+		}
+		
 		void sync() {
 			std::map<int, CE::Decompiler::DataValue> registers;
 			registers = m_execCtx.getRegisters();

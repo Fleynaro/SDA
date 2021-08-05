@@ -21,21 +21,22 @@ bool CE::Decompiler::PCode::VmExecutionContext::getValue(Varnode* varnode, DataV
 		const auto& reg = varnodeRegister->m_register;
 		const auto it = m_registers.find(reg.getId());
 		if (it != m_registers.end()) {
-			const auto value = it->second & GetValueRangeMaskWithException(reg).getValue();
-			return value >> reg.m_valueRangeMask.getOffset();
+			const auto regValue = it->second & GetValueRangeMaskWithException(reg).getValue();
+			value = regValue >> reg.m_valueRangeMask.getOffset();
+			return true;
 		}
 	}
 	else if (const auto varnodeSymbol = dynamic_cast<SymbolVarnode*>(varnode)) {
 		const auto it = m_symbolVarnodes.find(varnodeSymbol);
 		if (it != m_symbolVarnodes.end()) {
-			return it->second;
+			value = it->second;
+			return true;
 		}
 	}
 	else if (const auto varnodeConstant = dynamic_cast<ConstantVarnode*>(varnode)) {
-		return varnodeConstant->m_value;
+		value = varnodeConstant->m_value;
+		return true;
 	}
-
-	
 	return false;
 }
 
@@ -61,16 +62,10 @@ void CE::Decompiler::PCode::VirtualMachine::execute(Instruction* instr) {
 	m_op2 = 0;
 	m_result = 0;
 	if (m_instr->m_input0) {
-		if (!m_execCtx->getValue(m_instr->m_input0, m_op1)) {
-			if (m_throwException)
-				throw VmException("data not found");
-		}
+		m_op1 = getValue(m_instr->m_input0);
 	}
 	if (m_instr->m_input1) {
-		if(!m_execCtx->getValue(m_instr->m_input1, m_op2)) {
-			if (m_throwException)
-				throw VmException("data not found");
-		}
+		m_op2 = getValue(m_instr->m_input1);
 	}
 
 	dispatch();
@@ -381,4 +376,15 @@ void CE::Decompiler::PCode::VirtualMachine::executeTruncation() {
 		break;
 	}
 	}
+}
+
+CE::Decompiler::PCode::DataValue CE::Decompiler::PCode::VirtualMachine::getValue(Varnode* varnode) const {
+	DataValue value = 0;
+	if (!m_execCtx->getValue(varnode, value)) {
+		if (m_throwException) {
+			throw VmException("data not found");
+		}
+		m_execCtx->setValue(varnode, value);
+	}
+	return value;
 }

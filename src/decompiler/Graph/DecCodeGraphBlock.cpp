@@ -305,11 +305,16 @@ std::list<DecBlock::SymbolParallelAssignmentLine*>& DecBlock::getSymbolParallelA
 }
 
 DecBlock::BlockTopNode* DecBlock::findBlockTopNodeByOffset(ComplexOffset offset) {
-	for (const auto blockTopNode : getAllTopNodes()) {
+	const auto allTopNodes = getAllTopNodes();
+	for (const auto blockTopNode : allTopNodes) {
+		if (!blockTopNode->getLastReqInstr())
+			continue;
 		if (offset <= blockTopNode->getLastReqInstr()->getOffset())
 			return blockTopNode;
 	}
-	return nullptr;
+	if (allTopNodes.empty())
+		return nullptr;
+	return *allTopNodes.rbegin();
 }
 
 // check if this block is empty

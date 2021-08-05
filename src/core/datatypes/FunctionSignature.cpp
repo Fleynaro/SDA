@@ -48,6 +48,7 @@ std::string FunctionSignature::getSigName() {
 
 void FunctionSignature::setReturnType(DataTypePtr returnType) {
 	m_returnType = returnType;
+	m_areCustomStoragesUpdated = true;
 }
 
 DataTypePtr FunctionSignature::getReturnType() {
@@ -62,15 +63,18 @@ void FunctionSignature::addParameter(const std::string& name, DataTypePtr dataTy
 	auto symbolManager = getTypeManager()->getProject()->getSymbolManager();
 	const auto paramSymbol = symbolManager->getFactory().createFuncParameterSymbol(dataType, name, comment);
 	m_parameters.addParameter(paramSymbol);
-	updateParameterStorages();
+	m_areCustomStoragesUpdated = true;
 }
 
 FunctionCallInfo FunctionSignature::getCallInfo() {
+	if(m_areCustomStoragesUpdated) {
+		updateParameterStorages();
+		m_areCustomStoragesUpdated = false;
+	}
 	return FunctionCallInfo(m_paramInfos);
 }
 
 void FunctionSignature::updateParameterStorages() {
-	// todo: return lazy calling
 	m_paramInfos.clear();
 	
 	for (const auto pair : getCustomStorages()) {
@@ -116,11 +120,11 @@ void FunctionSignature::updateParameterStorages() {
 		}
 
 		//return
-		auto retType = getReturnType();
+		const auto retType = getReturnType();
 		if (retType->getSize() != 0x0) {
 			const auto regId = !retType->isFloatingPoint() ? ZYDIS_REGISTER_RAX : ZYDIS_REGISTER_ZMM0;
 			const auto storage = Storage(Storage::STORAGE_REGISTER, regId, 0x0);
-			m_paramInfos.emplace_back(retType->getSize(), storage);
+			m_paramInfos.emplace_back(0, retType->getSize(), storage);
 		}
 	}
 }
