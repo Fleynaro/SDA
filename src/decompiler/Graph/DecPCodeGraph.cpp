@@ -40,10 +40,9 @@ PCodeBlock* ImagePCodeGraph::getBlockAtOffset(ComplexOffset offset, bool halfInt
 	if (!m_blocks.empty()) {
 		const auto it = std::prev(m_blocks.upper_bound(offset));
 		if (it != m_blocks.end()) {
-			auto& block = it->second;
-			const bool boundUp = halfInterval ? (offset < block.getMaxOffset()) : (offset <= block.getMaxOffset());
-			if (boundUp && offset >= block.getMinOffset()) {
-				return &block;
+			auto& pcodeBlock = it->second;
+			if (pcodeBlock.containsOffset(offset, halfInterval)) {
+				return &pcodeBlock;
 			}
 		}
 	}
@@ -109,6 +108,11 @@ CE::ComplexOffset PCodeBlock::getMaxOffset() const
 
 void PCodeBlock::setMaxOffset(ComplexOffset offset) {
 	m_maxOffset = offset;
+}
+
+bool PCodeBlock::containsOffset(ComplexOffset offset, bool halfInterval) const {
+	const bool boundUp = halfInterval ? offset < getMaxOffset() : offset <= getMaxOffset();
+	return offset >= getMinOffset() && boundUp;
 }
 
 void PCodeBlock::removeNextBlock(PCodeBlock* nextBlock) {

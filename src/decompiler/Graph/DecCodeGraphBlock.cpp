@@ -14,20 +14,19 @@ EndDecBlock::~EndDecBlock() {
 
 std::list<EndDecBlock::BlockTopNode*> EndDecBlock::getAllTopNodes() {
 	auto list = DecBlock::getAllTopNodes();
-	if (getReturnNode()) {
+	if (getReturnTopNode()->getNode()) {
 		list.push_back(m_returnNode);
 	}
 	return list;
 }
 
-ExprTree::INode* EndDecBlock::getReturnNode() const
-{
-	return m_returnNode->getNode();
+DecBlock::ReturnTopNode* EndDecBlock::getReturnTopNode() const {
+	return m_returnNode;
 }
 
 void EndDecBlock::setReturnNode(ExprTree::INode* returnNode) const
 {
-	if (getReturnNode()) {
+	if (getReturnTopNode()->getNode()) {
 		m_returnNode->clear();
 	}
 	m_returnNode->setNode(returnNode);
@@ -35,13 +34,17 @@ void EndDecBlock::setReturnNode(ExprTree::INode* returnNode) const
 
 void EndDecBlock::cloneAllExpr() {
 	DecBlock::cloneAllExpr();
-	if (getReturnNode())
-		setReturnNode(getReturnNode()->clone());
+	if (getReturnTopNode()->getNode())
+		setReturnNode(getReturnTopNode()->getNode()->clone());
 }
 
 DecBlock::BlockTopNode::BlockTopNode(DecBlock* block, ExprTree::INode* node)
 	: TopNode(node), m_block(block)
 {}
+
+Instruction* DecBlock::BlockTopNode::getLastReqInstr() {
+	return m_block->m_pcodeBlock->getLastInstruction();
+}
 
 DecBlock::JumpTopNode::JumpTopNode(DecBlock* block)
 	: BlockTopNode(block)
@@ -85,6 +88,10 @@ ExprTree::INode* DecBlock::SeqAssignmentLine::getDstNode() {
 
 ExprTree::INode* DecBlock::SeqAssignmentLine::getSrcNode() {
 	return getAssignmentNode()->getSrcNode();
+}
+
+Instruction* DecBlock::SeqAssignmentLine::getLastReqInstr() {
+	return m_lastRequiredInstruction;
 }
 
 DecBlock::SeqAssignmentLine* DecBlock::SeqAssignmentLine::clone(DecBlock* block, ExprTree::NodeCloneContext* ctx) {
@@ -260,6 +267,10 @@ std::list<DecBlock::BlockTopNode*> DecBlock::getAllTopNodes() {
 	return result;
 }
 
+DecBlock::JumpTopNode* DecBlock::getJumpTopNode() const {
+	return m_noJmpCond;
+}
+
 // condition top node which contains boolean expression to jump to another block
 
 ExprTree::AbstractCondition* DecBlock::getNoJumpCondition() const
@@ -291,6 +302,14 @@ void DecBlock::addSymbolParallelAssignmentLine(ExprTree::SymbolLeaf* symbolLeaf,
 
 std::list<DecBlock::SymbolParallelAssignmentLine*>& DecBlock::getSymbolParallelAssignmentLines() {
 	return m_symbolParallelAssignmentLines;
+}
+
+DecBlock::BlockTopNode* DecBlock::findBlockTopNodeByOffset(ComplexOffset offset) {
+	for (const auto blockTopNode : getAllTopNodes()) {
+		if (offset <= blockTopNode->getLastReqInstr()->getOffset())
+			return blockTopNode;
+	}
+	return nullptr;
 }
 
 // check if this block is empty

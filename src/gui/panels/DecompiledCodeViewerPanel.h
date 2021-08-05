@@ -450,6 +450,9 @@ namespace GUI
 				if (m_decCodeViewer->m_selectedLineIdx == m_curLineIdx - 1) {
 					rowColor = ToImGuiColorU32(0x1d333dFF);
 				}
+				else if(m_decCodeViewer->m_debugSelectedLineIdx == m_curLineIdx - 1) {
+					rowColor = ToImGuiColorU32(0x420001FF);
+				}
 				ImGui::PushStyleColor(ImGuiCol_TableRowBg, rowColor);
 				ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, rowColor);
 				ImGui::TableNextRow(0, 10.0f);
@@ -559,6 +562,13 @@ namespace GUI
 				}
 			}
 
+			void generateBlockTopNode(CE::Decompiler::DecBlock::BlockTopNode* blockTopNode, CE::Decompiler::INode* node) override {
+				if (m_decCodeViewer->m_debugger && m_decCodeViewer->m_debugger->m_curBlockTopNode == blockTopNode) {
+					m_decCodeViewer->m_debugSelectedLineIdx = m_curLineIdx;
+				}
+				CodeViewGenerator::generateBlockTopNode(blockTopNode, node);
+			}
+
 			void generateCurlyBracket(const std::string& text, CE::Decompiler::LinearView::BlockList* blockList) override {
 				if (text == "}") {
 					m_tabsCount--;
@@ -622,10 +632,12 @@ namespace GUI
 		std::string m_selectedText;
 		bool m_codeChanged = false;
 		int m_selectedLineIdx = -1;
+		int m_debugSelectedLineIdx = -1;
 		bool m_isCodeSelecting = false;
 		int m_startSelectionTokenIdx = -1;
 		int m_endSelectionTokenIdx = -1;
 		float m_maxLineSize = 0.0f;
+		Debugger* m_debugger = nullptr;
 		
 		DecompiledCodeViewer(CE::Decompiler::LinearView::BlockList* blockList)
 			: m_blockList(blockList)
@@ -669,6 +681,7 @@ namespace GUI
 			m_clickedFunction = nullptr;
 			m_clickedGlobalVar = nullptr;
 			m_codeChanged = false;
+			m_debugSelectedLineIdx = -1;
 			Show(m_ctxWindow);
 			Show(m_builtinWindow);
 			
@@ -789,6 +802,7 @@ namespace GUI
 		CE::Decompiler::LinearView::BlockList* m_blockList;
 	public:
 		DecompiledCodeViewer* m_decompiledCodeViewer;
+		bool m_startDebug = false;
 		
 		DecompiledCodeViewerPanel(CE::Decompiler::LinearView::BlockList* blockList)
 			: AbstractPanel("Decompiled Code Viewer"), m_blockList(blockList)
@@ -822,14 +836,26 @@ namespace GUI
 		}
 
 		void renderMenuBar() override {
+			m_startDebug = false;
+			
+			if (ImGui::BeginMenu("Debug"))
+			{
+				if (ImGui::MenuItem("Start Debug")) {
+					m_startDebug = true;
+				}
+				if (m_decompiledCodeViewer->m_debugger)
+					m_decompiledCodeViewer->m_debugger->renderDebugMenu();
+				ImGui::EndMenu();
+			}
+			
 			if (ImGui::BeginMenu("View"))
 			{
-				if (ImGui::MenuItem("Show all blocks")) {
+				if (ImGui::MenuItem("Show All Blocks")) {
 					m_decompiledCodeViewer->m_hidedBlockLists.clear();
 				}
 
 				ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
-				if (ImGui::MenuItem("Show assembler", nullptr, m_decompiledCodeViewer->m_show.Asm)) {
+				if (ImGui::MenuItem("Show Assembler", nullptr, m_decompiledCodeViewer->m_show.Asm)) {
 					m_decompiledCodeViewer->m_show.Asm ^= true;
 				}
 				if (m_decompiledCodeViewer->m_show.Asm) {
@@ -837,10 +863,10 @@ namespace GUI
 						m_decompiledCodeViewer->m_show.PCode ^= true;
 					}
 				}
-				if (ImGui::MenuItem("Show exec. contexts", nullptr, m_decompiledCodeViewer->m_show.ExecCtxs)) {
+				if (ImGui::MenuItem("Show Exec. Contexts", nullptr, m_decompiledCodeViewer->m_show.ExecCtxs)) {
 					m_decompiledCodeViewer->m_show.ExecCtxs ^= true;
 				}
-				if (ImGui::MenuItem("Show comments", nullptr, m_decompiledCodeViewer->m_show.DebugComments)) {
+				if (ImGui::MenuItem("Show Comments", nullptr, m_decompiledCodeViewer->m_show.DebugComments)) {
 					m_decompiledCodeViewer->m_show.DebugComments ^= true;
 				}
 				ImGui::PopItemFlag();

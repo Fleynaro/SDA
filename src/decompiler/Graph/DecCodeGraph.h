@@ -33,6 +33,8 @@ namespace CE::Decompiler
 
 		HS getHash();
 
+		DecBlock::BlockTopNode* findBlockTopNodeByOffset(ComplexOffset offset);
+
 		// recalculate levels because some blocks can be removed (while parsing AND/OR block constructions)
 		void recalculateLevelsForBlocks();
 

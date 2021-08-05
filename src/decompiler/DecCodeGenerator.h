@@ -716,8 +716,8 @@ namespace CE::Decompiler
 				}
 
 				if (const auto endBlock = dynamic_cast<EndDecBlock*>(block->m_decBlock)) {
-					if(endBlock->getReturnNode() != nullptr)
-						generateReturnStatement(endBlock->getReturnNode());
+					if(endBlock->getReturnTopNode()->getNode() != nullptr)
+						generateReturnStatement(endBlock->getReturnTopNode());
 				}
 			}
 			generateGotoStatement(blockList);
@@ -750,7 +750,7 @@ namespace CE::Decompiler
 			generateTabs();
 			generateToken("if", TOKEN_OPERATOR);
 			{
-				m_exprTreeViewGenerator->generateNode(block->m_cond);
+				generateBlockTopNode(block->m_decBlock->getJumpTopNode(), block->m_cond);
 			}
 			generateToken(" ", TOKEN_OTHER);
 			{
@@ -772,7 +772,7 @@ namespace CE::Decompiler
 				generateToken("while", TOKEN_OPERATOR);
 				generateToken(" ", TOKEN_OTHER);
 				{
-					m_exprTreeViewGenerator->generateNode(block->m_cond);
+					generateBlockTopNode(block->m_decBlock->getJumpTopNode(), block->m_cond);
 				}
 				generateToken(" ", TOKEN_OTHER);
 				{
@@ -789,7 +789,7 @@ namespace CE::Decompiler
 				generateToken("while", TOKEN_OPERATOR);
 				generateToken(" ", TOKEN_OTHER);
 				{
-					m_exprTreeViewGenerator->generateNode(block->m_cond);
+					generateBlockTopNode(block->m_decBlock->getJumpTopNode(), block->m_cond);
 				}
 				generateSemicolon();
 				generateEndLine();
@@ -799,7 +799,7 @@ namespace CE::Decompiler
 		virtual void generateCode(DecBlock* decBlock) {
 			for (auto line : decBlock->m_seqLines) {
 				generateTabs();
-				m_exprTreeViewGenerator->generateNode(line->getNode());
+				generateBlockTopNode(line);
 				generateSemicolon();
 				generateEndLine();
 			}
@@ -815,11 +815,15 @@ namespace CE::Decompiler
 			}
 		}
 
-		virtual void generateReturnStatement(ExprTree::INode* node) {
+		virtual void generateBlockTopNode(DecBlock::BlockTopNode* blockTopNode, ExprTree::INode* node = nullptr) {
+			m_exprTreeViewGenerator->generateNode(node ? node : blockTopNode->getNode());
+		}
+
+		virtual void generateReturnStatement(DecBlock::ReturnTopNode* returnTopNode) {
 			generateTabs();
 			generateToken("return", TOKEN_OPERATOR);
 			generateToken(" ", TOKEN_OTHER);
-			m_exprTreeViewGenerator->generateNode(node);
+			generateBlockTopNode(returnTopNode);
 			generateSemicolon();
 			generateEndLine();
 		}

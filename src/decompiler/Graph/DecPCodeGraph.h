@@ -49,6 +49,8 @@ namespace CE::Decompiler
 
 		void setMaxOffset(ComplexOffset offset);
 
+		bool containsOffset(ComplexOffset offset, bool halfInterval = true) const;
+
 		void removeNextBlock(PCodeBlock* nextBlock);
 
 		void setNextNearBlock(PCodeBlock* nextBlock);

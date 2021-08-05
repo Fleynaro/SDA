@@ -322,9 +322,10 @@ namespace GUI
 					}
 
 					if (ImGui::MenuItem("Debug")) {
-						delete m_codeSectionViewer->m_debuger;
-						m_codeSectionViewer->m_debuger = new Debuger(m_codeSectionViewer->m_codeSectionController->m_imageDec, m_codeSectionRow.getOffset());
-						m_codeSectionViewer->m_debuger->m_executePCode = m_codeSectionRow.m_isPCode;
+						delete m_codeSectionViewer->m_debugger;
+						m_codeSectionViewer->m_debugger = new Debugger(m_codeSectionViewer->m_codeSectionController->m_imageDec, m_codeSectionRow.getOffset());
+						m_codeSectionViewer->m_debugger->m_stepWidth = m_codeSectionRow.m_isPCode ? Debugger::StepWidth::STEP_PCODE_INSTR : Debugger::StepWidth::STEP_ORIGINAL_INSTR;
+						m_codeSectionViewer->m_startDebug = true;
 					}
 				}
 			};
@@ -335,7 +336,8 @@ namespace GUI
 			PopupModalWindow* m_popupModalWindow = nullptr;
 			PopupContextWindow* m_ctxWindow = nullptr;
 		public:
-			Debuger* m_debuger = nullptr;
+			Debugger* m_debugger = nullptr;
+			bool m_startDebug = false;
 			CodeSectionController* m_codeSectionController;
 			AbstractInstructionViewDecoder* m_instructionViewDecoder;
 			CE::Decompiler::FunctionPCodeGraph* m_curFuncPCodeGraph = nullptr;
@@ -359,6 +361,7 @@ namespace GUI
 				m_shownJmps.clear();
 				m_curFuncPCodeGraph = nullptr;
 				m_clickedPCodeBlock = nullptr;
+				m_startDebug = false;
 				
 				if(Button::StdButton("go to func").present()) {
 					goToOffset(0x20c80);
@@ -394,8 +397,8 @@ namespace GUI
 							}
 
 							// select rows
-							if (m_debuger) {
-								if (const auto instr = m_debuger->getCurInstr()) {
+							if (m_debugger) {
+								if (const auto instr = m_debugger->m_curInstr) {
 									bool isSelected;
 									if (m_codeSectionController->m_showPCode)
 										isSelected = codeSectionRow.m_isPCode && instr->getOffset() == codeSectionRow.getOffset();
@@ -464,7 +467,7 @@ namespace GUI
 				Show(m_builtinWindow);
 				Show(m_popupModalWindow);
 				Show(m_ctxWindow);
-				Show(m_debuger);
+				Show(m_debugger);
 			}
 
 			void decorateRow(const ImVec2& startRowPos, const ImVec2& rowSize, CodeSectionRow row, int rowIdx, CE::Decompiler::PCodeBlock* pcodeBlock) {
@@ -504,6 +507,8 @@ namespace GUI
 								m_clickedPCodeBlock = pcodeBlock;
 							}
 							else if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+								if(m_selectedRows.size() == 1)
+									m_selectedRows = { row };
 								delete m_ctxWindow;
 								m_ctxWindow = new PopupContextWindow(new RowContextPanel(this, row));
 								m_ctxWindow->open();
@@ -711,7 +716,7 @@ namespace GUI
 
 			if (ImGui::BeginMenu("Navigation"))
 			{
-				if (ImGui::MenuItem("Go to")) {
+				if (ImGui::MenuItem("Go To")) {
 					delete m_popupModalWindow;
 					m_popupModalWindow = new PopupModalWindow(new GoToPanel(this));
 					m_popupModalWindow->open();
@@ -728,50 +733,50 @@ namespace GUI
 						}
 
 						ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
-						if (ImGui::MenuItem("Decompiling step", nullptr, m_decompilerStep >= DecompilerStep::DECOMPILING)) {
+						if (ImGui::MenuItem("Decompiling Step", nullptr, m_decompilerStep >= DecompilerStep::DECOMPILING)) {
 							m_decompilerStep = DecompilerStep::DECOMPILING;
 						}
-						if (ImGui::MenuItem("Processing step", nullptr, m_decompilerStep >= DecompilerStep::PROCESSING)) {
+						if (ImGui::MenuItem("Processing Step", nullptr, m_decompilerStep >= DecompilerStep::PROCESSING)) {
 							m_decompilerStep = DecompilerStep::PROCESSING;
 						}
-						if (ImGui::MenuItem("Symbolizing step", nullptr, m_decompilerStep >= DecompilerStep::SYMBOLIZING)) {
+						if (ImGui::MenuItem("Symbolizing Step", nullptr, m_decompilerStep >= DecompilerStep::SYMBOLIZING)) {
 							m_decompilerStep = DecompilerStep::SYMBOLIZING;
 						}
-						if (ImGui::MenuItem("Final processing step", nullptr, m_decompilerStep >= DecompilerStep::FINAL_PROCESSING)) {
+						if (ImGui::MenuItem("Final Processing Step", nullptr, m_decompilerStep >= DecompilerStep::FINAL_PROCESSING)) {
 							m_decompilerStep = DecompilerStep::FINAL_PROCESSING;
 						}
 
-						if (ImGui::BeginMenu("Processing steps"))
+						if (ImGui::BeginMenu("Processing Steps"))
 						{
 							using namespace magic_enum::bitwise_operators;
-							if (ImGui::MenuItem("Condition processing step", nullptr, (m_processingStep | ProcessingStep::CONDITION_PROCESSING) == m_processingStep)) {
+							if (ImGui::MenuItem("Condition Processing Step", nullptr, (m_processingStep | ProcessingStep::CONDITION_PROCESSING) == m_processingStep)) {
 								m_processingStep ^= ProcessingStep::CONDITION_PROCESSING;
 							}
-							if (ImGui::MenuItem("Expr. optimizing step", nullptr, (m_processingStep | ProcessingStep::EXPR_OPTIMIZING) == m_processingStep)) {
+							if (ImGui::MenuItem("Expr. Optimizing Step", nullptr, (m_processingStep | ProcessingStep::EXPR_OPTIMIZING) == m_processingStep)) {
 								m_processingStep ^= ProcessingStep::EXPR_OPTIMIZING;
 							}
-							if (ImGui::MenuItem("Par. assignment creating step", nullptr, (m_processingStep | ProcessingStep::PAR_ASSIGNMENT_CREATING) == m_processingStep)) {
+							if (ImGui::MenuItem("Par. Assignment Creating Step", nullptr, (m_processingStep | ProcessingStep::PAR_ASSIGNMENT_CREATING) == m_processingStep)) {
 								m_processingStep ^= ProcessingStep::PAR_ASSIGNMENT_CREATING;
 							}
-							if (ImGui::MenuItem("Order fixing step", nullptr, (m_processingStep | ProcessingStep::ORDER_FIXING) == m_processingStep)) {
+							if (ImGui::MenuItem("Order Fixing Step", nullptr, (m_processingStep | ProcessingStep::ORDER_FIXING) == m_processingStep)) {
 								m_processingStep ^= ProcessingStep::ORDER_FIXING;
 							}
-							if (ImGui::MenuItem("View optimizing step", nullptr, (m_processingStep | ProcessingStep::VIEW_OPTIMIZING) == m_processingStep)) {
+							if (ImGui::MenuItem("View Optimizing Step", nullptr, (m_processingStep | ProcessingStep::VIEW_OPTIMIZING) == m_processingStep)) {
 								m_processingStep ^= ProcessingStep::VIEW_OPTIMIZING;
 							}
-							if (ImGui::MenuItem("Line expanding step", nullptr, (m_processingStep | ProcessingStep::LINE_EXPANDING) == m_processingStep)) {
+							if (ImGui::MenuItem("Line Expanding Step", nullptr, (m_processingStep | ProcessingStep::LINE_EXPANDING) == m_processingStep)) {
 								m_processingStep ^= ProcessingStep::LINE_EXPANDING;
 							}
-							if (ImGui::MenuItem("Useless lines removing step", nullptr, (m_processingStep | ProcessingStep::USELESS_LINES_REMOVING) == m_processingStep)) {
+							if (ImGui::MenuItem("Useless Lines Removing Step", nullptr, (m_processingStep | ProcessingStep::USELESS_LINES_REMOVING) == m_processingStep)) {
 								m_processingStep ^= ProcessingStep::USELESS_LINES_REMOVING;
 							}
-							if (ImGui::MenuItem("Debug processing step", nullptr, (m_processingStep | ProcessingStep::DEBUG_PROCESSING) == m_processingStep)) {
+							if (ImGui::MenuItem("Debug Processing Step", nullptr, (m_processingStep | ProcessingStep::DEBUG_PROCESSING) == m_processingStep)) {
 								m_processingStep ^= ProcessingStep::DEBUG_PROCESSING;
 							}
 							ImGui::EndMenu();
 						}
 						
-						if (ImGui::BeginMenu("Symbolizing steps"))
+						if (ImGui::BeginMenu("Symbolizing Steps"))
 						{
 							if (ImGui::MenuItem("Building step", nullptr, m_symbolizingStep >= SymbolizingStep::BUILDING)) {
 								m_symbolizingStep = SymbolizingStep::BUILDING;
@@ -782,13 +787,13 @@ namespace GUI
 							ImGui::EndMenu();
 						}
 
-						if (ImGui::BeginMenu("Final processing steps"))
+						if (ImGui::BeginMenu("Final Processing Steps"))
 						{
 							using namespace magic_enum::bitwise_operators;
-							if (ImGui::MenuItem("Memory optimizing step", nullptr, (m_finalProcessingStep | FinalProcessingStep::MEMORY_OPTIMIZING) == m_finalProcessingStep)) {
+							if (ImGui::MenuItem("Memory Optimizing Step", nullptr, (m_finalProcessingStep | FinalProcessingStep::MEMORY_OPTIMIZING) == m_finalProcessingStep)) {
 								m_finalProcessingStep ^= FinalProcessingStep::MEMORY_OPTIMIZING;
 							}
-							if (ImGui::MenuItem("Useless lines optimizing step", nullptr, (m_finalProcessingStep | FinalProcessingStep::USELESS_LINES_OPTIMIZING) == m_finalProcessingStep)) {
+							if (ImGui::MenuItem("Useless Lines Optimizing Step", nullptr, (m_finalProcessingStep | FinalProcessingStep::USELESS_LINES_OPTIMIZING) == m_finalProcessingStep)) {
 								m_finalProcessingStep ^= FinalProcessingStep::USELESS_LINES_OPTIMIZING;
 							}
 							ImGui::EndMenu();
@@ -798,10 +803,10 @@ namespace GUI
 					}
 				}
 
-				if(codeSectionViewer->m_debuger) {
+				if(codeSectionViewer->m_debugger) {
 					if (ImGui::BeginMenu("Debug"))
 					{
-						codeSectionViewer->m_debuger->renderDebugMenu();
+						codeSectionViewer->m_debugger->renderDebugMenu();
 						ImGui::EndMenu();
 					}
 				}
@@ -1032,6 +1037,15 @@ namespace GUI
 								}
 							}
 						}
+						// start debug
+						if(codeSectionViewer->m_startDebug) {
+							const auto debugger = codeSectionViewer->m_debugger;
+							debugger->instrHandler([&, debugger](bool isNewGraph)
+								{
+									instrHandler(debugger, isNewGraph);
+								});
+							decCodeViewerPanel->m_decompiledCodeViewer->m_debugger = debugger;
+						}
 					}
 				}
 			}
@@ -1070,6 +1084,36 @@ namespace GUI
 				else if (const auto globalVar = decCodeViewerPanel->m_decompiledCodeViewer->m_clickedGlobalVar) {
 					goToOffset(globalVar->getOffset());
 				}
+				// start debug
+				else if(decCodeViewerPanel->m_startDebug) {
+					const auto debugger = new Debugger(m_imageDec, m_curDecGraph->getStartBlock()->m_pcodeBlock->getMinOffset());
+					debugger->m_stepWidth = Debugger::StepWidth::STEP_CODE_LINE;
+					debugger->instrHandler([&, debugger](bool isNewGraph)
+						{
+							instrHandler(debugger, isNewGraph);
+						});
+					decCodeViewerPanel->m_decompiledCodeViewer->m_debugger = debugger;
+					if (const auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer))
+						codeSectionViewer->m_debugger = debugger;
+				}
+			}
+		}
+
+		void instrHandler(Debugger* debugger, bool isNewGraph) {
+			if (isNewGraph) {
+				if (const auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer))
+					codeSectionViewer->goToOffset(debugger->m_curInstr->getOffset().getByteOffset());
+				if (debugger->m_stepWidth == Debugger::StepWidth::STEP_CODE_LINE) {
+					if (!m_curDecGraph || debugger->m_curPCodeBlock->m_funcPCodeGraph != m_curDecGraph->getFuncGraph()) {
+						decompile(debugger->m_curPCodeBlock->m_funcPCodeGraph);
+					}
+				} else {
+					debugger->m_curBlockTopNode = nullptr;
+				}
+			}
+
+			if (m_curDecGraph) {
+				debugger->m_curBlockTopNode = m_curDecGraph->findBlockTopNodeByOffset(debugger->m_curInstr->getOffset());
 			}
 		}
 	};

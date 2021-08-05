@@ -19,6 +19,7 @@ void Optimization::GraphCondBlockOptimization::doBlockJoining() {
 		const auto block = *it;
 		while (const auto removedBlock = joinCondition(block)) {
 			optimizeConditionDecBlock(block);
+			block->m_joinedRemovedBlocks.push_back(removedBlock);
 			m_decGraph->removeDecompiledBlock(removedBlock);
 			it = m_decGraph->getDecompiledBlocks().rbegin();
 		}

@@ -296,7 +296,7 @@ namespace GUI
 
 		private:
 			void renderPanel() override {
-				if (ImGui::MenuItem("Create a new address space")) {
+				if (ImGui::MenuItem("Create Address Space")) {
 					delete m_imageManagerPanel->m_popupModalWindow;
 					m_imageManagerPanel->m_popupModalWindow = new PopupModalWindow(new AddrSpaceCreatorPanel(this));
 					m_imageManagerPanel->m_popupModalWindow->open();

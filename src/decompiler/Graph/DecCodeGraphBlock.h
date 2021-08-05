@@ -1,4 +1,5 @@
 #pragma once
+#include "DecPCodeGraph.h"
 #include <decompiler/DecTopNode.h>
 #include <decompiler/ExprTree/ExprTree.h>
 #include <list>
@@ -24,6 +25,8 @@ namespace CE::Decompiler
 			DecBlock* m_block;
 
 			BlockTopNode(DecBlock* block, ExprTree::INode* node = nullptr);
+
+			virtual Instruction* getLastReqInstr();
 		};
 
 		// condition for jumping to another block
@@ -48,7 +51,7 @@ namespace CE::Decompiler
 		class SeqAssignmentLine : public BlockTopNode // consequent
 		{
 		public:
-			PCode::Instruction* m_lastRequiredInstruction = nullptr;
+			Instruction* m_lastRequiredInstruction = nullptr;
 			
 			SeqAssignmentLine(DecBlock* block, ExprTree::AssignmentNode* assignmentNode);
 
@@ -63,6 +66,8 @@ namespace CE::Decompiler
 
 			// right node from =
 			ExprTree::INode* getSrcNode();
+
+			Instruction* getLastReqInstr() override;
 
 			SeqAssignmentLine* clone(DecBlock* block, ExprTree::NodeCloneContext* ctx);
 		};
@@ -93,6 +98,7 @@ namespace CE::Decompiler
 		std::list<SymbolParallelAssignmentLine*> m_symbolParallelAssignmentLines; // temporary list, empty in the end of graph optimization
 		JumpTopNode* m_noJmpCond;
 	public:
+		std::list<DecBlock*> m_joinedRemovedBlocks;
 		int m_maxHeight = 0; // calculated as count of the lines from the top to the block
 		DecompiledCodeGraph* m_decompiledGraph;
 
@@ -136,6 +142,8 @@ namespace CE::Decompiler
 		// get all top nodes for this block (assignments, function calls, return) / get all expressions
 		virtual std::list<BlockTopNode*> getAllTopNodes();
 
+		JumpTopNode* getJumpTopNode() const;
+
 		// condition top node which contains boolean expression to jump to another block
 		ExprTree::AbstractCondition* getNoJumpCondition() const;
 
@@ -148,6 +156,8 @@ namespace CE::Decompiler
 		void addSymbolParallelAssignmentLine(ExprTree::SymbolLeaf* symbolLeaf, ExprTree::INode* srcValue, PCode::Instruction* instr = nullptr);
 		
 		std::list<SymbolParallelAssignmentLine*>& getSymbolParallelAssignmentLines();
+
+		BlockTopNode* findBlockTopNodeByOffset(ComplexOffset offset);
 
 		// check if this block is empty
 		bool hasNoCode() const;
@@ -167,7 +177,7 @@ namespace CE::Decompiler
 
 		std::list<BlockTopNode*> getAllTopNodes() override;
 
-		ExprTree::INode* getReturnNode() const;
+		ReturnTopNode* getReturnTopNode() const;
 
 		void setReturnNode(ExprTree::INode* returnNode) const;
 

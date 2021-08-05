@@ -84,6 +84,19 @@ HS DecompiledCodeGraph::getHash() {
 	return hs;
 }
 
+DecBlock::BlockTopNode* DecompiledCodeGraph::findBlockTopNodeByOffset(ComplexOffset offset) {
+	for (auto decBlock : m_decompiledBlocks) {
+		if (decBlock->m_pcodeBlock->containsOffset(offset))
+			return decBlock->findBlockTopNodeByOffset(offset);
+		// for complex condition
+		for (auto joinedDecBlock : decBlock->m_joinedRemovedBlocks) {
+			if (joinedDecBlock->m_pcodeBlock->containsOffset(offset))
+				return *decBlock->getAllTopNodes().rbegin();
+		}
+	}
+	return nullptr;
+}
+
 // recalculate levels because some blocks can be removed (while parsing AND/OR block constructions)
 
 void DecompiledCodeGraph::recalculateLevelsForBlocks() {
