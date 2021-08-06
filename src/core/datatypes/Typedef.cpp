@@ -20,12 +20,6 @@ int Typedef::getSize() {
 	return getRefType()->getSize();
 }
 
-std::string Typedef::getViewValue(uint64_t value) {
-	if (getRefType()->getType() == this)
-		return UserDefinedType::getViewValue(value);
-	return getRefType()->getViewValue(value);
-}
-
 void Typedef::setRefType(DataTypePtr refType) {
 	
 	if (const auto refTypeDef = dynamic_cast<Typedef*>(refType->getType())) {

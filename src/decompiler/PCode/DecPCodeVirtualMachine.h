@@ -28,6 +28,8 @@ namespace CE::Decompiler::PCode
 
 		void setRegisterValue(const Register& reg, DataValue value);
 
+		bool getRegisterValue(const Register& reg, DataValue& value) const;
+
 		void setValue(Varnode* varnode, DataValue value);
 
 		bool getValue(Varnode* varnode, DataValue& value) const;

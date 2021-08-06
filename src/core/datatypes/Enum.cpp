@@ -15,13 +15,6 @@ Enum::Group Enum::getGroup() {
 	return Group::Enum;
 }
 
-std::string Enum::getViewValue(uint64_t value) {
-	const auto it = m_fields.find(value);
-	if (it == m_fields.end())
-		return UserDefinedType::getViewValue(value);
-	return it->second + " (" + UserDefinedType::getViewValue(value) + ")";
-}
-
 const Enum::FieldMapType& Enum::getFields() const {
 	return m_fields;
 }

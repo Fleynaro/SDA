@@ -28,6 +28,8 @@ namespace CE::Decompiler::ExprTree
 		virtual std::list<INode*> getNodesList() = 0;
 	};
 
+	
+
 	class INode
 	{
 	public:

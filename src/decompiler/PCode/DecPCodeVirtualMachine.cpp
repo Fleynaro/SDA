@@ -4,6 +4,14 @@ void CE::Decompiler::PCode::VmExecutionContext::setRegisterValue(const Register&
 	m_registers[reg.getId()] = value;
 }
 
+bool CE::Decompiler::PCode::VmExecutionContext::getRegisterValue(const Register& reg, DataValue& value) const {
+	const auto it = m_registers.find(reg.getId());
+	if (it == m_registers.end())
+		return false;
+	value = it->second;
+	return true;
+}
+
 void CE::Decompiler::PCode::VmExecutionContext::setValue(Varnode* varnode, DataValue value) {
 	if (const auto varnodeRegister = dynamic_cast<RegisterVarnode*>(varnode)) {
 		const auto reg = varnodeRegister->m_register;

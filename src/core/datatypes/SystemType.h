@@ -104,10 +104,6 @@ namespace CE
 				return Boolean;
 			}
 
-			std::string getViewValue(uint64_t value) override {
-				return (bool&)value ? "true" : "false";
-			}
-
 			int getSize() override {
 				return 1;
 			}
@@ -160,10 +156,6 @@ namespace CE
 				return true;
 			}
 
-			std::string getViewValue(uint64_t value) override {
-				return std::to_string((int8_t&)value);
-			}
-
 			int getSize() override {
 				return 1;
 			}
@@ -190,10 +182,6 @@ namespace CE
 
 			bool isSigned() override {
 				return true;
-			}
-
-			std::string getViewValue(uint64_t value) override {
-				return std::to_string((int16_t&)value);
 			}
 
 			int getSize() override {
@@ -224,10 +212,6 @@ namespace CE
 				return true;
 			}
 
-			std::string getViewValue(uint64_t value) override {
-				return std::to_string((int32_t&)value);
-			}
-
 			int getSize() override {
 				return 4;
 			}
@@ -255,11 +239,7 @@ namespace CE
 			bool isSigned() override {
 				return true;
 			}
-
-			std::string getViewValue(uint64_t value) override {
-				return std::to_string((int64_t&)value);
-			}
-
+			
 			int getSize() override {
 				return 8;
 			}
@@ -383,11 +363,7 @@ namespace CE
 			bool isSigned() override {
 				return true;
 			}
-
-			std::string getViewValue(uint64_t value) override {
-				return std::to_string((float&)value);
-			}
-
+			
 			int getSize() override {
 				return 4;
 			}
@@ -414,10 +390,6 @@ namespace CE
 
 			bool isSigned() override {
 				return true;
-			}
-
-			std::string getViewValue(uint64_t value) override {
-				return std::to_string((double&)value);
 			}
 
 			int getSize() override {

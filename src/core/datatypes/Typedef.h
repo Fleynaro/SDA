@@ -12,8 +12,6 @@ namespace CE::DataType
 
 		int getSize() override;
 
-		std::string getViewValue(uint64_t value) override;
-
 		void setRefType(DataTypePtr refType);
 
 		DataTypePtr getRefType() const;

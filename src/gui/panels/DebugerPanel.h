@@ -1,4 +1,6 @@
 #pragma once
+#include <utility>
+
 #include "ImageDecorator.h"
 #include "decompiler/PCode/DecPCodeInstructionPool.h"
 #include "decompiler/PCode/DecPCodeVirtualMachine.h"
@@ -13,6 +15,190 @@
 
 namespace GUI
 {
+	class ValueViewerPanel : public AbstractPanel
+	{
+	public:
+		struct Location
+		{
+			bool m_isRegister;
+			CE::Decompiler::Register m_register;
+			std::uintptr_t m_address = 0x0;
+
+			Location(const CE::Decompiler::Register& reg)
+				: m_register(reg), m_isRegister(true)
+			{}
+
+			Location(std::uintptr_t address = 0x0)
+				: m_address(address), m_isRegister(false)
+			{}
+		};
+	
+	private:
+		std::string m_name;
+		Location m_location;
+		CE::DataTypePtr m_dataType;
+		CE::Decompiler::PCode::VmExecutionContext* m_execCtx;
+		CE::Decompiler::PCode::VmMemoryContext* m_memCtx;
+		bool m_hexView = false;
+
+		PopupBuiltinWindow* m_builtinWindow = nullptr;
+	
+	public:
+		ValueViewerPanel(const std::string& name, const Location& location, CE::DataTypePtr dataType, CE::Decompiler::PCode::VmExecutionContext* execCtx, CE::Decompiler::PCode::VmMemoryContext* memCtx)
+			: m_name(name), m_location(location), m_dataType(std::move(dataType)), m_execCtx(execCtx), m_memCtx(memCtx)
+		{}
+
+		~ValueViewerPanel() {
+			delete m_builtinWindow;
+		}
+
+	private:
+		void renderPanel() override {
+			if (ImGui::BeginTable("##empty", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV))
+			{
+				ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 70.0f);
+				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_None);
+				ImGui::TableHeadersRow();
+
+				renderContent(m_name, m_location, m_dataType);
+				
+				ImGui::EndTable();
+			}
+
+			Show(m_builtinWindow);
+		}
+
+		void renderContent(const std::string& name, const Location& location, CE::DataTypePtr dataType) {
+			const auto isPointer = dataType->isPointer();
+			if (!isPointer) {
+				if (const auto Structure = dynamic_cast<CE::DataType::IStructure*>(dataType->getType())) {
+					if (!location.m_isRegister) {
+						// todo: show unknown fields also
+						for (const auto& [offset, field] : Structure->getFields()) {
+							if (field->isBitField())
+								continue;
+							const auto fieldName = name + "." + field->getName();
+							const auto fieldLoc = Location(location.m_address + field->getOffset());
+							
+							if (!field->getDataType()->isPointer() && dynamic_cast<CE::DataType::IStructure*>(field->getDataType()->getType())) {
+								ImGui::TableNextRow();
+								ImGui::TableNextColumn();
+								Text::Text(fieldName).show();
+								const auto events = GenericEvents(true);
+								const auto builtinWinPos = GetLeftBottom();
+								
+								ImGui::TableNextColumn();
+								Text::Text(field->getDataType()->getName()).show();
+								
+								if (events.isHovered()) {
+									delete m_builtinWindow;
+									const auto panel = new ValueViewerPanel(name, fieldLoc, field->getDataType(), m_execCtx, m_memCtx);
+									m_builtinWindow = new PopupBuiltinWindow(panel);
+									m_builtinWindow->getPos() = builtinWinPos;
+									m_builtinWindow->open();
+								}
+							}
+							else {
+								renderContent(fieldName, fieldLoc, field->getDataType());
+							}
+						}
+					}
+				}
+				else if (const auto Typedef = dynamic_cast<CE::DataType::Typedef*>(dataType->getType())) {
+					renderContent(name, location, Typedef->getRefType());
+				}
+				return;
+			}
+
+			// todo: array
+			
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			Text::Text(name).show();
+			const auto events = GenericEvents(true);
+			const auto builtinWinPos = GetLeftBottom();
+			
+			ImGui::TableNextColumn();
+			CE::Decompiler::DataValue value;
+			if (getValue(location, value)) {
+				if(isPointer) {
+					const auto addrStr = "0x" + Helper::String::NumberToHex(value);
+					Text::Text("-> " + addrStr).show();
+				}
+				else {
+					const auto valueStr = GetValueStr(value, dataType->getType(), m_hexView);
+					Text::Text(valueStr).show();
+				}
+
+				if (isPointer) {
+					if (events.isHovered()) {
+						const auto derefDataType = GetUnit(dataType->getType());
+						derefDataType->removePointerLevelOutOfFront();
+						delete m_builtinWindow;
+						const auto panel = new ValueViewerPanel(name, Location(value), derefDataType, m_execCtx, m_memCtx);
+						m_builtinWindow = new PopupBuiltinWindow(panel);
+						m_builtinWindow->getPos() = builtinWinPos;
+						m_builtinWindow->open();
+					}
+				}
+			}
+			else {
+				Text::Text("cannot read").show();
+			}
+		}
+
+		bool getValue(const Location& location, CE::Decompiler::DataValue& value) const {
+			if (location.m_isRegister) {
+				const auto& registers = m_execCtx->getRegisters();
+				const auto it = registers.find(location.m_register.getId());
+				if (it == registers.end())
+					return false;
+				value = it->second;
+				return true;
+			}
+			return m_memCtx->getValue(location.m_address, value);
+		}
+		
+		static std::string GetValueStr(uint64_t value, CE::DataType::IType* dataType, bool hexView) {
+			value &= CE::Decompiler::BitMask64(dataType->getSize()).getValue();
+			if(hexView) {
+				return "0x" + Helper::String::NumberToHex(value);
+			}
+			
+			if(const auto SysType = dynamic_cast<CE::DataType::SystemType*>(dataType)) {
+				if(SysType->getTypeId() == CE::DataType::SystemType::Bool) {
+					return (bool&)value ? "true" : "false";
+				}
+				if (SysType->getTypeId() == CE::DataType::SystemType::Int8) {
+					return std::to_string((int8_t&)value);
+				}
+				if (SysType->getTypeId() == CE::DataType::SystemType::Int16) {
+					return std::to_string((int16_t&)value);
+				}
+				if (SysType->getTypeId() == CE::DataType::SystemType::Int32) {
+					return std::to_string((int32_t&)value);
+				}
+				if (SysType->getTypeId() == CE::DataType::SystemType::Int64) {
+					return std::to_string((int64_t&)value);
+				}
+				if (SysType->getTypeId() == CE::DataType::SystemType::Float) {
+					return std::to_string((float&)value);
+				}
+				if (SysType->getTypeId() == CE::DataType::SystemType::Double) {
+					return std::to_string((double&)value);
+				}
+			} else if (const auto Enum = dynamic_cast<CE::DataType::Enum*>(dataType)) {
+				const auto it = Enum->getFields().find(value);
+				const auto intValueStr = std::to_string((int&)value);
+				if (it == Enum->getFields().end())
+					return intValueStr;
+				return it->second + " (" + intValueStr + ")";
+			}
+			
+			return std::to_string(value);
+		}
+	};
+	
 	class Debugger : public Control
 	{
 		class AbstractViewerPanel : public AbstractPanel
@@ -28,15 +214,6 @@ namespace GUI
 
 			~AbstractViewerPanel() {
 				delete m_builtinWindow;
-			}
-
-			bool getRegisterValue(const CE::Decompiler::Register& reg, CE::Decompiler::DataValue& value) const {
-				const auto& registers = m_execCtx->getRegisters();
-				const auto it = registers.find(reg.getId());
-				if (it == registers.end())
-					return false;
-				value = it->second;
-				return true;
 			}
 
 			void renderValueEditor(const std::string& hexValue, const std::function<void(uint64_t)>& callback) {
@@ -136,7 +313,7 @@ namespace GUI
 					CE::Decompiler::DataValue regValue;
 					std::string hexValue;
 					bool hasValue;
-					if ((hasValue = getRegisterValue(reg, regValue))) {
+					if ((hasValue = m_execCtx->getRegisterValue(reg, regValue))) {
 						hexValue = NumberToHex(regValue, true);
 					} else {
 						hexValue = "----------------";
@@ -167,7 +344,7 @@ namespace GUI
 
 				CE::Decompiler::DataValue regValue;
 				const auto reg = CE::Decompiler::Register(ZYDIS_REGISTER_RFLAGS, 0, 0x8);
-				if (getRegisterValue(reg, regValue)) {
+				if (m_execCtx->getRegisterValue(reg, regValue)) {
 					for (const auto flag : flags) {
 						const auto flagName = CE::Decompiler::PCode::InstructionViewGenerator::GetFlagName(flag);
 						const auto value = regValue >> flag & 0b1;
@@ -216,7 +393,7 @@ namespace GUI
 
 					const auto reg = m_registerFactory->createStackPointerRegister();
 					CE::Decompiler::DataValue stackPointerAddr;
-					if (getRegisterValue(reg, stackPointerAddr)) {
+					if (m_execCtx->getRegisterValue(reg, stackPointerAddr)) {
 						if(stackPointerAddr != m_stackPointerAddr)
 							ImGui::SetScrollY(ImGui::GetScrollMaxY());
 						m_stackPointerAddr = stackPointerAddr;
@@ -265,6 +442,7 @@ namespace GUI
 
 		StdWindow* m_execCtxViewerWin;
 		StdWindow* m_stackViewerWin;
+		PopupBuiltinWindow* m_builtinWindow = nullptr;
 		EventHandler<bool> m_instrHandler;
 	public:
 		enum class StepWidth
@@ -290,6 +468,7 @@ namespace GUI
 		~Debugger() {
 			delete m_execCtxViewerWin;
 			delete m_stackViewerWin;
+			delete m_builtinWindow;
 		}
 
 		void instrHandler(const std::function<void(bool)>& handler) {
@@ -317,6 +496,25 @@ namespace GUI
 				const auto isNewGraph = prevPCodeGraph != m_curPCodeBlock->m_funcPCodeGraph;
 				m_instrHandler(isNewGraph);
 			}
+		}
+
+		ValueViewerPanel* createValueViewer(const CE::Decompiler::Storage& storage, const std::string& name, CE::DataTypePtr dataType) {
+			ValueViewerPanel::Location location;
+			const auto reg = CE::Decompiler::Register(storage.getRegisterId());
+			if (storage.getType() == CE::Decompiler::Storage::STORAGE_REGISTER) {
+				location = ValueViewerPanel::Location(reg);
+			}
+			else {
+				CE::Decompiler::DataValue baseAddr = 0;
+				m_execCtx.getRegisterValue(reg, baseAddr);
+				location = ValueViewerPanel::Location(baseAddr + storage.getOffset());
+			}
+			
+			delete m_builtinWindow;
+			const auto panel = new ValueViewerPanel(name, location, dataType, &m_execCtx, &m_memCtx);
+			m_builtinWindow = new PopupBuiltinWindow(panel);
+			m_builtinWindow->placeAfterItem();
+			m_builtinWindow->open();
 		}
 
 		void renderDebugMenu() {

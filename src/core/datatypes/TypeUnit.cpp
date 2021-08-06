@@ -157,10 +157,6 @@ int Unit::getSize() {
 	return mulDim * m_type->getSize();
 }
 
-std::string Unit::getViewValue(uint64_t value) {
-	return m_type->getViewValue(value);
-}
-
 IType* Unit::getType() const
 {
 	return m_type;

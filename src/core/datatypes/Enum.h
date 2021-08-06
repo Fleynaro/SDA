@@ -21,8 +21,6 @@ namespace CE
 
 			Group getGroup() override;
 
-			std::string getViewValue(uint64_t value) override;
-
 			const FieldMapType& getFields() const;
 
 			void setFields(const FieldMapType& fields);

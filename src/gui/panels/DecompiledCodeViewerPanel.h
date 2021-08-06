@@ -318,6 +318,9 @@ namespace GUI
 							}
 						}
 					}
+					if (const auto memNode = dynamic_cast<CE::Decompiler::IMappedToMemory*>(node)) {
+						memNode->getLocation();
+					}
 					ExprTreeViewGenerator::generateNode(node);
 				}
 			};

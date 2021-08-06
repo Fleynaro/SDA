@@ -38,8 +38,6 @@ namespace CE::DataType
 
 		virtual IType* getBaseType(bool refType = true, bool dereferencedType = true) = 0;
 
-		virtual std::string getViewValue(uint64_t value) = 0;
-
 		virtual TypeManager* getTypeManager() = 0;
 	};
 
@@ -55,8 +53,6 @@ namespace CE::DataType
 		bool isSystem() override;
 
 		bool isSigned() override;
-
-		std::string getViewValue(uint64_t value) override;
 
 		void setTypeManager(TypeManager* typeManager);
 
