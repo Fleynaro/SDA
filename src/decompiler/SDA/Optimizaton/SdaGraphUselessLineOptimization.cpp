@@ -15,7 +15,7 @@ void CE::Decompiler::Optimization::SdaGraphUselessLineOptimization::start() {
 			m_usedSdaSymbols.clear();
 		}
 		passAllTopNodes([&](DecBlock::BlockTopNode* topNode) {
-			const auto curSeqLine = dynamic_cast<DecBlock::SeqAssignmentLine*>(topNode);
+			const auto curSeqLine = dynamic_cast<DecBlock::AssignmentLine*>(topNode);
 			defineUsedSdaSymbols(topNode->getNode(), curSeqLine);
 			});
 		m_isFirstPass = false;
@@ -23,14 +23,14 @@ void CE::Decompiler::Optimization::SdaGraphUselessLineOptimization::start() {
 
 	//try deleting all lines that contains unused symbol as a destination (localVar1 = 10, but "localVar1" is unused)
 	passAllTopNodes([&](DecBlock::BlockTopNode* topNode) {
-		if (const auto seqLine = dynamic_cast<DecBlock::SeqAssignmentLine*>(topNode)) {
+		if (const auto seqLine = dynamic_cast<DecBlock::AssignmentLine*>(topNode)) {
 			if (isSeqLineUseless(seqLine))
 				delete seqLine;
 		}
 		});
 }
 
-void CE::Decompiler::Optimization::SdaGraphUselessLineOptimization::defineUsedSdaSymbols(INode* node, DecBlock::SeqAssignmentLine* curSeqLine) {
+void CE::Decompiler::Optimization::SdaGraphUselessLineOptimization::defineUsedSdaSymbols(INode* node, DecBlock::AssignmentLine* curSeqLine) {
 	node->iterateChildNodes([&](INode* childNode) {
 		defineUsedSdaSymbols(childNode, curSeqLine);
 		});
@@ -58,7 +58,7 @@ void CE::Decompiler::Optimization::SdaGraphUselessLineOptimization::defineUsedSd
 
 // funcVar1 = func1() where "funcVar1" is unused anywhere
 
-bool CE::Decompiler::Optimization::SdaGraphUselessLineOptimization::isSeqLineUseless(DecBlock::SeqAssignmentLine* seqLine) {
+bool CE::Decompiler::Optimization::SdaGraphUselessLineOptimization::isSeqLineUseless(DecBlock::AssignmentLine* seqLine) {
 	SdaSymbolLeaf* sdaDstSymbolLeaf;
 	if (isSeqLineSuit(seqLine, sdaDstSymbolLeaf)) {
 		if (m_usedSdaSymbols.find(sdaDstSymbolLeaf->getSdaSymbol()) == m_usedSdaSymbols.end()) { //unused?
@@ -68,7 +68,7 @@ bool CE::Decompiler::Optimization::SdaGraphUselessLineOptimization::isSeqLineUse
 	return false;
 }
 
-bool CE::Decompiler::Optimization::SdaGraphUselessLineOptimization::isSeqLineSuit(DecBlock::SeqAssignmentLine* seqLine, SdaSymbolLeaf*& sdaDstSymbolLeaf) {
+bool CE::Decompiler::Optimization::SdaGraphUselessLineOptimization::isSeqLineSuit(DecBlock::AssignmentLine* seqLine, SdaSymbolLeaf*& sdaDstSymbolLeaf) {
 	if (const auto sdaGenericNode = dynamic_cast<SdaGenericNode*>(seqLine->getNode())) {
 		if (const auto assignmentNode = dynamic_cast<AssignmentNode*>(sdaGenericNode->getNode())) {
 			if (sdaDstSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(assignmentNode->getDstNode())) {

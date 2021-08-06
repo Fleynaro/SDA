@@ -321,9 +321,15 @@ namespace GUI
 						m_codeSectionViewer->m_popupModalWindow->open();
 					}
 
-					if (ImGui::MenuItem("Debug")) {
-						
-						m_codeSectionViewer->m_startDebug = true;
+					if (m_codeSectionViewer->m_debugger && !m_codeSectionViewer->m_debugger->m_isStopped) {
+						if (ImGui::MenuItem("Move Debug Here")) {
+							m_codeSectionViewer->m_debugger->goDebug(m_codeSectionRow.getOffset());
+						}
+					}
+					else {
+						if (ImGui::MenuItem("Start Debug Here")) {
+							m_codeSectionViewer->m_startDebug = true;
+						}
 					}
 				}
 			};
@@ -700,8 +706,9 @@ namespace GUI
 			processDecompiledCodeViewerEvents();
 			processDebuggerEvents();
 
-			if (m_debugger && !m_debugger->m_isStopped)
+			if (m_debugger) {
 				m_debugger->show();
+			}
 			Show(m_funcGraphViewerWindow);
 			Show(m_decompiledCodeViewerWindow);
 			Show(m_popupModalWindow);
@@ -734,7 +741,7 @@ namespace GUI
 							createDebugger(codeSectionViewer->m_curFuncPCodeGraph->getStartBlock()->getMinOffset(), Debugger::StepWidth::STEP_ORIGINAL_INSTR);
 						}
 					}
-					if (m_debugger && !m_debugger->m_isStopped) {
+					if (m_debugger) {
 						m_debugger->renderDebugMenu();
 					}
 					ImGui::EndMenu();
@@ -939,19 +946,24 @@ namespace GUI
 								graphViewOptimization.start();
 							}
 
+							if ((m_processingStep | ProcessingStep::DEBUG_PROCESSING) == m_processingStep) {
+								Optimization::GraphDebugProcessing graphDebugProcessing(decCodeGraph, false);
+								graphDebugProcessing.start();
+							}
+
 							if ((m_processingStep | ProcessingStep::LINE_EXPANDING) == m_processingStep) {
 								Optimization::GraphLinesExpanding graphLinesExpanding(decCodeGraph);
 								graphLinesExpanding.start();
 							}
 
+							if ((m_processingStep | ProcessingStep::DEBUG_PROCESSING) == m_processingStep) {
+								Optimization::GraphDebugProcessing graphDebugProcessing(decCodeGraph, true);
+								graphDebugProcessing.start();
+							}
+
 							if ((m_processingStep | ProcessingStep::USELESS_LINES_REMOVING) == m_processingStep) {
 								Optimization::GraphUselessLineDeleting graphUselessLineDeleting(decCodeGraph);
 								graphUselessLineDeleting.start();
-							}
-
-							if ((m_processingStep | ProcessingStep::DEBUG_PROCESSING) == m_processingStep) {
-								Optimization::GraphDebugProcessing graphDebugProcessing(decCodeGraph);
-								graphDebugProcessing.start();
 							}
 							
 							DecompiledCodeGraph::CalculateHeightForDecBlocks(decCodeGraph->getStartBlock());

@@ -6,16 +6,15 @@ namespace CE::Decompiler::Optimization
 	// process the graph for debugging
 	class GraphDebugProcessing : public GraphModification
 	{
+		bool m_seqLines;
 	public:
-		GraphDebugProcessing(DecompiledCodeGraph* decGraph);
+		GraphDebugProcessing(DecompiledCodeGraph* decGraph, bool seqLines);
 
 		void start() override;
 
 	private:
-		void calculateLastReqInstructions() const;
+		static void ProcessLines(std::list<DecBlock::AssignmentLine*>& lines);
 
-		void sortSeqLines() const;
-
-		static uint64_t GetOrder(DecBlock::SeqAssignmentLine* seqLine);
+		static uint64_t GetOrder(DecBlock::AssignmentLine* seqLine);
 	};
 };

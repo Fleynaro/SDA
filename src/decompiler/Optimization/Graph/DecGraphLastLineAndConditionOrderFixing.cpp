@@ -26,7 +26,7 @@ void Optimization::GraphLastLineAndConditionOrderFixing::processBlock(DecBlock* 
 
 void Optimization::GraphLastLineAndConditionOrderFixing::gatherLocalVarsDependedOnItselfFromBlock(DecBlock* block, std::map<HS::Value, Symbol::LocalVariable*>& localVars) {
 	for (auto symbolAssignmentLine : block->getSymbolParallelAssignmentLines()) {
-		if (auto localVar = dynamic_cast<Symbol::LocalVariable*>(symbolAssignmentLine->getDstSymbolLeaf()->m_symbol)) {
+		if (auto localVar = dynamic_cast<Symbol::LocalVariable*>(dynamic_cast<SymbolLeaf*>(symbolAssignmentLine->getDstNode())->m_symbol)) {
 			//if localVar expressed through itself (e.g. localVar = {localVar + 1})
 			if (DoesNodeHaveSymbol(symbolAssignmentLine->getSrcNode(), localVar)) {
 				// grab right node (e.g. {localVar + 1})

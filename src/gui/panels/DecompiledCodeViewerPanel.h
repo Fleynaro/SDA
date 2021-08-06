@@ -846,7 +846,7 @@ namespace GUI
 				if (ImGui::MenuItem("Start Debug")) {
 					m_startDebug = true;
 				}
-				if (m_decompiledCodeViewer->m_debugger && !m_decompiledCodeViewer->m_debugger->m_isStopped)
+				if (m_decompiledCodeViewer->m_debugger)
 					m_decompiledCodeViewer->m_debugger->renderDebugMenu();
 				ImGui::EndMenu();
 			}

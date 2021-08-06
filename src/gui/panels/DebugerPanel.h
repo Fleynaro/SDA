@@ -15,29 +15,76 @@ namespace GUI
 {
 	class Debugger : public Control
 	{
-		class ExecContextViewerPanel : public AbstractPanel
+		class AbstractViewerPanel : public AbstractPanel
 		{
+		protected:
 			CE::Decompiler::PCode::VmExecutionContext* m_execCtx;
 			CE::Decompiler::AbstractRegisterFactory* m_registerFactory;
 			PopupBuiltinWindow* m_builtinWindow = nullptr;
-		public:
-			ExecContextViewerPanel(CE::Decompiler::PCode::VmExecutionContext* execCtx, CE::Decompiler::AbstractRegisterFactory* registerFactory)
-				: AbstractPanel("Execution Context Viewer"), m_execCtx(execCtx), m_registerFactory(registerFactory)
+
+			AbstractViewerPanel(const std::string& name, CE::Decompiler::PCode::VmExecutionContext* execCtx, CE::Decompiler::AbstractRegisterFactory* registerFactory)
+				: AbstractPanel(name), m_execCtx(execCtx), m_registerFactory(registerFactory)
 			{}
 
-			~ExecContextViewerPanel() {
+			~AbstractViewerPanel() {
 				delete m_builtinWindow;
+			}
+
+			bool getRegisterValue(const CE::Decompiler::Register& reg, CE::Decompiler::DataValue& value) const {
+				const auto& registers = m_execCtx->getRegisters();
+				const auto it = registers.find(reg.getId());
+				if (it == registers.end())
+					return false;
+				value = it->second;
+				return true;
+			}
+
+			void renderValueEditor(const std::string& hexValue, const std::function<void(uint64_t)>& callback) {
+				const auto events = GenericEvents(true);
+				if (events.isHovered()) {
+					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+				}
+				if (events.isClickedByLeftMouseBtn()) {
+					const auto panel = new BuiltinTextInputPanel("0x" + hexValue);
+					panel->handler([&, panel, callback](const std::string& inputValue)
+						{
+							// todo: special input with various types of values
+							const auto value =
+								inputValue[1] == 'x' ? Helper::String::HexToNumber(inputValue) : std::stoull(inputValue);
+							callback(value);
+							panel->m_window->close();
+						});
+					delete m_builtinWindow;
+					m_builtinWindow = new PopupBuiltinWindow(panel);
+					m_builtinWindow->placeAfterItem();
+					m_builtinWindow->open();
+				}
+			}
+		};
+		
+		class ExecContextViewerPanel : public AbstractViewerPanel
+		{
+			Input::BoolInput m_symbolVarnodeCb;
+		public:
+			ExecContextViewerPanel(CE::Decompiler::PCode::VmExecutionContext* execCtx, CE::Decompiler::AbstractRegisterFactory* registerFactory)
+				: AbstractViewerPanel("Execution Context Viewer", execCtx, registerFactory)
+			{
+				m_symbolVarnodeCb = Input::BoolInput("Symbol varnodes", false);
 			}
 
 		private:
 			void renderPanel() override {
+				m_symbolVarnodeCb.show();
+				
 				if (ImGui::BeginTable("##empty", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV))
 				{
 					ImGui::TableSetupColumn("Register", ImGuiTableColumnFlags_WidthFixed, 70.0f);
 					ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_None);
 					ImGui::TableHeadersRow();
 
-					renderSymbolVarnodeRows();
+					if (m_symbolVarnodeCb.isSelected()) {
+						renderSymbolVarnodeRows();
+					}
 					
 					renderFlagRegisterRow();
 					
@@ -148,36 +195,64 @@ namespace GUI
 					}
 				}
 			}
+		};
 
-			bool getRegisterValue(const CE::Decompiler::Register& reg, CE::Decompiler::DataValue& value) const {
-				const auto& registers = m_execCtx->getRegisters();
-				const auto it = registers.find(reg.getId());
-				if (it == registers.end())
-					return false;
-				value = it->second;
-				return true;
-			}
+		class StackViewerPanel : public AbstractViewerPanel
+		{
+			CE::Decompiler::PCode::VmMemoryContext* m_memCtx;
+			CE::Decompiler::DataValue m_stackPointerAddr = 0;
+		public:
+			StackViewerPanel(CE::Decompiler::PCode::VmExecutionContext* execCtx, CE::Decompiler::PCode::VmMemoryContext* memCtx, CE::Decompiler::AbstractRegisterFactory* registerFactory)
+				: AbstractViewerPanel("Stack Viewer", execCtx, registerFactory), m_memCtx(memCtx)
+			{}
+		private:
+			void renderPanel() override {
+				if (ImGui::BeginTable("##empty", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV))
+				{
+					ImGui::TableSetupScrollFreeze(0, 1);
+					ImGui::TableSetupColumn("Address", ImGuiTableColumnFlags_None);
+					ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_None);
+					ImGui::TableHeadersRow();
 
-			void renderValueEditor(const std::string& hexValue, const std::function<void(uint64_t)>& callback) {
-				const auto events = GenericEvents(true);
-				if (events.isHovered()) {
-					ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-				}
-				if (events.isClickedByLeftMouseBtn()) {
-					const auto panel = new BuiltinTextInputPanel("0x" + hexValue);
-					panel->handler([&, panel, callback](const std::string& inputValue)
+					const auto reg = m_registerFactory->createStackPointerRegister();
+					CE::Decompiler::DataValue stackPointerAddr;
+					if (getRegisterValue(reg, stackPointerAddr)) {
+						if(stackPointerAddr != m_stackPointerAddr)
+							ImGui::SetScrollY(ImGui::GetScrollMaxY());
+						m_stackPointerAddr = stackPointerAddr;
+						
+						const auto rowsCount = 1000;
+						ImGuiListClipper clipper;
+						clipper.Begin(rowsCount);
+						while (clipper.Step())
 						{
-							// todo: special input with various types of values
-							const auto value =
-								inputValue[1] == 'x' ? Helper::String::HexToNumber(inputValue) : std::stoull(inputValue);
-							callback(value);
-							panel->m_window->close();
-						});
-					delete m_builtinWindow;
-					m_builtinWindow = new PopupBuiltinWindow(panel);
-					m_builtinWindow->placeAfterItem();
-					m_builtinWindow->open();
+							for (auto rowIdx = clipper.DisplayStart; rowIdx < clipper.DisplayEnd; rowIdx++) {
+								const auto addr = stackPointerAddr + (rowsCount - rowIdx - 1) * 0x8;
+								ImGui::TableNextRow();
+								ImGui::TableNextColumn();
+								Text::Text(Helper::String::NumberToHex(addr, true)).show();
+								ImGui::TableNextColumn();
+								std::string hexValue;
+								bool hasValue;
+								CE::Decompiler::DataValue value;
+								if ((hasValue = m_memCtx->getValue(addr, value))) {
+									hexValue = Helper::String::NumberToHex(value, true);
+								}
+								else {
+									hexValue = "----------------";
+								}
+								Text::Text(hexValue).show();
+								renderValueEditor(hasValue ? hexValue : "0000000000000000", [&, addr](uint64_t value)
+									{
+										m_memCtx->setValue(addr, value);
+									});
+							}
+						}
+					}
+					ImGui::EndTable();
 				}
+
+				Show(m_builtinWindow);
 			}
 		};
 
@@ -189,6 +264,7 @@ namespace GUI
 		CE::ComplexOffset m_offset;
 
 		StdWindow* m_execCtxViewerWin;
+		StdWindow* m_stackViewerWin;
 		EventHandler<bool> m_instrHandler;
 	public:
 		enum class StepWidth
@@ -202,15 +278,27 @@ namespace GUI
 		CE::Decompiler::PCodeBlock* m_curPCodeBlock = nullptr;
 		CE::Decompiler::DecBlock::BlockTopNode* m_curBlockTopNode = nullptr;
 		bool m_isStopped = false;
+		bool m_showContexts = false;
 		
 		Debugger(CE::ImageDecorator* imageDec, CE::ComplexOffset startOffset)
 			: m_imageDec(imageDec), m_offset(startOffset), m_vm(&m_execCtx, &m_memCtx, false)
 		{
 			m_execCtxViewerWin = new StdWindow(new ExecContextViewerPanel(&m_execCtx, &m_registerFactoryX86));
+			m_stackViewerWin = new StdWindow(new StackViewerPanel(&m_execCtx, &m_memCtx, &m_registerFactoryX86));
+		}
+
+		~Debugger() {
+			delete m_execCtxViewerWin;
+			delete m_stackViewerWin;
 		}
 
 		void instrHandler(const std::function<void(bool)>& handler) {
 			m_instrHandler = handler;
+		}
+
+		void goDebug(CE::ComplexOffset offset) {
+			m_offset = offset;
+			defineCurInstrutction();
 		}
 
 		void defineCurInstrutction() {
@@ -232,42 +320,54 @@ namespace GUI
 		}
 
 		void renderDebugMenu() {
-			if (ImGui::MenuItem("Stop Debug")) {
-				m_isStopped = true;
-			}
-			
-			if (ImGui::MenuItem("Step Over", "F8")) {
-				stepOver(true);
-			}
+			if (!m_isStopped) {
+				if (ImGui::MenuItem("Stop Debug")) {
+					m_isStopped = true;
+				}
 
-			if (ImGui::MenuItem("Step Into", "F7")) {
-				stepInto();
-			}
+				if (ImGui::MenuItem("Step Over", "F8")) {
+					stepOver(true);
+				}
 
-			if (ImGui::BeginMenu("Step Width"))
-			{
-				if (ImGui::MenuItem("PCode Instruction", nullptr, m_stepWidth == StepWidth::STEP_PCODE_INSTR)) {
-					m_stepWidth = StepWidth::STEP_PCODE_INSTR;
+				if (ImGui::MenuItem("Step Into", "F7")) {
+					stepInto();
 				}
-				if (ImGui::MenuItem("Orig. Instruction", nullptr, m_stepWidth == StepWidth::STEP_ORIGINAL_INSTR)) {
-					m_stepWidth = StepWidth::STEP_ORIGINAL_INSTR;
+
+				if (ImGui::BeginMenu("Step Width"))
+				{
+					if (ImGui::MenuItem("PCode Instruction", nullptr, m_stepWidth == StepWidth::STEP_PCODE_INSTR)) {
+						m_stepWidth = StepWidth::STEP_PCODE_INSTR;
+					}
+					if (ImGui::MenuItem("Orig. Instruction", nullptr, m_stepWidth == StepWidth::STEP_ORIGINAL_INSTR)) {
+						m_stepWidth = StepWidth::STEP_ORIGINAL_INSTR;
+					}
+					if (ImGui::MenuItem("Code Line", nullptr, m_stepWidth == StepWidth::STEP_CODE_LINE)) {
+						m_stepWidth = StepWidth::STEP_CODE_LINE;
+					}
+					ImGui::EndMenu();
 				}
-				if (ImGui::MenuItem("Code Line", nullptr, m_stepWidth == StepWidth::STEP_CODE_LINE)) {
-					m_stepWidth = StepWidth::STEP_CODE_LINE;
+			} else {
+				if (ImGui::MenuItem("Show Last Context", nullptr, m_showContexts)) {
+					m_showContexts ^= true;
 				}
-				ImGui::EndMenu();
 			}
 		}
+	
 	private:
 		void renderControl() override {
-			if (ImGui::IsKeyPressed(VK_F8)) { // todo: linux, change imgui_impl_win32.cpp
-				stepOver(true);
+			if (!m_isStopped) {
+				if (ImGui::IsKeyPressed(VK_F8)) { // todo: linux, change imgui_impl_win32.cpp
+					stepOver(true);
+				}
+				else if (ImGui::IsKeyPressed(VK_F7)) {
+					stepInto();
+				}
 			}
-			else if (ImGui::IsKeyPressed(VK_F7)) {
-				stepInto();
+
+			if (!m_isStopped || m_showContexts) {
+				Show(m_execCtxViewerWin);
+				Show(m_stackViewerWin);
 			}
-			
-			Show(m_execCtxViewerWin);
 		}
 
 		void defineNextInstrOffset(bool jmp) {

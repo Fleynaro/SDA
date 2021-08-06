@@ -2,39 +2,46 @@
 
 using namespace CE::Decompiler::Optimization;
 
-GraphDebugProcessing::GraphDebugProcessing(DecompiledCodeGraph* decGraph):
-	GraphModification(decGraph) {
+GraphDebugProcessing::GraphDebugProcessing(DecompiledCodeGraph* decGraph, bool seqLines)
+	: GraphModification(decGraph), m_seqLines(seqLines) {
 }
 
 void GraphDebugProcessing::start() {
-	calculateLastReqInstructions();
-	sortSeqLines();
-}
-
-void GraphDebugProcessing::calculateLastReqInstructions() const {
-	for (const auto decBlock : m_decGraph->getDecompiledBlocks()) {
-		for (const auto seqLine : decBlock->getSeqAssignmentLines()) {
-			std::list<Instruction*> instructions;
-			GetInstructions(seqLine->getNode(), instructions);
-			if (!instructions.empty()) {
-				Sort(instructions); // todo: remove (implement max search)
-				seqLine->m_lastRequiredInstruction = *instructions.rbegin();
-			}
+	if(m_seqLines) {
+		// seq lines (after lines expanding)
+		for (const auto decBlock : m_decGraph->getDecompiledBlocks()) {
+			ProcessLines(decBlock->getSeqAssignmentLines());
+		}
+	}
+	else {
+		// parallel lines (before lines expanding)
+		for (const auto decBlock : m_decGraph->getDecompiledBlocks()) {
+			ProcessLines(decBlock->getSymbolParallelAssignmentLines());
 		}
 	}
 }
 
-void GraphDebugProcessing::sortSeqLines() const {
-	for (const auto decBlock : m_decGraph->getDecompiledBlocks()) {
-		decBlock->getSeqAssignmentLines().sort(
-			[&](DecBlock::SeqAssignmentLine* seqLine1, DecBlock::SeqAssignmentLine* seqLine2)
-			{
-				return GetOrder(seqLine1) < GetOrder(seqLine2);
-			});
+void GraphDebugProcessing::ProcessLines(std::list<DecBlock::AssignmentLine*>& lines) {
+	// calculate
+	for (const auto line : lines) {
+		if (line->m_lastRequiredInstruction)
+			continue;
+		std::list<Instruction*> instructions;
+		GetInstructions(line->getNode(), instructions);
+		if (!instructions.empty()) {
+			Sort(instructions); // todo: remove (implement max search)
+			line->m_lastRequiredInstruction = *instructions.rbegin();
+		}
 	}
+
+	// sort
+	lines.sort([&](DecBlock::AssignmentLine* seqLine1, DecBlock::AssignmentLine* seqLine2)
+	{
+		return GetOrder(seqLine1) < GetOrder(seqLine2);
+	});
 }
 
-uint64_t GraphDebugProcessing::GetOrder(DecBlock::SeqAssignmentLine* seqLine) {
+uint64_t GraphDebugProcessing::GetOrder(DecBlock::AssignmentLine* seqLine) {
 	const auto lastInstr = seqLine->getLastReqInstr();
 	if (!lastInstr)
 		return 0xFFFFFFFFFFFFFFFF;

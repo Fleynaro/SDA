@@ -62,60 +62,40 @@ DecBlock::ReturnTopNode::ReturnTopNode(DecBlock* block)
 	: BlockTopNode(block)
 {}
 
-DecBlock::SeqAssignmentLine::SeqAssignmentLine(DecBlock* block, ExprTree::AssignmentNode* assignmentNode)
+DecBlock::AssignmentLine::AssignmentLine(DecBlock* block, ExprTree::AssignmentNode* assignmentNode)
 	: BlockTopNode(block, assignmentNode)
 {}
 
-DecBlock::SeqAssignmentLine::SeqAssignmentLine(DecBlock * block, ExprTree::INode * dstNode, ExprTree::INode * srcNode, PCode::Instruction * instr)
-	: SeqAssignmentLine(block, new ExprTree::AssignmentNode(dstNode, srcNode, instr))
+DecBlock::AssignmentLine::AssignmentLine(DecBlock * block, ExprTree::INode * dstNode, ExprTree::INode * srcNode, PCode::Instruction * instr)
+	: AssignmentLine(block, new ExprTree::AssignmentNode(dstNode, srcNode, instr))
 {}
 
-DecBlock::SeqAssignmentLine::~SeqAssignmentLine() {
+DecBlock::AssignmentLine::~AssignmentLine() {
 	m_block->m_seqLines.remove(this);
 }
 
-ExprTree::AssignmentNode* DecBlock::SeqAssignmentLine::getAssignmentNode() {
+ExprTree::AssignmentNode* DecBlock::AssignmentLine::getAssignmentNode() {
 	return dynamic_cast<ExprTree::AssignmentNode*>(getNode());
 }
 
 // left node from =
 
-ExprTree::INode* DecBlock::SeqAssignmentLine::getDstNode() {
+ExprTree::INode* DecBlock::AssignmentLine::getDstNode() {
 	return getAssignmentNode()->getDstNode();
 }
 
 // right node from =
 
-ExprTree::INode* DecBlock::SeqAssignmentLine::getSrcNode() {
+ExprTree::INode* DecBlock::AssignmentLine::getSrcNode() {
 	return getAssignmentNode()->getSrcNode();
 }
 
-Instruction* DecBlock::SeqAssignmentLine::getLastReqInstr() {
+Instruction* DecBlock::AssignmentLine::getLastReqInstr() {
 	return m_lastRequiredInstruction;
 }
 
-DecBlock::SeqAssignmentLine* DecBlock::SeqAssignmentLine::clone(DecBlock* block, ExprTree::NodeCloneContext* ctx) {
-	return new SeqAssignmentLine(block, dynamic_cast<ExprTree::AssignmentNode*>(getNode()->clone(ctx)));
-}
-
-DecBlock::SymbolParallelAssignmentLine::SymbolParallelAssignmentLine(DecBlock* block, ExprTree::AssignmentNode* assignmentNode)
-	: SeqAssignmentLine(block, assignmentNode)
-{}
-
-DecBlock::SymbolParallelAssignmentLine::SymbolParallelAssignmentLine(DecBlock * block, ExprTree::SymbolLeaf * dstNode, ExprTree::INode * srcNode, PCode::Instruction * instr)
-	: SeqAssignmentLine(block, dstNode, srcNode, instr)
-{}
-
-DecBlock::SymbolParallelAssignmentLine::~SymbolParallelAssignmentLine() {
-	m_block->m_symbolParallelAssignmentLines.remove(this);
-}
-
-ExprTree::SymbolLeaf* DecBlock::SymbolParallelAssignmentLine::getDstSymbolLeaf() {
-	return dynamic_cast<ExprTree::SymbolLeaf*>(getDstNode());
-}
-
-DecBlock::SymbolParallelAssignmentLine* DecBlock::SymbolParallelAssignmentLine::clone(DecBlock* block, ExprTree::NodeCloneContext* ctx) {
-	return new SymbolParallelAssignmentLine(block, dynamic_cast<ExprTree::AssignmentNode*>(getNode()->clone(ctx)));
+DecBlock::AssignmentLine* DecBlock::AssignmentLine::clone(DecBlock* block, ExprTree::NodeCloneContext* ctx) {
+	return new AssignmentLine(block, dynamic_cast<ExprTree::AssignmentNode*>(getNode()->clone(ctx)));
 }
 
 DecBlock::DecBlock(DecompiledCodeGraph* decompiledGraph, PCodeBlock* pcodeBlock, int level)
@@ -289,18 +269,18 @@ void DecBlock::setNoJumpCondition(ExprTree::AbstractCondition* noJmpCond) const
 }
 
 void DecBlock::addSeqLine(ExprTree::INode* destAddr, ExprTree::INode* srcValue, PCode::Instruction* instr) {
-	m_seqLines.push_back(new SeqAssignmentLine(this, destAddr, srcValue, instr));
+	m_seqLines.push_back(new AssignmentLine(this, destAddr, srcValue, instr));
 }
 
-std::list<DecBlock::SeqAssignmentLine*>& DecBlock::getSeqAssignmentLines() {
+std::list<DecBlock::AssignmentLine*>& DecBlock::getSeqAssignmentLines() {
 	return m_seqLines;
 }
 
 void DecBlock::addSymbolParallelAssignmentLine(ExprTree::SymbolLeaf* symbolLeaf, ExprTree::INode* srcValue, PCode::Instruction* instr) {
-	m_symbolParallelAssignmentLines.push_back(new SymbolParallelAssignmentLine(this, symbolLeaf, srcValue, instr));
+	m_symbolParallelAssignmentLines.push_back(new AssignmentLine(this, symbolLeaf, srcValue, instr));
 }
 
-std::list<DecBlock::SymbolParallelAssignmentLine*>& DecBlock::getSymbolParallelAssignmentLines() {
+std::list<DecBlock::AssignmentLine*>& DecBlock::getSymbolParallelAssignmentLines() {
 	return m_symbolParallelAssignmentLines;
 }
 

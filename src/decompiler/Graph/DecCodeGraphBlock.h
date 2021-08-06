@@ -48,16 +48,16 @@ namespace CE::Decompiler
 		};
 
 		// line in high-level present (like code lines in C++), it may be function call(this is always assignment!) or normal assignment(e.g. localVar = 5)
-		class SeqAssignmentLine : public BlockTopNode // consequent
+		class AssignmentLine : public BlockTopNode // consequent
 		{
 		public:
 			Instruction* m_lastRequiredInstruction = nullptr;
 			
-			SeqAssignmentLine(DecBlock* block, ExprTree::AssignmentNode* assignmentNode);
+			AssignmentLine(DecBlock* block, ExprTree::AssignmentNode* assignmentNode);
 
-			SeqAssignmentLine(DecBlock* block, ExprTree::INode* dstNode, ExprTree::INode* srcNode, PCode::Instruction* instr);
+			AssignmentLine(DecBlock* block, ExprTree::INode* dstNode, ExprTree::INode* srcNode, PCode::Instruction* instr);
 
-			~SeqAssignmentLine();
+			~AssignmentLine();
 
 			ExprTree::AssignmentNode* getAssignmentNode();
 
@@ -69,22 +69,7 @@ namespace CE::Decompiler
 
 			Instruction* getLastReqInstr() override;
 
-			SeqAssignmentLine* clone(DecBlock* block, ExprTree::NodeCloneContext* ctx);
-		};
-
-		// temp line because it will be removed during graph optimization (lines expanding when parallel -> sequance)
-		class SymbolParallelAssignmentLine : public SeqAssignmentLine // parallel
-		{
-		public:
-			SymbolParallelAssignmentLine(DecBlock* block, ExprTree::AssignmentNode* assignmentNode);
-
-			SymbolParallelAssignmentLine(DecBlock* block, ExprTree::SymbolLeaf* dstNode, ExprTree::INode* srcNode, PCode::Instruction* instr);
-
-			~SymbolParallelAssignmentLine();
-
-			ExprTree::SymbolLeaf* getDstSymbolLeaf();
-
-			SymbolParallelAssignmentLine* clone(DecBlock* block, ExprTree::NodeCloneContext* ctx);
+			AssignmentLine* clone(DecBlock* block, ExprTree::NodeCloneContext* ctx);
 		};
 
 		std::string m_name;
@@ -94,8 +79,8 @@ namespace CE::Decompiler
 		std::list<DecBlock*> m_blocksReferencedTo;
 		DecBlock* m_nextNearBlock = nullptr;
 		DecBlock* m_nextFarBlock = nullptr;
-		std::list<SeqAssignmentLine*> m_seqLines;
-		std::list<SymbolParallelAssignmentLine*> m_symbolParallelAssignmentLines; // temporary list, empty in the end of graph optimization
+		std::list<AssignmentLine*> m_seqLines;
+		std::list<AssignmentLine*> m_symbolParallelAssignmentLines; // temporary list, empty in the end of graph optimization
 		JumpTopNode* m_noJmpCond;
 	public:
 		std::list<DecBlock*> m_joinedRemovedBlocks;
@@ -151,11 +136,11 @@ namespace CE::Decompiler
 
 		void addSeqLine(ExprTree::INode* destAddr, ExprTree::INode* srcValue, PCode::Instruction* instr = nullptr);
 
-		std::list<SeqAssignmentLine*>& getSeqAssignmentLines();
+		std::list<AssignmentLine*>& getSeqAssignmentLines();
 
 		void addSymbolParallelAssignmentLine(ExprTree::SymbolLeaf* symbolLeaf, ExprTree::INode* srcValue, PCode::Instruction* instr = nullptr);
 		
-		std::list<SymbolParallelAssignmentLine*>& getSymbolParallelAssignmentLines();
+		std::list<AssignmentLine*>& getSymbolParallelAssignmentLines();
 
 		BlockTopNode* findBlockTopNodeByOffset(ComplexOffset offset);
 

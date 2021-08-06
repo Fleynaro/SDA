@@ -26,7 +26,7 @@ void CE::Decompiler::Optimization::GraphViewOptimization::processBlock(DecBlock*
 void CE::Decompiler::Optimization::GraphViewOptimization::gatherLocalVarsDependedOnItselfFromBlock(DecBlock* block, std::map<HS::Value, Symbol::LocalVariable*>& nodeHashTolocalVar) {
 	for (auto symbolAssignmentLine : block->getSymbolParallelAssignmentLines()) {
 		// finding something like {localVar1 = localVar2 + 1}
-		if (auto localVar = dynamic_cast<Symbol::LocalVariable*>(symbolAssignmentLine->getDstSymbolLeaf()->m_symbol)) {
+		if (auto localVar = dynamic_cast<Symbol::LocalVariable*>(dynamic_cast<SymbolLeaf*>(symbolAssignmentLine->getDstNode())->m_symbol)) {
 			// dont select simple nodes
 			if (!filter(symbolAssignmentLine->getSrcNode())) {
 				// get hash of {localVar2 + 1}

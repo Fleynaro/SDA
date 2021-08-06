@@ -24,14 +24,14 @@ namespace CE::Decompiler::Optimization
 		std::set<CE::Symbol::ISymbol*> m_usedSdaSymbols;
 		std::set<CE::Symbol::ISymbol*> m_prevUsedSdaSymbols;
 		bool m_isFirstPass = true;
-		DecBlock::SeqAssignmentLine* m_curSeqLine = nullptr;
+		DecBlock::AssignmentLine* m_curSeqLine = nullptr;
 
-		void defineUsedSdaSymbols(INode* node, DecBlock::SeqAssignmentLine* curSeqLine);
+		void defineUsedSdaSymbols(INode* node, DecBlock::AssignmentLine* curSeqLine);
 
 		// funcVar1 = func1() where "funcVar1" is unused anywhere
-		bool isSeqLineUseless(DecBlock::SeqAssignmentLine* seqLine);
+		bool isSeqLineUseless(DecBlock::AssignmentLine* seqLine);
 
 		// funcVar1 = func1() or memVar1 = *(float*)&globalVar1
-		bool isSeqLineSuit(DecBlock::SeqAssignmentLine* seqLine, SdaSymbolLeaf*& sdaDstSymbolLeaf);
+		bool isSeqLineSuit(DecBlock::AssignmentLine* seqLine, SdaSymbolLeaf*& sdaDstSymbolLeaf);
 	};
 };

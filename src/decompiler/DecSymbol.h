@@ -83,9 +83,10 @@ namespace CE::Decompiler::Symbol
 	{
 	public:
 		std::list<PCode::Instruction*> m_instructionsRelatedTo;
+		bool m_isTemp;
 
-		LocalVariable(int size)
-			: AbstractVariable(size)
+		LocalVariable(int size, bool isTemp = false)
+			: AbstractVariable(size), m_isTemp(isTemp)
 		{}
 
 		void setSize(int size) {
