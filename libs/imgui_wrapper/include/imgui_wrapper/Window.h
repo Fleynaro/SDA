@@ -129,10 +129,11 @@ namespace GUI
 		: public StdWindow,
 		public Attribute::Id
 	{
-		uint64_t m_lastHoveredOutTime = 0;
 		bool m_isOpenPopup = false;
+		uint64_t m_lastHoveredOutTime = 0;
+		ImRect m_rect; // part of the window
 	public:
-		int m_closeTimerMs = 0;
+		uint64_t m_closeTimerMs = 0;
 		
 		PopupBuiltinWindow(AbstractPanel* panel)
 			: StdWindow(panel)
@@ -141,16 +142,19 @@ namespace GUI
 			setFlags(ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
 		}
 
-		void open() override
-		{
+		void open() override {
 			StdWindow::open();
 			m_lastHoveredOutTime = 0;
 			m_isOpenPopup = true;
 		}
 
-		void placeAfterItem()
-		{
+		void placeAfterItem() {
 			getPos() = GetLeftBottom();
+			m_rect = ImGui::GetCurrentWindowRead()->DC.LastItemRect;
+		}
+
+		void updateCloseTimer() {
+			m_lastHoveredOutTime = GetTimeInMs();
 		}
 
 	private:
@@ -168,12 +172,14 @@ namespace GUI
 				processGenericEvents();
 				if(m_closeTimerMs)
 				{
-					if ((!m_lastHoveredOutTime && !isHovered()) || isHoveredOut()) {
-						m_lastHoveredOutTime = GetTimeInMs();
+					if (!m_lastHoveredOutTime && !isHovered() || isHoveredOut()) {
+						updateCloseTimer();
 					}
-					if (!isHovered()) {
-						if (GetTimeInMs() - m_lastHoveredOutTime > m_closeTimerMs)
+					if (m_lastHoveredOutTime && !isHovered()) {
+						
+						if (GetTimeInMs() - m_lastHoveredOutTime > m_closeTimerMs) {
 							close();
+						}
 					}
 				}
 				
@@ -183,9 +189,14 @@ namespace GUI
 			ImGui::PopItemFlag();
 		}
 
-		bool isImGuiHovered() override
-		{
-			return ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows);
+		bool isImGuiHovered() override {
+			ImGuiContext& g = *GImGui;
+			if (ImGui::IsMousePosValid(&g.IO.MousePos)) {
+				if (m_rect.Contains(g.IO.MousePos)) {
+					return true;
+				}
+			}
+			return ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows);
 		}
 	};
 

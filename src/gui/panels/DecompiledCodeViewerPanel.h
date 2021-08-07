@@ -351,6 +351,7 @@ namespace GUI
 									}
 								}
 								else {
+									// delay for opening
 									m_decCodeViewer->m_hoverTimer = GetTimeInMs();
 								}
 

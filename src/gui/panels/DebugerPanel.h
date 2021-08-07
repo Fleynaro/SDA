@@ -56,15 +56,18 @@ namespace GUI
 		void renderPanel() override {
 			if (ImGui::BeginTable("##empty", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV))
 			{
-				ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 70.0f);
+				ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None);
 				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_None);
-				//ImGui::TableHeadersRow();
-
-				renderContent(m_name, m_location, m_dataType);
 				
+				renderContent(m_name, m_location, m_dataType);
 				ImGui::EndTable();
 			}
 
+			if(m_builtinWindow) {
+				// don't close unfocused window if the cursor hovers the child builtin window
+				if (const auto win = dynamic_cast<PopupBuiltinWindow*>(m_window))
+					win->updateCloseTimer();
+			}
 			Show(m_builtinWindow);
 		}
 
@@ -94,6 +97,7 @@ namespace GUI
 									delete m_builtinWindow;
 									const auto panel = new ValueViewerPanel(name, fieldLoc, field->getDataType(), m_execCtx, m_memCtx);
 									m_builtinWindow = new PopupBuiltinWindow(panel);
+									m_builtinWindow->m_closeTimerMs = 50;
 									m_builtinWindow->getPos() = builtinWinPos;
 									m_builtinWindow->open();
 								}
@@ -127,8 +131,9 @@ namespace GUI
 					Text::Text("-> " + addrStr).show();
 				}
 				else {
-					const auto valueStr = GetValueStr(value, dataType->getType(), m_hexView);
+					const auto valueStr = ValueToStr(value, dataType->getType(), m_hexView);
 					Text::Text(valueStr).show();
+					renderEditor(valueStr, location, dataType);
 				}
 
 				if (isPointer) {
@@ -138,6 +143,7 @@ namespace GUI
 						delete m_builtinWindow;
 						const auto panel = new ValueViewerPanel(name, Location(value), derefDataType, m_execCtx, m_memCtx);
 						m_builtinWindow = new PopupBuiltinWindow(panel);
+						m_builtinWindow->m_closeTimerMs = 50;
 						m_builtinWindow->getPos() = builtinWinPos;
 						m_builtinWindow->open();
 					}
@@ -145,22 +151,49 @@ namespace GUI
 			}
 			else {
 				Text::Text("cannot read").show();
+				renderEditor("0", location, dataType);
 			}
 		}
 
+		void renderEditor(const std::string& valueStr, const Location& location, CE::DataTypePtr dataType) {
+			const auto events = GenericEvents(true);
+			if (events.isHovered()) {
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+			}
+			if (events.isClickedByLeftMouseBtn()) {
+				const auto panel = new BuiltinTextInputPanel(valueStr);
+				panel->handler([&, panel, location, dataType](const std::string& inputValue)
+					{
+						const auto value = StrToValue(inputValue, dataType->getType());
+						setValue(location, value);
+						if (const auto win = dynamic_cast<PopupBuiltinWindow*>(m_window))
+							win->m_closeTimerMs = 0;
+						panel->m_window->close();
+					});
+				delete m_builtinWindow;
+				m_builtinWindow = new PopupBuiltinWindow(panel);
+				m_builtinWindow->placeAfterItem();
+				m_builtinWindow->open();
+			}
+		}
+		
 		bool getValue(const Location& location, CE::Decompiler::DataValue& value) const {
 			if (location.m_isRegister) {
-				const auto& registers = m_execCtx->getRegisters();
-				const auto it = registers.find(location.m_register.getId());
-				if (it == registers.end())
-					return false;
-				value = it->second;
-				return true;
+				return m_execCtx->getRegisterValue(location.m_register, value);
 			}
 			return m_memCtx->getValue(location.m_address, value);
 		}
+
+		void setValue(const Location& location, CE::Decompiler::DataValue value) const {
+			if (location.m_isRegister) {
+				m_execCtx->setRegisterValue(location.m_register, value);
+			}
+			else {
+				m_memCtx->setValue(location.m_address, value);
+			}
+		}
 		
-		static std::string GetValueStr(uint64_t value, CE::DataType::IType* dataType, bool hexView) {
+		static std::string ValueToStr(uint64_t value, CE::DataType::IType* dataType, bool hexView) {
 			value &= CE::Decompiler::BitMask64(dataType->getSize()).getValue();
 			if(hexView) {
 				return "0x" + Helper::String::NumberToHex(value);
@@ -197,6 +230,40 @@ namespace GUI
 			}
 			
 			return std::to_string(value);
+		}
+
+		static uint64_t StrToValue(const std::string& valueStr, CE::DataType::IType* dataType) {
+			uint64_t value = 0;
+			
+			if(valueStr[1] == 'x') {
+				value = Helper::String::HexToNumber(valueStr) & CE::Decompiler::BitMask64(dataType->getSize()).getValue();
+			} else {
+				if (const auto SysType = dynamic_cast<CE::DataType::SystemType*>(dataType)) {
+					if (SysType->getTypeId() == CE::DataType::SystemType::Int8) {
+						(int8_t&)value = std::stoi(valueStr);
+					}
+					else if (SysType->getTypeId() == CE::DataType::SystemType::Int16) {
+						(int16_t&)value = std::stoi(valueStr);
+					}
+					else if (SysType->getTypeId() == CE::DataType::SystemType::Int32) {
+						(int32_t&)value = std::stoi(valueStr);
+					}
+					else if (SysType->getTypeId() == CE::DataType::SystemType::Int64) {
+						(int64_t&)value = std::stoll(valueStr);
+					}
+					else if (SysType->getTypeId() == CE::DataType::SystemType::Float) {
+						(float&)value = std::stof(valueStr);
+					}
+					else if (SysType->getTypeId() == CE::DataType::SystemType::Double) {
+						(double&)value = std::stod(valueStr);
+					}
+					else {
+						value = std::stoull(valueStr);
+					}
+				}
+			}
+			
+			return value;
 		}
 	};
 	
@@ -465,6 +532,9 @@ namespace GUI
 		{
 			m_execCtxViewerWin = new StdWindow(new ExecContextViewerPanel(&m_execCtx, &m_registerFactoryX86));
 			m_stackViewerWin = new StdWindow(new StackViewerPanel(&m_execCtx, &m_memCtx, &m_registerFactoryX86));
+
+			m_execCtx.setRegisterValue(CE::Decompiler::Register(ZYDIS_REGISTER_RSP), 0x1000000000);
+			m_execCtx.setRegisterValue(CE::Decompiler::Register(ZYDIS_REGISTER_RIP), 0x2000000000);
 		}
 
 		~Debugger() {
@@ -508,6 +578,7 @@ namespace GUI
 			delete m_valueViewerWin;
 			const auto panel = new ValueViewerPanel(name, location, dataType, &m_execCtx, &m_memCtx);
 			m_valueViewerWin = new PopupBuiltinWindow(panel);
+			m_valueViewerWin->m_closeTimerMs = 50;
 			m_valueViewerWin->placeAfterItem();
 			m_valueViewerWin->open();
 		}
