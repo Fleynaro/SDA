@@ -31,7 +31,7 @@ void Optimization::GraphLinesExpanding::processBlock(DecBlock* block) const
 			//if we find anything like this {localVar2 = localVar1 + 1}
 			if (!symbolLeafs.empty()) {
 				if (!localTempVar) {
-					localTempVar = new Symbol::LocalVariable(localVar->getSize(), true); // create {tempVar1}
+					localTempVar = new Symbol::LocalVariable(localVar->getSize(), Register(), true); // create {tempVar1}
 					m_decGraph->addSymbol(localTempVar);
 				}
 				for (auto symbolLeaf : symbolLeafs) { // transforming to {localVar2 = tempVar1 + 1}

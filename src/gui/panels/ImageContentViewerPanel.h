@@ -190,7 +190,7 @@ namespace GUI
 				ImGui::TableNextColumn();
 				Text::Text(symbol->getDataType()->getDisplayName()).show();
 				ImGui::TableNextColumn();
-				Text::Text(symbol->getDataType()->getViewValue(*pValue)).show();
+				Text::Text("some value").show();
 			}
 
 			int getRowIdxByOffset(CE::Offset offset) override {

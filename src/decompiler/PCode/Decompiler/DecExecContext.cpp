@@ -182,7 +182,7 @@ void RegisterExecContext::join(RegisterExecContext* ctx) {
 					auto localVar = existingLocalVar;
 					if (!localVar) {
 						// new local var
-						localVar = new Symbol::LocalVariable(resultMask.getSize());
+						localVar = new Symbol::LocalVariable(resultMask.getSize(), newRegister);
 						// info for par. assignments
 						PrimaryDecompiler::LocalVarInfo localVarInfo;
 						localVarInfo.m_register = newRegister;

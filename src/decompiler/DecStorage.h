@@ -3,7 +3,8 @@
 
 namespace CE::Decompiler
 {
-	class Storage {
+	class Storage
+	{
 	public:
 		enum StorageType {
 			STORAGE_NONE,
@@ -25,7 +26,14 @@ namespace CE::Decompiler
 		int64_t m_offset;
 	};
 
-	struct ParameterInfo {
+	struct StoragePath
+	{
+		Storage m_storage;
+		std::list<int64_t> m_offsets;
+	};
+
+	struct ParameterInfo
+	{
 		int m_index = 0;
 		int m_size = 0;
 		Storage m_storage;
@@ -40,7 +48,8 @@ namespace CE::Decompiler
 	};
 	using ReturnInfo = ParameterInfo;
 
-	class FunctionCallInfo {
+	class FunctionCallInfo
+	{
 		std::list<ParameterInfo> m_paramInfos;
 	public:
 		FunctionCallInfo(std::list<ParameterInfo> paramInfos);

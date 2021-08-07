@@ -129,12 +129,13 @@ namespace GUI
 		: public StdWindow,
 		public Attribute::Id
 	{
-		bool m_closeByTimer;
 		uint64_t m_lastHoveredOutTime = 0;
 		bool m_isOpenPopup = false;
 	public:
-		PopupBuiltinWindow(AbstractPanel* panel,bool closeByTimer = false)
-			: StdWindow(panel), m_closeByTimer(closeByTimer)
+		int m_closeTimerMs = 0;
+		
+		PopupBuiltinWindow(AbstractPanel* panel)
+			: StdWindow(panel)
 		{
 			m_isOpened = false;
 			setFlags(ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
@@ -154,34 +155,32 @@ namespace GUI
 
 	private:
 		void renderControl() override {
-			if (m_isOpened) {
-				if (m_isOpenPopup) {
-					ImGui::OpenPopup(getId().c_str());
-					m_isOpenPopup = false;
+			if (m_isOpenPopup) {
+				ImGui::OpenPopup(getId().c_str());
+				m_isOpenPopup = false;
+			}
+			
+			pushParams();
+			ImGuiContext& g = *GImGui;
+			ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
+			if ((m_isOpened = ImGui::BeginPopupEx(g.CurrentWindow->GetID(getId().c_str()), getFlags())))
+			{
+				processGenericEvents();
+				if(m_closeTimerMs)
+				{
+					if ((!m_lastHoveredOutTime && !isHovered()) || isHoveredOut()) {
+						m_lastHoveredOutTime = GetTimeInMs();
+					}
+					if (!isHovered()) {
+						if (GetTimeInMs() - m_lastHoveredOutTime > m_closeTimerMs)
+							close();
+					}
 				}
 				
-				pushParams();
-				ImGuiContext& g = *GImGui;
-				ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
-				if (ImGui::BeginPopupEx(g.CurrentWindow->GetID(getId().c_str()), getFlags()))
-				{
-					processGenericEvents();
-					if(m_closeByTimer)
-					{
-						if ((!m_lastHoveredOutTime && !isHovered()) || isHoveredOut()) {
-							m_lastHoveredOutTime = GetTimeInMs();
-						}
-						if (!isHovered()) {
-							if (GetTimeInMs() - m_lastHoveredOutTime > 2000)
-								close();
-						}
-					}
-					
-					m_panel->show();
-					ImGui::EndPopup();
-				}
-				ImGui::PopItemFlag();
+				m_panel->show();
+				ImGui::EndPopup();
 			}
+			ImGui::PopItemFlag();
 		}
 
 		bool isImGuiHovered() override

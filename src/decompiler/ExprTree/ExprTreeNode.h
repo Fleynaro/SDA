@@ -1,4 +1,5 @@
 #pragma once
+#include "decompiler/DecStorage.h"
 #include <decompiler/DecMask.h>
 #include <decompiler/PCode/DecPCode.h>
 #include <utilities/HashSerialization.h>
@@ -27,8 +28,6 @@ namespace CE::Decompiler::ExprTree
 
 		virtual std::list<INode*> getNodesList() = 0;
 	};
-
-	
 
 	class INode
 	{
@@ -60,6 +59,12 @@ namespace CE::Decompiler::ExprTree
 		void iterateChildNodes(std::function<void(INode*)> func);
 
 		virtual void checkOnSingleParents();
+	};
+
+	class IStoragePathNode : virtual public INode
+	{
+	public:
+		virtual StoragePath getStoragePath() = 0;
 	};
 
 	class Node : public virtual INode

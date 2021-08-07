@@ -273,6 +273,8 @@ namespace GUI
 				}
 
 				void generateNode(CE::Decompiler::INode* node) override {
+					bool hasGroup = false;
+					MultiLineGroup::Group group;
 					if(const auto instrNode = dynamic_cast<CE::Decompiler::IRelatedToInstruction*>(node)) {
 						if(!instrNode->getInstructionsRelatedTo().empty()) {
 							if (m_decCodeViewer->m_isCodeSelecting) {
@@ -303,7 +305,8 @@ namespace GUI
 									m_parentGen->beginSelecting();
 								m_groups.beginGroup(node);
 								ExprTreeViewGenerator::generateNode(node);
-								const auto group = m_groups.endGroup();
+								group = m_groups.endGroup();
+								hasGroup = true;
 								if (isSelected)
 									m_parentGen->endSelecting();
 
@@ -314,14 +317,51 @@ namespace GUI
 										m_decCodeViewer->m_selectedInstrs = instrNode->getInstructionsRelatedTo();
 									}
 								}
-								return;
 							}
 						}
 					}
-					if (const auto memNode = dynamic_cast<CE::Decompiler::IMappedToMemory*>(node)) {
-						memNode->getLocation();
+
+					if (m_decCodeViewer->m_debugger) {
+						if (const auto storagePathNode = dynamic_cast<CE::Decompiler::IStoragePathNode*>(node)) {
+							if(!hasGroup) {
+								m_groups.beginGroup(node);
+								ExprTreeViewGenerator::generateNode(node);
+								group = m_groups.endGroup();
+								hasGroup = true;
+							}
+							
+							if (group.m_events.isHovered() && !m_decCodeViewer->m_debugger->m_valueViewerWin) {
+								ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+								if (m_decCodeViewer->m_hoverTimer) {
+									if (GetTimeInMs() - m_decCodeViewer->m_hoverTimer > 200) {
+										const auto path = storagePathNode->getStoragePath();
+										std::string name = "value";
+										CE::DataTypePtr dataType;
+										if (const auto sdaNode = dynamic_cast<CE::Decompiler::ISdaNode*>(node)) {
+											if (const auto sdaSymbolLeaf = dynamic_cast<CE::Decompiler::SdaSymbolLeaf*>(node))
+												name = sdaSymbolLeaf->getSdaSymbol()->getName();
+											dataType = sdaNode->getDataType();
+										}
+										else {
+											const auto project = m_decCodeViewer->m_debugger->m_imageDec->getImageManager()->getProject();
+											dataType = project->getTypeManager()->getDefaultType(storagePathNode->getSize());
+										}
+
+										m_decCodeViewer->m_debugger->createValueViewer(path, name, dataType);
+									}
+								}
+								else {
+									m_decCodeViewer->m_hoverTimer = GetTimeInMs();
+								}
+
+								m_decCodeViewer->m_isObjHovered = true;
+							}
+						}
 					}
-					ExprTreeViewGenerator::generateNode(node);
+
+					if (!hasGroup) {
+						ExprTreeViewGenerator::generateNode(node);
+					}
 				}
 			};
 
@@ -607,20 +647,41 @@ namespace GUI
 			}
 		};
 
-		CE::Decompiler::LinearView::BlockList* m_blockList;
+		// for round brackets
+		void* m_selectedObj = nullptr;
+
+		// block list
+		CE::Decompiler::LinearView::BlockList* m_selectedBlockList = nullptr;
+		std::set<CE::Decompiler::LinearView::BlockList*> m_hidedBlockLists;
+		
+		// symbol
 		CE::Symbol::ISymbol* m_selectedSymbol = nullptr;
 		int m_selectedSymbolCount = -1;
+
+		// node
 		CE::Decompiler::INode* m_selectedNode = nullptr;
 		CE::Decompiler::INode* m_hoveredNode = nullptr;
 		CE::Decompiler::INode* m_hoveredNodeOnPrevFrame = nullptr;
-		void* m_selectedObj = nullptr;
-		CE::Decompiler::LinearView::BlockList* m_selectedBlockList = nullptr;
-		
-		std::set<CE::Decompiler::LinearView::BlockList*> m_hidedBlockLists;
+
+		// line selection
+		int m_debugSelectedLineIdx = -1;
+		int m_selectedLineIdx = -1;
+
+		// code selection
+		bool m_isCodeSelecting = false;
+		int m_startSelectionTokenIdx = -1;
+		int m_endSelectionTokenIdx = -1;
+
+		// hover
+		bool m_isObjHovered = 0;
+		uint64_t m_hoverTimer = 0;
+
+		CE::Decompiler::LinearView::BlockList* m_blockList;
 		CE::AbstractImage* m_image = nullptr;
 		AbstractInstructionViewDecoder* m_instructionViewDecoder = nullptr;
 		CE::Decompiler::PrimaryDecompiler* m_primaryDecompiler = nullptr;
 
+		// windows
 		PopupContextWindow* m_ctxWindow = nullptr;
 		PopupBuiltinWindow* m_builtinWindow = nullptr;
 	public:
@@ -637,11 +698,6 @@ namespace GUI
 		std::set<CE::Decompiler::Instruction*> m_selectedCodeByInstr;
 		std::string m_selectedText;
 		bool m_codeChanged = false;
-		int m_selectedLineIdx = -1;
-		int m_debugSelectedLineIdx = -1;
-		bool m_isCodeSelecting = false;
-		int m_startSelectionTokenIdx = -1;
-		int m_endSelectionTokenIdx = -1;
 		float m_maxLineSize = 0.0f;
 		Debugger* m_debugger = nullptr;
 		
@@ -688,6 +744,9 @@ namespace GUI
 			m_clickedGlobalVar = nullptr;
 			m_codeChanged = false;
 			m_debugSelectedLineIdx = -1;
+			if (!m_isObjHovered)
+				m_hoverTimer = 0x0;
+			m_isObjHovered = false;
 			Show(m_ctxWindow);
 			Show(m_builtinWindow);
 			

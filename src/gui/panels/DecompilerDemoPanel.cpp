@@ -200,7 +200,7 @@ void GUI::DecompilerDemoPanel::renderPanel()
 					{
 						Text::Text("opened!").show();
 					});
-				m_popupBuiltinWindow = new PopupBuiltinWindow(panel, true);
+				m_popupBuiltinWindow = new PopupBuiltinWindow(panel);
 				m_popupBuiltinWindow->open();
 			}
 

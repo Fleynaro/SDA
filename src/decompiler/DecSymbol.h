@@ -42,9 +42,9 @@ namespace CE::Decompiler::Symbol
 	{
 	public:
 		PCode::Register m_register;
-
-		RegisterVariable(PCode::Register reg)
-			: m_register(reg), Symbol(reg.getSize())
+		
+		RegisterVariable(const PCode::Register& reg)
+			: Symbol(reg.getSize()), m_register(reg)
 		{}
 
 		HS getHash() override {
@@ -82,11 +82,12 @@ namespace CE::Decompiler::Symbol
 	class LocalVariable : public AbstractVariable
 	{
 	public:
+		PCode::Register m_register;
 		std::list<PCode::Instruction*> m_instructionsRelatedTo;
 		bool m_isTemp;
 
-		LocalVariable(int size, bool isTemp = false)
-			: AbstractVariable(size), m_isTemp(isTemp)
+		LocalVariable(int size, const PCode::Register& reg, bool isTemp = false)
+			: AbstractVariable(size), m_register(reg), m_isTemp(isTemp)
 		{}
 
 		void setSize(int size) {
@@ -99,7 +100,7 @@ namespace CE::Decompiler::Symbol
 
 	protected:
 		Symbol* cloneSymbol() override {
-			auto localVar = new LocalVariable(getSize());
+			auto localVar = new LocalVariable(getSize(), m_register);
 			localVar->m_instructionsRelatedTo = m_instructionsRelatedTo;
 			return localVar;
 		}
@@ -131,10 +132,11 @@ namespace CE::Decompiler::Symbol
 	class FunctionResultVar : public AbstractVariable
 	{
 	public:
+		PCode::Register m_register;
 		PCode::Instruction* m_instr;
 
-		FunctionResultVar(PCode::Instruction* instr, int size)
-			: m_instr(instr), AbstractVariable(size)
+		FunctionResultVar(PCode::Instruction* instr, int size, const PCode::Register& reg)
+			: AbstractVariable(size), m_instr(instr), m_register(reg)
 		{}
 
 		std::list<PCode::Instruction*> getInstructionsRelatedTo() override {
@@ -145,7 +147,7 @@ namespace CE::Decompiler::Symbol
 
 	protected:
 		Symbol* cloneSymbol() override {
-			return new FunctionResultVar(m_instr, getSize());
+			return new FunctionResultVar(m_instr, getSize(), m_register);
 		}
 	};
 };

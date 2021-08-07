@@ -340,7 +340,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 			dstRegister = m_decompiler->getRegisterFactory()->createRegister(retInfo.m_storage.getRegisterId(), retInfo.m_size, retInfo.m_storage.getOffset());
 		}
 
-		auto funcResultVar = new Symbol::FunctionResultVar(m_instr, dstRegister.getSize());
+		auto funcResultVar = new Symbol::FunctionResultVar(m_instr, dstRegister.getSize(), dstRegister);
 		funcCallCtx->m_functionResultVar = funcResultVar;
 		m_block->m_decompiledGraph->addSymbol(funcResultVar);
 		auto symbolLeaf = new ExprTree::SymbolLeaf(funcResultVar);

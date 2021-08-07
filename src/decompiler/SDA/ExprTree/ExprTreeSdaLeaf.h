@@ -5,7 +5,7 @@
 namespace CE::Decompiler::ExprTree
 {
 	// symbol that DONT related to memory: localVar1, param1, ...
-	class SdaSymbolLeaf : public SdaNode, public ILeaf
+	class SdaSymbolLeaf : public SdaNode, public ISymbolLeaf
 	{
 	public:
 		SdaSymbolLeaf(CE::Symbol::ISymbol* sdaSymbol, Symbol::Symbol* decSymbol);
@@ -25,6 +25,8 @@ namespace CE::Decompiler::ExprTree
 		DataTypePtr getSrcDataType() override;
 
 		void setDataType(DataTypePtr dataType) override;
+
+		StoragePath getStoragePath() override;
 
 	protected:
 		Symbol::Symbol* m_decSymbol;
@@ -52,6 +54,8 @@ namespace CE::Decompiler::ExprTree
 		void setAddrGetting(bool toggle) override;
 
 		void getLocation(MemLocation& location) override;
+
+		StoragePath getStoragePath() override;
 	};
 
 	// 0x1000, -12, ...

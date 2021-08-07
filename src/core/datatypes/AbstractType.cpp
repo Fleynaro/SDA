@@ -1,14 +1,9 @@
 #include "AbstractType.h"
 #include "TypeUnit.h"
 #include "Typedef.h"
-#include <decompiler/DecMask.h>
 
 using namespace CE;
 using namespace DataType;
-
-std::string AbstractType::getViewValue(uint64_t value) {
-	return std::to_string(value & Decompiler::BitMask64(getSize()).getValue());
-}
 
 IType* AbstractType::getBaseType(bool refType, bool dereferencedType) {
 	if (const auto unit = dynamic_cast<Unit*>(this)) {

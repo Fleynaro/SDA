@@ -58,7 +58,7 @@ namespace GUI
 			{
 				ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 70.0f);
 				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_None);
-				ImGui::TableHeadersRow();
+				//ImGui::TableHeadersRow();
 
 				renderContent(m_name, m_location, m_dataType);
 				
@@ -102,12 +102,13 @@ namespace GUI
 								renderContent(fieldName, fieldLoc, field->getDataType());
 							}
 						}
+						return;
 					}
 				}
 				else if (const auto Typedef = dynamic_cast<CE::DataType::Typedef*>(dataType->getType())) {
 					renderContent(name, location, Typedef->getRefType());
+					return;
 				}
-				return;
 			}
 
 			// todo: array
@@ -188,7 +189,7 @@ namespace GUI
 					return std::to_string((double&)value);
 				}
 			} else if (const auto Enum = dynamic_cast<CE::DataType::Enum*>(dataType)) {
-				const auto it = Enum->getFields().find(value);
+				const auto it = Enum->getFields().find((int&)value);
 				const auto intValueStr = std::to_string((int&)value);
 				if (it == Enum->getFields().end())
 					return intValueStr;
@@ -437,12 +438,10 @@ namespace GUI
 		CE::Decompiler::PCode::VmExecutionContext m_execCtx;
 		CE::Decompiler::PCode::VmMemoryContext m_memCtx;
 		CE::Decompiler::PCode::VirtualMachine m_vm;
-		CE::ImageDecorator* m_imageDec;
 		CE::ComplexOffset m_offset;
 
 		StdWindow* m_execCtxViewerWin;
 		StdWindow* m_stackViewerWin;
-		PopupBuiltinWindow* m_builtinWindow = nullptr;
 		EventHandler<bool> m_instrHandler;
 	public:
 		enum class StepWidth
@@ -451,12 +450,15 @@ namespace GUI
 			STEP_ORIGINAL_INSTR,
 			STEP_CODE_LINE
 		};
+		
+		CE::ImageDecorator* m_imageDec;
 		StepWidth m_stepWidth = StepWidth::STEP_PCODE_INSTR;
 		CE::Decompiler::PCode::Instruction* m_curInstr = nullptr;
 		CE::Decompiler::PCodeBlock* m_curPCodeBlock = nullptr;
 		CE::Decompiler::DecBlock::BlockTopNode* m_curBlockTopNode = nullptr;
 		bool m_isStopped = false;
 		bool m_showContexts = false;
+		PopupBuiltinWindow* m_valueViewerWin = nullptr;
 		
 		Debugger(CE::ImageDecorator* imageDec, CE::ComplexOffset startOffset)
 			: m_imageDec(imageDec), m_offset(startOffset), m_vm(&m_execCtx, &m_memCtx, false)
@@ -468,7 +470,7 @@ namespace GUI
 		~Debugger() {
 			delete m_execCtxViewerWin;
 			delete m_stackViewerWin;
-			delete m_builtinWindow;
+			delete m_valueViewerWin;
 		}
 
 		void instrHandler(const std::function<void(bool)>& handler) {
@@ -498,23 +500,16 @@ namespace GUI
 			}
 		}
 
-		ValueViewerPanel* createValueViewer(const CE::Decompiler::Storage& storage, const std::string& name, CE::DataTypePtr dataType) {
+		void createValueViewer(const CE::Decompiler::StoragePath& storagePath, const std::string& name, CE::DataTypePtr dataType) {
 			ValueViewerPanel::Location location;
-			const auto reg = CE::Decompiler::Register(storage.getRegisterId());
-			if (storage.getType() == CE::Decompiler::Storage::STORAGE_REGISTER) {
-				location = ValueViewerPanel::Location(reg);
-			}
-			else {
-				CE::Decompiler::DataValue baseAddr = 0;
-				m_execCtx.getRegisterValue(reg, baseAddr);
-				location = ValueViewerPanel::Location(baseAddr + storage.getOffset());
-			}
+			if (!getLocation(storagePath, location))
+				return;
 			
-			delete m_builtinWindow;
+			delete m_valueViewerWin;
 			const auto panel = new ValueViewerPanel(name, location, dataType, &m_execCtx, &m_memCtx);
-			m_builtinWindow = new PopupBuiltinWindow(panel);
-			m_builtinWindow->placeAfterItem();
-			m_builtinWindow->open();
+			m_valueViewerWin = new PopupBuiltinWindow(panel);
+			m_valueViewerWin->placeAfterItem();
+			m_valueViewerWin->open();
 		}
 
 		void renderDebugMenu() {
@@ -565,6 +560,7 @@ namespace GUI
 			if (!m_isStopped || m_showContexts) {
 				Show(m_execCtxViewerWin);
 				Show(m_stackViewerWin);
+				Show(m_valueViewerWin);
 			}
 		}
 
@@ -639,6 +635,40 @@ namespace GUI
 			std::map<int, CE::Decompiler::DataValue> registers;
 			registers = m_execCtx.getRegisters();
 			m_execCtx.syncWith(registers);
+		}
+
+		bool getLocation(const CE::Decompiler::StoragePath& storagePath, ValueViewerPanel::Location& location) {
+			const auto type = storagePath.m_storage.getType();
+			if (type == CE::Decompiler::Storage::STORAGE_NONE)
+				return false;
+			
+			if (type == CE::Decompiler::Storage::STORAGE_REGISTER) {
+				const auto reg = CE::Decompiler::Register(storagePath.m_storage.getRegisterId());
+				location = ValueViewerPanel::Location(reg);
+			}
+			else {
+				CE::Decompiler::DataValue baseAddr = 0;
+				const auto reg = type == CE::Decompiler::Storage::STORAGE_STACK ?
+					CE::Decompiler::Register(ZYDIS_REGISTER_RSP) : CE::Decompiler::Register(ZYDIS_REGISTER_RIP);
+				if (!m_execCtx.getRegisterValue(reg, baseAddr))
+					return false;
+				location = ValueViewerPanel::Location(baseAddr + storagePath.m_storage.getOffset());
+			}
+
+			// offsets (pointer dereferencing)
+			for (const auto offset : storagePath.m_offsets) {
+				CE::Decompiler::DataValue baseAddr;
+				if (location.m_isRegister) {
+					if (!m_execCtx.getRegisterValue(location.m_register, baseAddr))
+						return false;
+				}
+				else {
+					if (!m_memCtx.getValue(location.m_address, baseAddr))
+						return false;
+				}
+				location = ValueViewerPanel::Location(baseAddr + offset);
+			}
+			return true;
 		}
 	};
 };

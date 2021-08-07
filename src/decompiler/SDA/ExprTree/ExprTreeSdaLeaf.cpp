@@ -72,6 +72,11 @@ void SdaSymbolLeaf::setDataType(DataTypePtr dataType) {
 	}
 }
 
+StoragePath SdaSymbolLeaf::getStoragePath() {
+	SymbolLeaf symbolLeaf(m_decSymbol);
+	return symbolLeaf.getStoragePath();
+}
+
 SdaMemSymbolLeaf::SdaMemSymbolLeaf(CE::Symbol::IMemorySymbol* sdaSymbol, Symbol::Symbol* decSymbol, int64_t offset, bool isAddrGetting)
 	: SdaSymbolLeaf(sdaSymbol, decSymbol), m_offset(offset), m_isAddrGetting(isAddrGetting)
 {}
@@ -108,4 +113,10 @@ void SdaMemSymbolLeaf::getLocation(MemLocation& location) {
 	location.m_type = (getSdaSymbol()->getType() == CE::Symbol::LOCAL_STACK_VAR ? MemLocation::STACK : MemLocation::GLOBAL);
 	location.m_offset = m_offset;
 	location.m_valueSize = m_sdaSymbol->getDataType()->getSize();
+}
+
+StoragePath SdaMemSymbolLeaf::getStoragePath() {
+	StoragePath path;
+	path.m_storage = getSdaSymbol()->getStorage();
+	return path;
 }
