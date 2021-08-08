@@ -106,6 +106,24 @@ bool GoarNode::isFloatingPoint() {
 void GoarNode::setDataType(DataTypePtr dataType) {
 }
 
+StoragePath GoarNode::getNewStoragePath(int64_t offset) {
+	if (const auto storagePathNode = dynamic_cast<IStoragePathNode*>(m_base)) {
+		auto path = storagePathNode->getStoragePath();
+		if (path.m_register.isValid()) {
+			if (dynamic_cast<GoarFieldNode*>(m_base) || dynamic_cast<GoarArrayNode*>(m_base)) {
+				// pos.vec.x
+				*path.m_offsets.rbegin() += offset;
+			}
+			else {
+				// pos->vec->x (in case of mem. optimization, where -> is GoarTopNode)
+				path.m_offsets.push_back(offset);
+			}
+			return path;
+		}
+	}
+	return StoragePath();
+}
+
 GoarArrayNode::GoarArrayNode(ISdaNode* base, ISdaNode* indexNode, DataTypePtr dataType, int itemsMaxCount)
 	: GoarNode(base), m_indexNode(indexNode), m_outDataType(dataType), m_itemsMaxCount(itemsMaxCount)
 {

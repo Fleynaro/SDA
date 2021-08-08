@@ -12,6 +12,19 @@ void RegisterExecContext::clear() {
 }
 
 ExprTree::INode* RegisterExecContext::requestRegister(const Register& reg) {
+	if(reg.getType() == Register::Type::StackPointer) {
+		if (!m_decompiler->m_stackPointerSymbol)
+			m_decompiler->m_stackPointerSymbol = new Symbol::RegisterVariable(reg);
+		const auto symbolLeaf = new ExprTree::SymbolLeaf(m_decompiler->m_stackPointerSymbol);
+		return new ExprTree::OperationalNode(symbolLeaf, new ExprTree::NumberLeaf(m_stackPointerValue, 0x8), ExprTree::Add);
+	}
+	if (reg.getType() == Register::Type::InstructionPointer) {
+		if (!m_decompiler->m_instrPointerSymbol)
+			m_decompiler->m_instrPointerSymbol = new Symbol::RegisterVariable(reg);
+		const auto symbolLeaf = new ExprTree::SymbolLeaf(m_decompiler->m_instrPointerSymbol);
+		return new ExprTree::OperationalNode(symbolLeaf, new ExprTree::NumberLeaf(m_instrPointerValue, 0x8), ExprTree::Add);
+	}
+	
 	BitMask64 needReadMask = reg.m_valueRangeMask;
 	auto regParts = findRegisterParts(reg.getId(), needReadMask);
 	if (!needReadMask.isZero()) {
@@ -314,7 +327,8 @@ ExprTree::INode* RegisterExecContext::CreateExprFromRegisterParts(std::list<Regi
 		}
 
 		if (bitShift != 0) {
-			regExpr = new ExprTree::OperationalNode(regExpr, new ExprTree::NumberLeaf(static_cast<uint64_t>(abs(bitShift)), regExpr->getSize()), bitShift > 0 ? ExprTree::Shr : ExprTree::Shl);
+			const auto rightNode = new ExprTree::NumberLeaf(static_cast<uint64_t>(abs(bitShift)), regExpr->getSize());
+			regExpr = new ExprTree::OperationalNode(regExpr, rightNode, bitShift > 0 ? ExprTree::Shr : ExprTree::Shl);
 		}
 
 		if (resultExpr) {

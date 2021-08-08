@@ -54,9 +54,11 @@ namespace GUI
 
 	private:
 		void renderPanel() override {
-			if (ImGui::BeginTable("##empty", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV))
+			if (ImGui::BeginTable("##empty", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV))
 			{
+				ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 7.0f);
 				ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_None);
+				ImGui::TableSetupColumn("DataType", ImGuiTableColumnFlags_None);
 				ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_None);
 				
 				renderContent(m_name, m_location, m_dataType);
@@ -85,22 +87,27 @@ namespace GUI
 							
 							if (!field->getDataType()->isPointer() && dynamic_cast<CE::DataType::IStructure*>(field->getDataType()->getType())) {
 								ImGui::TableNextRow();
+
+								ImGui::TableNextColumn();
+								Text::Text(">").show();
+								const auto events = GenericEvents(true);
+								if (events.isHovered()) {
+									delete m_builtinWindow;
+									const auto panel = new ValueViewerPanel(field->getName(), fieldLoc, field->getDataType(), m_execCtx, m_memCtx);
+									m_builtinWindow = new PopupBuiltinWindow(panel);
+									m_builtinWindow->m_closeTimerMs = 50;
+									m_builtinWindow->placeAfterItem();
+									m_builtinWindow->open();
+								}
+								
 								ImGui::TableNextColumn();
 								Text::Text(fieldName).show();
-								const auto events = GenericEvents(true);
-								const auto builtinWinPos = GetLeftBottom();
 								
 								ImGui::TableNextColumn();
 								Text::Text(field->getDataType()->getName()).show();
-								
-								if (events.isHovered()) {
-									delete m_builtinWindow;
-									const auto panel = new ValueViewerPanel(name, fieldLoc, field->getDataType(), m_execCtx, m_memCtx);
-									m_builtinWindow = new PopupBuiltinWindow(panel);
-									m_builtinWindow->m_closeTimerMs = 50;
-									m_builtinWindow->getPos() = builtinWinPos;
-									m_builtinWindow->open();
-								}
+
+								ImGui::TableNextColumn();
+								Text::Text("...").show();
 							}
 							else {
 								renderContent(fieldName, fieldLoc, field->getDataType());
@@ -116,16 +123,41 @@ namespace GUI
 			}
 
 			// todo: array
-			
+
+			CE::Decompiler::DataValue value;
+			const auto hasValue = getValue(location, value);
 			ImGui::TableNextRow();
+
+			// +
+			ImGui::TableNextColumn();
+			if (hasValue && isPointer) {
+				Text::Text(">").show();
+				const auto events = GenericEvents(true);
+				if (events.isHovered()) {
+					const auto derefDataType = CloneUnit(dataType);
+					derefDataType->removePointerLevelOutOfFront();
+					delete m_builtinWindow;
+					const auto panel = new ValueViewerPanel(name, Location(value), derefDataType, m_execCtx, m_memCtx);
+					m_builtinWindow = new PopupBuiltinWindow(panel);
+					m_builtinWindow->m_closeTimerMs = 50;
+					m_builtinWindow->placeAfterItem();
+					m_builtinWindow->open();
+				}
+			} else {
+				Text::Text("-").show();
+			}
+
+			// name
 			ImGui::TableNextColumn();
 			Text::Text(name).show();
-			const auto events = GenericEvents(true);
-			const auto builtinWinPos = GetLeftBottom();
-			
+
+			// data type
 			ImGui::TableNextColumn();
-			CE::Decompiler::DataValue value;
-			if (getValue(location, value)) {
+			Text::Text(dataType->getDisplayName()).show();
+
+			// value
+			ImGui::TableNextColumn();
+			if (hasValue) {
 				if(isPointer) {
 					const auto addrStr = "0x" + Helper::String::NumberToHex(value);
 					Text::Text("-> " + addrStr).show();
@@ -135,23 +167,12 @@ namespace GUI
 					Text::Text(valueStr).show();
 					renderEditor(valueStr, location, dataType);
 				}
-
-				if (isPointer) {
-					if (events.isHovered()) {
-						const auto derefDataType = GetUnit(dataType->getType());
-						derefDataType->removePointerLevelOutOfFront();
-						delete m_builtinWindow;
-						const auto panel = new ValueViewerPanel(name, Location(value), derefDataType, m_execCtx, m_memCtx);
-						m_builtinWindow = new PopupBuiltinWindow(panel);
-						m_builtinWindow->m_closeTimerMs = 50;
-						m_builtinWindow->getPos() = builtinWinPos;
-						m_builtinWindow->open();
-					}
-				}
 			}
 			else {
 				Text::Text("cannot read").show();
-				renderEditor("0", location, dataType);
+				if (!isPointer) {
+					renderEditor("0", location, dataType);
+				}
 			}
 		}
 
@@ -446,6 +467,7 @@ namespace GUI
 		{
 			CE::Decompiler::PCode::VmMemoryContext* m_memCtx;
 			CE::Decompiler::DataValue m_stackPointerAddr = 0;
+			bool m_needScrool = false;
 		public:
 			StackViewerPanel(CE::Decompiler::PCode::VmExecutionContext* execCtx, CE::Decompiler::PCode::VmMemoryContext* memCtx, CE::Decompiler::AbstractRegisterFactory* registerFactory)
 				: AbstractViewerPanel("Stack Viewer", execCtx, registerFactory), m_memCtx(memCtx)
@@ -462,8 +484,9 @@ namespace GUI
 					const auto reg = m_registerFactory->createStackPointerRegister();
 					CE::Decompiler::DataValue stackPointerAddr;
 					if (m_execCtx->getRegisterValue(reg, stackPointerAddr)) {
-						if(stackPointerAddr != m_stackPointerAddr)
+						if(m_needScrool)
 							ImGui::SetScrollY(ImGui::GetScrollMaxY());
+						m_needScrool = stackPointerAddr != m_stackPointerAddr;
 						m_stackPointerAddr = stackPointerAddr;
 						
 						const auto rowsCount = 1000;
@@ -523,6 +546,7 @@ namespace GUI
 		CE::Decompiler::PCode::Instruction* m_curInstr = nullptr;
 		CE::Decompiler::PCodeBlock* m_curPCodeBlock = nullptr;
 		CE::Decompiler::DecBlock::BlockTopNode* m_curBlockTopNode = nullptr;
+		int m_stackPointerValue = 0;
 		bool m_isStopped = false;
 		bool m_showContexts = false;
 		PopupBuiltinWindow* m_valueViewerWin = nullptr;
@@ -534,7 +558,6 @@ namespace GUI
 			m_stackViewerWin = new StdWindow(new StackViewerPanel(&m_execCtx, &m_memCtx, &m_registerFactoryX86));
 
 			m_execCtx.setRegisterValue(CE::Decompiler::Register(ZYDIS_REGISTER_RSP), 0x1000000000);
-			m_execCtx.setRegisterValue(CE::Decompiler::Register(ZYDIS_REGISTER_RIP), 0x2000000000);
 		}
 
 		~Debugger() {
@@ -563,6 +586,9 @@ namespace GUI
 				return;
 			}
 			m_curPCodeBlock = m_imageDec->getPCodeGraph()->getBlockAtOffset(m_offset);
+
+			// rip
+			m_execCtx.setRegisterValue(CE::Decompiler::Register(ZYDIS_REGISTER_RIP), 0x2000000000 + m_curInstr->m_origInstruction->m_offset);
 
 			if (m_instrHandler.isInit()) {
 				const auto isNewGraph = prevPCodeGraph != m_curPCodeBlock->m_funcPCodeGraph;
@@ -709,22 +735,7 @@ namespace GUI
 		}
 
 		bool getLocation(const CE::Decompiler::StoragePath& storagePath, ValueViewerPanel::Location& location) {
-			const auto type = storagePath.m_storage.getType();
-			if (type == CE::Decompiler::Storage::STORAGE_NONE)
-				return false;
-			
-			if (type == CE::Decompiler::Storage::STORAGE_REGISTER) {
-				const auto reg = CE::Decompiler::Register(storagePath.m_storage.getRegisterId());
-				location = ValueViewerPanel::Location(reg);
-			}
-			else {
-				CE::Decompiler::DataValue baseAddr = 0;
-				const auto reg = type == CE::Decompiler::Storage::STORAGE_STACK ?
-					CE::Decompiler::Register(ZYDIS_REGISTER_RSP) : CE::Decompiler::Register(ZYDIS_REGISTER_RIP);
-				if (!m_execCtx.getRegisterValue(reg, baseAddr))
-					return false;
-				location = ValueViewerPanel::Location(baseAddr + storagePath.m_storage.getOffset());
-			}
+			location = ValueViewerPanel::Location(storagePath.m_register);
 
 			// offsets (pointer dereferencing)
 			for (const auto offset : storagePath.m_offsets) {
@@ -732,6 +743,11 @@ namespace GUI
 				if (location.m_isRegister) {
 					if (!m_execCtx.getRegisterValue(location.m_register, baseAddr))
 						return false;
+					if(location.m_register.getType() == CE::Decompiler::Register::Type::StackPointer) {
+						baseAddr -= m_stackPointerValue;
+					} else if (location.m_register.getType() == CE::Decompiler::Register::Type::InstructionPointer) {
+						baseAddr -= m_curInstr->m_origInstruction->m_offset;
+					}
 				}
 				else {
 					if (!m_memCtx.getValue(location.m_address, baseAddr))

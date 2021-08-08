@@ -15,7 +15,3 @@ Type FuncParameterSymbol::getType() {
 Decompiler::ParameterInfo FuncParameterSymbol::getParamInfo() const {
 	return m_signature->getCallInfo().findParamInfoByIndex(m_paramIdx);
 }
-
-Decompiler::Storage FuncParameterSymbol::getStorage() {
-	return getParamInfo().m_storage;
-}

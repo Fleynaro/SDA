@@ -4,9 +4,4 @@
 
 namespace CE::Symbol
 {
-	class IMemorySymbol : virtual public ISymbol
-	{
-	public:
-		virtual Decompiler::Storage getStorage() = 0;
-	};
 };

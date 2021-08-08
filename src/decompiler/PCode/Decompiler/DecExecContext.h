@@ -35,6 +35,8 @@ namespace CE::Decompiler
 		std::map<RegisterId, std::list<RegisterInfo>> m_registers;
 		ExecContext* m_execContext;
 		bool m_isFilled = false;
+		DataValue m_stackPointerValue = 0;
+		DataValue m_instrPointerValue = 0;
 
 		RegisterExecContext(AbstractPrimaryDecompiler* decompiler, ExecContext* execContext)
 			: m_decompiler(decompiler), m_execContext(execContext)

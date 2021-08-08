@@ -25,21 +25,7 @@ namespace CE::Decompiler::ExprTree
 
 		INode* clone(NodeCloneContext* ctx) override;
 
-		StoragePath getStoragePath() override {
-			StoragePath path;
-			if (const auto regVar = dynamic_cast<Symbol::RegisterVariable*>(m_symbol)) {
-				path.m_storage = Storage(Storage::STORAGE_REGISTER, regVar->m_register.getGenericId());
-			}
-			else if (const auto localVar = dynamic_cast<Symbol::LocalVariable*>(m_symbol)) {
-				if (!localVar->m_isTemp) {
-					path.m_storage = Storage(Storage::STORAGE_REGISTER, localVar->m_register.getGenericId());
-				}
-			}
-			else if (const auto funcVar = dynamic_cast<Symbol::FunctionResultVar*>(m_symbol)) {
-				path.m_storage = Storage(Storage::STORAGE_REGISTER, funcVar->m_register.getGenericId());
-			}
-			return path;
-		}
+		StoragePath getStoragePath() override;
 	};
 
 	class INumberLeaf : public ILeaf

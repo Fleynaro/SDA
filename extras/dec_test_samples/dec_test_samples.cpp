@@ -184,10 +184,9 @@ void CE::DecTestSamplesPool::fillByTests() {
 			auto entity = typeFactory.createStructure("Entity100", "");
 			entity->getFields().addField(0x70, "pos", GetUnit(pos));
 
-			auto sig = sample->createFunc(0xfffffffffffde098, "getEntitySig")->getSignature();
+			auto sig = sample->createFunc(0xfffffffffffde0d1, "getEntitySig")->getSignature();
 			sig->addParameter("param1", findType("uint32_t"));
 			sig->setReturnType(GetUnit(entity, "[1]"));
-			sample->m_symbolCtx.m_globalSymbolTable->addSymbol(symFactory.createLocalInstrVarSymbol(GetUnit(sig), "getEntity"), 0xfffffffffffde098);
 		}
 	}
 

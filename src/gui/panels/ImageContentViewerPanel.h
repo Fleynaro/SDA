@@ -1152,7 +1152,9 @@ namespace GUI
 			}
 
 			if (m_curDecGraph) {
-				m_debugger->m_curBlockTopNode = m_curDecGraph->findBlockTopNodeByOffset(m_debugger->m_curInstr->getOffset());
+				const auto instrOffset = m_debugger->m_curInstr->getOffset();
+				m_debugger->m_curBlockTopNode = m_curDecGraph->findBlockTopNodeAtOffset(instrOffset);
+				m_debugger->m_stackPointerValue = m_curDecGraph->getStackPointerValueAtOffset(instrOffset);
 			}
 		}
 	};

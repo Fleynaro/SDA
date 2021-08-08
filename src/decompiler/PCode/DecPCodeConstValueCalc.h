@@ -20,9 +20,10 @@ namespace CE::Decompiler::PCode
 		void start(std::map<Instruction*, DataValue>& constValues) {
 			VirtualMachine vm(&m_execCtx, &m_memCtx, false);
 			//SP, IP registers to zero
-			m_execCtx.setRegisterValue(m_registerFactory->createInstructionPointerRegister(), 0);
+			const auto rip = m_registerFactory->createInstructionPointerRegister();
 			m_execCtx.setRegisterValue(m_registerFactory->createStackPointerRegister(), 0);
 			for (auto instr : m_instructions) {
+				m_execCtx.setRegisterValue(rip, instr->m_origInstruction->m_offset);
 				vm.execute(instr);
 				if (Instruction::IsAnyJmup(instr->m_id)) {
 					if (!dynamic_cast<ConstantVarnode*>(instr->m_input0)) {

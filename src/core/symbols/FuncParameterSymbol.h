@@ -8,7 +8,7 @@ namespace CE::DataType {
 
 namespace CE::Symbol
 {
-	class FuncParameterSymbol : public AbstractSymbol, public IMemorySymbol
+	class FuncParameterSymbol : public AbstractSymbol
 	{
 	public:
 		DataType::IFunctionSignature* m_signature = nullptr;
@@ -23,8 +23,6 @@ namespace CE::Symbol
 		Type getType() override;
 
 		Decompiler::ParameterInfo getParamInfo() const;
-		
-		Decompiler::Storage getStorage() override;
 
 		FuncParameterSymbol* clone() {
 			const auto param = new FuncParameterSymbol(getManager(), getDataType(), getName(), getComment());

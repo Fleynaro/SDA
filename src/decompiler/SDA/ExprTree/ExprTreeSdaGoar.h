@@ -5,7 +5,7 @@
 namespace CE::Decompiler::ExprTree
 {
 	// Base class for GoarArrayNode, GoarFieldNode, GoarTopNode
-	class GoarNode : public SdaNode, public INodeAgregator
+	class GoarNode : public SdaNode, public INodeAgregator, public IStoragePathNode
 	{
 	public:
 		ISdaNode* m_base;
@@ -25,6 +25,9 @@ namespace CE::Decompiler::ExprTree
 		bool isFloatingPoint() override;
 
 		void setDataType(DataTypePtr dataType) override;
+
+	protected:
+		StoragePath getNewStoragePath(int64_t offset);
 	};
 
 	// Array: players[playersCount - 3]
@@ -48,7 +51,16 @@ namespace CE::Decompiler::ExprTree
 		HS getHash() override;
 
 		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override;
+
+		StoragePath getStoragePath() override;
 	};
+
+	inline StoragePath GoarArrayNode::getStoragePath() {
+		if (const auto numberLeaf = dynamic_cast<INumberLeaf*>(m_indexNode)) {
+			return getNewStoragePath(numberLeaf->getValue() * m_outDataType->getSize());
+		}
+		return StoragePath();
+	}
 
 	// Field of a class: player.pos.x
 	class GoarFieldNode : public GoarNode
@@ -61,7 +73,13 @@ namespace CE::Decompiler::ExprTree
 		DataTypePtr getSrcDataType() override;
 
 		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override;
+
+		StoragePath getStoragePath() override;
 	};
+
+	inline StoragePath GoarFieldNode::getStoragePath() {
+		return getNewStoragePath(m_field->getOffset());
+	}
 
 	// Top node for any goar structure that need to define operator &: &player.pos.x
 	class GoarTopNode : public GoarNode, public IMappedToMemory
@@ -82,6 +100,10 @@ namespace CE::Decompiler::ExprTree
 		HS getHash() override;
 
 		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override;
+
+		StoragePath getStoragePath() override {
+			return StoragePath();
+		}
 
 	private:
 		// players[2][10] -> dims: 10, 2

@@ -20,6 +20,7 @@ namespace CE::Decompiler
 		int getRegisterId() const;
 
 		int64_t getOffset() const;
+	
 	private:
 		StorageType m_storageType;
 		int m_registerId;
@@ -28,7 +29,7 @@ namespace CE::Decompiler
 
 	struct StoragePath
 	{
-		Storage m_storage;
+		PCode::Register m_register;
 		std::list<int64_t> m_offsets;
 	};
 

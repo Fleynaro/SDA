@@ -7,6 +7,7 @@ namespace CE::Decompiler
 {
 	class AbstractPrimaryDecompiler
 	{
+		friend struct RegisterExecContext;
 	protected:
 		struct DecompiledBlockInfo {
 			PCodeBlock* m_pcodeBlock = nullptr;
@@ -20,6 +21,9 @@ namespace CE::Decompiler
 	private:
 		AbstractRegisterFactory* m_registerFactory;
 		int m_loopsCount = 0;
+		Symbol::RegisterVariable* m_stackPointerSymbol = nullptr;
+		Symbol::RegisterVariable* m_instrPointerSymbol = nullptr;
+		std::map<ComplexOffset, int> m_stackPointerValues;
 
 	public:
 		struct LocalVarInfo {

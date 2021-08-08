@@ -962,7 +962,7 @@ void DecoderX86::translateCurInstruction() {
 			addMicroInstruction(InstructionId::STORE, varnodeRsp, m_instrPool->createConstantVarnode((uint64_t&)offset, 0x8));
 			}*/
 			if (auto varnodeConst = dynamic_cast<ConstantVarnode*>(varnodeInput0)) {
-				varnodeConst->m_value = static_cast<int64_t>((int)(varnodeConst->m_value >> 8));
+				varnodeConst->m_value = static_cast<int64_t>((int)(varnodeConst->m_value >> 8)) + m_curInstr->length;
 				auto varnodeRip = CreateVarnode(ZYDIS_REGISTER_RIP, 0x8);
 				auto varnodeDst = m_instrPool->createSymbolVarnode(0x8);
 				addMicroInstruction(InstructionId::INT_ADD, varnodeRip, varnodeConst, varnodeDst);
@@ -1322,14 +1322,14 @@ Varnode* DecoderX86::requestOperandValue(const ZydisDecodedOperand& operand, int
 	}
 
 	if (operand.type == ZYDIS_OPERAND_TYPE_MEMORY) {
-		Varnode* resultVarnode = nullptr;
+		Varnode* resultVarnode;
 		RegisterVarnode* baseRegVarnode = nullptr;
-		RegisterVarnode* indexRegVarnode = nullptr;
+		RegisterVarnode* indexRegVarnode;
 
 		if (operand.mem.base != ZYDIS_REGISTER_NONE) {
 			baseRegVarnode = CreateVarnode(operand.mem.base, memLocExprSize);
 			if (operand.mem.base == ZYDIS_REGISTER_RIP) {
-				offset += m_curOrigInstr->m_offset + m_curOrigInstr->m_length;
+				offset += m_curOrigInstr->m_length;
 			}
 		}
 

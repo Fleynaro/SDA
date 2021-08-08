@@ -335,10 +335,9 @@ void PCodeGraphReferenceSearch::findNewFunctionOffsets(FunctionPCodeGraph* funcG
 	sdaBuilding.start();
 
 	for (auto symbol : sdaBuilding.getNewAutoSymbols()) {
-		if (auto memSymbol = dynamic_cast<CE::Symbol::IMemorySymbol*>(symbol)) {
-			auto storage = memSymbol->getStorage();
-			const auto offset = static_cast<Offset>(storage.getOffset());
-			if (storage.getType() == Storage::STORAGE_GLOBAL) {
+		if (const auto memSymbol = dynamic_cast<CE::Symbol::AbstractMemorySymbol*>(symbol)) {
+			const auto offset = static_cast<Offset>(memSymbol->getOffset());
+			if (memSymbol->getType() == CE::Symbol::GLOBAL_VAR) {
 				const auto segmentType = m_image->getSectionByOffset(offset)->m_type;
 				if (segmentType == ImageSection::CODE_SEGMENT) {
 					nonVirtFuncOffsets.push_back(offset);

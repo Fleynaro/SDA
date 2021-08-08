@@ -5,10 +5,17 @@
 namespace CE::Decompiler::ExprTree
 {
 	// symbol that DONT related to memory: localVar1, param1, ...
-	class SdaSymbolLeaf : public SdaNode, public ISymbolLeaf
+	class SdaSymbolLeaf : public SdaNode, public ISymbolLeaf, public INodeAgregator
 	{
+	protected:
+		SymbolLeaf* m_symbolLeaf;
+		CE::Symbol::ISymbol* m_sdaSymbol;
 	public:
-		SdaSymbolLeaf(CE::Symbol::ISymbol* sdaSymbol, Symbol::Symbol* decSymbol);
+		SdaSymbolLeaf(SymbolLeaf* m_symbolLeaf, CE::Symbol::ISymbol* sdaSymbol);
+
+		void replaceNode(INode* node, INode* newNode) override;
+
+		std::list<INode*> getNodesList() override;
 
 		Symbol::Symbol* getDecSymbol() const;
 
@@ -27,27 +34,25 @@ namespace CE::Decompiler::ExprTree
 		void setDataType(DataTypePtr dataType) override;
 
 		StoragePath getStoragePath() override;
-
-	protected:
-		Symbol::Symbol* m_decSymbol;
-		CE::Symbol::ISymbol* m_sdaSymbol;
 	};
 
 	// symbol that related to memory: stackVar1 or globalVar1
 	class SdaMemSymbolLeaf : public SdaSymbolLeaf, public IMappedToMemory
 	{
+		CE::Symbol::AbstractMemorySymbol* m_sdaMemSymbol;
 		bool m_isAddrGetting;
-		int64_t m_offset;
 	public:
-		SdaMemSymbolLeaf(CE::Symbol::IMemorySymbol* sdaSymbol, Symbol::Symbol* decSymbol, int64_t offset, bool isAddrGetting = false);
+		SdaMemSymbolLeaf(SymbolLeaf* symbolLeaf, CE::Symbol::AbstractMemorySymbol* sdaMemSymbol, bool isAddrGetting = false);
 
-		CE::Symbol::IMemorySymbol* getSdaSymbol() const;
+		CE::Symbol::AbstractMemorySymbol* getSdaMemSymbol() const;
 
 		DataTypePtr getSrcDataType() override;
 
 		HS getHash() override;
 
 		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override;
+
+		int64_t getOffset() const;
 
 		bool isAddrGetting() override;
 

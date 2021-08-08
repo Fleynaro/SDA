@@ -32,17 +32,25 @@ ISdaNode* SdaNumberLeaf::cloneSdaNode(NodeCloneContext* ctx) {
 	return new SdaNumberLeaf(m_value, m_calcDataType);
 }
 
-SdaSymbolLeaf::SdaSymbolLeaf(CE::Symbol::ISymbol* sdaSymbol, Symbol::Symbol* decSymbol)
-	: m_sdaSymbol(sdaSymbol), m_decSymbol(decSymbol)
+SdaSymbolLeaf::SdaSymbolLeaf(SymbolLeaf* m_symbolLeaf, CE::Symbol::ISymbol* sdaSymbol)
+	: m_symbolLeaf(m_symbolLeaf), m_sdaSymbol(sdaSymbol)
 {}
 
-Decompiler::Symbol::Symbol* SdaSymbolLeaf::getDecSymbol() const
-{
-	return m_decSymbol;
+void SdaSymbolLeaf::replaceNode(INode* node, INode* newNode) {
+	if (node == m_symbolLeaf) {
+		m_symbolLeaf = dynamic_cast<SymbolLeaf*>(newNode);
+	}
 }
 
-CE::Symbol::ISymbol* SdaSymbolLeaf::getSdaSymbol() const
-{
+std::list<INode*> SdaSymbolLeaf::getNodesList() {
+	return {m_symbolLeaf};
+}
+
+Decompiler::Symbol::Symbol* SdaSymbolLeaf::getDecSymbol() const {
+	return m_symbolLeaf->m_symbol;
+}
+
+CE::Symbol::ISymbol* SdaSymbolLeaf::getSdaSymbol() const {
 	return m_sdaSymbol;
 }
 
@@ -51,11 +59,11 @@ int SdaSymbolLeaf::getSize() {
 }
 
 HS SdaSymbolLeaf::getHash() {
-	return m_decSymbol->getHash();
+	return m_symbolLeaf->getHash();
 }
 
 ISdaNode* SdaSymbolLeaf::cloneSdaNode(NodeCloneContext* ctx) {
-	return new SdaSymbolLeaf(m_sdaSymbol, m_decSymbol);
+	return new SdaSymbolLeaf(m_symbolLeaf, m_sdaSymbol);
 }
 
 bool SdaSymbolLeaf::isFloatingPoint() {
@@ -73,17 +81,15 @@ void SdaSymbolLeaf::setDataType(DataTypePtr dataType) {
 }
 
 StoragePath SdaSymbolLeaf::getStoragePath() {
-	SymbolLeaf symbolLeaf(m_decSymbol);
-	return symbolLeaf.getStoragePath();
+	return m_symbolLeaf->getStoragePath();
 }
 
-SdaMemSymbolLeaf::SdaMemSymbolLeaf(CE::Symbol::IMemorySymbol* sdaSymbol, Symbol::Symbol* decSymbol, int64_t offset, bool isAddrGetting)
-	: SdaSymbolLeaf(sdaSymbol, decSymbol), m_offset(offset), m_isAddrGetting(isAddrGetting)
+SdaMemSymbolLeaf::SdaMemSymbolLeaf(SymbolLeaf* symbolLeaf, CE::Symbol::AbstractMemorySymbol* sdaMemSymbol, bool isAddrGetting)
+	: SdaSymbolLeaf(symbolLeaf, sdaMemSymbol), m_sdaMemSymbol(sdaMemSymbol), m_isAddrGetting(isAddrGetting)
 {}
 
-CE::Symbol::IMemorySymbol* SdaMemSymbolLeaf::getSdaSymbol() const
-{
-	return dynamic_cast<CE::Symbol::IMemorySymbol*>(m_sdaSymbol);
+CE::Symbol::AbstractMemorySymbol* SdaMemSymbolLeaf::getSdaMemSymbol() const {
+	return m_sdaMemSymbol;
 }
 
 DataTypePtr SdaMemSymbolLeaf::getSrcDataType() {
@@ -94,11 +100,11 @@ DataTypePtr SdaMemSymbolLeaf::getSrcDataType() {
 }
 
 HS SdaMemSymbolLeaf::getHash() {
-	return SdaSymbolLeaf::getHash() << m_offset;
+	return SdaSymbolLeaf::getHash() << m_sdaMemSymbol->getOffset();
 }
 
 ISdaNode* SdaMemSymbolLeaf::cloneSdaNode(NodeCloneContext* ctx) {
-	return new SdaMemSymbolLeaf(getSdaSymbol(), m_decSymbol, m_offset, m_isAddrGetting);
+	return new SdaMemSymbolLeaf(m_symbolLeaf, m_sdaMemSymbol, m_isAddrGetting);
 }
 
 bool SdaMemSymbolLeaf::isAddrGetting() {
@@ -110,13 +116,18 @@ void SdaMemSymbolLeaf::setAddrGetting(bool toggle) {
 }
 
 void SdaMemSymbolLeaf::getLocation(MemLocation& location) {
-	location.m_type = (getSdaSymbol()->getType() == CE::Symbol::LOCAL_STACK_VAR ? MemLocation::STACK : MemLocation::GLOBAL);
-	location.m_offset = m_offset;
+	location.m_type = m_sdaMemSymbol->getType() == CE::Symbol::LOCAL_STACK_VAR ? MemLocation::STACK : MemLocation::GLOBAL;
+	location.m_offset = m_sdaMemSymbol->getOffset();
 	location.m_valueSize = m_sdaSymbol->getDataType()->getSize();
 }
 
 StoragePath SdaMemSymbolLeaf::getStoragePath() {
 	StoragePath path;
-	path.m_storage = getSdaSymbol()->getStorage();
+	if(m_sdaMemSymbol->getType() == CE::Symbol::LOCAL_STACK_VAR) {
+		path.m_register = PCode::Register(ZYDIS_REGISTER_RSP, 0, BitMask64(0x8), PCode::Register::Type::StackPointer);
+	} else {
+		path.m_register = PCode::Register(ZYDIS_REGISTER_RIP, 0, BitMask64(0x8), PCode::Register::Type::InstructionPointer);
+	}
+	path.m_offsets.push_back(m_sdaMemSymbol->getOffset());
 	return path;
 }

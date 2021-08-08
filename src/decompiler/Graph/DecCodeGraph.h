@@ -6,7 +6,13 @@ namespace CE::Decompiler
 {
 	class DecompiledCodeGraph
 	{
+		FunctionPCodeGraph* m_funcGraph;
+		std::list<DecBlock*> m_decompiledBlocks;
+		std::list<DecBlock*> m_removedDecompiledBlocks;
+		std::list<Symbol::Symbol*> m_symbols;
+		std::map<ComplexOffset, int> m_stackPointerValues;
 	public:
+		
 		DecompiledCodeGraph(FunctionPCodeGraph* funcGraph);
 
 		~DecompiledCodeGraph();
@@ -33,7 +39,11 @@ namespace CE::Decompiler
 
 		HS getHash();
 
-		DecBlock::BlockTopNode* findBlockTopNodeByOffset(ComplexOffset offset);
+		DecBlock::BlockTopNode* findBlockTopNodeAtOffset(ComplexOffset offset);
+
+		std::map<ComplexOffset, int>& getStackPointerValues();
+
+		int getStackPointerValueAtOffset(ComplexOffset offset);
 
 		// recalculate levels because some blocks can be removed (while parsing AND/OR block constructions)
 		void recalculateLevelsForBlocks();
@@ -41,10 +51,6 @@ namespace CE::Decompiler
 		// calculate count of lines(height) for each block beginining from lower blocks (need as some score for linearization)
 		static int CalculateHeightForDecBlocks(DecBlock* block);
 	private:
-		FunctionPCodeGraph* m_funcGraph;
-		std::list<DecBlock*> m_decompiledBlocks;
-		std::list<DecBlock*> m_removedDecompiledBlocks;
-		std::list<Symbol::Symbol*> m_symbols;
 
 		// pass decompiled graph and calculate max distance from the root to each node (dec block). Similarly to asm graph!
 		static void CalculateLevelsForDecBlocks(DecBlock* block, std::list<DecBlock*>& path);

@@ -105,6 +105,7 @@ namespace GUI
 			inline const static ColorRGBA COLOR_DEBUG_INFO = 0xd982c2FF;
 			inline const static ColorRGBA COLOR_BG_TEXT_ON_HOVER = 0x212e40FF;
 			inline const static ColorRGBA COLOR_BG_USER_SELECTED_TEXT = 0x3d0000FF;
+			inline const static ColorRGBA COLOR_BG_DEBUG_SELECTED_TEXT = 0x541453FF;
 			inline const static ColorRGBA COLOR_BG_SELECTED_TEXT = 0x374559FF;
 			inline const static ColorRGBA COLOR_FRAME_SELECTED_TEXT = 0x8c8c8cFF;
 			inline const static ColorRGBA COLOR_DATA_TYPE = 0xd9c691FF;
@@ -321,12 +322,21 @@ namespace GUI
 						}
 					}
 
-					if (m_decCodeViewer->m_debugger) {
+					if (m_decCodeViewer->m_debugger && !m_decCodeViewer->m_debugger->m_isStopped) {
 						if (const auto storagePathNode = dynamic_cast<CE::Decompiler::IStoragePathNode*>(node)) {
 							if(!hasGroup) {
+								auto isSelected = false;
+								if (m_decCodeViewer->m_debugger->m_valueViewerWin) {
+									isSelected = node == m_decCodeViewer->m_debugSelectedNode;
+								}
+								
+								if (isSelected)
+									m_parentGen->beginSelecting(COLOR_BG_DEBUG_SELECTED_TEXT);
 								m_groups.beginGroup(node);
 								ExprTreeViewGenerator::generateNode(node);
 								group = m_groups.endGroup();
+								if (isSelected)
+									m_parentGen->endSelecting();
 								hasGroup = true;
 							}
 							
@@ -335,19 +345,25 @@ namespace GUI
 								if (m_decCodeViewer->m_hoverTimer) {
 									if (GetTimeInMs() - m_decCodeViewer->m_hoverTimer > 200) {
 										const auto path = storagePathNode->getStoragePath();
-										std::string name = "value";
-										CE::DataTypePtr dataType;
-										if (const auto sdaNode = dynamic_cast<CE::Decompiler::ISdaNode*>(node)) {
-											if (const auto sdaSymbolLeaf = dynamic_cast<CE::Decompiler::SdaSymbolLeaf*>(node))
-												name = sdaSymbolLeaf->getSdaSymbol()->getName();
-											dataType = sdaNode->getDataType();
-										}
-										else {
-											const auto project = m_decCodeViewer->m_debugger->m_imageDec->getImageManager()->getProject();
-											dataType = project->getTypeManager()->getDefaultType(storagePathNode->getSize());
-										}
+										if (path.m_register.isValid()) {
+											std::string name = "value";
+											CE::DataTypePtr dataType;
+											if (const auto sdaNode = dynamic_cast<CE::Decompiler::ISdaNode*>(node)) {
+												if (const auto sdaSymbolLeaf = dynamic_cast<CE::Decompiler::SdaSymbolLeaf*>(node)) {
+													name = sdaSymbolLeaf->getSdaSymbol()->getName();
+													dataType = sdaSymbolLeaf->getSdaSymbol()->getDataType();
+												} else {
+													dataType = sdaNode->getSrcDataType();
+												}
+											}
+											else {
+												const auto project = m_decCodeViewer->m_debugger->m_imageDec->getImageManager()->getProject();
+												dataType = project->getTypeManager()->getDefaultType(storagePathNode->getSize());
+											}
 
-										m_decCodeViewer->m_debugger->createValueViewer(path, name, dataType);
+											m_decCodeViewer->m_debugger->createValueViewer(path, name, dataType);
+											m_decCodeViewer->m_debugSelectedNode = node;
+										}
 									}
 								}
 								else {
@@ -663,6 +679,7 @@ namespace GUI
 		CE::Decompiler::INode* m_selectedNode = nullptr;
 		CE::Decompiler::INode* m_hoveredNode = nullptr;
 		CE::Decompiler::INode* m_hoveredNodeOnPrevFrame = nullptr;
+		CE::Decompiler::INode* m_debugSelectedNode = nullptr;
 
 		// line selection
 		int m_debugSelectedLineIdx = -1;

@@ -83,15 +83,33 @@ void AbstractPrimaryDecompiler::interpreteGraph(PCodeBlock* pcodeBlock, int vers
 		// execute the instructions and then change the execution context
 		blockInfo.m_decBlock->clearCode();
 		InstructionInterpreter instructionInterpreter(this, blockInfo.m_decBlock, blockInfo.m_execCtx);
+		// for rsp register
+		VmExecutionContext execCtx;
+		const auto rsp = m_registerFactory->createStackPointerRegister();
+		execCtx.setRegisterValue(rsp, blockInfo.m_execCtx->m_registerExecCtx.m_stackPointerValue);
+		VmMemoryContext memCtx;
+		VirtualMachine vm(&execCtx, &memCtx, false);
 		for (const auto instr : pcodeBlock->getInstructions()) {
+			// for rip register
+			blockInfo.m_execCtx->m_registerExecCtx.m_instrPointerValue = instr->m_origInstruction->m_offset;
+
+			// generate high code
 			instructionInterpreter.execute(instr);
+			
+			// for rsp register
+			vm.execute(instr);
+			const auto prevStackPointerValue = blockInfo.m_execCtx->m_registerExecCtx.m_stackPointerValue;
+			execCtx.getRegisterValue(rsp, blockInfo.m_execCtx->m_registerExecCtx.m_stackPointerValue);
+			if(blockInfo.m_execCtx->m_registerExecCtx.m_stackPointerValue != prevStackPointerValue) {
+				m_decompiledGraph->getStackPointerValues()[instr->getOffset()] = (int&)blockInfo.m_execCtx->m_registerExecCtx.m_stackPointerValue;
+			}
 		}
 
 		const auto hasAlreadyDecompiled = blockInfo.m_isDecompiled;
 		blockInfo.m_isDecompiled = true;
 		blockInfo.m_versionOfDecompiling = versionOfDecompiling;
 
-		// go to the next blocks to deompile them
+		// go to the next blocks to decompile them
 		for (auto nextPCodeBlock : pcodeBlock->getNextBlocks()) {
 			auto nextDecBlockInfo = m_decompiledBlocks[nextPCodeBlock];
 

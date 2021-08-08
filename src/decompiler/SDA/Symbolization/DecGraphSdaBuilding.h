@@ -51,9 +51,5 @@ namespace CE::Decompiler::Symbolization
 
 		// store stack or global memory symbol by decompiler symbol (RSP/RIP) and offset
 		void storeSdaSymbolIfMem(CE::Symbol::ISymbol* sdaSymbol, Symbol::Symbol* symbol, int64_t& offset);
-
-		int64_t toGlobalOffset(int64_t offset) const;
-
-		int64_t toLocalOffset(int64_t offset) const;
 	};
 };

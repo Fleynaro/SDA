@@ -19,7 +19,6 @@ namespace CE
 		Symbol::GlobalSymbolTable* m_globalSymbolTable;
 		Symbol::StackSymbolTable* m_stackSymbolTable;
 		Symbol::GlobalSymbolTable* m_funcBodySymbolTable;
-		int64_t m_startOffset = 0;
 	};
 
 	class Function : public DB::DomainObject, public Ghidra::Object, public IDescription

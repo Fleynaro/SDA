@@ -362,7 +362,7 @@ namespace CE::Decompiler
 
 				if (auto dstCastNode = dynamic_cast<ISdaNode*>(sdaFunctionNode->getDestination())) {
 					if (const auto sdaMemSymbolLeaf = dynamic_cast<SdaMemSymbolLeaf*>(dstCastNode)) {
-						if (auto funcSymbol = dynamic_cast<CE::Symbol::FunctionSymbol*>(sdaMemSymbolLeaf->getSdaSymbol())) {
+						if (auto funcSymbol = dynamic_cast<CE::Symbol::FunctionSymbol*>(sdaMemSymbolLeaf->getSdaMemSymbol())) {
 							// if it is a non-virtual function call
 							return;
 						}

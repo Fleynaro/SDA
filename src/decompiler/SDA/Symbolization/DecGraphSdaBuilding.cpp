@@ -129,16 +129,11 @@ void SdaBuilding::buildSdaNodesAndReplace(INode* node) {
 		// if symbol has been found
 		if (sdaSymbolLeafToReplace)
 		{
-			bool transformToGlobalOffset = false;
 			bool isStackOrGlobal = false;
 			//check to see if this symbol is register
 			if (const auto regSymbol = dynamic_cast<Symbol::RegisterVariable*>(sdaSymbolLeafToReplace->m_symbol)) {
 				//if [rip] or [rsp] register
 				if (regSymbol->m_register.isPointer()) {
-					//transform to global offset
-					if (regSymbol->m_register.getType() == Register::Type::InstructionPointer) {
-						transformToGlobalOffset = true;
-					}
 					isStackOrGlobal = true;
 				}
 			}
@@ -166,37 +161,26 @@ void SdaBuilding::buildSdaNodesAndReplace(INode* node) {
 					size = readValueNode->getSize();
 				}
 			}
-
-			//before findOrCreateSymbol
-			if (transformToGlobalOffset)
-				offset = toGlobalOffset(offset);
-
+			
 			//find symbol or create it
 			const auto sdaSymbol = findOrCreateSymbol(sdaSymbolLeafToReplace->m_symbol, size, offset);
 
-			//after findOrCreateSymbol
-			if (transformToGlobalOffset)
-				offset = toLocalOffset(offset);
-
 			// creating sda symbol leaf (memory or normal)
 			SdaSymbolLeaf* newSdaSymbolLeaf = nullptr;
-			if (auto memSymbol = dynamic_cast<CE::Symbol::IMemorySymbol*>(sdaSymbol)) {
-				const auto storage = memSymbol->getStorage();
-				if (storage.getType() == Storage::STORAGE_STACK || storage.getType() == Storage::STORAGE_GLOBAL) {
-					// stackVar or globalVar
-					newSdaSymbolLeaf = new SdaMemSymbolLeaf(memSymbol, sdaSymbolLeafToReplace->m_symbol, storage.getOffset(), true);
-				}
+			if (auto memSymbol = dynamic_cast<CE::Symbol::AbstractMemorySymbol*>(sdaSymbol)) {
+				// stackVar or globalVar
+				newSdaSymbolLeaf = new SdaMemSymbolLeaf(sdaSymbolLeafToReplace, memSymbol, true);
 			}
 
 			if (!newSdaSymbolLeaf) {
-				// localVar
-				newSdaSymbolLeaf = new SdaSymbolLeaf(sdaSymbol, sdaSymbolLeafToReplace->m_symbol);
+				// localVar/param/memVar
+				newSdaSymbolLeaf = new SdaSymbolLeaf(sdaSymbolLeafToReplace, sdaSymbol);
 				m_replacedSymbols[sdaSymbolLeafToReplace->m_symbol] = newSdaSymbolLeaf;
 			}
 
 			//replace
 			sdaSymbolLeafToReplace->replaceWith(newSdaSymbolLeaf);
-			delete sdaSymbolLeafToReplace;
+			sdaSymbolLeafToReplace->addParentNode(newSdaSymbolLeaf);
 
 			if (symbolLeaf)
 				return;
@@ -275,19 +259,19 @@ CE::Symbol::ISymbol* SdaBuilding::findOrCreateSymbol(Symbol::Symbol* symbol, int
 				return sdaSymbol;
 			}
 
-			CE::Symbol::AbstractSymbol* sdaSymbol = nullptr;
+			CE::Symbol::AbstractMemorySymbol* sdaMemSymbol;
 			const auto dataType = m_project->getTypeManager()->getDefaultType(size);
 			if (isStackPointer) {
 				const auto name = "stack_0x" + Helper::String::NumberToHex(static_cast<uint32_t>(-offset));
-				sdaSymbol = m_symbolFactory.createLocalStackVarSymbol(offset, dataType, name);
+				sdaMemSymbol = m_symbolFactory.createLocalStackVarSymbol(offset, dataType, name);
 			}
 			else {
 				const auto name = "global_0x" + Helper::String::NumberToHex(offset);
-				sdaSymbol = m_symbolFactory.createGlobalVarSymbol(offset, dataType, name);
+				sdaMemSymbol = m_symbolFactory.createGlobalVarSymbol(offset, dataType, name);
 			}
-			m_newAutoSymbols.insert(sdaSymbol);
-			storeSdaSymbolIfMem(sdaSymbol, symbol, offset);
-			return sdaSymbol;
+			m_newAutoSymbols.insert(sdaMemSymbol);
+			storeSdaSymbolIfMem(sdaMemSymbol, symbol, offset);
+			return sdaMemSymbol;
 		}
 
 		//NOT-MEMORY symbol (unknown registers)
@@ -352,7 +336,7 @@ CE::Symbol::ISymbol* SdaBuilding::loadSdaSymbolIfMem(Symbol::Symbol* symbol, int
 		else if (reg.getType() == Register::Type::InstructionPointer) {
 			const auto it = m_globalToSymbols.find(offset);
 			if (it != m_globalToSymbols.end()) {
-				offset = toGlobalOffset(0x0);
+				offset = 0x0;
 				return it->second;
 			}
 		}
@@ -368,23 +352,11 @@ void SdaBuilding::storeSdaSymbolIfMem(CE::Symbol::ISymbol* sdaSymbol, Symbol::Sy
 		if (reg.getType() == Register::Type::StackPointer) {
 			m_stackToSymbols[offset] = sdaSymbol;
 			offset = 0x0;
-			return;
 		}
 		else if (reg.getType() == Register::Type::InstructionPointer) {
 			m_globalToSymbols[offset] = sdaSymbol;
-			offset = toGlobalOffset(0x0);
-			return;
+			offset = 0x0;
 		}
 		//todo: for other...
 	}
-}
-
-int64_t SdaBuilding::toGlobalOffset(int64_t offset) const
-{
-	return m_symbolCtx->m_startOffset + offset;
-}
-
-int64_t SdaBuilding::toLocalOffset(int64_t offset) const
-{
-	return offset - m_symbolCtx->m_startOffset;
 }

@@ -84,7 +84,7 @@ HS DecompiledCodeGraph::getHash() {
 	return hs;
 }
 
-DecBlock::BlockTopNode* DecompiledCodeGraph::findBlockTopNodeByOffset(ComplexOffset offset) {
+DecBlock::BlockTopNode* DecompiledCodeGraph::findBlockTopNodeAtOffset(ComplexOffset offset) {
 	for (auto decBlock : m_decompiledBlocks) {
 		if (decBlock->m_pcodeBlock->containsOffset(offset))
 			return decBlock->findBlockTopNodeByOffset(offset);
@@ -97,8 +97,20 @@ DecBlock::BlockTopNode* DecompiledCodeGraph::findBlockTopNodeByOffset(ComplexOff
 	return nullptr;
 }
 
-// recalculate levels because some blocks can be removed (while parsing AND/OR block constructions)
+std::map<CE::ComplexOffset, int>& DecompiledCodeGraph::getStackPointerValues() {
+	return m_stackPointerValues;
+}
 
+int DecompiledCodeGraph::getStackPointerValueAtOffset(ComplexOffset offset) {
+	if (m_stackPointerValues.empty())
+		return 0;
+	const auto it = std::prev(m_stackPointerValues.lower_bound(offset));
+	if (it == m_stackPointerValues.end())
+		return 0;
+	return it->second;
+}
+
+// recalculate levels because some blocks can be removed (while parsing AND/OR block constructions)
 void DecompiledCodeGraph::recalculateLevelsForBlocks() {
 	for (const auto decBlock : getDecompiledBlocks()) {
 		decBlock->m_level = 0;
@@ -108,7 +120,6 @@ void DecompiledCodeGraph::recalculateLevelsForBlocks() {
 }
 
 // calculate count of lines(height) for each block beginining from lower blocks (need as some score for linearization)
-
 int DecompiledCodeGraph::CalculateHeightForDecBlocks(DecBlock* block) {
 	int height = 0;
 	for (auto nextBlock : block->getNextBlocks()) {
