@@ -340,7 +340,7 @@ namespace GUI
 			PopupModalWindow* m_popupModalWindow = nullptr;
 			PopupContextWindow* m_ctxWindow = nullptr;
 		public:
-			Debugger* m_debugger = nullptr;
+			ImageDebugger* m_debugger = nullptr;
 			bool m_startDebug = false;
 			CodeSectionController* m_codeSectionController;
 			AbstractInstructionViewDecoder* m_instructionViewDecoder;
@@ -652,7 +652,7 @@ namespace GUI
 		std::map<const CE::ImageSection*, AbstractSectionController*> m_imageSectionControllers; // todo: move out of the scope
 		ImageSectionListModel m_imageSectionListModel;
 		MenuListView<const CE::ImageSection*> m_imageSectionMenuListView;
-		Debugger* m_debugger = nullptr;
+		ImageDebugger* m_debugger = nullptr;
 		StdWindow* m_funcGraphViewerWindow = nullptr;
 		StdWindow* m_decompiledCodeViewerWindow = nullptr;
 		PopupModalWindow* m_popupModalWindow = nullptr;
@@ -738,7 +738,7 @@ namespace GUI
 				{
 					if (codeSectionViewer->m_curFuncPCodeGraph) {
 						if (ImGui::MenuItem("Start Debug")) {
-							createDebugger(codeSectionViewer->m_curFuncPCodeGraph->getStartBlock()->getMinOffset(), Debugger::StepWidth::STEP_ORIGINAL_INSTR);
+							createDebugger(codeSectionViewer->m_curFuncPCodeGraph->getStartBlock()->getMinOffset(), ImageDebugger::StepWidth::STEP_ORIGINAL_INSTR);
 						}
 					}
 					if (m_debugger) {
@@ -1067,7 +1067,7 @@ namespace GUI
 				// start debug
 				if (codeSectionViewer->m_startDebug) {
 					const auto codeSectionRow = *codeSectionViewer->m_selectedRows.begin();
-					const auto stepWidth = codeSectionRow.m_isPCode ? Debugger::StepWidth::STEP_PCODE_INSTR : Debugger::StepWidth::STEP_ORIGINAL_INSTR;
+					const auto stepWidth = codeSectionRow.m_isPCode ? ImageDebugger::StepWidth::STEP_PCODE_INSTR : ImageDebugger::StepWidth::STEP_ORIGINAL_INSTR;
 					createDebugger(codeSectionRow.getOffset(), stepWidth);
 				}
 			}
@@ -1108,7 +1108,7 @@ namespace GUI
 				}
 				// start debug
 				else if(decCodeViewerPanel->m_startDebug) {
-					createDebugger(m_curDecGraph->getStartBlock()->m_pcodeBlock->getMinOffset(), Debugger::StepWidth::STEP_CODE_LINE);
+					createDebugger(m_curDecGraph->getStartBlock()->m_pcodeBlock->getMinOffset(), ImageDebugger::StepWidth::STEP_CODE_LINE);
 				}
 			}
 		}
@@ -1127,9 +1127,9 @@ namespace GUI
 			}
 		}
 
-		void createDebugger(CE::ComplexOffset startOffset, Debugger::StepWidth stepWidth) {
+		void createDebugger(CE::ComplexOffset startOffset, ImageDebugger::StepWidth stepWidth) {
 			delete m_debugger;
-			m_debugger = new Debugger(m_imageDec, startOffset);
+			m_debugger = new ImageDebugger(m_imageDec, startOffset);
 			m_debugger->m_stepWidth = stepWidth;
 			m_debugger->instrHandler([&](bool isNewGraph)
 				{
@@ -1142,7 +1142,7 @@ namespace GUI
 			if (isNewGraph) {
 				if (const auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer))
 					codeSectionViewer->goToOffset(m_debugger->m_curInstr->getOffset().getByteOffset());
-				if (m_debugger->m_stepWidth == Debugger::StepWidth::STEP_CODE_LINE) {
+				if (m_debugger->m_stepWidth == ImageDebugger::StepWidth::STEP_CODE_LINE) {
 					if (!m_curDecGraph || m_debugger->m_curPCodeBlock->m_funcPCodeGraph != m_curDecGraph->getFuncGraph()) {
 						decompile(m_debugger->m_curPCodeBlock->m_funcPCodeGraph, false);
 					}

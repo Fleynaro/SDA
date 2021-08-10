@@ -55,8 +55,10 @@ namespace GUI
 			StdWindow* m_funcViewerWindow = nullptr;
 			StdWindow* m_dataTypeViewerWindow = nullptr;
 			StdWindow* m_symbolViewerWindow = nullptr;
+			StdWindow* m_debugAttachProcessWindow = nullptr;
 			WindowManager m_imageContentWinManager;
 			StdWindow* m_messageWindow = nullptr;
+			Debugger* m_debugger = nullptr;
 		public:
 			StdWorkspace(ProjectPanel* projectPanel)
 				: m_projectPanel(projectPanel), m_project(projectPanel->m_project)
@@ -82,6 +84,7 @@ namespace GUI
 				Show(m_funcViewerWindow);
 				Show(m_dataTypeViewerWindow);
 				Show(m_symbolViewerWindow);
+				Show(m_debugAttachProcessWindow);
 				Show(m_messageWindow);
 			}
 
@@ -92,6 +95,20 @@ namespace GUI
 						m_project->getTransaction()->commit();
 					}
 					ImGui::EndMenu();
+				}
+
+				if (ImGui::BeginMenu("Debug"))
+				{
+					if (ImGui::MenuItem("Attach Process", nullptr)) {
+						delete m_debugAttachProcessWindow;
+						const auto panel = new DebuggerAttachProcessPanel;
+						panel->selectProcessEventHandler([&, panel]()
+							{
+								delete m_debugger;
+								m_debugger = new Debugger(m_project, panel->m_debugSession);
+							});
+						m_debugAttachProcessWindow = new StdWindow(panel);
+					}
 				}
 
 				if (ImGui::BeginMenu("View"))

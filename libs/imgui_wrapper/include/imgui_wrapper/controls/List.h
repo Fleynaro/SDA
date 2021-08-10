@@ -125,8 +125,10 @@ namespace GUI
 			{
 				std::string text;
 				T data;
-				iter->getNextItem(&text, &data);
-				renderItem(text, data, n++);
+				if (!text.empty()) {
+					iter->getNextItem(&text, &data);
+					renderItem(text, data, n++);
+				}
 			}
 		}
 
@@ -181,7 +183,8 @@ namespace GUI
 				Item item;
 				item.n = n++;
 				iter->getNextItem(&item.text, &item.data);
-				items.push_back(item);
+				if (!item.text.empty())
+					items.push_back(item);
 			}
 
 			// sort the items

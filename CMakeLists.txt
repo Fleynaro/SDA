@@ -45,13 +45,16 @@ add_subdirectory(extras/ghidra_sync)
 add_subdirectory(data/resources)
 include_directories(src)
 add_subdirectory(src/utilities)
+add_subdirectory(src/debugger)
 add_subdirectory(src/core)
 add_subdirectory(extras/dec_test_functions)
 add_subdirectory(extras/dec_test_samples)
+add_subdirectory(extras/test_program)
 add_subdirectory(src/gui)
 
 set_target_properties(dec_test_samples PROPERTIES FOLDER "extras")
 set_target_properties(dec_test_functions PROPERTIES FOLDER "extras")
+set_target_properties(test_program PROPERTIES FOLDER "extras")
 
 # for creating the gui app
 add_executable(

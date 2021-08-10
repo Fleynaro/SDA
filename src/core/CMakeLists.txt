@@ -26,6 +26,7 @@ target_sources(
 target_link_libraries(
     core PUBLIC
     utilities
+    debugger
     ghidra_sync_thrift
     nlohmann_json
     magic_enum::magic_enum

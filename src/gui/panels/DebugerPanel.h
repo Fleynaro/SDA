@@ -2,6 +2,7 @@
 #include <utility>
 
 #include "ImageDecorator.h"
+#include "debugger/Debug.h"
 #include "decompiler/PCode/DecPCodeInstructionPool.h"
 #include "decompiler/PCode/DecPCodeVirtualMachine.h"
 #include "decompiler/PCode/DecRegisterFactory.h"
@@ -15,6 +16,133 @@
 
 namespace GUI
 {
+	class Debugger : public AbstractPanel
+	{
+		CE::Project* m_project;
+		CE::IDebugSession* m_debugSession;
+		CE::AddressSpace* m_addressSpace;
+	
+	public:
+		Debugger(CE::Project* project, CE::IDebugSession* debugSession)
+			: m_project(project), m_debugSession(debugSession)
+		{
+			m_addressSpace = m_project->getAddrSpaceManager()->createAddressSpace();
+		}
+
+	private:
+		void renderPanel() override {
+			
+		}
+	};
+
+	class DebuggerAttachProcessPanel : public AbstractPanel
+	{
+		class DebugProcessListModel : public IListModel<CE::DebugProcess*>
+		{
+			std::list<CE::DebugProcess>* m_list;
+		public:
+			std::string m_filterName;
+			
+			DebugProcessListModel(std::list<CE::DebugProcess>* list)
+				: m_list(list)
+			{}
+
+		private:
+			class DebugProcessIterator : public Iterator
+			{
+				std::list<CE::DebugProcess>::iterator m_it;
+				DebugProcessListModel* m_model;
+			public:
+				DebugProcessIterator(DebugProcessListModel* model)
+					: m_model(model), m_it(m_model->m_list->begin())
+				{}
+
+				void getNextItem(std::string* text, CE::DebugProcess** data) override {
+					if (m_it->m_name.find(m_model->m_filterName) == std::string::npos)
+						return;
+					*text = std::to_string(m_it->m_id) + "," + m_it->m_name;
+					*data = &*m_it;
+					++m_it;
+				}
+
+				bool hasNextItem() override {
+					return m_it != m_model->m_list->end();
+				}
+			};
+
+			void newIterator(const IteratorCallback& callback) override
+			{
+				DebugProcessIterator iterator(this);
+				callback(&iterator);
+			}
+		};
+
+		CE::Project* m_project;
+		std::string m_selectedDebuggerStr;
+		CE::Debugger m_selectedDebugger;
+		CE::DebugProcess* m_selectedProcess = nullptr;
+		std::list<CE::DebugProcess> m_debugProcesses;
+		DebugProcessListModel m_processListModel;
+		Input::TextInput m_textInput;
+		SelectableTableListView<CE::DebugProcess*> m_tableProcessListView;
+
+		EventHandler<> m_selectProcessEventHandler;
+	public:
+		CE::IDebugSession* m_debugSession = nullptr;
+		
+		DebuggerAttachProcessPanel()
+			: AbstractPanel("Attach Process"), m_processListModel(&m_debugProcesses)
+		{
+			m_selectedDebugger = *CE::GetAvailableDebuggers().begin();
+			m_selectedDebuggerStr = GetDubuggerName(m_selectedDebugger);
+			m_debugProcesses = CE::GetProcesses();
+			m_tableProcessListView = SelectableTableListView(&m_processListModel, {
+				ColInfo("PID", ImGuiTableColumnFlags_WidthFixed, 50.0f),
+				ColInfo("Name", ImGuiTableColumnFlags_None)
+			});
+			m_tableProcessListView.handler([&](CE::DebugProcess* process)
+				{
+					m_selectedProcess = process;
+				});
+		}
+
+		void selectProcessEventHandler(const std::function<void()>& handler) {
+			m_selectProcessEventHandler = handler;
+		}
+
+	private:
+		void renderPanel() override {
+			if (ImGui::BeginCombo("##combo", m_selectedDebuggerStr.c_str())) {
+				for(const auto debugger : CE::GetAvailableDebuggers()) {
+					const auto name = GetDubuggerName(debugger);
+					const auto isSelected = debugger == m_selectedDebugger;
+					if (ImGui::Selectable(name.c_str(), isSelected)) {
+						m_selectedDebugger = debugger;
+						m_selectedDebuggerStr = name;
+					}
+				}
+				ImGui::EndCombo();
+			}
+
+			m_textInput.show();
+			if (m_textInput.isTextEntering())
+				m_processListModel.m_filterName = m_textInput.getInputText();
+			ImGui::BeginChild("##processes", ImVec2(0, 400));
+			m_tableProcessListView.show();
+			ImGui::EndChild();
+			
+			NewLine();
+			if (Button::StdButton("Attach").present()) {
+				if(m_selectedProcess) {
+					m_debugSession = CreateDebugSession(m_selectedDebugger);
+					m_debugSession->attachProcess(*m_selectedProcess);
+					m_selectProcessEventHandler();
+					m_window->close();
+				}
+			}
+		}
+	};
+	
 	class ValueViewerPanel : public AbstractPanel
 	{
 	public:
@@ -288,7 +416,7 @@ namespace GUI
 		}
 	};
 	
-	class Debugger : public Control
+	class ImageDebugger : public Control
 	{
 		class AbstractViewerPanel : public AbstractPanel
 		{
@@ -551,7 +679,7 @@ namespace GUI
 		bool m_showContexts = false;
 		PopupBuiltinWindow* m_valueViewerWin = nullptr;
 		
-		Debugger(CE::ImageDecorator* imageDec, CE::ComplexOffset startOffset)
+		ImageDebugger(CE::ImageDecorator* imageDec, CE::ComplexOffset startOffset)
 			: m_imageDec(imageDec), m_offset(startOffset), m_vm(&m_execCtx, &m_memCtx, false)
 		{
 			m_execCtxViewerWin = new StdWindow(new ExecContextViewerPanel(&m_execCtx, &m_registerFactoryX86));
@@ -560,7 +688,7 @@ namespace GUI
 			m_execCtx.setRegisterValue(CE::Decompiler::Register(ZYDIS_REGISTER_RSP), 0x1000000000);
 		}
 
-		~Debugger() {
+		~ImageDebugger() {
 			delete m_execCtxViewerWin;
 			delete m_stackViewerWin;
 			delete m_valueViewerWin;
