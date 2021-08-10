@@ -44,11 +44,7 @@ ImageDecorator::ImageDecorator(ImageManager* imageManager, AddressSpace* address
 
 ImageDecorator::~ImageDecorator() {
 	m_addressSpace->getImageDecorators().remove(this);
-	
-	if (m_image) {
-		delete m_image->getData();
-		delete m_image;
-	}
+	delete m_image;
 
 	if (!m_parentImageDec) {
 		delete m_instrPool;
@@ -67,12 +63,16 @@ void ImageDecorator::load() {
 	Helper::File::LoadFileIntoBuffer(getFile(), &buffer, &size);
 
 	if (m_type == IMAGE_PE) {
-		m_image = new PEImage((int8_t*)buffer, size);
+		const auto image = new PEImage(new SimpleReader((uint8_t*)buffer, size));
+		image->analyze();
+		m_image = image;
 	}
 }
 
 void ImageDecorator::save() {
-	Helper::File::SaveBufferIntoFile((char*)m_image->getData(), m_image->getSize(), getFile());
+	std::vector<uint8_t> buffer(m_image->getSize());
+	m_image->getReader()->read(0x0, buffer);
+	Helper::File::SaveBufferIntoFile((char*)&buffer, buffer.size(), getFile());
 }
 
 bool ImageDecorator::hasLoaded() const {

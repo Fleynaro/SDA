@@ -93,7 +93,7 @@ namespace GUI
 	class AbstractInstructionViewDecoder
 	{
 	public:
-		virtual bool decode(const void* addr, InstructionViewInfo* instrViewInfo) = 0;
+		virtual bool decode(const std::vector<uint8_t>& data, InstructionViewInfo* instrViewInfo) = 0;
 	};
 
 	class InstructionViewDecoderX86 : public AbstractInstructionViewDecoder
@@ -107,9 +107,9 @@ namespace GUI
 			ZydisFormatterInit(&m_formatter, ZYDIS_FORMATTER_STYLE_INTEL);
 		}
 
-		bool decode(const void* addr, InstructionViewInfo* instrViewInfo) override {
+		bool decode(const std::vector<uint8_t>& data, InstructionViewInfo* instrViewInfo) override {
 			ZydisDecodedInstruction instruction;
-			if (ZYAN_FAILED(ZydisDecoderDecodeBuffer(&m_decoder, addr, 0x100, &instruction))) {
+			if (ZYAN_FAILED(ZydisDecoderDecodeBuffer(&m_decoder, data.data(), data.size(), &instruction))) {
 				return false;
 			}
 
@@ -174,7 +174,9 @@ namespace GUI
 			Text::Text("+" + NumberToHex(offset - graphOffset)).show();
 
 			InstructionViewInfo instrViewInfo;
-			instrViewDecoder->decode(image->getData() + image->toImageOffset(offset), &instrViewInfo);
+			std::vector<uint8_t> buffer(100);
+			image->read(offset, buffer);
+			instrViewDecoder->decode(buffer, &instrViewInfo);
 			InstructionTableRowViewer2 instructionViewer(&instrViewInfo);
 			instructionViewer.show();
 

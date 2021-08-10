@@ -78,5 +78,13 @@ namespace GUI
 
 			return true;
 		}
+
+		void addExtraItems() override {
+			const auto debugAddressSpace = m_manager->getProject()->getAddrSpaceManager()->m_debugAddressSpace;
+			if (!debugAddressSpace)
+				return;
+			const auto images = debugAddressSpace->getImageDecorators();
+			m_items.insert(m_items.begin(), images.begin(), images.end());
+		}
 	};
 };

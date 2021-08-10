@@ -186,7 +186,9 @@ namespace GUI
 				using namespace Helper::String;
 
 				auto symbol = m_dataSectionController->getSymbol(offset);
-				const auto pValue = reinterpret_cast<uint64_t*>(&m_dataSectionController->getImageData()[offset]);
+				std::vector<uint8_t> buffer(0x8);
+				m_dataSectionController->m_imageDec->getImage()->read(offset, buffer);
+				const auto pValue = reinterpret_cast<uint64_t*>(buffer.data());
 				ImGui::TableNextColumn();
 				Text::Text(symbol->getDataType()->getDisplayName()).show();
 				ImGui::TableNextColumn();
@@ -432,7 +434,9 @@ namespace GUI
 
 								// Asm
 								InstructionViewInfo instrViewInfo;
-								m_instructionViewDecoder->decode(m_codeSectionController->getImageDataByOffset(instrOffset), &instrViewInfo);
+								std::vector<uint8_t> buffer(100);
+								m_codeSectionController->m_imageDec->getImage()->read(instrOffset, buffer);
+								m_instructionViewDecoder->decode(buffer, &instrViewInfo);
 								CodeSectionInstructionViewer instructionViewer(&instrViewInfo);
 								instructionViewer.renderJmpArrow([&]()
 									{

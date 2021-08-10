@@ -4,13 +4,11 @@
 using namespace CE::Decompiler;
 using namespace PCode;
 
-void DecoderX86::tryDecode(void* addr, Offset offset) {
-	const auto size = m_maxSize > 0 ? (m_maxSize - offset) : 0x1000;
+void DecoderX86::tryDecode(const std::vector<uint8_t>& data) {
 	ZydisDecodedInstruction curInstruction;
-	if (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&m_decoder, addr, size,
-		&curInstruction))) {
+	if (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&m_decoder, data.data(), data.size(), &curInstruction))) {
 		m_curInstr = &curInstruction;
-		m_curOrigInstr = m_instrPool->createOrigInstruction(offset, curInstruction.length);
+		m_curOrigInstr = m_instrPool->createOrigInstruction(m_curOffset, curInstruction.length);
 		translateCurInstruction();
 	}
 }

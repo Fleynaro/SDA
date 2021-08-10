@@ -66,6 +66,7 @@ namespace GUI
 		{
 			int itemsCount = 0;
 			m_items.clear();
+			addExtraItems();
 			CE::AbstractItemManager::AbstractIterator<T> iterator(m_manager);
 			while (iterator.hasNext())
 			{
@@ -79,5 +80,7 @@ namespace GUI
 			}
 			sort();
 		}
+
+		virtual void addExtraItems() {}
 	};
 };

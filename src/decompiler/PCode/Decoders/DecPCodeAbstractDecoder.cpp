@@ -3,13 +3,12 @@
 using namespace CE::Decompiler;
 using namespace PCode;
 
-void AbstractDecoder::decode(void* addr, Offset offset, int maxSize) {
-	m_addr = addr;
+void AbstractDecoder::decode(Offset offset, const std::vector<uint8_t>& data) {
+	m_curOffset = offset;
 	m_curOrigInstr = nullptr;
 	m_curOrderId = 0x0;
-	m_maxSize = maxSize;
 	clear();
-	tryDecode(addr, offset);
+	tryDecode(data);
 }
 
 void AbstractDecoder::clear() {

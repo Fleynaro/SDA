@@ -4,6 +4,7 @@
 #include <atlcomcli.h>
 #include "DebugSession.h"
 #include <map>
+#include <mutex>
 #include <thread>
 
 #pragma comment(lib,"Ole32.lib")
@@ -195,11 +196,12 @@ namespace CE
 
         State m_state = State::NONE;
 
-        std::string m_attachProcessName;
+        DebugProcess m_process;
         std::list<DebugModule> m_modules;
         std::map<std::uintptr_t, PDEBUG_BREAKPOINT> m_breakpoints;
         std::thread m_eventLoopThread;
         DebuggerEngineException m_exception;
+        std::mutex m_mutex;
 	public:
 		DebuggerEngineSession()
 		{}
@@ -235,9 +237,17 @@ namespace CE
             }
 		}
 
+        Debugger getDebugger() override {
+            return Debugger::DebuggerEngine;
+		}
+		
 		void attachProcess(const DebugProcess& process) override {
-            m_attachProcessName = process.m_name;
+            m_process = process;
             runSession();
+		}
+
+		DebugProcess getProcess() override {
+            return m_process;
 		}
 
 		void stepOver() override {
@@ -300,8 +310,20 @@ namespace CE
             m_breakpoints.erase(it);
 		}
 
-		const std::list<DebugModule>& getModules() override {
-            return m_modules;
+		std::list<DebugModule> getModules() override {
+            m_mutex.lock();
+            const auto modules = m_modules;
+            m_mutex.unlock();
+            return modules;
+		}
+
+		void readMemory(uint64_t offset, std::vector<uint8_t>& data) override {
+            ULONG bytesRead;
+            const auto hr = m_dataSpaces->ReadVirtual(offset, data.data(), data.size(), &bytesRead);
+            Check(hr, "ReadVirtual error");
+            if (bytesRead != data.size()) {
+                throw DebugException("not all bytes has read");
+            }
 		}
 	
 	private:
@@ -314,7 +336,7 @@ namespace CE
 
                         // search
                         ULONG processId;
-                        foundProcessByName(m_attachProcessName, processId);
+                        foundProcessByName(m_process.m_name, processId);
 
                         // attach
                         const auto hr = m_client->AttachProcess(NULL, processId, DEBUG_ATTACH_DEFAULT);

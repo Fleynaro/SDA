@@ -9,7 +9,7 @@ using namespace PCode;
 
 // pass pcode graph and gather its blocks
 
-ImageAnalyzer::ImageAnalyzer(AbstractImage* image, ImagePCodeGraph* imageGraph, AbstractDecoder* decoder, AbstractRegisterFactory* registerFactory, PCodeGraphReferenceSearch* graphReferenceSearch)
+ImageAnalyzer::ImageAnalyzer(IImage* image, ImagePCodeGraph* imageGraph, AbstractDecoder* decoder, AbstractRegisterFactory* registerFactory, PCodeGraphReferenceSearch* graphReferenceSearch)
 	: m_image(image), m_imageGraph(imageGraph), m_decoder(decoder), m_registerFactory(registerFactory), m_graphReferenceSearch(graphReferenceSearch)
 {}
 
@@ -308,7 +308,7 @@ void ImageAnalyzer::GatherPCodeBlocks(PCodeBlock* block, std::set<PCodeBlock*>& 
 	GatherPCodeBlocks(block->getNextFarBlock(), gatheredBlocks);
 }
 
-PCodeGraphReferenceSearch::PCodeGraphReferenceSearch(Project* project, AbstractRegisterFactory* registerFactory, AbstractImage* image)
+PCodeGraphReferenceSearch::PCodeGraphReferenceSearch(Project* project, AbstractRegisterFactory* registerFactory, IImage* image)
 	: m_project(project), m_registerFactory(registerFactory), m_image(image)
 {
 	const auto factory = m_project->getSymTableManager()->getFactory(false);

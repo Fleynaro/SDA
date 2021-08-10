@@ -42,7 +42,7 @@ namespace CE
 
 		void analyze();
 
-		Sample* createSampleTest(int testId, const std::string& name, const std::string& comment, AbstractImage* image,
+		Sample* createSampleTest(int testId, const std::string& name, const std::string& comment, IImage* image,
 		                         int offset = 0);
 
 		Sample* createSampleTest(int testId, const std::string& name, const std::string& comment, std::vector<uint8_t> content);

@@ -8,9 +8,11 @@
 #include "decompiler/PCode/DecRegisterFactory.h"
 #include "decompiler/Graph/DecPCodeGraph.h"
 #include "decompiler/Graph/DecCodeGraphBlock.h"
+#include "images/DebugImage.h"
 #include "imgui_wrapper/Window.h"
 #include "imgui_wrapper/controls/AbstractPanel.h"
 #include "imgui_wrapper/controls/Text.h"
+#include "managers/SymbolTableManager.h"
 #include "panels/BuiltinInputPanel.h"
 #include "utilities/Helper.h"
 
@@ -21,17 +23,55 @@ namespace GUI
 		CE::Project* m_project;
 		CE::IDebugSession* m_debugSession;
 		CE::AddressSpace* m_addressSpace;
-	
+		std::map<std::uintptr_t, CE::ImageDecorator*> m_images;
+		CE::Symbol::GlobalSymbolTable* m_globalSymbolTable;
+		CE::Symbol::GlobalSymbolTable* m_funcBodySymbolTable;
 	public:
 		Debugger(CE::Project* project, CE::IDebugSession* debugSession)
 			: m_project(project), m_debugSession(debugSession)
 		{
-			m_addressSpace = m_project->getAddrSpaceManager()->createAddressSpace();
+			const auto factory = m_project->getSymTableManager()->getFactory(false);
+			m_globalSymbolTable = factory.createGlobalSymbolTable();
+			m_funcBodySymbolTable = factory.createGlobalSymbolTable();
+			m_addressSpace = m_project->getAddrSpaceManager()->createAddressSpace(debugSession->getProcess().m_name, "", false);
+			m_project->getAddrSpaceManager()->m_debugAddressSpace = m_addressSpace;
+		}
+
+		~Debugger() {
+			m_project->getAddrSpaceManager()->m_debugAddressSpace = nullptr;
+			delete m_addressSpace;
+			delete m_globalSymbolTable;
+			delete m_funcBodySymbolTable;
+			for (const auto& [addr, imageDec] : m_images)
+				delete imageDec;
 		}
 
 	private:
 		void renderPanel() override {
-			
+			// todo: timer 1 sec
+			updateModules();
+		}
+
+		void updateModules() {
+			const auto modules = m_debugSession->getModules();
+			for(const auto m : modules) {
+				const auto it = m_images.find(m.m_baseAddress);
+				if (it != m_images.end())
+					continue;
+				m_images[m.m_baseAddress] = createImage(m);
+				
+			}
+		}
+
+		CE::ImageDecorator* createImage(const CE::DebugModule& debugModule) const {
+			const auto name = debugModule.m_path.filename().string();
+			const auto imageDec = m_project->getImageManager()->createImage(m_addressSpace, CE::ImageDecorator::IMAGE_DEBUG, m_globalSymbolTable, m_funcBodySymbolTable, name);
+			const auto debugReader = new CE::DebugReader(m_debugSession, debugModule);
+			CE::AbstractImage* debugImage = nullptr;
+			if (m_debugSession->getDebugger() == CE::Debugger::DebuggerEngine)
+				debugImage = new CE::PEImage(debugReader);
+			imageDec->setImage(debugImage);
+			return imageDec;
 		}
 	};
 

@@ -3,11 +3,6 @@
 
 namespace CE
 {
-	enum class Debugger
-	{
-		DebuggerEngine // WinDbg
-	};
-
 	std::list<Debugger> GetAvailableDebuggers();
 
 	std::string GetDubuggerName(Debugger debugger);

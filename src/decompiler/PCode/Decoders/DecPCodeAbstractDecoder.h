@@ -1,6 +1,7 @@
 #pragma once
 #include "../DecRegisterFactory.h"
 #include "../DecPCodeInstructionPool.h"
+#include <vector>
 #include <decompiler/DecWarningContainer.h>
 
 namespace CE::Decompiler::PCode
@@ -14,7 +15,7 @@ namespace CE::Decompiler::PCode
 			: m_instrPool(instrPool), m_warningContainer(warningContainer)
 		{}
 
-		void decode(void* addr, Offset offset, int maxSize = 0x0);
+		void decode(Offset offset, const std::vector<uint8_t>& data);
 
 		void clear();
 
@@ -28,11 +29,10 @@ namespace CE::Decompiler::PCode
 	protected:
 		WarningContainer* m_warningContainer;
 		std::list<Instruction*> m_result;
-		void* m_addr = nullptr;
 		Instruction::OriginalInstruction* m_curOrigInstr = nullptr;
+		Offset m_curOffset = 0;
 		int m_curOrderId = 0;
-		int m_maxSize = 0x0;
 
-		virtual void tryDecode(void* addr, Offset offset) = 0;
+		virtual void tryDecode(const std::vector<uint8_t>& data) = 0;
 	};
 };

@@ -18,14 +18,6 @@ namespace GUI
 			: m_imageDec(imageDec), m_imageSection(imageSection)
 		{}
 
-		int8_t* getImageData() const {
-			return m_imageDec->getImage()->getData();
-		}
-
-		int8_t* getImageDataByOffset(CE::Offset offset) const {
-			return m_imageDec->getImage()->getData() + m_imageSection->toImageOffset(offset);
-		}
-
 		virtual void update() = 0;
 	};
 
@@ -243,18 +235,16 @@ namespace GUI
 	
 	private:
 		void fillOffsets() {
-			const auto data = getImageData();
-			auto offset = static_cast<int64_t>(m_imageSection->getMinOffset());
-			auto size = m_imageSection->m_virtualSize;
+			auto offset = m_imageSection->getMinOffset();
 			ZydisDecodedInstruction instruction;
-			while (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&m_decoder, data + m_imageSection->toImageOffset(offset), size, &instruction)))
+			while (decode(offset, &instruction))
 			{
 				if (instruction.meta.category == ZYDIS_CATEGORY_COND_BR || instruction.meta.category == ZYDIS_CATEGORY_UNCOND_BR) {
 					const auto& operand = instruction.operands[0];
 					if (operand.type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
 						if (operand.imm.is_relative) {
 							const auto targetOffset = offset + instruction.length + operand.imm.value.s;
-							if (std::abs(offset - targetOffset) < 0x300) {
+							if (std::abs(static_cast<int64_t>(offset) - static_cast<int64_t>(targetOffset)) < 0x300) {
 								addJump(offset, targetOffset);
 							}
 						}
@@ -262,10 +252,15 @@ namespace GUI
 				}
 				addOffset(offset);
 				offset += instruction.length;
-				size -= instruction.length;
 			}
 
 			setupJmpLevels();
+		}
+
+		bool decode(CE::Offset offset, ZydisDecodedInstruction* instruction) const {
+			std::vector<uint8_t> buffer(100);
+			m_imageDec->getImage()->read(offset, buffer);
+			return ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&m_decoder, buffer.data(), buffer.size(), instruction));
 		}
 	};
 };

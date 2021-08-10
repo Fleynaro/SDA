@@ -695,7 +695,7 @@ namespace GUI
 		uint64_t m_hoverTimer = 0;
 
 		CE::Decompiler::LinearView::BlockList* m_blockList;
-		CE::AbstractImage* m_image = nullptr;
+		CE::IImage* m_image = nullptr;
 		AbstractInstructionViewDecoder* m_instructionViewDecoder = nullptr;
 		CE::Decompiler::PrimaryDecompiler* m_primaryDecompiler = nullptr;
 
@@ -727,7 +727,7 @@ namespace GUI
 			delete m_instructionViewDecoder;
 		}
 
-		void setInfoToShowAsm(CE::AbstractImage* image, AbstractInstructionViewDecoder* instructionViewDecoder) {
+		void setInfoToShowAsm(CE::IImage* image, AbstractInstructionViewDecoder* instructionViewDecoder) {
 			m_image = image;
 			m_instructionViewDecoder = instructionViewDecoder;
 		}

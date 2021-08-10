@@ -1,7 +1,9 @@
 #pragma once
+#include "ImageReader.h"
 #include <list>
 #include <stdexcept>
 #include "Offset.h"
+#include <vector>
 
 namespace CE
 {
@@ -47,41 +49,29 @@ namespace CE
 		inline const static ImageSection DefaultSection = ImageSection();
 	protected:
 		std::list<ImageSection> m_imageSections;
+		IReader* m_reader;
 	public:
-		virtual int8_t* getData() = 0;
+		AbstractImage(IReader* reader);
 
-		virtual int getSize() = 0;
+		~AbstractImage();
+
+		IReader* getReader() const;
+
+		void read(Offset offset, std::vector<uint8_t>& data) const;
+
+		int getSize() const;
 
 		virtual int getOffsetOfEntryPoint() = 0;
 
-		virtual std::uintptr_t getAddress() {
-			return 0x0;
-		}
+		virtual std::uintptr_t getAddress();
 
-		const std::list<ImageSection>& getImageSections() const
-		{
-			return m_imageSections;
-		}
+		const std::list<ImageSection>& getImageSections() const;
 
-		uint64_t addrToRva(uint64_t addr) {
-			return addr - getAddress();
-		}
+		uint64_t addrToRva(uint64_t addr);
 
 		// rva(=offset) to image file offset (ghidra makes this transform automatically)
-		uint64_t toImageOffset(Offset offset) const {
-			const auto section = getSectionByOffset(offset);
-			if (!section)
-				return offset;
-			return section->toImageOffset(offset);
-		}
+		uint64_t toImageOffset(Offset offset) const;
 
-		const ImageSection* getSectionByOffset(Offset offset) const {
-			for (auto& section : m_imageSections) {
-				if (section.contains(offset)) {
-					return &section;
-				}
-			}
-			return &DefaultSection;
-		}
+		const ImageSection* getSectionByOffset(Offset offset) const;
 	};
 };

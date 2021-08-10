@@ -11,7 +11,10 @@ HRESULT CE::DebuggerEngineEventCallbacks::LoadModule(ULONG64 imghdl, ULONG64 bas
 	debugModule.m_path = imgname;
 	debugModule.m_baseAddress = baseoff;
 	debugModule.m_size = modsize;
+	debugModule.m_isLoaded = true;
+	m_debugSession->m_mutex.lock();
 	m_debugSession->m_modules.push_back(debugModule);
+	m_debugSession->m_mutex.unlock();
 	return DEBUG_STATUS_NO_CHANGE;
 }
 

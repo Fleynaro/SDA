@@ -86,6 +86,10 @@ namespace GUI
 				Show(m_symbolViewerWindow);
 				Show(m_debugAttachProcessWindow);
 				Show(m_messageWindow);
+
+				if (m_debugger) {
+					m_debugger->show();
+				}
 			}
 
 			void renderMenuBar() override {

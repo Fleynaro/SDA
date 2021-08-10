@@ -20,7 +20,7 @@ ImageDecorator* ImageManager::createImage(AddressSpace* addressSpace, ImageDecor
 }
 
 ImageDecorator* ImageManager::createImage(AddressSpace* addressSpace, ImageDecorator::IMAGE_TYPE type, const std::string& name, const std::string& comment, bool markAsNew) {
-	const auto factory = getProject()->getSymTableManager()->getFactory();
+	const auto factory = getProject()->getSymTableManager()->getFactory(markAsNew);
 	const auto globalSymbolTable = factory.createGlobalSymbolTable();
 	const auto funcBodySymbolTable = factory.createGlobalSymbolTable();
 	return createImage(addressSpace, type, globalSymbolTable, funcBodySymbolTable, name, comment, markAsNew);

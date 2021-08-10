@@ -10,6 +10,11 @@ namespace CE
 	public: DebugException(const std::string& message) : std::exception(message.c_str()) {}
 	};
 
+	enum class Debugger
+	{
+		DebuggerEngine // WinDbg
+	};
+
 	struct DebugProcess
 	{
 		uint64_t m_id;
@@ -21,12 +26,17 @@ namespace CE
 		std::filesystem::path m_path;
 		std::uintptr_t m_baseAddress;
 		int m_size;
+		bool m_isLoaded;
 	};
 	
 	class IDebugSession
 	{
 	public:
+		virtual Debugger getDebugger() = 0;
+		
 		virtual void attachProcess(const DebugProcess& process) = 0;
+
+		virtual DebugProcess getProcess() = 0;
 
 		virtual void stepOver() = 0;
 
@@ -46,6 +56,8 @@ namespace CE
 
 		virtual void removeBreakpoint(std::uintptr_t address) = 0;
 
-		virtual const std::list<DebugModule>& getModules() = 0;
+		virtual std::list<DebugModule> getModules() = 0;
+
+		virtual void readMemory(uint64_t offset, std::vector<uint8_t>& data) = 0;
 	};
 };

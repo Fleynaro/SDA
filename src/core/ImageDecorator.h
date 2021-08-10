@@ -25,7 +25,8 @@ namespace CE
 	{
 	public:
 		enum IMAGE_TYPE {
-			IMAGE_PE
+			IMAGE_PE,
+			IMAGE_DEBUG
 		};
 
 	private:

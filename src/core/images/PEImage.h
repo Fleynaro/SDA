@@ -6,17 +6,14 @@ namespace CE
 {
 	class PEImage : public AbstractImage
 	{
-		int8_t* m_data;
-		int m_size;
-		PIMAGE_DOS_HEADER m_pImgDosHeader;
-		PIMAGE_NT_HEADERS m_pImgNtHeaders;
-		PIMAGE_SECTION_HEADER m_pImgSecHeader;
+		IMAGE_DOS_HEADER m_imgDosHeader;
+		IMAGE_NT_HEADERS m_imgNtHeaders;
 	public:
-		PEImage(int8_t* data, int size);
+		PEImage(IReader* reader);
 
-		int8_t* getData() override;
+		~PEImage();
 
-		int getSize() override;
+		void analyze();
 
 		int getOffsetOfEntryPoint() override;
 

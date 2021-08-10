@@ -13,6 +13,8 @@ namespace CE
 	public:
 		using Iterator = AbstractIterator<AddressSpace>;
 
+		AddressSpace* m_debugAddressSpace = nullptr;
+
 		AddressSpaceManager(Project* project);
 
 		AddressSpace* createAddressSpace(const std::string& name, const std::string& desc = "", bool markAsNew = true);

@@ -539,7 +539,7 @@ void CE::DecTestSamplesPool::analyze() {
 
 CE::DecTestSamplesPool::Sample* CE::DecTestSamplesPool::createSampleTest(int testId, const std::string& name,
                                                                          const std::string& comment,
-                                                                         AbstractImage* image, int offset) {
+                                                                         IImage* image, int offset) {
 	const auto suffix = std::to_string(testId);
 	Sample sample;
 	sample.m_testId = testId;

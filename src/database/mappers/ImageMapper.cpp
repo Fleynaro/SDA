@@ -137,7 +137,9 @@ void ImageMapper::decodePCodeBlock(PCodeBlock* block, ImageDecorator* imageDec) 
 	DecoderX86 decoder(&registerFactoryX86, imageDec ->getInstrPool(), &warningContainer);
 	auto offset = block->getMinOffset() >> 8;
 	while (offset < block->getMaxOffset() >> 8) {
-		decoder.decode(imageDec->getImage()->getData() + offset, static_cast<int>(offset), imageDec->getImage()->getSize());
+		std::vector<uint8_t> buffer(100);
+		imageDec->getImage()->read(offset, buffer);
+		decoder.decode(offset, buffer);
 		if (!decoder.getOrigInstruction())
 			break;
 		for (const auto instr : decoder.getDecodedPCodeInstructions()) {

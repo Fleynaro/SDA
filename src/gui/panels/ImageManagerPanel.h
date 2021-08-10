@@ -153,7 +153,7 @@ namespace GUI
 			
 			private:		
 				void renderPanel() override {
-					if (ImGui::MenuItem("Create a new image")) {
+					if (ImGui::MenuItem("Create Image")) {
 						delete m_imageManagerPanel->m_popupModalWindow;
 						m_imageManagerPanel->m_popupModalWindow = new PopupModalWindow(new ImageCreatorPanel(this));
 						m_imageManagerPanel->m_popupModalWindow->open();
