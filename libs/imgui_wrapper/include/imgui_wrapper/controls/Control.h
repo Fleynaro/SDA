@@ -15,7 +15,6 @@ namespace GUI
 	
 	class Control
 	{
-		bool m_display = true;
 	protected:
 		virtual ~Control() {};
 
@@ -23,29 +22,16 @@ namespace GUI
 
 	public:
 		void show() {
-			if (isShown()) {
-				renderControl();
-			}
+			renderControl();
 		}
 
-		void setDisplay(bool toggle) {
-			m_display = toggle;
-		}
-
-		virtual bool isShown() {
-			return m_display;
-		}
-
-		virtual bool isRemoved()
-		{
+		virtual bool isRemoved() {
 			return false;
 		}
 
 		template<typename T = Control>
-		static void Show(T*& control)
-		{
-			if (control)
-			{
+		static void Show(T*& control) {
+			if (control) {
 				control->show();
 				if (control->isRemoved()) {
 					delete control;
@@ -55,8 +41,7 @@ namespace GUI
 		}
 	};
 
-	static uint64_t GetTimeInMs()
-	{
+	static uint64_t GetTimeInMs() {
 		auto time_since_epoch = std::chrono::system_clock::now().time_since_epoch();
 		return std::chrono::duration_cast<std::chrono::milliseconds>(time_since_epoch).count();
 	}

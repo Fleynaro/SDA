@@ -32,6 +32,7 @@ namespace GUI
 		bool m_focus = false;
 	public:
 		bool m_applyPosAndSize = false;
+		bool m_isShown = false;
 		
 		StdWindow(AbstractPanel* panel, ImGuiWindowFlags flags = ImGuiWindowFlags_None)
 			: m_panel(panel), Flags<ImGuiWindowFlags, ImGuiWindowFlags_None>(flags)
@@ -78,13 +79,13 @@ namespace GUI
 				ImGui::SetNextWindowFocus();
 				m_focus = false;
 			}
-			bool isOpen = ImGui::Begin(m_panel->getName().c_str(), &m_isOpened, getFlags());
+			m_isShown = ImGui::Begin(m_panel->getName().c_str(), &m_isOpened, getFlags());
 			processGenericEvents();
 			
 			m_pos = ImGui::GetWindowPos();
 			m_size = ImGui::GetWindowSize();
 
-			if (isOpen)
+			if (m_isShown)
 			{
 				m_panel->show();
 			}

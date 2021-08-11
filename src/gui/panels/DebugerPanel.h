@@ -353,7 +353,7 @@ namespace GUI
 					return std::to_string((double&)value);
 				}
 			} else if (const auto Enum = dynamic_cast<CE::DataType::Enum*>(dataType)) {
-				const auto it = Enum->getFields().find((int&)value);
+				const auto it = Enum->getFields().find(value);
 				const auto intValueStr = std::to_string((int&)value);
 				if (it == Enum->getFields().end())
 					return intValueStr;
@@ -639,10 +639,11 @@ namespace GUI
 		CE::Decompiler::PCode::VmExecutionContext m_execCtx;
 		CE::Decompiler::PCode::VmMemoryContext m_memCtx;
 		CE::Decompiler::PCode::VirtualMachine m_vm;
+		std::uintptr_t m_curAddr = 0;
 
 		StdWindow* m_execCtxViewerWin;
 		StdWindow* m_stackViewerWin;
-		EventHandler<bool> m_instrHandler;
+		EventHandler<uint64_t> m_locationHandler;
 	public:
 		enum class PCodeStepWidth
 		{
@@ -683,8 +684,8 @@ namespace GUI
 			return !m_isStopped && !m_isExit;
 		}
 
-		void instrHandler(const std::function<void(bool)>& handler) {
-			m_instrHandler = handler;
+		void locationHandler(const std::function<void(uint64_t)>& handler) {
+			m_locationHandler = handler;
 		}
 
 		void goDebug(CE::ImageDecorator* imageDec, CE::ComplexOffset offset) {
@@ -694,24 +695,27 @@ namespace GUI
 		}
 
 		bool defineCurPCodeInstruction() {
-			const auto prevPCodeGraph = m_curPCodeBlock ? m_curPCodeBlock->m_funcPCodeGraph : nullptr;
-
 			m_curInstr = m_imageDec->getInstrPool()->getPCodeInstructionAt(m_offset);
-			if (!m_curInstr) {
+			if (m_curInstr) {
+				m_curPCodeBlock = m_imageDec->getPCodeGraph()->getBlockAtOffset(m_offset);
+			} else {
 				m_curPCodeBlock = nullptr;
 				m_curBlockTopNode = nullptr;
 				m_isStopped = true;
-				return false;
 			}
-			m_curPCodeBlock = m_imageDec->getPCodeGraph()->getBlockAtOffset(m_offset);
+
+			if (m_locationHandler.isInit()) {
+				const auto newAddr = m_imageDec->getImage()->getAddress() + m_offset;
+				const auto delta = std::abs(static_cast<int64_t>(m_curAddr) - static_cast<int64_t>(newAddr));
+				m_curAddr = newAddr;
+				m_locationHandler(delta);
+			}
+
+			if (!m_curInstr)
+				return false;
 
 			// rip
 			m_execCtx.setRegisterValue(CE::Decompiler::Register(ZYDIS_REGISTER_RIP), 0x2000000000 + m_curInstr->m_origInstruction->m_offset);
-
-			if (m_instrHandler.isInit()) {
-				const auto isNewGraph = prevPCodeGraph != m_curPCodeBlock->m_funcPCodeGraph;
-				m_instrHandler(isNewGraph);
-			}
 			return true;
 		}
 

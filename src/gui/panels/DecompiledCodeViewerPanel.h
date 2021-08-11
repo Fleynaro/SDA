@@ -3,6 +3,9 @@
 #include "DataTypeManagerPanel.h"
 #include "imgui_internal.h"
 #include "InstructionViewer.h"
+#include "ProjectPanel.h"
+#include "ProjectPanel.h"
+#include "ProjectPanel.h"
 #include "controllers/SymbolManagerController.h"
 #include "decompiler/SDA/SdaCodeGraph.h"
 #include "decompiler/DecCodeGenerator.h"
@@ -12,6 +15,7 @@
 
 namespace GUI
 {
+	class ProjectPanel;
 	class DecompiledCodeViewer
 		: public Control,
 		public Attribute::Id
@@ -113,14 +117,16 @@ namespace GUI
 		
 			class ExprTreeGenerator : public CE::Decompiler::ExprTree::ExprTreeViewGenerator
 			{
-				CodeGenerator* m_parentGen;
-				DecompiledCodeViewer* m_decCodeViewer;
+			protected:
+				CodeGenerator* m_parentGen = nullptr;
+				DecompiledCodeViewer* m_decCodeViewer = nullptr;
 			public:
 				MultiLineGroup m_groups;
 				
-				ExprTreeGenerator(CodeGenerator* parentGen)
-					: m_parentGen(parentGen), m_decCodeViewer(parentGen->m_decCodeViewer)
-				{}
+				void setParentGen(CodeGenerator* parentGen) {
+					m_parentGen = parentGen;
+					m_decCodeViewer = parentGen->m_decCodeViewer;
+				}
 
 				void generateToken(const std::string& text, TokenType tokenType) override {
 					if (text == " ") {
@@ -276,25 +282,33 @@ namespace GUI
 				void generateNode(CE::Decompiler::INode* node) override {
 					bool hasGroup = false;
 					MultiLineGroup::Group group;
-					if(const auto instrNode = dynamic_cast<CE::Decompiler::IRelatedToInstruction*>(node)) {
-						if(!instrNode->getInstructionsRelatedTo().empty()) {
+					generateNode(node, hasGroup, group);
+					if (!hasGroup) {
+						ExprTreeViewGenerator::generateNode(node);
+					}
+				}
+
+				virtual void generateNode(CE::Decompiler::INode* node, bool& hasGroup, MultiLineGroup::Group& group) {
+					if (const auto instrNode = dynamic_cast<CE::Decompiler::IRelatedToInstruction*>(node)) {
+						if (!instrNode->getInstructionsRelatedTo().empty()) {
 							if (m_decCodeViewer->m_isCodeSelecting) {
 								// select code and instructions at the same time
 								if (m_parentGen->isSelected()) {
 									for (const auto instr : instrNode->getInstructionsRelatedTo())
 										m_decCodeViewer->m_selectedInstrs.push_back(instr);
 								}
-							} else {
+							}
+							else {
 								auto isSelected = false;
 								// select nodes by the middle mouse button
-								if(m_decCodeViewer->m_hoveredNodeOnPrevFrame) {
+								if (m_decCodeViewer->m_hoveredNodeOnPrevFrame) {
 									isSelected = node->getHash().getHashValue() == m_decCodeViewer->m_hoveredNodeOnPrevFrame->getHash().getHashValue();
 								}
 								// select code by instruction selection in image viewer
-								if(!m_decCodeViewer->m_selectedCodeByInstr.empty()) {
+								if (!m_decCodeViewer->m_selectedCodeByInstr.empty()) {
 									const auto& instrs = m_decCodeViewer->m_selectedCodeByInstr;
-									for(const auto instr : instrNode->getInstructionsRelatedTo()) {
-										if(instrs.find(instr) != instrs.end()) {
+									for (const auto instr : instrNode->getInstructionsRelatedTo()) {
+										if (instrs.find(instr) != instrs.end()) {
 											isSelected = true;
 											break;
 										}
@@ -321,68 +335,11 @@ namespace GUI
 							}
 						}
 					}
-
-					if (m_decCodeViewer->m_debugger && !m_decCodeViewer->m_debugger->m_isStopped) {
-						if (const auto storagePathNode = dynamic_cast<CE::Decompiler::IStoragePathNode*>(node)) {
-							if(!hasGroup) {
-								auto isSelected = false;
-								if (m_decCodeViewer->m_debugger->m_valueViewerWin) {
-									isSelected = node == m_decCodeViewer->m_debugSelectedNode;
-								}
-								
-								if (isSelected)
-									m_parentGen->beginSelecting(COLOR_BG_DEBUG_SELECTED_TEXT);
-								m_groups.beginGroup(node);
-								ExprTreeViewGenerator::generateNode(node);
-								group = m_groups.endGroup();
-								if (isSelected)
-									m_parentGen->endSelecting();
-								hasGroup = true;
-							}
-							
-							if (group.m_events.isHovered() && !m_decCodeViewer->m_debugger->m_valueViewerWin) {
-								ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-								if (m_decCodeViewer->m_hoverTimer) {
-									if (GetTimeInMs() - m_decCodeViewer->m_hoverTimer > 200) {
-										const auto path = storagePathNode->getStoragePath();
-										if (path.m_register.isValid()) {
-											std::string name = "value";
-											CE::DataTypePtr dataType;
-											if (const auto sdaNode = dynamic_cast<CE::Decompiler::ISdaNode*>(node)) {
-												if (const auto sdaSymbolLeaf = dynamic_cast<CE::Decompiler::SdaSymbolLeaf*>(node)) {
-													name = sdaSymbolLeaf->getSdaSymbol()->getName();
-													dataType = sdaSymbolLeaf->getSdaSymbol()->getDataType();
-												} else {
-													dataType = sdaNode->getSrcDataType();
-												}
-											}
-											else {
-												const auto project = m_decCodeViewer->m_debugger->m_imageDec->getImageManager()->getProject();
-												dataType = project->getTypeManager()->getDefaultType(storagePathNode->getSize());
-											}
-
-											m_decCodeViewer->m_debugger->createValueViewer(path, name, dataType);
-											m_decCodeViewer->m_debugSelectedNode = node;
-										}
-									}
-								}
-								else {
-									// delay for opening
-									m_decCodeViewer->m_hoverTimer = GetTimeInMs();
-								}
-
-								m_decCodeViewer->m_isObjHovered = true;
-							}
-						}
-					}
-
-					if (!hasGroup) {
-						ExprTreeViewGenerator::generateNode(node);
-					}
 				}
 			};
 
-		private:
+		protected:
+			ExprTreeGenerator* m_exprTreeGenerator;
 			DecompiledCodeViewer* m_decCodeViewer;
 			bool m_hasNodeSelected = false;
 			std::string m_textOnCurLine;
@@ -390,12 +347,12 @@ namespace GUI
 			int m_curTokenIdx = 0;
 			std::list<ColorRGBA> m_selectedCodeColors;
 		public:
-			ExprTreeGenerator m_exprTreeGenerator;
 			int m_isTextAddingOnCurLine = 0;
-			
-			CodeGenerator(DecompiledCodeViewer* decompiledCodeViewer)
-				: CodeViewGenerator(&m_exprTreeGenerator), m_decCodeViewer(decompiledCodeViewer), m_exprTreeGenerator(this)
+
+			CodeGenerator(ExprTreeGenerator* exprTreeGenerator, DecompiledCodeViewer* decompiledCodeViewer)
+				: CodeViewGenerator(exprTreeGenerator), m_exprTreeGenerator(exprTreeGenerator), m_decCodeViewer(decompiledCodeViewer)
 			{
+				exprTreeGenerator->setParentGen(this);
 				setMinInfoToShow();
 				m_SHOW_LINEAR_LEVEL_EXT = true;
 			}
@@ -460,12 +417,12 @@ namespace GUI
 			bool checkToGoToNewLine() {
 				const auto curLineSize = ImGui::CalcTextSize(m_textOnCurLine.c_str()).x;
 				if (curLineSize >= std::max(m_decCodeViewer->m_maxLineSize, 400.0f)) {
-					m_exprTreeGenerator.m_groups.beginSeparator();
+					m_exprTreeGenerator->m_groups.beginSeparator();
 					generateEndLine();
 					generateTabs();
 					generateTab();
 					generateTab();
-					m_exprTreeGenerator.m_groups.endSeparator();
+					m_exprTreeGenerator->m_groups.endSeparator();
 					return true;
 				}
 				return false;
@@ -612,7 +569,7 @@ namespace GUI
 								
 								ImGui::TableNextColumn();
 								m_isTextAddingOnCurLine ++;
-								m_exprTreeGenerator.generate(regInfo.m_expr->getNode());
+								m_exprTreeGenerator->generate(regInfo.m_expr->getNode());
 								m_isTextAddingOnCurLine --;
 							}
 						}
@@ -620,16 +577,6 @@ namespace GUI
 					}
 					generateEndLine();
 				}
-			}
-
-			void generateBlockTopNode(CE::Decompiler::DecBlock::BlockTopNode* blockTopNode, CE::Decompiler::INode* node) override {
-				const auto debugger = m_decCodeViewer->m_debugger;
-				if (debugger && !debugger->m_isStopped) {
-					if (debugger->m_curBlockTopNode == blockTopNode) {
-						m_decCodeViewer->m_debugSelectedLineIdx = m_curLineIdx;
-					}
-				}
-				CodeViewGenerator::generateBlockTopNode(blockTopNode, node);
 			}
 
 			void generateCurlyBracket(const std::string& text, CE::Decompiler::LinearView::BlockList* blockList) override {
@@ -682,8 +629,8 @@ namespace GUI
 		CE::Decompiler::INode* m_debugSelectedNode = nullptr;
 
 		// line selection
-		int m_debugSelectedLineIdx = -1;
 		int m_selectedLineIdx = -1;
+		int m_debugSelectedLineIdx = -1;
 
 		// code selection
 		bool m_isCodeSelecting = false;
@@ -695,7 +642,7 @@ namespace GUI
 		uint64_t m_hoverTimer = 0;
 
 		CE::Decompiler::LinearView::BlockList* m_blockList;
-		CE::IImage* m_image = nullptr;
+		CE::AbstractImage* m_image = nullptr;
 		AbstractInstructionViewDecoder* m_instructionViewDecoder = nullptr;
 		CE::Decompiler::PrimaryDecompiler* m_primaryDecompiler = nullptr;
 
@@ -717,7 +664,6 @@ namespace GUI
 		std::string m_selectedText;
 		bool m_codeChanged = false;
 		float m_maxLineSize = 0.0f;
-		PCodeEmulator* m_debugger = nullptr;
 		
 		DecompiledCodeViewer(CE::Decompiler::LinearView::BlockList* blockList)
 			: m_blockList(blockList)
@@ -727,7 +673,7 @@ namespace GUI
 			delete m_instructionViewDecoder;
 		}
 
-		void setInfoToShowAsm(CE::IImage* image, AbstractInstructionViewDecoder* instructionViewDecoder) {
+		void setInfoToShowAsm(CE::AbstractImage* image, AbstractInstructionViewDecoder* instructionViewDecoder) {
 			m_image = image;
 			m_instructionViewDecoder = instructionViewDecoder;
 		}
@@ -746,7 +692,8 @@ namespace GUI
 
 	protected:
 		virtual void renderCode() {
-			CodeGenerator generator(this);
+			CodeGenerator::ExprTreeGenerator exprTreeGenerator;
+			CodeGenerator generator(&exprTreeGenerator, this);
 			generator.m_SHOW_ALL_COMMENTS = m_show.DebugComments;
 			generator.generateEndLine();
 			generator.generate(m_blockList);
@@ -811,24 +758,108 @@ namespace GUI
 	{
 		class DecompiledCodeViewerWithHeader : public DecompiledCodeViewer
 		{
+			class CodeGenerator : public DecompiledCodeViewer::CodeGenerator
+			{
+			public:
+				class ExprTreeGenerator : public DecompiledCodeViewer::CodeGenerator::ExprTreeGenerator
+				{
+				public:
+					void generateNode(CE::Decompiler::INode* node, bool& hasGroup, MultiLineGroup::Group& group) override {
+						DecompiledCodeViewer::CodeGenerator::ExprTreeGenerator::generateNode(node, hasGroup, group);
+						
+						const auto projectPanel = dynamic_cast<DecompiledCodeViewerWithHeader*>(m_decCodeViewer)->m_projectPanel;
+						if (const auto emulator = projectPanel->getEmulator()) {
+							if (const auto storagePathNode = dynamic_cast<CE::Decompiler::IStoragePathNode*>(node)) {
+								if (!hasGroup) {
+									auto isSelected = false;
+									if (emulator->m_valueViewerWin) {
+										isSelected = node == m_decCodeViewer->m_debugSelectedNode;
+									}
+
+									if (isSelected)
+										m_parentGen->beginSelecting(COLOR_BG_DEBUG_SELECTED_TEXT);
+									m_groups.beginGroup(node);
+									ExprTreeViewGenerator::generateNode(node);
+									group = m_groups.endGroup();
+									if (isSelected)
+										m_parentGen->endSelecting();
+									hasGroup = true;
+								}
+
+								if (group.m_events.isHovered() && !emulator->m_valueViewerWin) {
+									ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+									if (m_decCodeViewer->m_hoverTimer) {
+										if (GetTimeInMs() - m_decCodeViewer->m_hoverTimer > 200) {
+											const auto path = storagePathNode->getStoragePath();
+											if (path.m_register.isValid()) {
+												std::string name = "value";
+												CE::DataTypePtr dataType;
+												if (const auto sdaNode = dynamic_cast<CE::Decompiler::ISdaNode*>(node)) {
+													if (const auto sdaSymbolLeaf = dynamic_cast<CE::Decompiler::SdaSymbolLeaf*>(node)) {
+														name = sdaSymbolLeaf->getSdaSymbol()->getName();
+														dataType = sdaSymbolLeaf->getSdaSymbol()->getDataType();
+													}
+													else {
+														dataType = sdaNode->getSrcDataType();
+													}
+												}
+												else {
+													const auto project = emulator->m_imageDec->getImageManager()->getProject();
+													dataType = project->getTypeManager()->getDefaultType(storagePathNode->getSize());
+												}
+
+												emulator->createValueViewer(path, name, dataType);
+												m_decCodeViewer->m_debugSelectedNode = node;
+											}
+										}
+									}
+									else {
+										// delay for opening
+										m_decCodeViewer->m_hoverTimer = GetTimeInMs();
+									}
+
+									m_decCodeViewer->m_isObjHovered = true;
+								}
+							}
+						}
+					}
+				};
+				
+				CodeGenerator(ExprTreeGenerator* exprTreeGenerator, DecompiledCodeViewerWithHeader* decCodeViewerWithHeader)
+					: DecompiledCodeViewer::CodeGenerator(exprTreeGenerator, decCodeViewerWithHeader)
+				{}
+
+				void generateBlockTopNode(CE::Decompiler::DecBlock::BlockTopNode* blockTopNode, CE::Decompiler::INode* node) override {
+					const auto projectPanel = dynamic_cast<DecompiledCodeViewerWithHeader*>(m_decCodeViewer)->m_projectPanel;
+					if (const auto emulator = projectPanel->getEmulator()) {
+						if (emulator->m_curBlockTopNode == blockTopNode) {
+							m_decCodeViewer->m_debugSelectedLineIdx = m_curLineIdx;
+						}
+					}
+					CodeViewGenerator::generateBlockTopNode(blockTopNode, node);
+				}
+			};
+
+			ProjectPanel* m_projectPanel;
 			CE::Decompiler::SdaCodeGraph* m_sdaCodeGraph;
 			CE::Function* m_function;
 			std::list<CE::Symbol::ISymbol*> m_symbols;
 		public:
-			DecompiledCodeViewerWithHeader(CE::Decompiler::LinearView::BlockList* blockList, CE::Decompiler::SdaCodeGraph* sdaCodeGraph, CE::Function* function)
-				: DecompiledCodeViewer(blockList), m_sdaCodeGraph(sdaCodeGraph), m_function(function)
+			DecompiledCodeViewerWithHeader(CE::Decompiler::LinearView::BlockList* blockList, CE::Decompiler::SdaCodeGraph* sdaCodeGraph, CE::Function* function, ProjectPanel* projectPanel)
+				: DecompiledCodeViewer(blockList), m_sdaCodeGraph(sdaCodeGraph), m_function(function), m_projectPanel(projectPanel)
 			{
 				gatherSdaSymbols();
 			}
 
 		private:
 			void renderCode() override {
-				CodeGenerator generator(this);
+				CodeGenerator::ExprTreeGenerator exprTreeGenerator;
+				CodeGenerator generator(&exprTreeGenerator, this);
 				generator.m_SHOW_ALL_COMMENTS = m_show.DebugComments;
 
 				// function signature
 				generator.generateEndLine();
-				renderFunctionSignature(generator.m_exprTreeGenerator);
+				renderFunctionSignature(exprTreeGenerator);
 				generator.generateEndLine();
 				generator.generateCurlyBracket("{", m_blockList);
 
@@ -880,25 +911,28 @@ namespace GUI
 					return a->getName() < b->getName();
 					});
 			}
+
+			
 		};
-		
+
+		ProjectPanel* m_projectPanel;
 		CE::Decompiler::LinearView::BlockList* m_blockList;
 	public:
 		DecompiledCodeViewer* m_decompiledCodeViewer;
 		bool m_startDebug = false;
 		
-		DecompiledCodeViewerPanel(CE::Decompiler::LinearView::BlockList* blockList)
-			: AbstractPanel("Decompiled Code Viewer"), m_blockList(blockList)
+		DecompiledCodeViewerPanel(ProjectPanel* projectPanel, CE::Decompiler::LinearView::BlockList* blockList)
+			: AbstractPanel("Decompiled Code Viewer"), m_projectPanel(projectPanel), m_blockList(blockList)
 		{}
 		
-		DecompiledCodeViewerPanel(CE::Decompiler::SdaCodeGraph* sdaCodeGraph, CE::Function* function)
-			: DecompiledCodeViewerPanel(CE::Decompiler::Misc::BuildBlockList(sdaCodeGraph->getDecGraph()))
+		DecompiledCodeViewerPanel(ProjectPanel* projectPanel, CE::Decompiler::SdaCodeGraph* sdaCodeGraph, CE::Function* function)
+			: DecompiledCodeViewerPanel(projectPanel, CE::Decompiler::Misc::BuildBlockList(sdaCodeGraph->getDecGraph()))
 		{
-			m_decompiledCodeViewer = new DecompiledCodeViewerWithHeader(m_blockList, sdaCodeGraph, function);
+			m_decompiledCodeViewer = new DecompiledCodeViewerWithHeader(m_blockList, sdaCodeGraph, function, m_projectPanel);
 		}
 
-		DecompiledCodeViewerPanel(CE::Decompiler::DecompiledCodeGraph* decCodeGraph)
-			: DecompiledCodeViewerPanel(CE::Decompiler::Misc::BuildBlockList(decCodeGraph))
+		DecompiledCodeViewerPanel(ProjectPanel* projectPanel, CE::Decompiler::DecompiledCodeGraph* decCodeGraph)
+			: DecompiledCodeViewerPanel(projectPanel, CE::Decompiler::Misc::BuildBlockList(decCodeGraph))
 		{
 			m_decompiledCodeViewer = new DecompiledCodeViewer(m_blockList);
 		}
@@ -923,11 +957,11 @@ namespace GUI
 			
 			if (ImGui::BeginMenu("Debug"))
 			{
-				if (ImGui::MenuItem("Start Debug")) {
+				if (ImGui::MenuItem("Start Emulator")) {
 					m_startDebug = true;
 				}
-				if (m_decompiledCodeViewer->m_debugger)
-					m_decompiledCodeViewer->m_debugger->renderDebugMenu();
+				if (const auto emulator = m_projectPanel->getEmulator())
+					emulator->renderDebugMenu();
 				ImGui::EndMenu();
 			}
 			
