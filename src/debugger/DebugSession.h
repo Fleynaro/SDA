@@ -28,6 +28,13 @@ namespace CE
 		int m_size;
 		bool m_isLoaded;
 	};
+
+	struct DebugRegister
+	{
+		int m_id;
+		int m_index;
+		uint64_t m_value;
+	};
 	
 	class IDebugSession
 	{
@@ -59,5 +66,9 @@ namespace CE
 		virtual std::list<DebugModule> getModules() = 0;
 
 		virtual void readMemory(uint64_t offset, std::vector<uint8_t>& data) = 0;
+
+		virtual std::uintptr_t getInstructionAddress() = 0;
+
+		virtual std::list<DebugRegister> getRegisters() = 0;
 	};
 };

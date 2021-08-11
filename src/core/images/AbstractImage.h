@@ -67,7 +67,7 @@ namespace CE
 
 		const std::list<ImageSection>& getImageSections() const;
 
-		uint64_t addrToRva(uint64_t addr);
+		Offset addressToOffset(std::uintptr_t addr);
 
 		// rva(=offset) to image file offset (ghidra makes this transform automatically)
 		uint64_t toImageOffset(Offset offset) const;

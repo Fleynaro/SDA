@@ -8,7 +8,6 @@
 #include "decompiler/PCode/DecRegisterFactory.h"
 #include "decompiler/Graph/DecPCodeGraph.h"
 #include "decompiler/Graph/DecCodeGraphBlock.h"
-#include "images/DebugImage.h"
 #include "imgui_wrapper/Window.h"
 #include "imgui_wrapper/controls/AbstractPanel.h"
 #include "imgui_wrapper/controls/Text.h"
@@ -18,63 +17,6 @@
 
 namespace GUI
 {
-	class Debugger : public AbstractPanel
-	{
-		CE::Project* m_project;
-		CE::IDebugSession* m_debugSession;
-		CE::AddressSpace* m_addressSpace;
-		std::map<std::uintptr_t, CE::ImageDecorator*> m_images;
-		CE::Symbol::GlobalSymbolTable* m_globalSymbolTable;
-		CE::Symbol::GlobalSymbolTable* m_funcBodySymbolTable;
-	public:
-		Debugger(CE::Project* project, CE::IDebugSession* debugSession)
-			: m_project(project), m_debugSession(debugSession)
-		{
-			const auto factory = m_project->getSymTableManager()->getFactory(false);
-			m_globalSymbolTable = factory.createGlobalSymbolTable();
-			m_funcBodySymbolTable = factory.createGlobalSymbolTable();
-			m_addressSpace = m_project->getAddrSpaceManager()->createAddressSpace(debugSession->getProcess().m_name, "", false);
-			m_project->getAddrSpaceManager()->m_debugAddressSpace = m_addressSpace;
-		}
-
-		~Debugger() {
-			m_project->getAddrSpaceManager()->m_debugAddressSpace = nullptr;
-			delete m_addressSpace;
-			delete m_globalSymbolTable;
-			delete m_funcBodySymbolTable;
-			for (const auto& [addr, imageDec] : m_images)
-				delete imageDec;
-		}
-
-	private:
-		void renderPanel() override {
-			// todo: timer 1 sec
-			updateModules();
-		}
-
-		void updateModules() {
-			const auto modules = m_debugSession->getModules();
-			for(const auto m : modules) {
-				const auto it = m_images.find(m.m_baseAddress);
-				if (it != m_images.end())
-					continue;
-				m_images[m.m_baseAddress] = createImage(m);
-				
-			}
-		}
-
-		CE::ImageDecorator* createImage(const CE::DebugModule& debugModule) const {
-			const auto name = debugModule.m_path.filename().string();
-			const auto imageDec = m_project->getImageManager()->createImage(m_addressSpace, CE::ImageDecorator::IMAGE_DEBUG, m_globalSymbolTable, m_funcBodySymbolTable, name);
-			const auto debugReader = new CE::DebugReader(m_debugSession, debugModule);
-			CE::AbstractImage* debugImage = nullptr;
-			if (m_debugSession->getDebugger() == CE::Debugger::DebuggerEngine)
-				debugImage = new CE::PEImage(debugReader);
-			imageDec->setImage(debugImage);
-			return imageDec;
-		}
-	};
-
 	class DebuggerAttachProcessPanel : public AbstractPanel
 	{
 		class DebugProcessListModel : public IListModel<CE::DebugProcess*>
@@ -456,7 +398,7 @@ namespace GUI
 		}
 	};
 	
-	class ImageDebugger : public Control
+	class PCodeEmulator : public Control
 	{
 		class AbstractViewerPanel : public AbstractPanel
 		{
@@ -692,35 +634,38 @@ namespace GUI
 			}
 		};
 
+	protected:
 		CE::Decompiler::RegisterFactoryX86 m_registerFactoryX86;
 		CE::Decompiler::PCode::VmExecutionContext m_execCtx;
 		CE::Decompiler::PCode::VmMemoryContext m_memCtx;
 		CE::Decompiler::PCode::VirtualMachine m_vm;
-		CE::ComplexOffset m_offset;
 
 		StdWindow* m_execCtxViewerWin;
 		StdWindow* m_stackViewerWin;
 		EventHandler<bool> m_instrHandler;
 	public:
-		enum class StepWidth
+		enum class PCodeStepWidth
 		{
 			STEP_PCODE_INSTR,
 			STEP_ORIGINAL_INSTR,
 			STEP_CODE_LINE
 		};
-		
+
+		CE::AddressSpace* m_addressSpace;
 		CE::ImageDecorator* m_imageDec;
-		StepWidth m_stepWidth = StepWidth::STEP_PCODE_INSTR;
+		CE::ComplexOffset m_offset;
+		PCodeStepWidth m_stepWidth = PCodeStepWidth::STEP_PCODE_INSTR;
 		CE::Decompiler::PCode::Instruction* m_curInstr = nullptr;
 		CE::Decompiler::PCodeBlock* m_curPCodeBlock = nullptr;
 		CE::Decompiler::DecBlock::BlockTopNode* m_curBlockTopNode = nullptr;
 		int m_stackPointerValue = 0;
 		bool m_isStopped = false;
+		bool m_isExit = false;
 		bool m_showContexts = false;
 		PopupBuiltinWindow* m_valueViewerWin = nullptr;
 		
-		ImageDebugger(CE::ImageDecorator* imageDec, CE::ComplexOffset startOffset)
-			: m_imageDec(imageDec), m_offset(startOffset), m_vm(&m_execCtx, &m_memCtx, false)
+		PCodeEmulator(CE::AddressSpace* addressSpace, CE::ImageDecorator* imageDec, CE::ComplexOffset startOffset)
+			: m_addressSpace(addressSpace), m_imageDec(imageDec), m_offset(startOffset),  m_vm(&m_execCtx, &m_memCtx, false)
 		{
 			m_execCtxViewerWin = new StdWindow(new ExecContextViewerPanel(&m_execCtx, &m_registerFactoryX86));
 			m_stackViewerWin = new StdWindow(new StackViewerPanel(&m_execCtx, &m_memCtx, &m_registerFactoryX86));
@@ -728,22 +673,27 @@ namespace GUI
 			m_execCtx.setRegisterValue(CE::Decompiler::Register(ZYDIS_REGISTER_RSP), 0x1000000000);
 		}
 
-		~ImageDebugger() {
+		~PCodeEmulator() {
 			delete m_execCtxViewerWin;
 			delete m_stackViewerWin;
 			delete m_valueViewerWin;
+		}
+
+		bool isWorking() const { // todo: replace
+			return !m_isStopped && !m_isExit;
 		}
 
 		void instrHandler(const std::function<void(bool)>& handler) {
 			m_instrHandler = handler;
 		}
 
-		void goDebug(CE::ComplexOffset offset) {
+		void goDebug(CE::ImageDecorator* imageDec, CE::ComplexOffset offset) {
+			m_imageDec = imageDec;
 			m_offset = offset;
-			defineCurInstrutction();
+			defineCurPCodeInstruction();
 		}
 
-		void defineCurInstrutction() {
+		bool defineCurPCodeInstruction() {
 			const auto prevPCodeGraph = m_curPCodeBlock ? m_curPCodeBlock->m_funcPCodeGraph : nullptr;
 
 			m_curInstr = m_imageDec->getInstrPool()->getPCodeInstructionAt(m_offset);
@@ -751,7 +701,7 @@ namespace GUI
 				m_curPCodeBlock = nullptr;
 				m_curBlockTopNode = nullptr;
 				m_isStopped = true;
-				return;
+				return false;
 			}
 			m_curPCodeBlock = m_imageDec->getPCodeGraph()->getBlockAtOffset(m_offset);
 
@@ -762,11 +712,23 @@ namespace GUI
 				const auto isNewGraph = prevPCodeGraph != m_curPCodeBlock->m_funcPCodeGraph;
 				m_instrHandler(isNewGraph);
 			}
+			return true;
+		}
+
+		bool setLocationByAddress(std::uintptr_t addr) {
+			m_imageDec = m_addressSpace->getImageDecoratorAt(addr);
+			if (!m_imageDec) {
+				m_offset = 0x0;
+				m_isStopped = true;
+				return false;
+			}
+			m_offset = CE::ComplexOffset(m_imageDec->getImage()->addressToOffset(addr), 0);
+			return true;
 		}
 
 		void createValueViewer(const CE::Decompiler::StoragePath& storagePath, const std::string& name, CE::DataTypePtr dataType) {
 			ValueViewerPanel::Location location;
-			if (!getLocation(storagePath, location))
+			if (!getMemLocation(storagePath, location))
 				return;
 			
 			delete m_valueViewerWin;
@@ -779,8 +741,8 @@ namespace GUI
 
 		void renderDebugMenu() {
 			if (!m_isStopped) {
-				if (ImGui::MenuItem("Stop Debug")) {
-					m_isStopped = true;
+				if (ImGui::MenuItem("Exit Debug")) {
+					m_isExit = true;
 				}
 
 				if (ImGui::MenuItem("Step Over", "F8")) {
@@ -793,14 +755,14 @@ namespace GUI
 
 				if (ImGui::BeginMenu("Step Width"))
 				{
-					if (ImGui::MenuItem("PCode Instruction", nullptr, m_stepWidth == StepWidth::STEP_PCODE_INSTR)) {
-						m_stepWidth = StepWidth::STEP_PCODE_INSTR;
+					if (ImGui::MenuItem("PCode Instruction", nullptr, m_stepWidth == PCodeStepWidth::STEP_PCODE_INSTR)) {
+						m_stepWidth = PCodeStepWidth::STEP_PCODE_INSTR;
 					}
-					if (ImGui::MenuItem("Orig. Instruction", nullptr, m_stepWidth == StepWidth::STEP_ORIGINAL_INSTR)) {
-						m_stepWidth = StepWidth::STEP_ORIGINAL_INSTR;
+					if (ImGui::MenuItem("Orig. Instruction", nullptr, m_stepWidth == PCodeStepWidth::STEP_ORIGINAL_INSTR)) {
+						m_stepWidth = PCodeStepWidth::STEP_ORIGINAL_INSTR;
 					}
-					if (ImGui::MenuItem("Code Line", nullptr, m_stepWidth == StepWidth::STEP_CODE_LINE)) {
-						m_stepWidth = StepWidth::STEP_CODE_LINE;
+					if (ImGui::MenuItem("Code Line", nullptr, m_stepWidth == PCodeStepWidth::STEP_CODE_LINE)) {
+						m_stepWidth = PCodeStepWidth::STEP_CODE_LINE;
 					}
 					ImGui::EndMenu();
 				}
@@ -811,7 +773,7 @@ namespace GUI
 			}
 		}
 	
-	private:
+	protected:
 		void renderControl() override {
 			if (!m_isStopped) {
 				if (ImGui::IsKeyPressed(VK_F8)) { // todo: linux, change imgui_impl_win32.cpp
@@ -821,17 +783,20 @@ namespace GUI
 					stepInto();
 				}
 			}
-
+			
 			if (!m_isStopped || m_showContexts) {
 				Show(m_execCtxViewerWin);
 				Show(m_stackViewerWin);
+			}
+			if (!m_isStopped) {
 				Show(m_valueViewerWin);
 			}
 		}
 
 		void defineNextInstrOffset(bool jmp) {
 			if (jmp && m_execCtx.m_nextInstrOffset != 0) {
-				m_offset = m_execCtx.m_nextInstrOffset;
+				const auto addr = m_execCtx.m_nextInstrOffset;
+				setLocationByAddress(addr);
 				m_execCtx.m_nextInstrOffset = 0;
 				return;
 			}
@@ -848,18 +813,17 @@ namespace GUI
 		void stepNextPCodeInstr(bool into) {
 			m_vm.execute(m_curInstr);
 			defineNextInstrOffset(into ? true : m_curInstr->m_id != CE::Decompiler::PCode::InstructionId::CALL);
-			defineCurInstrutction();
-			if (m_isStopped)
-				return;
-			if (isNewOrigInstruction())
-				sync();
+			if (isNewOrigInstruction()) {
+				sync(into);
+			}
+			else {
+				defineCurPCodeInstruction();
+			}
 		}
 
 		void stepNextOrigInstr(bool into) {
 			do {
 				stepNextPCodeInstr(into);
-				if (m_isStopped)
-					return;
 			} while (!isNewOrigInstruction());
 		}
 
@@ -868,21 +832,19 @@ namespace GUI
 			do {
 				const auto prevBlockTopNode = m_curBlockTopNode;
 				stepNextPCodeInstr(into);
-				if (m_isStopped)
-					return;
 				isNewBlockTopNode = m_curBlockTopNode != prevBlockTopNode;
 			} while (m_curBlockTopNode && !isNewBlockTopNode);
 		}
 		
-		void stepOver(bool into) {
+		virtual void stepOver(bool into) {
 			switch(m_stepWidth) {
-			case StepWidth::STEP_PCODE_INSTR:
+			case PCodeStepWidth::STEP_PCODE_INSTR:
 				stepNextPCodeInstr(into);
 				break;
-			case StepWidth::STEP_ORIGINAL_INSTR:
+			case PCodeStepWidth::STEP_ORIGINAL_INSTR:
 				stepNextOrigInstr(into);
 				break;
-			case StepWidth::STEP_CODE_LINE:
+			case PCodeStepWidth::STEP_CODE_LINE:
 				stepNextBlockTopNode(into);
 				break;
 			}
@@ -893,16 +855,17 @@ namespace GUI
 		}
 
 		bool isNewOrigInstruction() const {
-			return m_curInstr->m_orderId == 0;
+			return m_offset.getOrderId() == 0;
 		}
-		
-		void sync() {
+
+		virtual void sync(bool into) {
 			std::map<int, CE::Decompiler::DataValue> registers;
 			registers = m_execCtx.getRegisters();
 			m_execCtx.syncWith(registers);
+			defineCurPCodeInstruction();
 		}
 
-		bool getLocation(const CE::Decompiler::StoragePath& storagePath, ValueViewerPanel::Location& location) {
+		bool getMemLocation(const CE::Decompiler::StoragePath& storagePath, ValueViewerPanel::Location& location) {
 			location = ValueViewerPanel::Location(storagePath.m_register);
 
 			// offsets (pointer dereferencing)
@@ -924,6 +887,153 @@ namespace GUI
 				location = ValueViewerPanel::Location(baseAddr + offset);
 			}
 			return true;
+		}
+	};
+
+	class Debugger : public Control
+	{
+		class PCodeEmulatorWithDebugSession : public PCodeEmulator
+		{
+			CE::IDebugSession* m_debugSession;
+			bool m_isSyncing = false;
+			bool m_isInto = false;
+		public:
+			PCodeEmulatorWithDebugSession(CE::AddressSpace* addressSpace, CE::IDebugSession* debugSession)
+				: PCodeEmulator(addressSpace, nullptr, 0x0), m_debugSession(debugSession)
+			{
+				m_isStopped = true;
+			}
+
+			void newOrigInstructionExecuted() {
+				syncContext();
+
+				const auto prevBlockTopNode = m_curBlockTopNode;
+				defineCurPCodeInstruction();
+				if(m_isSyncing) {
+					if (m_stepWidth == PCodeStepWidth::STEP_CODE_LINE) {
+						if(m_curInstr && m_curBlockTopNode == prevBlockTopNode) {
+							stepNextBlockTopNode(m_isInto);
+						}
+					}
+					m_isSyncing = false;
+				}
+			}
+		
+		private:
+			void stepOver(bool into) override {
+				if (m_curInstr) {
+					PCodeEmulator::stepOver(into);
+				} else {
+					step(into);
+				}
+			}
+
+			void sync(bool into) override {
+				step(into);
+				m_isStopped = true;
+				m_isSyncing = true;
+				m_isInto = into;
+			}
+
+			void step(bool into) const {
+				if (into) {
+					m_debugSession->stepInto();
+				}
+				else {
+					m_debugSession->stepOver();
+				}
+			}
+
+			void syncContext() {
+				std::map<int, CE::Decompiler::DataValue> registers;
+				const auto debugRegisters = m_debugSession->getRegisters();
+				for (const auto debugReg : debugRegisters) {
+					const auto reg = CE::Decompiler::Register(debugReg.m_id, debugReg.m_index);
+					registers[reg.getId()] = debugReg.m_value;
+				}
+				m_execCtx.syncWith(registers);
+			}
+		};
+		
+		CE::Project* m_project;
+		CE::IDebugSession* m_debugSession;
+		CE::AddressSpace* m_addressSpace;
+		std::map<std::uintptr_t, CE::ImageDecorator*> m_images;
+		CE::Symbol::GlobalSymbolTable* m_globalSymbolTable;
+		CE::Symbol::GlobalSymbolTable* m_funcBodySymbolTable;
+	public:
+		PCodeEmulatorWithDebugSession* m_emulator;
+		
+		Debugger(CE::Project* project, CE::IDebugSession* debugSession)
+			: m_project(project), m_debugSession(debugSession)
+		{
+			const auto factory = m_project->getSymTableManager()->getFactory(false);
+			m_globalSymbolTable = factory.createGlobalSymbolTable();
+			m_funcBodySymbolTable = factory.createGlobalSymbolTable();
+			m_addressSpace = m_project->getAddrSpaceManager()->createAddressSpace(debugSession->getProcess().m_name, "", false);
+			m_project->getAddrSpaceManager()->m_debugAddressSpace = m_addressSpace;
+			m_emulator = new PCodeEmulatorWithDebugSession(m_addressSpace, m_debugSession);
+		}
+
+		~Debugger() {
+			m_project->getAddrSpaceManager()->m_debugAddressSpace = nullptr;
+			delete m_addressSpace;
+			delete m_globalSymbolTable;
+			delete m_funcBodySymbolTable;
+			for (const auto& [addr, imageDec] : m_images)
+				delete imageDec;
+		}
+
+		bool isWorking() const {
+			return m_debugSession->isWorking();
+		}
+	
+	private:
+		void renderControl() override {
+			// todo: timer 1 sec
+			updateModules();
+			updateLocation();
+			m_emulator->show();
+
+			if(!m_debugSession->isSuspended()) {
+				m_emulator->m_isStopped = true;
+			}
+		}
+
+		void updateModules() {
+			const auto modules = m_debugSession->getModules();
+			for (const auto m : modules) {
+				const auto it = m_images.find(m.m_baseAddress);
+				if (it != m_images.end())
+					continue;
+				m_images[m.m_baseAddress] = createImage(m);
+			}
+		}
+
+		void updateLocation() const {
+			if (m_debugSession->isSuspended()) {
+				const auto addr = m_debugSession->getInstructionAddress();
+				const auto prevImageDec = m_emulator->m_imageDec;
+				const auto prevOffset = m_emulator->m_offset;
+				if(m_emulator->setLocationByAddress(addr)) {
+					if (m_emulator->m_imageDec != prevImageDec || m_emulator->m_offset != prevOffset) {
+						// if new instruction meet
+						m_emulator->newOrigInstructionExecuted();
+					}
+					m_emulator->m_isStopped = false;
+				}
+			}
+		}
+
+		CE::ImageDecorator* createImage(const CE::DebugModule& debugModule) const {
+			const auto name = debugModule.m_path.filename().string();
+			const auto imageDec = m_project->getImageManager()->createImage(m_addressSpace, CE::ImageDecorator::IMAGE_DEBUG, m_globalSymbolTable, m_funcBodySymbolTable, name);
+			const auto debugReader = new CE::DebugReader(m_debugSession, debugModule);
+			CE::AbstractImage* debugImage = nullptr;
+			if (m_debugSession->getDebugger() == CE::Debugger::DebuggerEngine)
+				debugImage = new CE::PEImage(debugReader);
+			imageDec->setImage(debugImage);
+			return imageDec;
 		}
 	};
 };

@@ -325,6 +325,17 @@ namespace CE
                 throw DebugException("not all bytes has read");
             }
 		}
+
+		std::uintptr_t getInstructionAddress() override {
+            ULONG64 offset;
+            const auto hr = m_registers->GetInstructionOffset(&offset);
+            Check(hr, "GetInstructionOffset error");
+            return offset;
+		}
+
+        std::list<DebugRegister> getRegisters() override {
+            return {};
+		}
 	
 	private:
         void runSession() {

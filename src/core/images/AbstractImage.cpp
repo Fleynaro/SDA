@@ -27,7 +27,7 @@ const std::list<CE::ImageSection>& CE::AbstractImage::getImageSections() const {
 	return m_imageSections;
 }
 
-uint64_t CE::AbstractImage::addrToRva(uint64_t addr) {
+CE::Offset CE::AbstractImage::addressToOffset(std::uintptr_t addr) {
 	return addr - getAddress();
 }
 

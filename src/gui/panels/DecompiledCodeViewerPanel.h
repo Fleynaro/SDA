@@ -717,7 +717,7 @@ namespace GUI
 		std::string m_selectedText;
 		bool m_codeChanged = false;
 		float m_maxLineSize = 0.0f;
-		ImageDebugger* m_debugger = nullptr;
+		PCodeEmulator* m_debugger = nullptr;
 		
 		DecompiledCodeViewer(CE::Decompiler::LinearView::BlockList* blockList)
 			: m_blockList(blockList)
