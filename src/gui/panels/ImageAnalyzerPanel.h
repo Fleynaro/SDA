@@ -7,6 +7,9 @@
 #include "imgui_wrapper/Window.h"
 #include "imgui_wrapper/controls/AbstractPanel.h"
 #include "imgui_wrapper/controls/Button.h"
+#include "managers/FunctionManager.h"
+#include "managers/ImageManager.h"
+#include "managers/TypeManager.h"
 
 namespace GUI
 {
@@ -40,12 +43,26 @@ namespace GUI
 			using namespace CE;
 			using namespace Decompiler;
 
+			const auto project = m_imageDec->getImageManager()->getProject();
+			const auto imagePCodeGraph = new ImagePCodeGraph();
+			const auto instrPool = new InstructionPool();
+
 			WarningContainer warningContainer;
 			RegisterFactoryX86 registerFactoryX86;
-			DecoderX86 decoder(&registerFactoryX86, m_imageDec->getInstrPool(), &warningContainer);
+			DecoderX86 decoder(&registerFactoryX86, instrPool, &warningContainer);
 
-			const ImageAnalyzer imageAnalyzer(m_imageDec->getImage(), m_imageDec->getPCodeGraph(), &decoder, &registerFactoryX86);
+			PCodeGraphReferenceSearch graphReferenceSearch(project, &registerFactoryX86, m_imageDec->getImage());
+			const ImageAnalyzer imageAnalyzer(m_imageDec->getImage(), imagePCodeGraph, &decoder, &registerFactoryX86, &graphReferenceSearch);
 			imageAnalyzer.start(m_startOffset);
+
+			m_imageDec->setInstrPool(instrPool);
+			m_imageDec->setPCodeGraph(imagePCodeGraph);
+
+			const auto defSignature = project->getTypeManager()->getDefaultFuncSignature();
+			for(const auto funcGraph : imagePCodeGraph->getFunctionGraphList()) {
+				const auto funcOffset = funcGraph.getStartBlock()->getMinOffset().getByteOffset();
+				project->getFunctionManager()->getFactory().createFunction(funcOffset, defSignature, m_imageDec, "func_" + Helper::String::NumberToHex(funcOffset));
+			}
 		}
 	};
 };

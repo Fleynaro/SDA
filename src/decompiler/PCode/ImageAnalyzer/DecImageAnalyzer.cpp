@@ -42,6 +42,7 @@ void ImageAnalyzer::start(Offset startOffset, bool onceFunc) const {
 			offsetsToFuncGraphs[startInstrOffset.getByteOffset()] = funcGraph;
 
 			if (!onceFunc) {
+				assert(m_graphReferenceSearch != nullptr);
 				std::list<Offset> nonVirtFuncOffsets;
 				std::list<Offset> otherOffsets;
 				PrepareFuncGraph(funcGraph);
@@ -121,7 +122,7 @@ void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, Fu
 					// if no instruction at the offset then decode the location
 					if (byteOffset < m_image->getSize()) {
 						std::vector<uint8_t> buffer(100);
-						m_image->getReader()->read(byteOffset, buffer);
+						m_image->read(byteOffset, buffer);
 						m_decoder->decode(byteOffset, buffer);
 					}
 					instr = m_decoder->m_instrPool->getPCodeInstructionAt(offset);
@@ -338,8 +339,8 @@ void PCodeGraphReferenceSearch::findNewFunctionOffsets(FunctionPCodeGraph* funcG
 
 	for (auto symbol : sdaBuilding.getNewAutoSymbols()) {
 		if (const auto memSymbol = dynamic_cast<CE::Symbol::AbstractMemorySymbol*>(symbol)) {
-			const auto offset = static_cast<Offset>(memSymbol->getOffset());
 			if (memSymbol->getType() == CE::Symbol::GLOBAL_VAR) {
+				const auto offset = static_cast<Offset>(memSymbol->getOffset());
 				const auto segmentType = m_image->getSectionByOffset(offset)->m_type;
 				if (segmentType == ImageSection::CODE_SEGMENT) {
 					nonVirtFuncOffsets.push_back(offset);

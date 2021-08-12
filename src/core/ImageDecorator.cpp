@@ -119,9 +119,19 @@ Decompiler::PCode::InstructionPool* ImageDecorator::getInstrPool() const
 	return m_instrPool;
 }
 
+void ImageDecorator::setInstrPool(Decompiler::PCode::InstructionPool* instrPool) {
+	delete m_instrPool;
+	m_instrPool = instrPool;
+}
+
 Decompiler::ImagePCodeGraph* ImageDecorator::getPCodeGraph() const
 {
 	return m_imagePCodeGraph;
+}
+
+void ImageDecorator::setPCodeGraph(Decompiler::ImagePCodeGraph* imagePCodeGraph) {
+	delete m_imagePCodeGraph;
+	m_imagePCodeGraph = imagePCodeGraph;
 }
 
 std::map<ComplexOffset, DataType::IFunctionSignature*>& ImageDecorator::getVirtFuncCalls() const

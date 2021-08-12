@@ -156,6 +156,8 @@ namespace GUI
 			Show(m_debugAttachProcessWindow);
 			Show(m_messageWindow);
 
+			if(m_debugger)
+				m_debugger->show();
 			if (const auto emulator = getEmulator(false)) {
 				emulator->show();
 			}

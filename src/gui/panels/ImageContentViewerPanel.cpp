@@ -52,11 +52,13 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::RowContextPanel::renderPan
 		}
 	}
 	else {
-		if (ImGui::MenuItem("Start Emulator here")) {
-			const auto stepWidth = m_codeSectionRow.m_isPCode
-				                       ? PCodeEmulator::PCodeStepWidth::STEP_PCODE_INSTR
-				                       : PCodeEmulator::PCodeStepWidth::STEP_ORIGINAL_INSTR;
-			m_codeSectionViewer->m_projectPanel->createEmulator(imageDec, m_codeSectionRow.getOffset(), stepWidth);
+		if (m_codeSectionViewer->m_codeSectionController->m_imageDec->getInstrPool()->getPCodeInstructionAt(m_codeSectionRow.getOffset())) {
+			if (ImGui::MenuItem("Start Emulator here")) {
+				const auto stepWidth = m_codeSectionRow.m_isPCode
+					? PCodeEmulator::PCodeStepWidth::STEP_PCODE_INSTR
+					: PCodeEmulator::PCodeStepWidth::STEP_ORIGINAL_INSTR;
+				m_codeSectionViewer->m_projectPanel->createEmulator(imageDec, m_codeSectionRow.getOffset(), stepWidth);
+			}
 		}
 	}
 }

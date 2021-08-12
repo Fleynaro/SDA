@@ -127,7 +127,7 @@ namespace GUI
 			NewLine();
 			std::string btnText = "Nothing to attach";
 			if (m_selectedProcess)
-				btnText += "Attach to " + m_selectedProcess->m_name;
+				btnText = "Attach to " + m_selectedProcess->m_name;
 			if (Button::StdButton(btnText).present()) {
 				if(m_selectedProcess) {
 					m_debugSession = CreateDebugSession(m_selectedDebugger);

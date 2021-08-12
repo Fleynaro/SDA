@@ -80,7 +80,11 @@ namespace CE
 
 		Decompiler::PCode::InstructionPool* getInstrPool() const;
 
+		void setInstrPool(Decompiler::PCode::InstructionPool* instrPool);
+
 		Decompiler::ImagePCodeGraph* getPCodeGraph() const;
+
+		void setPCodeGraph(Decompiler::ImagePCodeGraph* imagePCodeGraph);
 
 		std::map<ComplexOffset, DataType::IFunctionSignature*>& getVirtFuncCalls() const;
 

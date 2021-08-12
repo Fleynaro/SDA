@@ -19,6 +19,8 @@ namespace CE
 		class ISymbol : virtual public IDescription
 		{
 		public:
+			virtual ~ISymbol() = default;
+
 			virtual bool isAutoSymbol() = 0;
 
 			virtual Type getType() = 0;
