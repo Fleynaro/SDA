@@ -319,7 +319,7 @@ namespace CE
 
 		void readMemory(uint64_t offset, std::vector<uint8_t>& data) override {
             ULONG bytesRead;
-            const auto hr = m_dataSpaces->ReadVirtual(offset, data.data(), data.size(), &bytesRead);
+            const auto hr = m_dataSpaces->ReadVirtual(offset, data.data(), static_cast<ULONG>(data.size()), &bytesRead);
             Check(hr, "ReadVirtual error");
             if (bytesRead != data.size()) {
                 throw DebugException("not all bytes has read");

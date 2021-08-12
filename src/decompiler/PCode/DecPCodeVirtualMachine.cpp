@@ -342,7 +342,7 @@ void CE::Decompiler::PCode::VirtualMachine::executeBranching() {
 	 * case InstructionId::CALLIND:
 	 * case InstructionId::RETURN:
 	 */
-	m_execCtx->m_nextInstrOffset = m_op1;
+	m_execCtx->m_nextInstrAddr = m_op1;
 }
 
 void CE::Decompiler::PCode::VirtualMachine::executeExtension() {

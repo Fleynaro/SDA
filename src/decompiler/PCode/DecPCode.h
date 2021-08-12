@@ -2,6 +2,7 @@
 #include <decompiler/DecMask.h>
 #include <Zydis/Zydis.h>
 #include "Offset.h"
+#include "utilities/Helper.h"
 #include <magic_enum.hpp>
 #include <string>
 #include <list>
@@ -302,7 +303,7 @@ namespace CE::Decompiler::PCode
 				generateToken(symbolName, TOKEN_VARIABLE);
 			}
 			else if (const auto constVarnode = dynamic_cast<ConstantVarnode*>(varnode)) {
-				const auto number = std::to_string((int64_t&)constVarnode->m_value) + ":" + std::to_string(constVarnode->getSize());
+				const auto number = Helper::String::NumberToHex(constVarnode->m_value) + ":" + std::to_string(constVarnode->getSize());
 				generateToken(number, TOKEN_NUMBER);
 			}
 		}

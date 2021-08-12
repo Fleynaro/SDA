@@ -64,7 +64,6 @@ void ImageDecorator::load() {
 
 	if (m_type == IMAGE_PE) {
 		const auto image = new PEImage(new SimpleReader((uint8_t*)buffer, size));
-		image->analyze();
 		m_image = image;
 	}
 }
@@ -72,7 +71,7 @@ void ImageDecorator::load() {
 void ImageDecorator::save() {
 	std::vector<uint8_t> buffer(m_image->getSize());
 	m_image->getReader()->read(0x0, buffer);
-	Helper::File::SaveBufferIntoFile((char*)&buffer, buffer.size(), getFile());
+	Helper::File::SaveBufferIntoFile((char*)&buffer, static_cast<int>(buffer.size()), getFile());
 }
 
 bool ImageDecorator::hasLoaded() const {

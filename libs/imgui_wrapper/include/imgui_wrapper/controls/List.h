@@ -125,8 +125,8 @@ namespace GUI
 			{
 				std::string text;
 				T data;
+				iter->getNextItem(&text, &data);
 				if (!text.empty()) {
-					iter->getNextItem(&text, &data);
 					renderItem(text, data, n++);
 				}
 			}

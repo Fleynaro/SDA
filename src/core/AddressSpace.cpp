@@ -13,7 +13,8 @@ std::list<CE::ImageDecorator*>& CE::AddressSpace::getImageDecorators()
 CE::ImageDecorator* CE::AddressSpace::getImageDecoratorAt(std::uintptr_t addr)
 {
 	for(const auto imageDec : m_imagesDecorators) {
-		if(addr >= imageDec->getImage()->getAddress() && addr < imageDec->getImage()->getAddress() + imageDec->getImage()->getSize()) {
+		const auto image = imageDec->getImage();
+		if(addr >= image->getAddress() && addr < image->getAddress() + image->getSize()) {
 			return imageDec;
 		}
 	}

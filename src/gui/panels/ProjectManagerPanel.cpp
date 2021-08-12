@@ -1,5 +1,4 @@
 #include "ProjectManagerPanel.h"
-#include "DecompilerDemoPanel.h"
 #include "panels/ProjectPanel.h"
 #include "imgui_wrapper/controls/Text.h"
 
@@ -47,7 +46,9 @@ void GUI::ProjectManagerPanel::renderPanel() {
 	renderProjectList();
 	Show(m_prjCreatorWin);
 	Show(m_projectWin);
-	Show(m_demoWin);
+
+	if (m_isImguiDemo)
+		ImGui::ShowDemoWindow(&m_isImguiDemo);
 }
 
 void GUI::ProjectManagerPanel::renderProjectList() {
@@ -71,9 +72,8 @@ void GUI::ProjectManagerPanel::renderProjectList() {
 
 	NewLine();
 	NewLine();
-	if (Button::StdButton("Open demo window").present()) {
-		delete m_demoWin;
-		m_demoWin = new StdWindow(new DecompilerDemoPanel);
+	if (Button::StdButton("Open imgui demo").present()) {
+		m_isImguiDemo = true;
 	}
 }
 

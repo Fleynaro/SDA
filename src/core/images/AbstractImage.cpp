@@ -19,10 +19,6 @@ int CE::AbstractImage::getSize() const {
 	return m_reader->getSize();
 }
 
-std::uintptr_t CE::AbstractImage::getAddress() {
-	return 0x0;
-}
-
 const std::list<CE::ImageSection>& CE::AbstractImage::getImageSections() const {
 	return m_imageSections;
 }

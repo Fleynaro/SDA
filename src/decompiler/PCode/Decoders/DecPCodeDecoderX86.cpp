@@ -1292,7 +1292,7 @@ Instruction* DecoderX86::addMicroInstruction(InstructionId id, Varnode* input0, 
 		ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
 		char buffer[256];
 		ZydisFormatterFormatInstruction(&formatter, m_curInstr, buffer, sizeof(buffer),
-			(ZyanU64)m_addr);
+			(ZyanU64)m_curOffset);
 		m_curOrigInstr->m_originalView = buffer;
 	}
 	m_result.push_back(instr);

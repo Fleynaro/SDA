@@ -1,6 +1,6 @@
 #pragma once
 #include "AbstractSymbol.h"
-#include "IMemorySymbol.h"
+#include "decompiler/DecStorage.h"
 
 namespace CE::DataType {
 	class IFunctionSignature;

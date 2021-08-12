@@ -258,6 +258,8 @@ namespace GUI
 		}
 
 		bool decode(CE::Offset offset, ZydisDecodedInstruction* instruction) const {
+			if (offset >= m_imageDec->getImage()->getSize())
+				return false;
 			std::vector<uint8_t> buffer(100);
 			m_imageDec->getImage()->read(offset, buffer);
 			return ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&m_decoder, buffer.data(), buffer.size(), instruction));

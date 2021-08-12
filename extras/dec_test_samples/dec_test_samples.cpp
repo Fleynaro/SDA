@@ -5,6 +5,7 @@
 #include "decompiler/PCode/Decoders/DecPCodeDecoderX86.h"
 #include "decompiler/PCode/ImageAnalyzer/DecImageAnalyzer.h"
 #include "decompiler/SDA/Symbolization/DecGraphSymbolization.h"
+#include "images/SimpleImage.h"
 
 void CE::DecTestSamplesPool::Sample::decode() {
 	using namespace Decompiler;
@@ -538,8 +539,7 @@ void CE::DecTestSamplesPool::analyze() {
 }
 
 CE::DecTestSamplesPool::Sample* CE::DecTestSamplesPool::createSampleTest(int testId, const std::string& name,
-                                                                         const std::string& comment,
-                                                                         IImage* image, int offset) {
+                                                                         const std::string& comment, AbstractImage* image, int offset) {
 	const auto suffix = std::to_string(testId);
 	Sample sample;
 	sample.m_testId = testId;
@@ -562,8 +562,7 @@ CE::DecTestSamplesPool::Sample* CE::DecTestSamplesPool::createSampleTest(int tes
 CE::DecTestSamplesPool::Sample* CE::DecTestSamplesPool::createSampleTest(int testId, const std::string& name,
                                                                          const std::string& comment,
                                                                          std::vector<uint8_t> content) {
-	return createSampleTest(testId, name, comment, new VectorBufferImage(
-		                        std::vector<int8_t>(content.begin(), content.end())));
+	return createSampleTest(testId, name, comment, new SimpleImage(new VectorReader(content)));
 }
 
 CE::DataTypePtr CE::DecTestSamplesPool::findType(std::string typeName, std::string typeLevel) const {

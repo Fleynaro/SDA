@@ -1,7 +1,6 @@
 #pragma once
 #include "decompiler/Graph/DecCodeGraph.h"
 #include "decompiler/SDA/SdaCodeGraph.h"
-#include "images/VectorBufferImage.h"
 #include "managers/Managers.h"
 #include <string>
 
@@ -42,7 +41,7 @@ namespace CE
 
 		void analyze();
 
-		Sample* createSampleTest(int testId, const std::string& name, const std::string& comment, IImage* image,
+		Sample* createSampleTest(int testId, const std::string& name, const std::string& comment, AbstractImage* image,
 		                         int offset = 0);
 
 		Sample* createSampleTest(int testId, const std::string& name, const std::string& comment, std::vector<uint8_t> content);

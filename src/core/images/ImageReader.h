@@ -29,11 +29,15 @@ namespace CE
 		int getSize() override;
 	};
 
-	class VectorReader : public SimpleReader
+	class VectorReader : public IReader
 	{
 		std::vector<uint8_t> m_data;
 	public:
 		VectorReader(std::vector<uint8_t> data);
+
+		void read(uint64_t offset, std::vector<uint8_t>& data) override;
+
+		int getSize() override;
 	};
 
 	class IDebugSession;

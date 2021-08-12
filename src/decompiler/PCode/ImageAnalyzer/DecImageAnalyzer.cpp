@@ -9,7 +9,7 @@ using namespace PCode;
 
 // pass pcode graph and gather its blocks
 
-ImageAnalyzer::ImageAnalyzer(IImage* image, ImagePCodeGraph* imageGraph, AbstractDecoder* decoder, AbstractRegisterFactory* registerFactory, PCodeGraphReferenceSearch* graphReferenceSearch)
+ImageAnalyzer::ImageAnalyzer(AbstractImage* image, ImagePCodeGraph* imageGraph, AbstractDecoder* decoder, AbstractRegisterFactory* registerFactory, PCodeGraphReferenceSearch* graphReferenceSearch)
 	: m_image(image), m_imageGraph(imageGraph), m_decoder(decoder), m_registerFactory(registerFactory), m_graphReferenceSearch(graphReferenceSearch)
 {}
 
@@ -120,7 +120,9 @@ void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, Fu
 				if (!instr) {
 					// if no instruction at the offset then decode the location
 					if (byteOffset < m_image->getSize()) {
-						m_decoder->decode(m_image->getData() + m_image->toImageOffset(byteOffset), byteOffset, m_image->getSize());
+						std::vector<uint8_t> buffer(100);
+						m_image->getReader()->read(byteOffset, buffer);
+						m_decoder->decode(byteOffset, buffer);
 					}
 					instr = m_decoder->m_instrPool->getPCodeInstructionAt(offset);
 				}
@@ -308,7 +310,7 @@ void ImageAnalyzer::GatherPCodeBlocks(PCodeBlock* block, std::set<PCodeBlock*>& 
 	GatherPCodeBlocks(block->getNextFarBlock(), gatheredBlocks);
 }
 
-PCodeGraphReferenceSearch::PCodeGraphReferenceSearch(Project* project, AbstractRegisterFactory* registerFactory, IImage* image)
+PCodeGraphReferenceSearch::PCodeGraphReferenceSearch(Project* project, AbstractRegisterFactory* registerFactory, AbstractImage* image)
 	: m_project(project), m_registerFactory(registerFactory), m_image(image)
 {
 	const auto factory = m_project->getSymTableManager()->getFactory(false);
@@ -364,13 +366,14 @@ void PCodeGraphReferenceSearch::findNewFunctionOffsets(FunctionPCodeGraph* funcG
 
 void PCodeGraphReferenceSearch::checkOnVTable(uint64_t startOffset, VTable* pVtable) {
 	std::list<uint64_t> funcOffsets;
-	const auto data = m_image->getData();
 	for (auto offset = startOffset; offset < m_image->getSize(); offset += sizeof(uint64_t)) {
-		const auto funcAddr = reinterpret_cast<uint64_t&>(data[offset]);
+		std::vector<uint8_t> buffer(sizeof uint64_t);
+		m_image->getReader()->read(offset, buffer);
+		const auto funcAddr = *reinterpret_cast<uint64_t*>(buffer.data());
 		// all vtables ends with zero address
 		if (funcAddr == 0x0)
 			break;
-		const auto funcRva = m_image->addrToRva(funcAddr);
+		const auto funcRva = m_image->addressToOffset(funcAddr);
 		if (m_image->getSectionByOffset(funcRva)->m_type != ImageSection::CODE_SEGMENT)
 			break;
 		funcOffsets.push_back(funcRva);

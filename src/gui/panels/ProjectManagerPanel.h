@@ -35,10 +35,10 @@ namespace GUI
 		
 		ProjectManagerController m_controller;
 		TableListViewSelector<CE::ProjectManager::ProjectEntry*>* m_tableListView;
-		StdWindow* m_demoWin = nullptr;
 		StdWindow* m_prjCreatorWin = nullptr;
 		StdWindow* m_projectWin = nullptr;
 		bool m_tryToLoad = true;
+		bool m_isImguiDemo = false;
 	public:
 		ProjectManagerPanel(CE::Program* program);
 

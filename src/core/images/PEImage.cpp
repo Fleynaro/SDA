@@ -2,9 +2,7 @@
 
 CE::PEImage::PEImage(IReader* reader)
 	: AbstractImage(reader)
-{}
-
-void CE::PEImage::analyze() {
+{
 	parse();
 	loadSections();
 }
@@ -18,17 +16,17 @@ std::uintptr_t CE::PEImage::getAddress() {
 }
 
 void CE::PEImage::parse() {
-	std::vector<uint8_t> imgDosHeader(sizeof IMAGE_DOS_HEADER);
+	std::vector<uint8_t> imgDosHeader(sizeof __IMAGE_DOS_HEADER);
 	m_reader->read(0x0, imgDosHeader);
-	m_imgDosHeader = *reinterpret_cast<IMAGE_DOS_HEADER*>(imgDosHeader.data());
+	m_imgDosHeader = *reinterpret_cast<__IMAGE_DOS_HEADER*>(imgDosHeader.data());
 	
 	const auto e_magic = reinterpret_cast<char*>(&m_imgDosHeader.e_magic);
 	if (std::string(e_magic, 2) != "MZ")
 		throw std::exception();
 
-	std::vector<uint8_t> imgNtHeaders(sizeof IMAGE_NT_HEADERS);
+	std::vector<uint8_t> imgNtHeaders(sizeof __IMAGE_NT_HEADERS);
 	m_reader->read(m_imgDosHeader.e_lfanew, imgNtHeaders);
-	m_imgNtHeaders = *reinterpret_cast<IMAGE_NT_HEADERS*>(imgNtHeaders.data());
+	m_imgNtHeaders = *reinterpret_cast<__IMAGE_NT_HEADERS*>(imgNtHeaders.data());
 
 	const auto signature = reinterpret_cast<char*>(&m_imgNtHeaders.Signature);
 	if (std::string(signature, 2) != "PE")
@@ -39,14 +37,14 @@ void CE::PEImage::loadSections()
 {
 	ImageSection headerSection;
 	headerSection.m_name = "PE HEADER";
-	headerSection.m_virtualSize = m_imgDosHeader.e_lfanew + sizeof(IMAGE_NT_HEADERS);
+	headerSection.m_virtualSize = m_imgDosHeader.e_lfanew + sizeof(__IMAGE_NT_HEADERS);
 	m_imageSections.push_back(headerSection);
 
 	for (int i = 0; i < m_imgNtHeaders.FileHeader.NumberOfSections; i++)
 	{
-		std::vector<uint8_t> imgSecHeader(sizeof IMAGE_SECTION_HEADER);
-		m_reader->read(m_imgDosHeader.e_lfanew + sizeof(IMAGE_NT_HEADERS) + sizeof(IMAGE_SECTION_HEADER) * i, imgSecHeader);
-		const auto pSeh = reinterpret_cast<IMAGE_SECTION_HEADER*>(imgSecHeader.data());
+		std::vector<uint8_t> imgSecHeader(sizeof __IMAGE_SECTION_HEADER);
+		m_reader->read(m_imgDosHeader.e_lfanew + sizeof(__IMAGE_NT_HEADERS) + sizeof(__IMAGE_SECTION_HEADER) * i, imgSecHeader);
+		const auto pSeh = reinterpret_cast<__IMAGE_SECTION_HEADER*>(imgSecHeader.data());
 
 		ImageSection section;
 		section.m_name = reinterpret_cast<const char*>(pSeh->Name);

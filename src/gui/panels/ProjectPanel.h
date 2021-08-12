@@ -79,7 +79,7 @@ namespace GUI
 
 		PCodeEmulator* getEmulator(bool notStopped = true) const {
 			if (!m_emulator) {
-				if (notStopped && m_debugger->m_emulator->m_isStopped)
+				if (!m_debugger || notStopped && m_debugger->m_emulator->m_isStopped)
 					return nullptr;
 				return m_debugger->m_emulator;
 			}
@@ -106,7 +106,12 @@ namespace GUI
 				return;
 
 			if (isNewLocation) {
-				panel->goToOffset(emulator->m_offset.getByteOffset());
+				try {
+					panel->goToOffset(emulator->m_offset.getByteOffset());
+				} catch(WarningException&) {
+					return;
+				}
+				
 				if (emulator->m_stepWidth == PCodeEmulator::PCodeStepWidth::STEP_CODE_LINE) {
 					if (emulator->m_curPCodeBlock) {
 						if (!panel->m_curDecGraph || emulator->m_curPCodeBlock->m_funcPCodeGraph != panel->m_curDecGraph->getFuncGraph()) {
@@ -134,7 +139,7 @@ namespace GUI
 				{
 					locationHandler(delta);
 				});
-			m_emulator->defineCurPCodeInstruction();
+			m_emulator->sync();
 		}
 	
 	protected:
@@ -151,8 +156,8 @@ namespace GUI
 			Show(m_debugAttachProcessWindow);
 			Show(m_messageWindow);
 
-			if (m_debugger) {
-				m_debugger->show();
+			if (const auto emulator = getEmulator(false)) {
+				emulator->show();
 			}
 		}
 
@@ -181,6 +186,7 @@ namespace GUI
 				if (const auto emulator = getEmulator(false)) {
 					emulator->renderDebugMenu();
 				}
+				ImGui::EndMenu();
 			}
 
 			if (ImGui::BeginMenu("View"))

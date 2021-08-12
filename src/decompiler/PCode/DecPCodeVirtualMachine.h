@@ -13,7 +13,7 @@ namespace CE::Decompiler::PCode
 		std::map<int, DataValue> m_registers;
 		std::map<SymbolVarnode*, DataValue> m_symbolVarnodes;
 	public:
-		DataValue m_nextInstrOffset = 0;
+		DataValue m_nextInstrAddr = 0;
 		
 		VmExecutionContext()
 		{}

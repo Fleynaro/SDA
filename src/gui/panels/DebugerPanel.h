@@ -2,15 +2,23 @@
 #include <utility>
 
 #include "ImageDecorator.h"
+#include "datatypes/Enum.h"
+#include "datatypes/Structure.h"
+#include "datatypes/SystemType.h"
+#include "datatypes/Typedef.h"
 #include "debugger/Debug.h"
 #include "decompiler/PCode/DecPCodeInstructionPool.h"
 #include "decompiler/PCode/DecPCodeVirtualMachine.h"
 #include "decompiler/PCode/DecRegisterFactory.h"
 #include "decompiler/Graph/DecPCodeGraph.h"
 #include "decompiler/Graph/DecCodeGraphBlock.h"
+#include "images/PEImage.h"
 #include "imgui_wrapper/Window.h"
 #include "imgui_wrapper/controls/AbstractPanel.h"
+#include "imgui_wrapper/controls/List.h"
 #include "imgui_wrapper/controls/Text.h"
+#include "managers/AddressSpaceManager.h"
+#include "managers/ImageManager.h"
 #include "managers/SymbolTableManager.h"
 #include "panels/BuiltinInputPanel.h"
 #include "utilities/Helper.h"
@@ -32,18 +40,18 @@ namespace GUI
 		private:
 			class DebugProcessIterator : public Iterator
 			{
-				std::list<CE::DebugProcess>::iterator m_it;
 				DebugProcessListModel* m_model;
+				std::list<CE::DebugProcess>::iterator m_it;
 			public:
 				DebugProcessIterator(DebugProcessListModel* model)
-					: m_model(model), m_it(m_model->m_list->begin())
+					: m_model(model), m_it(model->m_list->begin())
 				{}
 
 				void getNextItem(std::string* text, CE::DebugProcess** data) override {
-					if (m_it->m_name.find(m_model->m_filterName) == std::string::npos)
-						return;
-					*text = std::to_string(m_it->m_id) + "," + m_it->m_name;
-					*data = &*m_it;
+					if (m_it->m_name.find(m_model->m_filterName) != std::string::npos) {
+						*text = std::to_string(m_it->m_id) + "," + m_it->m_name;
+						*data = &*m_it;
+					}
 					++m_it;
 				}
 
@@ -94,6 +102,7 @@ namespace GUI
 
 	private:
 		void renderPanel() override {
+			Text::Text("Select debugger:").show();
 			if (ImGui::BeginCombo("##combo", m_selectedDebuggerStr.c_str())) {
 				for(const auto debugger : CE::GetAvailableDebuggers()) {
 					const auto name = GetDubuggerName(debugger);
@@ -106,6 +115,8 @@ namespace GUI
 				ImGui::EndCombo();
 			}
 
+			NewLine();
+			Text::Text("Select process to attach:").show();
 			m_textInput.show();
 			if (m_textInput.isTextEntering())
 				m_processListModel.m_filterName = m_textInput.getInputText();
@@ -114,7 +125,10 @@ namespace GUI
 			ImGui::EndChild();
 			
 			NewLine();
-			if (Button::StdButton("Attach").present()) {
+			std::string btnText = "Nothing to attach";
+			if (m_selectedProcess)
+				btnText += "Attach to " + m_selectedProcess->m_name;
+			if (Button::StdButton(btnText).present()) {
 				if(m_selectedProcess) {
 					m_debugSession = CreateDebugSession(m_selectedDebugger);
 					m_debugSession->attachProcess(*m_selectedProcess);
@@ -353,7 +367,7 @@ namespace GUI
 					return std::to_string((double&)value);
 				}
 			} else if (const auto Enum = dynamic_cast<CE::DataType::Enum*>(dataType)) {
-				const auto it = Enum->getFields().find(value);
+				const auto it = Enum->getFields().find((int&)value);
 				const auto intValueStr = std::to_string((int&)value);
 				if (it == Enum->getFields().end())
 					return intValueStr;
@@ -463,7 +477,8 @@ namespace GUI
 					}
 					
 					renderFlagRegisterRow();
-					
+
+					renderRegisterRow(ZYDIS_REGISTER_RIP, 0x8);
 					for(int regId = ZYDIS_REGISTER_RAX; regId <= ZYDIS_REGISTER_R15; regId++) {
 						renderRegisterRow(regId, 0x8);
 					}
@@ -640,6 +655,7 @@ namespace GUI
 		CE::Decompiler::PCode::VmMemoryContext m_memCtx;
 		CE::Decompiler::PCode::VirtualMachine m_vm;
 		std::uintptr_t m_curAddr = 0;
+		bool m_into = false;
 
 		StdWindow* m_execCtxViewerWin;
 		StdWindow* m_stackViewerWin;
@@ -694,29 +710,12 @@ namespace GUI
 			defineCurPCodeInstruction();
 		}
 
-		bool defineCurPCodeInstruction() {
-			m_curInstr = m_imageDec->getInstrPool()->getPCodeInstructionAt(m_offset);
-			if (m_curInstr) {
-				m_curPCodeBlock = m_imageDec->getPCodeGraph()->getBlockAtOffset(m_offset);
-			} else {
-				m_curPCodeBlock = nullptr;
-				m_curBlockTopNode = nullptr;
-				m_isStopped = true;
-			}
-
-			if (m_locationHandler.isInit()) {
-				const auto newAddr = m_imageDec->getImage()->getAddress() + m_offset;
-				const auto delta = std::abs(static_cast<int64_t>(m_curAddr) - static_cast<int64_t>(newAddr));
-				m_curAddr = newAddr;
-				m_locationHandler(delta);
-			}
-
-			if (!m_curInstr)
-				return false;
-
-			// rip
-			m_execCtx.setRegisterValue(CE::Decompiler::Register(ZYDIS_REGISTER_RIP), 0x2000000000 + m_curInstr->m_origInstruction->m_offset);
-			return true;
+		virtual void sync() {
+			std::map<int, CE::Decompiler::DataValue> registers;
+			registers = m_execCtx.getRegisters();
+			m_execCtx.syncWith(registers);
+			m_execCtx.setRegisterValue(CE::Decompiler::Register(ZYDIS_REGISTER_RIP), m_imageDec->getImage()->getAddress() + m_offset.getByteOffset());
+			defineCurPCodeInstruction();
 		}
 
 		bool setLocationByAddress(std::uintptr_t addr) {
@@ -750,7 +749,7 @@ namespace GUI
 				}
 
 				if (ImGui::MenuItem("Step Over", "F8")) {
-					stepOver(true);
+					stepOver();
 				}
 
 				if (ImGui::MenuItem("Step Into", "F7")) {
@@ -781,7 +780,7 @@ namespace GUI
 		void renderControl() override {
 			if (!m_isStopped) {
 				if (ImGui::IsKeyPressed(VK_F8)) { // todo: linux, change imgui_impl_win32.cpp
-					stepOver(true);
+					stepOver();
 				}
 				else if (ImGui::IsKeyPressed(VK_F7)) {
 					stepInto();
@@ -797,11 +796,17 @@ namespace GUI
 			}
 		}
 
-		void defineNextInstrOffset(bool jmp) {
-			if (jmp && m_execCtx.m_nextInstrOffset != 0) {
-				const auto addr = m_execCtx.m_nextInstrOffset;
-				setLocationByAddress(addr);
-				m_execCtx.m_nextInstrOffset = 0;
+		void defineNextInstrOffset() {
+			const auto jmp = m_into ? true : m_curInstr->m_id != CE::Decompiler::PCode::InstructionId::CALL;
+			if (jmp && m_execCtx.m_nextInstrAddr != 0) {
+				if(dynamic_cast<CE::Decompiler::ConstantVarnode*>(m_curInstr->m_input0)) {
+					// any constant value in jump instructions (branch/call) is offset from start of the current image
+					m_offset = m_execCtx.m_nextInstrAddr;
+				} else {
+					// jmp [rax] (can visit other image)
+					setLocationByAddress(m_execCtx.m_nextInstrAddr);
+				}
+				m_execCtx.m_nextInstrAddr = 0;
 				return;
 			}
 			
@@ -814,59 +819,84 @@ namespace GUI
 			}
 		}
 
-		void stepNextPCodeInstr(bool into) {
+		bool defineCurPCodeInstruction() {
+			m_curInstr = m_imageDec->getInstrPool()->getPCodeInstructionAt(m_offset);
+			if (m_curInstr) {
+				m_curPCodeBlock = m_imageDec->getPCodeGraph()->getBlockAtOffset(m_offset);
+			}
+			else {
+				m_curPCodeBlock = nullptr;
+				m_curBlockTopNode = nullptr;
+			}
+
+			if (m_locationHandler.isInit()) {
+				const auto newAddr = m_imageDec->getImage()->getAddress() + m_offset;
+				const auto delta = std::abs(static_cast<int64_t>(m_curAddr) - static_cast<int64_t>(newAddr));
+				m_curAddr = newAddr;
+				m_locationHandler(delta);
+			}
+
+			if (!m_curInstr) {
+				m_isStopped = true;
+				return false;
+			}
+			return true;
+		}
+
+		void stepNextPCodeInstr() {
 			m_vm.execute(m_curInstr);
-			defineNextInstrOffset(into ? true : m_curInstr->m_id != CE::Decompiler::PCode::InstructionId::CALL);
+			defineNextInstrOffset();
+			if (m_isStopped)
+				return;
 			if (isNewOrigInstruction()) {
-				sync(into);
+				sync();
 			}
 			else {
 				defineCurPCodeInstruction();
 			}
 		}
 
-		void stepNextOrigInstr(bool into) {
+		void stepNextOrigInstr() {
 			do {
-				stepNextPCodeInstr(into);
+				stepNextPCodeInstr();
+				if (m_isStopped)
+					return;
 			} while (!isNewOrigInstruction());
 		}
 
-		void stepNextBlockTopNode(bool into) {
+		void stepNextBlockTopNode() {
 			bool isNewBlockTopNode;
 			do {
 				const auto prevBlockTopNode = m_curBlockTopNode;
-				stepNextPCodeInstr(into);
+				stepNextPCodeInstr();
+				if (m_isStopped)
+					return;
 				isNewBlockTopNode = m_curBlockTopNode != prevBlockTopNode;
 			} while (m_curBlockTopNode && !isNewBlockTopNode);
 		}
 		
-		virtual void stepOver(bool into) {
+		virtual void stepOver() {
 			switch(m_stepWidth) {
 			case PCodeStepWidth::STEP_PCODE_INSTR:
-				stepNextPCodeInstr(into);
+				stepNextPCodeInstr();
 				break;
 			case PCodeStepWidth::STEP_ORIGINAL_INSTR:
-				stepNextOrigInstr(into);
+				stepNextOrigInstr();
 				break;
 			case PCodeStepWidth::STEP_CODE_LINE:
-				stepNextBlockTopNode(into);
+				stepNextBlockTopNode();
 				break;
 			}
 		}
 
 		void stepInto() {
-			stepOver(true);
+			m_into = true;
+			stepOver();
+			m_into = false;
 		}
 
 		bool isNewOrigInstruction() const {
 			return m_offset.getOrderId() == 0;
-		}
-
-		virtual void sync(bool into) {
-			std::map<int, CE::Decompiler::DataValue> registers;
-			registers = m_execCtx.getRegisters();
-			m_execCtx.syncWith(registers);
-			defineCurPCodeInstruction();
 		}
 
 		bool getMemLocation(const CE::Decompiler::StoragePath& storagePath, ValueViewerPanel::Location& location) {
@@ -916,7 +946,9 @@ namespace GUI
 				if(m_isSyncing) {
 					if (m_stepWidth == PCodeStepWidth::STEP_CODE_LINE) {
 						if(m_curInstr && m_curBlockTopNode == prevBlockTopNode) {
-							stepNextBlockTopNode(m_isInto);
+							if (m_isInto)
+								stepInto();
+							else stepOver();
 						}
 					}
 					m_isSyncing = false;
@@ -924,19 +956,19 @@ namespace GUI
 			}
 		
 		private:
-			void stepOver(bool into) override {
+			void stepOver() override {
 				if (m_curInstr) {
-					PCodeEmulator::stepOver(into);
+					PCodeEmulator::stepOver();
 				} else {
-					step(into);
+					step(m_into);
 				}
 			}
 
-			void sync(bool into) override {
-				step(into);
+			void sync() override {
+				step(m_into);
 				m_isStopped = true;
 				m_isSyncing = true;
-				m_isInto = into;
+				m_isInto = m_into;
 			}
 
 			void step(bool into) const {
@@ -997,7 +1029,6 @@ namespace GUI
 			// todo: timer 1 sec
 			updateModules();
 			updateLocation();
-			m_emulator->show();
 
 			if(!m_debugSession->isSuspended()) {
 				m_emulator->m_isStopped = true;

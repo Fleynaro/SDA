@@ -63,7 +63,7 @@ namespace CE
 
 		virtual int getOffsetOfEntryPoint() = 0;
 
-		virtual std::uintptr_t getAddress();
+		virtual std::uintptr_t getAddress() = 0;
 
 		const std::list<ImageSection>& getImageSections() const;
 
