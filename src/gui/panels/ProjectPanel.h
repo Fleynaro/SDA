@@ -79,11 +79,11 @@ namespace GUI
 
 		PCodeEmulator* getEmulator(bool notStopped = true) const {
 			if (!m_emulator) {
-				if (!m_debugger || notStopped && m_debugger->m_emulator->isWorking())
+				if (!m_debugger || notStopped && !m_debugger->m_emulator->isWorking())
 					return nullptr;
 				return m_debugger->m_emulator;
 			}
-			if (notStopped && m_emulator->isWorking())
+			if (notStopped && !m_emulator->isWorking())
 				return nullptr;
 			return m_emulator;
 		}
@@ -125,9 +125,8 @@ namespace GUI
 			}
 
 			if (panel->m_curDecGraph) {
-				const auto instrOffset = m_emulator->m_curInstr->getOffset();
-				m_emulator->m_curBlockTopNode = panel->m_curDecGraph->findBlockTopNodeAtOffset(instrOffset);
-				m_emulator->m_stackPointerValue = panel->m_curDecGraph->getStackPointerValueAtOffset(instrOffset);
+				emulator->m_curBlockTopNode = panel->m_curDecGraph->findBlockTopNodeAtOffset(emulator->m_offset);
+				emulator->m_stackPointerValue = panel->m_curDecGraph->getStackPointerValueAtOffset(emulator->m_offset);
 			}
 		}
 
@@ -140,10 +139,6 @@ namespace GUI
 					locationHandler(delta);
 				});
 			m_emulator->sync();
-		}
-
-		void addBreakpoint(CE::ImageDecorator* imageDec, CE::Offset offset) const {
-			imageDec->getBreakpoints()[offset] = CE::BreakPoint(imageDec, offset);
 		}
 	
 	protected:
@@ -160,8 +155,15 @@ namespace GUI
 			Show(m_debugAttachProcessWindow);
 			Show(m_messageWindow);
 
-			if(m_debugger)
-				m_debugger->show();
+			// debugger & emulator
+			if (m_debugger) {
+				if (m_debugger->isWorking()) {
+					m_debugger->show();
+				} else {
+					delete m_debugger;
+					m_debugger = nullptr;
+				}
+			}
 			if (const auto emulator = getEmulator(false)) {
 				emulator->show();
 			}
@@ -180,11 +182,15 @@ namespace GUI
 			{
 				if (ImGui::MenuItem("Attach Process", nullptr)) {
 					delete m_debugAttachProcessWindow;
-					const auto panel = new DebuggerAttachProcessPanel;
+					const auto panel = new DebuggerAttachProcessPanel(m_project);
 					panel->selectProcessEventHandler([&, panel]()
 						{
 							delete m_debugger;
-							m_debugger = new Debugger(m_project, panel->m_debugSession);
+							m_debugger = new Debugger(m_project, panel->m_debugSession, panel->m_selectedParentAddrSpace);
+							m_debugger->m_emulator->locationHandler([&](uint64_t delta)
+								{
+									locationHandler(delta);
+								});
 						});
 					m_debugAttachProcessWindow = new StdWindow(panel);
 				}

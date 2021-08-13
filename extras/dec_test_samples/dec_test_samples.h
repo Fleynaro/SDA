@@ -50,9 +50,9 @@ namespace CE
 		DataTypePtr findType(std::string typeName, std::string typeLevel = "") const;
 
 		// calculates the function size, seeing RET instruction
-		static int CalculateFuncSize(byte* addr, bool endByRet = false);
+		static int CalculateFuncSize(uint8_t* addr, bool endByRet = false);
 
 		// returns array of bytes on specified address of some function (seeing RET instruction)
-		static std::vector<byte> GetFuncBytes(void* addr);
+		static std::vector<uint8_t> GetFuncBytes(void* addr);
 	};
 };

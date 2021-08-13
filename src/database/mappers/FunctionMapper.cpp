@@ -1,10 +1,8 @@
 #include "FunctionMapper.h"
 #include <managers/FunctionManager.h>
 #include <managers/SymbolTableManager.h>
-#include <managers/TypeManager.h>
 #include <managers/SymbolManager.h>
 #include <managers/ImageManager.h>
-#include <ghidra_sync/Mappers/GhidraFunctionMapper.h>
 
 using namespace DB;
 using namespace CE;
@@ -43,7 +41,6 @@ IDomainObject* FunctionMapper::doLoad(Database* db, Statement& query) {
 	
 	funcSymbol->setFunction(function);
 	function->setId(func_id);
-	function->setGhidraMapper(getManager()->m_ghidraFunctionMapper);
 	return function;
 }
 

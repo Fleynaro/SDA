@@ -25,3 +25,7 @@ CE::AddressSpaceManager* CE::AddressSpace::getAddrSpaceManager() const
 {
 	return m_addrSpaceManager;
 }
+
+bool CE::AddressSpace::isDebug() const {
+	return m_debugSession != nullptr;
+}

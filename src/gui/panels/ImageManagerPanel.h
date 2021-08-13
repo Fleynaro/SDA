@@ -153,24 +153,42 @@ namespace GUI
 			
 			private:		
 				void renderPanel() override {
-					if (ImGui::MenuItem("Create Image")) {
-						delete m_imageManagerPanel->m_popupModalWindow;
-						m_imageManagerPanel->m_popupModalWindow = new PopupModalWindow(new ImageCreatorPanel(this));
-						m_imageManagerPanel->m_popupModalWindow->open();
-					}
+					if (m_addrSpace->isDebug()) {
+						if (ImGui::MenuItem("Create Snapshot")) {
+							clone("snapshot");
+						}
+					} else {
+						if (ImGui::MenuItem("Clone")) {
+							clone("cloned");
+						}
+						
+						if (ImGui::MenuItem("Create Image")) {
+							delete m_imageManagerPanel->m_popupModalWindow;
+							m_imageManagerPanel->m_popupModalWindow = new PopupModalWindow(new ImageCreatorPanel(this));
+							m_imageManagerPanel->m_popupModalWindow->open();
+						}
 
-					if (ImGui::MenuItem("Rename")) {
-						delete m_imageManagerPanel->m_popupBuiltinWindow;
-						const auto panel = new BuiltinTextInputPanel(m_addrSpace->getName());
-						panel->handler([&, panel](const std::string& name)
-							{
-								m_addrSpace->setName(name);
-								m_addrSpace->getAddrSpaceManager()->getProject()->getTransaction()->markAsDirty(m_addrSpace);
-								panel->m_window->close();
-							});
-						m_imageManagerPanel->m_popupBuiltinWindow = new PopupBuiltinWindow(panel);
-						m_imageManagerPanel->m_popupBuiltinWindow->getPos() = m_winPos;
-						m_imageManagerPanel->m_popupBuiltinWindow->open();
+						if (ImGui::MenuItem("Rename")) {
+							delete m_imageManagerPanel->m_popupBuiltinWindow;
+							const auto panel = new BuiltinTextInputPanel(m_addrSpace->getName());
+							panel->handler([&, panel](const std::string& name)
+								{
+									m_addrSpace->setName(name);
+									m_addrSpace->getAddrSpaceManager()->getProject()->getTransaction()->markAsDirty(m_addrSpace);
+									panel->m_window->close();
+								});
+							m_imageManagerPanel->m_popupBuiltinWindow = new PopupBuiltinWindow(panel);
+							m_imageManagerPanel->m_popupBuiltinWindow->getPos() = m_winPos;
+							m_imageManagerPanel->m_popupBuiltinWindow->open();
+						}
+					}
+				}
+
+				void clone(const std::string& suffix) const {
+					const auto clonedAddrSpace = m_addrSpace->getAddrSpaceManager()->createAddressSpace(std::string(m_addrSpace->getName()) + " " + suffix);
+					for(const auto imageDec : m_addrSpace->getImageDecorators()) {
+						const auto clonedImageDec = imageDec->getImageManager()->createImage(clonedAddrSpace, imageDec->getType(), imageDec->getName());
+						clonedImageDec->copyImageFrom(imageDec->getImage()->getReader());
 					}
 				}
 			};
@@ -191,25 +209,27 @@ namespace GUI
 						if (m_imageManagerPanel->m_selectImageEventHandler.isInit())
 							m_imageManagerPanel->m_selectImageEventHandler(m_imageDec, true);
 					}
-					
-					if (ImGui::MenuItem("Rename")) {
-						delete m_imageManagerPanel->m_popupBuiltinWindow;
-						const auto panel = new BuiltinTextInputPanel(m_imageDec->getName());
-						panel->handler([&, panel](const std::string& name)
-							{
-								m_imageDec->setName(name);
-								m_imageDec->getImageManager()->getProject()->getTransaction()->markAsDirty(m_imageDec);
-								panel->m_window->close();
-							});
-						m_imageManagerPanel->m_popupBuiltinWindow = new PopupBuiltinWindow(panel);
-						m_imageManagerPanel->m_popupBuiltinWindow->getPos() = m_winPos;
-						m_imageManagerPanel->m_popupBuiltinWindow->open();
-					}
 
-					if (ImGui::MenuItem("Analyze...")) {
-						delete m_imageManagerPanel->m_popupModalWindow;
-						m_imageManagerPanel->m_popupModalWindow = new PopupModalWindow(new ImageAnalyzerPanel(m_imageDec));
-						m_imageManagerPanel->m_popupModalWindow->open();
+					if (!m_imageDec->isDebug()) {
+						if (ImGui::MenuItem("Rename")) {
+							delete m_imageManagerPanel->m_popupBuiltinWindow;
+							const auto panel = new BuiltinTextInputPanel(m_imageDec->getName());
+							panel->handler([&, panel](const std::string& name)
+								{
+									m_imageDec->setName(name);
+									m_imageDec->getImageManager()->getProject()->getTransaction()->markAsDirty(m_imageDec);
+									panel->m_window->close();
+								});
+							m_imageManagerPanel->m_popupBuiltinWindow = new PopupBuiltinWindow(panel);
+							m_imageManagerPanel->m_popupBuiltinWindow->getPos() = m_winPos;
+							m_imageManagerPanel->m_popupBuiltinWindow->open();
+						}
+
+						if (ImGui::MenuItem("Analyze...")) {
+							delete m_imageManagerPanel->m_popupModalWindow;
+							m_imageManagerPanel->m_popupModalWindow = new PopupModalWindow(new ImageAnalyzerPanel(m_imageDec));
+							m_imageManagerPanel->m_popupModalWindow->open();
+						}
 					}
 				}
 			};
@@ -319,7 +339,7 @@ namespace GUI
 		ImageManagerPanel(CE::ImageManager* manager)
 			: AbstractPanel("Image viewer"), m_controller(manager), m_addrSpaceController(manager->getProject()->getAddrSpaceManager())
 		{
-			m_addrSpaceController.m_filter.m_showEmpty = true;
+			m_addrSpaceController.m_filter.m_showOnlyEmpty = true;
 			const auto listView = new StdListView(&m_controller.m_listModel);
 			m_listView = new ImageListView(listView, this);
 		}

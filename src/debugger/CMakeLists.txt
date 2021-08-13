@@ -13,6 +13,7 @@ target_include_directories(
 
 target_link_libraries(
     debugger PUBLIC
-    utilities)
+    utilities
+    magic_enum::magic_enum)
 
 create_vs_filters("${DEBUGGER_SRC}")

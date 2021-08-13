@@ -14,15 +14,15 @@ namespace CE
 		virtual int getSize() = 0;
 	};
 	
-	class SimpleReader : public IReader
+	class DataPointerReader : public IReader
 	{
 		uint8_t* m_data;
 		int m_size;
 		bool m_isDelete;
 	public:
-		SimpleReader(uint8_t* data, int size, bool isDelete = true);
+		DataPointerReader(uint8_t* data, int size, bool isDelete = true);
 
-		~SimpleReader();
+		~DataPointerReader();
 
 		void read(uint64_t offset, std::vector<uint8_t>& data) override;
 

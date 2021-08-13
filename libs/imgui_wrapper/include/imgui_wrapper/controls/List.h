@@ -234,11 +234,12 @@ namespace GUI
 	{
 	protected:
 		EventHandler<T> m_clickItemEventHandler;
+		bool m_notSelectRow;
 	public:
 		T m_selectedItem;
 		
-		StdListView(IListModel<T>* listModel = nullptr, T selectedItem = 0)
-			: AbstractListView<T>(listModel), m_selectedItem(selectedItem)
+		StdListView(IListModel<T>* listModel = nullptr, T selectedItem = 0, bool notSelectRow = false)
+			: AbstractListView<T>(listModel), m_selectedItem(selectedItem), m_notSelectRow(notSelectRow)
 		{}
 
 		void handler(const std::function<void(T)>& clickItemEventHandler)
@@ -247,6 +248,16 @@ namespace GUI
 		}
 	
 	protected:
+		void renderContent(Iterator* iter) override {
+			if (m_notSelectRow) {
+				if (ImGui::Selectable("Not selected", !m_selectedItem)) {
+					if (m_clickItemEventHandler.isInit())
+						m_clickItemEventHandler(0);
+				}
+			}
+			AbstractListView<T>::renderContent(iter);
+		}
+		
 		void renderItem(const std::string& text, const T& data, int n) override
 		{
 			if (ImGui::Selectable(text.c_str(), data == m_selectedItem)) {

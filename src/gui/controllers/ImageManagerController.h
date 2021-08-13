@@ -83,8 +83,10 @@ namespace GUI
 			const auto debugAddressSpace = m_manager->getProject()->getAddrSpaceManager()->m_debugAddressSpace;
 			if (!debugAddressSpace)
 				return;
-			const auto images = debugAddressSpace->getImageDecorators();
-			m_items.insert(m_items.begin(), images.begin(), images.end());
+			for(const auto imageDec : debugAddressSpace->getImageDecorators()) {
+				if (filter(imageDec))
+					m_items.push_back(imageDec);
+			}
 		}
 	};
 };

@@ -2,21 +2,21 @@
 
 #include <utility>
 
-CE::SimpleReader::SimpleReader(uint8_t* data, int size, bool isDelete)
+CE::DataPointerReader::DataPointerReader(uint8_t* data, int size, bool isDelete)
 	: m_data(data), m_size(size), m_isDelete(isDelete)
 {}
 
-CE::SimpleReader::~SimpleReader() {
+CE::DataPointerReader::~DataPointerReader() {
 	if (m_isDelete)
 		delete[] m_data;
 }
 
-void CE::SimpleReader::read(uint64_t offset, std::vector<uint8_t>& data) {
+void CE::DataPointerReader::read(uint64_t offset, std::vector<uint8_t>& data) {
 	const auto size = std::min(getSize() - offset, data.size());
 	std::copy_n(&m_data[offset], size, data.begin());
 }
 
-int CE::SimpleReader::getSize() {
+int CE::DataPointerReader::getSize() {
 	return m_size;
 }
 

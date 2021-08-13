@@ -386,7 +386,7 @@ namespace GUI
 		ImageContentViewerPanel(CE::ImageDecorator* imageDec, ProjectPanel* projectPanel)
 			: AbstractPanel(std::string("Image: ") + imageDec->getName() + "###ImageContentViewer"), m_imageDec(imageDec), m_projectPanel(projectPanel), m_imageSectionListModel(imageDec->getImage())
 		{
-			m_imageSectionMenuListView = MenuListView(&m_imageSectionListModel);
+			m_imageSectionMenuListView = MenuListView<const CE::ImageSection*>(&m_imageSectionListModel);
 			m_imageSectionMenuListView.handler([&](const CE::ImageSection* imageSection)
 				{
 					selectImageSection(imageSection);

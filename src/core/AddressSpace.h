@@ -10,6 +10,8 @@ namespace CE
 		AddressSpaceManager* m_addrSpaceManager;
 		std::list<ImageDecorator*> m_imagesDecorators;
 	public:
+		IDebugSession* m_debugSession = nullptr;
+		
 		AddressSpace(AddressSpaceManager* addrSpaceManager, const std::string& name, const std::string& comment = "")
 			: m_addrSpaceManager(addrSpaceManager), Description(name, comment)
 		{}
@@ -21,5 +23,7 @@ namespace CE
 		ImageDecorator* getImageDecoratorAt(std::uintptr_t addr);
 
 		AddressSpaceManager* getAddrSpaceManager() const;
+
+		bool isDebug() const;
 	};
 };

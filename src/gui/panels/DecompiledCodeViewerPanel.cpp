@@ -5,60 +5,66 @@ void GUI::DecompiledCodeViewerPanel::DecompiledCodeViewerWithDebugAndHeader::Cod
 generateNode(CE::Decompiler::INode* node, bool& hasGroup, MultiLineGroup::Group& group) {
 	DecompiledCodeViewer::CodeGenerator::ExprTreeGenerator::generateNode(node, hasGroup, group);
 
-	const auto projectPanel = dynamic_cast<DecompiledCodeViewerWithDebugAndHeader*>(m_decCodeViewer)->m_projectPanel;
-	if (const auto emulator = projectPanel->getEmulator()) {
-		if (const auto storagePathNode = dynamic_cast<CE::Decompiler::IStoragePathNode*>(node)) {
-			if (!hasGroup) {
-				auto isSelected = false;
-				if (emulator->m_valueViewerWin) {
-					isSelected = node == m_decCodeViewer->m_debugSelectedNode;
-				}
+	const auto decCodeViewer = dynamic_cast<DecompiledCodeViewerWithDebugAndHeader*>(m_decCodeViewer);
+	const auto projectPanel = decCodeViewer->m_projectPanel;
+	const auto emulator = projectPanel->getEmulator();
+	if (!emulator)
+		return;
+	if (!emulator->m_curPCodeBlock || emulator->m_curPCodeBlock->m_funcPCodeGraph != decCodeViewer->m_sdaCodeGraph->getDecGraph()->getFuncGraph())
+		return;
+	const auto storagePathNode = dynamic_cast<CE::Decompiler::IStoragePathNode*>(node);
+	if (!storagePathNode)
+		return;
+	
+	if (!hasGroup) {
+		auto isSelected = false;
+		if (emulator->m_valueViewerWin) {
+			isSelected = node == m_decCodeViewer->m_debugSelectedNode;
+		}
 
-				if (isSelected)
-					m_parentGen->beginSelecting(COLOR_BG_DEBUG_SELECTED_TEXT);
-				m_groups.beginGroup(node);
-				ExprTreeViewGenerator::generateNode(node);
-				group = m_groups.endGroup();
-				if (isSelected)
-					m_parentGen->endSelecting();
-				hasGroup = true;
-			}
+		if (isSelected)
+			m_parentGen->beginSelecting(COLOR_BG_DEBUG_SELECTED_TEXT);
+		m_groups.beginGroup(node);
+		ExprTreeViewGenerator::generateNode(node);
+		group = m_groups.endGroup();
+		if (isSelected)
+			m_parentGen->endSelecting();
+		hasGroup = true;
+	}
 
-			if (group.m_events.isHovered() && !emulator->m_valueViewerWin) {
-				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-				if (m_decCodeViewer->m_hoverTimer) {
-					if (GetTimeInMs() - m_decCodeViewer->m_hoverTimer > 200) {
-						const auto path = storagePathNode->getStoragePath();
-						if (path.m_register.isValid()) {
-							std::string name = "value";
-							CE::DataTypePtr dataType;
-							if (const auto sdaNode = dynamic_cast<CE::Decompiler::ISdaNode*>(node)) {
-								if (const auto sdaSymbolLeaf = dynamic_cast<CE::Decompiler::SdaSymbolLeaf*>(node)) {
-									name = sdaSymbolLeaf->getSdaSymbol()->getName();
-									dataType = sdaSymbolLeaf->getSdaSymbol()->getDataType();
-								}
-								else {
-									dataType = sdaNode->getSrcDataType();
-								}
-							}
-							else {
-								const auto project = emulator->m_imageDec->getImageManager()->getProject();
-								dataType = project->getTypeManager()->getDefaultType(storagePathNode->getSize());
-							}
-
-							emulator->createValueViewer(path, name, dataType);
-							m_decCodeViewer->m_debugSelectedNode = node;
+	if (group.m_events.isHovered() && !emulator->m_valueViewerWin) {
+		ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+		if (m_decCodeViewer->m_hoverTimer) {
+			if (GetTimeInMs() - m_decCodeViewer->m_hoverTimer > 200) {
+				const auto path = storagePathNode->getStoragePath();
+				if (path.m_register.isValid()) {
+					std::string name = "value";
+					CE::DataTypePtr dataType;
+					if (const auto sdaNode = dynamic_cast<CE::Decompiler::ISdaNode*>(node)) {
+						if (const auto sdaSymbolLeaf = dynamic_cast<CE::Decompiler::SdaSymbolLeaf*>(node)) {
+							name = sdaSymbolLeaf->getSdaSymbol()->getName();
+							dataType = sdaSymbolLeaf->getSdaSymbol()->getDataType();
+						}
+						else {
+							dataType = sdaNode->getSrcDataType();
 						}
 					}
-				}
-				else {
-					// delay for opening
-					m_decCodeViewer->m_hoverTimer = GetTimeInMs();
-				}
+					else {
+						const auto project = emulator->m_imageDec->getImageManager()->getProject();
+						dataType = project->getTypeManager()->getDefaultType(storagePathNode->getSize());
+					}
 
-				m_decCodeViewer->m_isObjHovered = true;
+					emulator->createValueViewer(path, name, dataType);
+					m_decCodeViewer->m_debugSelectedNode = node;
+				}
 			}
 		}
+		else {
+			// delay for opening
+			m_decCodeViewer->m_hoverTimer = GetTimeInMs();
+		}
+
+		m_decCodeViewer->m_isObjHovered = true;
 	}
 }
 

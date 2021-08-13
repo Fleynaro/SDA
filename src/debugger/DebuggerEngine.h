@@ -6,6 +6,7 @@
 #include <map>
 #include <mutex>
 #include <thread>
+#include <magic_enum.hpp>
 
 #pragma comment(lib,"Ole32.lib")
 #pragma comment(lib,"dbgeng.lib")
@@ -184,6 +185,7 @@ namespace CE
         enum class State
         {
             NONE,
+        	START,
         	RUN,
             SUSPEND,
             STEP_OVER,
@@ -200,6 +202,7 @@ namespace CE
         std::thread m_eventLoopThread;
         DebuggerEngineException m_exception;
         std::mutex m_mutex;
+        std::vector<std::string> m_log;
 	public:
 		DebuggerEngineSession()
 		{}
@@ -232,16 +235,24 @@ namespace CE
         }
 
 		void pause(bool wait) override {
-            if (m_state != State::RUN)
+            m_log.emplace_back("pause");
+            if (m_state == State::SUSPEND)
                 return;
+			// wait for run state
+            if (m_state != State::RUN) {
+                while (m_state != State::RUN)
+                    Sleep(100);
+            }
+			// wait for suspend state
             interrupt(DEBUG_INTERRUPT_ACTIVE);
-			if(wait) {
+            if (wait) {
                 while (m_state != State::SUSPEND)
                     Sleep(100);
-			}
+            }
         }
 
         void resume() override {
+            m_log.emplace_back("resume");
             if (m_state == State::RUN)
                 return;
             m_state = State::RESUME;
@@ -314,6 +325,7 @@ namespace CE
 	
 	private:
         void runSession() {
+            m_state = State::START;
             m_eventLoopThread = std::thread([&]()
                 {
                     try {
@@ -332,6 +344,7 @@ namespace CE
                         {
                         	// the target always runs until WaitForEvent completed
                             m_state = State::RUN;
+                            m_log.emplace_back("State: RUN");
                         	
                         	// wait for some event (breakpoint hit, user interrupt, ...)
                             auto hr = m_control->WaitForEvent(0, INFINITE);
@@ -343,13 +356,16 @@ namespace CE
                             ULONG status;
                             hr = m_control->GetExecutionStatus(&status);
                             Check(hr, "GetExecutionStatus error");
+
+                            m_log.emplace_back("New status: " + std::to_string(status));
                         	
                             if (status == DEBUG_STATUS_BREAK) {
                             	// for any break status event the debugger is suspended
                                 m_state = State::SUSPEND;
                                 while (m_state == State::SUSPEND)
                                     Sleep(100);
-
+                                m_log.emplace_back(std::string("State after suspend: ") + magic_enum::enum_name(m_state).data());
+                            	
                             	// set new status
                                 ULONG nextStatus = DEBUG_STATUS_GO;
                                 if (m_state == State::STEP_OVER)
@@ -369,6 +385,7 @@ namespace CE
                         m_exception = ex;
                     }
 
+                    m_log.emplace_back("END");
                     m_state = State::NONE;
                     freeResources();
                 });

@@ -62,15 +62,13 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::RowContextPanel::renderPan
 		}
 	}
 
-	auto& breakpoints = imageDec->getBreakpoints();
-	const auto it = breakpoints.find(m_codeSectionRow.m_byteOffset);
-	if (breakpoints.find(m_codeSectionRow.m_byteOffset) != breakpoints.end()) {
+	if (imageDec->hasBreakpoint(m_codeSectionRow.m_byteOffset)) {
 		if (ImGui::MenuItem("Remove Breakpoint")) {
-			breakpoints.erase(it);
+			imageDec->setBreakpoint(m_codeSectionRow.m_byteOffset, false);
 		}
 	} else {
 		if (ImGui::MenuItem("Add Breakpoint")) {
-			breakpoints[m_codeSectionRow.m_byteOffset] = CE::BreakPoint(imageDec, m_codeSectionRow.m_byteOffset);
+			imageDec->setBreakpoint(m_codeSectionRow.m_byteOffset, true);
 		}
 	}
 }
@@ -126,13 +124,15 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::renderControl() {
 
 				// select rows
 				if (const auto emulator = m_projectPanel->getEmulator()) {
-					bool isSelected;
-					if (m_codeSectionController->m_showPCode)
-						isSelected = codeSectionRow.m_isPCode && emulator->m_offset == codeSectionRow.getOffset();
-					else isSelected = emulator->m_offset.getByteOffset() == codeSectionRow.getOffset().getByteOffset();
-					if (isSelected) {
-						m_selectCurRow = true;
-						m_selectedRowColor = 0x420001FF;
+					if (emulator->m_imageDec == m_codeSectionController->m_imageDec) {
+						bool isSelected;
+						if (m_codeSectionController->m_showPCode)
+							isSelected = codeSectionRow.m_isPCode && emulator->m_offset == codeSectionRow.getOffset();
+						else isSelected = emulator->m_offset.getByteOffset() == codeSectionRow.getOffset().getByteOffset();
+						if (isSelected) {
+							m_selectCurRow = true;
+							m_selectedRowColor = 0x420001FF;
+						}
 					}
 				}
 				for (auto selRow : m_selectedRows) {
@@ -152,11 +152,8 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::renderControl() {
 					const auto instrOffset = codeSectionRow.m_byteOffset;
 					ImGui::TableNextColumn();
 					startRowPos = ImGui::GetCursorScreenPos();
-					{
-						const auto& breakpoints = m_codeSectionController->m_imageDec->getBreakpoints();
-						const auto isBpSet = breakpoints.find(codeSectionRow.m_byteOffset) != breakpoints.end();
-						RenderAddress(instrOffset, isBpSet);
-					}
+					const auto isBpSet = m_codeSectionController->m_imageDec->hasBreakpoint(codeSectionRow.m_byteOffset);
+					RenderAddress(instrOffset, isBpSet);
 
 					// Asm
 					InstructionViewInfo instrViewInfo;

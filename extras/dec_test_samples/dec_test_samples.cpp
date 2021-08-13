@@ -569,14 +569,14 @@ CE::DataTypePtr CE::DecTestSamplesPool::findType(std::string typeName, std::stri
 	return GetUnit(m_project->getTypeManager()->findTypeByName(typeName), typeLevel);
 }
 
-int CE::DecTestSamplesPool::CalculateFuncSize(byte* addr, bool endByRet) {
+int CE::DecTestSamplesPool::CalculateFuncSize(uint8_t* addr, bool endByRet) {
 	int size = 0;
 	while (!(addr[size] == 0xC3 && addr[size + 1] == 0xCC))
 		size++;
 	return size + 1;
 }
 
-std::vector<byte> CE::DecTestSamplesPool::GetFuncBytes(void* addr) {
-	const auto size = std::min(CalculateFuncSize(static_cast<byte*>(addr), 0), 0x1000);
-	return std::vector(static_cast<byte*>(addr), static_cast<byte*>(addr) + size);
+std::vector<uint8_t> CE::DecTestSamplesPool::GetFuncBytes(void* addr) {
+	const auto size = std::min(CalculateFuncSize(static_cast<uint8_t*>(addr), 0), 0x1000);
+	return std::vector(static_cast<uint8_t*>(addr), static_cast<uint8_t*>(addr) + size);
 }

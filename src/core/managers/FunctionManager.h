@@ -1,15 +1,10 @@
 #pragma once
 #include "AbstractManager.h"
 #include <Function.h>
-#include <ghidra_sync/DataSyncPacketManagerService.h>
 
 namespace DB {
 	class FunctionMapper;
-};
-
-namespace CE::Ghidra {
-	class FunctionMapper;
-};
+};;
 
 namespace CE
 {
@@ -19,11 +14,10 @@ namespace CE
 		class Factory : public AbstractFactory
 		{
 			FunctionManager* m_functionManager;
-			Ghidra::FunctionMapper* m_ghidraFunctionMapper;
 			DB::FunctionMapper* m_funcMapper;
 		public:
-			Factory(FunctionManager* functionManager, Ghidra::FunctionMapper* ghidraFunctionMapper, DB::FunctionMapper* funcMapper, bool markAsNew)
-				: m_functionManager(functionManager), m_ghidraFunctionMapper(ghidraFunctionMapper), m_funcMapper(funcMapper), AbstractFactory(markAsNew)
+			Factory(FunctionManager* functionManager, DB::FunctionMapper* funcMapper, bool markAsNew)
+				: m_functionManager(functionManager), m_funcMapper(funcMapper), AbstractFactory(markAsNew)
 			{}
 
 			Function* createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::StackSymbolTable* stackSymbolTable) const;
@@ -34,7 +28,6 @@ namespace CE
 		};
 
 		using Iterator = AbstractIterator<Function>;
-		Ghidra::FunctionMapper* m_ghidraFunctionMapper;
 
 		FunctionManager(Project* module);
 
@@ -44,11 +37,7 @@ namespace CE
 
 		void loadFunctions() const;
 
-		void loadFunctionsFrom(ghidra::packet::SDataFullSyncPacket* dataPacket) const;
-
 		Function* findFunctionById(DB::Id id);
-
-		Function* findFunctionByGhidraId(Ghidra::Id id);
 	private:
 		DB::FunctionMapper* m_funcMapper;
 	};

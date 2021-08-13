@@ -6,28 +6,18 @@ namespace DB {
 	class DataTypeMapper;
 };
 
-namespace CE::Ghidra {
-	class DataTypeMapper;
-};
-
 namespace CE
 {
-	namespace Ghidra
-	{
-		class DataTypeManager;
-	};
-
 	class TypeManager : public AbstractItemManager
 	{
 	public:
 		class Factory : public AbstractFactory
 		{
 			TypeManager* m_typeManager;
-			Ghidra::DataTypeMapper* m_ghidraDataTypeMapper;
 			DB::DataTypeMapper* m_dataTypeMapper;
 		public:
-			Factory(TypeManager* typeManager, Ghidra::DataTypeMapper* ghidraDataTypeMapper, DB::DataTypeMapper* dataTypeMapper, bool markAsNew)
-				: m_typeManager(typeManager), m_ghidraDataTypeMapper(ghidraDataTypeMapper), m_dataTypeMapper(dataTypeMapper), AbstractFactory(markAsNew)
+			Factory(TypeManager* typeManager, DB::DataTypeMapper* dataTypeMapper, bool markAsNew)
+				: m_typeManager(typeManager), m_dataTypeMapper(dataTypeMapper), AbstractFactory(markAsNew)
 			{}
 
 			DataType::Typedef* createTypedef(const std::string& name, const std::string& desc = "") const;
@@ -35,8 +25,6 @@ namespace CE
 			DataType::Enum* createEnum(const std::string& name, const std::string& desc = "") const;
 
 			DataType::Structure* createStructure(const std::string& name, const std::string& desc) const;
-
-			DataType::Class* createClass(const std::string& name, const std::string& desc = "") const;
 
 			DataType::FunctionSignature* createSignature(DataType::CallingConvetion callingConvetion, const std::string& name, const std::string& desc = "") const;
 
@@ -48,7 +36,6 @@ namespace CE
 		};
 
 		using Iterator = AbstractIterator<DataType::AbstractType>;
-		Ghidra::DataTypeMapper* m_ghidraDataTypeMapper;
 
 		TypeManager(Project* module);
 
@@ -64,8 +51,6 @@ namespace CE
 
 		void loadAfter() const;
 
-		void loadTypesFrom(ghidra::packet::SDataFullSyncPacket* dataPacket) const;
-
 		DataTypePtr getType(DB::Id id);
 
 		DataTypePtr getDefaultType(int size, bool sign = false, bool floating = false);
@@ -77,10 +62,6 @@ namespace CE
 		DataType::IType* findTypeById(DB::Id id);
 
 		DataType::IType* findTypeByName(const std::string& typeName);
-
-		DataType::IType* findTypeByGhidraId(Ghidra::Id id);
-
-		Ghidra::Id getGhidraId(DataType::IType* type);
 	private:
 		DB::DataTypeMapper* m_dataTypeMapper;
 		DataType::FunctionSignature* m_defSignature;

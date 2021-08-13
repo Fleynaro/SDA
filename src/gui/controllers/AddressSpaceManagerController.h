@@ -10,7 +10,8 @@ namespace GUI
 		struct AddressSpaceFilter
 		{
 			std::string m_name;
-			bool m_showEmpty = false;
+			bool m_showOnlyEmpty = false;
+			bool m_showDebug = true;
 		};
 
 		class AddressSpaceListModel : public ListModel
@@ -55,9 +56,20 @@ namespace GUI
 			using namespace Helper::String;
 			if (!m_filter.m_name.empty() && ToLower(item->getName()).find(ToLower(m_filter.m_name)) == std::string::npos)
 				return false;
-			if (m_filter.m_showEmpty && !item->getImageDecorators().empty())
+			if (m_filter.m_showOnlyEmpty && !item->getImageDecorators().empty())
 				return false;
 			return true;
+		}
+
+		void addExtraItems() override {
+			if (!m_filter.m_showDebug)
+				return;
+			const auto debugAddressSpace = m_manager->getProject()->getAddrSpaceManager()->m_debugAddressSpace;
+			if (!debugAddressSpace)
+				return;
+			if (filter(debugAddressSpace)) {
+				m_items.push_back(debugAddressSpace);
+			}
 		}
 	};
 };

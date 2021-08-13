@@ -1,7 +1,7 @@
 #pragma once
 #include <utility>
-
 #include "ImageDecorator.h"
+#include "controllers/AddressSpaceManagerController.h"
 #include "datatypes/Enum.h"
 #include "datatypes/Structure.h"
 #include "datatypes/SystemType.h"
@@ -67,24 +67,28 @@ namespace GUI
 			}
 		};
 
-		CE::Project* m_project;
 		std::string m_selectedDebuggerStr;
+		std::string m_selectedParentAddrSpaceStr;
 		CE::Debugger m_selectedDebugger;
 		CE::DebugProcess* m_selectedProcess = nullptr;
 		std::list<CE::DebugProcess> m_debugProcesses;
 		DebugProcessListModel m_processListModel;
 		Input::TextInput m_textInput;
 		SelectableTableListView<CE::DebugProcess*> m_tableProcessListView;
+		AddressSpaceManagerController m_addrSpaceController;
+		StdListView<CE::AddressSpace*> m_addrSpaceListView;
 
 		EventHandler<> m_selectProcessEventHandler;
 	public:
+		CE::AddressSpace* m_selectedParentAddrSpace = nullptr;
 		CE::IDebugSession* m_debugSession = nullptr;
 		
-		DebuggerAttachProcessPanel()
-			: AbstractPanel("Attach Process"), m_processListModel(&m_debugProcesses)
+		DebuggerAttachProcessPanel(CE::Project* project)
+			: AbstractPanel("Attach Process"), m_processListModel(&m_debugProcesses), m_addrSpaceController(project->getAddrSpaceManager())
 		{
 			m_selectedDebugger = *CE::GetAvailableDebuggers().begin();
 			m_selectedDebuggerStr = GetDubuggerName(m_selectedDebugger);
+			
 			m_debugProcesses = CE::GetProcesses();
 			m_tableProcessListView = SelectableTableListView(&m_processListModel, {
 				ColInfo("PID", ImGuiTableColumnFlags_WidthFixed, 50.0f),
@@ -94,6 +98,15 @@ namespace GUI
 				{
 					m_selectedProcess = process;
 				});
+			
+			m_addrSpaceListView = StdListView<CE::AddressSpace*>(&m_addrSpaceController.m_listModel, nullptr, true);
+			m_addrSpaceListView.handler([&](CE::AddressSpace* addrSpace)
+				{
+					m_selectedParentAddrSpace = addrSpace;
+					m_selectedParentAddrSpaceStr = addrSpace ? addrSpace->getName() : "Not selected";
+				});
+			m_selectedParentAddrSpaceStr = "Not selected";
+			m_addrSpaceController.m_filter.m_showDebug = false;
 		}
 
 		void selectProcessEventHandler(const std::function<void()>& handler) {
@@ -103,7 +116,7 @@ namespace GUI
 	private:
 		void renderPanel() override {
 			Text::Text("Select debugger:").show();
-			if (ImGui::BeginCombo("##combo", m_selectedDebuggerStr.c_str())) {
+			if (ImGui::BeginCombo("##combo_process", m_selectedDebuggerStr.c_str())) {
 				for(const auto debugger : CE::GetAvailableDebuggers()) {
 					const auto name = GetDubuggerName(debugger);
 					const auto isSelected = debugger == m_selectedDebugger;
@@ -123,6 +136,14 @@ namespace GUI
 			ImGui::BeginChild("##processes", ImVec2(0, 400));
 			m_tableProcessListView.show();
 			ImGui::EndChild();
+
+			NewLine();
+			Text::Text("Select parent address space:").show();
+			m_addrSpaceController.update();
+			if (ImGui::BeginCombo("##combo_addr_space", m_selectedParentAddrSpaceStr.c_str())) {
+				m_addrSpaceListView.show();
+				ImGui::EndCombo();
+			}
 			
 			NewLine();
 			std::string btnText = "Nothing to attach";
@@ -718,14 +739,14 @@ namespace GUI
 			defineCurPCodeInstruction();
 		}
 
-		bool setLocationByAddress(std::uintptr_t addr) {
+		bool setLocationByAddress(std::uintptr_t addr, int orderId = 0) {
 			m_imageDec = m_addressSpace->getImageDecoratorAt(addr);
 			if (!m_imageDec) {
 				m_offset = 0x0;
 				m_isStopped = true;
 				return false;
 			}
-			m_offset = CE::ComplexOffset(m_imageDec->getImage()->addressToOffset(addr), 0);
+			m_offset = CE::ComplexOffset(m_imageDec->getImage()->addressToOffset(addr), orderId);
 			return true;
 		}
 
@@ -777,24 +798,7 @@ namespace GUI
 		}
 	
 	protected:
-		void renderControl() override {
-			if (isWorking()) {
-				if (ImGui::IsKeyPressed(VK_F8)) { // todo: linux, change imgui_impl_win32.cpp
-					stepOver();
-				}
-				else if (ImGui::IsKeyPressed(VK_F7)) {
-					stepInto();
-				}
-			}
-			
-			if (isWorking() || m_showContexts) {
-				Show(m_execCtxViewerWin);
-				Show(m_stackViewerWin);
-			}
-			if (isWorking()) {
-				Show(m_valueViewerWin);
-			}
-		}
+		void renderControl() override;
 
 		void defineNextInstrOffset() {
 			const auto jmp = m_into ? true : m_curInstr->m_id != CE::Decompiler::PCode::InstructionId::CALL;
@@ -846,7 +850,7 @@ namespace GUI
 		void stepNextPCodeInstr() {
 			m_vm.execute(m_curInstr);
 			defineNextInstrOffset();
-			if (isWorking())
+			if (!isWorking())
 				return;
 			if (isNewOrigInstruction()) {
 				sync();
@@ -859,7 +863,7 @@ namespace GUI
 		void stepNextOrigInstr() {
 			do {
 				stepNextPCodeInstr();
-				if (isWorking())
+				if (!isWorking())
 					return;
 			} while (!isNewOrigInstruction());
 		}
@@ -869,7 +873,7 @@ namespace GUI
 			do {
 				const auto prevBlockTopNode = m_curBlockTopNode;
 				stepNextPCodeInstr();
-				if (isWorking())
+				if (!isWorking())
 					return;
 				isNewBlockTopNode = m_curBlockTopNode != prevBlockTopNode;
 			} while (m_curBlockTopNode && !isNewBlockTopNode);
@@ -980,25 +984,8 @@ namespace GUI
 			}
 		
 		private:
-			void renderControl() override {
-				PCodeEmulator::renderControl();
-				if(m_isExit) {
-					if (m_debugSession->isWorking()) {
-						m_debugSession->stop();
-					}
-				}
-				if (isWorking()) {
-					if (ImGui::IsKeyPressed(VK_F5)) {
-						if (m_debugSession->isSuspended()) {
-							m_debugSession->resume();
-						}
-						else {
-							m_debugSession->pause();
-						}
-					}
-				}
-			}
-			
+			void renderControl() override;
+
 			void stepOver() override {
 				if (m_curInstr) {
 					PCodeEmulator::stepOver();
@@ -1037,19 +1024,21 @@ namespace GUI
 		CE::Project* m_project;
 		CE::IDebugSession* m_debugSession;
 		CE::AddressSpace* m_addressSpace;
+		CE::AddressSpace* m_parentAddressSpace;
 		std::map<std::uintptr_t, CE::ImageDecorator*> m_images;
 		CE::Symbol::GlobalSymbolTable* m_globalSymbolTable;
 		CE::Symbol::GlobalSymbolTable* m_funcBodySymbolTable;
 	public:
 		PCodeEmulatorWithDebugSession* m_emulator;
 		
-		Debugger(CE::Project* project, CE::IDebugSession* debugSession)
-			: m_project(project), m_debugSession(debugSession)
+		Debugger(CE::Project* project, CE::IDebugSession* debugSession, CE::AddressSpace* parentAddressSpace = nullptr)
+			: m_project(project), m_debugSession(debugSession), m_parentAddressSpace(parentAddressSpace)
 		{
 			const auto factory = m_project->getSymTableManager()->getFactory(false);
 			m_globalSymbolTable = factory.createGlobalSymbolTable();
 			m_funcBodySymbolTable = factory.createGlobalSymbolTable();
 			m_addressSpace = m_project->getAddrSpaceManager()->createAddressSpace(debugSession->getProcess().m_name, "", false);
+			m_addressSpace->m_debugSession = m_debugSession;
 			m_project->getAddrSpaceManager()->m_debugAddressSpace = m_addressSpace;
 			m_emulator = new PCodeEmulatorWithDebugSession(m_addressSpace, m_debugSession);
 		}
@@ -1069,9 +1058,6 @@ namespace GUI
 	
 	private:
 		void renderControl() override {
-			if (!isWorking())
-				return;
-			
 			// todo: timer 1 sec
 			updateModules();
 			updateLocation();
@@ -1097,18 +1083,16 @@ namespace GUI
 				const auto prevImageDec = m_emulator->m_imageDec;
 				const auto prevOffset = m_emulator->m_offset;
 				if(m_emulator->setLocationByAddress(addr)) {
+					m_emulator->m_isStopped = false;
 					if (m_emulator->m_imageDec != prevImageDec || m_emulator->m_offset != prevOffset) {
 						// if new instruction meet
 						m_emulator->newOrigInstructionExecuted();
 					}
-					m_emulator->m_isStopped = false;
 				}
 			}
 		}
 
 		CE::ImageDecorator* createImage(const CE::DebugModule& debugModule) const {
-			const auto name = debugModule.m_path.filename().string();
-			const auto imageDec = m_project->getImageManager()->createImage(m_addressSpace, CE::ImageDecorator::IMAGE_DEBUG, m_globalSymbolTable, m_funcBodySymbolTable, name);
 			const auto debugReader = new CE::DebugReader(m_debugSession, debugModule);
 
 			// pause process to read memory and then resume
@@ -1118,9 +1102,26 @@ namespace GUI
 			m_debugSession->resume();
 			
 			CE::AbstractImage* debugImage = nullptr;
-			if (m_debugSession->getDebugger() == CE::Debugger::DebuggerEngine)
+			CE::ImageDecorator::IMAGE_TYPE type = CE::ImageDecorator::IMAGE_PE;
+			if (m_debugSession->getDebugger() == CE::Debugger::DebuggerEngine) {
 				debugImage = new CE::PEImage(debugReader);
+			}
 
+			const auto name = debugModule.m_path.filename().string();
+			CE::ImageDecorator* imageDec = nullptr;
+			if (m_parentAddressSpace) {
+				for(const auto parentImageDec : m_parentAddressSpace->getImageDecorators()) {
+					if (std::string(imageDec->getName()).find(parentImageDec->getName()) != std::string::npos) {
+						imageDec = m_project->getImageManager()->createImageFromParent(m_addressSpace, parentImageDec, name, "", false);
+						break;
+					}
+				}
+			}
+			if (!imageDec) {
+				imageDec = m_project->getImageManager()->createImage(m_addressSpace, type, m_globalSymbolTable, m_funcBodySymbolTable, name, "", false);
+			}
+			imageDec->m_debugSession = m_debugSession;
+			
 			if (debugImage) {
 				debugImage->m_inVirtualMemory = true;
 				imageDec->setImage(debugImage);

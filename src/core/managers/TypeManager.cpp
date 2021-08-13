@@ -1,13 +1,5 @@
-#pragma once
 #include "TypeManager.h"
-#include <database/Mappers/DataTypeMapper.h>
-#include <ghidra_sync/Mappers/GhidraTypedefTypeMapper.h>
-#include <ghidra_sync/Mappers/GhidraStructureTypeMapper.h>
-#include <ghidra_sync/Mappers/GhidraClassTypeMapper.h>
-#include <ghidra_sync/Mappers/GhidraEnumTypeMapper.h>
-#include <ghidra_sync/Mappers/GhidraSignatureTypeMapper.h>
-#include <ghidra_sync/DataSyncPacketManagerService.h>
-#include <utilities/ObjectHash.h>
+#include "database/Mappers/DataTypeMapper.h"
 
 using namespace CE;
 using namespace DataType;
@@ -16,7 +8,6 @@ TypeManager::TypeManager(Project* module)
 	: AbstractItemManager(module)
 {
 	m_dataTypeMapper = new DB::DataTypeMapper(this);
-	m_ghidraDataTypeMapper = new Ghidra::DataTypeMapper(this);
 	addSystemTypes();
 	addGhidraTypedefs();
 	m_defSignature = getFactory(false).createSignature(DataType::CallingConvetion::FASTCALL, "defSignature");
@@ -24,11 +15,10 @@ TypeManager::TypeManager(Project* module)
 
 TypeManager::~TypeManager() {
 	delete m_dataTypeMapper;
-	delete m_ghidraDataTypeMapper;
 }
 
 TypeManager::Factory TypeManager::getFactory(bool markAsNew) {
-	return Factory(this, m_ghidraDataTypeMapper, m_dataTypeMapper, markAsNew);
+	return Factory(this, m_dataTypeMapper, markAsNew);
 }
 
 void TypeManager::addSystemTypes() {
@@ -94,7 +84,6 @@ void TypeManager::addGhidraTypedefs() {
 		auto type = new Typedef(this, it.first);
 		type->setTypeManager(this);
 		type->setId(startId);
-		type->setGhidraMapper(m_ghidraDataTypeMapper->m_typedefTypeMapper);
 		type->setRefType(GetUnit(findTypeById(it.second)));
 		m_items.insert(std::make_pair(startId, type));
 		startId++;
@@ -109,11 +98,6 @@ void TypeManager::loadBefore() const
 void TypeManager::loadAfter() const
 {
 	m_dataTypeMapper->loadAfter();
-}
-
-void TypeManager::loadTypesFrom(ghidra::packet::SDataFullSyncPacket* dataPacket) const
-{
-	m_ghidraDataTypeMapper->load(dataPacket);
 }
 
 DataTypePtr TypeManager::getType(DB::Id id) {
@@ -166,32 +150,10 @@ IType* TypeManager::findTypeByName(const std::string& typeName)
 	return nullptr;
 }
 
-IType* TypeManager::findTypeByGhidraId(Ghidra::Id id) {
-	Iterator it(this);
-	while (it.hasNext()) {
-		const auto type = it.next();
-		if (getGhidraId(type) == id) {
-			return type;
-		}
-	}
-	return nullptr;
-}
-
-Ghidra::Id TypeManager::getGhidraId(IType* type) {
-	if (auto userType = dynamic_cast<UserDefinedType*>(type)) {
-		return userType->getGhidraId();
-	}
-	
-	ObjectHash objHash;
-	objHash.addValue(type->getName());
-	return objHash.getHash();
-}
-
 Typedef* TypeManager::Factory::createTypedef(const std::string& name, const std::string& desc) const
 {
 	auto type = new Typedef(m_typeManager, name, desc);
 	type->setMapper(m_dataTypeMapper);
-	type->setGhidraMapper(m_ghidraDataTypeMapper->m_typedefTypeMapper);
 	if (m_markAsNew)
 		m_typeManager->getProject()->getTransaction()->markAsNew(type);
 	return type;
@@ -201,7 +163,6 @@ Enum* TypeManager::Factory::createEnum(const std::string& name, const std::strin
 {
 	auto type = new Enum(m_typeManager, name, desc);
 	type->setMapper(m_dataTypeMapper);
-	type->setGhidraMapper(m_ghidraDataTypeMapper->m_enumTypeMapper);
 	if (m_markAsNew)
 		m_typeManager->getProject()->getTransaction()->markAsNew(type);
 	return type;
@@ -211,17 +172,6 @@ Structure* TypeManager::Factory::createStructure(const std::string& name, const 
 {
 	auto type = new Structure(m_typeManager, name, desc);
 	type->setMapper(m_dataTypeMapper);
-	type->setGhidraMapper(m_ghidraDataTypeMapper->m_structureTypeMapper);
-	if (m_markAsNew)
-		m_typeManager->getProject()->getTransaction()->markAsNew(type);
-	return type;
-}
-
-Class* TypeManager::Factory::createClass(const std::string& name, const std::string& desc) const
-{
-	auto type = new Class(m_typeManager, name, desc);
-	type->setMapper(m_dataTypeMapper);
-	type->setGhidraMapper(m_ghidraDataTypeMapper->m_classTypeMapper);
 	if (m_markAsNew)
 		m_typeManager->getProject()->getTransaction()->markAsNew(type);
 	return type;
@@ -231,7 +181,6 @@ FunctionSignature* TypeManager::Factory::createSignature(CallingConvetion callin
 {
 	auto type = new FunctionSignature(m_typeManager, name, desc, callingConvetion);
 	type->setMapper(m_typeManager->m_dataTypeMapper);
-	type->setGhidraMapper(m_ghidraDataTypeMapper->m_signatureTypeMapper);
 	if (m_markAsNew)
 		m_typeManager->getProject()->getTransaction()->markAsNew(type);
 	return type;

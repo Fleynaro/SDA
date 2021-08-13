@@ -60,13 +60,15 @@ namespace CE
 		Symbol::GlobalSymbolTable* m_funcBodySymbolTable;
 		Decompiler::PCode::InstructionPool* m_instrPool;
 		Decompiler::ImagePCodeGraph* m_imagePCodeGraph;
-		std::map<Offset, BreakPoint> m_breakPoints;
-		std::map<ComplexOffset, BookMark> m_bookMarks;
+		std::map<Offset, BreakPoint>* m_breakPoints;
+		std::map<ComplexOffset, BookMark>* m_bookMarks;
 		std::map<ComplexOffset, DataType::IFunctionSignature*>* m_vfunc_calls;
 		// need for making a clone that based on its parent image but haved own raw-image
 		ImageDecorator* m_parentImageDec = nullptr;
-		
+		std::list<ImageDecorator*> m_childImageDecs;
 	public:
+		IDebugSession* m_debugSession = nullptr;
+		
 		ImageDecorator(
 			ImageManager* imageManager,
 			AddressSpace* addressSpace,
@@ -84,9 +86,13 @@ namespace CE
 
 		void load();
 
+		void copyImageFrom(IReader* reader);
+
 		void save();
 
 		bool hasLoaded() const;
+
+		bool isDebug() const;
 
 		ImageManager* getImageManager() const;
 
@@ -110,14 +116,23 @@ namespace CE
 
 		void setPCodeGraph(Decompiler::ImagePCodeGraph* imagePCodeGraph);
 
-		std::map<Offset, BreakPoint>& getBreakpoints();
-
-		std::map<ComplexOffset, BookMark>& getBookmark();
+		std::map<ComplexOffset, BookMark>& getBookmarks();
 
 		std::map<ComplexOffset, DataType::IFunctionSignature*>& getVirtFuncCalls() const;
 
 		ImageDecorator* getParentImage() const;
 
+		const std::list<ImageDecorator*>& getChildImages() const;
+
+		ImageDecorator* getCorrespondingDebugImage();
+
+		void setBreakpoint(Offset offset, bool toggle);
+
+		bool hasBreakpoint(Offset offset) const;
+
 		fs::path getFile();
+
+	private:
+		void createImage(IReader* reader);
 	};
 };
