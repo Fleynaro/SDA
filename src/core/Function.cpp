@@ -67,11 +67,6 @@ Symbol::StackSymbolTable* Function::getStackSymbolTable() const
 	return m_stackSymbolTable;
 }
 
-Ghidra::Id Function::getGhidraId()
-{
-	return getOffset();
-}
-
 FunctionManager* Function::getManager() const
 {
 	return m_manager;

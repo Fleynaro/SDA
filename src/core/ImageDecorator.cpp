@@ -134,6 +134,14 @@ void ImageDecorator::setPCodeGraph(Decompiler::ImagePCodeGraph* imagePCodeGraph)
 	m_imagePCodeGraph = imagePCodeGraph;
 }
 
+std::map<Offset, BreakPoint>& ImageDecorator::getBreakpoints() {
+	return m_breakPoints;
+}
+
+std::map<ComplexOffset, BookMark>& ImageDecorator::getBookmark() {
+	return m_bookMarks;
+}
+
 std::map<ComplexOffset, DataType::IFunctionSignature*>& ImageDecorator::getVirtFuncCalls() const
 {
 	return *m_vfunc_calls;

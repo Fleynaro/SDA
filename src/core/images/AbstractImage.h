@@ -51,6 +51,8 @@ namespace CE
 		std::list<ImageSection> m_imageSections;
 		IReader* m_reader;
 	public:
+		bool m_inVirtualMemory = false;
+		
 		AbstractImage(IReader* reader);
 
 		~AbstractImage();

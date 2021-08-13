@@ -1,6 +1,5 @@
 #pragma once
 #include <database/Transaction.h>
-#include <ghidra_sync/GhidraSync.h>
 #include <filesystem>
 namespace fs = std::filesystem;
 
@@ -19,9 +18,6 @@ namespace CE
 	class AddressSpaceManager;
 	class ImageManager;
 
-	namespace Ghidra {
-		class Client;
-	};
 
 	class Project
 	{
@@ -40,7 +36,6 @@ namespace CE
 		FunctionManager* m_functionManager = nullptr;
 		AddressSpaceManager* m_addrSpaceManager = nullptr;
 		ImageManager* m_imageManager = nullptr;
-		Ghidra::Sync* m_ghidraSync;
 	public:
 		Project(ProjectManager* projectManager, const fs::path& dir);
 
@@ -77,8 +72,6 @@ namespace CE
 		const fs::path& getDirectory() const;
 
 		fs::path getImagesDirectory() const;
-
-		Ghidra::Sync* getGhidraSync() const;
 
 	private:
 		void initTransaction();

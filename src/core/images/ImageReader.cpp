@@ -38,9 +38,29 @@ CE::DebugReader::DebugReader(IDebugSession* debugSession, DebugModule debugModul
 {}
 
 void CE::DebugReader::read(uint64_t offset, std::vector<uint8_t>& data) {
-	m_debugSession->readMemory(m_module.m_baseAddress + offset, data);
+	if(m_debugSession->isSuspended()) {
+		m_debugSession->readMemory(m_module.m_baseAddress + offset, data);
+	} else {
+		if (m_isCacheEnabled) {
+			const auto size = std::min(getSize() - offset, data.size());
+			std::copy_n(m_cache.begin() + offset, size, data.begin());
+		}
+	}
 }
 
 int CE::DebugReader::getSize() {
 	return m_module.m_size;
+}
+
+void CE::DebugReader::updateCache() {
+	m_cache.resize(m_module.m_size);
+	m_debugSession->readMemory(m_module.m_baseAddress, m_cache);
+}
+
+void CE::DebugReader::removeCache() {
+	m_cache.resize(0x0);
+}
+
+void CE::DebugReader::setCacheEnabled(bool toggle) {
+	m_isCacheEnabled = toggle;
 }

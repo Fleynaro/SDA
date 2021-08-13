@@ -21,7 +21,7 @@ namespace GUI
 
 	protected:
 		bool groupBy(CE::ImageDecorator* const& img1, CE::ImageDecorator* const& img2) override {
-			return img1->getAddressSpace()->getId() > img2->getAddressSpace()->getId();
+			return img1->getAddressSpace() > img2->getAddressSpace();
 		}
 
 		bool renderGroupTop(CE::ImageDecorator* const& img, int group_n) override {

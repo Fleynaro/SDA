@@ -1,5 +1,4 @@
 #pragma once
-#include <ghidra_sync/GhidraObject.h>
 #include <datatypes/FunctionSignature.h>
 #include <symbols/FunctionSymbol.h>
 #include "symbols/LocalInstrVarSymbol.h"
@@ -21,7 +20,7 @@ namespace CE
 		Symbol::GlobalSymbolTable* m_funcBodySymbolTable;
 	};
 
-	class Function : public DB::DomainObject, public Ghidra::Object, public IDescription
+	class Function : public DB::DomainObject, public IDescription
 	{
 	public:
 		Function(FunctionManager* manager, Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec, Symbol::StackSymbolTable* stackSymbolTable);
@@ -47,8 +46,6 @@ namespace CE
 		int64_t getOffset() const;
 
 		Symbol::StackSymbolTable* getStackSymbolTable() const;
-
-		Ghidra::Id getGhidraId() override;
 
 		FunctionManager* getManager() const;
 	private:

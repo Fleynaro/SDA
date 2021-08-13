@@ -2,7 +2,7 @@
 
 #include "SystemType.h"
 #include "Typedef.h"
-#include "Class.h"
+#include "Structure.h"
 #include "Enum.h"
 #include "FunctionSignature.h"
 

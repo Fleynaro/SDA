@@ -2,9 +2,9 @@
 
 namespace GUI
 {
-	static void RenderAddress(uint64_t offset) {
+	static void RenderAddress(uint64_t offset, bool isBpSet = false) {
 		using namespace Helper::String;
-		Text::Text("base + 0x" + NumberToHex(offset, false)).show();
+		Text::ColoredText("base + 0x" + NumberToHex(offset, false), isBpSet ? 0xf5455cFF : -1).show();
 	}
 
 	class Canvas

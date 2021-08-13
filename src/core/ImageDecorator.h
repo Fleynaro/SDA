@@ -11,6 +11,7 @@ namespace fs = std::filesystem;
 namespace CE
 {
 	class AddressSpace;
+	class ImageDecorator;
 	class ImageManager;
 
 	namespace Decompiler {
@@ -18,6 +19,27 @@ namespace CE
 			class InstructionPool;
 		};
 		class ImagePCodeGraph;
+	};
+
+	
+	struct BookMark
+	{
+		ImageDecorator* m_imageDec;
+		ComplexOffset m_offset;
+
+		BookMark(ImageDecorator* imageDec = nullptr, ComplexOffset offset = InvalidOffset)
+			: m_imageDec(imageDec), m_offset(offset)
+		{}
+	};
+	
+	struct BreakPoint
+	{
+		ImageDecorator* m_imageDec;
+		Offset m_offset;
+
+		BreakPoint(ImageDecorator* imageDec = nullptr, Offset offset = 0x0)
+			: m_imageDec(imageDec), m_offset(offset)
+		{}
 	};
 
 	// it is a symbolized image that decorates a raw image and can manipulate with high-level things (symbols)
@@ -38,6 +60,8 @@ namespace CE
 		Symbol::GlobalSymbolTable* m_funcBodySymbolTable;
 		Decompiler::PCode::InstructionPool* m_instrPool;
 		Decompiler::ImagePCodeGraph* m_imagePCodeGraph;
+		std::map<Offset, BreakPoint> m_breakPoints;
+		std::map<ComplexOffset, BookMark> m_bookMarks;
 		std::map<ComplexOffset, DataType::IFunctionSignature*>* m_vfunc_calls;
 		// need for making a clone that based on its parent image but haved own raw-image
 		ImageDecorator* m_parentImageDec = nullptr;
@@ -85,6 +109,10 @@ namespace CE
 		Decompiler::ImagePCodeGraph* getPCodeGraph() const;
 
 		void setPCodeGraph(Decompiler::ImagePCodeGraph* imagePCodeGraph);
+
+		std::map<Offset, BreakPoint>& getBreakpoints();
+
+		std::map<ComplexOffset, BookMark>& getBookmark();
 
 		std::map<ComplexOffset, DataType::IFunctionSignature*>& getVirtFuncCalls() const;
 

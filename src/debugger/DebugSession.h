@@ -27,6 +27,7 @@ namespace CE
 		std::uintptr_t m_baseAddress;
 		int m_size;
 		bool m_isLoaded;
+		bool m_isBase;
 	};
 
 	struct DebugRegister
@@ -49,7 +50,7 @@ namespace CE
 
 		virtual void stepInto() = 0;
 
-		virtual void pause() = 0;
+		virtual void pause(bool wait = false) = 0;
 
 		virtual void resume() = 0;
 

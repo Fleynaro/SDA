@@ -11,10 +11,3 @@ bool UserDefinedType::isUserDefined() {
 std::string UserDefinedType::getDisplayName() {
 	return getName();
 }
-
-Ghidra::Id UserDefinedType::getGhidraId()
-{
-	ObjectHash objHash;
-	objHash.addValue(getName());
-	return objHash.getHash();
-}

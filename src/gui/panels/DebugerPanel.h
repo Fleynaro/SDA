@@ -656,6 +656,8 @@ namespace GUI
 		CE::Decompiler::PCode::VirtualMachine m_vm;
 		std::uintptr_t m_curAddr = 0;
 		bool m_into = false;
+		bool m_isStopped = false;
+		bool m_isExit = false;
 
 		StdWindow* m_execCtxViewerWin;
 		StdWindow* m_stackViewerWin;
@@ -676,8 +678,6 @@ namespace GUI
 		CE::Decompiler::PCodeBlock* m_curPCodeBlock = nullptr;
 		CE::Decompiler::DecBlock::BlockTopNode* m_curBlockTopNode = nullptr;
 		int m_stackPointerValue = 0;
-		bool m_isStopped = false;
-		bool m_isExit = false;
 		bool m_showContexts = false;
 		PopupBuiltinWindow* m_valueViewerWin = nullptr;
 		
@@ -742,8 +742,8 @@ namespace GUI
 			m_valueViewerWin->open();
 		}
 
-		void renderDebugMenu() {
-			if (!m_isStopped) {
+		virtual void renderDebugMenu() {
+			if (isWorking()) {
 				if (ImGui::MenuItem("Exit Debug")) {
 					m_isExit = true;
 				}
@@ -778,7 +778,7 @@ namespace GUI
 	
 	protected:
 		void renderControl() override {
-			if (!m_isStopped) {
+			if (isWorking()) {
 				if (ImGui::IsKeyPressed(VK_F8)) { // todo: linux, change imgui_impl_win32.cpp
 					stepOver();
 				}
@@ -787,11 +787,11 @@ namespace GUI
 				}
 			}
 			
-			if (!m_isStopped || m_showContexts) {
+			if (isWorking() || m_showContexts) {
 				Show(m_execCtxViewerWin);
 				Show(m_stackViewerWin);
 			}
-			if (!m_isStopped) {
+			if (isWorking()) {
 				Show(m_valueViewerWin);
 			}
 		}
@@ -846,7 +846,7 @@ namespace GUI
 		void stepNextPCodeInstr() {
 			m_vm.execute(m_curInstr);
 			defineNextInstrOffset();
-			if (m_isStopped)
+			if (isWorking())
 				return;
 			if (isNewOrigInstruction()) {
 				sync();
@@ -859,7 +859,7 @@ namespace GUI
 		void stepNextOrigInstr() {
 			do {
 				stepNextPCodeInstr();
-				if (m_isStopped)
+				if (isWorking())
 					return;
 			} while (!isNewOrigInstruction());
 		}
@@ -869,7 +869,7 @@ namespace GUI
 			do {
 				const auto prevBlockTopNode = m_curBlockTopNode;
 				stepNextPCodeInstr();
-				if (m_isStopped)
+				if (isWorking())
 					return;
 				isNewBlockTopNode = m_curBlockTopNode != prevBlockTopNode;
 			} while (m_curBlockTopNode && !isNewBlockTopNode);
@@ -928,6 +928,7 @@ namespace GUI
 	{
 		class PCodeEmulatorWithDebugSession : public PCodeEmulator
 		{
+			friend class Debugger;
 			CE::IDebugSession* m_debugSession;
 			bool m_isSyncing = false;
 			bool m_isInto = false;
@@ -954,8 +955,50 @@ namespace GUI
 					m_isSyncing = false;
 				}
 			}
+
+			void renderDebugMenu() override {
+				if (!m_isExit && m_isStopped) {
+					if (ImGui::MenuItem("Exit Debug")) {
+						m_isExit = true;
+					}
+				}
+				
+				PCodeEmulator::renderDebugMenu();
+
+				if (m_debugSession->isWorking()) {
+					if (m_debugSession->isSuspended()) {
+						if (ImGui::MenuItem("Resume Process", "F5")) {
+							m_debugSession->resume();
+						}
+					}
+					else {
+						if (ImGui::MenuItem("Pause Process", "F5")) {
+							m_debugSession->pause();
+						}
+					}
+				}
+			}
 		
 		private:
+			void renderControl() override {
+				PCodeEmulator::renderControl();
+				if(m_isExit) {
+					if (m_debugSession->isWorking()) {
+						m_debugSession->stop();
+					}
+				}
+				if (isWorking()) {
+					if (ImGui::IsKeyPressed(VK_F5)) {
+						if (m_debugSession->isSuspended()) {
+							m_debugSession->resume();
+						}
+						else {
+							m_debugSession->pause();
+						}
+					}
+				}
+			}
+			
 			void stepOver() override {
 				if (m_curInstr) {
 					PCodeEmulator::stepOver();
@@ -1026,6 +1069,9 @@ namespace GUI
 	
 	private:
 		void renderControl() override {
+			if (!isWorking())
+				return;
+			
 			// todo: timer 1 sec
 			updateModules();
 			updateLocation();
@@ -1064,10 +1110,21 @@ namespace GUI
 			const auto name = debugModule.m_path.filename().string();
 			const auto imageDec = m_project->getImageManager()->createImage(m_addressSpace, CE::ImageDecorator::IMAGE_DEBUG, m_globalSymbolTable, m_funcBodySymbolTable, name);
 			const auto debugReader = new CE::DebugReader(m_debugSession, debugModule);
+
+			// pause process to read memory and then resume
+			m_debugSession->pause(true);
+			debugReader->setCacheEnabled(true);
+			debugReader->updateCache();
+			m_debugSession->resume();
+			
 			CE::AbstractImage* debugImage = nullptr;
 			if (m_debugSession->getDebugger() == CE::Debugger::DebuggerEngine)
 				debugImage = new CE::PEImage(debugReader);
-			imageDec->setImage(debugImage);
+
+			if (debugImage) {
+				debugImage->m_inVirtualMemory = true;
+				imageDec->setImage(debugImage);
+			}
 			return imageDec;
 		}
 	};

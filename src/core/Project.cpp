@@ -1,7 +1,6 @@
 #include "Project.h"
 #include "ProjectManager.h"
 #include <Program.h>
-#include <ghidra_sync/GhidraSync.h>
 #include <managers/Managers.h>
 #include <cmrc/cmrc.hpp>
 #include <nlohmann/json.hpp>
@@ -15,9 +14,7 @@ using namespace CE;
 
 Project::Project(ProjectManager* projectManager, const fs::path& dir)
 	: m_projectManager(projectManager), m_directory(dir)
-{
-	m_ghidraSync = new Ghidra::Sync(this);
-}
+{}
 
 Project::~Project() {
 	if (m_allManagersHaveBeenLoaded) {
@@ -27,9 +24,6 @@ Project::~Project() {
 		delete m_symbolManager;
 		delete m_symbolTableManager;
 		delete m_typeManager;
-	}
-	if (m_ghidraSync != nullptr) {
-		delete m_ghidraSync;
 	}
 	if (m_transaction != nullptr)
 		delete m_transaction;
@@ -160,9 +154,4 @@ const fs::path& Project::getDirectory() const
 fs::path Project::getImagesDirectory() const
 {
 	return m_directory / fs::path("images");
-}
-
-Ghidra::Sync* Project::getGhidraSync() const
-{
-	return m_ghidraSync;
 }

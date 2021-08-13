@@ -1,7 +1,8 @@
 #include "AbstractImage.h"
 
-CE::AbstractImage::AbstractImage(IReader* reader): m_reader(reader) {
-}
+CE::AbstractImage::AbstractImage(IReader* reader)
+	: m_reader(reader)
+{}
 
 CE::AbstractImage::~AbstractImage() {
 	delete m_reader;
@@ -12,7 +13,7 @@ CE::IReader* CE::AbstractImage::getReader() const {
 }
 
 void CE::AbstractImage::read(Offset offset, std::vector<uint8_t>& data) const {
-	m_reader->read(toImageOffset(offset), data);
+	m_reader->read(m_inVirtualMemory ? offset : toImageOffset(offset), data);
 }
 
 int CE::AbstractImage::getSize() const {

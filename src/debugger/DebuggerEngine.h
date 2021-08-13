@@ -60,12 +60,9 @@ namespace CE
         }
 
         HRESULT CreateProcess(ULONG64 imghdl, ULONG64 hdl, ULONG64 baseoff, ULONG modsize,
-            PCSTR modname, PCSTR imgname, ULONG chksum, ULONG timestamp, ULONG64 initthrhdl, ULONG64 thrdataoff,
-            ULONG64 startoff) override {
-            printf("CreateProcess imghdl [0x%llx] hdl [0x%llx] baseoff [0x%llx] modsize [0x%lx] modname [%s] imgname [%s] chksum [0x%lx] timestamp [0x%lx] initthrhdl [0x%llx] thrdataoff [0x%llx] startoff [0x%llx]", imghdl, hdl, baseoff, modsize, modname,
-                imgname, chksum, timestamp, initthrhdl, thrdataoff, startoff);
-            return DEBUG_STATUS_NO_CHANGE;
-        }
+                              PCSTR modname, PCSTR imgname, ULONG chksum, ULONG timestamp, ULONG64 initthrhdl,
+                              ULONG64 thrdataoff,
+                              ULONG64 startoff) override;
 
         HRESULT CreateThread(ULONG64 hdl, ULONG64 dataoff, ULONG64 startoff) override {
             printf("CreateThread hdl[0x%llx] dataoff[0x%llx] startoff[0x%llx]",
@@ -191,7 +188,8 @@ namespace CE
             SUSPEND,
             STEP_OVER,
             STEP_INTO,
-            RESUME
+            RESUME,
+        	STOP
         };
 
         State m_state = State::NONE;
@@ -207,34 +205,9 @@ namespace CE
 		{}
 
 		~DebuggerEngineSession() {
-            if (m_eventCallbacks) {
-                m_client->SetEventCallbacks(nullptr);
-                delete m_eventCallbacks;
-            }
-            if (m_IOCallbacks) {
-                m_client->SetInputCallbacks(nullptr);
-                m_client->SetOutputCallbacks(nullptr);
-                delete m_IOCallbacks;
-            }
-			
-			if(m_client) {
-                m_client->Release();
-			}
-            if (m_control) {
-                m_control->Release();
-            }
-            if (m_registers) {
-                m_registers->Release();
-            }
-            if (m_symbols) {
-                m_symbols->Release();
-            }
-            if (m_dataSpaces) {
-                m_dataSpaces->Release();
-            }
-            if (m_dataSpaces4) {
-                m_dataSpaces4->Release();
-            }
+            stop();
+            while (m_state != State::NONE)
+                Sleep(100);
 		}
 
         Debugger getDebugger() override {
@@ -258,15 +231,24 @@ namespace CE
             m_state = State::STEP_INTO;
         }
 
-		void pause() override {
+		void pause(bool wait) override {
+            if (m_state != State::RUN)
+                return;
             interrupt(DEBUG_INTERRUPT_ACTIVE);
+			if(wait) {
+                while (m_state != State::SUSPEND)
+                    Sleep(100);
+			}
         }
 
         void resume() override {
+            if (m_state == State::RUN)
+                return;
             m_state = State::RESUME;
         }
 
 		void stop() override {
+            m_state = State::STOP;
             interrupt(DEBUG_INTERRUPT_EXIT);
 		}
 
@@ -275,18 +257,12 @@ namespace CE
 		}
 
         bool isWorking() override {
-            return m_state != State::NONE;
+            return m_state != State::NONE && m_state != State::STOP;
 		}
 
         void addBreakpoint(std::uintptr_t address) override {
 			// breakpoint can be added while the debugger is suspended
-            bool needResume = false;
-			if(m_state == State::RUN) {
-                pause();
-                while (m_state != State::SUSPEND)
-                    Sleep(100);
-                needResume = true;
-			}
+            pause(true);
 			
             PDEBUG_BREAKPOINT bp = nullptr;
 			const auto hr = m_control->AddBreakpoint(DEBUG_BREAKPOINT_CODE, DEBUG_ANY_ID, &bp);
@@ -295,9 +271,7 @@ namespace CE
             bp->AddFlags(DEBUG_BREAKPOINT_ENABLED);
             m_breakpoints[address] = bp;
 
-			if(needResume) {
-                resume();
-			}
+            resume();
 		}
 
         void removeBreakpoint(std::uintptr_t address) override {
@@ -318,6 +292,7 @@ namespace CE
 		}
 
 		void readMemory(uint64_t offset, std::vector<uint8_t>& data) override {
+            // memory can be read while the debugger is suspended
             ULONG bytesRead;
             const auto hr = m_dataSpaces->ReadVirtual(offset, data.data(), static_cast<ULONG>(data.size()), &bytesRead);
             Check(hr, "ReadVirtual error");
@@ -360,6 +335,8 @@ namespace CE
                         	
                         	// wait for some event (breakpoint hit, user interrupt, ...)
                             auto hr = m_control->WaitForEvent(0, INFINITE);
+                            if (hr == E_PENDING)
+                                break;
                             Check(hr, "WaitForEvent error");
 
                         	// get status
@@ -381,6 +358,8 @@ namespace CE
                                     nextStatus = DEBUG_STATUS_STEP_INTO;
                                 else if (m_state == State::RESUME)
                                     nextStatus = DEBUG_STATUS_GO;
+                                else if (m_state == State::STOP)
+                                    break;
 
                                 hr = m_control->SetExecutionStatus(nextStatus);
                                 Check(hr, "SetExecutionStatus error");
@@ -391,6 +370,7 @@ namespace CE
                     }
 
                     m_state = State::NONE;
+                    freeResources();
                 });
             m_eventLoopThread.detach();
         }
@@ -468,6 +448,41 @@ namespace CE
             const auto hr = m_client->SetOutputMask(mask);
             Check(hr, "cannot set mask");
 		}
+
+		void freeResources() const {
+            if (m_client) {
+                m_client->DetachProcesses();
+            }
+        	
+            if (m_eventCallbacks) {
+                m_client->SetEventCallbacks(nullptr);
+                delete m_eventCallbacks;
+            }
+            if (m_IOCallbacks) {
+                m_client->SetInputCallbacks(nullptr);
+                m_client->SetOutputCallbacks(nullptr);
+                delete m_IOCallbacks;
+            }
+
+            if (m_client) {
+                m_client->Release();
+            }
+            if (m_control) {
+                m_control->Release();
+            }
+            if (m_registers) {
+                m_registers->Release();
+            }
+            if (m_symbols) {
+                m_symbols->Release();
+            }
+            if (m_dataSpaces) {
+                m_dataSpaces->Release();
+            }
+            if (m_dataSpaces4) {
+                m_dataSpaces4->Release();
+            }
+        }
 		
 		static void Check(HRESULT hr, const std::string& message) {
 			if (hr != S_OK) {

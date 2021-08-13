@@ -61,6 +61,18 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::RowContextPanel::renderPan
 			}
 		}
 	}
+
+	auto& breakpoints = imageDec->getBreakpoints();
+	const auto it = breakpoints.find(m_codeSectionRow.m_byteOffset);
+	if (breakpoints.find(m_codeSectionRow.m_byteOffset) != breakpoints.end()) {
+		if (ImGui::MenuItem("Remove Breakpoint")) {
+			breakpoints.erase(it);
+		}
+	} else {
+		if (ImGui::MenuItem("Add Breakpoint")) {
+			breakpoints[m_codeSectionRow.m_byteOffset] = CE::BreakPoint(imageDec, m_codeSectionRow.m_byteOffset);
+		}
+	}
 }
 
 void GUI::ImageContentViewerPanel::CodeSectionViewer::renderControl() {
@@ -140,7 +152,11 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::renderControl() {
 					const auto instrOffset = codeSectionRow.m_byteOffset;
 					ImGui::TableNextColumn();
 					startRowPos = ImGui::GetCursorScreenPos();
-					RenderAddress(instrOffset);
+					{
+						const auto& breakpoints = m_codeSectionController->m_imageDec->getBreakpoints();
+						const auto isBpSet = breakpoints.find(codeSectionRow.m_byteOffset) != breakpoints.end();
+						RenderAddress(instrOffset, isBpSet);
+					}
 
 					// Asm
 					InstructionViewInfo instrViewInfo;

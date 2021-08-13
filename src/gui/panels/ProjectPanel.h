@@ -79,11 +79,11 @@ namespace GUI
 
 		PCodeEmulator* getEmulator(bool notStopped = true) const {
 			if (!m_emulator) {
-				if (!m_debugger || notStopped && m_debugger->m_emulator->m_isStopped)
+				if (!m_debugger || notStopped && m_debugger->m_emulator->isWorking())
 					return nullptr;
 				return m_debugger->m_emulator;
 			}
-			if (notStopped && m_emulator->m_isStopped)
+			if (notStopped && m_emulator->isWorking())
 				return nullptr;
 			return m_emulator;
 		}
@@ -140,6 +140,10 @@ namespace GUI
 					locationHandler(delta);
 				});
 			m_emulator->sync();
+		}
+
+		void addBreakpoint(CE::ImageDecorator* imageDec, CE::Offset offset) const {
+			imageDec->getBreakpoints()[offset] = CE::BreakPoint(imageDec, offset);
 		}
 	
 	protected:
