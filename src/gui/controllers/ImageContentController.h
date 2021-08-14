@@ -236,33 +236,32 @@ namespace GUI
 	private:
 		void fillOffsets() {
 			auto offset = m_imageSection->getMinOffset();
-			ZydisDecodedInstruction instruction;
-			while (decode(offset, &instruction))
+			while (offset < m_imageSection->getMaxOffset())
 			{
-				if (instruction.meta.category == ZYDIS_CATEGORY_COND_BR || instruction.meta.category == ZYDIS_CATEGORY_UNCOND_BR) {
-					const auto& operand = instruction.operands[0];
-					if (operand.type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
-						if (operand.imm.is_relative) {
-							const auto targetOffset = offset + instruction.length + operand.imm.value.s;
-							if (std::abs(static_cast<int64_t>(offset) - static_cast<int64_t>(targetOffset)) < 0x300) {
-								addJump(offset, targetOffset);
+				addOffset(offset);
+				
+				ZydisDecodedInstruction instruction;
+				std::vector<uint8_t> buffer(100);
+				m_imageDec->getImage()->read(offset, buffer);
+				if (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&m_decoder, buffer.data(), buffer.size(), &instruction))) {
+					if (instruction.meta.category == ZYDIS_CATEGORY_COND_BR || instruction.meta.category == ZYDIS_CATEGORY_UNCOND_BR) {
+						const auto& operand = instruction.operands[0];
+						if (operand.type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
+							if (operand.imm.is_relative) {
+								const auto targetOffset = offset + instruction.length + operand.imm.value.s;
+								if (std::abs(static_cast<int64_t>(offset) - static_cast<int64_t>(targetOffset)) < 0x300) {
+									addJump(offset, targetOffset);
+								}
 							}
 						}
 					}
+					offset += instruction.length;
+				} else {
+					offset++;
 				}
-				addOffset(offset);
-				offset += instruction.length;
 			}
 
 			setupJmpLevels();
-		}
-
-		bool decode(CE::Offset offset, ZydisDecodedInstruction* instruction) const {
-			if (offset >= m_imageDec->getImage()->getSize())
-				return false;
-			std::vector<uint8_t> buffer(100);
-			m_imageDec->getImage()->read(offset, buffer);
-			return ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&m_decoder, buffer.data(), buffer.size(), instruction));
 		}
 	};
 };

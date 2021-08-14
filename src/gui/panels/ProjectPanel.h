@@ -124,9 +124,10 @@ namespace GUI
 				}
 			}
 
-			if (panel->m_curDecGraph) {
-				emulator->m_curBlockTopNode = panel->m_curDecGraph->findBlockTopNodeAtOffset(emulator->m_offset);
-				emulator->m_stackPointerValue = panel->m_curDecGraph->getStackPointerValueAtOffset(emulator->m_offset);
+			if (panel->m_curDecGraph && emulator->m_curInstr) {
+				const auto instrOffset = emulator->m_curInstr->getOffset();
+				emulator->m_curBlockTopNode = panel->m_curDecGraph->findBlockTopNodeAtOffset(instrOffset);
+				emulator->m_stackPointerValue = panel->m_curDecGraph->getStackPointerValueAtOffset(instrOffset);
 			}
 		}
 
@@ -160,6 +161,11 @@ namespace GUI
 				if (m_debugger->isWorking()) {
 					m_debugger->show();
 				} else {
+					for (const auto& [addr, imageDec] : m_debugger->m_images) {
+						const auto window = getImageContentViewerWindow(imageDec);
+						m_imageContentWinManager.removeWindow(window);
+						delete window;
+					}
 					delete m_debugger;
 					m_debugger = nullptr;
 				}
@@ -180,19 +186,20 @@ namespace GUI
 
 			if (ImGui::BeginMenu("Debug"))
 			{
-				if (ImGui::MenuItem("Attach Process", nullptr)) {
-					delete m_debugAttachProcessWindow;
-					const auto panel = new DebuggerAttachProcessPanel(m_project);
-					panel->selectProcessEventHandler([&, panel]()
-						{
-							delete m_debugger;
-							m_debugger = new Debugger(m_project, panel->m_debugSession, panel->m_selectedParentAddrSpace);
-							m_debugger->m_emulator->locationHandler([&](uint64_t delta)
-								{
-									locationHandler(delta);
-								});
-						});
-					m_debugAttachProcessWindow = new StdWindow(panel);
+				if (!m_debugger) {
+					if (ImGui::MenuItem("Attach Process", nullptr)) {
+						delete m_debugAttachProcessWindow;
+						const auto panel = new DebuggerAttachProcessPanel(m_project);
+						panel->selectProcessEventHandler([&, panel]()
+							{
+								m_debugger = new Debugger(m_project, panel->m_debugSession, panel->m_selectedParentAddrSpace);
+								m_debugger->m_emulator->locationHandler([&](uint64_t delta)
+									{
+										locationHandler(delta);
+									});
+							});
+						m_debugAttachProcessWindow = new StdWindow(panel);
+					}
 				}
 
 				if (const auto emulator = getEmulator(false)) {

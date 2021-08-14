@@ -314,6 +314,14 @@ namespace GUI
 			m_windows.push_back(window);
 		}
 
+		void removeWindow(StdWindow* window) {
+			for (int i = 0; i < m_windows.size(); i++) {
+				if (window == m_windows[i]) {
+					m_windows[i] = nullptr;
+				}
+			}
+		}
+
 	protected:
 		void renderControl() override {
 			for (int i = 0; i < m_windows.size(); i++) {

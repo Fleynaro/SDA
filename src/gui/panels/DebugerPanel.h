@@ -834,13 +834,14 @@ namespace GUI
 			}
 
 			if (m_locationHandler.isInit()) {
-				const auto newAddr = m_imageDec->getImage()->getAddress() + m_offset;
+				const auto newAddr = m_imageDec->getImage()->getAddress() + m_offset.getByteOffset();
 				const auto delta = std::abs(static_cast<int64_t>(m_curAddr) - static_cast<int64_t>(newAddr));
 				m_curAddr = newAddr;
 				m_locationHandler(delta);
 			}
 
 			if (!m_curInstr) {
+				// there may not be PCode instruction in real debugging
 				m_isStopped = true;
 				return false;
 			}
@@ -941,9 +942,11 @@ namespace GUI
 				: PCodeEmulator(addressSpace, nullptr, 0x0), m_debugSession(debugSession)
 			{
 				m_isStopped = true;
+				m_showContexts = true;
 			}
 
 			void newOrigInstructionExecuted() {
+				m_execCtx.m_nextInstrAddr = 0;
 				syncContext();
 
 				const auto prevBlockTopNode = m_curBlockTopNode;
@@ -1025,10 +1028,11 @@ namespace GUI
 		CE::IDebugSession* m_debugSession;
 		CE::AddressSpace* m_addressSpace;
 		CE::AddressSpace* m_parentAddressSpace;
-		std::map<std::uintptr_t, CE::ImageDecorator*> m_images;
 		CE::Symbol::GlobalSymbolTable* m_globalSymbolTable;
 		CE::Symbol::GlobalSymbolTable* m_funcBodySymbolTable;
+		std::uintptr_t m_curAddr = 0x0;
 	public:
+		std::map<std::uintptr_t, CE::ImageDecorator*> m_images;
 		PCodeEmulatorWithDebugSession* m_emulator;
 		
 		Debugger(CE::Project* project, CE::IDebugSession* debugSession, CE::AddressSpace* parentAddressSpace = nullptr)
@@ -1044,12 +1048,12 @@ namespace GUI
 		}
 
 		~Debugger() {
-			m_project->getAddrSpaceManager()->m_debugAddressSpace = nullptr;
-			delete m_addressSpace;
 			delete m_globalSymbolTable;
 			delete m_funcBodySymbolTable;
 			for (const auto& [addr, imageDec] : m_images)
 				delete imageDec;
+			m_project->getAddrSpaceManager()->m_debugAddressSpace = nullptr;
+			delete m_addressSpace;
 		}
 
 		bool isWorking() const {
@@ -1077,17 +1081,21 @@ namespace GUI
 			}
 		}
 
-		void updateLocation() const {
+		void updateLocation() {
 			if (m_debugSession->isSuspended()) {
-				const auto addr = m_debugSession->getInstructionAddress();
-				const auto prevImageDec = m_emulator->m_imageDec;
-				const auto prevOffset = m_emulator->m_offset;
-				if(m_emulator->setLocationByAddress(addr)) {
-					m_emulator->m_isStopped = false;
-					if (m_emulator->m_imageDec != prevImageDec || m_emulator->m_offset != prevOffset) {
+				const auto address = m_debugSession->getInstructionAddress();
+				if (address != m_curAddr) {
+					if (m_emulator->setLocationByAddress(address)) {
+						// for location handler
+						m_emulator->m_isStopped = false;
+						
 						// if new instruction meet
 						m_emulator->newOrigInstructionExecuted();
+						
+						// set false again if it was set true after newOrigInstructionExecuted
+						m_emulator->m_isStopped = false;
 					}
+					m_curAddr = address;
 				}
 			}
 		}

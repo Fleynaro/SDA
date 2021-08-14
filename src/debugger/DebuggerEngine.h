@@ -273,6 +273,7 @@ namespace CE
 
         void addBreakpoint(std::uintptr_t address) override {
 			// breakpoint can be added while the debugger is suspended
+            const auto prevState = m_state;
             pause(true);
 			
             PDEBUG_BREAKPOINT bp = nullptr;
@@ -282,17 +283,24 @@ namespace CE
             bp->AddFlags(DEBUG_BREAKPOINT_ENABLED);
             m_breakpoints[address] = bp;
 
-            resume();
+			if(prevState == State::RUN)
+				resume();
 		}
 
         void removeBreakpoint(std::uintptr_t address) override {
             const auto it = m_breakpoints.find(address);
             if (it == m_breakpoints.end())
                 return;
+            const auto prevState = m_state;
+            pause(true);
+			
             const auto bp = it->second;
             const auto hr = m_control->RemoveBreakpoint(bp);
             Check(hr, "RemoveBreakpoint error");
             m_breakpoints.erase(it);
+            
+            if (prevState == State::RUN)
+                resume();
 		}
 
 		std::list<DebugModule> getModules() override {

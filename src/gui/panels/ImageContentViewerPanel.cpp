@@ -159,13 +159,14 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::renderControl() {
 					InstructionViewInfo instrViewInfo;
 					std::vector<uint8_t> buffer(100);
 					m_codeSectionController->m_imageDec->getImage()->read(instrOffset, buffer);
-					m_instructionViewDecoder->decode(buffer, &instrViewInfo);
-					CodeSectionInstructionViewer instructionViewer(&instrViewInfo);
-					instructionViewer.renderJmpArrow([&]()
-					{
-						renderJmpLines(rowIdx, m_clipper);
-					});
-					instructionViewer.show();
+					if (m_instructionViewDecoder->decode(buffer, &instrViewInfo)) {
+						CodeSectionInstructionViewer instructionViewer(&instrViewInfo);
+						instructionViewer.renderJmpArrow([&]()
+							{
+								renderJmpLines(rowIdx, m_clipper);
+							});
+						instructionViewer.show();
+					}
 				}
 				else {
 					// PCode
