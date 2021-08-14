@@ -3,6 +3,7 @@
 #include <dbgeng.h>
 #include <atlcomcli.h>
 #include "DebugSession.h"
+#include "Zydis/Register.h"
 #include <map>
 #include <mutex>
 #include <thread>
@@ -134,13 +135,13 @@ namespace CE
         HRESULT STDMETHODCALLTYPE QueryInterface(const IID& InterfaceId, PVOID* Interface) override {
             if (IsEqualIID(InterfaceId, __uuidof(IDebugInputCallbacks)))
             {
-                *Interface = (IDebugInputCallbacks*)this;
+                *Interface = static_cast<IDebugInputCallbacks*>(this);
                 AddRef();
                 return S_OK;
             }
             if (IsEqualIID(InterfaceId, __uuidof(IDebugOutputCallbacks)))
             {
-                *Interface = (IDebugOutputCallbacks*)this;
+                *Interface = static_cast<IDebugOutputCallbacks*>(this);
                 AddRef();
                 return S_OK;
             }
@@ -246,6 +247,7 @@ namespace CE
 			// wait for suspend state
             interrupt(DEBUG_INTERRUPT_ACTIVE);
             if (wait) {
+            	// todo: use sync primitives, not loops (mutex, semaphores, ...)
                 while (m_state != State::SUSPEND)
                     Sleep(100);
             }
@@ -310,10 +312,10 @@ namespace CE
             return modules;
 		}
 
-		void readMemory(uint64_t offset, std::vector<uint8_t>& data) override {
+		void readMemory(std::uintptr_t address, std::vector<uint8_t>& data) override {
             // memory can be read while the debugger is suspended
             ULONG bytesRead;
-            const auto hr = m_dataSpaces->ReadVirtual(offset, data.data(), static_cast<ULONG>(data.size()), &bytesRead);
+            const auto hr = m_dataSpaces->ReadVirtual(address, data.data(), static_cast<ULONG>(data.size()), &bytesRead);
             Check(hr, "ReadVirtual error");
             if (bytesRead != data.size()) {
                 throw DebugException("not all bytes has read");
@@ -328,7 +330,46 @@ namespace CE
 		}
 
         std::list<DebugRegister> getRegisters() override {
-            return {};
+            const auto registers = {
+                std::pair(ZYDIS_REGISTER_RIP, ZYDIS_REGISTER_RIP),
+                std::pair(ZYDIS_REGISTER_RFLAGS, ZYDIS_REGISTER_RFLAGS),
+				std::pair(ZYDIS_REGISTER_RAX, ZYDIS_REGISTER_R15),
+                std::pair(ZYDIS_REGISTER_XMM0, ZYDIS_REGISTER_XMM15)
+            };
+
+			// get register indexes
+            std::vector<ZydisRegister> registerIds;
+            std::vector<ULONG> registerIndexes;
+            for (const auto regRange : registers) {
+                for (int regId = regRange.first; regId <= regRange.second; regId++) {
+                    const auto regIdx = getRegisterIndex(static_cast<ZydisRegister>(regId));
+                    registerIndexes.push_back(regIdx);
+                    registerIds.push_back(static_cast<ZydisRegister>(regId));
+                }
+            }
+
+			// get register values using indexes
+            std::vector<DEBUG_VALUE> registerValues(registerIndexes.size());
+            const auto hr = m_registers->GetValues(static_cast<ULONG>(registerIndexes.size()), registerIndexes.data(), 0, registerValues.data());
+            Check(hr, "GetValues error");
+
+            std::list<DebugRegister> debugRegisters;
+            for (size_t i = 0; i < registerIndexes.size(); i++) {
+                const auto& value = registerValues[i];
+                DebugRegister debugRegister;
+                debugRegister.m_id = registerIds[i];
+                debugRegister.m_value = value.I64;
+                debugRegister.m_index = 0;
+                debugRegisters.push_back(debugRegister);
+            	
+            	if(value.Type == DEBUG_VALUE_FLOAT128 || value.Type == DEBUG_VALUE_VECTOR128) {
+                    debugRegister.m_id = registerIds[i];
+                    debugRegister.m_value = value.VI64[1];
+                    debugRegister.m_index = 1;
+                    debugRegisters.push_back(debugRegister);
+            	}
+            }
+            return debugRegisters;
 		}
 	
 	private:
@@ -339,13 +380,9 @@ namespace CE
                     try {
                         // init
                         createClient();
-
-                        // search
-                        ULONG processId;
-                        foundProcessByName(m_process.m_name, processId);
-
+                    	
                         // attach
-                        const auto hr = m_client->AttachProcess(NULL, processId, DEBUG_ATTACH_DEFAULT);
+                        const auto hr = m_client->AttachProcess(NULL, static_cast<ULONG>(m_process.m_id), DEBUG_ATTACH_DEFAULT);
                         Check(hr, "process attachment failed");
 
                         while (true)
@@ -473,6 +510,16 @@ namespace CE
             const auto hr = m_client->SetOutputMask(mask);
             Check(hr, "cannot set mask");
 		}
+
+        ULONG getRegisterIndex(ZydisRegister regId) const {
+            if (regId == ZYDIS_REGISTER_RFLAGS)
+                return 11;
+            const auto regName = ZydisRegisterGetString(regId);
+            ULONG regIndex;
+			const auto hr = m_registers->GetIndexByName(regName, &regIndex);
+            Check(hr, "GetIndexByName error");
+            return regIndex;
+        }
 
 		void freeResources() const {
             if (m_client) {

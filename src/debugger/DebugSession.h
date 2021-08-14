@@ -66,7 +66,7 @@ namespace CE
 
 		virtual std::list<DebugModule> getModules() = 0;
 
-		virtual void readMemory(uint64_t offset, std::vector<uint8_t>& data) = 0;
+		virtual void readMemory(std::uintptr_t address, std::vector<uint8_t>& data) = 0;
 
 		virtual std::uintptr_t getInstructionAddress() = 0;
 

@@ -694,7 +694,7 @@ namespace GUI
 		CE::AddressSpace* m_addressSpace;
 		CE::ImageDecorator* m_imageDec;
 		CE::ComplexOffset m_offset;
-		PCodeStepWidth m_stepWidth = PCodeStepWidth::STEP_PCODE_INSTR;
+		PCodeStepWidth m_stepWidth = PCodeStepWidth::STEP_ORIGINAL_INSTR;
 		CE::Decompiler::PCode::Instruction* m_curInstr = nullptr;
 		CE::Decompiler::PCodeBlock* m_curPCodeBlock = nullptr;
 		CE::Decompiler::DecBlock::BlockTopNode* m_curBlockTopNode = nullptr;
@@ -707,7 +707,6 @@ namespace GUI
 		{
 			m_execCtxViewerWin = new StdWindow(new ExecContextViewerPanel(&m_execCtx, &m_registerFactoryX86));
 			m_stackViewerWin = new StdWindow(new StackViewerPanel(&m_execCtx, &m_memCtx, &m_registerFactoryX86));
-
 			m_execCtx.setRegisterValue(CE::Decompiler::Register(ZYDIS_REGISTER_RSP), 0x1000000000);
 		}
 
@@ -943,6 +942,19 @@ namespace GUI
 			{
 				m_isStopped = true;
 				m_showContexts = true;
+				m_memCtx.setAddressSpaceCallaback([&](std::uintptr_t address, CE::Decompiler::DataValue& value)
+					{
+						if (!m_debugSession->isSuspended())
+							return false;
+						std::vector<uint8_t> data(sizeof(value));
+						try {
+							m_debugSession->readMemory(address, data);
+						} catch(CE::DebugException&) {
+							return false;
+						}
+						value = *reinterpret_cast<CE::Decompiler::DataValue*>(data.data());
+						return true;
+					});
 			}
 
 			void newOrigInstructionExecuted() {
@@ -952,6 +964,7 @@ namespace GUI
 				const auto prevBlockTopNode = m_curBlockTopNode;
 				defineCurPCodeInstruction();
 				if(m_isSyncing) {
+					m_isSyncing = false;
 					if (m_stepWidth == PCodeStepWidth::STEP_CODE_LINE) {
 						if(m_curInstr && m_curBlockTopNode == prevBlockTopNode) {
 							if (m_isInto)
@@ -959,7 +972,6 @@ namespace GUI
 							else stepOver();
 						}
 					}
-					m_isSyncing = false;
 				}
 			}
 
@@ -1068,6 +1080,7 @@ namespace GUI
 
 			if(!m_debugSession->isSuspended()) {
 				m_emulator->m_isStopped = true;
+				m_curAddr = 0x0;
 			}
 		}
 

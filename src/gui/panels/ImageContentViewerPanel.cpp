@@ -62,13 +62,16 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::RowContextPanel::renderPan
 		}
 	}
 
-	if (imageDec->hasBreakpoint(m_codeSectionRow.m_byteOffset)) {
-		if (ImGui::MenuItem("Remove Breakpoint")) {
-			imageDec->setBreakpoint(m_codeSectionRow.m_byteOffset, false);
+	if (!m_codeSectionRow.m_isPCode) {
+		if (imageDec->hasBreakpoint(m_codeSectionRow.m_byteOffset)) {
+			if (ImGui::MenuItem("Remove Breakpoint")) {
+				imageDec->setBreakpoint(m_codeSectionRow.m_byteOffset, false);
+			}
 		}
-	} else {
-		if (ImGui::MenuItem("Add Breakpoint")) {
-			imageDec->setBreakpoint(m_codeSectionRow.m_byteOffset, true);
+		else {
+			if (ImGui::MenuItem("Add Breakpoint")) {
+				imageDec->setBreakpoint(m_codeSectionRow.m_byteOffset, true);
+			}
 		}
 	}
 }

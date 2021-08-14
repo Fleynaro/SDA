@@ -12,8 +12,9 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(
-    debugger PUBLIC
+    debugger PRIVATE
     utilities
-    magic_enum::magic_enum)
+    magic_enum::magic_enum
+    Zydis)
 
 create_vs_filters("${DEBUGGER_SRC}")
