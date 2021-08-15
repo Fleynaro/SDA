@@ -630,7 +630,7 @@ namespace CE::Decompiler
 	class CodeViewGenerator
 	{
 		ExprTree::ExprTreeViewGenerator* m_exprTreeViewGenerator;
-		std::set<LinearView::Block*> m_blocksToGoTo;
+		std::set<LinearView::CodeBlock*> m_blocksToGoTo;
 
 	protected:
 		int m_tabsCount = 0;
@@ -660,7 +660,7 @@ namespace CE::Decompiler
 		{}
 
 		void setMinInfoToShow() {
-			m_SHOW_ALL_GOTO = false;
+			m_SHOW_ALL_GOTO = true;
 			m_SHOW_LINEAR_LEVEL_EXT = false;
 		}
 
@@ -705,19 +705,22 @@ namespace CE::Decompiler
 				generateCurlyBracket("{", blockList);
 			}
 			for (auto block : blockList->getBlocks()) {
-				if (const auto conditionBlock = dynamic_cast<LinearView::Condition*>(block)) {
+				if (m_SHOW_ALL_COMMENTS && m_SHOW_BLOCK_HEADER) {
+					generateCommentAboutBlock(block);
+				}
+				
+				if (const auto conditionBlock = dynamic_cast<LinearView::ConditionBlock*>(block)) {
 					generateConditionBlock(conditionBlock);
 				}
-				else if (const auto whileCycleBlock = dynamic_cast<LinearView::WhileCycle*>(block)) {
+				else if (const auto whileCycleBlock = dynamic_cast<LinearView::WhileCycleBlock*>(block)) {
 					generateWhileCycleBlock(whileCycleBlock);
 				}
-				else {
-					generateBlock(block);
-				}
-
-				if (const auto endBlock = dynamic_cast<EndDecBlock*>(block->m_decBlock)) {
-					if(endBlock->getReturnTopNode()->getNode() != nullptr)
-						generateReturnStatement(endBlock->getReturnTopNode());
+				else if (const auto codeBlock = dynamic_cast<LinearView::CodeBlock*>(block)) {
+					generateBlock(codeBlock);
+					if (const auto endBlock = dynamic_cast<EndDecBlock*>(codeBlock->m_decBlock)) {
+						if (endBlock->getReturnTopNode()->getNode() != nullptr)
+							generateReturnStatement(endBlock->getReturnTopNode());
+					}
 				}
 			}
 			generateGotoStatement(blockList);
@@ -726,31 +729,37 @@ namespace CE::Decompiler
 			}
 		}
 
-		virtual void generateBlock(LinearView::Block* block) {
-			const auto pcodeBlock = block->m_decBlock->m_pcodeBlock;
-			if (m_SHOW_ALL_COMMENTS && m_SHOW_BLOCK_HEADER) {
-				const auto comment = "//block " + pcodeBlock->getName() + " (level: " + std::to_string(block->m_decBlock->m_level) +
-					", maxHeight: " + std::to_string(block->m_decBlock->m_maxHeight) + ", backOrderId: " + std::to_string(block->getBackOrderId()) +
-					", linearLevel: " + std::to_string(block->getLinearLevel()) + ", refCount: " + std::to_string(block->m_decBlock->getRefBlocksCount()) + ")";
-				generateTabs();
-				generateToken(comment, TOKEN_COMMENT);
-				generateEndLine();
+		void generateCommentAboutBlock(LinearView::AbstractBlock* block) {
+			std::string comment;
+			const auto levelInfo = "backOrderId: " + std::to_string(block->m_backOrderId) + ", linearLevel: " + std::to_string(block->m_linearLevel);
+			if (const auto codeBlock = dynamic_cast<LinearView::CodeBlock*>(block)) {
+				const auto decBlock = codeBlock->m_decBlock;
+				comment = "//block " + decBlock->m_pcodeBlock->getName() + " (level: " + std::to_string(decBlock->m_level) +
+					", maxHeight: " + std::to_string(decBlock->m_maxHeight) + ", " + levelInfo + ", refCount: " +
+					std::to_string(decBlock->getRefBlocksCount()) + ")";
+			} else {
+				comment = "//block (" + levelInfo + ")";
 			}
+			generateTabs();
+			generateToken(comment, TOKEN_COMMENT);
+			generateEndLine();
+		}
+
+		virtual void generateBlock(LinearView::CodeBlock* block) {
 			if (m_blocksToGoTo.find(block) != m_blocksToGoTo.end()) {
 				generateTabs();
-				generateLabelName(pcodeBlock);
+				generateLabelName(block->m_decBlock->m_pcodeBlock);
 				generateToken(":", TOKEN_OTHER);
 				generateEndLine();
 			}
 			generateCode(block->m_decBlock);
 		}
 
-		virtual void generateConditionBlock(LinearView::Condition* block) {
-			generateBlock(block);
+		virtual void generateConditionBlock(LinearView::ConditionBlock* block) {
 			generateTabs();
 			generateToken("if", TOKEN_OPERATOR);
 			{
-				generateBlockTopNode(block->m_decBlock->getJumpTopNode(), block->m_cond);
+				generateBlockTopNode(block->m_jmpTopNode, block->m_cond);
 			}
 			generateToken(" ", TOKEN_OTHER);
 			{
@@ -765,14 +774,13 @@ namespace CE::Decompiler
 			generateEndLine();
 		}
 
-		virtual void generateWhileCycleBlock(LinearView::WhileCycle* block) {
+		virtual void generateWhileCycleBlock(LinearView::WhileCycleBlock* block) {
 			if (!block->m_isDoWhileCycle) {
-				generateBlock(block);
 				generateTabs();
 				generateToken("while", TOKEN_OPERATOR);
 				generateToken(" ", TOKEN_OTHER);
 				{
-					generateBlockTopNode(block->m_decBlock->getJumpTopNode(), block->m_cond);
+					generateBlockTopNode(block->m_jmpTopNode, block->m_cond);
 				}
 				generateToken(" ", TOKEN_OTHER);
 				{
@@ -789,11 +797,7 @@ namespace CE::Decompiler
 				generateToken("while", TOKEN_OPERATOR);
 				generateToken(" ", TOKEN_OTHER);
 				{
-					if (block->m_decBlock) {
-						generateBlockTopNode(block->m_decBlock->getJumpTopNode(), block->m_cond);
-					} else {
-						m_exprTreeViewGenerator->generateNode(block->m_cond);
-					}
+					generateBlockTopNode(block->m_jmpTopNode, block->m_cond);
 				}
 				generateSemicolon();
 				generateEndLine();
@@ -869,8 +873,8 @@ namespace CE::Decompiler
 			}
 
 			if (m_SHOW_ALL_COMMENTS && m_SHOW_LINEAR_LEVEL_EXT) {
-				auto const comment2 = "//backOrderId: " + std::to_string(blockList->getBackOrderId()) + "; minLinLevel: " +
-					std::to_string(blockList->getMinLinearLevel()) + ", maxLinLevel: " + std::to_string(blockList->getMaxLinearLevel());
+				auto const comment2 = "//backOrderId: " + std::to_string(blockList->m_backOrderId) + "; minLinLevel: " +
+					std::to_string(blockList->m_minLinearLevel) + ", maxLinLevel: " + std::to_string(blockList->m_maxLinearLevel);
 				generateTabs();
 				generateToken(comment2, TOKEN_COMMENT);
 				generateEndLine();

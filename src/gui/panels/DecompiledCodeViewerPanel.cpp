@@ -70,10 +70,12 @@ generateNode(CE::Decompiler::INode* node, bool& hasGroup, MultiLineGroup::Group&
 
 void GUI::DecompiledCodeViewerPanel::DecompiledCodeViewerWithDebugAndHeader::CodeGenerator::generateBlockTopNode(
 	CE::Decompiler::DecBlock::BlockTopNode* blockTopNode, CE::Decompiler::INode* node) {
-	const auto projectPanel = dynamic_cast<DecompiledCodeViewerWithDebugAndHeader*>(m_decCodeViewer)->m_projectPanel;
-	if (const auto emulator = projectPanel->getEmulator()) {
-		if (emulator->m_curBlockTopNode == blockTopNode) {
-			m_decCodeViewer->m_debugSelectedLineIdx = m_curLineIdx;
+	if (blockTopNode) {
+		const auto projectPanel = dynamic_cast<DecompiledCodeViewerWithDebugAndHeader*>(m_decCodeViewer)->m_projectPanel;
+		if (const auto emulator = projectPanel->getEmulator()) {
+			if (emulator->m_curBlockTopNode == blockTopNode) {
+				m_decCodeViewer->m_debugSelectedLineIdx = m_curLineIdx;
+			}
 		}
 	}
 	CodeViewGenerator::generateBlockTopNode(blockTopNode, node);

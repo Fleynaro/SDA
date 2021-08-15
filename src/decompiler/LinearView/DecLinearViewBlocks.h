@@ -11,128 +11,111 @@ namespace CE::Decompiler::LinearView
 	};
 
 	class BlockList;
-	class WhileCycle;
+	class WhileCycleBlock;
 
-	// condition or cycle block
-	class IBlockListAgregator
-	{
-	public:
-		virtual std::list<BlockList*> getBlockLists() = 0;
-	};
-
-	class Block
+	// code, condition or while cycle
+	class AbstractBlock
 	{
 	public:
 		int m_backOrderId = 0;
 		int m_linearLevel = 0;
-		DecBlock* m_decBlock; //todo: remove for while
 		BlockList* m_blockList = nullptr;
+
+		virtual ~AbstractBlock() {}
+
+		virtual std::list<BlockList*> getBlockLists() = 0;
+
+		virtual WhileCycleBlock* getWhileCycle();
+	};
+
+	// always associated with dec. block
+	class CodeBlock : public AbstractBlock
+	{
+	public:
+		DecBlock* m_decBlock; //todo: remove for while
 		std::list<BlockList*> m_refBlockLists;
 
-		Block(DecBlock* decBlock)
+		CodeBlock(DecBlock* decBlock)
 			: m_decBlock(decBlock)
 		{}
 
-		virtual ~Block() {}
-
-		int getBackOrderId() const
-		{
-			return m_backOrderId;
+		std::list<BlockList*> getBlockLists() override {
+			return {};
 		}
-
-		int getLinearLevel() const
-		{
-			return m_linearLevel;
-		}
-
-		std::list<BlockList*>& getRefBlockLists() {
-			return m_refBlockLists;
-		}
-
-		virtual WhileCycle* getWhileCycle();
 	};
 
 	class BlockList
 	{
+		std::list<AbstractBlock*> m_blocks;
 	public:
+		AbstractBlock* m_parentBlock; // condition or while
+		CodeBlock* m_goto = nullptr;
 		int m_backOrderId = 0;
 		int m_minLinearLevel = 0;
 		int m_maxLinearLevel = 0;
-		IBlockListAgregator* m_parent;
-		Block* m_goto = nullptr;
 
-		BlockList(IBlockListAgregator* parent = nullptr)
-			: m_parent(parent)
+		BlockList(AbstractBlock* parent = nullptr)
+			: m_parentBlock(parent)
 		{}
 
-		void setGoto(Block* block) {
+		void setGoto(CodeBlock* block) {
 			if (m_goto) {
-				m_goto->getRefBlockLists().remove(this);
+				m_goto->m_refBlockLists.remove(this);
 			}
-			block->getRefBlockLists().push_back(this);
+			block->m_refBlockLists.push_back(this);
 			m_goto = block;
 		}
 
-		void addBlock(Block* block) {
+		void addBlock(AbstractBlock* block) {
 			block->m_blockList = this;
 			m_blocks.push_back(block);
 		}
 
-		void removeBlock(Block* block) {
+		void removeBlock(AbstractBlock* block) {
 			block->m_blockList = nullptr;
 			m_blocks.remove(block);
 		}
 
-		virtual std::list<Block*> getBlocks() {
+		virtual std::list<AbstractBlock*> getBlocks() {
 			return m_blocks;
 		}
 
-		Block* findBlock(DecBlock* decBlock);
+		AbstractBlock* getFirstBlock() const {
+			if (m_blocks.empty())
+				return nullptr;
+			return *m_blocks.begin();
+		}
 
-		bool hasGoto();
+		CodeBlock* findBlock(DecBlock* decBlock);
+
+		bool hasGoto() const;
 
 		GotoType getGotoType();
 
-		WhileCycle* getWhileCycle() const;
+		WhileCycleBlock* getWhileCycle() const;
 
 		bool isEmpty() {
-			return getBlocks().size() == 0 && getGotoType() == GotoType::None;
+			return m_blocks.empty() && getGotoType() == GotoType::None;
 		}
-
-		int getBackOrderId() const
-		{
-			return m_backOrderId;
-		}
-
-		int getMinLinearLevel() const
-		{
-			return m_minLinearLevel;
-		}
-
-		int getMaxLinearLevel() const
-		{
-			return m_maxLinearLevel;
-		}
-	private:
-		std::list<Block*> m_blocks;
 	};
 
-	class Condition : public Block, public IBlockListAgregator
+	class ConditionBlock : public AbstractBlock
 	{
 	public:
 		BlockList* m_mainBranch;
 		BlockList* m_elseBranch;
-		ExprTree::AbstractCondition* m_cond = nullptr;
+		ExprTree::AbstractCondition* m_cond;
+		DecBlock::JumpTopNode* m_jmpTopNode;
 
-		Condition(DecBlock* decBlock)
-			: Block(decBlock)
+		ConditionBlock(DecBlock::JumpTopNode* jmpTopNode)
+			: m_jmpTopNode(jmpTopNode)
 		{
 			m_mainBranch = new BlockList(this);
 			m_elseBranch = new BlockList(this);
-			createCondition();
+			m_cond = dynamic_cast<ExprTree::AbstractCondition*>(m_jmpTopNode->getCond()->clone());
 		}
 
-		~Condition() {
+		~ConditionBlock() {
 			delete m_mainBranch;
 			delete m_elseBranch;
 			delete m_cond;
@@ -146,54 +129,35 @@ namespace CE::Decompiler::LinearView
 			m_cond->inverse();
 			std::swap(m_mainBranch, m_elseBranch);
 		}
-
-	private:
-		void createCondition() {
-			if (m_decBlock->getNoJumpCondition())
-				m_cond = dynamic_cast<ExprTree::AbstractCondition*>(m_decBlock->getNoJumpCondition()->clone());
-		}
 	};
 
-	class WhileCycle : public Block, public IBlockListAgregator
+	class WhileCycleBlock : public AbstractBlock
 	{
-		// do-while cycles is not associated with dec. block, its dec. block is in its block list in the end
-		/*class DoWhileBlockList : public BlockList
-		{
-			Block* m_block;
-		public:
-			DoWhileBlockList(IBlockListAgregator* parent, DecBlock* decBlock)
-				: BlockList(parent), m_block(new Block(decBlock))
-			{}
-
-			~DoWhileBlockList() {
-				delete m_block;
-			}
-
-			std::list<Block*> getBlocks() override {
-				auto blocks = BlockList::getBlocks();
-				blocks.push_back(m_block);
-				return blocks;
-			}
-		};*/
 	public:
 		BlockList* m_mainBranch;
 		ExprTree::AbstractCondition* m_cond;
+		DecBlock::JumpTopNode* m_jmpTopNode;
 		bool m_isDoWhileCycle;
-		bool m_isInfinite;
 
-		WhileCycle(DecBlock* decBlock, bool isDoWhileCycle = false, bool isInfinite = false)
-			: Block(isDoWhileCycle ? nullptr : decBlock), m_isDoWhileCycle(isDoWhileCycle), m_isInfinite(isInfinite)
+		WhileCycleBlock(DecBlock::JumpTopNode* jmpTopNode, bool isDoWhileCycle = false)
+			: m_jmpTopNode(jmpTopNode), m_isDoWhileCycle(isDoWhileCycle)
 		{
 			m_mainBranch = new BlockList(this);
-			createCondition(decBlock);
+			if(m_jmpTopNode && m_jmpTopNode->getCond()) {
+				m_cond = dynamic_cast<ExprTree::AbstractCondition*>(m_jmpTopNode->getCond()->clone());
+				if (isDoWhileCycle)
+					m_cond->inverse();
+			} else {
+				m_cond = new ExprTree::BooleanValue(true);
+			}
 		}
 
-		~WhileCycle() {
+		~WhileCycleBlock() {
 			delete m_mainBranch;
 			delete m_cond;
 		}
 
-		Block* getFirstBlock() const {
+		AbstractBlock* getFirstBlock() const {
 			return *m_mainBranch->getBlocks().begin();
 		}
 
@@ -201,21 +165,8 @@ namespace CE::Decompiler::LinearView
 			return { m_mainBranch };
 		}
 
-		WhileCycle* getWhileCycle() override {
+		WhileCycleBlock* getWhileCycle() override {
 			return this;
-		}
-
-	private:
-		void createCondition(DecBlock* decBlock) {
-			if (m_isInfinite) {
-				m_cond = new ExprTree::BooleanValue(true);
-			}
-			else {
-				m_cond = dynamic_cast<ExprTree::AbstractCondition*>(decBlock->getNoJumpCondition()->clone());
-				if (m_isDoWhileCycle) {
-					m_cond->inverse();
-				}
-			}
 		}
 	};
 };

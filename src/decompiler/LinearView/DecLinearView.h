@@ -55,7 +55,7 @@ namespace CE::Decompiler::LinearView
 				//if a condition block is above then not set goto as it is excess
 				auto blocks = blockList->getBlocks();
 				if (!blocks.empty())
-					if (dynamic_cast<Condition*>(*blocks.rbegin()))
+					if (dynamic_cast<ConditionBlock*>(*blocks.rbegin()))
 						continue;
 				// set goto
 				const auto block = m_blockList->findBlock(nextBlock);
@@ -114,21 +114,22 @@ namespace CE::Decompiler::LinearView
 						}
 
 						if (!isDoWhileCycleBetter) {
-							WhileCycle* const whileCycle = new WhileCycle(startCycleBlock, false);
-							blockList->addBlock(whileCycle);
-							nextDecBlocksToFillBlockLists.emplace_front(whileCycle->m_mainBranch, startCycleBlock->getNextNearBlock());
+							const auto whileCycleBlock = new WhileCycleBlock(decBlock->getJumpTopNode(), false);
+							blockList->addBlock(new CodeBlock(curDecBlock));
+							blockList->addBlock(whileCycleBlock);
+							nextDecBlocksToFillBlockLists.emplace_front(whileCycleBlock->m_mainBranch, startCycleBlock->getNextNearBlock());
 							nextBlock = startCycleBlock->getNextFarBlock();
 						}
 						else {
-							WhileCycle* whileCycle;
+							WhileCycleBlock* whileCycleBlock;
 							// check if a conditional block to exit the cycle is in the end or in the middle
 							if (endCycleBlock->isCondition()) {
-								whileCycle = new WhileCycle(endCycleBlock, true);
+								whileCycleBlock = new WhileCycleBlock(decBlock->getJumpTopNode(), true);
 								nextBlock = endCycleBlock->getNextNearBlock();
 							}
 							else {
 								// the infinite cycle with a condition in the middle to exit it
-								whileCycle = new WhileCycle(endCycleBlock, true, true);
+								whileCycleBlock = new WhileCycleBlock(nullptr, true);
 								// finding a conditional block($1) that refers to a non-cycle block($2)
 								for (auto cycleBlock : cycle.m_blocks) {
 									const auto farBlock = cycleBlock->getNextFarBlock();
@@ -140,13 +141,14 @@ namespace CE::Decompiler::LinearView
 									}
 								}
 							}
-							blockList->addBlock(whileCycle);
-							nextDecBlocksToFillBlockLists.emplace_front(whileCycle->m_mainBranch, startCycleBlock);
+							blockList->addBlock(whileCycleBlock);
+							nextDecBlocksToFillBlockLists.emplace_front(whileCycleBlock->m_mainBranch, startCycleBlock);
 							curDecBlock = nullptr;
 						}
 					}
 				}
 				else if (curDecBlock->isCondition()) {
+					// as curDecBlock is conditional, find corresponding loop and set loop.endBlock as nextBlock
 					const auto it = m_loops.find(curDecBlock);
 					if (it != m_loops.end()) {
 						const auto& loop = it->second;
@@ -154,6 +156,7 @@ namespace CE::Decompiler::LinearView
 						for (auto block : loop.m_blocks) {
 							if (block == loop.m_endBlock)
 								continue;
+							// if one of the blocks in the loop have already been used
 							if (usedDecBlocks.count(block) != 0) {
 								nextBlock = nullptr;
 								break;
@@ -161,12 +164,13 @@ namespace CE::Decompiler::LinearView
 						}
 					}
 
-					const auto cond = new Condition(curDecBlock);
-					blockList->addBlock(cond);
+					const auto condBlock = new ConditionBlock(decBlock->getJumpTopNode());
+					blockList->addBlock(new CodeBlock(curDecBlock));
+					blockList->addBlock(condBlock);
 					if (nextBlock) {
 						// common {if-else} block
-						nextDecBlocksToFillBlockLists.emplace_back(cond->m_mainBranch, curDecBlock->getNextNearBlock());
-						nextDecBlocksToFillBlockLists.emplace_back(cond->m_elseBranch, curDecBlock->getNextFarBlock());
+						nextDecBlocksToFillBlockLists.emplace_back(condBlock->m_mainBranch, curDecBlock->getNextNearBlock());
+						nextDecBlocksToFillBlockLists.emplace_back(condBlock->m_elseBranch, curDecBlock->getNextFarBlock());
 					}
 					else {
 						// need make the block list more linearly (for different if-checks)
@@ -189,21 +193,23 @@ namespace CE::Decompiler::LinearView
 						auto blockBelowCond = curDecBlock->getNextFarBlock();
 						if (blockInCond->m_maxHeight > blockBelowCond->m_maxHeight || usedDecBlocks.count(blockInCond) != 0) {
 							std::swap(blockInCond, blockBelowCond);
-							cond->m_cond->inverse();
+							condBlock->m_cond->inverse();
 						}
-						nextDecBlocksToFillBlockLists.emplace_back(cond->m_mainBranch, blockInCond);
+						nextDecBlocksToFillBlockLists.emplace_back(condBlock->m_mainBranch, blockInCond);
 						nextDecBlocksToFillBlockLists.emplace_back(blockList, blockBelowCond);
-						m_goto.emplace_back(cond->m_elseBranch, blockBelowCond);
+						m_goto.emplace_back(condBlock->m_elseBranch, blockBelowCond);
 					}
 				}
 				else {
-					blockList->addBlock(new Block(curDecBlock));
+					blockList->addBlock(new CodeBlock(curDecBlock));
 					nextBlock = curDecBlock->getNextBlock();
 				}
 
+				// mark as used
 				if (curDecBlock) {
 					usedDecBlocks.insert(curDecBlock);
 				}
+				// go to next block
 				curDecBlock = nextBlock;
 			}
 
