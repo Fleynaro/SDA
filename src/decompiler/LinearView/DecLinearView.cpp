@@ -47,12 +47,12 @@ GotoType BlockList::getGotoType() {
 		return GotoType::None;
 	if (const auto whileCycle = getWhileCycle()) {
 		if (m_goto->m_linearLevel >= m_maxLinearLevel) {
-			if (m_goto->m_backOrderId == whileCycle->m_backOrderId - 1)
+			if (m_goto->m_backOrderId == whileCycle->m_enterBackOrderId)
 				return GotoType::Break;
 		}
 		else {
 			if (m_goto == whileCycle->getFirstBlock()) {
-				if(m_backOrderId == whileCycle->m_backOrderId - 1)
+				if(m_backOrderId == whileCycle->m_enterBackOrderId)
 					return GotoType::None;
 				return GotoType::Continue;
 			}

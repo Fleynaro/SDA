@@ -76,7 +76,7 @@ namespace CE::Decompiler::LinearView
 		std::list<std::pair<BlockList*, DecBlock*>> m_goto;
 		BlockList* m_blockList;
 
-		void convert(BlockList* blockList, DecBlock* decBlock, std::set<DecBlock*>& usedDecBlocks, std::set<DecBlock*>& createdCycleDecBlocks) {
+		void convert(BlockList* const blockList, DecBlock* const decBlock, std::set<DecBlock*>& usedDecBlocks, std::set<DecBlock*>& createdCycleDecBlocks) {
 			// need for filling it with new dec. blocks they have to be visited in the next recursive call
 			std::list<std::pair<BlockList*, DecBlock*>> nextDecBlocksToFillBlockLists;
 			
@@ -164,7 +164,7 @@ namespace CE::Decompiler::LinearView
 						}
 					}
 
-					const auto condBlock = new ConditionBlock(decBlock->getJumpTopNode());
+					const auto condBlock = new ConditionBlock(curDecBlock->getJumpTopNode());
 					blockList->addBlock(new CodeBlock(curDecBlock));
 					blockList->addBlock(condBlock);
 					if (nextBlock) {

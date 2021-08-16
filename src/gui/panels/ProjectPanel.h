@@ -192,6 +192,8 @@ namespace GUI
 						const auto panel = new DebuggerAttachProcessPanel(m_project);
 						panel->selectProcessEventHandler([&, panel]()
 							{
+								delete m_emulator;
+								m_emulator = nullptr;
 								m_debugger = new Debugger(m_project, panel->m_debugSession, panel->m_selectedParentAddrSpace);
 								m_debugger->m_emulator->locationHandler([&](uint64_t delta)
 									{

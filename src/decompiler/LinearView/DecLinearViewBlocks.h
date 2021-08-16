@@ -138,6 +138,7 @@ namespace CE::Decompiler::LinearView
 		ExprTree::AbstractCondition* m_cond;
 		DecBlock::JumpTopNode* m_jmpTopNode;
 		bool m_isDoWhileCycle;
+		int m_enterBackOrderId = 0; // set when entering the cycle
 
 		WhileCycleBlock(DecBlock::JumpTopNode* jmpTopNode, bool isDoWhileCycle = false)
 			: m_jmpTopNode(jmpTopNode), m_isDoWhileCycle(isDoWhileCycle)

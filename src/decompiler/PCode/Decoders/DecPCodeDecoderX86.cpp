@@ -959,13 +959,6 @@ void DecoderX86::translateCurInstruction() {
 			auto offset = getJumpOffsetToNextInstr();
 			addMicroInstruction(InstructionId::STORE, varnodeRsp, m_instrPool->createConstantVarnode((uint64_t&)offset, 0x8));
 			}*/
-			if (auto varnodeConst = dynamic_cast<ConstantVarnode*>(varnodeInput0)) {
-				varnodeConst->m_value = static_cast<int64_t>((int)(varnodeConst->m_value >> 8)) + m_curInstr->length;
-				auto varnodeRip = CreateVarnode(ZYDIS_REGISTER_RIP, 0x8);
-				auto varnodeDst = m_instrPool->createSymbolVarnode(0x8);
-				addMicroInstruction(InstructionId::INT_ADD, varnodeRip, varnodeConst, varnodeDst);
-				varnodeInput0 = varnodeDst;
-			}
 			addMicroInstruction(InstructionId::CALL, varnodeInput0, nullptr);
 		}
 		break;
@@ -1216,7 +1209,7 @@ Varnode* DecoderX86::getJumpOffsetByOperand(const ZydisDecodedOperand& operand) 
 	if (operand.type != ZYDIS_OPERAND_TYPE_IMMEDIATE)
 		return requestOperandValue(operand, operand.size / 0x8);
 	const auto jmpOffset = static_cast<int>(operand.imm.value.s);
-	return m_instrPool->createConstantVarnode(getJumpOffset(jmpOffset), 0x8);
+	return m_instrPool->createConstantVarnode(getJumpOffset(jmpOffset), 0x8, true);
 }
 
 uint64_t DecoderX86::getJumpOffset(int jmpOffset) const

@@ -113,6 +113,11 @@ void GUI::DecompiledCodeViewerPanel::renderMenuBar() {
 		if (ImGui::MenuItem("Show Comments", nullptr, m_decompiledCodeViewer->m_show.DebugComments)) {
 			m_decompiledCodeViewer->m_show.DebugComments ^= true;
 		}
+		if (m_decompiledCodeViewer->m_show.DebugComments) {
+			if (ImGui::MenuItem("Show All Goto", nullptr, m_decompiledCodeViewer->m_show.DebugAllGoto)) {
+				m_decompiledCodeViewer->m_show.DebugAllGoto ^= true;
+			}
+		}
 		ImGui::PopItemFlag();
 		ImGui::EndMenu();
 	}

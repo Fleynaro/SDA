@@ -7,7 +7,6 @@ namespace CE::Decompiler
 {
 	class AbstractPrimaryDecompiler
 	{
-		friend struct RegisterExecContext;
 	protected:
 		struct DecompiledBlockInfo {
 			PCodeBlock* m_pcodeBlock = nullptr;
@@ -21,8 +20,8 @@ namespace CE::Decompiler
 	private:
 		AbstractRegisterFactory* m_registerFactory;
 		int m_loopsCount = 0;
-		Symbol::RegisterVariable* m_stackPointerSymbol = nullptr;
-		Symbol::RegisterVariable* m_instrPointerSymbol = nullptr;
+		Symbol::Symbol* m_stackPointerSymbol = nullptr;
+		Symbol::Symbol* m_instrPointerSymbol = nullptr;
 		std::map<ComplexOffset, int> m_stackPointerValues;
 
 	public:
@@ -51,6 +50,10 @@ namespace CE::Decompiler
 
 		// called when a function call appears during decompiling
 		FunctionCallInfo requestFunctionCallInfo(ExecContext* ctx, Instruction* instr);
+
+		Symbol::Symbol* getStackPointerSymbol();
+
+		Symbol::Symbol* getInstrPointerSymbol();
 
 	protected:
 		// called when a function call appears during decompiling

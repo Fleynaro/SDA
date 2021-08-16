@@ -660,7 +660,7 @@ namespace CE::Decompiler
 		{}
 
 		void setMinInfoToShow() {
-			m_SHOW_ALL_GOTO = true;
+			m_SHOW_ALL_GOTO = false;
 			m_SHOW_LINEAR_LEVEL_EXT = false;
 		}
 
@@ -734,11 +734,15 @@ namespace CE::Decompiler
 			const auto levelInfo = "backOrderId: " + std::to_string(block->m_backOrderId) + ", linearLevel: " + std::to_string(block->m_linearLevel);
 			if (const auto codeBlock = dynamic_cast<LinearView::CodeBlock*>(block)) {
 				const auto decBlock = codeBlock->m_decBlock;
-				comment = "//block " + decBlock->m_pcodeBlock->getName() + " (level: " + std::to_string(decBlock->m_level) +
-					", maxHeight: " + std::to_string(decBlock->m_maxHeight) + ", " + levelInfo + ", refCount: " +
+				comment = "//code block " + decBlock->m_pcodeBlock->getName() + " (" + levelInfo + ", level: " + std::to_string(decBlock->m_level) +
+					", maxHeight: " + std::to_string(decBlock->m_maxHeight) + ", refCount: " +
 					std::to_string(decBlock->getRefBlocksCount()) + ")";
-			} else {
-				comment = "//block (" + levelInfo + ")";
+			}
+			else if (const auto whileCycleBlock = dynamic_cast<LinearView::WhileCycleBlock*>(block)) {
+				comment = "//while block (enterBackOrderId: " + std::to_string(whileCycleBlock->m_enterBackOrderId) + ", " + levelInfo + ")";
+			}
+			else {
+				comment = "//condition block (" + levelInfo + ")";
 			}
 			generateTabs();
 			generateToken(comment, TOKEN_COMMENT);

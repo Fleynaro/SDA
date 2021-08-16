@@ -98,12 +98,12 @@ void FunctionSignature::updateParameterStorages() {
 			const auto paramType = m_parameters[i]->getDataType();
 			if (paramIdx >= 1 && paramIdx <= 4) {
 				static std::map<int, std::pair<PCode::RegisterId, PCode::RegisterId>> paramToReg = {
-							std::pair(1, std::pair(ZYDIS_REGISTER_RCX, ZYDIS_REGISTER_ZMM0)),
-							std::pair(2, std::pair(ZYDIS_REGISTER_RDX, ZYDIS_REGISTER_ZMM1)),
-							std::pair(3, std::pair(ZYDIS_REGISTER_R8, ZYDIS_REGISTER_ZMM2)),
-							std::pair(4, std::pair(ZYDIS_REGISTER_R9, ZYDIS_REGISTER_ZMM3))
+							std::pair(1, std::pair(ZYDIS_REGISTER_RCX, ZYDIS_REGISTER_XMM0)), //todo: replace xmm -> zmm
+							std::pair(2, std::pair(ZYDIS_REGISTER_RDX, ZYDIS_REGISTER_XMM1)),
+							std::pair(3, std::pair(ZYDIS_REGISTER_R8, ZYDIS_REGISTER_XMM2)),
+							std::pair(4, std::pair(ZYDIS_REGISTER_R9, ZYDIS_REGISTER_XMM3))
 				};
-				auto it = paramToReg.find(paramIdx);
+				const auto it = paramToReg.find(paramIdx);
 				if (it != paramToReg.end()) {
 					auto& reg = it->second;
 					const auto regId = !paramType->isFloatingPoint() ? reg.first : reg.second;
@@ -122,7 +122,7 @@ void FunctionSignature::updateParameterStorages() {
 		//return
 		const auto retType = getReturnType();
 		if (retType->getSize() != 0x0) {
-			const auto regId = !retType->isFloatingPoint() ? ZYDIS_REGISTER_RAX : ZYDIS_REGISTER_ZMM0;
+			const auto regId = !retType->isFloatingPoint() ? ZYDIS_REGISTER_RAX : ZYDIS_REGISTER_XMM0;
 			const auto storage = Storage(Storage::STORAGE_REGISTER, regId, 0x0);
 			m_paramInfos.emplace_back(0, retType->getSize(), storage);
 		}

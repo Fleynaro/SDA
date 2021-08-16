@@ -653,6 +653,7 @@ namespace GUI
 			bool PCode = false;
 			bool ExecCtxs = false;
 			bool DebugComments = true;
+			bool DebugAllGoto = false;
 		} m_show;
 		CE::Function* m_clickedFunction = nullptr;
 		CE::Symbol::GlobalVarSymbol* m_clickedGlobalVar = nullptr;
@@ -692,6 +693,7 @@ namespace GUI
 			CodeGenerator::ExprTreeGenerator exprTreeGenerator;
 			CodeGenerator generator(&exprTreeGenerator, this);
 			generator.m_SHOW_ALL_COMMENTS = m_show.DebugComments;
+			generator.m_SHOW_ALL_GOTO = m_show.DebugAllGoto;
 			generator.generateEndLine();
 			generator.generate(m_blockList);
 		}
@@ -789,6 +791,7 @@ namespace GUI
 				CodeGenerator::ExprTreeGenerator exprTreeGenerator;
 				CodeGenerator generator(&exprTreeGenerator, this);
 				generator.m_SHOW_ALL_COMMENTS = m_show.DebugComments;
+				generator.m_SHOW_ALL_GOTO = m_show.DebugAllGoto;
 
 				// function signature
 				generator.generateEndLine();

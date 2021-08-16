@@ -174,7 +174,7 @@ void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, Fu
 
 		// create a new block
 		if (Instruction::IsBranching(instr->m_id)) {
-			ComplexOffset targetOffset;
+			ComplexOffset targetOffset = InvalidOffset;
 			if (const auto varnodeConst = dynamic_cast<ConstantVarnode*>(instr->m_input0)) {
 				// if this input contains hardcoded constant
 				targetOffset = varnodeConst->m_value;

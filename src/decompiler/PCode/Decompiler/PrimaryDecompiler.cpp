@@ -62,11 +62,32 @@ AbstractRegisterFactory* AbstractPrimaryDecompiler::getRegisterFactory() const
 
 FunctionCallInfo AbstractPrimaryDecompiler::requestFunctionCallInfo(ExecContext* ctx, Instruction* instr) {
 	int funcOffset = -1;
-	auto& constValues = m_decompiledGraph->getFuncGraph()->getConstValues();
-	const auto it = constValues.find(instr);
-	if (it != constValues.end())
-		funcOffset = static_cast<int>(it->second);
+	if (const auto constVarnode = dynamic_cast<ConstantVarnode*>(instr->m_input0)) {
+		funcOffset = static_cast<int>(constVarnode->m_value >> 8);
+	}
+	else {
+		const auto& constValues = m_decompiledGraph->getFuncGraph()->getConstValues();
+		const auto it = constValues.find(instr);
+		if (it != constValues.end())
+			funcOffset = static_cast<int>(it->second);
+	}
 	return requestFunctionCallInfo(ctx, instr, funcOffset);
+}
+
+Symbol::Symbol* AbstractPrimaryDecompiler::getStackPointerSymbol() {
+	if (!m_stackPointerSymbol) {
+		m_stackPointerSymbol = new Symbol::RegisterVariable(m_registerFactory->createStackPointerRegister());
+		m_decompiledGraph->addSymbol(m_stackPointerSymbol);
+	}
+	return m_stackPointerSymbol;
+}
+
+Symbol::Symbol* AbstractPrimaryDecompiler::getInstrPointerSymbol() {
+	if (!m_instrPointerSymbol) {
+		m_instrPointerSymbol = new Symbol::RegisterVariable(m_registerFactory->createInstructionPointerRegister());
+		m_decompiledGraph->addSymbol(m_instrPointerSymbol);
+	}
+	return m_instrPointerSymbol;
 }
 
 void AbstractPrimaryDecompiler::interpreteGraph(PCodeBlock* pcodeBlock, int versionOfDecompiling) {

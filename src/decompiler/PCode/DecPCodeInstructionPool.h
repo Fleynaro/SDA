@@ -23,7 +23,7 @@ namespace CE::Decompiler::PCode
 
 		RegisterVarnode* createRegisterVarnode(Register reg);
 
-		ConstantVarnode* createConstantVarnode(uint64_t value, int size);
+		ConstantVarnode* createConstantVarnode(uint64_t value, int size, bool isAddr = false);
 
 		SymbolVarnode* createSymbolVarnode(int size);
 

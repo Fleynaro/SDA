@@ -29,6 +29,9 @@ namespace CE::Decompiler::LinearView
 			 *	}
 			 *	i++; // label
 			 * }
+			 *
+			 * as hasGoto is called here, the blockList must have linearLevel and backOrderId are set - it's ok.
+			 * it's also important OptimizeBlockOrderBlockList is called before CalculateBackOrderIdsForBlockList!
 			 */
 			orderId++;
 		}
@@ -42,6 +45,11 @@ namespace CE::Decompiler::LinearView
 				}
 			}
 			else {
+				const auto whileCycleBlock = dynamic_cast<WhileCycleBlock*>(block);
+				if (whileCycleBlock) {
+					whileCycleBlock->m_enterBackOrderId = orderId;
+				}
+				
 				auto maxOrderId = orderId;
 				for (const auto nextBlockList : block->getBlockLists()) {
 					nextBlockList->m_backOrderId = orderId;
@@ -52,10 +60,8 @@ namespace CE::Decompiler::LinearView
 				}
 				orderId = maxOrderId + 1;
 				// exception for do-while cycle
-				if(const auto whileBlock = dynamic_cast<WhileCycleBlock*>(block)) {
-					if (whileBlock->m_isDoWhileCycle) {
-						orderId = maxOrderId;
-					}
+				if(whileCycleBlock && whileCycleBlock->m_isDoWhileCycle) {
+					orderId = maxOrderId;
 				}
 			}
 			block->m_backOrderId = orderId;

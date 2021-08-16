@@ -102,11 +102,12 @@ namespace CE::Decompiler::PCode
 	public:
 		uint64_t m_value;
 		int m_size;
+		bool m_isAddr;
 
 		ConstantVarnode() = default;
 
-		ConstantVarnode(uint64_t value, int size)
-			: m_value(value), m_size(size)
+		ConstantVarnode(uint64_t value, int size, bool isAddr)
+			: m_value(value), m_size(size), m_isAddr(isAddr)
 		{}
 
 		int getSize() override;
@@ -303,7 +304,7 @@ namespace CE::Decompiler::PCode
 				generateToken(symbolName, TOKEN_VARIABLE);
 			}
 			else if (const auto constVarnode = dynamic_cast<ConstantVarnode*>(varnode)) {
-				const auto number = Helper::String::NumberToHex(constVarnode->m_value) + ":" + std::to_string(constVarnode->getSize());
+				const auto number = Helper::String::NumberToHex(constVarnode->m_value) + ":" + (constVarnode->m_isAddr ? "addr" : std::to_string(constVarnode->getSize()));
 				generateToken(number, TOKEN_NUMBER);
 			}
 		}

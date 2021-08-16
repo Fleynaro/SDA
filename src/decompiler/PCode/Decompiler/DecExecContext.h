@@ -52,6 +52,8 @@ namespace CE::Decompiler
 
 		void join(RegisterExecContext* ctx);
 
+		
+
 	private:
 		std::list<RegisterPart> findRegisterParts(int regId, BitMask64& needReadMask);
 
@@ -69,12 +71,13 @@ namespace CE::Decompiler
 	{
 		std::map<SymbolVarnode*, TopNode*> m_symbolVarnodes;
 	public:
+		AbstractPrimaryDecompiler* m_decompiler;
 		RegisterExecContext m_startRegisterExecCtx; // state before decompiling
 		RegisterExecContext m_registerExecCtx; // state during decompiling and after
 		PCodeBlock* m_pcodeBlock; // need as a key only
 
 		ExecContext(AbstractPrimaryDecompiler* decompiler, PCodeBlock* pcodeBlock = nullptr)
-			: m_startRegisterExecCtx(decompiler, this), m_registerExecCtx(m_startRegisterExecCtx), m_pcodeBlock(pcodeBlock)
+			: m_decompiler(decompiler), m_startRegisterExecCtx(decompiler, this), m_registerExecCtx(m_startRegisterExecCtx), m_pcodeBlock(pcodeBlock)
 		{}
 
 		~ExecContext();

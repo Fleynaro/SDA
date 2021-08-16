@@ -9,8 +9,8 @@ RegisterVarnode* InstructionPool::createRegisterVarnode(Register reg) {
 	return &*m_registerVarnodes.rbegin();
 }
 
-ConstantVarnode* InstructionPool::createConstantVarnode(uint64_t value, int size) {
-	m_constantVarnodes.emplace_back(value, size);
+ConstantVarnode* InstructionPool::createConstantVarnode(uint64_t value, int size, bool isAddr) {
+	m_constantVarnodes.emplace_back(value, size, isAddr);
 	return &*m_constantVarnodes.rbegin();
 }
 

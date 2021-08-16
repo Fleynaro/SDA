@@ -13,15 +13,11 @@ void RegisterExecContext::clear() {
 
 ExprTree::INode* RegisterExecContext::requestRegister(const Register& reg) {
 	if(reg.getType() == Register::Type::StackPointer) {
-		if (!m_decompiler->m_stackPointerSymbol)
-			m_decompiler->m_stackPointerSymbol = new Symbol::RegisterVariable(reg);
-		const auto symbolLeaf = new ExprTree::SymbolLeaf(m_decompiler->m_stackPointerSymbol);
+		const auto symbolLeaf = new ExprTree::SymbolLeaf(m_decompiler->getStackPointerSymbol());
 		return new ExprTree::OperationalNode(symbolLeaf, new ExprTree::NumberLeaf(m_stackPointerValue, 0x8), ExprTree::Add);
 	}
 	if (reg.getType() == Register::Type::InstructionPointer) {
-		if (!m_decompiler->m_instrPointerSymbol)
-			m_decompiler->m_instrPointerSymbol = new Symbol::RegisterVariable(reg);
-		const auto symbolLeaf = new ExprTree::SymbolLeaf(m_decompiler->m_instrPointerSymbol);
+		const auto symbolLeaf = new ExprTree::SymbolLeaf(m_decompiler->getInstrPointerSymbol());
 		return new ExprTree::OperationalNode(symbolLeaf, new ExprTree::NumberLeaf(m_instrPointerValue, 0x8), ExprTree::Add);
 	}
 	
@@ -361,8 +357,19 @@ ExprTree::INode* ExecContext::requestVarnode(Varnode* varnode) {
 			return topNode->getNode();
 		}
 	}
-	if (auto varnodeConstant = dynamic_cast<ConstantVarnode*>(varnode)) {
-		return new ExprTree::NumberLeaf(varnodeConstant->m_value, varnodeConstant->getMask().getSize());
+	if (const auto varnodeConstant = dynamic_cast<ConstantVarnode*>(varnode)) {
+		auto value = varnodeConstant->m_value;
+		if (varnodeConstant->m_isAddr)
+			value = static_cast<int64_t>(static_cast<int>(value >> 8));
+		
+		const auto numberLeaf = new ExprTree::NumberLeaf(value, varnodeConstant->getMask().getSize());
+		
+		if(varnodeConstant->m_isAddr) {
+			// for CALL instruction with constant complex offset
+			const auto symbolLeaf = new ExprTree::SymbolLeaf(m_decompiler->getInstrPointerSymbol());
+			return new ExprTree::OperationalNode(symbolLeaf, numberLeaf, ExprTree::Add);
+		}
+		return numberLeaf;
 	}
 	return nullptr;
 }
