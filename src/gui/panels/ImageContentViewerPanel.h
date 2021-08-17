@@ -294,9 +294,10 @@ namespace GUI
 		public:
 			CodeSectionController* m_codeSectionController;
 			AbstractInstructionViewDecoder* m_instructionViewDecoder;
-			CE::Decompiler::FunctionPCodeGraph* m_curFuncPCodeGraph = nullptr;
+			CE::Decompiler::FunctionPCodeGraph* m_selectedFuncPCodeGraph = nullptr;
 			bool m_obscureUnknownLocation = true;
 			std::list<CodeSectionRow> m_selectedRows;
+			bool m_pcodeGraphChanged = false;
 			CE::Decompiler::PCodeBlock* m_clickedPCodeBlock = nullptr;
 			
 			CodeSectionViewer(ProjectPanel* projectPanel, CodeSectionController* codeSectionController, AbstractInstructionViewDecoder* instructionViewDecoder)
@@ -422,7 +423,7 @@ namespace GUI
 			m_imageSectionViewer->goToOffset(offset);
 		}
 
-		void decompile(CE::Decompiler::FunctionPCodeGraph* functionPCodeGraph, bool updateDebug = true);
+		void decompile(CE::Decompiler::FunctionPCodeGraph* functionPCodeGraph);
 
 	private:
 		void renderPanel() override {
@@ -441,7 +442,7 @@ namespace GUI
 		void selectImageSection(const CE::ImageSection* imageSection);
 
 		// e.g. if rows were selected
-		void processSectionViewerEvents() const;
+		void processSectionViewerEvents();
 
 		// e.g. if a symbol was renamed
 		void processDecompiledCodeViewerEvents();

@@ -78,8 +78,8 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::RowContextPanel::renderPan
 
 void GUI::ImageContentViewerPanel::CodeSectionViewer::renderControl() {
 	m_shownJmps.clear();
-	m_curFuncPCodeGraph = nullptr;
 	m_clickedPCodeBlock = nullptr;
+	m_pcodeGraphChanged = false;
 
 	if (Button::StdButton("go to func").present()) {
 		goToOffset(0x20c80);
@@ -140,7 +140,8 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::renderControl() {
 						    : selRow.m_byteOffset == codeSectionRow.m_byteOffset) {
 						// select func. graph
 						if (selRowIdx == 0 && pcodeBlock) {
-							m_curFuncPCodeGraph = pcodeBlock->m_funcPCodeGraph;
+							m_pcodeGraphChanged = m_selectedFuncPCodeGraph != pcodeBlock->m_funcPCodeGraph;
+							m_selectedFuncPCodeGraph = pcodeBlock->m_funcPCodeGraph;
 						}
 						m_selectCurRow = true;
 						break;
@@ -197,7 +198,12 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::renderControl() {
 			}
 		}
 
+		// select and scroll
+		if(m_scrollToRowIdx != -1) {
+			m_selectedRows = { m_codeSectionController->getRow(m_scrollToRowIdx) };
+		}
 		scroll();
+		
 		ImGui::EndTable();
 	}
 	ImGui::EndChild();
@@ -352,7 +358,7 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::drawJmpLine(const int rowI
 	ImGui::RenderArrow(window->DrawList, arrowPos, lineColor, ImGuiDir_Right, 0.7f);
 }
 
-void GUI::ImageContentViewerPanel::decompile(CE::Decompiler::FunctionPCodeGraph* functionPCodeGraph, bool updateDebug) {
+void GUI::ImageContentViewerPanel::decompile(CE::Decompiler::FunctionPCodeGraph* functionPCodeGraph) {
 	using namespace CE::Decompiler;
 
 	RegisterFactoryX86 registerFactoryX86;
@@ -481,10 +487,8 @@ void GUI::ImageContentViewerPanel::decompile(CE::Decompiler::FunctionPCodeGraph*
 			delete m_decompiledCodeViewerWindow;
 			m_decompiledCodeViewerWindow = panel->createStdWindow();
 
-			if (updateDebug) {
-				if (m_projectPanel->getEmulator()) {
-					m_projectPanel->locationHandler();
-				}
+			if (const auto emulator = m_projectPanel->getEmulator()) {
+				emulator->updateByDecGraph(decCodeGraph);
 			}
 		}
 	}
@@ -509,10 +513,10 @@ void GUI::ImageContentViewerPanel::renderMenuBar() {
 
 	if (codeSectionViewer) {
 		if (ImGui::BeginMenu("Debug")) {
-			if (codeSectionViewer->m_curFuncPCodeGraph) {
+			if (codeSectionViewer->m_selectedFuncPCodeGraph) {
 				if (ImGui::MenuItem("Start Emulator")) {
 					m_projectPanel->createEmulator(
-						m_imageDec, codeSectionViewer->m_curFuncPCodeGraph->getStartBlock()->getMinOffset(),
+						m_imageDec, codeSectionViewer->m_selectedFuncPCodeGraph->getStartBlock()->getMinOffset(),
 						PCodeEmulator::PCodeStepWidth::STEP_ORIGINAL_INSTR);
 				}
 			}
@@ -522,10 +526,10 @@ void GUI::ImageContentViewerPanel::renderMenuBar() {
 			ImGui::EndMenu();
 		}
 
-		if (codeSectionViewer->m_curFuncPCodeGraph) {
+		if (codeSectionViewer->m_selectedFuncPCodeGraph) {
 			if (ImGui::BeginMenu("Decompiler")) {
 				if (ImGui::MenuItem("Decompile")) {
-					decompile(codeSectionViewer->m_curFuncPCodeGraph);
+					decompile(codeSectionViewer->m_selectedFuncPCodeGraph);
 				}
 
 				ImGui::PushItemFlag(ImGuiItemFlags_SelectableDontClosePopup, true);
@@ -623,17 +627,17 @@ void GUI::ImageContentViewerPanel::renderMenuBar() {
 				codeSectionViewer->m_codeSectionController->m_showPCode ^= true;
 				codeSectionViewer->m_codeSectionController->update();
 			}
-			if (codeSectionViewer->m_curFuncPCodeGraph) {
+			if (codeSectionViewer->m_selectedFuncPCodeGraph) {
 				if (ImGui::MenuItem("Show function graph", nullptr)) {
 					if (!m_funcGraphViewerWindow) {
 						auto funcGraphViewerPanel = new FuncGraphViewerPanel(m_imageDec, new InstructionViewDecoderX86);
-						funcGraphViewerPanel->setFuncGraph(codeSectionViewer->m_curFuncPCodeGraph);
+						funcGraphViewerPanel->setFuncGraph(codeSectionViewer->m_selectedFuncPCodeGraph);
 						m_funcGraphViewerWindow = funcGraphViewerPanel->createStdWindow();
 					}
 					else {
 						if (auto funcGraphViewerPanel = dynamic_cast<FuncGraphViewerPanel*>(m_funcGraphViewerWindow->
 							getPanel())) {
-							funcGraphViewerPanel->setFuncGraph(codeSectionViewer->m_curFuncPCodeGraph);
+							funcGraphViewerPanel->setFuncGraph(codeSectionViewer->m_selectedFuncPCodeGraph);
 						}
 					}
 				}
@@ -671,7 +675,7 @@ void GUI::ImageContentViewerPanel::selectImageSection(const CE::ImageSection* im
 	}
 }
 
-void GUI::ImageContentViewerPanel::processSectionViewerEvents() const {
+void GUI::ImageContentViewerPanel::processSectionViewerEvents() {
 	if (const auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer)) {
 		const auto decCodeViewerPanel = m_decompiledCodeViewerWindow
 			                                ? dynamic_cast<DecompiledCodeViewerPanel*>(m_decompiledCodeViewerWindow->
@@ -680,6 +684,11 @@ void GUI::ImageContentViewerPanel::processSectionViewerEvents() const {
 		if (decCodeViewerPanel) {
 			auto& instrs = decCodeViewerPanel->m_decompiledCodeViewer->m_selectedCodeByInstr;
 
+			// select row that new function graph is on
+			if(codeSectionViewer->m_pcodeGraphChanged) {
+				decompile(codeSectionViewer->m_selectedFuncPCodeGraph);
+				return;
+			}
 			// select block list by instruction selection
 			if (codeSectionViewer->m_clickedPCodeBlock && m_curDecGraph) {
 				CE::Decompiler::DecBlock* selDecBlock = nullptr;
@@ -724,10 +733,11 @@ void GUI::ImageContentViewerPanel::processDecompiledCodeViewerEvents() {
 
 	if (const auto decCodeViewerPanel = dynamic_cast<DecompiledCodeViewerPanel*>(m_decompiledCodeViewerWindow->
 		getPanel())) {
+
 		if (const auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer)) {
 			// symbol was changed
 			if (decCodeViewerPanel->m_decompiledCodeViewer->m_codeChanged) {
-				decompile(codeSectionViewer->m_curFuncPCodeGraph);
+				decompile(codeSectionViewer->m_selectedFuncPCodeGraph);
 				return;
 			}
 			// select instructions by code selection
@@ -742,16 +752,15 @@ void GUI::ImageContentViewerPanel::processDecompiledCodeViewerEvents() {
 		// click function
 		if (const auto function = decCodeViewerPanel->m_decompiledCodeViewer->m_clickedFunction) {
 			goToOffset(function->getOffset());
-			decCodeViewerPanel->m_decompiledCodeViewer->m_codeChanged = true;
 		}
-			// click global var
+		// click global var
 		else if (const auto globalVar = decCodeViewerPanel->m_decompiledCodeViewer->m_clickedGlobalVar) {
 			goToOffset(globalVar->getOffset());
 		}
-			// start debug
+		// start debug
 		else if (decCodeViewerPanel->m_startDebug) {
 			m_projectPanel->createEmulator(m_imageDec, m_curDecGraph->getStartBlock()->m_pcodeBlock->getMinOffset(),
-			                               PCodeEmulator::PCodeStepWidth::STEP_CODE_LINE);
+				PCodeEmulator::PCodeStepWidth::STEP_CODE_LINE);
 		}
 	}
 }

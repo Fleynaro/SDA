@@ -344,7 +344,7 @@ void CE::DecTestSamplesPool::fillByTests() {
 			entity->getFields().addField(0, "vtable", GetUnit(vtable, "[1]"));
 			entity->getFields().addField(8, "type", GetUnit(EntityTypeEnum));
 			entity->getFields().addField(96, "matrix", GetUnit(m_matrix4x4));
-			sample->m_symbolCtx.m_funcBodySymbolTable->addSymbol(symFactory.createLocalInstrVarSymbol(GetUnit(entity, "[1]"), "entity"), 17153);
+			sample->m_symbolCtx.m_funcBodySymbolTable->addSymbol(symFactory.createLocalInstrVarSymbol(GetUnit(entity, "[1]"), "entity"), 17152);
 		}
 
 		sig = sample->createFunc(0xfffffffffffdd064, "GetEntity")->getSignature();

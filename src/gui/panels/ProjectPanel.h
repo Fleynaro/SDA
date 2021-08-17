@@ -88,12 +88,19 @@ namespace GUI
 			return m_emulator;
 		}
 
+		CE::Decompiler::FunctionPCodeGraph* m_prevFuncPCodeGraph = nullptr;
 		void locationHandler(uint64_t delta = 0) {
-			const auto isNewLocation = delta > 100;
 			const auto emulator = getEmulator();
 			const auto imageDec = emulator->m_imageDec;
 			if (!imageDec)
 				return;
+
+			auto isNewLocation = delta > 100;
+			if(emulator->m_curPCodeBlock) {
+				const auto newFuncGraph = emulator->m_curPCodeBlock->m_funcPCodeGraph;
+				isNewLocation |= m_prevFuncPCodeGraph != newFuncGraph;
+				m_prevFuncPCodeGraph = newFuncGraph;
+			}
 			if (isNewLocation) {
 				selectImage(imageDec, false);
 			}
@@ -108,26 +115,12 @@ namespace GUI
 			if (isNewLocation) {
 				try {
 					panel->goToOffset(emulator->m_offset.getByteOffset());
-				} catch(WarningException&) {
-					return;
-				}
-				
-				if (emulator->m_stepWidth == PCodeEmulator::PCodeStepWidth::STEP_CODE_LINE) {
-					if (emulator->m_curPCodeBlock) {
-						if (!panel->m_curDecGraph || emulator->m_curPCodeBlock->m_funcPCodeGraph != panel->m_curDecGraph->getFuncGraph()) {
-							panel->decompile(emulator->m_curPCodeBlock->m_funcPCodeGraph, false);
-						}
-					}
-				}
-				else {
-					emulator->m_curBlockTopNode = nullptr;
-				}
+				} catch(WarningException&) {}
+				return;
 			}
 
-			if (panel->m_curDecGraph && emulator->m_curInstr) {
-				const auto instrOffset = emulator->m_curInstr->getOffset();
-				emulator->m_curBlockTopNode = panel->m_curDecGraph->findBlockTopNodeAtOffset(instrOffset);
-				emulator->m_stackPointerValue = panel->m_curDecGraph->getStackPointerValueAtOffset(instrOffset);
+			if (panel->m_curDecGraph) {
+				emulator->updateByDecGraph(panel->m_curDecGraph);
 			}
 		}
 

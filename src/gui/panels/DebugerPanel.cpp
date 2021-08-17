@@ -1,6 +1,15 @@
 #include "Windows.h" // windows (for keys VK_F5, ...)
 #include "DebugerPanel.h"
+#include "decompiler/Graph/DecCodeGraph.h"
 
+
+void GUI::PCodeEmulator::updateByDecGraph(CE::Decompiler::DecompiledCodeGraph* decGraph) {
+	if (m_curInstr) {
+		const auto instrOffset = m_curInstr->getOffset();
+		m_curBlockTopNode = decGraph->findBlockTopNodeAtOffset(instrOffset);
+		m_stackPointerValue = decGraph->getStackPointerValueAtOffset(instrOffset);
+	}
+}
 
 void GUI::PCodeEmulator::renderControl() {
 	if (isWorking()) {

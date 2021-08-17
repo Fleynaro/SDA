@@ -749,6 +749,8 @@ namespace GUI
 			return true;
 		}
 
+		void updateByDecGraph(CE::Decompiler::DecompiledCodeGraph* decGraph);
+
 		void createValueViewer(const CE::Decompiler::StoragePath& storagePath, const std::string& name, CE::DataTypePtr dataType) {
 			ValueViewerPanel::Location location;
 			if (!getMemLocation(storagePath, location))

@@ -524,13 +524,13 @@ void CE::Decompiler::PCode::VirtualMachine::executeTruncation() {
 }
 
 CE::Decompiler::PCode::DataValue CE::Decompiler::PCode::VirtualMachine::getValue(Varnode* varnode) const {
-	DataValue value;
+	DataValue value = 0;
 	if (!m_execCtx->getValue(varnode, value)) {
 		if (m_throwException) {
 			throw VmException("data not found");
 		}
-		// be default
-		m_execCtx->setValue(varnode, 0);
+		// value by default
+		m_execCtx->setValue(varnode, value);
 	}
 	return value;
 }
