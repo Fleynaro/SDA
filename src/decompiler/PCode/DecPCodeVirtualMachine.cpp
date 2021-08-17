@@ -29,7 +29,7 @@ bool CE::Decompiler::PCode::VmExecutionContext::getValue(Varnode* varnode, DataV
 		const auto& reg = varnodeRegister->m_register;
 		const auto it = m_registers.find(reg.getId());
 		if (it != m_registers.end()) {
-			const auto regValue = it->second & GetValueRangeMaskWithException(reg).getValue();
+			const auto regValue = it->second & reg.m_valueRangeMask.getValue();
 			value = regValue >> reg.m_valueRangeMask.getOffset();
 			return true;
 		}
@@ -165,6 +165,47 @@ void CE::Decompiler::PCode::VirtualMachine::executeDataMoving() {
 	}
 }
 
+template<typename T>
+T IntegerSDiv(T a, T b) {
+	return a / b;
+}
+
+template<typename T>
+T IntegerSRem(T a, T b) {
+	return a % b;
+}
+
+// checks for signed addition overflow
+template<typename T>
+bool IntegerSCarry(T a, T b) {
+	if (a >= 0) {
+		if (b > std::numeric_limits<T>::max() - a)
+			return true;
+	}
+	else {
+		if (b < std::numeric_limits<T>::min() - a)
+			return true;
+	}
+	return false;
+}
+
+// checks for signed subtraction overflow
+template<typename T>
+bool IntegerSBorrow(T a, T b) {
+	const auto result = a - b;
+	return (result < a) != (b > 0);
+}
+
+template<typename T>
+bool IntegerSLess(T a, T b) {
+	return a < b;
+}
+
+template<typename T>
+bool IntegerSLessEqual(T a, T b) {
+	return a <= b;
+}
+
 void CE::Decompiler::PCode::VirtualMachine::executeArithmetic() {
 	switch (m_instr->m_id) {
 	case InstructionId::INT_2COMP: {
@@ -190,8 +231,24 @@ void CE::Decompiler::PCode::VirtualMachine::executeArithmetic() {
 		break;
 	}
 	case InstructionId::INT_SDIV: {
-		if (m_op2 != 0)
-			m_result = (int64_t&)m_op1 / (int64_t&)m_op2;
+		if (m_op2 != 0) {
+			const auto size = m_instr->m_input0->getSize();
+			switch (size)
+			{
+			case 1:
+				(int8_t&)m_result = IntegerSDiv((int8_t&)m_op1, (int8_t&)m_op2);
+				break;
+			case 2:
+				(int16_t&)m_result = IntegerSDiv((int16_t&)m_op1, (int16_t&)m_op2);
+				break;
+			case 4:
+				(int32_t&)m_result = IntegerSDiv((int32_t&)m_op1, (int32_t&)m_op2);
+				break;
+			case 8:
+				(int64_t&)m_result = IntegerSDiv((int64_t&)m_op1, (int64_t&)m_op2);
+				break;
+			}
+		}
 		// todo: throw exception
 		break;
 	}
@@ -200,21 +257,71 @@ void CE::Decompiler::PCode::VirtualMachine::executeArithmetic() {
 		break;
 	}
 	case InstructionId::INT_SREM: {
-		if (m_op2 != 0)
-			m_result = (int64_t&)m_op1 % (int64_t&)m_op2;
+		if (m_op2 != 0) {
+			const auto size = m_instr->m_input0->getSize();
+			switch (size)
+			{
+			case 1:
+				(int8_t&)m_result = IntegerSRem((int8_t&)m_op1, (int8_t&)m_op2);
+				break;
+			case 2:
+				(int16_t&)m_result = IntegerSRem((int16_t&)m_op1, (int16_t&)m_op2);
+				break;
+			case 4:
+				(int32_t&)m_result = IntegerSRem((int32_t&)m_op1, (int32_t&)m_op2);
+				break;
+			case 8:
+				(int64_t&)m_result = IntegerSRem((int64_t&)m_op1, (int64_t&)m_op2);
+				break;
+			}
+		}
 		// todo: throw exception
 		break;
 	}
 	case InstructionId::INT_CARRY: {
-		// todo: add
+		// checks for unsigned addition overflow
+		const auto add = m_op1 + m_op2;
+		m_result = add < m_op1;
 		break;
 	}
 	case InstructionId::INT_SCARRY: {
-		// todo: add
+		// checks for signed addition overflow
+		const auto size = m_instr->m_input0->getSize();
+		switch(size)
+		{
+		case 1:
+			m_result = IntegerSCarry((int8_t&)m_op1, (int8_t&)m_op2);
+			break;
+		case 2:
+			m_result = IntegerSCarry((int16_t&)m_op1, (int16_t&)m_op2);
+			break;
+		case 4:
+			m_result = IntegerSCarry((int32_t&)m_op1, (int32_t&)m_op2);
+			break;
+		case 8:
+			m_result = IntegerSCarry((int64_t&)m_op1, (int64_t&)m_op2);
+			break;
+		}
 		break;
 	}
 	case InstructionId::INT_SBORROW: {
-		// todo: add
+		// checks for signed subtraction overflow
+		const auto size = m_instr->m_input0->getSize();
+		switch (size)
+		{
+		case 1:
+			m_result = IntegerSBorrow((int8_t&)m_op1, (int8_t&)m_op2);
+			break;
+		case 2:
+			m_result = IntegerSBorrow((int16_t&)m_op1, (int16_t&)m_op2);
+			break;
+		case 4:
+			m_result = IntegerSBorrow((int32_t&)m_op1, (int32_t&)m_op2);
+			break;
+		case 8:
+			m_result = IntegerSBorrow((int64_t&)m_op1, (int64_t&)m_op2);
+			break;
+		}
 		break;
 	}
 	}
@@ -265,11 +372,41 @@ void CE::Decompiler::PCode::VirtualMachine::executeIntegerComp() {
 		break;
 	}
 	case InstructionId::INT_SLESS: {
-		m_result = (int64_t&)m_op1 < (int64_t&)m_op2;
+		const auto size = m_instr->m_input0->getSize();
+		switch (size)
+		{
+		case 1:
+			(int8_t&)m_result = IntegerSLess((int8_t&)m_op1, (int8_t&)m_op2);
+			break;
+		case 2:
+			(int16_t&)m_result = IntegerSLess((int16_t&)m_op1, (int16_t&)m_op2);
+			break;
+		case 4:
+			(int32_t&)m_result = IntegerSLess((int32_t&)m_op1, (int32_t&)m_op2);
+			break;
+		case 8:
+			(int64_t&)m_result = IntegerSLess((int64_t&)m_op1, (int64_t&)m_op2);
+			break;
+		}
 		break;
 	}
 	case InstructionId::INT_SLESSEQUAL: {
-		m_result = (int64_t&)m_op1 <= (int64_t&)m_op2;
+		const auto size = m_instr->m_input0->getSize();
+		switch (size)
+		{
+		case 1:
+			(int8_t&)m_result = IntegerSLessEqual((int8_t&)m_op1, (int8_t&)m_op2);
+			break;
+		case 2:
+			(int16_t&)m_result = IntegerSLessEqual((int16_t&)m_op1, (int16_t&)m_op2);
+			break;
+		case 4:
+			(int32_t&)m_result = IntegerSLessEqual((int32_t&)m_op1, (int32_t&)m_op2);
+			break;
+		case 8:
+			(int64_t&)m_result = IntegerSLessEqual((int64_t&)m_op1, (int64_t&)m_op2);
+			break;
+		}
 		break;
 	}
 	case InstructionId::INT_LESS: {
@@ -387,12 +524,13 @@ void CE::Decompiler::PCode::VirtualMachine::executeTruncation() {
 }
 
 CE::Decompiler::PCode::DataValue CE::Decompiler::PCode::VirtualMachine::getValue(Varnode* varnode) const {
-	DataValue value = 0;
+	DataValue value;
 	if (!m_execCtx->getValue(varnode, value)) {
 		if (m_throwException) {
 			throw VmException("data not found");
 		}
-		m_execCtx->setValue(varnode, value);
+		// be default
+		m_execCtx->setValue(varnode, 0);
 	}
 	return value;
 }

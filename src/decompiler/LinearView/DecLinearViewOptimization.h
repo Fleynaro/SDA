@@ -18,7 +18,7 @@ namespace CE::Decompiler::LinearView
 
 	static void CalculateBackOrderIdsForBlockList(BlockList* blockList, int orderId = 1) {
 		//goto is a line (like not empty block)
-		if (blockList->hasGoto() && false) {
+		if (blockList->getGotoType() != GotoType::None) {
 			/*
 			 * while() {
 			 *	if() {
@@ -110,9 +110,9 @@ namespace CE::Decompiler::LinearView
 
 	static void OptimizeBlockList(BlockList* blockList) {
 		int level = 1;
-		/*CalculateLinearLevelForBlockList(blockList, level);
+		CalculateLinearLevelForBlockList(blockList, level);
 		OptimizeBlockOrderBlockList(blockList);
-		level = 1;*/
+		level = 1;
 		CalculateLinearLevelForBlockList(blockList, level);
 		CalculateBackOrderIdsForBlockList(blockList);
 	}

@@ -211,7 +211,7 @@ namespace CE::Decompiler::PCode
 		}
 
 		void executeTruncation();
-
+		
 		DataValue getValue(Varnode* varnode) const;
 	};
 };

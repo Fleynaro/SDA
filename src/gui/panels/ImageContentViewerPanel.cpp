@@ -116,13 +116,8 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::renderControl() {
 				const auto codeSectionRow = m_codeSectionController->getRow(rowIdx);
 				const auto pcodeBlock = m_codeSectionController->m_imageDec->getPCodeGraph()->getBlockAtOffset(
 					codeSectionRow.m_fullOffset);
-				if (pcodeBlock) {
-					if (rowIdx == (m_clipper.DisplayStart + m_clipper.DisplayEnd) / 2)
-						m_curFuncPCodeGraph = pcodeBlock->m_funcPCodeGraph;
-				}
-				else {
-					if (m_obscureUnknownLocation)
-						obscure = true;
+				if (!pcodeBlock && m_obscureUnknownLocation) {
+					obscure = true;
 				}
 
 				// select rows
@@ -138,13 +133,19 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::renderControl() {
 						}
 					}
 				}
+				int selRowIdx = 0;
 				for (auto selRow : m_selectedRows) {
 					if (m_codeSectionController->m_showPCode
 						    ? selRow == codeSectionRow
 						    : selRow.m_byteOffset == codeSectionRow.m_byteOffset) {
+						// select func. graph
+						if (selRowIdx == 0 && pcodeBlock) {
+							m_curFuncPCodeGraph = pcodeBlock->m_funcPCodeGraph;
+						}
 						m_selectCurRow = true;
 						break;
 					}
+					selRowIdx++;
 				}
 
 				if (obscure)
@@ -727,6 +728,7 @@ void GUI::ImageContentViewerPanel::processDecompiledCodeViewerEvents() {
 			// symbol was changed
 			if (decCodeViewerPanel->m_decompiledCodeViewer->m_codeChanged) {
 				decompile(codeSectionViewer->m_curFuncPCodeGraph);
+				return;
 			}
 			// select instructions by code selection
 			if (!decCodeViewerPanel->m_decompiledCodeViewer->m_selectedInstrs.empty()) {

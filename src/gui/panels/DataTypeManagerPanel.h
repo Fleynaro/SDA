@@ -36,6 +36,7 @@ namespace GUI
 			: m_controller(manager)
 		{
 			m_input.setInputText(name);
+			m_input.setFlags(ImGuiInputTextFlags_EnterReturnsTrue);
 			m_input.focus();
 			m_controller.m_maxItemsCount = 10;
 
@@ -59,7 +60,7 @@ namespace GUI
 		void renderPanel() override {
 			m_input.show();
 			SameLine();
-			if (Button::StdButton("Ok").present()) {
+			if (Button::StdButton("Ok").present() || m_input.isTextEntering()) {
 				// todo: check new size that can overlap other symbols
 				const auto dataType = m_controller.parseDataType(m_input.getInputText());
 				if(m_eventHandler.isInit())
