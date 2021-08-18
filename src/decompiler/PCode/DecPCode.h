@@ -176,8 +176,8 @@ namespace CE::Decompiler::PCode
 		FLOAT_NEG,
 		FLOAT_ABS,
 		FLOAT_SQRT,
-		FLOAT_NAN,
 		//Floating Point Compare
+		FLOAT_NAN,
 		FLOAT_EQUAL,
 		FLOAT_NOTEQUAL,
 		FLOAT_LESS,

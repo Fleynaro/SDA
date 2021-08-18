@@ -1,5 +1,14 @@
 #include "DecPCodeVirtualMachine.h"
 
+const std::map<int, CE::Decompiler::PCode::DataValue>& CE::Decompiler::PCode::VmExecutionContext::getRegisters() const {
+	return m_registers;
+}
+
+const std::map<CE::Decompiler::PCode::SymbolVarnode*, CE::Decompiler::PCode::DataValue>& CE::Decompiler::PCode::
+VmExecutionContext::getSymbolVarnodes() const {
+	return m_symbolVarnodes;
+}
+
 void CE::Decompiler::PCode::VmExecutionContext::setRegisterValue(const Register& reg, DataValue value) {
 	m_registers[reg.getId()] = value;
 }
@@ -48,6 +57,11 @@ bool CE::Decompiler::PCode::VmExecutionContext::getValue(Varnode* varnode, DataV
 	return false;
 }
 
+void CE::Decompiler::PCode::VmExecutionContext::syncWith(const std::map<int, DataValue>& registers) {
+	m_registers = registers;
+	m_symbolVarnodes.clear();
+}
+
 void CE::Decompiler::PCode::VmMemoryContext::setValue(std::uintptr_t address, DataValue value) {
 	m_values[address] = value;
 }
@@ -62,6 +76,16 @@ bool CE::Decompiler::PCode::VmMemoryContext::getValue(std::uintptr_t address, Da
 		return m_addressSpaceCallaback(address, value);
 	}
 	return false;
+}
+
+void CE::Decompiler::PCode::VmMemoryContext::clear() {
+	m_values.clear();
+}
+
+void CE::Decompiler::PCode::VmMemoryContext::setAddressSpaceCallaback(
+	const std::function<bool(std::uintptr_t, DataValue&)>& addressSpaceCallaback) {
+	m_addressSpaceCallaback = addressSpaceCallaback;
+	m_hasCallback = true;
 }
 
 void CE::Decompiler::PCode::VirtualMachine::execute(Instruction* instr) {
@@ -99,7 +123,7 @@ void CE::Decompiler::PCode::VirtualMachine::dispatch() {
 	else if (m_instr->m_id >= InstructionId::BOOL_NEGATE && m_instr->m_id <= InstructionId::BOOL_OR) {
 		executeBoolean();
 	}
-	else if (m_instr->m_id >= InstructionId::FLOAT_ADD && m_instr->m_id <= InstructionId::FLOAT_NAN) {
+	else if (m_instr->m_id >= InstructionId::FLOAT_ADD && m_instr->m_id <= InstructionId::FLOAT_SQRT) {
 		if (m_instr->m_input0->getSize() == 0x4) {
 			executeFloatingPoint<float>();
 		}
@@ -107,7 +131,7 @@ void CE::Decompiler::PCode::VirtualMachine::dispatch() {
 			executeFloatingPoint<double>();
 		}
 	}
-	else if (m_instr->m_id >= InstructionId::FLOAT_EQUAL && m_instr->m_id <= InstructionId::FLOAT_LESSEQUAL) {
+	else if (m_instr->m_id >= InstructionId::FLOAT_NAN && m_instr->m_id <= InstructionId::FLOAT_LESSEQUAL) {
 		if (m_instr->m_input0->getSize() == 0x4) {
 			executeFloatingPointComp<float>();
 		}
@@ -440,6 +464,109 @@ void CE::Decompiler::PCode::VirtualMachine::executeBoolean() {
 		break;
 	}
 	}
+}
+
+template <typename T>
+void CE::Decompiler::PCode::VirtualMachine::executeFloatingPoint() {
+	T fresult = 0;
+	const auto fop1 = (T&)m_op1;
+	const auto fop2 = (T&)m_op2;
+
+	switch (m_instr->m_id) {
+	case InstructionId::FLOAT_NEG: {
+		fresult = -fop1;
+		break;
+	}
+	case InstructionId::FLOAT_ABS: {
+		fresult = abs(fop1);
+		break;
+	}
+	case InstructionId::FLOAT_SQRT: {
+		fresult = sqrt(fop1);
+		break;
+	}
+
+	case InstructionId::FLOAT_ADD: {
+		fresult = fop1 + fop2;
+		break;
+	}
+	case InstructionId::FLOAT_SUB: {
+		fresult = fop1 - fop2;
+		break;
+	}
+	case InstructionId::FLOAT_MULT: {
+		fresult = fop1 * fop2;
+		break;
+	}
+	case InstructionId::FLOAT_DIV: {
+		if (fop2 != 0)
+			fresult = fop1 / fop2;
+		// todo: throw exception
+		break;
+	}
+	}
+
+	(T&)m_result = fresult;
+}
+
+template <typename T>
+void CE::Decompiler::PCode::VirtualMachine::executeFloatingPointComp() {
+	const auto fop1 = (T&)m_op1;
+	const auto fop2 = (T&)m_op2;
+	switch (m_instr->m_id) {
+	case InstructionId::FLOAT_NAN: {
+		m_result = isnan(fop1);
+		break;
+	}
+	case InstructionId::FLOAT_EQUAL: {
+		m_result = fop1 == fop2;
+		break;
+	}
+	case InstructionId::FLOAT_NOTEQUAL: {
+		m_result = fop1 != fop2;
+		break;
+	}
+	case InstructionId::FLOAT_LESS: {
+		m_result = fop1 < fop2;
+		break;
+	}
+	case InstructionId::FLOAT_LESSEQUAL: {
+		m_result = fop1 <= fop2;
+		break;
+	}
+	}
+}
+
+template <typename T>
+void CE::Decompiler::PCode::VirtualMachine::executeFloatingPointConversion() {
+	T fresult = 0;
+	const auto fop1 = (T&)m_op1;
+	const auto fop2 = (T&)m_op2;
+	switch (m_instr->m_id) {
+	case InstructionId::INT2FLOAT: {
+		fresult = (T)m_op1;
+		break;
+	}
+	case InstructionId::FLOAT_CEIL: {
+		fresult = ceil(fop1);
+		break;
+	}
+	case InstructionId::FLOAT_FLOOR: {
+		fresult = floor(fop1);
+		break;
+	}
+	case InstructionId::FLOAT_ROUND: {
+		fresult = round(fop1);
+		break;
+	}
+	}
+
+	(T&)m_result = fresult;
+}
+
+template <typename T_in, typename T_out>
+void CE::Decompiler::PCode::VirtualMachine::executeSignExtension() {
+	(T_out&)m_result = (T_out)(T_in&)m_op1;
 }
 
 void CE::Decompiler::PCode::VirtualMachine::executeFloatToFloat() {

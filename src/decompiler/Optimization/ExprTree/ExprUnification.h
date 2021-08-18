@@ -18,7 +18,7 @@ namespace CE::Decompiler::Optimization
 		void processOpNode(OperationalNode* opNode);
 
 		// transform [rcx:8] to [rcx:8] & 0xFFFFFFFF because of the size(=4) defined in SymbolLeaf
-		void processSymbolLeaf(SymbolLeaf* symbolLeaf);
+		/*void processSymbolLeaf(SymbolLeaf* symbolLeaf);*/
 
 		// leafs: x, x * 5, ...
 		static bool IsLeaf(INode* node);

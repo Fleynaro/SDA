@@ -28,7 +28,7 @@ ExprTree::INode* RegisterExecContext::requestRegister(const Register& reg) {
 		RegisterPart part;
 		part.m_regMask = regVar->m_register.m_valueRangeMask;
 		part.m_maskToChange = needReadMask;
-		part.m_expr = new ExprTree::SymbolLeaf(regVar, regVar->getSize());
+		part.m_expr = new ExprTree::SymbolLeaf(regVar);
 		regParts.push_back(part);
 	}
 
