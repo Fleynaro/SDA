@@ -20,9 +20,7 @@ namespace CE::Decompiler
 	private:
 		AbstractRegisterFactory* m_registerFactory;
 		int m_loopsCount = 0;
-		Symbol::Symbol* m_stackPointerSymbol = nullptr;
-		Symbol::Symbol* m_instrPointerSymbol = nullptr;
-		std::map<ComplexOffset, int> m_stackPointerValues;
+		std::map<int, Symbol::RegisterVariable*> m_registerVars;
 
 	public:
 		struct LocalVarInfo {
@@ -50,6 +48,8 @@ namespace CE::Decompiler
 
 		// called when a function call appears during decompiling
 		FunctionCallInfo requestFunctionCallInfo(ExecContext* ctx, Instruction* instr);
+
+		Symbol::RegisterVariable* getRegisterVariable(const Register& reg);
 
 		Symbol::Symbol* getStackPointerSymbol();
 

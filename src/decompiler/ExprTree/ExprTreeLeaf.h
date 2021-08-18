@@ -14,8 +14,9 @@ namespace CE::Decompiler::ExprTree
 	{
 	public:
 		Symbol::Symbol* m_symbol;
+		int m_size; // for register variables ([rcx:8] & 0xFFFF)
 
-		SymbolLeaf(Symbol::Symbol* symbol);
+		SymbolLeaf(Symbol::Symbol* symbol, int size = 0);
 
 		int getSize() override;
 

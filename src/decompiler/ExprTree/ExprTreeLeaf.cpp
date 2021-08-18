@@ -22,8 +22,8 @@ bool FloatNanLeaf::isFloatingPoint() {
 	return true;
 }
 
-SymbolLeaf::SymbolLeaf(Symbol::Symbol* symbol)
-	: m_symbol(symbol)
+SymbolLeaf::SymbolLeaf(Symbol::Symbol* symbol, int size)
+	: m_symbol(symbol), m_size(size)
 {}
 
 int SymbolLeaf::getSize() {
@@ -39,7 +39,7 @@ std::list<PCode::Instruction*> SymbolLeaf::getInstructionsRelatedTo() {
 }
 
 INode* SymbolLeaf::clone(NodeCloneContext* ctx) {
-	return new SymbolLeaf(m_symbol->clone(ctx));
+	return new SymbolLeaf(m_symbol->clone(ctx), m_size);
 }
 
 StoragePath SymbolLeaf::getStoragePath() {

@@ -18,7 +18,7 @@ namespace CE::Decompiler::PCode
 		friend class InstructionViewGenerator;
 	public:
 		enum class Type {
-			Helper,
+			Generic,
 			StackPointer,
 			InstructionPointer,
 			Flag,
@@ -34,7 +34,7 @@ namespace CE::Decompiler::PCode
 		std::string m_debugName;
 		BitMask64 m_valueRangeMask; // range of possible values
 
-		Register(RegisterId genericId = 0, int index = 0, BitMask64 valueRangeMask = 0x0, Type type = Type::Helper);
+		Register(RegisterId genericId = 0, int index = 0, BitMask64 valueRangeMask = 0x0, Type type = Type::Generic);
 
 		Type getType() const;
 

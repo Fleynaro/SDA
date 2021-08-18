@@ -74,20 +74,31 @@ FunctionCallInfo AbstractPrimaryDecompiler::requestFunctionCallInfo(ExecContext*
 	return requestFunctionCallInfo(ctx, instr, funcOffset);
 }
 
-Symbol::Symbol* AbstractPrimaryDecompiler::getStackPointerSymbol() {
-	if (!m_stackPointerSymbol) {
-		m_stackPointerSymbol = new Symbol::RegisterVariable(m_registerFactory->createStackPointerRegister());
-		m_decompiledGraph->addSymbol(m_stackPointerSymbol);
+Symbol::RegisterVariable* AbstractPrimaryDecompiler::getRegisterVariable(const Register& reg) {
+	const auto it = m_registerVars.find(reg.getId());
+	if (it != m_registerVars.end()) {
+		const auto regVar = it->second;
+		regVar->m_register.m_valueRangeMask = regVar->m_register.m_valueRangeMask | reg.m_valueRangeMask;
+		return regVar;
 	}
-	return m_stackPointerSymbol;
+	const auto regVar = new Symbol::RegisterVariable(reg);
+	if (reg.getType() == Register::Type::Generic) {
+		// todo: think about flag/xmm registers
+		// ah(mask 0xFF00) -> ax(mask 0xFFFF)
+		auto& mask = regVar->m_register.m_valueRangeMask;
+		mask = BitMask64::GetBitMask64BySizeInBits(mask.getMaxSizeInBits() - mask.getOffsetFromTheEnd());
+	}
+	m_registerVars[reg.getId()] = regVar;
+	m_decompiledGraph->addSymbol(regVar);
+	return regVar;
+}
+
+Symbol::Symbol* AbstractPrimaryDecompiler::getStackPointerSymbol() {
+	return getRegisterVariable(m_registerFactory->createStackPointerRegister());
 }
 
 Symbol::Symbol* AbstractPrimaryDecompiler::getInstrPointerSymbol() {
-	if (!m_instrPointerSymbol) {
-		m_instrPointerSymbol = new Symbol::RegisterVariable(m_registerFactory->createInstructionPointerRegister());
-		m_decompiledGraph->addSymbol(m_instrPointerSymbol);
-	}
-	return m_instrPointerSymbol;
+	return getRegisterVariable(m_registerFactory->createInstructionPointerRegister());
 }
 
 void AbstractPrimaryDecompiler::interpreteGraph(PCodeBlock* pcodeBlock, int versionOfDecompiling) {

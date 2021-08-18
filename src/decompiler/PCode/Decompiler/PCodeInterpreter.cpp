@@ -375,7 +375,7 @@ ExprTree::INode* InstructionInterpreter::buildParameterInfoExpr(ParameterInfo& p
 		const auto offsetNumber = new ExprTree::NumberLeaf(static_cast<uint64_t>(storage.getOffset()) - 0x8, regSymbol->getSize());
 		const auto opAddNode = new ExprTree::OperationalNode(regSymbol, offsetNumber, ExprTree::Add);
 		const auto readValueNode = new ExprTree::ReadValueNode(opAddNode, paramInfo.m_size);
-		return createMemSymbol(readValueNode);
+		return createMemSymbol(readValueNode, m_instr);
 	}
 
 	// register

@@ -12,10 +12,13 @@ namespace CE::Decompiler::Optimization
 		void start() override;
 	private:
 		// remove MirrorNode
-		void processMirrorNodes(MirrorNode* mirrorNode);
+		void processMirrorNode(MirrorNode* mirrorNode);
 
 		// unify term order: left operand is expr, right operand is leaf (5*x -> x*5, x2 + (y6 + 1) -> (y6 + 1) + x2)
 		void processOpNode(OperationalNode* opNode);
+
+		// transform [rcx:8] to [rcx:8] & 0xFFFFFFFF because of the size(=4) defined in SymbolLeaf
+		void processSymbolLeaf(SymbolLeaf* symbolLeaf);
 
 		// leafs: x, x * 5, ...
 		static bool IsLeaf(INode* node);

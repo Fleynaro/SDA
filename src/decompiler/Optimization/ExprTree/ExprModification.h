@@ -21,7 +21,7 @@ namespace CE::Decompiler
 	protected:
 		bool m_isChanged = false;
 
-		void changed();
+		void markAsChanged();
 
 		// replace this node with another
 		void replace(INode* newNode, bool destroy = true);

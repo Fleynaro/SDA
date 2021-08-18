@@ -24,12 +24,11 @@ ExprTree::INode* RegisterExecContext::requestRegister(const Register& reg) {
 	BitMask64 needReadMask = reg.m_valueRangeMask;
 	auto regParts = findRegisterParts(reg.getId(), needReadMask);
 	if (!needReadMask.isZero()) {
-		const auto symbol = new Symbol::RegisterVariable(reg);
-		m_decompiler->m_decompiledGraph->addSymbol(symbol);
+		const auto regVar = m_decompiler->getRegisterVariable(reg);
 		RegisterPart part;
-		part.m_regMask = reg.m_valueRangeMask;
+		part.m_regMask = regVar->m_register.m_valueRangeMask;
 		part.m_maskToChange = needReadMask;
-		part.m_expr = new ExprTree::SymbolLeaf(symbol);
+		part.m_expr = new ExprTree::SymbolLeaf(regVar, regVar->getSize());
 		regParts.push_back(part);
 	}
 

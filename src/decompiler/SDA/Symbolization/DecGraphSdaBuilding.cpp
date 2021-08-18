@@ -264,10 +264,12 @@ CE::Symbol::ISymbol* SdaBuilding::findOrCreateSymbol(Symbol::Symbol* symbol, int
 			if (isStackPointer) {
 				const auto name = "stack_0x" + Helper::String::NumberToHex(static_cast<uint32_t>(-offset));
 				sdaMemSymbol = m_symbolFactory.createLocalStackVarSymbol(offset, dataType, name);
+				sdaMemSymbol->setAutoSymbol(true);
 			}
 			else {
 				const auto name = "global_0x" + Helper::String::NumberToHex(offset);
 				sdaMemSymbol = m_symbolFactory.createGlobalVarSymbol(offset, dataType, name);
+				sdaMemSymbol->setAutoSymbol(true);
 			}
 			m_newAutoSymbols.insert(sdaMemSymbol);
 			storeSdaSymbolIfMem(sdaMemSymbol, symbol, offset);

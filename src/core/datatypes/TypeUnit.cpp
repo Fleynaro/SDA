@@ -59,10 +59,12 @@ std::list<int> Unit::getPointerLevels() {
 
 void Unit::addPointerLevelInFront(int size) {
 	m_levels.push_front(size);
+	m_debugName = getDisplayName();
 }
 
 void Unit::removePointerLevelOutOfFront() {
 	m_levels.pop_front();
+	m_debugName = getDisplayName();
 }
 
 bool Unit::isString() {

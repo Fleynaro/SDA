@@ -55,7 +55,7 @@ bool Register::intersect(const Register& reg) const {
 
 // that is the feature of x86: setting value to EAX cleans fully RAX
 BitMask64 PCode::GetValueRangeMaskWithException(const Register& reg) {
-	if (reg.getType() == Register::Type::Helper && reg.m_valueRangeMask == BitMask64(4))
+	if (reg.getType() == Register::Type::Generic && reg.m_valueRangeMask == BitMask64(4))
 		return BitMask64(8);
 	return reg.m_valueRangeMask;
 }

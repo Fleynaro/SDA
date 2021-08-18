@@ -20,7 +20,7 @@ bool ExprModification::isChanged() const
 	return m_isChanged;
 }
 
-void ExprModification::changed() {
+void ExprModification::markAsChanged() {
 	m_isChanged = true;
 }
 
@@ -30,6 +30,6 @@ void ExprModification::replace(INode* newNode, bool destroy) {
 		delete m_node;
 	}
 	m_node = newNode;
-	changed();
+	markAsChanged();
 	UpdateDebugInfo(m_node);
 }

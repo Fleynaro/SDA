@@ -9,13 +9,16 @@ void CE::Decompiler::Optimization::ExprUnification::start() {
 		processOpNode(opNode);
 	}
 	else if (const auto mirrorNode = dynamic_cast<MirrorNode*>(getNode())) {
-		processMirrorNodes(mirrorNode);
+		processMirrorNode(mirrorNode);
+	}
+	else if (const auto symbolLeaf = dynamic_cast<SymbolLeaf*>(getNode())) {
+		processSymbolLeaf(symbolLeaf);
 	}
 }
 
 // remove MirrorNode
 
-void CE::Decompiler::Optimization::ExprUnification::processMirrorNodes(MirrorNode* mirrorNode) {
+void CE::Decompiler::Optimization::ExprUnification::processMirrorNode(MirrorNode* mirrorNode) {
 	replace(mirrorNode->m_node);
 }
 
@@ -25,8 +28,19 @@ void CE::Decompiler::Optimization::ExprUnification::processOpNode(OperationalNod
 	if (IsOperationMoving(opNode->m_operation)) {
 		if (IsSwap(opNode->m_leftNode, opNode->m_rightNode)) {
 			std::swap(opNode->m_leftNode, opNode->m_rightNode);
-			changed();
+			markAsChanged();
 		}
+	}
+}
+
+// transform [rcx:8] to [rcx:8] & 0xFFFFFFFF because of the size(=4) defined in SymbolLeaf
+void CE::Decompiler::Optimization::ExprUnification::processSymbolLeaf(SymbolLeaf* symbolLeaf) {
+	if (symbolLeaf->m_size != 0 && symbolLeaf->m_size < symbolLeaf->m_symbol->getSize()) {
+		const auto mask = BitMask64(symbolLeaf->m_size, 0).getValue();
+		const auto numberLeaf = new NumberLeaf(mask, 0x8);
+		const auto opNode = new OperationalNode(symbolLeaf, numberLeaf, And);
+		replace(opNode, false);
+		symbolLeaf->m_size = 0;
 	}
 }
 
