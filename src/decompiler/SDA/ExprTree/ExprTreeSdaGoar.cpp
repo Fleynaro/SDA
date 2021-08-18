@@ -18,10 +18,12 @@ void GoarTopNode::setAddrGetting(bool toggle) {
 	m_isAddrGetting = toggle;
 }
 
-void GoarTopNode::getLocation(MemLocation& location) {
-	auto mainBase = getBaseNode(this);
-	if (auto storedInMem = dynamic_cast<IMappedToMemory*>(mainBase)) {
-		storedInMem->getLocation(location);
+bool GoarTopNode::getLocation(MemLocation& location) {
+	const auto mainBase = getBaseNode(this);
+	
+	if (const auto storedInMem = dynamic_cast<IMappedToMemory*>(mainBase)) {
+		if (!storedInMem->getLocation(location))
+			return false;
 	}
 	else {
 		location.m_type = MemLocation::IMPLICIT;
@@ -30,6 +32,7 @@ void GoarTopNode::getLocation(MemLocation& location) {
 	location.m_offset += m_bitOffset / 0x8;
 	location.m_valueSize = m_base->getDataType()->getSize();
 	gatherArrDims(m_base, location);
+	return true;
 }
 
 DataTypePtr GoarTopNode::getSrcDataType() {

@@ -165,16 +165,9 @@ void SdaBuilding::buildSdaNodesAndReplace(INode* node) {
 			//find symbol or create it
 			const auto sdaSymbol = findOrCreateSymbol(sdaSymbolLeafToReplace->m_symbol, size, offset);
 
-			// creating sda symbol leaf (memory or normal)
-			SdaSymbolLeaf* newSdaSymbolLeaf = nullptr;
-			if (auto memSymbol = dynamic_cast<CE::Symbol::AbstractMemorySymbol*>(sdaSymbol)) {
-				// stackVar or globalVar
-				newSdaSymbolLeaf = new SdaMemSymbolLeaf(sdaSymbolLeafToReplace, memSymbol, true);
-			}
-
-			if (!newSdaSymbolLeaf) {
-				// localVar/param/memVar
-				newSdaSymbolLeaf = new SdaSymbolLeaf(sdaSymbolLeafToReplace, sdaSymbol);
+			// creating sda symbol leaf
+			const auto newSdaSymbolLeaf = new SdaSymbolLeaf(sdaSymbolLeafToReplace, sdaSymbol, isStackOrGlobal);
+			if (!isStackOrGlobal) {
 				m_replacedSymbols[sdaSymbolLeafToReplace->m_symbol] = newSdaSymbolLeaf;
 			}
 
@@ -305,11 +298,16 @@ CE::Symbol::ISymbol* SdaBuilding::findOrCreateSymbol(Symbol::Symbol* symbol, int
 
 	//otherwise create AUTO sda not-memory symbol (e.g. funcVar1)
 	if (auto symbolWithId = dynamic_cast<Symbol::AbstractVariable*>(symbol)) {
-		std::string suffix = "local";
-		if (dynamic_cast<Symbol::MemoryVariable*>(symbol))
+		std::string suffix;
+		if (dynamic_cast<Symbol::LocalVariable*>(symbol)) {
+			suffix = "local";
+		}
+		else if (dynamic_cast<Symbol::MemoryVariable*>(symbol)) {
 			suffix = "mem";
-		else if (dynamic_cast<Symbol::FunctionResultVar*>(symbol))
+		}
+		else if (dynamic_cast<Symbol::FunctionResultVar*>(symbol)) {
 			suffix = "func";
+		}
 
 		const auto defType = m_project->getTypeManager()->getDefaultType(size);
 		const auto name = suffix + "Var" + Helper::String::NumberToHex(symbolWithId->getId());

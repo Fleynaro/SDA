@@ -34,36 +34,36 @@ void SdaGraphMemoryOptimization::MemoryContextInitializer::passNode(INode* node)
 			const auto srcSdaNode = dynamic_cast<ISdaNode*>(assignmentNode->getSrcNode());
 
 			if (dstSdaNode && srcSdaNode) {
-				//when writing some stuff into a memory location (entity2.vec.x = memVar1488 + 0.5)
-				if (auto dstSdaLocNode = dynamic_cast<ILocatable*>(dstSdaNode)) {
-					try {
-						MemLocation dstLocation;
-						dstSdaLocNode->getLocation(dstLocation);
-						m_memCtx->addMemValue(dstLocation, srcSdaNode);
-					}
-					catch (std::exception&) {}
-				}
-				else {
-					if (const auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(assignmentNode->getDstNode())) {
-						if (const auto memVar = dynamic_cast<Symbol::MemoryVariable*>(sdaSymbolLeaf->getDecSymbol())) {
-							//when reading from a memory location into the memory symbol (memVar1488 = entity1.vec.x)
-							if (auto srcSdaLocNode = dynamic_cast<ILocatable*>(srcSdaNode)) {
-								try {
-									MemLocation srcLocation;
-									srcSdaLocNode->getLocation(srcLocation);
-									MemoryContext::MemSnapshot memSnapshot;
-									memSnapshot.m_location = srcLocation;
-									memSnapshot.m_locatableNode = srcSdaLocNode;
-									memSnapshot.m_lastUsedMemLocIdx = m_memCtx->getLastUsedMemLocIdx();
-									auto snapshotValueTopNode = m_memCtx->getMemValue(srcLocation);
-									if (snapshotValueTopNode) {
-										// create snapshot of a value stored on the memory location {srcLocation}
-										memSnapshot.m_snapshotValue = new SdaTopNode(snapshotValueTopNode->getSdaNode());
-									}
-									m_memCtx->m_memVarSnapshots[memVar] = memSnapshot;
+				bool isMemVar = false;
+				if (const auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(dstSdaNode)) {
+					if (const auto memVar = dynamic_cast<Symbol::MemoryVariable*>(sdaSymbolLeaf->getDecSymbol())) {
+						isMemVar = true;
+						
+						//when reading from a memory location into the memory symbol (memVar1488 = entity1.vec.x)
+						if (auto srcSdaLocNode = dynamic_cast<ILocatable*>(srcSdaNode)) {
+							MemLocation srcLocation;
+							if (srcSdaLocNode->getLocation(srcLocation)) {
+								MemoryContext::MemSnapshot memSnapshot;
+								memSnapshot.m_location = srcLocation;
+								memSnapshot.m_locatableNode = srcSdaLocNode;
+								memSnapshot.m_lastUsedMemLocIdx = m_memCtx->getLastUsedMemLocIdx();
+								auto snapshotValueTopNode = m_memCtx->getMemValue(srcLocation);
+								if (snapshotValueTopNode) {
+									// create snapshot of a value stored on the memory location {srcLocation}
+									memSnapshot.m_snapshotValue = new SdaTopNode(snapshotValueTopNode->getSdaNode());
 								}
-								catch (std::exception&) {}
+								m_memCtx->m_memVarSnapshots[memVar] = memSnapshot;
 							}
+						}
+					}
+				}
+
+				if(!isMemVar) {
+					//when writing some stuff into a memory location (entity2.vec.x = memVar1488 + 0.5)
+					if (auto dstSdaLocNode = dynamic_cast<ILocatable*>(dstSdaNode)) {
+						MemLocation dstLocation;
+						if (dstSdaLocNode->getLocation(dstLocation)) {
+							m_memCtx->addMemValue(dstLocation, srcSdaNode);
 						}
 					}
 				}
@@ -134,14 +134,12 @@ MemLocation* SdaGraphMemoryOptimization::MemoryContext::createNewLocation(const 
 			//stack_0x30 = stack_0x100 (location of stack_0x100 can be changed)
 			if (auto locSnapshotValue = dynamic_cast<IMappedToMemory*>(it->m_topNode->getSdaNode())) {
 				if (!locSnapshotValue->isAddrGetting()) {
-					try {
-						MemLocation snapshotValueLocation;
-						locSnapshotValue->getLocation(snapshotValueLocation);
+					MemLocation snapshotValueLocation;
+					if (locSnapshotValue->getLocation(snapshotValueLocation)) {
 						if (snapshotValueLocation.intersect(location)) {
 							isIntersecting = true;
 						}
 					}
-					catch (std::exception&) {}
 				}
 			}
 		}
@@ -239,14 +237,12 @@ void SdaGraphMemoryOptimization::optimizeBlock(DecBlock* block, MemoryContext* m
 				const auto lastUsedMemLocIdx = memCtx->getLastUsedMemLocIdx();
 				auto newPossibleNode = getSnapshotValue(blockAbove, memCtx, memSnapshot, lastUsedMemLocIdx);
 				if (auto locNewPossibleNode = dynamic_cast<ILocatable*>(newPossibleNode)) {
-					try {
-						MemLocation newPossibleNodeLocation;
-						locNewPossibleNode->getLocation(newPossibleNodeLocation);
+					MemLocation newPossibleNodeLocation;
+					if (locNewPossibleNode->getLocation(newPossibleNodeLocation)) {
 						if (canBlockBeReachedThroughLocation(block, blockAbove, &newPossibleNodeLocation)) {
 							newNode = newPossibleNode;
 						}
 					}
-					catch (std::exception&) {}
 				}
 
 				if (!newNode) {
@@ -270,20 +266,18 @@ void SdaGraphMemoryOptimization::optimizeBlock(DecBlock* block, MemoryContext* m
 ISdaNode* SdaGraphMemoryOptimization::getSnapshotValue(DecBlock* block, MemoryContext* memCtx, MemoryContext::MemSnapshot* memSnapshot, int lastUsedMemLocIdx) {
 	if (memSnapshot->m_snapshotValue) {
 		if (auto locSnapshotValue = dynamic_cast<ILocatable*>(memSnapshot->m_snapshotValue->getNode())) {
-			try {
-				/*
+			/*
 				entity1.vec.x = entity1.vec.z
 				memVar1488 = entity1.vec.x (m_snapshotValue = entity1.vec.z)
 				entity1.vec.z = 1 (changed!)
 				return memVar1488; (m_snapshotValue != entity1.vec.z)
-				*/
-				MemLocation snapshotValueLocation;
-				locSnapshotValue->getLocation(snapshotValueLocation);
+			*/
+			MemLocation snapshotValueLocation;
+			if (locSnapshotValue->getLocation(snapshotValueLocation)) {
 				if (memCtx->hasUsed(snapshotValueLocation, memSnapshot->m_lastUsedMemLocIdx, lastUsedMemLocIdx)) {
 					return nullptr;
 				}
 			}
-			catch (std::exception&) {} // todo: dangerous, need to remove
 		}
 		return memSnapshot->m_snapshotValue->getSdaNode();
 	}

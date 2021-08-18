@@ -93,7 +93,7 @@ namespace CE::Decompiler::ExprTree
 
 		void setAddrGetting(bool toggle) override;
 
-		void getLocation(MemLocation& location) override;
+		bool getLocation(MemLocation& location) override;
 
 		DataTypePtr getSrcDataType() override;
 

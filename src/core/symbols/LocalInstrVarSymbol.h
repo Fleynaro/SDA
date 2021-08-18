@@ -14,5 +14,7 @@ namespace CE::Symbol
 		LocalInstrVarSymbol(SymbolManager* manager, DataTypePtr type, const std::string& name, const std::string& comment = "");
 
 		Type getType() override;
+
+		Decompiler::Storage getStorage() override;
 	};
 };

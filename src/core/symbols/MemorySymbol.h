@@ -25,6 +25,8 @@ namespace CE::Symbol
 		GlobalVarSymbol(SymbolManager* manager, int64_t offset, DataTypePtr type, const std::string& name, const std::string& comment = "");
 
 		Type getType() override;
+
+		Decompiler::Storage getStorage() override;
 	};
 
 	class LocalStackVarSymbol : public AbstractMemorySymbol
@@ -35,5 +37,7 @@ namespace CE::Symbol
 		LocalStackVarSymbol(SymbolManager* manager, int64_t offset, DataTypePtr type, const std::string& name, const std::string& comment = "");
 
 		Type getType() override;
+
+		Decompiler::Storage getStorage() override;
 	};
 };

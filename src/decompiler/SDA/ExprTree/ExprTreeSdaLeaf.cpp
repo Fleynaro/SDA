@@ -32,8 +32,8 @@ ISdaNode* SdaNumberLeaf::cloneSdaNode(NodeCloneContext* ctx) {
 	return new SdaNumberLeaf(m_value, m_calcDataType);
 }
 
-SdaSymbolLeaf::SdaSymbolLeaf(SymbolLeaf* m_symbolLeaf, CE::Symbol::ISymbol* sdaSymbol)
-	: m_symbolLeaf(m_symbolLeaf), m_sdaSymbol(sdaSymbol)
+SdaSymbolLeaf::SdaSymbolLeaf(SymbolLeaf* m_symbolLeaf, CE::Symbol::ISymbol* sdaSymbol, bool isAddrGetting)
+	: m_symbolLeaf(m_symbolLeaf), m_sdaSymbol(sdaSymbol), m_isAddrGetting(isAddrGetting)
 {}
 
 void SdaSymbolLeaf::replaceNode(INode* node, INode* newNode) {
@@ -59,11 +59,13 @@ int SdaSymbolLeaf::getSize() {
 }
 
 HS SdaSymbolLeaf::getHash() {
-	return m_symbolLeaf->getHash();
+	const auto storage = m_sdaSymbol->getStorage();
+	return m_symbolLeaf->getHash()
+		<< storage.getOffset();
 }
 
 ISdaNode* SdaSymbolLeaf::cloneSdaNode(NodeCloneContext* ctx) {
-	return new SdaSymbolLeaf(m_symbolLeaf, m_sdaSymbol);
+	return new SdaSymbolLeaf(m_symbolLeaf, m_sdaSymbol, m_isAddrGetting);
 }
 
 bool SdaSymbolLeaf::isFloatingPoint() {
@@ -71,6 +73,9 @@ bool SdaSymbolLeaf::isFloatingPoint() {
 }
 
 DataTypePtr SdaSymbolLeaf::getSrcDataType() {
+	if (m_isAddrGetting) {
+		return MakePointer(m_sdaSymbol->getDataType());
+	}
 	return m_sdaSymbol->getDataType();
 }
 
@@ -80,54 +85,40 @@ void SdaSymbolLeaf::setDataType(DataTypePtr dataType) {
 	}
 }
 
-StoragePath SdaSymbolLeaf::getStoragePath() {
-	return m_symbolLeaf->getStoragePath();
-}
-
-SdaMemSymbolLeaf::SdaMemSymbolLeaf(SymbolLeaf* symbolLeaf, CE::Symbol::AbstractMemorySymbol* sdaMemSymbol, bool isAddrGetting)
-	: SdaSymbolLeaf(symbolLeaf, sdaMemSymbol), m_sdaMemSymbol(sdaMemSymbol), m_isAddrGetting(isAddrGetting)
-{}
-
-CE::Symbol::AbstractMemorySymbol* SdaMemSymbolLeaf::getSdaMemSymbol() const {
-	return m_sdaMemSymbol;
-}
-
-DataTypePtr SdaMemSymbolLeaf::getSrcDataType() {
-	if (m_isAddrGetting) {
-		return MakePointer(SdaSymbolLeaf::getSrcDataType());
-	}
-	return SdaSymbolLeaf::getSrcDataType();
-}
-
-HS SdaMemSymbolLeaf::getHash() {
-	return SdaSymbolLeaf::getHash() << m_sdaMemSymbol->getOffset();
-}
-
-ISdaNode* SdaMemSymbolLeaf::cloneSdaNode(NodeCloneContext* ctx) {
-	return new SdaMemSymbolLeaf(m_symbolLeaf, m_sdaMemSymbol, m_isAddrGetting);
-}
-
-bool SdaMemSymbolLeaf::isAddrGetting() {
+bool SdaSymbolLeaf::isAddrGetting() {
 	return m_isAddrGetting;
 }
 
-void SdaMemSymbolLeaf::setAddrGetting(bool toggle) {
+void SdaSymbolLeaf::setAddrGetting(bool toggle) {
 	m_isAddrGetting = toggle;
 }
 
-void SdaMemSymbolLeaf::getLocation(MemLocation& location) {
-	location.m_type = m_sdaMemSymbol->getType() == CE::Symbol::LOCAL_STACK_VAR ? MemLocation::STACK : MemLocation::GLOBAL;
-	location.m_offset = m_sdaMemSymbol->getOffset();
+bool SdaSymbolLeaf::getLocation(MemLocation& location) {
+	const auto storage = m_sdaSymbol->getStorage();
+	if (storage.getType() == Storage::STORAGE_REGISTER) {
+		location.m_type = MemLocation::IMPLICIT;
+		location.m_baseAddrHash = getHash();
+		return true;
+	}
+	location.m_type = storage.getType() == Storage::STORAGE_STACK ? MemLocation::STACK : MemLocation::GLOBAL;
+	location.m_offset = storage.getOffset();
 	location.m_valueSize = m_sdaSymbol->getDataType()->getSize();
+	return true;
 }
 
-StoragePath SdaMemSymbolLeaf::getStoragePath() {
-	StoragePath path;
-	if(m_sdaMemSymbol->getType() == CE::Symbol::LOCAL_STACK_VAR) {
+StoragePath SdaSymbolLeaf::getStoragePath() {
+	const auto storage = m_sdaSymbol->getStorage();
+	if (storage.getType() == Storage::STORAGE_STACK) {
+		StoragePath path;
 		path.m_register = PCode::Register(ZYDIS_REGISTER_RSP, 0, BitMask64(0x8), PCode::Register::Type::StackPointer);
-	} else {
-		path.m_register = PCode::Register(ZYDIS_REGISTER_RIP, 0, BitMask64(0x8), PCode::Register::Type::InstructionPointer);
+		path.m_offsets.push_back(storage.getOffset());
+		return path;
 	}
-	path.m_offsets.push_back(m_sdaMemSymbol->getOffset());
-	return path;
+	if (storage.getType() == Storage::STORAGE_GLOBAL) {
+		StoragePath path;
+		path.m_register = PCode::Register(ZYDIS_REGISTER_RIP, 0, BitMask64(0x8), PCode::Register::Type::InstructionPointer);
+		path.m_offsets.push_back(storage.getOffset());
+		return path;
+	}
+	return m_symbolLeaf->getStoragePath();
 }

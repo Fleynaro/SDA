@@ -7,6 +7,10 @@ LocalInstrVarSymbol::LocalInstrVarSymbol(SymbolManager* manager, DataTypePtr typ
 	: AbstractSymbol(manager, type, name, comment)
 {}
 
+Decompiler::Storage LocalInstrVarSymbol::getStorage() {
+	return Decompiler::Storage(Decompiler::Storage::STORAGE_REGISTER, 0, 0);
+}
+
 Type LocalInstrVarSymbol::getType() {
 	return LOCAL_INSTR_VAR;
 }

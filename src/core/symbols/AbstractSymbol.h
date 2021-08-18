@@ -1,4 +1,5 @@
 #pragma once
+#include "decompiler/DecStorage.h"
 #include <datatypes/TypeUnit.h>
 
 namespace CE
@@ -22,6 +23,8 @@ namespace CE
 			virtual ~ISymbol() = default;
 
 			virtual bool isAutoSymbol() = 0;
+			
+			virtual Decompiler::Storage getStorage() = 0;
 
 			virtual Type getType() = 0;
 

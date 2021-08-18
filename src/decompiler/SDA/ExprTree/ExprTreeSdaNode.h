@@ -41,7 +41,7 @@ namespace CE::Decompiler::ExprTree
 	class ILocatable : public virtual ISdaNode
 	{
 	public:
-		virtual void getLocation(MemLocation& location) = 0;
+		virtual bool getLocation(MemLocation& location) = 0;
 	};
 
 	// means that the class can give a value(or not) associated with some memory location

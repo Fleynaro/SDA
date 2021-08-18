@@ -4,6 +4,10 @@
 using namespace CE;
 using namespace Symbol;
 
+Decompiler::Storage FuncParameterSymbol::getStorage() {
+	return getParamInfo().m_storage;
+}
+
 int FuncParameterSymbol::getParamIdx() const {
 	return m_paramIdx;
 }

@@ -18,9 +18,11 @@ namespace CE::Symbol
 			: AbstractSymbol(manager, type, name, comment)
 		{}
 
-		int getParamIdx() const;
-
 		Type getType() override;
+
+		Decompiler::Storage getStorage() override;
+
+		int getParamIdx() const;
 
 		Decompiler::ParameterInfo getParamInfo() const;
 

@@ -16,6 +16,8 @@ namespace CE::Decompiler::Symbol
 	class Symbol
 	{
 	public:
+		int m_size;
+		
 		Symbol(int size)
 			: m_size(size)
 		{}
@@ -32,8 +34,6 @@ namespace CE::Decompiler::Symbol
 		Symbol* clone(ExprTree::NodeCloneContext* ctx);
 
 	protected:
-		int m_size;
-
 		virtual Symbol* cloneSymbol() = 0;
 	};
 	

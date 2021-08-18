@@ -4,6 +4,10 @@ CE::Symbol::Type CE::Symbol::StructFieldSymbol::getType() {
 	return STRUCT_FIELD;
 }
 
+CE::Decompiler::Storage CE::Symbol::StructFieldSymbol::getStorage() {
+	return Decompiler::Storage();
+}
+
 int CE::Symbol::StructFieldSymbol::getBitSize() const {
 	return m_bitSize;
 }

@@ -75,19 +75,22 @@ FunctionCallInfo AbstractPrimaryDecompiler::requestFunctionCallInfo(ExecContext*
 }
 
 Symbol::RegisterVariable* AbstractPrimaryDecompiler::getRegisterVariable(const Register& reg) {
+	if (reg.getType() == Register::Type::Flag || true)
+		return new Symbol::RegisterVariable(reg);
+	
 	const auto it = m_registerVars.find(reg.getId());
 	if (it != m_registerVars.end()) {
 		const auto regVar = it->second;
 		regVar->m_register.m_valueRangeMask = regVar->m_register.m_valueRangeMask | reg.m_valueRangeMask;
+		regVar->m_size = regVar->m_register.getSize();
 		return regVar;
 	}
 	const auto regVar = new Symbol::RegisterVariable(reg);
-	if (reg.getType() == Register::Type::Generic) {
-		// todo: think about flag/xmm registers
-		// ah(mask 0xFF00) -> ax(mask 0xFFFF)
-		auto& mask = regVar->m_register.m_valueRangeMask;
-		mask = BitMask64::GetBitMask64BySizeInBits(mask.getMaxSizeInBits() - mask.getOffsetFromTheEnd());
-	}
+	// todo: think about flag/xmm registers
+	// ah(mask 0xFF00) -> ax(mask 0xFFFF)
+	auto& mask = regVar->m_register.m_valueRangeMask;
+	mask = BitMask64::GetBitMask64BySizeInBits(mask.getMaxSizeInBits() - mask.getOffsetFromTheEnd());
+	
 	m_registerVars[reg.getId()] = regVar;
 	m_decompiledGraph->addSymbol(regVar);
 	return regVar;

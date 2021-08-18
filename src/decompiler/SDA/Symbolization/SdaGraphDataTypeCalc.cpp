@@ -284,23 +284,25 @@ void SdaDataTypesCalculater::calculateDataTypes(INode* node) {
 	else if (const auto sdaFunctionNode = dynamic_cast<SdaFunctionNode*>(sdaNode)) {
 		handleFunctionNode(sdaFunctionNode);
 	}
-	else if (auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(sdaNode)) {
+	else if (const auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(sdaNode)) {
 		// example: *(float*)(param1) where <param1> is <float*>
-		if (sdaSymbolLeaf->getDataType()->isPointer()) {
-			const auto g = sdaSymbolLeaf->getDataType()->getGroup();
-			if (g == DataType::AbstractType::Structure || g == DataType::AbstractType::Class) {
-				if (dynamic_cast<ReadValueNode*>(sdaSymbolLeaf->getParentNode())) {
-					// just add offset: *(float*)(param1) -> *(float*)(param1 + 0x0)
-					auto linearExpr = new LinearExpr(new SdaNumberLeaf(0));
-					const auto unknownLocation = new UnknownLocation(linearExpr, 0);
-					linearExpr->addParentNode(unknownLocation);
-					sdaSymbolLeaf->replaceWith(unknownLocation);
-					linearExpr->addTerm(sdaSymbolLeaf);
-					//then build a goar or anything
-					handleUnknownLocation(unknownLocation);
+		if (!sdaSymbolLeaf->isAddrGetting()) { // to avoid *(&param5) (see #108 sample) todo: think about it
+			if (sdaSymbolLeaf->getDataType()->isPointer()) {
+				const auto group = sdaSymbolLeaf->getDataType()->getGroup();
+				if (group == DataType::AbstractType::Structure) {
+					if (dynamic_cast<ReadValueNode*>(sdaSymbolLeaf->getParentNode())) {
+						// just add offset: *(float*)(param1) -> *(float*)(param1 + 0x0)
+						auto linearExpr = new LinearExpr(new SdaNumberLeaf(0));
+						const auto unknownLocation = new UnknownLocation(linearExpr, 0);
+						linearExpr->addParentNode(unknownLocation);
+						sdaSymbolLeaf->replaceWith(unknownLocation);
+						linearExpr->addTerm(sdaSymbolLeaf);
+						//then build a goar or anything
+						handleUnknownLocation(unknownLocation);
+					}
 				}
+				// why a symbol only? Because no cases when (param1->field_1)->field_2 as memVar exists.
 			}
-			// why a symbol only? Because no cases when (param1->field_1)->field_2 as memVar exists.
 		}
 	}
 	else if (auto sdaNumberLeaf = dynamic_cast<SdaNumberLeaf*>(sdaNode)) {

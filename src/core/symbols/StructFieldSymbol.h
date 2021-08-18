@@ -21,6 +21,8 @@ namespace CE::Symbol
 
 		Type getType() override;
 
+		Decompiler::Storage getStorage() override;
+
 		int getBitSize() const;
 
 		void setBitSize(int size);

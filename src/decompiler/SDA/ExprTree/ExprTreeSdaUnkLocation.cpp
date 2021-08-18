@@ -87,13 +87,14 @@ void UnknownLocation::setDataType(DataTypePtr dataType) {
 	getBaseSdaNode()->setDataType(dataType);
 }
 
-void UnknownLocation::getLocation(MemLocation& location) {
+bool UnknownLocation::getLocation(MemLocation& location) {
 	auto baseSdaNode = getBaseSdaNode();
 	auto valueDataType = CloneUnit(baseSdaNode->getDataType());
 	valueDataType->removePointerLevelOutOfFront();
 
 	if (auto locatableNode = dynamic_cast<ILocatable*>(baseSdaNode)) {
-		locatableNode->getLocation(location);
+		if (!locatableNode->getLocation(location))
+			return false;
 	}
 	else {
 		location.m_type = MemLocation::IMPLICIT;
@@ -106,4 +107,5 @@ void UnknownLocation::getLocation(MemLocation& location) {
 		const auto itemSize = multiplier ? static_cast<int>(multiplier->getValue()) : 1;
 		location.addArrayDim(itemSize);
 	}
+	return true;
 }

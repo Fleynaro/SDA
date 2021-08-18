@@ -58,6 +58,6 @@ namespace CE::Decompiler::ExprTree
 
 		void setDataType(DataTypePtr dataType) override;
 
-		void getLocation(MemLocation& location) override;
+		bool getLocation(MemLocation& location) override;
 	};
 };

@@ -118,7 +118,7 @@ void SymbolMapper::bind(Statement& query, AbstractSymbol& symbol) {
 	if (const auto memSymbol = dynamic_cast<AbstractMemorySymbol*>(&symbol)) {
 		json_extra["offset"] = memSymbol->getOffset();
 	}
-	else if(auto structFieldSymbol = dynamic_cast<StructFieldSymbol*>(&symbol)) {
+	else if(const auto structFieldSymbol = dynamic_cast<StructFieldSymbol*>(&symbol)) {
 		json_extra["abs_bit_offset"] = structFieldSymbol->getAbsBitOffset();
 		json_extra["bit_size"] = structFieldSymbol->getBitSize();
 	}

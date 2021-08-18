@@ -38,8 +38,10 @@ void CE::Decompiler::Optimization::ExprUnification::processSymbolLeaf(SymbolLeaf
 	if (symbolLeaf->m_size != 0 && symbolLeaf->m_size < symbolLeaf->m_symbol->getSize()) {
 		const auto mask = BitMask64(symbolLeaf->m_size, 0).getValue();
 		const auto numberLeaf = new NumberLeaf(mask, 0x8);
-		const auto opNode = new OperationalNode(symbolLeaf, numberLeaf, And);
+		const auto opNode = new OperationalNode(nullptr, numberLeaf, And);
 		replace(opNode, false);
+		opNode->m_leftNode = symbolLeaf;
+		symbolLeaf->addParentNode(opNode);
 		symbolLeaf->m_size = 0;
 	}
 }

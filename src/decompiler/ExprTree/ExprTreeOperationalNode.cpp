@@ -51,7 +51,8 @@ bool ExprTree::IsOperationManipulatedWithBitVector(OperationType opType) {
 OperationalNode::OperationalNode(INode* leftNode, INode* rightNode, OperationType operation,
                                  PCode::Instruction* instr): m_leftNode(leftNode), m_rightNode(rightNode),
                                                              m_operation(operation), m_instr(instr) {
-	leftNode->addParentNode(this);
+	if (leftNode != nullptr)
+		leftNode->addParentNode(this);
 	if (rightNode != nullptr) {
 		rightNode->addParentNode(this);
 	}

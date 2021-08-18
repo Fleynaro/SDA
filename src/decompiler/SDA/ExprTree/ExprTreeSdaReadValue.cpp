@@ -62,35 +62,36 @@ bool SdaReadValueNode::isAddrGetting() {
 void SdaReadValueNode::setAddrGetting(bool toggle) {
 }
 
-void SdaReadValueNode::getLocation(MemLocation& location) {
+bool SdaReadValueNode::getLocation(MemLocation& location) {
 	if (auto locatableAddrNode = dynamic_cast<ILocatable*>(getAddress())) {
-		locatableAddrNode->getLocation(location);
+		if (!locatableAddrNode->getLocation(location))
+			return false;
 		location.m_valueSize = getSize();
-		return;
+		return true;
 	}
-	else {
-		ISdaNode* sdaAddrNode = nullptr;
-		int64_t offset = 0x0;
-		if (const auto symbolLeaf = dynamic_cast<SdaSymbolLeaf*>(getAddress())) {
-			sdaAddrNode = symbolLeaf;
-		}
-		else if (const auto sdaGenNode = dynamic_cast<SdaGenericNode*>(getAddress())) {
-			if (auto linearExpr = dynamic_cast<LinearExpr*>(sdaGenNode->getNode())) {
-				if (linearExpr->getTerms().size() == 1) {
-					if (sdaAddrNode = dynamic_cast<ISdaNode*>(*linearExpr->getTerms().begin())) {
-						offset = linearExpr->getConstTermValue();
-					}
+	
+	ISdaNode* sdaAddrNode = nullptr;
+	int64_t offset = 0x0;
+	if (const auto symbolLeaf = dynamic_cast<SdaSymbolLeaf*>(getAddress())) {
+		sdaAddrNode = symbolLeaf;
+	}
+	else if (const auto sdaGenNode = dynamic_cast<SdaGenericNode*>(getAddress())) {
+		if (auto linearExpr = dynamic_cast<LinearExpr*>(sdaGenNode->getNode())) {
+			if (linearExpr->getTerms().size() == 1) {
+				if (sdaAddrNode = dynamic_cast<ISdaNode*>(*linearExpr->getTerms().begin())) {
+					offset = linearExpr->getConstTermValue();
 				}
 			}
 		}
-
-		if (sdaAddrNode && sdaAddrNode->getSrcDataType()->getSize() == 0x8) {
-			location.m_type = MemLocation::IMPLICIT;
-			location.m_baseAddrHash = sdaAddrNode->getHash();
-			location.m_offset = offset;
-			location.m_valueSize = getSize();
-			return;
-		}
 	}
-	throw std::exception("impossible to determine the location");
+
+	if (sdaAddrNode && sdaAddrNode->getSrcDataType()->getSize() == 0x8) {
+		location.m_type = MemLocation::IMPLICIT;
+		location.m_baseAddrHash = sdaAddrNode->getHash();
+		location.m_offset = offset;
+		location.m_valueSize = getSize();
+		return true;
+	}
+	// impossible to determine the location
+	return false;
 }
