@@ -53,7 +53,7 @@ void AbstractPrimaryDecompiler::start() {
 	// all register variables have theirs values only at start offset and these values are not changed during emulating
 	const auto startOffset = m_decompiledGraph->getFuncGraph()->getStartBlock()->getMinOffset();
 	for(const auto& [reg, regVar] : m_registerVars) {
-		m_decompiledGraph->addSymbolValue(startOffset, regVar, Storage(reg), true);
+		m_decompiledGraph->addSymbolValue(startOffset, regVar, Storage(reg), false);
 	}
 	
 	// end

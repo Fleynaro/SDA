@@ -6,12 +6,14 @@
 void GUI::PCodeEmulator::updateByDecGraph(CE::Decompiler::DecompiledCodeGraph* decGraph) {
 	if (m_lastExecutedInstr) {
 		const auto instrOffset = m_lastExecutedInstr->getOffset();
+		// after the last executed instruction
 		updateSymbolValuesByDecGraph(decGraph, instrOffset, true);
 	}
 	if (m_curInstr) {
 		const auto instrOffset = m_curInstr->getOffset();
 		m_curBlockTopNode = decGraph->findBlockTopNodeAtOffset(instrOffset);
 		m_relStackPointerValue = decGraph->getStackPointerValueAtOffset(instrOffset);
+		// before the current instruction
 		updateSymbolValuesByDecGraph(decGraph, instrOffset, false);
 	}
 }
@@ -28,30 +30,37 @@ void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::Decompiled
 			const auto symbol = valueInfo.m_symbol;
 			const auto& storage = valueInfo.m_storage;
 
-			// take value for the symbol from contexts
-			if(storage.getType() == CE::Decompiler::Storage::STORAGE_REGISTER) {
-				const auto regMask = CE::Decompiler::BitMask64(symbol->getSize(), static_cast<int>(storage.getOffset()));
-				const auto reg = CE::Decompiler::Register(storage.getRegisterId(), regMask);
-
-				// if user changed value for the symbol then set user's value into context
-				auto userDefined = false;
+			// if user changed value for the symbol then need to set user's value into context
+			auto userDefined = false;
+			CE::Decompiler::DataValue userValue = 0;
+			{
 				const auto it2 = symbolValueMap->find(symbol);
 				if (it2 != symbolValueMap->end()) {
 					if (it2->second.m_userDefined) {
-						m_execCtx.setRegisterValue(reg, it2->second.m_value);
+						userValue = it2->second.m_value;
 						it2->second.m_userDefined = false;
 						userDefined = true;
 					}
 				}
+			}
 
-				if (!userDefined) {
+			// take value for the symbol from contexts (or set user value)
+			if(storage.getType() == CE::Decompiler::Storage::STORAGE_REGISTER) {
+				// param registers (rcx, rdx)
+				const auto regMask = CE::Decompiler::BitMask64(symbol->getSize(), static_cast<int>(storage.getOffset()));
+				const auto reg = CE::Decompiler::Register(storage.getRegisterId(), regMask);
+
+				if (userDefined) {
+					m_execCtx.setRegisterValue(reg, userValue);
+				} else {
 					CE::Decompiler::DataValue value;
 					if (m_execCtx.getRegisterValue(reg, value)) {
-						(*symbolValueMap)[symbol].m_value = value >> storage.getOffset();
+						(*symbolValueMap)[symbol] = { value >> storage.getOffset(), false };
 					}
 				}
 			}
 			else if (storage.getType() == CE::Decompiler::Storage::STORAGE_STACK || storage.getType() == CE::Decompiler::Storage::STORAGE_GLOBAL) {
+				// param memVar
 				CE::Decompiler::RegisterId regId;
 				auto memOffset = storage.getOffset();
 				if (storage.getType() == CE::Decompiler::Storage::STORAGE_STACK) {
@@ -65,27 +74,25 @@ void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::Decompiled
 				
 				CE::Decompiler::DataValue baseAddr;
 				if (m_execCtx.getRegisterValue(reg, baseAddr)) {
-					// if user changed value for the symbol then set user's value into context
-					auto userDefined = false;
-					const auto it2 = symbolValueMap->find(symbol);
-					if (it2 != symbolValueMap->end()) {
-						if (it2->second.m_userDefined) {
-							m_memCtx.setValue(baseAddr + memOffset, it2->second.m_value);
-							it2->second.m_userDefined = false;
-							userDefined = true;
-						}
-					}
-
-					if (!userDefined) {
+					if (userDefined) {
+						m_memCtx.setValue(baseAddr + memOffset, userValue);
+					} else {
 						CE::Decompiler::DataValue value;
 						if (m_memCtx.getValue(baseAddr + memOffset, value)) {
-							addSymbolValue(symbol, value);
+							(*symbolValueMap)[symbol] = { value, false };
 						}
 					}
 				}
 			} else {
 				// memVar
-				addSymbolValue(symbol, m_lastExecutedInstrValue);
+				if (userDefined) {
+					if(const auto outputVarnode = m_lastExecutedInstr->m_output) {
+						m_execCtx.setValue(outputVarnode, userValue);
+					}
+				}
+				else {
+					(*symbolValueMap)[symbol] = { m_lastExecutedInstrValue, false };
+				}
 			}
 		}
 	}

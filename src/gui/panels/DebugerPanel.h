@@ -198,6 +198,7 @@ namespace GUI
 		PopupBuiltinWindow* m_builtinWindow = nullptr;
 	
 	public:
+		// need to set param registers in the beigining of the function
 		bool m_takeValueFromRegister = false;
 		
 		ValueViewerPanel(const std::string& name, const Location& location, CE::DataTypePtr dataType, SymbolValueMap* symbolValueMap, CE::Decompiler::PCode::VmExecutionContext* execCtx, CE::Decompiler::PCode::VmMemoryContext* memCtx)
@@ -372,10 +373,11 @@ namespace GUI
 
 		void setValue(const Location& location, CE::Decompiler::DataValue value) const {
 			if (location.m_isSymbol) {
-				const auto regSymbol = dynamic_cast<CE::Decompiler::Symbol::RegisterVariable*>(location.m_symbol);
-				if (regSymbol && (m_takeValueFromRegister || regSymbol->m_register.isPointer())) {
-					// rip/rsp
-					m_execCtx->setRegisterValue(regSymbol->m_register, value);
+				if (const auto regSymbol = dynamic_cast<CE::Decompiler::Symbol::RegisterVariable*>(location.m_symbol)) {
+					if (m_takeValueFromRegister || regSymbol->m_register.isPointer()) {
+						m_execCtx->setRegisterValue(regSymbol->m_register, value);
+						(*m_symbolValueMap)[location.m_symbol] = { value, false };
+					}
 					return;
 				}
 				const auto it = m_symbolValueMap->find(location.m_symbol);
@@ -892,6 +894,9 @@ namespace GUI
 
 		void stepNextPCodeInstr() {
 			m_vm.execute(m_curInstr);
+			if(m_curInstr->m_id == CE::Decompiler::InstructionId::RETURN) {
+				getSymbolValueMap()->clear();
+			}
 			m_lastExecutedInstr = m_curInstr;
 			m_lastExecutedInstrValue = m_vm.m_result;
 			
@@ -952,18 +957,6 @@ namespace GUI
 		SymbolValueMap* getSymbolValueMap() {
 			const auto curStackFrame = getCurrentStackFrame();
 			return &m_symbolValueMaps[curStackFrame];
-		}
-
-		void addSymbolValue(CE::Decompiler::Symbol::Symbol* symbol, CE::Decompiler::DataValue value) {
-			const auto symbolValueMap = getSymbolValueMap();
-			const auto it = symbolValueMap->find(symbol);
-			if (it != symbolValueMap->end()) {
-				if(it->second.m_userDefined) {
-					it->second.m_userDefined = false;
-					return;
-				}
-			}
-			(*symbolValueMap)[symbol] = { value, false };
 		}
 
 		std::uintptr_t getCurrentStackFrame() const {
@@ -1054,6 +1047,8 @@ namespace GUI
 							else stepOver();
 						}
 					}
+				} else {
+					m_symbolValueMaps.clear();
 				}
 			}
 
