@@ -28,7 +28,7 @@ namespace CE::Decompiler::PCode
 		ExprTree::AbstractCondition* toBoolean(ExprTree::INode* node);
 
 		// create assignment line: memVar1 = read([memory location])
-		ExprTree::SymbolLeaf* createMemSymbol(ExprTree::ReadValueNode* readValueNode, Instruction* instr = nullptr) const;
+		ExprTree::SymbolLeaf* createMemSymbolLeaf(ExprTree::ReadValueNode* readValueNode, Instruction* instr = nullptr) const;
 	private:
 		AbstractPrimaryDecompiler* m_decompiler;
 		DecBlock* m_block;

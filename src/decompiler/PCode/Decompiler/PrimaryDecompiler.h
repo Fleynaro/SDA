@@ -20,7 +20,7 @@ namespace CE::Decompiler
 	private:
 		AbstractRegisterFactory* m_registerFactory;
 		int m_loopsCount = 0;
-		std::map<int, std::map<uint64_t, Symbol::RegisterVariable*>> m_registerVars;
+		std::map<Register, Symbol::RegisterVariable*> m_registerVars;
 
 	public:
 		struct LocalVarInfo {

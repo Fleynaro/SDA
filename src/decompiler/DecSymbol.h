@@ -17,6 +17,7 @@ namespace CE::Decompiler::Symbol
 	{
 	public:
 		int m_size;
+		int m_parentsCount = 0;
 		
 		Symbol(int size)
 			: m_size(size)

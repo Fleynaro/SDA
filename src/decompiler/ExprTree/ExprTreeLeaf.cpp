@@ -24,7 +24,13 @@ bool FloatNanLeaf::isFloatingPoint() {
 
 SymbolLeaf::SymbolLeaf(Symbol::Symbol* symbol)
 	: m_symbol(symbol)
-{}
+{
+	m_symbol->m_parentsCount++;
+}
+
+SymbolLeaf::~SymbolLeaf() {
+	m_symbol->m_parentsCount--;
+}
 
 int SymbolLeaf::getSize() {
 	return m_symbol->getSize();

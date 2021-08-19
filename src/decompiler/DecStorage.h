@@ -15,6 +15,8 @@ namespace CE::Decompiler
 
 		Storage(StorageType storageType = STORAGE_NONE, int registerId = 0, int64_t offset = 0);
 
+		Storage(const PCode::Register& reg);
+
 		StorageType getType() const;
 
 		int getRegisterId() const;

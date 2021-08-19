@@ -22,6 +22,7 @@
 #include "managers/SymbolTableManager.h"
 #include "panels/BuiltinInputPanel.h"
 #include "utilities/Helper.h"
+#include <stack>
 
 namespace GUI
 {
@@ -700,14 +701,19 @@ namespace GUI
 		CE::Decompiler::DecBlock::BlockTopNode* m_curBlockTopNode = nullptr;
 		int m_stackPointerValue = 0;
 		bool m_showContexts = false;
+		CE::ComplexOffset m_lastExecutedInstrOffset = CE::InvalidOffset;
+		CE::Decompiler::DataValue m_lastExecutedInstrValue = 0;
 		PopupBuiltinWindow* m_valueViewerWin = nullptr;
+
+		using SymbolValueMap = std::map<CE::Decompiler::Symbol::Symbol*, CE::Decompiler::DataValue>;
+		std::stack<SymbolValueMap> m_symbolValues;
 		
 		PCodeEmulator(CE::AddressSpace* addressSpace, CE::ImageDecorator* imageDec, CE::ComplexOffset startOffset)
 			: m_addressSpace(addressSpace), m_imageDec(imageDec), m_offset(startOffset),  m_vm(&m_execCtx, &m_memCtx, false)
 		{
 			m_execCtxViewerWin = new StdWindow(new ExecContextViewerPanel(&m_execCtx, &m_registerFactoryX86));
 			m_stackViewerWin = new StdWindow(new StackViewerPanel(&m_execCtx, &m_memCtx, &m_registerFactoryX86));
-			m_execCtx.setRegisterValue(CE::Decompiler::Register(ZYDIS_REGISTER_RSP), 0x1000000000);
+			m_execCtx.setRegisterValue(CE::Decompiler::Register(ZYDIS_REGISTER_RSP, 0), 0x1000000000);
 		}
 
 		~PCodeEmulator() {
@@ -734,7 +740,7 @@ namespace GUI
 			std::map<int, CE::Decompiler::DataValue> registers;
 			registers = m_execCtx.getRegisters();
 			m_execCtx.syncWith(registers);
-			m_execCtx.setRegisterValue(CE::Decompiler::Register(ZYDIS_REGISTER_RIP), m_imageDec->getImage()->getAddress() + m_offset.getByteOffset());
+			m_execCtx.setRegisterValue(CE::Decompiler::Register(ZYDIS_REGISTER_RIP, 0), m_imageDec->getImage()->getAddress() + m_offset.getByteOffset());
 			defineCurPCodeInstruction();
 		}
 
@@ -750,6 +756,9 @@ namespace GUI
 		}
 
 		void updateByDecGraph(CE::Decompiler::DecompiledCodeGraph* decGraph);
+
+		void updateSymbolValuesByDecGraph(CE::Decompiler::DecompiledCodeGraph* decGraph, CE::ComplexOffset offset,
+		                                  bool after);
 
 		void createValueViewer(const CE::Decompiler::StoragePath& storagePath, const std::string& name, CE::DataTypePtr dataType) {
 			ValueViewerPanel::Location location;
@@ -851,6 +860,15 @@ namespace GUI
 
 		void stepNextPCodeInstr() {
 			m_vm.execute(m_curInstr);
+			m_lastExecutedInstrOffset = m_offset;
+			m_lastExecutedInstrValue = m_vm.m_result;
+			if(m_curInstr->m_id == CE::Decompiler::InstructionId::CALL) {
+				m_symbolValues.push(SymbolValueMap());
+			}
+			else if (m_curInstr->m_id == CE::Decompiler::InstructionId::RETURN) {
+				m_symbolValues.pop();
+			}
+			
 			defineNextInstrOffset();
 			if (!isWorking())
 				return;
@@ -917,7 +935,7 @@ namespace GUI
 					if(location.m_register.getType() == CE::Decompiler::Register::Type::StackPointer) {
 						baseAddr -= m_stackPointerValue;
 					} else if (location.m_register.getType() == CE::Decompiler::Register::Type::InstructionPointer) {
-						baseAddr -= m_curInstr->m_origInstruction->m_offset;
+						baseAddr -= m_offset.getByteOffset();
 					}
 				}
 				else {

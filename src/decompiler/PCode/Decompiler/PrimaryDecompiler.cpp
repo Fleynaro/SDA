@@ -49,6 +49,13 @@ void AbstractPrimaryDecompiler::start() {
 	}
 	m_decompiledGraph->sortBlocksByLevel();
 
+	// for pcode emulator
+	// all register variables have theirs values only at start offset and these values are not changed during emulating
+	const auto startOffset = m_decompiledGraph->getFuncGraph()->getStartBlock()->getMinOffset();
+	for(const auto& [reg, regVar] : m_registerVars) {
+		m_decompiledGraph->addSymbolValue(startOffset, regVar, Storage(reg), false);
+	}
+	
 	// end
 	onFinal();
 }
@@ -75,18 +82,12 @@ FunctionCallInfo AbstractPrimaryDecompiler::requestFunctionCallInfo(ExecContext*
 }
 
 Symbol::RegisterVariable* AbstractPrimaryDecompiler::getRegisterVariable(const Register& reg) {
-	const auto regId = reg.getId();
-	const auto regMask = reg.m_valueRangeMask.getValue();
-	
-	const auto it = m_registerVars.find(regId);
+	const auto it = m_registerVars.find(reg);
 	if (it != m_registerVars.end()) {
-		const auto it2 = it->second.find(regMask);
-		if (it2 != it->second.end()) {
-			return it2->second;
-		}
+		return it->second;
 	}
 	const auto regVar = new Symbol::RegisterVariable(reg);
-	m_registerVars[regId][regMask] = regVar;
+	m_registerVars[reg] = regVar;
 	m_decompiledGraph->addSymbol(regVar);
 	return regVar;
 }

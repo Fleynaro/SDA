@@ -44,6 +44,10 @@ Storage::Storage(StorageType storageType, int registerId, int64_t offset)
 	: m_storageType(storageType), m_registerId(registerId), m_offset(offset)
 {}
 
+Storage::Storage(const Register& reg)
+	: Storage(STORAGE_REGISTER, reg.getId(), reg.getOffset())
+{}
+
 Storage::StorageType Storage::getType() const
 {
 	return m_storageType;

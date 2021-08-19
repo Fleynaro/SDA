@@ -56,12 +56,13 @@ namespace CE::Decompiler::PCode
 	{
 		VmExecutionContext* m_execCtx;
 		VmMemoryContext* m_memCtx;
-		DataValue m_op1 = 0;
-		DataValue m_op2 = 0;
-		DataValue m_result = 0;
 		Instruction* m_instr = nullptr;
 		bool m_throwException;
 	public:
+		DataValue m_op1 = 0;
+		DataValue m_op2 = 0;
+		DataValue m_result = 0;
+		
 		VirtualMachine(VmExecutionContext* execCtx, VmMemoryContext* memCtx, bool throwException = true)
 			: m_execCtx(execCtx), m_memCtx(memCtx), m_throwException(throwException)
 		{}

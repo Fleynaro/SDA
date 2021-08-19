@@ -17,6 +17,8 @@ namespace CE::Decompiler::ExprTree
 
 		SymbolLeaf(Symbol::Symbol* symbol);
 
+		~SymbolLeaf() override;
+
 		int getSize() override;
 
 		HS getHash() override;

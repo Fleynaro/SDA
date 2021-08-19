@@ -36,6 +36,8 @@ namespace CE::Decompiler::PCode
 
 		Register(RegisterId genericId = 0, int index = 0, BitMask64 valueRangeMask = 0x0, Type type = Type::Generic);
 
+		Register(int regId, BitMask64 valueRangeMask = 0x0, Type type = Type::Generic);
+
 		Type getType() const;
 
 		int getId() const;
@@ -58,9 +60,9 @@ namespace CE::Decompiler::PCode
 		// check if memory area of two registers intersected
 		bool intersect(const Register& reg) const;
 
-		bool operator ==(const Register& reg) const {
-			return getId() == reg.getId() && m_valueRangeMask == reg.m_valueRangeMask;
-		}
+		bool operator <(const Register& reg) const;
+
+		bool operator ==(const Register& reg) const;
 	};
 
 	// that is the feature of x86: setting value to EAX cleans fully RAX

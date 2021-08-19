@@ -8,6 +8,10 @@ Register::Register(RegisterId genericId, int index, BitMask64 valueRangeMask, Ty
 	m_debugName = InstructionViewGenerator::GenerateRegisterName(*this);
 }
 
+Register::Register(int regId, BitMask64 valueRangeMask, Type type)
+	: Register(regId >> 8, regId & 0xFF, valueRangeMask, type)
+{}
+
 Register::Type Register::getType() const {
 	return m_type;
 }
@@ -51,6 +55,15 @@ int Register::getOffset() const {
 bool Register::intersect(const Register& reg) const {
 	//if the masks intersected
 	return getId() == reg.getId() && !(m_valueRangeMask & reg.m_valueRangeMask).isZero();
+}
+
+bool Register::operator<(const Register& reg) const {
+	return getId() < reg.getId() ||
+		getId() == reg.getId() && m_valueRangeMask < reg.m_valueRangeMask;
+}
+
+bool Register::operator==(const Register& reg) const {
+	return getId() == reg.getId() && m_valueRangeMask == reg.m_valueRangeMask;
 }
 
 // that is the feature of x86: setting value to EAX cleans fully RAX

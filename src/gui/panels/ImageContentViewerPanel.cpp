@@ -469,6 +469,8 @@ void GUI::ImageContentViewerPanel::decompile(CE::Decompiler::FunctionPCodeGraph*
 				}
 			}
 
+			decCodeGraph->removeNotUsedSymbols();
+
 			// open the window
 			DecompiledCodeViewerPanel* panel;
 			if (sdaCodeGraph) {

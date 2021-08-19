@@ -21,8 +21,9 @@ void InstructionInterpreter::execute(Instruction* instr) {
 		auto expr = requestVarnode(m_instr->m_input0);
 		auto readSize = m_instr->m_output->getSize();
 		auto readValueNode = new ExprTree::ReadValueNode(expr, readSize, m_instr);
-		auto memSymbolLeaf = createMemSymbol(readValueNode, m_instr);
+		auto memSymbolLeaf = createMemSymbolLeaf(readValueNode, m_instr);
 		m_ctx->setVarnode(m_instr->m_output, memSymbolLeaf);
+		m_decompiler->m_decompiledGraph->addSymbolValue(m_instr->getOffset(), memSymbolLeaf->m_symbol);
 		break;
 	}
 
@@ -334,8 +335,8 @@ void InstructionInterpreter::execute(Instruction* instr) {
 			}
 		}
 
+		const auto retInfo = funcCallInfo.getReturnInfo();
 		Register dstRegister;
-		auto retInfo = funcCallInfo.getReturnInfo();
 		if (retInfo.m_storage.getType() != Storage::STORAGE_NONE) {
 			dstRegister = m_decompiler->getRegisterFactory()->createRegister(retInfo.m_storage.getRegisterId(), retInfo.m_size, retInfo.m_storage.getOffset());
 		}
@@ -348,6 +349,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 		if (dstRegister.isValid()) {
 			m_ctx->m_registerExecCtx.setRegister(dstRegister, symbolLeaf);
 		}
+		m_decompiler->m_decompiledGraph->addSymbolValue(m_instr->getOffset(), funcResultVar, retInfo.m_storage);
 		break;
 	}
 
@@ -366,16 +368,21 @@ void InstructionInterpreter::execute(Instruction* instr) {
 }
 
 ExprTree::INode* InstructionInterpreter::buildParameterInfoExpr(ParameterInfo& paramInfo) {
-	auto& storage = paramInfo.m_storage;
+	const auto& storage = paramInfo.m_storage;
 
 	// memory
 	if (storage.getType() == Storage::STORAGE_STACK || storage.getType() == Storage::STORAGE_GLOBAL) {
-		const auto reg = m_decompiler->getRegisterFactory()->createRegister(storage.getRegisterId(), 0x8); // RIP or RSP (8 bytes = size of pointer)
+		const auto fixedStorage = Storage(storage.getType(), storage.getRegisterId(), storage.getOffset() - 0x8);
+		
+		const auto reg = m_decompiler->getRegisterFactory()->createRegister(fixedStorage.getRegisterId(), 0x8); // RIP or RSP (8 bytes = size of pointer)
 		auto regSymbol = m_ctx->m_registerExecCtx.requestRegister(reg);
-		const auto offsetNumber = new ExprTree::NumberLeaf(static_cast<uint64_t>(storage.getOffset()) - 0x8, regSymbol->getSize());
+		const auto offsetNumber = new ExprTree::NumberLeaf(static_cast<uint64_t>(fixedStorage.getOffset()), regSymbol->getSize());
 		const auto opAddNode = new ExprTree::OperationalNode(regSymbol, offsetNumber, ExprTree::Add);
 		const auto readValueNode = new ExprTree::ReadValueNode(opAddNode, paramInfo.m_size);
-		return createMemSymbol(readValueNode, m_instr);
+		
+		const auto memSymbolLeaf = createMemSymbolLeaf(readValueNode, m_instr);
+		m_decompiler->m_decompiledGraph->addSymbolValue(m_instr->getOffset(), memSymbolLeaf->m_symbol, fixedStorage, false);
+		return memSymbolLeaf;
 	}
 
 	// register
@@ -399,7 +406,7 @@ ExprTree::AbstractCondition* InstructionInterpreter::toBoolean(ExprTree::INode* 
 	return new ExprTree::Condition(node, new ExprTree::NumberLeaf(static_cast<uint64_t>(0x0), 1), ExprTree::Condition::Ne, false);
 }
 
-ExprTree::SymbolLeaf* InstructionInterpreter::createMemSymbol(ExprTree::ReadValueNode* readValueNode, Instruction* instr) const
+ExprTree::SymbolLeaf* InstructionInterpreter::createMemSymbolLeaf(ExprTree::ReadValueNode* readValueNode, Instruction* instr) const
 {
 	const auto memVar = new Symbol::MemoryVariable(instr, readValueNode->getSize());
 	readValueNode->m_memVar = memVar;

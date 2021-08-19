@@ -10,6 +10,14 @@ namespace CE::Decompiler
 		std::list<DecBlock*> m_decompiledBlocks;
 		std::list<DecBlock*> m_removedDecompiledBlocks;
 		std::list<Symbol::Symbol*> m_symbols;
+
+		// for pcode emulator
+		struct SymbolValue
+		{
+			Storage m_storage;
+			bool m_after;
+		};
+		std::map<ComplexOffset, std::map<Symbol::Symbol*, SymbolValue>> m_symbolValues;
 		std::map<ComplexOffset, int> m_stackPointerValues;
 	public:
 		
@@ -39,8 +47,17 @@ namespace CE::Decompiler
 
 		HS getHash();
 
+		void removeNotUsedSymbols();
+
 		DecBlock::BlockTopNode* findBlockTopNodeAtOffset(ComplexOffset offset);
 
+		// for pcode emulator
+		void addSymbolValue(ComplexOffset offset, Symbol::Symbol* symbol, const Storage& storage = Storage(), bool after = true);
+
+		// for pcode emulator
+		std::map<ComplexOffset, std::map<Symbol::Symbol*, SymbolValue>>& getSymbolValues();
+
+		// for pcode emulator
 		std::map<ComplexOffset, int>& getStackPointerValues();
 
 		int getStackPointerValueAtOffset(ComplexOffset offset);

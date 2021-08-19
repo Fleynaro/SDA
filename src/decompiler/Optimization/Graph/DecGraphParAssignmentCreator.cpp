@@ -87,12 +87,6 @@ void Optimization::GraphParAssignmentCreator::createParAssignmentsForLocalVars()
 		// iterate over all ctxs and create assignments: localVar1 = 0x5
 		for (auto execCtx : localVarInfo.m_parentExecCtxs) {
 			const auto expr = execCtx->m_registerExecCtx.requestRegister(localVarInfo.m_register);
-			Instruction* instr = nullptr;
-			if(const auto relToInstr = dynamic_cast<IRelatedToInstruction*>(expr)) {
-				if(!relToInstr->getInstructionsRelatedTo().empty()) {
-					instr = *relToInstr->getInstructionsRelatedTo().begin();
-				}
-			}
 
 			// to avoide: localVar1 = localVar1
 			if (const auto symbolLeaf = dynamic_cast<SymbolLeaf*>(expr))
@@ -100,9 +94,13 @@ void Optimization::GraphParAssignmentCreator::createParAssignmentsForLocalVars()
 					continue;
 
 			// associate localVar with PCode instructions
-			if (auto nodeRelToInstr = dynamic_cast<IRelatedToInstruction*>(expr)) {
-				for (auto instr : nodeRelToInstr->getInstructionsRelatedTo())
+			Instruction* instr = nullptr;
+			if (const auto nodeRelToInstr = dynamic_cast<IRelatedToInstruction*>(expr)) {
+				if (!nodeRelToInstr->getInstructionsRelatedTo().empty()) {
+					instr = *nodeRelToInstr->getInstructionsRelatedTo().begin();
 					localVar->m_instructionsRelatedTo.push_back(instr);
+					m_decGraph->addSymbolValue(instr->getOffset(), localVar, Storage(localVarInfo.m_register), true);
+				}
 			}
 
 			// create assignment: localVar = {expr}
