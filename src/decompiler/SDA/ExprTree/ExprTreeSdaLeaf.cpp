@@ -107,18 +107,10 @@ bool SdaSymbolLeaf::getLocation(MemLocation& location) {
 }
 
 StoragePath SdaSymbolLeaf::getStoragePath() {
+	auto path = m_symbolLeaf->getStoragePath();
 	const auto storage = m_sdaSymbol->getStorage();
-	if (storage.getType() == Storage::STORAGE_STACK) {
-		StoragePath path;
-		path.m_register = PCode::Register(ZYDIS_REGISTER_RSP, 0, BitMask64(0x8), PCode::Register::Type::StackPointer);
+	if (storage.getType() == Storage::STORAGE_STACK || storage.getType() == Storage::STORAGE_GLOBAL) {
 		path.m_offsets.push_back(storage.getOffset());
-		return path;
 	}
-	if (storage.getType() == Storage::STORAGE_GLOBAL) {
-		StoragePath path;
-		path.m_register = PCode::Register(ZYDIS_REGISTER_RIP, 0, BitMask64(0x8), PCode::Register::Type::InstructionPointer);
-		path.m_offsets.push_back(storage.getOffset());
-		return path;
-	}
-	return m_symbolLeaf->getStoragePath();
+	return path;
 }

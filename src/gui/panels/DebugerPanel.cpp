@@ -4,14 +4,15 @@
 
 
 void GUI::PCodeEmulator::updateByDecGraph(CE::Decompiler::DecompiledCodeGraph* decGraph) {
+	if (m_lastExecutedInstr) {
+		const auto instrOffset = m_lastExecutedInstr->getOffset();
+		updateSymbolValuesByDecGraph(decGraph, instrOffset, true);
+	}
 	if (m_curInstr) {
 		const auto instrOffset = m_curInstr->getOffset();
 		m_curBlockTopNode = decGraph->findBlockTopNodeAtOffset(instrOffset);
-		m_stackPointerValue = decGraph->getStackPointerValueAtOffset(instrOffset);
+		m_relStackPointerValue = decGraph->getStackPointerValueAtOffset(instrOffset);
 		updateSymbolValuesByDecGraph(decGraph, instrOffset, false);
-	}
-	if(m_lastExecutedInstrOffset != CE::InvalidOffset) {
-		updateSymbolValuesByDecGraph(decGraph, m_lastExecutedInstrOffset, true);
 	}
 }
 
@@ -20,16 +21,34 @@ void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::Decompiled
 	const auto& symbolValues = decGraph->getSymbolValues();
 	const auto it = symbolValues.find(offset);
 	if (it != symbolValues.end()) {
-		for (const auto& [symbol, info] : it->second) {
-			if (info.m_after == after)
+		const auto symbolValueMap = getSymbolValueMap();
+		for (const auto& valueInfo : it->second) {
+			if (valueInfo.m_after != after)
 				continue;
-			const auto& storage = info.m_storage;
+			const auto symbol = valueInfo.m_symbol;
+			const auto& storage = valueInfo.m_storage;
+
+			// take value for the symbol from contexts
 			if(storage.getType() == CE::Decompiler::Storage::STORAGE_REGISTER) {
-				const auto regMask = CE::Decompiler::BitMask64(symbol->getSize(), storage.getOffset());
+				const auto regMask = CE::Decompiler::BitMask64(symbol->getSize(), static_cast<int>(storage.getOffset()));
 				const auto reg = CE::Decompiler::Register(storage.getRegisterId(), regMask);
-				CE::Decompiler::DataValue value;
-				if (m_execCtx.getRegisterValue(reg, value)) {
-					m_symbolValues.top()[symbol] = value >> storage.getOffset();
+
+				// if user changed value for the symbol then set user's value into context
+				auto userDefined = false;
+				const auto it2 = symbolValueMap->find(symbol);
+				if (it2 != symbolValueMap->end()) {
+					if (it2->second.m_userDefined) {
+						m_execCtx.setRegisterValue(reg, it2->second.m_value);
+						it2->second.m_userDefined = false;
+						userDefined = true;
+					}
+				}
+
+				if (!userDefined) {
+					CE::Decompiler::DataValue value;
+					if (m_execCtx.getRegisterValue(reg, value)) {
+						(*symbolValueMap)[symbol].m_value = value >> storage.getOffset();
+					}
 				}
 			}
 			else if (storage.getType() == CE::Decompiler::Storage::STORAGE_STACK || storage.getType() == CE::Decompiler::Storage::STORAGE_GLOBAL) {
@@ -37,21 +56,36 @@ void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::Decompiled
 				auto memOffset = storage.getOffset();
 				if (storage.getType() == CE::Decompiler::Storage::STORAGE_STACK) {
 					regId = ZYDIS_REGISTER_RSP;
-					memOffset -= m_stackPointerValue;
+					memOffset -= m_relStackPointerValue;
 				} else {
 					regId = ZYDIS_REGISTER_RIP;
 					memOffset -= offset.getByteOffset();
 				}
 				const auto reg = CE::Decompiler::Register(regId, 0, CE::Decompiler::BitMask64(8));
+				
 				CE::Decompiler::DataValue baseAddr;
 				if (m_execCtx.getRegisterValue(reg, baseAddr)) {
-					CE::Decompiler::DataValue value;
-					if (m_memCtx.getValue(baseAddr + memOffset, value)) {
-						m_symbolValues.top()[symbol] = value;
+					// if user changed value for the symbol then set user's value into context
+					auto userDefined = false;
+					const auto it2 = symbolValueMap->find(symbol);
+					if (it2 != symbolValueMap->end()) {
+						if (it2->second.m_userDefined) {
+							m_memCtx.setValue(baseAddr + memOffset, it2->second.m_value);
+							it2->second.m_userDefined = false;
+							userDefined = true;
+						}
+					}
+
+					if (!userDefined) {
+						CE::Decompiler::DataValue value;
+						if (m_memCtx.getValue(baseAddr + memOffset, value)) {
+							addSymbolValue(symbol, value);
+						}
 					}
 				}
 			} else {
-				m_symbolValues.top()[symbol] = m_lastExecutedInstrValue;
+				// memVar
+				addSymbolValue(symbol, m_lastExecutedInstrValue);
 			}
 		}
 	}

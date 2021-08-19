@@ -52,9 +52,7 @@ void DecompiledCodeGraph::addSymbol(Symbol::Symbol* symbol) {
 void DecompiledCodeGraph::removeSymbol(Symbol::Symbol* symbol) {
 	m_symbols.remove(symbol);
 	for(auto& [offset, symbolValues] : m_symbolValues) {
-		const auto it = symbolValues.find(symbol);
-		if (it != symbolValues.end())
-			symbolValues.erase(it);
+		symbolValues.remove_if([&](const SymbolValue& value) { return symbol == value.m_symbol; });
 	}
 }
 
@@ -112,10 +110,10 @@ DecBlock::BlockTopNode* DecompiledCodeGraph::findBlockTopNodeAtOffset(ComplexOff
 }
 
 void DecompiledCodeGraph::addSymbolValue(ComplexOffset offset, Symbol::Symbol* symbol, const Storage& storage, bool after) {
-	m_symbolValues[offset][symbol] = {storage, after};
+	m_symbolValues[offset].push_back({ symbol, storage, after });
 }
 
-std::map<CE::ComplexOffset, std::map<Symbol::Symbol*, DecompiledCodeGraph::SymbolValue>>& DecompiledCodeGraph::getSymbolValues() {
+std::map<CE::ComplexOffset, std::list<DecompiledCodeGraph::SymbolValue>>& DecompiledCodeGraph::getSymbolValues() {
 	return m_symbolValues;
 }
 

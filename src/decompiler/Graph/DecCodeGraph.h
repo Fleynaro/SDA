@@ -14,10 +14,11 @@ namespace CE::Decompiler
 		// for pcode emulator
 		struct SymbolValue
 		{
+			Symbol::Symbol* m_symbol;
 			Storage m_storage;
 			bool m_after;
 		};
-		std::map<ComplexOffset, std::map<Symbol::Symbol*, SymbolValue>> m_symbolValues;
+		std::map<ComplexOffset, std::list<SymbolValue>> m_symbolValues;
 		std::map<ComplexOffset, int> m_stackPointerValues;
 	public:
 		
@@ -55,7 +56,7 @@ namespace CE::Decompiler
 		void addSymbolValue(ComplexOffset offset, Symbol::Symbol* symbol, const Storage& storage = Storage(), bool after = true);
 
 		// for pcode emulator
-		std::map<ComplexOffset, std::map<Symbol::Symbol*, SymbolValue>>& getSymbolValues();
+		std::map<ComplexOffset, std::list<SymbolValue>>& getSymbolValues();
 
 		// for pcode emulator
 		std::map<ComplexOffset, int>& getStackPointerValues();

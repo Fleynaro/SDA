@@ -112,7 +112,7 @@ void GoarNode::setDataType(DataTypePtr dataType) {
 StoragePath GoarNode::getNewStoragePath(int64_t offset) {
 	if (const auto storagePathNode = dynamic_cast<IStoragePathNode*>(m_base)) {
 		auto path = storagePathNode->getStoragePath();
-		if (path.m_register.isValid()) {
+		if (path.m_symbol) {
 			if (dynamic_cast<GoarFieldNode*>(m_base) || dynamic_cast<GoarArrayNode*>(m_base)) {
 				// pos.vec.x
 				*path.m_offsets.rbegin() += offset;
@@ -161,6 +161,13 @@ ISdaNode* GoarArrayNode::cloneSdaNode(NodeCloneContext* ctx) {
 	return new GoarArrayNode(dynamic_cast<ISdaNode*>(m_base->clone()), dynamic_cast<ISdaNode*>(m_indexNode->clone(ctx)), CloneUnit(m_outDataType), m_itemsMaxCount);
 }
 
+StoragePath GoarArrayNode::getStoragePath() {
+	if (const auto numberLeaf = dynamic_cast<INumberLeaf*>(m_indexNode)) {
+		return getNewStoragePath(numberLeaf->getValue() * m_outDataType->getSize());
+	}
+	return StoragePath();
+}
+
 GoarFieldNode::GoarFieldNode(ISdaNode* base, CE::Symbol::StructFieldSymbol* field)
 	: GoarNode(base), m_field(field)
 {}
@@ -171,4 +178,8 @@ DataTypePtr GoarFieldNode::getSrcDataType() {
 
 ISdaNode* GoarFieldNode::cloneSdaNode(NodeCloneContext* ctx) {
 	return new GoarFieldNode(dynamic_cast<ISdaNode*>(m_base->clone()), m_field);
+}
+
+StoragePath GoarFieldNode::getStoragePath() {
+	return getNewStoragePath(m_field->getOffset());
 }

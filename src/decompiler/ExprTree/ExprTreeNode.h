@@ -61,6 +61,12 @@ namespace CE::Decompiler::ExprTree
 		virtual void checkOnSingleParents();
 	};
 
+	struct StoragePath
+	{
+		Symbol::Symbol* m_symbol = nullptr;
+		std::list<int64_t> m_offsets;
+	};
+	
 	class IStoragePathNode : virtual public INode
 	{
 	public:

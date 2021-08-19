@@ -7,6 +7,7 @@
 #include "datatypes/SystemType.h"
 #include "datatypes/Typedef.h"
 #include "debugger/Debug.h"
+#include "decompiler/Graph/DecCodeGraph.h"
 #include "decompiler/PCode/DecPCodeInstructionPool.h"
 #include "decompiler/PCode/DecPCodeVirtualMachine.h"
 #include "decompiler/PCode/DecRegisterFactory.h"
@@ -22,7 +23,6 @@
 #include "managers/SymbolTableManager.h"
 #include "panels/BuiltinInputPanel.h"
 #include "utilities/Helper.h"
-#include <stack>
 
 namespace GUI
 {
@@ -160,22 +160,29 @@ namespace GUI
 			}
 		}
 	};
+
+	struct SymbolValue
+	{
+		CE::Decompiler::DataValue m_value;
+		bool m_userDefined;
+	};
+	using SymbolValueMap = std::map<CE::Decompiler::Symbol::Symbol*, SymbolValue>;
 	
 	class ValueViewerPanel : public AbstractPanel
 	{
 	public:
 		struct Location
 		{
-			bool m_isRegister;
-			CE::Decompiler::Register m_register;
+			bool m_isSymbol;
+			CE::Decompiler::Symbol::Symbol* m_symbol;
 			std::uintptr_t m_address = 0x0;
 
-			Location(const CE::Decompiler::Register& reg)
-				: m_register(reg), m_isRegister(true)
+			Location(CE::Decompiler::Symbol::Symbol* symbol)
+				: m_symbol(symbol), m_isSymbol(true)
 			{}
 
 			Location(std::uintptr_t address = 0x0)
-				: m_address(address), m_isRegister(false)
+				: m_address(address), m_isSymbol(false)
 			{}
 		};
 	
@@ -183,6 +190,7 @@ namespace GUI
 		std::string m_name;
 		Location m_location;
 		CE::DataTypePtr m_dataType;
+		SymbolValueMap* m_symbolValueMap;
 		CE::Decompiler::PCode::VmExecutionContext* m_execCtx;
 		CE::Decompiler::PCode::VmMemoryContext* m_memCtx;
 		bool m_hexView = false;
@@ -190,8 +198,10 @@ namespace GUI
 		PopupBuiltinWindow* m_builtinWindow = nullptr;
 	
 	public:
-		ValueViewerPanel(const std::string& name, const Location& location, CE::DataTypePtr dataType, CE::Decompiler::PCode::VmExecutionContext* execCtx, CE::Decompiler::PCode::VmMemoryContext* memCtx)
-			: m_name(name), m_location(location), m_dataType(std::move(dataType)), m_execCtx(execCtx), m_memCtx(memCtx)
+		bool m_takeValueFromRegister = false;
+		
+		ValueViewerPanel(const std::string& name, const Location& location, CE::DataTypePtr dataType, SymbolValueMap* symbolValueMap, CE::Decompiler::PCode::VmExecutionContext* execCtx, CE::Decompiler::PCode::VmMemoryContext* memCtx)
+			: m_name(name), m_location(location), m_dataType(std::move(dataType)), m_symbolValueMap(symbolValueMap), m_execCtx(execCtx), m_memCtx(memCtx)
 		{}
 
 		~ValueViewerPanel() {
@@ -223,7 +233,7 @@ namespace GUI
 			const auto isPointer = dataType->isPointer();
 			if (!isPointer) {
 				if (const auto Structure = dynamic_cast<CE::DataType::IStructure*>(dataType->getType())) {
-					if (!location.m_isRegister) {
+					if (!location.m_isSymbol) {
 						// todo: show unknown fields also
 						for (const auto& [offset, field] : Structure->getFields()) {
 							if (field->isBitField())
@@ -239,7 +249,7 @@ namespace GUI
 								const auto events = GenericEvents(true);
 								if (events.isHovered()) {
 									delete m_builtinWindow;
-									const auto panel = new ValueViewerPanel(field->getName(), fieldLoc, field->getDataType(), m_execCtx, m_memCtx);
+									const auto panel = new ValueViewerPanel(field->getName(), fieldLoc, field->getDataType(), m_symbolValueMap, m_execCtx, m_memCtx);
 									m_builtinWindow = new PopupBuiltinWindow(panel);
 									m_builtinWindow->m_closeTimerMs = 50;
 									m_builtinWindow->placeAfterItem();
@@ -283,7 +293,7 @@ namespace GUI
 					const auto derefDataType = CloneUnit(dataType);
 					derefDataType->removePointerLevelOutOfFront();
 					delete m_builtinWindow;
-					const auto panel = new ValueViewerPanel(name, Location(value), derefDataType, m_execCtx, m_memCtx);
+					const auto panel = new ValueViewerPanel(name, Location(value), derefDataType, m_symbolValueMap, m_execCtx, m_memCtx);
 					m_builtinWindow = new PopupBuiltinWindow(panel);
 					m_builtinWindow->m_closeTimerMs = 50;
 					m_builtinWindow->placeAfterItem();
@@ -345,15 +355,34 @@ namespace GUI
 		}
 		
 		bool getValue(const Location& location, CE::Decompiler::DataValue& value) const {
-			if (location.m_isRegister) {
-				return m_execCtx->getRegisterValue(location.m_register, value);
+			if (location.m_isSymbol) {
+				const auto regSymbol = dynamic_cast<CE::Decompiler::Symbol::RegisterVariable*>(location.m_symbol);
+				if (regSymbol && (m_takeValueFromRegister || regSymbol->m_register.isPointer())) {
+					// rip/rsp
+					return m_execCtx->getRegisterValue(regSymbol->m_register, value);
+				}
+				const auto it = m_symbolValueMap->find(location.m_symbol);
+				if (it == m_symbolValueMap->end())
+					return false;
+				value = it->second.m_value;
+				return true;
 			}
 			return m_memCtx->getValue(location.m_address, value);
 		}
 
 		void setValue(const Location& location, CE::Decompiler::DataValue value) const {
-			if (location.m_isRegister) {
-				m_execCtx->setRegisterValue(location.m_register, value);
+			if (location.m_isSymbol) {
+				const auto regSymbol = dynamic_cast<CE::Decompiler::Symbol::RegisterVariable*>(location.m_symbol);
+				if (regSymbol && (m_takeValueFromRegister || regSymbol->m_register.isPointer())) {
+					// rip/rsp
+					m_execCtx->setRegisterValue(regSymbol->m_register, value);
+					return;
+				}
+				const auto it = m_symbolValueMap->find(location.m_symbol);
+				if (it == m_symbolValueMap->end()) {
+					(*m_symbolValueMap)[location.m_symbol] = { value, true };
+				}
+				// todo: make symbol reassignments (see loops where localVar/memVar/funcVar is in)
 			}
 			else {
 				m_memCtx->setValue(location.m_address, value);
@@ -699,14 +728,14 @@ namespace GUI
 		CE::Decompiler::PCode::Instruction* m_curInstr = nullptr;
 		CE::Decompiler::PCodeBlock* m_curPCodeBlock = nullptr;
 		CE::Decompiler::DecBlock::BlockTopNode* m_curBlockTopNode = nullptr;
-		int m_stackPointerValue = 0;
+		int m_relStackPointerValue = 0;
 		bool m_showContexts = false;
-		CE::ComplexOffset m_lastExecutedInstrOffset = CE::InvalidOffset;
+		CE::Decompiler::PCode::Instruction* m_lastExecutedInstr = nullptr;
 		CE::Decompiler::DataValue m_lastExecutedInstrValue = 0;
 		PopupBuiltinWindow* m_valueViewerWin = nullptr;
 
-		using SymbolValueMap = std::map<CE::Decompiler::Symbol::Symbol*, CE::Decompiler::DataValue>;
-		std::stack<SymbolValueMap> m_symbolValues;
+		
+		std::map<std::uintptr_t, SymbolValueMap> m_symbolValueMaps;
 		
 		PCodeEmulator(CE::AddressSpace* addressSpace, CE::ImageDecorator* imageDec, CE::ComplexOffset startOffset)
 			: m_addressSpace(addressSpace), m_imageDec(imageDec), m_offset(startOffset),  m_vm(&m_execCtx, &m_memCtx, false)
@@ -760,13 +789,16 @@ namespace GUI
 		void updateSymbolValuesByDecGraph(CE::Decompiler::DecompiledCodeGraph* decGraph, CE::ComplexOffset offset,
 		                                  bool after);
 
-		void createValueViewer(const CE::Decompiler::StoragePath& storagePath, const std::string& name, CE::DataTypePtr dataType) {
+		void createValueViewer(const CE::Decompiler::ExprTree::StoragePath& storagePath, const std::string& name, CE::DataTypePtr dataType) {
 			ValueViewerPanel::Location location;
 			if (!getMemLocation(storagePath, location))
 				return;
 			
 			delete m_valueViewerWin;
-			const auto panel = new ValueViewerPanel(name, location, dataType, &m_execCtx, &m_memCtx);
+			const auto panel = new ValueViewerPanel(name, location, dataType, getSymbolValueMap() , &m_execCtx, &m_memCtx);
+			if (m_curPCodeBlock) {
+				panel->m_takeValueFromRegister = m_offset == m_curPCodeBlock->m_funcPCodeGraph->getStartBlock()->getMinOffset();
+			}
 			m_valueViewerWin = new PopupBuiltinWindow(panel);
 			m_valueViewerWin->m_closeTimerMs = 50;
 			m_valueViewerWin->placeAfterItem();
@@ -860,14 +892,8 @@ namespace GUI
 
 		void stepNextPCodeInstr() {
 			m_vm.execute(m_curInstr);
-			m_lastExecutedInstrOffset = m_offset;
+			m_lastExecutedInstr = m_curInstr;
 			m_lastExecutedInstrValue = m_vm.m_result;
-			if(m_curInstr->m_id == CE::Decompiler::InstructionId::CALL) {
-				m_symbolValues.push(SymbolValueMap());
-			}
-			else if (m_curInstr->m_id == CE::Decompiler::InstructionId::RETURN) {
-				m_symbolValues.pop();
-			}
 			
 			defineNextInstrOffset();
 			if (!isWorking())
@@ -923,19 +949,55 @@ namespace GUI
 			return m_offset.getOrderId() == 0;
 		}
 
-		bool getMemLocation(const CE::Decompiler::StoragePath& storagePath, ValueViewerPanel::Location& location) {
-			location = ValueViewerPanel::Location(storagePath.m_register);
+		SymbolValueMap* getSymbolValueMap() {
+			const auto curStackFrame = getCurrentStackFrame();
+			return &m_symbolValueMaps[curStackFrame];
+		}
+
+		void addSymbolValue(CE::Decompiler::Symbol::Symbol* symbol, CE::Decompiler::DataValue value) {
+			const auto symbolValueMap = getSymbolValueMap();
+			const auto it = symbolValueMap->find(symbol);
+			if (it != symbolValueMap->end()) {
+				if(it->second.m_userDefined) {
+					it->second.m_userDefined = false;
+					return;
+				}
+			}
+			(*symbolValueMap)[symbol] = { value, false };
+		}
+
+		std::uintptr_t getCurrentStackFrame() const {
+			const auto rsp = CE::Decompiler::Register(ZYDIS_REGISTER_RSP, 0);
+			CE::Decompiler::DataValue stackPointer;
+			if (!m_execCtx.getRegisterValue(rsp, stackPointer))
+				return 0;
+			return stackPointer - m_relStackPointerValue;
+		}
+
+		bool getMemLocation(const CE::Decompiler::ExprTree::StoragePath& storagePath, ValueViewerPanel::Location& location) {
+			location = ValueViewerPanel::Location(storagePath.m_symbol);
 
 			// offsets (pointer dereferencing)
 			for (const auto offset : storagePath.m_offsets) {
 				CE::Decompiler::DataValue baseAddr;
-				if (location.m_isRegister) {
-					if (!m_execCtx.getRegisterValue(location.m_register, baseAddr))
-						return false;
-					if(location.m_register.getType() == CE::Decompiler::Register::Type::StackPointer) {
-						baseAddr -= m_stackPointerValue;
-					} else if (location.m_register.getType() == CE::Decompiler::Register::Type::InstructionPointer) {
-						baseAddr -= m_offset.getByteOffset();
+				if (location.m_isSymbol) {
+					const auto regSymbol = dynamic_cast<CE::Decompiler::Symbol::RegisterVariable*>(location.m_symbol);
+					if (regSymbol && regSymbol->m_register.isPointer()) {
+						const auto& reg = regSymbol->m_register;
+						if (!m_execCtx.getRegisterValue(reg, baseAddr))
+							return false;
+						if (reg.getType() == CE::Decompiler::Register::Type::StackPointer) {
+							baseAddr -= m_relStackPointerValue;
+						}
+						else if (reg.getType() == CE::Decompiler::Register::Type::InstructionPointer) {
+							baseAddr -= m_offset.getByteOffset();
+						}
+					} else {
+						const auto symbolValueMap = getSymbolValueMap();
+						const auto it = symbolValueMap->find(location.m_symbol);
+						if (it == symbolValueMap->end())
+							return false;
+						baseAddr = it->second.m_value;
 					}
 				}
 				else {

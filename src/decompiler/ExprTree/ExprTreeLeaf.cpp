@@ -50,17 +50,7 @@ INode* SymbolLeaf::clone(NodeCloneContext* ctx) {
 
 StoragePath SymbolLeaf::getStoragePath() {
 	StoragePath path;
-	if (const auto regVar = dynamic_cast<Symbol::RegisterVariable*>(m_symbol)) {
-		path.m_register = regVar->m_register;
-	}
-	else if (const auto localVar = dynamic_cast<Symbol::LocalVariable*>(m_symbol)) {
-		if (!localVar->m_isTemp) {
-			path.m_register = localVar->m_register;
-		}
-	}
-	else if (const auto funcVar = dynamic_cast<Symbol::FunctionResultVar*>(m_symbol)) {
-		path.m_register = funcVar->m_register;
-	}
+	path.m_symbol = m_symbol;
 	return path;
 }
 

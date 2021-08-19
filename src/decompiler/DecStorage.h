@@ -29,12 +29,6 @@ namespace CE::Decompiler
 		int64_t m_offset;
 	};
 
-	struct StoragePath
-	{
-		PCode::Register m_register;
-		std::list<int64_t> m_offsets;
-	};
-
 	struct ParameterInfo
 	{
 		int m_index = 0;

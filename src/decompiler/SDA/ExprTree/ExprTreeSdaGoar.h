@@ -55,13 +55,6 @@ namespace CE::Decompiler::ExprTree
 		StoragePath getStoragePath() override;
 	};
 
-	inline StoragePath GoarArrayNode::getStoragePath() {
-		if (const auto numberLeaf = dynamic_cast<INumberLeaf*>(m_indexNode)) {
-			return getNewStoragePath(numberLeaf->getValue() * m_outDataType->getSize());
-		}
-		return StoragePath();
-	}
-
 	// Field of a class: player.pos.x
 	class GoarFieldNode : public GoarNode
 	{
@@ -76,10 +69,6 @@ namespace CE::Decompiler::ExprTree
 
 		StoragePath getStoragePath() override;
 	};
-
-	inline StoragePath GoarFieldNode::getStoragePath() {
-		return getNewStoragePath(m_field->getOffset());
-	}
 
 	// Top node for any goar structure that need to define operator &: &player.pos.x
 	class GoarTopNode : public GoarNode, public IMappedToMemory

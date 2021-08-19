@@ -37,7 +37,7 @@ generateNode(CE::Decompiler::INode* node, bool& hasGroup, MultiLineGroup::Group&
 		if (m_decCodeViewer->m_hoverTimer) {
 			if (GetTimeInMs() - m_decCodeViewer->m_hoverTimer > 200) {
 				const auto path = storagePathNode->getStoragePath();
-				if (path.m_register.isValid()) {
+				if (path.m_symbol) {
 					std::string name = "value";
 					CE::DataTypePtr dataType;
 					if (const auto sdaNode = dynamic_cast<CE::Decompiler::ISdaNode*>(node)) {
