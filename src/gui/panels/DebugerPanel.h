@@ -740,7 +740,7 @@ namespace GUI
 		bool m_showContexts = false;
 		
 		// for value viewer
-		SymbolValueMap m_symbolValueMap;
+		std::map<std::uintptr_t, SymbolValueMap> m_symbolValueMaps;
 		int m_relStackPointerValue = 0;
 		CE::Decompiler::PCode::Instruction* m_lastExecutedInstr = nullptr;
 		CE::Decompiler::DataValue m_lastExecutedInstrValue = 0;
@@ -804,7 +804,7 @@ namespace GUI
 				return;
 			
 			delete m_valueViewerWin;
-			const auto panel = new ValueViewerPanel(name, location, dataType, &m_symbolValueMap, &m_execCtx, &m_memCtx);
+			const auto panel = new ValueViewerPanel(name, location, dataType, getSymbolValueMap(), &m_execCtx, &m_memCtx);
 			if (m_curPCodeBlock) {
 				panel->m_takeValueFromRegister = m_offset == m_curPCodeBlock->m_funcPCodeGraph->getStartBlock()->getMinOffset();
 			}
@@ -901,6 +901,9 @@ namespace GUI
 
 		void stepNextPCodeInstr() {
 			m_vm.execute(m_curInstr);
+			if (m_curInstr->m_id == CE::Decompiler::InstructionId::RETURN) {
+				getSymbolValueMap()->clear();
+			}
 			m_lastExecutedInstr = m_curInstr;
 			m_lastExecutedInstrValue = m_vm.m_result;
 			
@@ -958,13 +961,18 @@ namespace GUI
 			return m_offset.getOrderId() == 0;
 		}
 
-		/*std::uintptr_t getCurrentStackFrame() const {
+		SymbolValueMap* getSymbolValueMap() {
+			const auto curStackFrame = getCurrentStackFrame();
+			return &m_symbolValueMaps[curStackFrame];
+		}
+
+		std::uintptr_t getCurrentStackFrame() const {
 			const auto rsp = CE::Decompiler::Register(ZYDIS_REGISTER_RSP, 0);
 			CE::Decompiler::DataValue stackPointer;
 			if (!m_execCtx.getRegisterValue(rsp, stackPointer))
 				return 0;
 			return stackPointer - m_relStackPointerValue;
-		}*/
+		}
 
 		bool getMemLocation(const CE::Decompiler::ExprTree::StoragePath& storagePath, ValueViewerPanel::Location& location) {
 			location = ValueViewerPanel::Location(storagePath.m_symbol);
@@ -985,8 +993,9 @@ namespace GUI
 							baseAddr -= m_offset.getByteOffset();
 						}
 					} else {
-						const auto it = m_symbolValueMap.find(location.m_symbol->getHash());
-						if (it == m_symbolValueMap.end())
+						const auto symbolValueMap = getSymbolValueMap();
+						const auto it = symbolValueMap->find(location.m_symbol->getHash());
+						if (it == symbolValueMap->end())
 							return false;
 						baseAddr = it->second.m_value;
 					}
@@ -1046,7 +1055,7 @@ namespace GUI
 						}
 					}
 				} else {
-					m_symbolValueMap.clear();
+					m_symbolValueMaps.clear();
 				}
 			}
 

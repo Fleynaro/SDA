@@ -23,6 +23,7 @@ void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::Decompiled
 	const auto& symbolValues = decGraph->getSymbolValues();
 	const auto it = symbolValues.find(offset);
 	if (it != symbolValues.end()) {
+		const auto symbolValueMap = getSymbolValueMap();
 		for (const auto& valueInfo : it->second) {
 			if (valueInfo.m_after != after)
 				continue;
@@ -34,8 +35,8 @@ void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::Decompiled
 			auto userDefined = false;
 			CE::Decompiler::DataValue userValue = 0;
 			{
-				const auto it2 = m_symbolValueMap.find(symbolHash);
-				if (it2 != m_symbolValueMap.end()) {
+				const auto it2 = symbolValueMap->find(symbolHash);
+				if (it2 != symbolValueMap->end()) {
 					if (it2->second.m_userDefined) {
 						userValue = it2->second.m_value;
 						it2->second.m_userDefined = false;
@@ -55,7 +56,7 @@ void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::Decompiled
 				} else {
 					CE::Decompiler::DataValue value;
 					if (m_execCtx.getRegisterValue(reg, value)) {
-						m_symbolValueMap[symbolHash] = { value >> storage.getOffset(), false };
+						(*symbolValueMap)[symbolHash] = { value >> storage.getOffset(), false };
 					}
 				}
 			}
@@ -79,7 +80,7 @@ void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::Decompiled
 					} else {
 						CE::Decompiler::DataValue value;
 						if (m_memCtx.getValue(baseAddr + memOffset, value)) {
-							m_symbolValueMap[symbolHash] = { value, false };
+							(*symbolValueMap)[symbolHash] = { value, false };
 						}
 					}
 				}
@@ -91,7 +92,7 @@ void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::Decompiled
 					}
 				}
 				else {
-					m_symbolValueMap[symbolHash] = { m_lastExecutedInstrValue, false };
+					(*symbolValueMap)[symbolHash] = { m_lastExecutedInstrValue, false };
 				}
 			}
 		}
