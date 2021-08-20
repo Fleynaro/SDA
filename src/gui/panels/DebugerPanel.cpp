@@ -23,19 +23,19 @@ void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::Decompiled
 	const auto& symbolValues = decGraph->getSymbolValues();
 	const auto it = symbolValues.find(offset);
 	if (it != symbolValues.end()) {
-		const auto symbolValueMap = getSymbolValueMap();
 		for (const auto& valueInfo : it->second) {
 			if (valueInfo.m_after != after)
 				continue;
 			const auto symbol = valueInfo.m_symbol;
+			const auto symbolHash = symbol->getHash();
 			const auto& storage = valueInfo.m_storage;
 
 			// if user changed value for the symbol then need to set user's value into context
 			auto userDefined = false;
 			CE::Decompiler::DataValue userValue = 0;
 			{
-				const auto it2 = symbolValueMap->find(symbol);
-				if (it2 != symbolValueMap->end()) {
+				const auto it2 = m_symbolValueMap.find(symbolHash);
+				if (it2 != m_symbolValueMap.end()) {
 					if (it2->second.m_userDefined) {
 						userValue = it2->second.m_value;
 						it2->second.m_userDefined = false;
@@ -55,7 +55,7 @@ void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::Decompiled
 				} else {
 					CE::Decompiler::DataValue value;
 					if (m_execCtx.getRegisterValue(reg, value)) {
-						(*symbolValueMap)[symbol] = { value >> storage.getOffset(), false };
+						m_symbolValueMap[symbolHash] = { value >> storage.getOffset(), false };
 					}
 				}
 			}
@@ -79,7 +79,7 @@ void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::Decompiled
 					} else {
 						CE::Decompiler::DataValue value;
 						if (m_memCtx.getValue(baseAddr + memOffset, value)) {
-							(*symbolValueMap)[symbol] = { value, false };
+							m_symbolValueMap[symbolHash] = { value, false };
 						}
 					}
 				}
@@ -91,7 +91,7 @@ void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::Decompiled
 					}
 				}
 				else {
-					(*symbolValueMap)[symbol] = { m_lastExecutedInstrValue, false };
+					m_symbolValueMap[symbolHash] = { m_lastExecutedInstrValue, false };
 				}
 			}
 		}

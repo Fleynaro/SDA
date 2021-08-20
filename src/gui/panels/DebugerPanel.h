@@ -166,7 +166,7 @@ namespace GUI
 		CE::Decompiler::DataValue m_value;
 		bool m_userDefined;
 	};
-	using SymbolValueMap = std::map<CE::Decompiler::Symbol::Symbol*, SymbolValue>;
+	using SymbolValueMap = std::map<HS, SymbolValue>;
 	
 	class ValueViewerPanel : public AbstractPanel
 	{
@@ -362,7 +362,7 @@ namespace GUI
 					// rip/rsp
 					return m_execCtx->getRegisterValue(regSymbol->m_register, value);
 				}
-				const auto it = m_symbolValueMap->find(location.m_symbol);
+				const auto it = m_symbolValueMap->find(location.m_symbol->getHash());
 				if (it == m_symbolValueMap->end())
 					return false;
 				value = it->second.m_value;
@@ -376,13 +376,13 @@ namespace GUI
 				if (const auto regSymbol = dynamic_cast<CE::Decompiler::Symbol::RegisterVariable*>(location.m_symbol)) {
 					if (m_takeValueFromRegister || regSymbol->m_register.isPointer()) {
 						m_execCtx->setRegisterValue(regSymbol->m_register, value);
-						(*m_symbolValueMap)[location.m_symbol] = { value, false };
+						(*m_symbolValueMap)[location.m_symbol->getHash()] = { value, false };
 					}
 					return;
 				}
-				const auto it = m_symbolValueMap->find(location.m_symbol);
+				const auto it = m_symbolValueMap->find(location.m_symbol->getHash());
 				if (it == m_symbolValueMap->end()) {
-					(*m_symbolValueMap)[location.m_symbol] = { value, true };
+					(*m_symbolValueMap)[location.m_symbol->getHash()] = { value, true };
 				}
 				// todo: make symbol reassignments (see loops where localVar/memVar/funcVar is in)
 			}
@@ -723,21 +723,28 @@ namespace GUI
 			STEP_CODE_LINE
 		};
 
+		// location
 		CE::AddressSpace* m_addressSpace;
 		CE::ImageDecorator* m_imageDec;
 		CE::ComplexOffset m_offset;
+
+		// other
 		PCodeStepWidth m_stepWidth = PCodeStepWidth::STEP_ORIGINAL_INSTR;
+
+		// objects at the current offset
 		CE::Decompiler::PCode::Instruction* m_curInstr = nullptr;
 		CE::Decompiler::PCodeBlock* m_curPCodeBlock = nullptr;
 		CE::Decompiler::DecBlock::BlockTopNode* m_curBlockTopNode = nullptr;
-		int m_relStackPointerValue = 0;
+		
+		// contexts
 		bool m_showContexts = false;
+		
+		// for value viewer
+		SymbolValueMap m_symbolValueMap;
+		int m_relStackPointerValue = 0;
 		CE::Decompiler::PCode::Instruction* m_lastExecutedInstr = nullptr;
 		CE::Decompiler::DataValue m_lastExecutedInstrValue = 0;
 		PopupBuiltinWindow* m_valueViewerWin = nullptr;
-
-		
-		std::map<std::uintptr_t, SymbolValueMap> m_symbolValueMaps;
 		
 		PCodeEmulator(CE::AddressSpace* addressSpace, CE::ImageDecorator* imageDec, CE::ComplexOffset startOffset)
 			: m_addressSpace(addressSpace), m_imageDec(imageDec), m_offset(startOffset),  m_vm(&m_execCtx, &m_memCtx, false)
@@ -797,7 +804,7 @@ namespace GUI
 				return;
 			
 			delete m_valueViewerWin;
-			const auto panel = new ValueViewerPanel(name, location, dataType, getSymbolValueMap() , &m_execCtx, &m_memCtx);
+			const auto panel = new ValueViewerPanel(name, location, dataType, &m_symbolValueMap, &m_execCtx, &m_memCtx);
 			if (m_curPCodeBlock) {
 				panel->m_takeValueFromRegister = m_offset == m_curPCodeBlock->m_funcPCodeGraph->getStartBlock()->getMinOffset();
 			}
@@ -894,9 +901,6 @@ namespace GUI
 
 		void stepNextPCodeInstr() {
 			m_vm.execute(m_curInstr);
-			if(m_curInstr->m_id == CE::Decompiler::InstructionId::RETURN) {
-				getSymbolValueMap()->clear();
-			}
 			m_lastExecutedInstr = m_curInstr;
 			m_lastExecutedInstrValue = m_vm.m_result;
 			
@@ -954,18 +958,13 @@ namespace GUI
 			return m_offset.getOrderId() == 0;
 		}
 
-		SymbolValueMap* getSymbolValueMap() {
-			const auto curStackFrame = getCurrentStackFrame();
-			return &m_symbolValueMaps[curStackFrame];
-		}
-
-		std::uintptr_t getCurrentStackFrame() const {
+		/*std::uintptr_t getCurrentStackFrame() const {
 			const auto rsp = CE::Decompiler::Register(ZYDIS_REGISTER_RSP, 0);
 			CE::Decompiler::DataValue stackPointer;
 			if (!m_execCtx.getRegisterValue(rsp, stackPointer))
 				return 0;
 			return stackPointer - m_relStackPointerValue;
-		}
+		}*/
 
 		bool getMemLocation(const CE::Decompiler::ExprTree::StoragePath& storagePath, ValueViewerPanel::Location& location) {
 			location = ValueViewerPanel::Location(storagePath.m_symbol);
@@ -986,9 +985,8 @@ namespace GUI
 							baseAddr -= m_offset.getByteOffset();
 						}
 					} else {
-						const auto symbolValueMap = getSymbolValueMap();
-						const auto it = symbolValueMap->find(location.m_symbol);
-						if (it == symbolValueMap->end())
+						const auto it = m_symbolValueMap.find(location.m_symbol->getHash());
+						if (it == m_symbolValueMap.end())
 							return false;
 						baseAddr = it->second.m_value;
 					}
@@ -1048,7 +1046,7 @@ namespace GUI
 						}
 					}
 				} else {
-					m_symbolValueMaps.clear();
+					m_symbolValueMap.clear();
 				}
 			}
 

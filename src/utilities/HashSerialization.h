@@ -56,6 +56,10 @@ public:
 	HS operator<<(const HS& hs) const {
 		return *this << hs.m_hashValue;
 	}
+
+	bool operator<(const HS& hs) const {
+		return m_hashValue < hs.m_hashValue;
+	}
 	
 	// get hash as integer value
 	Value getHashValue() const {
