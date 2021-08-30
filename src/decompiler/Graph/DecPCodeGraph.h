@@ -120,8 +120,10 @@ namespace CE::Decompiler
 
 		PCodeBlock* createBlock(ComplexOffset offset);
 
+		// get list of topmost functions that don't have parents (main/virtual functions)
 		const std::list<FunctionPCodeGraph*>& getHeadFuncGraphs() const;
 
+		// get list of all functions including head
 		std::list<FunctionPCodeGraph>& getFunctionGraphList();
 
 		FunctionPCodeGraph* getEntryFunctionGraph();
