@@ -20,6 +20,20 @@ void Optimization::GraphParAssignmentCreator::start() {
 	createParAssignmentsForLocalVars();
 	// optimize them
 	optimizeAllParAssignments();
+
+	// repeat for par. assignments (localVar1 = localVar2 * localVar2)
+	while(!m_createdParAssignmentLines.empty()) {
+		m_localVars.clear();
+		for (const auto parAssignmentLine : m_createdParAssignmentLines) {
+			findAllLocalVarsAndGatherParentOpNodes(parAssignmentLine);
+		}
+		m_createdParAssignmentLines.clear();
+		
+		// create assignments
+		createParAssignmentsForLocalVars();
+		// optimize them
+		optimizeAllParAssignments();
+	}
 }
 
 void Optimization::GraphParAssignmentCreator::findAllLocalVarsAndGatherParentOpNodes(DecBlock::BlockTopNode* topNode) {
@@ -61,7 +75,9 @@ void Optimization::GraphParAssignmentCreator::findAllLocalVarsAndGatherParentOpN
 void Optimization::GraphParAssignmentCreator::createParAssignmentsForLocalVars() {
 	for (const auto& [localVar, info] : m_localVars) {
 		auto& localVarInfo = m_decompiler->m_localVars[localVar];
-		localVarInfo.m_used = true;
+		if (localVarInfo.m_used)
+			continue;
+		localVarInfo.m_used = true; // mark not to remove local var
 
 		// try to change the size of the local var
 		if (info.areAllParentOpNode) {
@@ -105,7 +121,8 @@ void Optimization::GraphParAssignmentCreator::createParAssignmentsForLocalVars()
 
 			// create assignment: localVar = {expr}
 			auto& blockInfo = m_decompiler->m_decompiledBlocks[execCtx->m_pcodeBlock];
-			blockInfo.m_decBlock->addSymbolParallelAssignmentLine(new SymbolLeaf(localVar), expr, instr);
+			const auto assignmentLine = blockInfo.m_decBlock->addSymbolParallelAssignmentLine(new SymbolLeaf(localVar), expr, instr);
+			m_createdParAssignmentLines.push_back(assignmentLine);
 		}
 
 		m_decGraph->addSymbol(localVar);
@@ -114,17 +131,15 @@ void Optimization::GraphParAssignmentCreator::createParAssignmentsForLocalVars()
 
 void Optimization::GraphParAssignmentCreator::optimizeAllParAssignments() const
 {
-	for (const auto decBlock : m_decGraph->getDecompiledBlocks()) {
-		for (auto parAssignmentLine : decBlock->getSymbolParallelAssignmentLines()) {
-			auto assignmentNode = parAssignmentLine->getAssignmentNode();
+	for (const auto parAssignmentLine : m_createdParAssignmentLines) {
+		auto assignmentNode = parAssignmentLine->getAssignmentNode();
 
-			// clone and optimize expr
-			const auto clonedExpr = assignmentNode->getSrcNode()->clone();
-			auto topNode = TopNode(clonedExpr);
-			ExprOptimization exprOptimization(&topNode);
-			exprOptimization.start();
+		// clone and optimize expr
+		const auto clonedExpr = assignmentNode->getSrcNode()->clone();
+		auto topNode = TopNode(clonedExpr);
+		ExprOptimization exprOptimization(&topNode);
+		exprOptimization.start();
 
-			assignmentNode->setSrcNode(topNode.getNode());
-		}
+		assignmentNode->setSrcNode(topNode.getNode());
 	}
 }

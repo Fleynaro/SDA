@@ -89,6 +89,11 @@ namespace GUI
 		{
 			m_selectedDebugger = *CE::GetAvailableDebuggers().begin();
 			m_selectedDebuggerStr = GetDubuggerName(m_selectedDebugger);
+
+#ifndef NDEBUG
+			// for test only
+			m_processListModel.m_filterName = "test";
+#endif
 			
 			m_debugProcesses = CE::GetProcesses();
 			m_tableProcessListView = SelectableTableListView(&m_processListModel, {

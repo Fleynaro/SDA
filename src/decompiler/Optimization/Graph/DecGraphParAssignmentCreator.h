@@ -15,6 +15,7 @@ namespace CE::Decompiler::Optimization
 			std::list<INode*> m_opNodes;
 		};
 		std::map<Symbol::LocalVariable*, LocalVarInfo> m_localVars;
+		std::list<DecBlock::AssignmentLine*> m_createdParAssignmentLines;
 	public:
 		GraphParAssignmentCreator(DecompiledCodeGraph* decGraph, PrimaryDecompiler* decompiler);
 

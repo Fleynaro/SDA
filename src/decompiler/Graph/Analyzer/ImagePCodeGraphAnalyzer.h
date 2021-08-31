@@ -3,7 +3,6 @@
 #include "decompiler/Decompiler.h"
 #include "decompiler/PCode/Decompiler/PrimaryDecompiler.h"
 #include "decompiler/PCode/ImageAnalyzer/DecImageAnalyzer.h"
-#include "managers/FunctionManager.h"
 #include "managers/ImageManager.h"
 #include "managers/SymbolTableManager.h"
 #include <decompiler/SDA/Symbolization/DecGraphSdaBuilding.h>
@@ -31,7 +30,7 @@ namespace CE::Decompiler
 				std::list<RawStructureOwner*> m_owners;
 
 				// for hierarchy
-				RawStructure* m_parentRawStructure = nullptr;
+				std::list<RawStructure*> m_parentRawStructures;
 				std::list<RawStructure*> m_childRawStructures;
 
 				RawStructure(RawStructureOwner* owner)
@@ -46,7 +45,7 @@ namespace CE::Decompiler
 				}
 
 				void addParent(RawStructure* rawStructure) {
-					m_parentRawStructure = rawStructure;
+					m_parentRawStructures.push_back(rawStructure);
 					rawStructure->m_childRawStructures.push_back(this);
 				}
 
@@ -84,6 +83,16 @@ namespace CE::Decompiler
 
 			void addField(RawStructure::Field field) const {
 				m_rawStructure->m_fields[field.m_offset] = field;
+			}
+
+			void makeAsParent(RawStructure* rawStruct) {
+				const auto rawStruct1 = m_rawStructure;
+				const auto rawStruct2 = rawStruct;
+				
+				m_rawStructure->removeFromOwner(this);
+				m_rawStructure = new RawStructure(this);
+				rawStruct1->addParent(m_rawStructure);
+				rawStruct2->addParent(m_rawStructure);
 			}
 
 			std::string getDisplayName() override {
@@ -224,9 +233,10 @@ namespace CE::Decompiler
 		class StructureFinder : public Symbolization::SdaDataTypesCalculater
 		{
 			ImagePCodeGraphAnalyzer* m_imagePCodeGraphAnalyzer;
+			bool m_excludeFunctionNodes = false;
 		public:
-			StructureFinder(SdaCodeGraph* sdaCodeGraph, ImagePCodeGraphAnalyzer* imagePCodeGraphAnalyzer)
-				: SdaDataTypesCalculater(sdaCodeGraph, nullptr, imagePCodeGraphAnalyzer->m_project), m_imagePCodeGraphAnalyzer(imagePCodeGraphAnalyzer)
+			StructureFinder(SdaCodeGraph* sdaCodeGraph, ImagePCodeGraphAnalyzer* imagePCodeGraphAnalyzer, bool excludeFunctionNodes)
+				: SdaDataTypesCalculater(sdaCodeGraph, nullptr, imagePCodeGraphAnalyzer->m_project), m_imagePCodeGraphAnalyzer(imagePCodeGraphAnalyzer), m_excludeFunctionNodes(excludeFunctionNodes)
 			{}
 
 		private:
@@ -276,7 +286,7 @@ namespace CE::Decompiler
 
 					// create a raw structure
 					if (sdaPointerNode) {
-						const auto rawStructOwner = new RawStructureOwner(m_imagePCodeGraphAnalyzer->m_project->getTypeManager());
+						const auto rawStructOwner = m_imagePCodeGraphAnalyzer->createRawStructureOwner();
 						sdaPointerNode->setDataType(GetUnit(rawStructOwner, "[1]"));
 						m_nextPassRequired = true;
 					}
@@ -284,6 +294,9 @@ namespace CE::Decompiler
 			}
 
 			void handleFunctionNode(SdaFunctionNode* sdaFunctionNode) override {
+				if (m_excludeFunctionNodes)
+					return;
+				
 				SdaDataTypesCalculater::handleFunctionNode(sdaFunctionNode);
 
 				if (const auto dstCastNode = dynamic_cast<ISdaNode*>(sdaFunctionNode->getDestination())) {
@@ -313,8 +326,9 @@ namespace CE::Decompiler
 							const auto fieldOffset = unknownLoc->getConstTermValue();
 							const auto newFieldDataType = sdaReadValueNode->getDataType();
 
-							if (!rawStructOwner->canFieldBeAddedAtOffset(fieldOffset, newFieldDataType->getSize()))
-								rawStructOwner->createNewBranch(fieldOffset);
+							if (!rawStructOwner->canFieldBeAddedAtOffset(fieldOffset, newFieldDataType->getSize())) {
+								// warning here (dynamic_cast required, can be only resolved by user)
+							}
 
 							const auto it = rawStructOwner->m_rawStructure->m_fields.find(fieldOffset);
 							if (it == rawStructOwner->m_rawStructure->m_fields.end() || it->second.m_dataType->getPriority() < newFieldDataType->getPriority()) {
@@ -340,13 +354,18 @@ namespace CE::Decompiler
 
 				if (const auto rawSigOwner1 = dynamic_cast<RawSignatureOwner*>(dataType1)) {
 					if (const auto rawSigOwner2 = dynamic_cast<RawSignatureOwner*>(dataType2)) {
-						rawSigOwner1->merge(rawSigOwner2);
+						//rawSigOwner1->merge(rawSigOwner2);
 					}
 				}
 
-				if (auto rawStructOwner1 = dynamic_cast<RawStructureOwner*>(dataType1)) {
+				if (const auto rawStructOwner1 = dynamic_cast<RawStructureOwner*>(dataType1)) {
 					if (const auto rawStructOwner2 = dynamic_cast<RawStructureOwner*>(dataType2)) {
-						rawStructOwner1->merge(rawStructOwner2);
+						if (m_excludeFunctionNodes) {
+							rawStructOwner2->makeAsParent(rawStructOwner1->m_rawStructure);
+						} else {
+							// for function parameters (where type of a symbol param is more abstract than type of a param node)
+							rawStructOwner2->m_rawStructure->addParent(rawStructOwner1->m_rawStructure);
+						}
 					}
 				}
 			}
@@ -432,7 +451,6 @@ namespace CE::Decompiler
 
 		ImageDecorator* m_imageDec;
 		Project* m_project;
-		AbstractRegisterFactory* m_registerFactory;
 		PCodeGraphReferenceSearch* m_graphReferenceSearch;
 		std::list<RawStructureOwner*> m_rawStructOwners;
 		bool m_nextPassRequired = false;
@@ -442,8 +460,8 @@ namespace CE::Decompiler
 		CE::Symbol::GlobalSymbolTable* m_globalSymbolTable;
 		CE::Symbol::GlobalSymbolTable* m_funcBodySymbolTable;
 
-		ImagePCodeGraphAnalyzer(ImageDecorator* imageDec, AbstractRegisterFactory* registerFactory, PCodeGraphReferenceSearch* graphReferenceSearch = nullptr)
-			: m_imageDec(imageDec), m_project(imageDec->getImageManager()->getProject()), m_registerFactory(registerFactory), m_graphReferenceSearch(graphReferenceSearch)
+		ImagePCodeGraphAnalyzer(ImageDecorator* imageDec, PCodeGraphReferenceSearch* graphReferenceSearch = nullptr)
+			: m_imageDec(imageDec), m_project(imageDec->getImageManager()->getProject()), m_graphReferenceSearch(graphReferenceSearch)
 		{
 			m_globalSymbolTable = m_project->getSymTableManager()->getFactory(false).createGlobalSymbolTable();
 			m_funcBodySymbolTable = m_project->getSymTableManager()->getFactory(false).createGlobalSymbolTable();
@@ -500,7 +518,7 @@ namespace CE::Decompiler
 				return;
 
 			DecompiledCodeGraph decompiledCodeGraph(funcGraph);
-			auto decompiler = PrimaryDecompilerForReturnVal(&decompiledCodeGraph, m_registerFactory, ReturnInfo());
+			auto decompiler = PrimaryDecompilerForReturnVal(&decompiledCodeGraph, m_imageDec->getRegisterFactory(), ReturnInfo());
 			decompiler.setImagePCodeGraphAnalyzer(this);
 			decompiler.start();
 
@@ -581,7 +599,7 @@ namespace CE::Decompiler
 					return rawSigOwner->getCallInfo();
 				return FunctionCallInfo({});
 			};
-			auto primaryDecompiler = PrimaryDecompiler(decCodeGraph, m_registerFactory,
+			auto primaryDecompiler = PrimaryDecompiler(decCodeGraph, m_imageDec->getRegisterFactory(),
 				ReturnInfo(),
 				funcCallInfoCallback);
 			primaryDecompiler.start();
@@ -593,8 +611,11 @@ namespace CE::Decompiler
 			sdaBuilding.start();
 
 			// data type calculating
-			StructureFinder structureFinder(sdaCodeGraph, this);
+			StructureFinder structureFinder(sdaCodeGraph, this, true);
 			structureFinder.start();
+			// including function params
+			StructureFinder structureFinder2(sdaCodeGraph, this, false);
+			structureFinder2.start();
 
 			// gather all new symbols (only after parameters of all function will be defined)
 			for (const auto symbol : sdaBuilding.getNewAutoSymbols()) {
@@ -673,7 +694,7 @@ namespace CE::Decompiler
 		// create vtables that have been found during reference search
 		void createVTables() {
 			for (const auto& vtable : m_graphReferenceSearch->m_vtables) {
-				const auto rawStructOwner = new RawStructureOwner(m_project->getTypeManager());
+				const auto rawStructOwner = createRawStructureOwner();
 				// fill the structure with virtual functions
 				int offset = 0;
 				for (auto funcOffset : vtable.m_funcOffsets) {
@@ -692,6 +713,12 @@ namespace CE::Decompiler
 					.createGlobalVarSymbol(vtable.m_offset, GetUnit(rawStructOwner), "vtable_0x" + Helper::String::NumberToHex(vtable.m_offset));
 				m_globalSymbolTable->addSymbol(vtableGlobalVar, vtable.m_offset); // todo: intersecting might be
 			}
+		}
+
+		RawStructureOwner* createRawStructureOwner() {
+			const auto rawStructOwner = new RawStructureOwner(m_project->getTypeManager());
+			m_rawStructOwners.push_back(rawStructOwner);
+			return rawStructOwner;
 		}
 	};
 };

@@ -49,13 +49,6 @@ void DecompiledCodeGraph::addSymbol(Symbol::Symbol* symbol) {
 	m_symbols.push_back(symbol);
 }
 
-void DecompiledCodeGraph::removeSymbol(Symbol::Symbol* symbol) {
-	m_symbols.remove(symbol);
-	for(auto& [offset, symbolValues] : m_symbolValues) {
-		symbolValues.remove_if([&](const SymbolValue& value) { return symbol == value.m_symbol; });
-	}
-}
-
 void DecompiledCodeGraph::cloneAllExpr() {
 	for (auto block : m_decompiledBlocks) {
 		block->cloneAllExpr();
@@ -88,10 +81,18 @@ HS DecompiledCodeGraph::getHash() {
 }
 
 void DecompiledCodeGraph::removeNotUsedSymbols() {
-	for(const auto symbol : m_symbols) {
-		if(symbol->m_parentsCount == 0) {
-			removeSymbol(symbol);
+	auto it = m_symbols.begin();
+	while(it != m_symbols.end()) {
+		const auto symbol = *it;
+		if (symbol->m_parentsCount == 0) {
+			for (auto& [offset, symbolValues] : m_symbolValues) {
+				symbolValues.remove_if([&](const SymbolValue& value) { return symbol == value.m_symbol; });
+			}
+			it = m_symbols.erase(it);
 			delete symbol;
+		}
+		else {
+			++it;
 		}
 	}
 }

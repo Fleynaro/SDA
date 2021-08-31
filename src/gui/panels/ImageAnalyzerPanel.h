@@ -1,6 +1,7 @@
 #pragma once
 #include "ImageDecorator.h"
 #include "decompiler/DecWarningContainer.h"
+#include "decompiler/Graph/Analyzer/ImagePCodeGraphAnalyzer.h"
 #include "decompiler/PCode/DecRegisterFactory.h"
 #include "decompiler/PCode/Decoders/DecPCodeDecoderX86.h"
 #include "decompiler/PCode/ImageAnalyzer/DecImageAnalyzer.h"
@@ -63,6 +64,9 @@ namespace GUI
 				const auto funcOffset = funcGraph.getStartBlock()->getMinOffset().getByteOffset();
 				project->getFunctionManager()->getFactory().createFunction(funcOffset, defSignature, m_imageDec, "func_" + Helper::String::NumberToHex(funcOffset));
 			}
+
+			/*ImagePCodeGraphAnalyzer imagePCodeGraphAnalyzer(m_imageDec, &graphReferenceSearch);
+			imagePCodeGraphAnalyzer.start();*/
 		}
 	};
 };

@@ -50,6 +50,7 @@ ImageDecorator::ImageDecorator(ImageManager* imageManager, AddressSpace* address
 ImageDecorator::~ImageDecorator() {
 	m_addressSpace->getImageDecorators().remove(this);
 	delete m_image;
+	delete m_registerFactory;
 
 	if (!m_parentImageDec) {
 		delete m_instrPool;
@@ -142,6 +143,10 @@ Decompiler::ImagePCodeGraph* ImageDecorator::getPCodeGraph() const
 	return m_imagePCodeGraph;
 }
 
+Decompiler::AbstractRegisterFactory* ImageDecorator::getRegisterFactory() const {
+	return m_registerFactory;
+}
+
 void ImageDecorator::setPCodeGraph(Decompiler::ImagePCodeGraph* imagePCodeGraph) {
 	delete m_imagePCodeGraph;
 	m_imagePCodeGraph = imagePCodeGraph;
@@ -205,5 +210,6 @@ fs::path ImageDecorator::getFile() {
 void ImageDecorator::createImage(IReader* reader) {
 	if (m_type == IMAGE_PE) {
 		m_image = new PEImage(reader);
+		m_registerFactory = new Decompiler::RegisterFactoryX86;
 	}
 }

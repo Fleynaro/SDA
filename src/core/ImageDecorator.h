@@ -1,5 +1,6 @@
 #pragma once
 #include "Function.h"
+#include "decompiler/PCode/DecRegisterFactory.h"
 #include <images/AbstractImage.h>
 #include <database/DomainObject.h>
 #include <utilities/Description.h>
@@ -60,6 +61,7 @@ namespace CE
 		Symbol::GlobalSymbolTable* m_funcBodySymbolTable;
 		Decompiler::PCode::InstructionPool* m_instrPool;
 		Decompiler::ImagePCodeGraph* m_imagePCodeGraph;
+		Decompiler::AbstractRegisterFactory* m_registerFactory = nullptr;
 		std::map<Offset, BreakPoint>* m_breakPoints;
 		std::map<ComplexOffset, BookMark>* m_bookMarks;
 		std::map<ComplexOffset, DataType::IFunctionSignature*>* m_vfunc_calls;
@@ -113,6 +115,8 @@ namespace CE
 		void setInstrPool(Decompiler::PCode::InstructionPool* instrPool);
 
 		Decompiler::ImagePCodeGraph* getPCodeGraph() const;
+
+		Decompiler::AbstractRegisterFactory* getRegisterFactory() const;
 
 		void setPCodeGraph(Decompiler::ImagePCodeGraph* imagePCodeGraph);
 

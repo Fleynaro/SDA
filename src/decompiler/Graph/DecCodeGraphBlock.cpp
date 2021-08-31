@@ -276,8 +276,10 @@ std::list<DecBlock::AssignmentLine*>& DecBlock::getSeqAssignmentLines() {
 	return m_seqLines;
 }
 
-void DecBlock::addSymbolParallelAssignmentLine(ExprTree::SymbolLeaf* symbolLeaf, ExprTree::INode* srcValue, PCode::Instruction* instr) {
-	m_symbolParallelAssignmentLines.push_back(new AssignmentLine(this, symbolLeaf, srcValue, instr));
+DecBlock::AssignmentLine* DecBlock::addSymbolParallelAssignmentLine(ExprTree::SymbolLeaf* symbolLeaf, ExprTree::INode* srcValue, PCode::Instruction* instr) {
+	const auto assignmentLine = new AssignmentLine(this, symbolLeaf, srcValue, instr);
+	m_symbolParallelAssignmentLines.push_back(assignmentLine);
+	return assignmentLine;
 }
 
 std::list<DecBlock::AssignmentLine*>& DecBlock::getSymbolParallelAssignmentLines() {

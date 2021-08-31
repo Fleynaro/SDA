@@ -5,14 +5,12 @@ using namespace CE;
 using namespace Decompiler;
 
 AbstractPrimaryDecompiler::~AbstractPrimaryDecompiler() {
-	for (auto& pair : m_decompiledBlocks) {
-		auto& decBlockInfo = pair.second;
+	for (const auto& pair : m_decompiledBlocks) {
+		const auto& decBlockInfo = pair.second;
 		delete decBlockInfo.m_execCtx;
 	}
 
-	for (auto& pair : m_localVars) {
-		const auto localVar = pair.first;
-		auto& localVarInfo = pair.second;
+	for (const auto& [localVar, localVarInfo] : m_localVars) {
 		if (!localVarInfo.m_used)
 			delete localVar;
 	}

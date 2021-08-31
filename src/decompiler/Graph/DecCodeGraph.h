@@ -38,8 +38,6 @@ namespace CE::Decompiler
 
 		void addSymbol(Symbol::Symbol* symbol);
 
-		void removeSymbol(Symbol::Symbol* symbol);
-
 		void cloneAllExpr();
 
 		void sortBlocksByLevel();

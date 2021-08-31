@@ -82,7 +82,7 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::renderControl() {
 	m_pcodeGraphChanged = false;
 
 	if (Button::StdButton("go to func").present()) {
-		goToOffset(0x20c80);
+		goToOffset(0x1240);
 	}
 
 	ImGui::BeginChild("##empty", ImVec2(0, 0), false, ImGuiWindowFlags_NoMove);

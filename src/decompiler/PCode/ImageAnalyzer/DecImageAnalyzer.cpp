@@ -14,7 +14,7 @@ ImageAnalyzer::ImageAnalyzer(AbstractImage* image, ImagePCodeGraph* imageGraph, 
 {}
 
 void ImageAnalyzer::start(Offset startOffset, bool onceFunc) const {
-	std::set<Offset> visitedOffsets;
+	std::set<ComplexOffset> visitedOffsets;
 	std::list<Offset> nextOffsetsToVisitLater = { startOffset };
 	std::list<std::pair<FunctionPCodeGraph*, std::list<Offset>>> nonVirtFuncOffsetsForGraphs;
 	std::map<Offset, FunctionPCodeGraph*> offsetsToFuncGraphs;
@@ -22,11 +22,11 @@ void ImageAnalyzer::start(Offset startOffset, bool onceFunc) const {
 
 	// generate an image graph
 	while (!nextOffsetsToVisitLater.empty()) {
-		auto startInstrOffset = ComplexOffset(nextOffsetsToVisitLater.back(), 0);
+		const auto startInstrOffset = ComplexOffset(nextOffsetsToVisitLater.back(), 0);
+		nextOffsetsToVisitLater.pop_back();
 		if (visitedOffsets.find(startInstrOffset) != visitedOffsets.end())
 			continue;
 		visitedOffsets.insert(startInstrOffset);
-		nextOffsetsToVisitLater.pop_back();
 
 		auto funcGraph = m_imageGraph->createFunctionGraph();
 		if (auto block = m_imageGraph->getBlockAtOffset(startInstrOffset)) {

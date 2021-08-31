@@ -138,7 +138,7 @@ namespace CE::Decompiler
 
 		std::list<AssignmentLine*>& getSeqAssignmentLines();
 
-		void addSymbolParallelAssignmentLine(ExprTree::SymbolLeaf* symbolLeaf, ExprTree::INode* srcValue, PCode::Instruction* instr = nullptr);
+		AssignmentLine* addSymbolParallelAssignmentLine(ExprTree::SymbolLeaf* symbolLeaf, ExprTree::INode* srcValue, PCode::Instruction* instr = nullptr);
 		
 		std::list<AssignmentLine*>& getSymbolParallelAssignmentLines();
 
