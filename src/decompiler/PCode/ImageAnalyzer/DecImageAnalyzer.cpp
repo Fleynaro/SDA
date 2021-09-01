@@ -197,7 +197,7 @@ void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, Fu
 			PCodeBlock* nextFarBlock = nullptr;
 			if (auto alreadyExistingBlock = m_imageGraph->getBlockAtOffset(targetOffset)) {
 				// split the already existing block into 2 non-empty blocks 
-				if (targetOffset > alreadyExistingBlock->getMinOffset() && targetOffset < alreadyExistingBlock->getMaxOffset() - 1) {
+				if (targetOffset > alreadyExistingBlock->getMinOffset()) {
 					auto block1 = alreadyExistingBlock;
 					auto block2 = m_imageGraph->createBlock(targetOffset);
 
@@ -221,10 +221,11 @@ void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, Fu
 					block1->disconnect();
 					block1->setNextNearBlock(block2);
 
-					if (curBlock == alreadyExistingBlock)
-						alreadyExistingBlock = curBlock = block2;
+					curBlock->setNextFarBlock(nextFarBlock = block2);
 				}
-				curBlock->setNextFarBlock(alreadyExistingBlock);
+				else {
+					curBlock->setNextFarBlock(nextFarBlock = alreadyExistingBlock);
+				}
 			}
 			else {
 				nextFarBlock = m_imageGraph->createBlock(targetOffset);

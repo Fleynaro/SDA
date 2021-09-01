@@ -3,6 +3,37 @@
 #include "decompiler/Graph/DecCodeGraph.h"
 
 
+GUI::DebuggerAttachProcessPanel::DebuggerAttachProcessPanel(CE::Project* project)
+	: AbstractPanel("Attach Process"), m_processListModel(&m_debugProcesses), m_addrSpaceController(project->getAddrSpaceManager())
+{
+	m_selectedDebugger = *CE::GetAvailableDebuggers().begin();
+	m_selectedDebuggerStr = GetDubuggerName(m_selectedDebugger);
+
+#ifndef NDEBUG
+	// for test only
+	m_processListModel.m_filterName = "test";
+#endif
+
+	m_debugProcesses = CE::GetProcesses();
+	m_tableProcessListView = SelectableTableListView(&m_processListModel, {
+		                                                 ColInfo("PID", ImGuiTableColumnFlags_WidthFixed, 50.0f),
+		                                                 ColInfo("Name", ImGuiTableColumnFlags_None)
+	                                                 });
+	m_tableProcessListView.handler([&](CE::DebugProcess* process)
+	{
+		m_selectedProcess = process;
+	});
+
+	m_addrSpaceListView = StdListView<CE::AddressSpace*>(&m_addrSpaceController.m_listModel, nullptr, true);
+	m_addrSpaceListView.handler([&](CE::AddressSpace* addrSpace)
+	{
+		m_selectedParentAddrSpace = addrSpace;
+		m_selectedParentAddrSpaceStr = addrSpace ? addrSpace->getName() : "Not selected";
+	});
+	m_selectedParentAddrSpaceStr = "Not selected";
+	m_addrSpaceController.m_filter.m_showDebug = false;
+}
+
 void GUI::PCodeEmulator::updateByDecGraph(CE::Decompiler::DecompiledCodeGraph* decGraph) {
 	if (m_lastExecutedInstr) {
 		const auto instrOffset = m_lastExecutedInstr->getOffset();
