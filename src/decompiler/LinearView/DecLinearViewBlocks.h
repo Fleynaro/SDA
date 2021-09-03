@@ -95,7 +95,19 @@ namespace CE::Decompiler::LinearView
 		WhileCycleBlock* getWhileCycle() const;
 
 		bool isEmpty() {
-			return m_blocks.empty() && getGotoType() == GotoType::None;
+			if (m_blocks.empty()) {
+				if (getGotoType() == GotoType::None) {
+					return true;
+				}
+			} else {
+				if(m_blocks.size() == 1) { // todo: multiple blocks can be empty
+					if(const auto codeBlock = dynamic_cast<CodeBlock*>(*m_blocks.begin())) {
+						if (codeBlock->m_decBlock->hasNoCode())
+							return true;
+					}
+				}
+			}
+			return false;
 		}
 	};
 

@@ -102,7 +102,7 @@ void Optimization::GraphParAssignmentCreator::createParAssignmentsForLocalVars()
 
 		// iterate over all ctxs and create assignments: localVar1 = 0x5
 		for (auto execCtx : localVarInfo.m_parentExecCtxs) {
-			const auto expr = execCtx->m_registerExecCtx.requestRegister(localVarInfo.m_register);
+			const auto expr = execCtx->m_registerExecCtx.requestRegister(localVarInfo.m_register, nullptr);
 
 			// to avoide: localVar1 = localVar1
 			if (const auto symbolLeaf = dynamic_cast<SymbolLeaf*>(expr))

@@ -24,6 +24,9 @@ namespace CE::Decompiler::PCode
 		// get expr. value from varnode (register/symbol/constant)
 		ExprTree::INode* requestVarnode(Varnode* varnode) const;
 
+		// get expr. value from register
+		ExprTree::INode* requestRegister(const Register& reg) const;
+
 		// make expression return boolean value: x -> x != 0
 		ExprTree::AbstractCondition* toBoolean(ExprTree::INode* node);
 

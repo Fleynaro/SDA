@@ -11,7 +11,7 @@ void RegisterExecContext::clear() {
 	}
 }
 
-ExprTree::INode* RegisterExecContext::requestRegister(const Register& reg) {
+ExprTree::INode* RegisterExecContext::requestRegister(const Register& reg, Instruction* instr) {
 	if(reg.getType() == Register::Type::StackPointer) {
 		const auto symbolLeaf = new ExprTree::SymbolLeaf(m_decompiler->getStackPointerSymbol());
 		return new ExprTree::OperationalNode(symbolLeaf, new ExprTree::NumberLeaf(m_stackPointerValue, 0x8), ExprTree::Add);
@@ -22,7 +22,7 @@ ExprTree::INode* RegisterExecContext::requestRegister(const Register& reg) {
 	}
 	
 	BitMask64 needReadMask = reg.m_valueRangeMask;
-	auto regParts = findRegisterParts(reg.getId(), needReadMask);
+	auto regParts = findRegisterParts(reg.getId(), needReadMask, instr);
 	if (!needReadMask.isZero()) {
 		const auto regVar = m_decompiler->getRegisterVariable(reg);
 		RegisterPart part;
@@ -35,7 +35,7 @@ ExprTree::INode* RegisterExecContext::requestRegister(const Register& reg) {
 	return CreateExprFromRegisterParts(regParts, reg.m_valueRangeMask);
 }
 
-void RegisterExecContext::setRegister(const Register& reg, ExprTree::INode* newExpr) {
+void RegisterExecContext::setRegister(const Register& reg, ExprTree::INode* newExpr, Instruction* srcInstr) {
 	std::list<TopNode*> oldTopNodes;
 
 	auto it = m_registers.find(reg.getId());
@@ -62,7 +62,7 @@ void RegisterExecContext::setRegister(const Register& reg, ExprTree::INode* newE
 	registerInfo.m_register = reg;
 	registerInfo.m_expr = new TopNode(newExpr);
 	registerInfo.m_srcExecContext = m_execContext;
-	registerInfo.m_using = RegisterInfo::REGISTER_FULLY_USING;
+	registerInfo.m_srcInstr = srcInstr;
 	m_registers[reg.getId()].push_back(registerInfo);
 
 	// delete only here because new expr may be the same as old expr: mov rax, rax
@@ -229,10 +229,10 @@ void RegisterExecContext::join(RegisterExecContext* ctx) {
 	}
 }
 
-std::list<RegisterExecContext::RegisterPart> RegisterExecContext::findRegisterParts(int regId, BitMask64& needReadMask) {
+std::list<RegisterExecContext::RegisterPart> RegisterExecContext::findRegisterParts(int regId, BitMask64& needReadMask, Instruction* instr) {
 	std::list<RegisterInfo*> sameRegisters;
 
-	//select same registeres
+	//select same registers
 	auto it = m_registers.find(regId);
 	if (it != m_registers.end()) {
 		auto& registers = it->second;
@@ -253,8 +253,13 @@ std::list<RegisterExecContext::RegisterPart> RegisterExecContext::findRegisterPa
 
 		//if the masks intersected
 		if (!(needReadMask & sameRegExceptionMask).isZero()) {
-			sameRegInfo->m_using = RegisterInfo::REGISTER_FULLY_USING;
-
+			if (instr) {
+				// within the same orig. instruction reading of register(eax) after writing don't affect using state (during setting flags ZF, OF, SF, ...)
+				if (!sameRegInfo->m_srcInstr || instr->getOffset().getByteOffset() != sameRegInfo->m_srcInstr->getOffset().getByteOffset()) {
+					sameRegInfo->m_using = RegisterInfo::REGISTER_FULLY_USING;
+				}
+			}
+			
 			RegisterPart part;
 			part.m_regMask = sameRegInfo->m_register.m_valueRangeMask;
 			part.m_maskToChange = needReadMask & sameRegExceptionMask;
@@ -352,9 +357,9 @@ ExecContext::~ExecContext() {
 	}
 }
 
-ExprTree::INode* ExecContext::requestVarnode(Varnode* varnode) {
+ExprTree::INode* ExecContext::requestVarnode(Varnode* varnode, Instruction* instr) {
 	if (const auto registerVarnode = dynamic_cast<RegisterVarnode*>(varnode)) {
-		return m_registerExecCtx.requestRegister(registerVarnode->m_register);
+		return m_registerExecCtx.requestRegister(registerVarnode->m_register, instr);
 	}
 	if (const auto symbolVarnode = dynamic_cast<SymbolVarnode*>(varnode)) {
 		const auto it = m_symbolVarnodes.find(symbolVarnode);
@@ -380,11 +385,11 @@ ExprTree::INode* ExecContext::requestVarnode(Varnode* varnode) {
 	return nullptr;
 }
 
-void ExecContext::setVarnode(Varnode* varnode, ExprTree::INode* newExpr) {
-	if (const auto registerVarnode = dynamic_cast<RegisterVarnode*>(varnode)) {
-		m_registerExecCtx.setRegister(registerVarnode->m_register, newExpr);
+void ExecContext::setVarnode(Instruction* instr, ExprTree::INode* newExpr) {
+	if (const auto registerVarnode = dynamic_cast<RegisterVarnode*>(instr->m_output)) {
+		m_registerExecCtx.setRegister(registerVarnode->m_register, newExpr, instr);
 	}
-	if (const auto symbolVarnode = dynamic_cast<SymbolVarnode*>(varnode)) {
+	if (const auto symbolVarnode = dynamic_cast<SymbolVarnode*>(instr->m_output)) {
 		TopNode* topNode = nullptr;
 		const auto it = m_symbolVarnodes.find(symbolVarnode);
 		if (it != m_symbolVarnodes.end()) {

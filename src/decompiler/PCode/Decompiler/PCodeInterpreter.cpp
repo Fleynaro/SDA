@@ -12,7 +12,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 	case InstructionId::COPY:
 	{
 		auto expr = requestVarnode(m_instr->m_input0);
-		m_ctx->setVarnode(m_instr->m_output, new ExprTree::MirrorNode(expr, m_instr));
+		m_ctx->setVarnode(m_instr, new ExprTree::MirrorNode(expr, m_instr));
 		break;
 	}
 
@@ -22,7 +22,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 		auto readSize = m_instr->m_output->getSize();
 		auto readValueNode = new ExprTree::ReadValueNode(expr, readSize, m_instr);
 		auto memSymbolLeaf = createMemSymbolLeaf(readValueNode, m_instr);
-		m_ctx->setVarnode(m_instr->m_output, memSymbolLeaf);
+		m_ctx->setVarnode(m_instr, memSymbolLeaf);
 		m_decompiler->m_decompiledGraph->addSymbolValue(m_instr->getOffset(), memSymbolLeaf->m_symbol);
 		break;
 	}
@@ -112,7 +112,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 		}
 
 		auto result = new ExprTree::OperationalNode(op1, op2, opType, m_instr);
-		m_ctx->setVarnode(m_instr->m_output, result);
+		m_ctx->setVarnode(m_instr, result);
 		break;
 	}
 
@@ -122,7 +122,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 		auto expr = requestVarnode(m_instr->m_input0);
 		auto nodeMask = new ExprTree::NumberLeaf(static_cast<uint64_t>((int64_t)-1), m_instr->m_input0->getMask().getSize());
 		auto opType = (m_instr->m_id == InstructionId::INT_2COMP) ? ExprTree::Mul : ExprTree::Xor;
-		m_ctx->setVarnode(m_instr->m_output, new ExprTree::OperationalNode(expr, nodeMask, opType, m_instr));
+		m_ctx->setVarnode(m_instr, new ExprTree::OperationalNode(expr, nodeMask, opType, m_instr));
 		break;
 	}
 
@@ -134,7 +134,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 			// todo: increase from 8 to 16 bytes (it requires 128-bit arithmetic implementation)
 			expr = new ExprTree::CastNode(expr, m_instr->m_output->getSize(), m_instr->m_id == InstructionId::INT_SEXT, m_instr);
 		}
-		m_ctx->setVarnode(m_instr->m_output, expr);
+		m_ctx->setVarnode(m_instr, expr);
 		break;
 	}
 
@@ -146,7 +146,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 		expr = new ExprTree::OperationalNode(expr, shiftExpr, ExprTree::Shr);
 		auto numberLeaf = new ExprTree::NumberLeaf(static_cast<uint64_t>(-1), m_instr->m_output->getMask().getSize());
 		expr = new ExprTree::OperationalNode(expr, numberLeaf, ExprTree::And, m_instr);
-		m_ctx->setVarnode(m_instr->m_output, expr);
+		m_ctx->setVarnode(m_instr, expr);
 		break;
 	}
 
@@ -154,7 +154,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 	{
 		auto expr = requestVarnode(m_instr->m_input0);
 		auto result = new ExprTree::OperationalNode(expr, new ExprTree::NumberLeaf(-1.0, m_instr->m_input0->getMask().getSize()), ExprTree::fMul, m_instr);
-		m_ctx->setVarnode(m_instr->m_output, result);
+		m_ctx->setVarnode(m_instr, result);
 		break;
 	}
 
@@ -196,7 +196,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 			break;
 		}
 
-		m_ctx->setVarnode(m_instr->m_output, new ExprTree::FloatFunctionalNode(expr, id, m_instr->m_input0->getSize(), m_instr));
+		m_ctx->setVarnode(m_instr, new ExprTree::FloatFunctionalNode(expr, id, m_instr->m_input0->getSize(), m_instr));
 		break;
 	}
 
@@ -240,7 +240,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 
 		bool isFloatingPoint = (InstructionId::FLOAT_EQUAL <= m_instr->m_id && m_instr->m_id <= InstructionId::FLOAT_LESSEQUAL);
 		auto result = new ExprTree::Condition(op1, op2, condType, isFloatingPoint, m_instr);
-		m_ctx->setVarnode(m_instr->m_output, result);
+		m_ctx->setVarnode(m_instr, result);
 		break;
 	}
 
@@ -248,7 +248,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 	{
 		auto op1 = requestVarnode(m_instr->m_input0);
 		auto result = new ExprTree::Condition(op1, new ExprTree::FloatNanLeaf(), ExprTree::Condition::Eq, m_instr);
-		m_ctx->setVarnode(m_instr->m_output, result);
+		m_ctx->setVarnode(m_instr, result);
 		break;
 	}
 
@@ -257,7 +257,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 		auto cond = toBoolean(requestVarnode(m_instr->m_input0));
 		if (cond) {
 			auto result = new ExprTree::CompositeCondition(cond, nullptr, ExprTree::CompositeCondition::Not, m_instr);
-			m_ctx->setVarnode(m_instr->m_output, result);
+			m_ctx->setVarnode(m_instr, result);
 		}
 		break;
 	}
@@ -284,7 +284,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 						condType = ExprTree::CompositeCondition::Or;
 					result = new ExprTree::CompositeCondition(condOp1, condOp2, condType, m_instr);
 				}
-				m_ctx->setVarnode(m_instr->m_output, result);
+				m_ctx->setVarnode(m_instr, result);
 			}
 		}
 		break;
@@ -303,7 +303,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 			funcId = ExprTree::FunctionalNode::Id::SBORROW;
 
 		auto result = new ExprTree::FunctionalNode(op1, op2, funcId, m_instr);
-		m_ctx->setVarnode(m_instr->m_output, result);
+		m_ctx->setVarnode(m_instr, result);
 		break;
 	}
 
@@ -347,7 +347,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 		auto symbolLeaf = new ExprTree::SymbolLeaf(funcResultVar);
 		m_block->addSeqLine(symbolLeaf, funcCallCtx, m_instr);
 		if (dstRegister.isValid()) {
-			m_ctx->m_registerExecCtx.setRegister(dstRegister, symbolLeaf);
+			m_ctx->m_registerExecCtx.setRegister(dstRegister, symbolLeaf, m_instr);
 		}
 		m_decompiler->m_decompiledGraph->addSymbolValue(m_instr->getOffset(), funcResultVar, retInfo.m_storage);
 		break;
@@ -355,11 +355,12 @@ void InstructionInterpreter::execute(Instruction* instr) {
 
 	case InstructionId::RETURN:
 	{
-		if (auto endBlock = dynamic_cast<EndDecBlock*>(m_block)) {
-			auto& retInfo = m_decompiler->m_returnInfo;
+		if (const auto endBlock = dynamic_cast<EndDecBlock*>(m_block)) {
+			const auto& retInfo = m_decompiler->m_returnInfo;
 			if (retInfo.m_storage.getType() != Storage::STORAGE_NONE) {
-				auto dstRegister = m_decompiler->getRegisterFactory()->createRegister(retInfo.m_storage.getRegisterId(), retInfo.m_size, retInfo.m_storage.getOffset());
-				endBlock->setReturnNode(m_ctx->m_registerExecCtx.requestRegister(dstRegister));
+				const auto dstRegister = m_decompiler->getRegisterFactory()->createRegister(retInfo.m_storage.getRegisterId(), retInfo.m_size, retInfo.m_storage.getOffset());
+				const auto returnExpr = m_ctx->m_registerExecCtx.requestRegister(dstRegister, nullptr);
+				endBlock->setReturnNode(returnExpr);
 			}
 		}
 		break;
@@ -375,7 +376,7 @@ ExprTree::INode* InstructionInterpreter::buildParameterInfoExpr(ParameterInfo& p
 		const auto fixedStorage = Storage(storage.getType(), storage.getRegisterId(), storage.getOffset() - 0x8);
 		
 		const auto reg = m_decompiler->getRegisterFactory()->createRegister(fixedStorage.getRegisterId(), 0x8); // RIP or RSP (8 bytes = size of pointer)
-		auto regSymbol = m_ctx->m_registerExecCtx.requestRegister(reg);
+		auto regSymbol = requestRegister(reg);
 		const auto offsetNumber = new ExprTree::NumberLeaf(static_cast<uint64_t>(fixedStorage.getOffset()), regSymbol->getSize());
 		const auto opAddNode = new ExprTree::OperationalNode(regSymbol, offsetNumber, ExprTree::Add);
 		const auto readValueNode = new ExprTree::ReadValueNode(opAddNode, paramInfo.m_size);
@@ -387,13 +388,16 @@ ExprTree::INode* InstructionInterpreter::buildParameterInfoExpr(ParameterInfo& p
 
 	// register
 	const auto reg = m_decompiler->getRegisterFactory()->createRegister(storage.getRegisterId(), paramInfo.m_size, storage.getOffset());
-	const auto regSymbol = m_ctx->m_registerExecCtx.requestRegister(reg);
+	const auto regSymbol = requestRegister(reg);
 	return regSymbol;
 }
 
-ExprTree::INode* InstructionInterpreter::requestVarnode(Varnode* varnode) const
-{
-	return m_ctx->requestVarnode(varnode);
+ExprTree::INode* InstructionInterpreter::requestVarnode(Varnode* varnode) const {
+	return m_ctx->requestVarnode(varnode, m_instr);
+}
+
+ExprTree::INode* InstructionInterpreter::requestRegister(const Register& reg) const {
+	return m_ctx->m_registerExecCtx.requestRegister(reg, m_instr);
 }
 
 ExprTree::AbstractCondition* InstructionInterpreter::toBoolean(ExprTree::INode* node) {

@@ -16,6 +16,7 @@ namespace CE::Decompiler
 			Register m_register;
 			TopNode* m_expr;
 			ExecContext* m_srcExecContext;
+			Instruction* m_srcInstr = nullptr;
 
 			// need for figuring out return registers (EAX, XMM)
 			enum REGISTER_USING {
@@ -44,9 +45,9 @@ namespace CE::Decompiler
 
 		void clear();
 
-		ExprTree::INode* requestRegister(const Register& reg);
+		ExprTree::INode* requestRegister(const Register& reg, Instruction* instr);
 
-		void setRegister(const Register& reg, ExprTree::INode* newExpr);
+		void setRegister(const Register& reg, ExprTree::INode* newExpr, Instruction* srcInstr);
 
 		void copyFrom(RegisterExecContext* ctx);
 
@@ -55,7 +56,7 @@ namespace CE::Decompiler
 		
 
 	private:
-		std::list<RegisterPart> findRegisterParts(int regId, BitMask64& needReadMask);
+		std::list<RegisterPart> findRegisterParts(int regId, BitMask64& needReadMask, Instruction* instr);
 
 		BitMask64 calculateMaxMask(const std::list<RegisterInfo>& regs);
 
@@ -82,9 +83,9 @@ namespace CE::Decompiler
 
 		~ExecContext();
 
-		ExprTree::INode* requestVarnode(Varnode* varnode);
+		ExprTree::INode* requestVarnode(Varnode* varnode, Instruction* instr);
 
-		void setVarnode(Varnode* varnode, ExprTree::INode* newExpr);
+		void setVarnode(Instruction* instr, ExprTree::INode* newExpr);
 
 		void join(ExecContext* ctx);
 	};

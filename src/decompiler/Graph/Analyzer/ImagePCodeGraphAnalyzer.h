@@ -425,7 +425,7 @@ namespace CE::Decompiler
 					if (retValStatInfo.m_score > 0) {
 						const auto& reg = retValStatInfo.m_register;
 						const auto markerNode = new MarkerNode(reg, rawSigOwner);
-						ctx->m_registerExecCtx.setRegister(reg, markerNode);
+						ctx->m_registerExecCtx.setRegister(reg, markerNode, instr);
 					}
 				}
 				return FunctionCallInfo({});
@@ -557,13 +557,13 @@ namespace CE::Decompiler
 					switch (minRegInfo->m_using)
 					{
 					case RegisterExecContext::RegisterInfo::REGISTER_NOT_USING:
-						regRetValueStatInfo.m_score += 1;
+						regRetValueStatInfo.m_score += 5;
 						break;
 					case RegisterExecContext::RegisterInfo::REGISTER_PARTIALLY_USING:
 						regRetValueStatInfo.m_score += 2;
 						break;
 					case RegisterExecContext::RegisterInfo::REGISTER_FULLY_USING:
-						regRetValueStatInfo.m_score += 5;
+						regRetValueStatInfo.m_score += 1;
 						break;
 					}
 
