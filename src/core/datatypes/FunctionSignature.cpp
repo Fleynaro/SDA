@@ -48,7 +48,7 @@ std::string FunctionSignature::getSigName() {
 
 void FunctionSignature::setReturnType(DataTypePtr returnType) {
 	m_returnType = returnType;
-	m_areCustomStoragesUpdated = true;
+	m_isReturnStorageChanged = true;
 }
 
 DataTypePtr FunctionSignature::getReturnType() {
@@ -63,13 +63,13 @@ void FunctionSignature::addParameter(const std::string& name, DataTypePtr dataTy
 	auto symbolManager = getTypeManager()->getProject()->getSymbolManager();
 	const auto paramSymbol = symbolManager->getFactory().createFuncParameterSymbol(dataType, name, comment);
 	m_parameters.addParameter(paramSymbol);
-	m_areCustomStoragesUpdated = true;
 }
 
 FunctionCallInfo FunctionSignature::getCallInfo() {
-	if(m_areCustomStoragesUpdated) {
+	if(m_isReturnStorageChanged || m_parameters.m_areParamStoragesChanged) {
 		updateParameterStorages();
-		m_areCustomStoragesUpdated = false;
+		m_isReturnStorageChanged = false;
+		m_parameters.m_areParamStoragesChanged = false;
 	}
 	return FunctionCallInfo(m_paramInfos);
 }

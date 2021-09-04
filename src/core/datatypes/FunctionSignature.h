@@ -15,6 +15,7 @@ namespace CE::DataType
 	{
 		std::vector<Symbol::FuncParameterSymbol*> m_params;
 	public:
+		bool m_areParamStoragesChanged = false;
 		IFunctionSignature* m_funcSignature;
 		ParameterList(IFunctionSignature* funcSignature)
 			: m_funcSignature(funcSignature)
@@ -32,6 +33,7 @@ namespace CE::DataType
 			param->m_paramIdx = static_cast<int>(m_params.size()) + 1;
 			param->m_signature = m_funcSignature;
 			m_params.push_back(param);
+			m_areParamStoragesChanged = true;
 		}
 
 		void removeParameter(int idx) {
@@ -39,6 +41,7 @@ namespace CE::DataType
 			for (int i = idx - 1; i < getParamsCount(); i++) {
 				m_params[i]->m_paramIdx--;
 			}
+			m_areParamStoragesChanged = true;
 		}
 
 		void moveParameter(int idx, int dir) {
@@ -133,7 +136,7 @@ namespace CE::DataType
 
 	private:
 		bool m_isAuto = false;
-		bool m_areCustomStoragesUpdated = false;
+		bool m_isReturnStorageChanged = false;
 		CallingConvetion m_callingConvetion;
 		std::list<Decompiler::ParameterInfo> m_paramInfos;
 		std::list<std::pair<int, Decompiler::Storage>> m_customStorages;

@@ -48,8 +48,8 @@ namespace CE
 	{
 	public:
 		enum IMAGE_TYPE {
-			IMAGE_PE,
-			IMAGE_DEBUG
+			IMAGE_NONE,
+			IMAGE_PE
 		};
 
 	private:
@@ -136,7 +136,6 @@ namespace CE
 
 		fs::path getFile();
 
-	private:
 		void createImage(IReader* reader);
 	};
 };

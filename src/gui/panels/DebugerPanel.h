@@ -1182,10 +1182,9 @@ namespace GUI
 			debugReader->updateCache();
 			m_debugSession->resume();
 			
-			CE::AbstractImage* debugImage = nullptr;
-			CE::ImageDecorator::IMAGE_TYPE type = CE::ImageDecorator::IMAGE_PE;
+			auto type = CE::ImageDecorator::IMAGE_NONE;
 			if (m_debugSession->getDebugger() == CE::Debugger::DebuggerEngine) {
-				debugImage = new CE::PEImage(debugReader);
+				type = CE::ImageDecorator::IMAGE_PE;
 			}
 
 			const auto name = debugModule.m_path.filename().string();
@@ -1202,11 +1201,8 @@ namespace GUI
 				imageDec = m_project->getImageManager()->createImage(m_addressSpace, type, m_globalSymbolTable, m_funcBodySymbolTable, name, "", false);
 			}
 			imageDec->m_debugSession = m_debugSession;
-			
-			if (debugImage) {
-				debugImage->m_inVirtualMemory = true;
-				imageDec->setImage(debugImage);
-			}
+			imageDec->createImage(debugReader);
+			imageDec->getImage()->m_inVirtualMemory = true;
 			return imageDec;
 		}
 	};

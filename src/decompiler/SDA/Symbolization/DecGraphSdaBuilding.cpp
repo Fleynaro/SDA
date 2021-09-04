@@ -221,7 +221,9 @@ CE::Symbol::ISymbol* SdaBuilding::findOrCreateSymbol(Symbol::Symbol* symbol, int
 				}
 			}
 		}
-		else {
+
+		// if user parameter not found then recognize
+		if (paramIdx <= 0) {
 			if (m_callingConvention == DataType::CallingConvetion::FASTCALL) {
 				paramIdx = GetIndex_FASTCALL(reg, offset);
 			}
@@ -234,6 +236,7 @@ CE::Symbol::ISymbol* SdaBuilding::findOrCreateSymbol(Symbol::Symbol* symbol, int
 			funcParamSymbol->m_paramIdx = paramIdx;
 			funcParamSymbol->setAutoSymbol(true);
 			storeSdaSymbolIfMem(funcParamSymbol, symbol, offset);
+			m_newAutoSymbols.insert(funcParamSymbol);
 			return funcParamSymbol;
 		}
 

@@ -65,8 +65,8 @@ namespace GUI
 				project->getFunctionManager()->getFactory().createFunction(funcOffset, defSignature, m_imageDec, "func_" + Helper::String::NumberToHex(funcOffset));
 			}
 
-			/*ImagePCodeGraphAnalyzer imagePCodeGraphAnalyzer(m_imageDec, &graphReferenceSearch);
-			imagePCodeGraphAnalyzer.start();*/
+			ImagePCodeGraphAnalyzer imagePCodeGraphAnalyzer(m_imageDec, &graphReferenceSearch);
+			imagePCodeGraphAnalyzer.start();
 		}
 	};
 };

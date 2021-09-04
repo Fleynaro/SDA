@@ -74,15 +74,15 @@ int Decompiler::GetIndex_FASTCALL(const Register& reg, int64_t offset) {
 	}
 	std::map<RegisterId, int> regToParamId = {
 		std::pair(ZYDIS_REGISTER_RCX, 1),
-		std::pair(ZYDIS_REGISTER_ZMM0, 1),
+		std::pair(ZYDIS_REGISTER_XMM0, 1),
 		std::pair(ZYDIS_REGISTER_RDX, 2),
-		std::pair(ZYDIS_REGISTER_ZMM1, 2),
+		std::pair(ZYDIS_REGISTER_XMM1, 2),
 		std::pair(ZYDIS_REGISTER_R8, 3),
-		std::pair(ZYDIS_REGISTER_ZMM2, 3),
+		std::pair(ZYDIS_REGISTER_XMM2, 3),
 		std::pair(ZYDIS_REGISTER_R9, 4),
-		std::pair(ZYDIS_REGISTER_ZMM3, 4),
+		std::pair(ZYDIS_REGISTER_XMM3, 4),
 	};
-	const auto it = regToParamId.find(reg.getId());
+	const auto it = regToParamId.find(reg.getGenericId());
 	if (it != regToParamId.end()) {
 		return it->second;
 	}

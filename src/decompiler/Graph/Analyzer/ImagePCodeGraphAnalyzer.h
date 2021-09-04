@@ -129,6 +129,7 @@ namespace CE::Decompiler
 			class RawSignature : public DataType::FunctionSignature
 			{
 			public:
+				// todo: DataType::FunctionSignature* m_signature;
 				ReturnValueStatInfo m_retValStatInfo;
 				std::list<RawSignatureOwner*> m_owners;
 				std::list<Function*> m_functions;
@@ -354,7 +355,7 @@ namespace CE::Decompiler
 
 				if (const auto rawSigOwner1 = dynamic_cast<RawSignatureOwner*>(dataType1)) {
 					if (const auto rawSigOwner2 = dynamic_cast<RawSignatureOwner*>(dataType2)) {
-						//rawSigOwner1->merge(rawSigOwner2);
+						rawSigOwner1->merge(rawSigOwner2);
 					}
 				}
 
@@ -471,7 +472,8 @@ namespace CE::Decompiler
 			createRawSignatures();
 			createVTables();
 
-			while (m_nextPassRequired) {
+			do {
+				m_nextPassRequired = false;
 				for (const auto headFuncGraph : m_imageDec->getPCodeGraph()->getHeadFuncGraphs()) {
 					std::set<FunctionPCodeGraph*> visitedGraphs;
 					doPassToDefineReturnValues(headFuncGraph, visitedGraphs);
@@ -480,7 +482,7 @@ namespace CE::Decompiler
 					visitedGraphs.clear();
 					doMainPass(headFuncGraph, visitedGraphs);
 				}
-			}
+			} while (m_nextPassRequired);
 		}
 
 	private:
@@ -488,9 +490,12 @@ namespace CE::Decompiler
 		void changeFunctionSignaturesByRetValStat() {
 			for (const auto& [funcOffset , rawSigOwner] : m_funcOffsetToSig) {
 				auto& retValStatInfo = rawSigOwner->m_rawSignature->m_retValStatInfo;
-				// need to define if the return value from a function call requested somewhere
-				retValStatInfo.m_score += retValStatInfo.m_meetMarkesCount * 5 / retValStatInfo.m_totalMarkesCount;
 
+				// need to define if the return value from a function call requested somewhere
+				if (retValStatInfo.m_totalMarkesCount != 0) {
+					retValStatInfo.m_score += retValStatInfo.m_meetMarkesCount * 5 / retValStatInfo.m_totalMarkesCount;
+				}
+				
 				// set return type if score is high enough
 				if (retValStatInfo.m_score >= 2) {
 					const auto retType = m_project->getTypeManager()->getDefaultType(retValStatInfo.m_register.getSize());
@@ -508,7 +513,7 @@ namespace CE::Decompiler
 				if(visitedGraphs.find(nextFuncGraph) == visitedGraphs.end())
 					doPassToDefineReturnValues(nextFuncGraph, visitedGraphs);
 
-			const auto funcOffset = funcGraph->getStartBlock()->getMinOffset() >> 8;
+			const auto funcOffset = funcGraph->getStartBlock()->getMinOffset().getByteOffset();
 			const auto it = m_funcOffsetToSig.find(funcOffset);
 			if (it == m_funcOffsetToSig.end())
 				throw std::logic_error("no signature");
@@ -600,7 +605,7 @@ namespace CE::Decompiler
 				return FunctionCallInfo({});
 			};
 			auto primaryDecompiler = PrimaryDecompiler(decCodeGraph, m_imageDec->getRegisterFactory(),
-				ReturnInfo(),
+				function->getSignature()->getCallInfo().getReturnInfo(),
 				funcCallInfoCallback);
 			primaryDecompiler.start();
 			Optimization::ProcessDecompiledGraph(decCodeGraph, &primaryDecompiler);
@@ -612,18 +617,13 @@ namespace CE::Decompiler
 
 			// data type calculating
 			StructureFinder structureFinder(sdaCodeGraph, this, true);
-			structureFinder.start();
+			//structureFinder.start();
 			// including function params
 			StructureFinder structureFinder2(sdaCodeGraph, this, false);
-			structureFinder2.start();
+			//structureFinder2.start();
 
 			// gather all new symbols (only after parameters of all function will be defined)
 			for (const auto symbol : sdaBuilding.getNewAutoSymbols()) {
-				// mark as non-auto
-				if (const auto autoSymbol = dynamic_cast<CE::Symbol::AbstractSymbol*>(symbol)) {
-					autoSymbol->setAutoSymbol(false);
-				}
-
 				// add symbols into symbol tables
 				if (const auto memSymbol = dynamic_cast<CE::Symbol::AbstractMemorySymbol*>(symbol)) {
 					if (symbol->getType() == CE::Symbol::GLOBAL_VAR) {
@@ -642,19 +642,44 @@ namespace CE::Decompiler
 			}
 
 			// fill the signature with params that are existing or newly found
+			auto& params = function->getSignature()->getParameters();
+			// gather all found params
 			std::list<CE::Symbol::FuncParameterSymbol*> funcParamSymbols;
 			for(const auto symbol : sdaCodeGraph->getSdaSymbols()) {
 				if(auto funcParamSymbol = dynamic_cast<CE::Symbol::FuncParameterSymbol*>(symbol)) {
 					funcParamSymbols.push_back(funcParamSymbol);
 				}
 			}
+			
+			// sort them
 			funcParamSymbols.sort([](CE::Symbol::FuncParameterSymbol* param1, CE::Symbol::FuncParameterSymbol* param2)
 				{
 					return param1->getParamIdx() < param2->getParamIdx();
 				});
-			function->getSignature()->getParameters().clear();
+			
+			// remove old params which are not in found params
+			for(int i = 0; i < params.getParamsCount(); i ++) {
+				const auto it = std::find(funcParamSymbols.begin(), funcParamSymbols.end(), params[i]);
+				if(it == funcParamSymbols.end()) {
+					delete params[i];
+				}
+			}
+			params.clear();
+
+			// add params
+			auto prevParamIdx = 0;
 			for(const auto paramSymbol : funcParamSymbols) {
-				function->getSignature()->getParameters().addParameter(paramSymbol);
+				// create and add fake params to fill a gap (param1, _param2, param3)
+				for (int paramIdx = prevParamIdx + 1; paramIdx < paramSymbol->getParamIdx(); paramIdx++) {
+					const auto defType = m_project->getTypeManager()->getDefaultType(0x4);
+					const auto fakeParamSymbol = m_project->getSymbolManager()->getFactory(false).createFuncParameterSymbol(defType, "_param" + std::to_string(paramIdx));
+					fakeParamSymbol->m_paramIdx = paramIdx;
+					fakeParamSymbol->setAutoSymbol(true);
+					params.addParameter(fakeParamSymbol);
+				}
+				// add parameter
+				params.addParameter(paramSymbol);
+				prevParamIdx = paramSymbol->getParamIdx();
 			}
 
 			delete sdaCodeGraph;
