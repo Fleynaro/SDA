@@ -196,7 +196,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 			break;
 		}
 
-		m_ctx->setVarnode(m_instr, new ExprTree::FloatFunctionalNode(expr, id, m_instr->m_input0->getSize(), m_instr));
+		m_ctx->setVarnode(m_instr, new ExprTree::FloatFunctionalNode(expr, id, m_instr->m_output->getSize(), m_instr));
 		break;
 	}
 

@@ -49,8 +49,9 @@ bool ExprTree::IsOperationManipulatedWithBitVector(OperationType opType) {
 }
 
 OperationalNode::OperationalNode(INode* leftNode, INode* rightNode, OperationType operation,
-                                 PCode::Instruction* instr): m_leftNode(leftNode), m_rightNode(rightNode),
-                                                             m_operation(operation), m_instr(instr) {
+                                 PCode::Instruction* instr, int userDefinedSize)
+	: m_leftNode(leftNode), m_rightNode(rightNode), m_operation(operation), m_instr(instr), m_userDefinedSize(userDefinedSize)
+{
 	leftNode->addParentNode(this);
 	if (rightNode != nullptr) {
 		rightNode->addParentNode(this);
@@ -110,9 +111,14 @@ HS OperationalNode::getHash() {
 }
 
 int OperationalNode::getSize() {
+	if (m_userDefinedSize)
+		return m_userDefinedSize;
+	
 	if (m_operation == Concat) {
 		return std::min(8, m_leftNode->getSize() + m_rightNode->getSize());
 	}
+	
+	// two operands for any operation have always the same size
 	return m_leftNode->getSize();
 }
 
@@ -121,7 +127,7 @@ bool OperationalNode::isFloatingPoint() {
 }
 
 INode* OperationalNode::clone(NodeCloneContext* ctx) {
-	return new OperationalNode(m_leftNode->clone(ctx), m_rightNode ? m_rightNode->clone(ctx) : nullptr, m_operation, m_instr);
+	return new OperationalNode(m_leftNode->clone(ctx), m_rightNode ? m_rightNode->clone(ctx) : nullptr, m_operation, m_instr, m_userDefinedSize);
 }
 
 std::string OperationalNode::getOpSize(int size, bool isFloat) {

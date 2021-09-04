@@ -59,10 +59,11 @@ namespace GUI
 			m_imageDec->setInstrPool(instrPool);
 			m_imageDec->setPCodeGraph(imagePCodeGraph);
 
-			const auto defSignature = project->getTypeManager()->getDefaultFuncSignature();
 			for(const auto funcGraph : imagePCodeGraph->getFunctionGraphList()) {
 				const auto funcOffset = funcGraph.getStartBlock()->getMinOffset().getByteOffset();
-				project->getFunctionManager()->getFactory().createFunction(funcOffset, defSignature, m_imageDec, "func_" + Helper::String::NumberToHex(funcOffset));
+				const auto funcOffsetStr = Helper::String::NumberToHex(funcOffset);
+				const auto funcSig = project->getTypeManager()->getFactory(false).createSignature("funcSig_" + funcOffsetStr);
+				project->getFunctionManager()->getFactory().createFunction(funcOffset, funcSig, m_imageDec, "func_" + funcOffsetStr);
 			}
 
 			ImagePCodeGraphAnalyzer imagePCodeGraphAnalyzer(m_imageDec, &graphReferenceSearch);

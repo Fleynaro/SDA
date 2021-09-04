@@ -335,7 +335,9 @@ ExprTree::INode* RegisterExecContext::CreateExprFromRegisterParts(std::list<Regi
 
 		if (bitShift != 0) {
 			const auto rightNode = new ExprTree::NumberLeaf(static_cast<uint64_t>(abs(bitShift)), regExpr->getSize());
-			regExpr = new ExprTree::OperationalNode(regExpr, rightNode, bitShift > 0 ? ExprTree::Shr : ExprTree::Shl);
+			const auto opNode = new ExprTree::OperationalNode(regExpr, rightNode, bitShift > 0 ? ExprTree::Shr : ExprTree::Shl);
+			opNode->m_userDefinedSize = (regPart.m_regMask.getMaxSizeInBits() - regPart.m_regMask.getOffsetFromTheEnd()) / 0x8;
+			regExpr = opNode;
 		}
 
 		if (resultExpr) {

@@ -126,16 +126,16 @@ namespace CE::Decompiler
 			};
 
 			// it is an extended implementation of a func. signature that supports merge operation
-			class RawSignature : public DataType::FunctionSignature
+			class RawSignature
 			{
 			public:
-				// todo: DataType::FunctionSignature* m_signature;
+				IFunctionSignature* m_signature;
 				ReturnValueStatInfo m_retValStatInfo;
 				std::list<RawSignatureOwner*> m_owners;
 				std::list<Function*> m_functions;
 				
-				RawSignature(TypeManager* typeManager, RawSignatureOwner* owner)
-					: FunctionSignature(typeManager, "RawSignature")
+				RawSignature(IFunctionSignature* signature, RawSignatureOwner* owner)
+					: m_signature(signature)
 				{
 					m_owners.push_back(owner);
 				}
@@ -143,10 +143,10 @@ namespace CE::Decompiler
 
 			RawSignature* m_rawSignature;
 
-			RawSignatureOwner(TypeManager* typeManager)
-				: AbstractType(typeManager, "RawSignatureOwner")
+			RawSignatureOwner(IFunctionSignature* signature)
+				: AbstractType(signature->getTypeManager(), "RawSignatureOwner")
 			{
-				m_rawSignature = new RawSignature(typeManager, this);
+				m_rawSignature = new RawSignature(signature, this);
 			}
 
 			~RawSignatureOwner() {}
@@ -187,47 +187,47 @@ namespace CE::Decompiler
 			}
 
 			DataType::CallingConvetion getCallingConvetion() override {
-				return m_rawSignature->getCallingConvetion();
+				return m_rawSignature->m_signature->getCallingConvetion();
 			}
 
 			std::list<std::pair<int, Storage>>& getCustomStorages() override {
-				return m_rawSignature->getCustomStorages();
+				return m_rawSignature->m_signature->getCustomStorages();
 			}
 
 			std::string getSigName() override {
-				return m_rawSignature->getSigName();
+				return m_rawSignature->m_signature->getSigName();
 			}
 
 			void setReturnType(DataTypePtr returnType) override {
-				return m_rawSignature->setReturnType(returnType);
+				return m_rawSignature->m_signature->setReturnType(returnType);
 			}
 
 			DataTypePtr getReturnType() override {
-				return m_rawSignature->getReturnType();
+				return m_rawSignature->m_signature->getReturnType();
 			}
 
 			DataType::ParameterList& getParameters() override {
-				return m_rawSignature->getParameters();
+				return m_rawSignature->m_signature->getParameters();
 			}
 
 			void addParameter(const std::string& name, DataTypePtr dataType, const std::string& comment = "") override {
-				return m_rawSignature->addParameter(name, dataType, comment);
+				return m_rawSignature->m_signature->addParameter(name, dataType, comment);
 			}
 
 			FunctionCallInfo getCallInfo() override {
-				return m_rawSignature->getCallInfo();
+				return m_rawSignature->m_signature->getCallInfo();
 			}
 
 			void updateParameterStorages() override {
-				return m_rawSignature->updateParameterStorages();
+				return m_rawSignature->m_signature->updateParameterStorages();
 			}
 
 			IFunctionSignature* clone() override {
-				return m_rawSignature->clone();
+				return m_rawSignature->m_signature->clone();
 			}
 
 			void apply(IFunctionSignature* funcSignature) override {
-				return m_rawSignature->apply(funcSignature);
+				return m_rawSignature->m_signature->apply(funcSignature);
 			}
 		};
 
@@ -707,10 +707,10 @@ namespace CE::Decompiler
 			for (const auto funcGraph : m_imageDec->getPCodeGraph()->getFunctionGraphList()) {
 				const auto funcOffset = funcGraph.getStartBlock()->getMinOffset().getByteOffset();
 				if (const auto function = m_imageDec->getFunctionAt(funcOffset)) {
-					const auto rawSignature = new RawSignatureOwner(m_project->getTypeManager());
+					const auto rawSignature = new RawSignatureOwner(function->getSignature());
 					m_funcOffsetToSig[funcOffset] = rawSignature;
 					function->getFunctionSymbol()->setSignature(rawSignature);
-					function->getFunctionSymbol()->setDataType(DataType::GetUnit(rawSignature));
+					function->getFunctionSymbol()->setDataType(GetUnit(rawSignature));
 					rawSignature->m_rawSignature->m_functions.push_back(function);
 				}
 			}
@@ -727,7 +727,7 @@ namespace CE::Decompiler
 					if (it != m_funcOffsetToSig.end()) {
 						RawStructureOwner::RawStructure::Field field;
 						field.m_offset = offset;
-						field.m_dataType = DataType::GetUnit(it->second->m_rawSignature, "[1]");
+						field.m_dataType = GetUnit(it->second->m_rawSignature->m_signature, "[1]");
 						rawStructOwner->addField(field);
 					}
 					offset += 0x8;

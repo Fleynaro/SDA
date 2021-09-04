@@ -81,9 +81,10 @@ namespace CE::Decompiler::ExprTree
 		INode* m_rightNode;
 		OperationType m_operation;
 		PCode::Instruction* m_instr;
+		int m_userDefinedSize;
 
 		OperationalNode(INode* leftNode, INode* rightNode, OperationType operation,
-		                PCode::Instruction* instr = nullptr);
+		                PCode::Instruction* instr = nullptr, int userDefinedSize = 0);
 
 		~OperationalNode();
 

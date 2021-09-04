@@ -342,7 +342,6 @@ void SdaDataTypesCalculater::handleFunctionNode(SdaFunctionNode* sdaFunctionNode
 					}
 				}
 			}
-			paramIdx++;
 		}
 	}
 }
@@ -397,6 +396,7 @@ void SdaDataTypesCalculater::cast(ISdaNode* sdaNode, DataTypePtr toDataType) {
 			newAddrDataType->addPointerLevelInFront();
 
 			cast(addrSdaNode, newAddrDataType);
+			sdaNode->getCast()->clearCast();
 			sdaNode->setDataType(toDataType);
 		}
 	}
