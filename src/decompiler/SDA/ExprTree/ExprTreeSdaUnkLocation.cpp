@@ -90,7 +90,7 @@ void UnknownLocation::setDataType(DataTypePtr dataType) {
 bool UnknownLocation::getLocation(MemLocation& location) {
 	auto baseSdaNode = getBaseSdaNode();
 	auto valueDataType = CloneUnit(baseSdaNode->getDataType());
-	valueDataType->removePointerLevelOutOfFront();
+	valueDataType->removePointerLevelFromTop();
 
 	if (auto locatableNode = dynamic_cast<ILocatable*>(baseSdaNode)) {
 		if (!locatableNode->getLocation(location))

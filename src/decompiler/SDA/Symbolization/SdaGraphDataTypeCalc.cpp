@@ -257,7 +257,7 @@ void SdaDataTypesCalculater::calculateDataTypes(INode* node) {
 		auto addrSdaNode = sdaReadValueNode->getAddress();
 		if (addrSdaNode->getDataType()->isPointer()) { // &globalVar is a pointer (type: float*)
 			auto addrDataType = CloneUnit(addrSdaNode->getDataType());
-			addrDataType->removePointerLevelOutOfFront(); // float*(8 bytes) -> float(4 bytes)
+			addrDataType->removePointerLevelFromTop(); // float*(8 bytes) -> float(4 bytes)
 			if (sdaReadValueNode->getSize() == addrDataType->getSize()) {
 				if (auto mappedToMemory = dynamic_cast<IMappedToMemory*>(addrSdaNode)) {
 					if (mappedToMemory->isAddrGetting()) {
@@ -278,7 +278,7 @@ void SdaDataTypesCalculater::calculateDataTypes(INode* node) {
 		// cast &globalVar/stackVar/0x1000 to default type uint32_t* (because reading of 4 bytes)
 		const auto defDataType = sdaReadValueNode->getDataType(); // any sda node have already had a default type
 		auto defPtrDataType = CloneUnit(defDataType);
-		defPtrDataType->addPointerLevelInFront();
+		defPtrDataType->addPointerLevelToTop();
 		cast(addrSdaNode, defPtrDataType);
 	}
 	else if (const auto sdaFunctionNode = dynamic_cast<SdaFunctionNode*>(sdaNode)) {
@@ -331,15 +331,15 @@ void SdaDataTypesCalculater::handleFunctionNode(SdaFunctionNode* sdaFunctionNode
 				auto nodeDataType = paramSdaNode->getDataType();
 
 				// or a type of the node, or a type of the sig parameter
-				if (funcParamSymbol->isAutoSymbol() && nodeDataType->getPriority() > sigDataType->getPriority()) {
+				if (funcParamSymbol->isAutoSymbol() &&
+					nodeDataType->isFloatingPoint() == sigDataType->isFloatingPoint() && // fastcall specific (not allow to change param storage rcx -> xmm0 here)
+					nodeDataType->getPriority() > sigDataType->getPriority()) {
 					// change a type of the parameter symbol
 					funcParamSymbol->setDataType(nodeDataType);
 					onDataTypeCasting(sigDataType, nodeDataType);
 				}
 				else {
-					if (nodeDataType->getPriority() < sigDataType->getPriority()) {
-						cast(paramSdaNode, sigDataType);
-					}
+					cast(paramSdaNode, sigDataType);
 				}
 			}
 		}
@@ -363,7 +363,7 @@ void SdaDataTypesCalculater::onDataTypeCasting(DataTypePtr fromDataType, DataTyp
 
 void SdaDataTypesCalculater::cast(ISdaNode* sdaNode, DataTypePtr toDataType) {
 	//exception case (better change number view between HEX and non-HEX than do the cast)
-	if (auto sdaNumberLeaf = dynamic_cast<SdaNumberLeaf*>(sdaNode)) {
+	if (const auto sdaNumberLeaf = dynamic_cast<SdaNumberLeaf*>(sdaNode)) {
 		if (!toDataType->isPointer()) {
 			if (toDataType->getSize() >= sdaNumberLeaf->getDataType()->getSize()) {
 				sdaNumberLeaf->setDataType(toDataType);
@@ -372,34 +372,37 @@ void SdaDataTypesCalculater::cast(ISdaNode* sdaNode, DataTypePtr toDataType) {
 		}
 	}
 
+	// for AUTO sda symbols that have to acquire a data type with the biggest priority (e.g. uint64_t -> Player*)
+	if (const auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(sdaNode)) {
+		if (sdaSymbolLeaf->getSdaSymbol()->isAutoSymbol()) {
+			const auto symbolDataType = sdaSymbolLeaf->getSrcDataType();
+			if (symbolDataType->getSize() == toDataType->getSize() && symbolDataType->getPriority() < toDataType->getPriority()) {
+				sdaSymbolLeaf->getCast()->clearCast();
+				sdaSymbolLeaf->setDataType(toDataType);
+				m_nextPassRequired = true;
+				return;
+			}
+		}
+	}
+	// *(uint32_t*)(p + 4) -> *(float*)(p + 4)
+	else if (const auto sdaReadValueNode = dynamic_cast<SdaReadValueNode*>(sdaNode)) {
+		if (sdaReadValueNode->getSize() == toDataType->getSize()) {
+			const auto addrSdaNode = sdaReadValueNode->getAddress();
+			const auto newAddrDataType = CloneUnit(toDataType);
+			newAddrDataType->addPointerLevelToTop();
+
+			cast(addrSdaNode, newAddrDataType);
+			sdaNode->getCast()->clearCast();
+			sdaNode->setDataType(toDataType);
+			return;
+		}
+	}
+
 	//CASTING
 	const auto fromDataType = sdaNode->getSrcDataType();
 	const auto explicitCast = isExplicitCast(fromDataType, toDataType);
 	onDataTypeCasting(fromDataType, toDataType);
 	sdaNode->getCast()->setCastDataType(toDataType, explicitCast);
-
-	// for AUTO sda symbols that have to acquire a data type with the biggest priority (e.g. uint64_t -> Player*)
-	if (auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(sdaNode)) {
-		if (sdaSymbolLeaf->getSdaSymbol()->isAutoSymbol()) {
-			auto symbolDataType = sdaSymbolLeaf->getSdaSymbol()->getDataType();
-			if (symbolDataType->getSize() == toDataType->getSize() && symbolDataType->getPriority() < toDataType->getPriority()) {
-				sdaSymbolLeaf->setDataType(toDataType);
-				m_nextPassRequired = true;
-			}
-		}
-	}
-	// *(uint32_t*)(p + 4) -> *(float*)(p + 4)
-	else if (auto sdaReadValueNode = dynamic_cast<SdaReadValueNode*>(sdaNode)) {
-		if (sdaReadValueNode->getSize() == toDataType->getSize()) {
-			const auto addrSdaNode = sdaReadValueNode->getAddress();
-			auto newAddrDataType = CloneUnit(toDataType);
-			newAddrDataType->addPointerLevelInFront();
-
-			cast(addrSdaNode, newAddrDataType);
-			sdaNode->getCast()->clearCast();
-			sdaNode->setDataType(toDataType);
-		}
-	}
 }
 
 // does it need explicit casting (e.g. (float)0x100024)

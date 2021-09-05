@@ -49,19 +49,27 @@ namespace CE::Decompiler
 					if (m_debugMode && m_markSdaNodes) {
 						generateToken("@", TOKEN_DEBUG_INFO);
 					}
+					
 					if (sdaNode->hasCast() && sdaNode->getCast()->hasExplicitCast()) {
-						generateCast(sdaNode->getCast());
-					}
-					if (auto memoryNode = dynamic_cast<IMappedToMemory*>(sdaNode)) {
-						bool isAddrGetting = memoryNode->isAddrGetting();
-						if (isAddrGetting) {
-							if (const auto funcCallNode = dynamic_cast<FunctionCall*>(sdaNode->getParentNode()))
-								isAddrGetting = funcCallNode->getDestination() != sdaNode;
+						const auto castDataType = sdaNode->getCast()->getCastDataType();
+						const auto bracketId = reinterpret_cast<uint8_t*>(sdaNode) + 1;
+						if (castDataType->isPointer()) {
+							generateRoundBracket("(", bracketId);
+							generateDataType(castDataType);
+							generateRoundBracket(")", bracketId);
+							generateSdaNodeWithAddrGetting(sdaNode);
+						} else {
+							generateToken("to", TOKEN_FUNCTION_CALL);
+							generateToken("<", TOKEN_OTHER);
+							generateDataType(castDataType);
+							generateToken(">", TOKEN_OTHER);
+							generateRoundBracket("(", bracketId);
+							generateSdaNodeWithAddrGetting(sdaNode);
+							generateRoundBracket(")", bracketId);
 						}
-						if (isAddrGetting)
-							generateToken("&", TOKEN_OPERATION);
+					} else {
+						generateSdaNodeWithAddrGetting(sdaNode);
 					}
-					generateSdaNode(sdaNode);
 				}
 				else if(const auto assignmentNode = dynamic_cast<AssignmentNode*>(node)) {
 					generateAssignmentNode(assignmentNode);
@@ -114,23 +122,17 @@ namespace CE::Decompiler
 				}
 			}
 
-			virtual void generateCast(DataTypeCast* cast, bool roundBraces = true, bool ampersand = false) {
-				/*if (dynamic_cast<DataType::Void*>(node->getCast()->getCastDataType()->getType()))
-					return;*/
-				const auto dataType = cast->getCastDataType();
-				if(roundBraces)
-					generateRoundBracket("(", cast);
-				generateDataType(dataType);
-				if(ampersand) {
-					/*
-					 * (float&)var		- interpreting bytes as {float} data type
-					 * (float)var		- function TO_FLOAT
-					 * var should be memory symbol, not operational node
-					 */
-					generateToken("&", TOKEN_OPERATION);
+			virtual void generateSdaNodeWithAddrGetting(ISdaNode* node) {
+				if (const auto memoryNode = dynamic_cast<IMappedToMemory*>(node)) {
+					bool isAddrGetting = memoryNode->isAddrGetting();
+					if (isAddrGetting) {
+						if (const auto funcCallNode = dynamic_cast<FunctionCall*>(node->getParentNode()))
+							isAddrGetting = funcCallNode->getDestination() != node;
+					}
+					if (isAddrGetting)
+						generateToken("&", TOKEN_OPERATION);
 				}
-				if (roundBraces)
-					generateRoundBracket(")", cast);
+				generateSdaNode(node);
 			}
 
 			virtual void generateSdaNode(ISdaNode* node) {
@@ -146,12 +148,11 @@ namespace CE::Decompiler
 					}
 					
 					if (childNode) {
-						DataTypeCast cast;
-						cast.setCastDataType(sdaGenericNode->getSrcDataType(), true);
-						generateCast(&cast, false);
-						generateRoundBracket("(", &cast);
+						const auto bracketId = reinterpret_cast<uint8_t*>(node) + 1;
+						generateDataType(sdaGenericNode->getSrcDataType());
+						generateRoundBracket("(", bracketId);
 						generateNode(childNode);
-						generateRoundBracket(")", &cast);
+						generateRoundBracket(")", bracketId);
 					} else {
 						generateNode(sdaGenericNode->getNode());
 					}

@@ -268,7 +268,7 @@ namespace GUI
 				const auto events = GenericEvents(true);
 				if (events.isHovered()) {
 					const auto derefDataType = CloneUnit(dataType);
-					derefDataType->removePointerLevelOutOfFront();
+					derefDataType->removePointerLevelFromTop();
 					delete m_builtinWindow;
 					const auto panel = new ValueViewerPanel(name, Location(value), derefDataType, m_symbolValueMap, m_execCtx, m_memCtx);
 					m_builtinWindow = new PopupBuiltinWindow(panel);

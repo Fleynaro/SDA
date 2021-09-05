@@ -60,5 +60,5 @@ namespace CE::Decompiler
 		int findIndex(const PCode::Register& reg, int64_t offset);
 	};
 
-	extern int GetIndex_FASTCALL(const PCode::Register& reg, int64_t offset);
+	extern bool GetIndex_FASTCALL(const PCode::Register& reg, int64_t offset, int& paramIdx, bool& isFloating);
 };

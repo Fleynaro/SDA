@@ -17,6 +17,7 @@ namespace CE::Decompiler::Symbolization
 		std::map<int64_t, CE::Symbol::ISymbol*> m_globalToSymbols; //globalVar1
 		std::set<CE::Symbol::ISymbol*> m_newAutoSymbols; // auto-created symbols which are not defined by user (e.g. funcVar1)
 		std::set<CE::Symbol::ISymbol*> m_userDefinedSymbols; // defined by user (e.g. playerObj)
+		std::set<int> m_paramsUsed; // for rcx/xmm0, rdx/xmm1 confusion
 		SymbolManager::Factory m_symbolFactory;
 	public:
 

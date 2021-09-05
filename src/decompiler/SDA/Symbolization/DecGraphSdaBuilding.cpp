@@ -8,7 +8,14 @@ using namespace Symbolization;
 
 SdaBuilding::SdaBuilding(SdaCodeGraph* sdaCodeGraph, SymbolContext* symbolCtx, Project* project, DataType::CallingConvetion callingConvention)
 	: SdaGraphModification(sdaCodeGraph), m_symbolCtx(symbolCtx), m_project(project), m_callingConvention(callingConvention), m_symbolFactory(m_project->getSymbolManager()->getFactory(false))
-{}
+{
+	// if signature passed in then a few first params used
+	if (m_symbolCtx->m_signature) {
+		for (int i = 0; i < m_symbolCtx->m_signature->getParameters().getParamsCount(); i++) {
+			m_paramsUsed.insert(i + 1);
+		}
+	}
+}
 
 void SdaBuilding::start() {
 	passAllTopNodes([&](DecBlock::BlockTopNode* topNode) {
@@ -223,21 +230,25 @@ CE::Symbol::ISymbol* SdaBuilding::findOrCreateSymbol(Symbol::Symbol* symbol, int
 		}
 
 		// if user parameter not found then recognize
+		bool isFloating = false;
 		if (paramIdx <= 0) {
 			if (m_callingConvention == DataType::CallingConvetion::FASTCALL) {
-				paramIdx = GetIndex_FASTCALL(reg, offset);
+				GetIndex_FASTCALL(reg, offset, paramIdx, isFloating);
 			}
 		}
 
 		if (paramIdx > 0) {
-			//auto func. parameter
-			const auto defType = m_project->getTypeManager()->getDefaultType(size);
-			auto funcParamSymbol = m_symbolFactory.createFuncParameterSymbol(defType, "param" + std::to_string(paramIdx));
-			funcParamSymbol->m_paramIdx = paramIdx;
-			funcParamSymbol->setAutoSymbol(true);
-			storeSdaSymbolIfMem(funcParamSymbol, symbol, offset);
-			m_newAutoSymbols.insert(funcParamSymbol);
-			return funcParamSymbol;
+			if (m_paramsUsed.find(paramIdx) == m_paramsUsed.end()) {
+				//auto func. parameter
+				const auto defType = m_project->getTypeManager()->getDefaultType(size, false, isFloating);
+				auto funcParamSymbol = m_symbolFactory.createFuncParameterSymbol(defType, "param" + std::to_string(paramIdx));
+				funcParamSymbol->m_paramIdx = paramIdx;
+				funcParamSymbol->setAutoSymbol(true);
+				storeSdaSymbolIfMem(funcParamSymbol, symbol, offset);
+				m_newAutoSymbols.insert(funcParamSymbol);
+				m_paramsUsed.insert(paramIdx);
+				return funcParamSymbol;
+			}
 		}
 
 		//MEMORY symbol with offset (e.g. globalVar1)

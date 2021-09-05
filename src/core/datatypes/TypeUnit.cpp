@@ -57,12 +57,12 @@ std::list<int> Unit::getPointerLevels() {
 	return m_levels;
 }
 
-void Unit::addPointerLevelInFront(int size) {
+void Unit::addPointerLevelToTop(int size) {
 	m_levels.push_front(size);
 	m_debugName = getDisplayName();
 }
 
-void Unit::removePointerLevelOutOfFront() {
+void Unit::removePointerLevelFromTop() {
 	m_levels.pop_front();
 	m_debugName = getDisplayName();
 }
@@ -230,9 +230,15 @@ DataTypePtr DataType::CloneUnit(DataTypePtr dataType) {
 }
 
 DataTypePtr DataType::MakePointer(DataTypePtr dataType) {
-	auto pointerDataType = CloneUnit(dataType);
-	pointerDataType->addPointerLevelInFront();
+	const auto pointerDataType = CloneUnit(dataType);
+	pointerDataType->addPointerLevelToTop();
 	return pointerDataType;
+}
+
+DataTypePtr DataType::DereferencePointer(DataTypePtr dataType) {
+	const auto derefDataType = CloneUnit(dataType);
+	derefDataType->removePointerLevelFromTop();
+	return derefDataType;
 }
 
 std::string DataType::GetPointerLevelStr(DataTypePtr type) {

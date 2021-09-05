@@ -68,9 +68,11 @@ int ParameterInfo::getIndex() const
 	return m_index;
 }
 
-int Decompiler::GetIndex_FASTCALL(const Register& reg, int64_t offset) {
+bool Decompiler::GetIndex_FASTCALL(const Register& reg, int64_t offset, int& paramIdx, bool& isFloating) {
 	if (reg.getType() == Register::Type::StackPointer) {
-		return static_cast<int>(offset) / 0x8 - 5 + 1;
+		paramIdx = static_cast<int>(offset) / 0x8 - 5 + 1;
+		isFloating = false;
+		return true;
 	}
 	std::map<RegisterId, int> regToParamId = {
 		std::pair(ZYDIS_REGISTER_RCX, 1),
@@ -84,7 +86,9 @@ int Decompiler::GetIndex_FASTCALL(const Register& reg, int64_t offset) {
 	};
 	const auto it = regToParamId.find(reg.getGenericId());
 	if (it != regToParamId.end()) {
-		return it->second;
+		paramIdx = it->second;
+		isFloating = reg.isVector();
+		return true;
 	}
-	return -1;
+	return false;
 }

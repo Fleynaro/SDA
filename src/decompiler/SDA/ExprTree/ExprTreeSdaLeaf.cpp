@@ -81,7 +81,12 @@ DataTypePtr SdaSymbolLeaf::getSrcDataType() {
 
 void SdaSymbolLeaf::setDataType(DataTypePtr dataType) {
 	if (m_sdaSymbol->isAutoSymbol()) {
-		m_sdaSymbol->setDataType(dataType);
+		if (m_isAddrGetting && dataType->isPointer()) {
+			m_sdaSymbol->setDataType(DereferencePointer(dataType));
+		}
+		else {
+			m_sdaSymbol->setDataType(dataType);
+		}
 	}
 }
 

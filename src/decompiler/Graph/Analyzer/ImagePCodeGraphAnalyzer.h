@@ -498,7 +498,9 @@ namespace CE::Decompiler
 				
 				// set return type if score is high enough
 				if (retValStatInfo.m_score >= 2) {
-					const auto retType = m_project->getTypeManager()->getDefaultType(retValStatInfo.m_register.getSize());
+					// todo: counting on fastcall
+					const auto retType = m_project->getTypeManager()->getDefaultType(
+						retValStatInfo.m_register.getSize(), false, retValStatInfo.m_register.isVector());
 					rawSigOwner->setReturnType(retType);
 				}
 
@@ -549,7 +551,7 @@ namespace CE::Decompiler
 				BitMask64 minMask(8);
 				const RegisterExecContext::RegisterInfo* minRegInfo = nullptr;
 				for (auto& regInfo : regList) {
-					if (minMask.getValue() == -1 || regInfo.m_register.m_valueRangeMask < minMask) {
+					if (regInfo.m_register.m_valueRangeMask <= minMask) {
 						minMask = regInfo.m_register.m_valueRangeMask;
 						minRegInfo = &regInfo;
 					}

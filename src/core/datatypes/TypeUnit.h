@@ -46,9 +46,9 @@ namespace CE
 
 			std::list<int> getPointerLevels();
 
-			void addPointerLevelInFront(int size = 1);
+			void addPointerLevelToTop(int size = 1);
 
-			void removePointerLevelOutOfFront();
+			void removePointerLevelFromTop();
 
 			bool isString();
 
@@ -86,5 +86,6 @@ namespace CE
 		std::list<int> ParsePointerLevelsStr(const std::string& str);
 		DataTypePtr CloneUnit(DataTypePtr dataType);
 		DataTypePtr MakePointer(DataTypePtr dataType);
+		DataTypePtr DereferencePointer(DataTypePtr dataType);
 	};
 };
