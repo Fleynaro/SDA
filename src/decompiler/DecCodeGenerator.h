@@ -53,7 +53,7 @@ namespace CE::Decompiler
 					if (sdaNode->hasCast() && sdaNode->getCast()->hasExplicitCast()) {
 						const auto castDataType = sdaNode->getCast()->getCastDataType();
 						const auto bracketId = reinterpret_cast<uint8_t*>(sdaNode) + 1;
-						if (castDataType->isPointer() || sdaNode->getDataType()->isPointer() && castDataType->isSystem()) {
+						if (castDataType->isPointer() || sdaNode->getSrcDataType()->isPointer() && castDataType->isSystem()) {
 							generateRoundBracket("(", bracketId);
 							generateDataType(castDataType);
 							generateRoundBracket(")", bracketId);

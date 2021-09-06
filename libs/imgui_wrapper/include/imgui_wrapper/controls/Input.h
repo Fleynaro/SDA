@@ -18,6 +18,7 @@ namespace GUI::Input
 		ColorRGBA m_borderColor = 0x0;
 		uint64_t m_borderHideTime = 0;
 		bool m_focus = false;
+		bool m_isEnterConfirm = false;
 	public:
 		AbstractInput(const std::string& name)
 			: Attribute::Name(name)
@@ -45,9 +46,10 @@ namespace GUI::Input
 			m_borderColor = 0x0;
 		}
 
-		/*void onExceptionOccured(const Exception& exception) override {
-			showBorder(0xFF0000AA, 3000);
-		}*/
+		bool isEnterConfirm() const {
+			return m_isEnterConfirm;
+		}
+	
 	protected:
 		void drawInputBorder() {
 			if (m_borderColor != 0x0 && (m_borderHideTime == 0 || GetTimeInMs() < m_borderHideTime)) {
@@ -62,6 +64,7 @@ namespace GUI::Input
 				m_focus = false;
 			}
 			renderInput();
+			m_isEnterConfirm = ImGui::IsItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Enter);
 			drawInputBorder();
 			popIdParam();
 		}
@@ -96,7 +99,7 @@ namespace GUI::Input
 			return m_inputValue;
 		}
 
-		bool isTextEntering() {
+		bool isTextEntering() const {
 			return m_isTextEntering;
 		}
 
@@ -145,7 +148,7 @@ namespace GUI::Input
 			m_value = value;
 		}
 
-		bool isSelected() {
+		bool isSelected() const {
 			return m_value;
 		}
 

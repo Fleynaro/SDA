@@ -16,7 +16,6 @@ namespace GUI
 		BuiltinTextInputPanel(const std::string& name = "")
 		{
 			m_input.setInputText(name);
-			m_input.setFlags(ImGuiInputTextFlags_EnterReturnsTrue);
 			m_input.focus();
 		}
 
@@ -28,7 +27,7 @@ namespace GUI
 		void renderPanel() override {
 			m_input.show();
 			SameLine();
-			if (Button::StdButton("Ok").present() || m_input.isTextEntering()) {
+			if (Button::StdButton("Ok").present() || m_input.isEnterConfirm()) {
 				if (m_eventHandler.isInit())
 					m_eventHandler(m_input.getInputText());
 			}
@@ -48,7 +47,6 @@ namespace GUI
 		BuiltinIntegerInputPanel(const int& value = 0)
 		{
 			m_input.setInputValue(value);
-			m_input.setFlags(ImGuiInputTextFlags_EnterReturnsTrue);
 			m_input.focus();
 		}
 
@@ -60,7 +58,7 @@ namespace GUI
 		void renderPanel() override {
 			m_input.show();
 			SameLine();
-			if (Button::StdButton("Ok").present() || m_input.isValueEntering()) {
+			if (Button::StdButton("Ok").present() || m_input.isEnterConfirm()) {
 				if (m_eventHandler.isInit())
 					m_eventHandler(m_input.getInputValue());
 			}

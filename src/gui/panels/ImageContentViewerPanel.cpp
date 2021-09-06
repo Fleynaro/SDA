@@ -36,6 +36,27 @@ void GUI::ImageContentViewerPanel::DataSectionViewer::renderControl() {
 	ImGui::EndChild();
 }
 
+GUI::ImageContentViewerPanel::CodeSectionViewer::FunctionReferencesPanel::FunctionReferencesPanel(
+	CE::Function* function, CodeSectionViewer* codeSectionViewer): AbstractPanel("Function References"),
+	                                                               m_function(function),
+	                                                               m_codeSectionViewer(codeSectionViewer),
+	                                                               m_listModel(function) {
+	m_listView = new SelectableTableListView(&m_listModel, {
+		                                         ColInfo("Function")
+	                                         });
+	m_listView->handler([&](CE::Function* function)
+	{
+		try {
+			m_codeSectionViewer->goToOffset(function->getOffset());
+			m_codeSectionViewer->m_projectPanel->addVisitedLocation(function->getImage(), function->getOffset());
+			m_window->close();
+		}
+		catch (WarningException& ex) {
+			m_errorMessage = ex.what();
+		}
+	});
+}
+
 void GUI::ImageContentViewerPanel::CodeSectionViewer::RowContextPanel::renderPanel() {
 	if (ImGui::MenuItem("Analyze")) {
 		delete m_codeSectionViewer->m_popupModalWindow;
@@ -269,7 +290,7 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::renderFunctionHeader(CE::F
 
 	// function name
 	{
-		const auto text = function->getName();
+		const auto text = "func";
 		const auto textSize = ImGui::CalcTextSize(text);
 		const auto textPos = endRowPos - ImVec2(textSize.x, 0.0);
 
@@ -353,6 +374,15 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::drawJmpLine(const int rowI
 	auto arrowPos = isStart ? point4 : point1;
 	arrowPos -= ImVec2(7.0f, 3.0f);
 	ImGui::RenderArrow(window->DrawList, arrowPos, lineColor, ImGuiDir_Right, 0.7f);
+}
+
+void GUI::ImageContentViewerPanel::goToOffset(CE::Offset offset) {
+	const auto section = m_imageDec->getImage()->getSectionByOffset(offset);
+	if (section->m_type == CE::ImageSection::NONE_SEGMENT)
+		throw WarningException("Offset not found.");
+	selectImageSection(section);
+	m_imageSectionViewer->goToOffset(offset);
+	m_projectPanel->addVisitedLocation(m_imageDec, offset);
 }
 
 void GUI::ImageContentViewerPanel::decompile(CE::Decompiler::FunctionPCodeGraph* functionPCodeGraph) {
@@ -733,6 +763,11 @@ void GUI::ImageContentViewerPanel::processSectionViewerEvents() {
 					}
 				}
 			}
+		}
+
+		// set current location
+		if (!codeSectionViewer->m_selectedRows.empty()) {
+			m_projectPanel->m_curLocation = std::pair(m_imageDec, codeSectionViewer->m_selectedRows.begin()->m_byteOffset);
 		}
 	}
 	else if (const auto dataSectionViewer = dynamic_cast<DataSectionViewer*>(m_imageSectionViewer)) {

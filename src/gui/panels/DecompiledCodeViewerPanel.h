@@ -652,7 +652,7 @@ namespace GUI
 			bool Asm = false;
 			bool PCode = false;
 			bool ExecCtxs = false;
-			bool DebugComments = true;
+			bool DebugComments = false;
 			bool DebugAllGoto = false;
 		} m_show;
 		CE::Function* m_clickedFunction = nullptr;

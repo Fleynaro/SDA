@@ -54,7 +54,14 @@ namespace GUI
 		WindowManager m_imageContentWinManager;
 		StdWindow* m_messageWindow = nullptr;
 		ImGuiID m_dockSpaceId;
+
+		// location history
+		std::vector<std::pair<CE::ImageDecorator*, CE::Offset>> m_visitedLocationsHistory;
+		int m_visitedLocationIdx = -1;
+		bool m_lockLocationHistoryUpdate = false;
 	public:
+		std::pair<CE::ImageDecorator*, CE::Offset> m_curLocation = std::pair(nullptr, 0);
+		
 		ProjectPanel(CE::Project* project)
 			: AbstractPanel("Project: " + project->getDirectory().string() + "###project"), m_project(project)
 		{
@@ -75,6 +82,15 @@ namespace GUI
 			const auto window = new StdWindow(this, ImGuiWindowFlags_MenuBar);
 			window->getSize() = ImVec2(1000, 800);
 			return window;
+		}
+		
+		void addVisitedLocation(CE::ImageDecorator* imageDec, CE::Offset offset) {
+			if (m_lockLocationHistoryUpdate)
+				return;
+			m_visitedLocationIdx++;
+			m_visitedLocationsHistory.resize(m_visitedLocationIdx + 2);
+			m_visitedLocationsHistory[m_visitedLocationIdx] = m_curLocation;
+			m_visitedLocationsHistory[m_visitedLocationIdx + 1] = std::pair(imageDec, offset);
 		}
 
 		PCodeEmulator* getEmulator(bool notStopped = true) const {
@@ -136,38 +152,7 @@ namespace GUI
 		}
 	
 	protected:
-		void renderPanel() override {
-			checkUnsavedState();
-			ImGui::DockSpace(m_dockSpaceId = ImGui::GetID("ProjectDockSpace"), ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
-
-			m_imageContentWinManager.m_dockSpaceId = m_dockSpaceId;
-			m_imageContentWinManager.show();
-			Show(m_imageViewerWindow);
-			Show(m_funcViewerWindow);
-			Show(m_dataTypeViewerWindow);
-			Show(m_symbolViewerWindow);
-			Show(m_debugAttachProcessWindow);
-			Show(m_messageWindow);
-
-			// debugger & emulator
-			if (m_debugger) {
-				if (m_debugger->isWorking()) {
-					m_debugger->show();
-				} else {
-					// remove debugger and all related windows
-					for (const auto& [addr, imageDec] : m_debugger->m_images) {
-						const auto window = getImageContentViewerWindow(imageDec);
-						m_imageContentWinManager.removeWindow(window);
-						delete window;
-					}
-					delete m_debugger;
-					m_debugger = nullptr;
-				}
-			}
-			if (const auto emulator = getEmulator(false)) {
-				emulator->show();
-			}
-		}
+		void renderPanel() override;
 
 		void renderMenuBar() override {
 			if (ImGui::BeginMenu("File"))

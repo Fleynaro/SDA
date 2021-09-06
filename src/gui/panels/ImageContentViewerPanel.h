@@ -197,14 +197,11 @@ namespace GUI
 
 						void getNextItem(std::string* text, CE::Function** data) override {
 							const auto funcGraph = *m_it;
-							++m_it;
 							if (const auto function = m_imageDec->getFunctionAt(funcGraph->getStartBlock()->getMinOffset().getByteOffset())) {
 								*text = function->getName();
 								*data = function;
-							} else {
-								if(hasNextItem())
-									getNextItem(text, data);
 							}
+							++m_it;
 						}
 
 						bool hasNextItem() override {
@@ -224,23 +221,7 @@ namespace GUI
 				SelectableTableListView<CE::Function*>* m_listView;
 				std::string m_errorMessage;
 			public:
-				FunctionReferencesPanel(CE::Function* function, CodeSectionViewer* codeSectionViewer)
-					: AbstractPanel("Function References"), m_function(function), m_codeSectionViewer(codeSectionViewer), m_listModel(function)
-				{
-					m_listView = new SelectableTableListView(&m_listModel, {
-						ColInfo("Function")
-					});
-					m_listView->handler([&](CE::Function* function)
-						{
-							try {
-								m_codeSectionViewer->goToOffset(function->getOffset());
-								m_window->close();
-							}
-							catch (WarningException& ex) {
-								m_errorMessage = ex.what();
-							}
-						});
-				}
+				FunctionReferencesPanel(CE::Function* function, CodeSectionViewer* codeSectionViewer);
 
 			private:
 				void renderPanel() override {
@@ -416,13 +397,7 @@ namespace GUI
 			return new StdWindow(this, ImGuiWindowFlags_MenuBar);
 		}
 
-		void goToOffset(CE::Offset offset) {
-			const auto section = m_imageDec->getImage()->getSectionByOffset(offset);
-			if (section->m_type == CE::ImageSection::NONE_SEGMENT)
-				throw WarningException("Offset not found.");
-			selectImageSection(section);
-			m_imageSectionViewer->goToOffset(offset);
-		}
+		void goToOffset(CE::Offset offset);
 
 		void decompile(CE::Decompiler::FunctionPCodeGraph* functionPCodeGraph);
 
