@@ -154,6 +154,7 @@ namespace GUI
 				if (m_debugger->isWorking()) {
 					m_debugger->show();
 				} else {
+					// remove debugger and all related windows
 					for (const auto& [addr, imageDec] : m_debugger->m_images) {
 						const auto window = getImageContentViewerWindow(imageDec);
 						m_imageContentWinManager.removeWindow(window);

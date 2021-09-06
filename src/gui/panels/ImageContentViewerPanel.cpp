@@ -54,10 +54,7 @@ void GUI::ImageContentViewerPanel::CodeSectionViewer::RowContextPanel::renderPan
 	else {
 		if (m_codeSectionViewer->m_codeSectionController->m_imageDec->getInstrPool()->getPCodeInstructionAt(m_codeSectionRow.getOffset())) {
 			if (ImGui::MenuItem("Start Emulator here")) {
-				const auto stepWidth = m_codeSectionRow.m_isPCode
-					? PCodeEmulator::PCodeStepWidth::STEP_PCODE_INSTR
-					: PCodeEmulator::PCodeStepWidth::STEP_ORIGINAL_INSTR;
-				m_codeSectionViewer->m_projectPanel->createEmulator(imageDec, m_codeSectionRow.getOffset(), stepWidth);
+				m_codeSectionViewer->m_createEmulator = true;
 			}
 		}
 	}
@@ -683,9 +680,23 @@ void GUI::ImageContentViewerPanel::processSectionViewerEvents() {
 			                                ? dynamic_cast<DecompiledCodeViewerPanel*>(m_decompiledCodeViewerWindow->
 				                                getPanel())
 			                                : nullptr;
+
+		// create emulator that will start on selected row
+		if (codeSectionViewer->m_createEmulator) {
+			if (!codeSectionViewer->m_selectedRows.empty()) {
+				const auto firstRow = *codeSectionViewer->m_selectedRows.begin();
+				const auto stepWidth = firstRow.m_isPCode
+					? PCodeEmulator::PCodeStepWidth::STEP_PCODE_INSTR
+					: PCodeEmulator::PCodeStepWidth::STEP_ORIGINAL_INSTR;
+				m_projectPanel->createEmulator(m_imageDec, firstRow.getOffset(), stepWidth);
+				return;
+			}
+			codeSectionViewer->m_createEmulator = false;
+		}
+
 		if (decCodeViewerPanel) {
 			auto& instrs = decCodeViewerPanel->m_decompiledCodeViewer->m_selectedCodeByInstr;
-
+			
 			// select row that new function graph is on
 			if(codeSectionViewer->m_pcodeGraphChanged) {
 				decompile(codeSectionViewer->m_selectedFuncPCodeGraph);

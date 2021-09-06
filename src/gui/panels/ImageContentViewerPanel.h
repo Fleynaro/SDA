@@ -299,6 +299,7 @@ namespace GUI
 			std::list<CodeSectionRow> m_selectedRows;
 			bool m_pcodeGraphChanged = false;
 			CE::Decompiler::PCodeBlock* m_clickedPCodeBlock = nullptr;
+			bool m_createEmulator = false;
 			
 			CodeSectionViewer(ProjectPanel* projectPanel, CodeSectionController* codeSectionController, AbstractInstructionViewDecoder* instructionViewDecoder)
 				: AbstractSectionViewer(projectPanel, codeSectionController), m_codeSectionController(codeSectionController), m_instructionViewDecoder(instructionViewDecoder)
