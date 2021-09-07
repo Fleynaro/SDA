@@ -8,6 +8,8 @@ DB::Transaction::Transaction(Database* db)
 {}
 
 void DB::Transaction::markAsNew(IDomainObject* obj) {
+	if (obj->isInDB())
+		return;
 	m_insertedObjs.remove(obj);
 	m_insertedObjs.push_back(obj);
 
@@ -18,6 +20,8 @@ void DB::Transaction::markAsNew(IDomainObject* obj) {
 }
 
 void DB::Transaction::markAsDirty(IDomainObject* obj) {
+	if (!obj->isInDB())
+		return;
 	m_updatedObjs.remove(obj);
 	m_updatedObjs.push_back(obj);
 
@@ -26,6 +30,8 @@ void DB::Transaction::markAsDirty(IDomainObject* obj) {
 }
 
 void DB::Transaction::markAsRemoved(IDomainObject* obj) {
+	if (!obj->isInDB())
+		return;
 	m_removedObjs.remove(obj);
 	m_removedObjs.push_back(obj);
 

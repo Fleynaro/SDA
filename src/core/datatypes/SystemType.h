@@ -44,6 +44,10 @@ namespace CE
 				return getTypeId();
 			}
 
+			bool isInDB() override {
+				return true;
+			}
+
 			virtual Types getTypeId() = 0;
 
 			virtual Set getSet() = 0;

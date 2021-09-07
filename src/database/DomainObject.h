@@ -11,6 +11,7 @@ namespace DB
 		virtual ~IDomainObject() {}
 		virtual Id getId() = 0;
 		virtual void setId(Id id) {}
+		virtual bool isInDB() = 0;
 		virtual IMapper* getMapper() { return nullptr; }
 		virtual void setMapper(IMapper* mapper) {}
 	};
@@ -23,6 +24,8 @@ namespace DB
 		Id getId() override;
 
 		void setId(Id id) override;
+
+		bool isInDB() override;
 
 		IMapper* getMapper() override;
 

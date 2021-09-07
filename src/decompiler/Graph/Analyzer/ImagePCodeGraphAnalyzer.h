@@ -166,6 +166,10 @@ namespace CE::Decompiler
 				return 0;
 			}
 
+			bool isInDB() override {
+				return false;
+			}
+
 			std::string getDisplayName() override {
 				return "RawSignature";
 			}
@@ -454,19 +458,27 @@ namespace CE::Decompiler
 		Project* m_project;
 		PCodeGraphReferenceSearch* m_graphReferenceSearch;
 		std::list<RawStructureOwner*> m_rawStructOwners;
-		std::list<CE::Symbol::ISymbol*> m_allSymbols;
-		bool m_nextPassRequired = false;
-	public:
 		std::map<int64_t, RawSignatureOwner*> m_funcOffsetToSig;
 		std::map<int64_t, RawSignatureOwner*> m_virtFuncCallOffsetToSig;
 		CE::Symbol::GlobalSymbolTable* m_globalSymbolTable;
 		CE::Symbol::GlobalSymbolTable* m_funcBodySymbolTable;
+		std::list<CE::Symbol::ISymbol*> m_allSymbols;
+		bool m_nextPassRequired = false;
+	public:
 
 		ImagePCodeGraphAnalyzer(ImageDecorator* imageDec, PCodeGraphReferenceSearch* graphReferenceSearch = nullptr)
 			: m_imageDec(imageDec), m_project(imageDec->getImageManager()->getProject()), m_graphReferenceSearch(graphReferenceSearch)
 		{
 			m_globalSymbolTable = m_project->getSymTableManager()->getFactory(false).createGlobalSymbolTable();
 			m_funcBodySymbolTable = m_project->getSymTableManager()->getFactory(false).createGlobalSymbolTable();
+		}
+
+		~ImagePCodeGraphAnalyzer() {
+			delete m_globalSymbolTable;
+			delete m_funcBodySymbolTable;
+			for(const auto& [offset, rawSigOwner] : m_funcOffsetToSig) {
+				delete rawSigOwner;
+			}
 		}
 		
 		void start() {
@@ -484,6 +496,27 @@ namespace CE::Decompiler
 					doMainPass(headFuncGraph, visitedGraphs);
 				}
 			} while (m_nextPassRequired);
+		}
+
+		void finish(bool markAsNew) {
+			for (const auto symbol : m_allSymbols) {
+				const auto dataType = symbol->getDataType();
+				if (const auto rawSigOwner = dynamic_cast<RawSignatureOwner*>(dataType->getType())) {
+					const auto sig = rawSigOwner->m_rawSignature->m_signature;
+					symbol->setDataType(GetUnit(sig, dataType->getPointerLevels()));
+					if (const auto funcSymbol = dynamic_cast<CE::Symbol::FunctionSymbol*>(symbol))
+						funcSymbol->setSignature(sig);
+				}
+			}
+
+			// insert all new symbols into database
+			if (markAsNew) {
+				for (const auto symbol : m_allSymbols) {
+					if (const auto symbolDb = dynamic_cast<CE::Symbol::AbstractSymbol*>(symbol)) {
+						m_project->getTransaction()->markAsNew(symbolDb);
+					}
+				}
+			}
 		}
 
 	private:
@@ -642,6 +675,7 @@ namespace CE::Decompiler
 							m_imageDec->getFuncBodySymbolTable()->addSymbol(localInstrVarSymbol, offset);
 					}
 				}
+				m_allSymbols.push_back(symbol);
 			}
 
 			// fill the signature with params that are existing or newly found
@@ -664,6 +698,7 @@ namespace CE::Decompiler
 			for(int i = 0; i < params.getParamsCount(); i ++) {
 				const auto it = std::find(funcParamSymbols.begin(), funcParamSymbols.end(), params[i]);
 				if(it == funcParamSymbols.end()) {
+					m_allSymbols.remove(params[i]);
 					delete params[i];
 				}
 			}
@@ -688,7 +723,7 @@ namespace CE::Decompiler
 			delete sdaCodeGraph;
 			delete decCodeGraph;
 		}
-
+		
 		// find func. signature for the function call (virt. or non-virt.)
 		RawSignatureOwner* getRawSignatureOwner(Instruction* instr, int funcOffset) {
 			if (funcOffset != 0) {
@@ -715,6 +750,7 @@ namespace CE::Decompiler
 					function->getFunctionSymbol()->setSignature(rawSignature);
 					function->getFunctionSymbol()->setDataType(GetUnit(rawSignature));
 					rawSignature->m_rawSignature->m_functions.push_back(function);
+					m_allSymbols.push_back(function->getFunctionSymbol());
 				}
 			}
 		}

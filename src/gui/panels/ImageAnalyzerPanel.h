@@ -68,6 +68,7 @@ namespace GUI
 
 			ImagePCodeGraphAnalyzer imagePCodeGraphAnalyzer(m_imageDec, &graphReferenceSearch);
 			imagePCodeGraphAnalyzer.start();
+			imagePCodeGraphAnalyzer.finish(true);
 		}
 	};
 };

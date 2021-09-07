@@ -15,6 +15,10 @@ void DB::DomainObject::setId(Id id) {
 	m_id = id;
 }
 
+bool DB::DomainObject::isInDB() {
+	return m_id != 0;
+}
+
 DB::IMapper* DB::DomainObject::getMapper() {
 	return m_mapper;
 }
