@@ -345,9 +345,11 @@ void InstructionInterpreter::execute(Instruction* instr) {
 		funcCallCtx->m_functionResultVar = funcResultVar;
 		m_block->m_decompiledGraph->addSymbol(funcResultVar);
 		auto symbolLeaf = new ExprTree::SymbolLeaf(funcResultVar);
-		m_block->addSeqLine(symbolLeaf, funcCallCtx, m_instr);
+		const auto seqLine = m_block->addSeqLine(symbolLeaf, funcCallCtx, m_instr);
 		if (dstRegister.isValid()) {
 			m_ctx->m_registerExecCtx.setRegister(dstRegister, symbolLeaf, m_instr);
+		} else {
+			seqLine->getAssignmentNode()->m_isSrcOnly = true;
 		}
 		m_decompiler->m_decompiledGraph->addSymbolValue(m_instr->getOffset(), funcResultVar, retInfo.m_storage);
 		break;

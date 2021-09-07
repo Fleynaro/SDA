@@ -268,8 +268,10 @@ void DecBlock::setNoJumpCondition(ExprTree::AbstractCondition* noJmpCond) const
 	}
 }
 
-void DecBlock::addSeqLine(ExprTree::INode* destAddr, ExprTree::INode* srcValue, PCode::Instruction* instr) {
-	m_seqLines.push_back(new AssignmentLine(this, destAddr, srcValue, instr));
+DecBlock::AssignmentLine* DecBlock::addSeqLine(ExprTree::INode* destAddr, ExprTree::INode* srcValue, PCode::Instruction* instr) {
+	const auto assignmentLine = new AssignmentLine(this, destAddr, srcValue, instr);
+	m_seqLines.push_back(assignmentLine);
+	return assignmentLine;
 }
 
 std::list<DecBlock::AssignmentLine*>& DecBlock::getSeqAssignmentLines() {

@@ -68,5 +68,5 @@ HS AssignmentNode::getHash() {
 }
 
 INode* AssignmentNode::clone(NodeCloneContext* ctx) {
-	return new AssignmentNode(m_dstNode->clone(ctx), m_srcNode->clone(ctx), m_instr);
+	return new AssignmentNode(m_dstNode->clone(ctx), m_srcNode->clone(ctx), m_instr, m_isSrcOnly);
 }

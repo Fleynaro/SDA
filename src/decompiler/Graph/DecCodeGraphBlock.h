@@ -134,7 +134,7 @@ namespace CE::Decompiler
 
 		void setNoJumpCondition(ExprTree::AbstractCondition* noJmpCond) const;
 
-		void addSeqLine(ExprTree::INode* destAddr, ExprTree::INode* srcValue, PCode::Instruction* instr = nullptr);
+		AssignmentLine* addSeqLine(ExprTree::INode* destAddr, ExprTree::INode* srcValue, PCode::Instruction* instr = nullptr);
 
 		std::list<AssignmentLine*>& getSeqAssignmentLines();
 

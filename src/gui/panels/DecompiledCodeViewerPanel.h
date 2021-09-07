@@ -7,6 +7,7 @@
 #include "decompiler/SDA/SdaCodeGraph.h"
 #include "decompiler/DecCodeGenerator.h"
 #include "decompiler/DecMisc.h"
+#include "editors/FunctionEditorPanel.h"
 #include <imgui_wrapper/controls/Control.h>
 #include <bitset>
 
@@ -73,20 +74,29 @@ namespace GUI
 					builtinWin->getPos() = m_winPos;
 					builtinWin->open();
 				}
-				if (ImGui::MenuItem("Change data type")) {
-					delete builtinWin;
-					const auto panel = new DataTypeSelectorPanel(m_symbol->getManager()->getProject()->getTypeManager());
-					panel->handler([&](CE::DataTypePtr dataType)
-						{
-							if (const auto dbSymbol = dynamic_cast<CE::Symbol::AbstractSymbol*>(m_symbol)) {
-								dbSymbol->setDataType(dataType);
-								dbSymbol->getManager()->getProject()->getTransaction()->markAsDirty(dbSymbol);
-							}
-							m_decCodeViewer->m_codeChanged = true;
-						});
-					builtinWin = new PopupBuiltinWindow(panel);
-					builtinWin->getPos() = m_winPos;
-					builtinWin->open();
+				if(const auto funcSymbol = dynamic_cast<CE::Symbol::FunctionSymbol*>(m_symbol)) {
+					if (ImGui::MenuItem("Edit Function")) {
+						delete m_decCodeViewer->m_stdWindow;
+						const auto panel = new FunctionEditorPanel(funcSymbol->getFunction());
+						m_decCodeViewer->m_stdWindow = new StdWindow(panel);
+					}
+				}
+				else {
+					if (ImGui::MenuItem("Change Data Type")) {
+						delete builtinWin;
+						const auto panel = new DataTypeSelectorPanel(m_symbol->getManager()->getProject()->getTypeManager());
+						panel->handler([&](CE::DataTypePtr dataType)
+							{
+								if (const auto dbSymbol = dynamic_cast<CE::Symbol::AbstractSymbol*>(m_symbol)) {
+									dbSymbol->setDataType(dataType);
+									dbSymbol->getManager()->getProject()->getTransaction()->markAsDirty(dbSymbol);
+								}
+								m_decCodeViewer->m_codeChanged = true;
+							});
+						builtinWin = new PopupBuiltinWindow(panel);
+						builtinWin->getPos() = m_winPos;
+						builtinWin->open();
+					}
 				}
 			}
 		};
@@ -646,6 +656,7 @@ namespace GUI
 		// windows
 		PopupContextWindow* m_ctxWindow = nullptr;
 		PopupBuiltinWindow* m_builtinWindow = nullptr;
+		StdWindow* m_stdWindow = nullptr;
 	public:
 		struct
 		{
@@ -713,6 +724,7 @@ namespace GUI
 			m_isObjHovered = false;
 			Show(m_ctxWindow);
 			Show(m_builtinWindow);
+			Show(m_stdWindow);
 			
 			ImGui::BeginChild(getId().c_str(), ImVec2(0, 0), false, ImGuiWindowFlags_NoMove);
 			if (ImGui::IsWindowHovered()) {

@@ -9,9 +9,10 @@ namespace CE::Decompiler::ExprTree
 		INode* m_srcNode;
 	public:
 		PCode::Instruction* m_instr;
+		bool m_isSrcOnly; // for function calls that don't return a result
 
-		AssignmentNode(INode* dstNode, INode* srcNode, PCode::Instruction* instr = nullptr)
-			: m_dstNode(dstNode), m_srcNode(srcNode), m_instr(instr)
+		AssignmentNode(INode* dstNode, INode* srcNode, PCode::Instruction* instr = nullptr, bool isSrcOnly = false)
+			: m_dstNode(dstNode), m_srcNode(srcNode), m_instr(instr), m_isSrcOnly(isSrcOnly)
 		{
 			m_dstNode->addParentNode(this);
 			m_srcNode->addParentNode(this);

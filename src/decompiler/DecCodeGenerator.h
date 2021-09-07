@@ -240,11 +240,7 @@ namespace CE::Decompiler
 			}
 
 			virtual void generateAssignmentNode(const AssignmentNode* node) {
-				bool showDstNode = true;
-				if(const auto sdaSymbolLeaf = dynamic_cast<SdaSymbolLeaf*>(node->getDstNode())) {
-					showDstNode = !dynamic_cast<DataType::Void*>(sdaSymbolLeaf->getDataType()->getBaseType());
-				}
-				if (showDstNode) {
+				if (!node->m_isSrcOnly) {
 					generateNode(node->getDstNode());
 					generateToken(" = ", TOKEN_OPERATION);
 				}

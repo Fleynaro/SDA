@@ -230,19 +230,21 @@ void SdaDataTypesCalculater::calculateDataTypes(INode* node) {
 			}
 		}
 		else if (const auto assignmentNode = dynamic_cast<AssignmentNode*>(sdaGenNode->getNode())) {
-			if (auto dstSdaNode = dynamic_cast<ISdaNode*>(assignmentNode->getDstNode())) {
-				if (auto srcSdaNode = dynamic_cast<ISdaNode*>(assignmentNode->getSrcNode())) {
-					auto dstNodeDataType = dstSdaNode->getDataType();
-					auto srcNodeDataType = srcSdaNode->getDataType();
+			if (!assignmentNode->m_isSrcOnly) {
+				if (auto dstSdaNode = dynamic_cast<ISdaNode*>(assignmentNode->getDstNode())) {
+					if (auto srcSdaNode = dynamic_cast<ISdaNode*>(assignmentNode->getSrcNode())) {
+						auto dstNodeDataType = dstSdaNode->getDataType();
+						auto srcNodeDataType = srcSdaNode->getDataType();
 
-					if (dstNodeDataType->getSize() == srcNodeDataType->getSize() && dstNodeDataType->getPriority() < srcNodeDataType->getPriority()) {
-						cast(dstSdaNode, srcNodeDataType);
-						dstSdaNode->getCast()->clearCast();
-						dstNodeDataType = dstSdaNode->getDataType();
+						if (dstNodeDataType->getSize() == srcNodeDataType->getSize() && dstNodeDataType->getPriority() < srcNodeDataType->getPriority()) {
+							cast(dstSdaNode, srcNodeDataType);
+							dstSdaNode->getCast()->clearCast();
+							dstNodeDataType = dstSdaNode->getDataType();
+						}
+
+						cast(srcSdaNode, dstNodeDataType);
+						sdaGenNode->setDataType(dstNodeDataType);
 					}
-
-					cast(srcSdaNode, dstNodeDataType);
-					sdaGenNode->setDataType(dstNodeDataType);
 				}
 			}
 		}
@@ -331,7 +333,8 @@ void SdaDataTypesCalculater::handleFunctionNode(SdaFunctionNode* sdaFunctionNode
 				auto nodeDataType = paramSdaNode->getDataType();
 
 				// or a type of the node, or a type of the sig parameter
-				if (funcParamSymbol->isAutoSymbol() &&
+				if (false && funcParamSymbol->isAutoSymbol() &&
+					nodeDataType->getSize() == sigDataType->getSize() &&
 					nodeDataType->isFloatingPoint() == sigDataType->isFloatingPoint() && // fastcall specific (not allow to change param storage rcx -> xmm0 here)
 					nodeDataType->getPriority() > sigDataType->getPriority()) {
 					// change a type of the parameter symbol

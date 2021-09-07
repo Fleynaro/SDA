@@ -163,7 +163,7 @@ namespace CE::Decompiler
 			}
 
 			DB::Id getId() override {
-				return 100000;
+				return 0;
 			}
 
 			std::string getDisplayName() override {
@@ -454,6 +454,7 @@ namespace CE::Decompiler
 		Project* m_project;
 		PCodeGraphReferenceSearch* m_graphReferenceSearch;
 		std::list<RawStructureOwner*> m_rawStructOwners;
+		std::list<CE::Symbol::ISymbol*> m_allSymbols;
 		bool m_nextPassRequired = false;
 	public:
 		std::map<int64_t, RawSignatureOwner*> m_funcOffsetToSig;

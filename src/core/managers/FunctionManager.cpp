@@ -40,13 +40,13 @@ Function* FunctionManager::Factory::createFunction(Symbol::FunctionSymbol* funct
 
 Function* FunctionManager::Factory::createFunction(Symbol::FunctionSymbol* functionSymbol, ImageDecorator* imageDec) const
 {
-	const auto factory = m_functionManager->getProject()->getSymTableManager()->getFactory();
+	const auto factory = m_functionManager->getProject()->getSymTableManager()->getFactory(m_markAsNew);
 	const auto stackSymbolTable = factory.createStackSymbolTable();
 	return createFunction(functionSymbol, imageDec, stackSymbolTable);
 }
 
 Function* FunctionManager::Factory::createFunction(int64_t offset, DataType::IFunctionSignature* funcSignature, ImageDecorator* imageDec, const std::string& name, const std::string& comment) {
-	const auto factory = m_functionManager->getProject()->getSymbolManager()->getFactory();
+	const auto factory = m_functionManager->getProject()->getSymbolManager()->getFactory(m_markAsNew);
 	const auto functionSymbol = factory.createFunctionSymbol(offset, funcSignature, name, comment);
 	imageDec->getGlobalSymbolTable()->addSymbol(functionSymbol, offset);
 	return createFunction(functionSymbol, imageDec);

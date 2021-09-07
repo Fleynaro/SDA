@@ -62,7 +62,7 @@ namespace GUI
 			for(const auto funcGraph : imagePCodeGraph->getFunctionGraphList()) {
 				const auto funcOffset = funcGraph.getStartBlock()->getMinOffset().getByteOffset();
 				const auto funcOffsetStr = Helper::String::NumberToHex(funcOffset);
-				const auto funcSig = project->getTypeManager()->getFactory(false).createSignature("funcSig_" + funcOffsetStr);
+				const auto funcSig = project->getTypeManager()->getFactory().createSignature("funcSig_" + funcOffsetStr);
 				project->getFunctionManager()->getFactory().createFunction(funcOffset, funcSig, m_imageDec, "func_" + funcOffsetStr);
 			}
 
