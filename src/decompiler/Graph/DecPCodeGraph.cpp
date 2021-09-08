@@ -203,8 +203,7 @@ void FunctionPCodeGraph::addVirtFuncCall(FunctionPCodeGraph* funcGraph) {
 	funcGraph->m_refFuncCalls.insert(this);
 }
 
-const std::set<PCodeBlock*>& FunctionPCodeGraph::getBlocks() const
-{
+std::set<PCodeBlock*>& FunctionPCodeGraph::getBlocks() {
 	return m_blocks;
 }
 

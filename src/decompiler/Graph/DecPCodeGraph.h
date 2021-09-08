@@ -96,7 +96,7 @@ namespace CE::Decompiler
 
 		void addVirtFuncCall(FunctionPCodeGraph* funcGraph);
 
-		const std::set<PCodeBlock*>& getBlocks() const;
+		std::set<PCodeBlock*>& getBlocks();
 
 		void addBlock(PCodeBlock* block);
 

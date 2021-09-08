@@ -46,18 +46,12 @@ namespace CE::Decompiler
 		void start(Offset startOffset, bool onceFunc = false) const;
 
 	private:
-		// reconnect all blocks that are referenced by function calls
-		void reconnectBlocksAndReplaceJmpByCall(std::list<PCodeBlock*> blocks) const;
-
-		// calculate levels and gather PCode blocks for each function graph
-		void prepareFuncGraphs() const;
+		// calculate levels, gather PCode blocks, replace JMP with CALL
+		static void ProcessFuncGraph(FunctionPCodeGraph* funcGraph);
 
 		// fill {funcGraph} with PCode blocks
-		void createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, FunctionPCodeGraph* funcGraph) const;
-
-		// prepare a function graph
-		static void PrepareFuncGraph(FunctionPCodeGraph* funcGraph);
-
+		void createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, FunctionPCodeGraph* funcGraph, std::set<ComplexOffset>& visitedInstrOffsets) const;
+		
 		// pass pcode graph and calculate max distance from root to each node (pcode block)
 		static void CalculateLevelsForPCodeBlocks(PCodeBlock* block, std::list<PCodeBlock*>& path);
 

@@ -14,38 +14,39 @@ ImageAnalyzer::ImageAnalyzer(AbstractImage* image, ImagePCodeGraph* imageGraph, 
 {}
 
 void ImageAnalyzer::start(Offset startOffset, bool onceFunc) const {
-	std::set<ComplexOffset> visitedOffsets;
+	std::set<Offset> visitedOffsets;
 	std::list<Offset> nextOffsetsToVisitLater = { startOffset };
 	std::list<std::pair<FunctionPCodeGraph*, std::list<Offset>>> nonVirtFuncOffsetsForGraphs;
 	std::map<Offset, FunctionPCodeGraph*> offsetsToFuncGraphs;
-	std::list<PCodeBlock*> blocksToReconnect;
+	std::set<ComplexOffset> visitedInstrOffsets;
 
 	// generate an image graph
 	while (!nextOffsetsToVisitLater.empty()) {
-		const auto startInstrOffset = ComplexOffset(nextOffsetsToVisitLater.back(), 0);
+		const auto byteOffset = nextOffsetsToVisitLater.back();
+		const auto offset = ComplexOffset(byteOffset, 0);
 		nextOffsetsToVisitLater.pop_back();
-		if (visitedOffsets.find(startInstrOffset) != visitedOffsets.end())
+		if (visitedOffsets.find(byteOffset) != visitedOffsets.end())
 			continue;
-		visitedOffsets.insert(startInstrOffset);
+		visitedOffsets.insert(byteOffset);
 
-		auto funcGraph = m_imageGraph->createFunctionGraph();
-		if (auto block = m_imageGraph->getBlockAtOffset(startInstrOffset)) {
+		// create new function graph for some function
+		const auto funcGraph = m_imageGraph->createFunctionGraph();
+		offsetsToFuncGraphs[byteOffset] = funcGraph;
+		// create of get start block of the func. graph
+		if (const auto block = m_imageGraph->getBlockAtOffset(offset)) {
 			// if the function call references to a block of the existing graph
 			funcGraph->setStartBlock(block);
-			offsetsToFuncGraphs[startInstrOffset.getByteOffset()] = funcGraph;
-			blocksToReconnect.push_back(block);
 		}
 		else {
-			const auto startBlock = m_imageGraph->createBlock(startInstrOffset);
+			const auto startBlock = m_imageGraph->createBlock(offset);
 			funcGraph->setStartBlock(startBlock);
-			createPCodeBlocksAtOffset(startInstrOffset, funcGraph);
-			offsetsToFuncGraphs[startInstrOffset.getByteOffset()] = funcGraph;
+			createPCodeBlocksAtOffset(offset, funcGraph, visitedInstrOffsets);
 
 			if (!onceFunc) {
 				assert(m_graphReferenceSearch != nullptr);
 				std::list<Offset> nonVirtFuncOffsets;
 				std::list<Offset> otherOffsets;
-				PrepareFuncGraph(funcGraph);
+				ProcessFuncGraph(funcGraph);
 				m_graphReferenceSearch->findNewFunctionOffsets(funcGraph, nonVirtFuncOffsets, otherOffsets);
 				nextOffsetsToVisitLater.insert(nextOffsetsToVisitLater.end(), nonVirtFuncOffsets.begin(), nonVirtFuncOffsets.end());
 				nextOffsetsToVisitLater.insert(nextOffsetsToVisitLater.end(), otherOffsets.begin(), otherOffsets.end());
@@ -65,45 +66,57 @@ void ImageAnalyzer::start(Offset startOffset, bool onceFunc) const {
 		}
 	}
 
-	// other
-	m_imageGraph->fillHeadFuncGraphs();
-	reconnectBlocksAndReplaceJmpByCall(blocksToReconnect);
-	prepareFuncGraphs();
-}
-
-// reconnect all blocks that are referenced by function calls
-
-void ImageAnalyzer::reconnectBlocksAndReplaceJmpByCall(std::list<PCodeBlock*> blocks) const
-{
-	for (auto block : blocks) {
-		for (auto refBlock : block->m_blocksReferencedTo) {
-			auto lastInstr = refBlock->getLastInstruction();
+	// all start blocks don't have to be referenced by another blocks through jmp instructions, only call
+	std::list<std::pair<PCodeBlock*, FunctionPCodeGraph*>> blocksToGraphs;
+	for (auto& funcGraph : m_imageGraph->getFunctionGraphList()) {
+		const auto startBlock = funcGraph.getStartBlock();
+		for (const auto refBlock : startBlock->m_blocksReferencedTo) {
+			const auto lastInstr = refBlock->getLastInstruction();
 			if (Instruction::IsBranching(lastInstr->m_id)) {
 				m_decoder->m_instrPool->modifyInstruction(lastInstr, InstructionPool::MODIFICATOR_JMP_CALL);
 				// after modification add new RET instr into ref. block
-				auto lastInsertedInstr = &lastInstr->m_origInstruction->m_pcodeInstructions.rbegin()->second;
+				const auto lastInsertedInstr = &lastInstr->m_origInstruction->m_pcodeInstructions.rbegin()->second;
 				refBlock->m_instructions.push_back(lastInsertedInstr);
+				blocksToGraphs.push_back(std::pair(refBlock, &funcGraph));
 			}
-			refBlock->removeNextBlock(block);
+			refBlock->removeNextBlock(startBlock);
 		}
-		block->m_blocksReferencedTo.clear();
+		startBlock->m_blocksReferencedTo.clear();
 	}
+	
+	// process all func. graphs calculating levels and gathering blocks
+	for (auto& funcGraph : m_imageGraph->getFunctionGraphList()) {
+		ProcessFuncGraph(&funcGraph);
+	}
+
+	// after replace JMP -> CALL need set connections
+	for(const auto& [pcodeBlock, funcGraph] : blocksToGraphs) {
+		pcodeBlock->m_funcPCodeGraph->addNonVirtFuncCall(funcGraph);
+	}
+
+	// other
+	m_imageGraph->fillHeadFuncGraphs();
 }
 
-// calculate levels and gather PCode blocks for each function graph
+void ImageAnalyzer::ProcessFuncGraph(FunctionPCodeGraph* funcGraph) {
+	const auto startBlock = funcGraph->getStartBlock();
+	// levels
+	std::list<PCodeBlock*> path;
+	startBlock->m_level = 1;
+	CalculateLevelsForPCodeBlocks(startBlock, path);
 
-void ImageAnalyzer::prepareFuncGraphs() const
-{
-	for (auto& funcGraph : m_imageGraph->getFunctionGraphList()) {
-		PrepareFuncGraph(&funcGraph);
-	}
+	// gather blocks and add them into func. graph
+	std::set<PCodeBlock*> blocks;
+	GatherPCodeBlocks(startBlock, blocks);
+	funcGraph->getBlocks() = blocks;
+	for (const auto block : blocks)
+		block->m_funcPCodeGraph = funcGraph;
 }
 
 // fill {funcGraph} with PCode blocks
 
-void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, FunctionPCodeGraph* funcGraph) const
+void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, FunctionPCodeGraph* funcGraph, std::set<ComplexOffset>& visitedInstrOffsets) const
 {
-	std::set<ComplexOffset> visitedOffsets;
 	std::list<ComplexOffset> nextOffsetsToVisitLater;
 
 	auto offset = startInstrOffset;
@@ -112,7 +125,7 @@ void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, Fu
 		Instruction* instr = nullptr;
 		PCodeBlock* curBlock = nullptr;
 
-		if (offset != InvalidOffset && visitedOffsets.find(offset) == visitedOffsets.end()) {
+		if (offset != InvalidOffset && visitedInstrOffsets.find(offset) == visitedInstrOffsets.end()) {
 			// any offset have to be assoicated with some existing block
 			if ((curBlock = m_imageGraph->getBlockAtOffset(offset, false))) {
 
@@ -127,7 +140,7 @@ void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, Fu
 					}
 					instr = m_decoder->m_instrPool->getPCodeInstructionAt(offset);
 				}
-				visitedOffsets.insert(offset);
+				visitedInstrOffsets.insert(offset);
 			}
 		}
 
@@ -137,7 +150,7 @@ void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, Fu
 			while (!nextOffsetsToVisitLater.empty()) {
 				offset = nextOffsetsToVisitLater.back();
 				nextOffsetsToVisitLater.pop_back();
-				if (visitedOffsets.find(offset) == visitedOffsets.end())
+				if (visitedInstrOffsets.find(offset) == visitedInstrOffsets.end())
 					break;
 				offset = InvalidOffset;
 			}
@@ -268,19 +281,6 @@ void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, Fu
 				offset = InvalidOffset;
 			}
 		}
-	}
-}
-
-// prepare a function graph
-
-void ImageAnalyzer::PrepareFuncGraph(FunctionPCodeGraph* funcGraph) {
-	std::list<PCodeBlock*> path;
-	CalculateLevelsForPCodeBlocks(funcGraph->getStartBlock(), path);
-
-	std::set<PCodeBlock*> blocks;
-	GatherPCodeBlocks(funcGraph->getStartBlock(), blocks);
-	for (auto block : blocks) {
-		funcGraph->addBlock(block);
 	}
 }
 

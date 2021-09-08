@@ -11,36 +11,26 @@ public:
 private:
 	Value m_hashValue = DefaultSeed;
 public:
-	HS(Value seed = DefaultSeed)
-		: m_hashValue(seed)
+	HS(Value value = DefaultSeed)
+		: m_hashValue(value)
 	{}
 
+	// integral
 	template<class T>
-	HS operator+(T value) const {
-		return HS(m_hashValue + static_cast<Value>(value));
+	HS operator+(const T& value) const {
+		Value value64 = 0;
+		reinterpret_cast<T&>(value64) = value;
+		return HS(m_hashValue + value64);
 	}
 
 	template<class T>
-	HS operator<<(T value) const {
-		return *this + static_cast<uint64_t>(value) * 31;
-	}
-	
-	HS operator+(float value) const {
-		return *this + reinterpret_cast<uint32_t&>(value);
+	HS operator<<(const T& value) const {
+		auto hash = *this + value;
+		hash.m_hashValue += hash.m_hashValue << 5;
+		return hash;
 	}
 
-	HS operator<<(float value) const {
-		return *this << reinterpret_cast<uint32_t&>(value);
-	}
-
-	HS operator+(double value) const {
-		return *this + reinterpret_cast<uint64_t&>(value);
-	}
-
-	HS operator<<(double value) const {
-		return *this << reinterpret_cast<uint64_t&>(value);
-	}
-	
+	// string
 	HS operator+(const std::string& string) const {
 		return *this + HashString(string);
 	}
@@ -49,6 +39,7 @@ public:
 		return *this << HashString(string);
 	}
 
+	// another hash
 	HS operator+(const HS& hs) const {
 		return *this + hs.m_hashValue;
 	}
