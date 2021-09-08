@@ -17,7 +17,7 @@ namespace GUI
 		bool groupBy(CE::Symbol::AbstractSymbol* const& symbol1, CE::Symbol::AbstractSymbol* const& symbol2) override {
 			const auto gvar1 = dynamic_cast<CE::Symbol::GlobalVarSymbol*>(symbol1);
 			const auto gvar2 = dynamic_cast<CE::Symbol::GlobalVarSymbol*>(symbol2);
-			return gvar1->m_globalSymbolTable->m_imageDec->getId() > gvar2->m_globalSymbolTable->m_imageDec->getId();
+			return gvar1->m_globalSymbolTable->m_imageDec > gvar2->m_globalSymbolTable->m_imageDec;
 		}
 
 		bool renderGroupTop(CE::Symbol::AbstractSymbol* const& symbol, int group_n) override {

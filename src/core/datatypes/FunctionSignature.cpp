@@ -143,6 +143,7 @@ IFunctionSignature* FunctionSignature::clone() {
 void FunctionSignature::apply(IFunctionSignature* funcSignature) {
 	m_parameters = funcSignature->getParameters();
 	funcSignature->getParameters().clear();
+	setReturnType(funcSignature->getReturnType());
 	m_parameters.m_funcSignature = this;
 	m_customStorages = funcSignature->getCustomStorages();
 	updateParameterStorages();

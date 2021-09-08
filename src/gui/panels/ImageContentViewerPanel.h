@@ -118,7 +118,7 @@ namespace GUI
 			
 			void scroll() {
 				if (m_scrollToRowIdx != -1) {
-					ImGui::SetScrollY(m_scrollToRowIdx * m_clipper.ItemsHeight);
+					ImGui::SetScrollY((m_scrollToRowIdx + 1) * m_clipper.ItemsHeight);
 					m_scrollToRowIdx = -1;
 				}
 			}
@@ -227,11 +227,16 @@ namespace GUI
 				void renderPanel() override {
 					if (!m_errorMessage.empty())
 						Text::Text("Error: " + m_errorMessage).show();
+
+					Text::Text(std::string("Function: ") + m_function->getName()).show();
+					Text::Text(std::string("Offset: 0x") + Helper::String::NumberToHex(m_function->getOffset())).show();
 					
+					NewLine();
+					Text::Text("Referenced to:").show();
 					if (!m_listModel.empty()) {
 						m_listView->show();
 					} else {
-						Text::Text("No functions referenced to.").show();
+						Text::Text("No functions.").show();
 					}
 				}
 			};

@@ -51,7 +51,8 @@ namespace CE::Decompiler::Symbol
 		HS getHash() override {
 			return HS()
 				<< m_register.getId()
-				<< m_register.m_valueRangeMask.getValue();
+				<< m_register.m_valueRangeMask.getSize()
+				<< m_register.m_valueRangeMask.getOffset();
 		}
 
 	protected:

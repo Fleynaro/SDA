@@ -16,7 +16,7 @@ namespace GUI
 
 	protected:
 		bool groupBy(CE::Function* const& func1, CE::Function* const& func2) override {
-			return func1->getImage()->getId() > func2->getImage()->getId();
+			return func1->getImage() > func2->getImage();
 		}
 
 		bool renderGroupTop(CE::Function* const& func, int group_n) override {

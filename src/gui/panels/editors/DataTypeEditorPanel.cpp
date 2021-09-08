@@ -161,3 +161,56 @@ void GUI::FuncSigEditorPanel::ParamTableListView::renderColumn(const std::string
 		}
 	}
 }
+
+void GUI::FuncSigEditorPanel::renderExtra() {
+	// return data type
+	NewLine();
+	Text::Text("Return data type: ").show();
+	SameLine();
+	const auto retDataType = m_clonedDataType->getReturnType();
+	if (Button::StdButton(retDataType->getDisplayName()).present()) {
+		const auto panel = new DataTypeSelectorPanel(retDataType->getTypeManager(),
+			retDataType->getDisplayName());
+		panel->handler([&, panel](CE::DataTypePtr dataType)
+			{
+				m_clonedDataType->setReturnType(dataType);
+				m_clonedDataType->updateParameterStorages();
+				panel->m_window->close();
+			});
+		createWindow(panel);
+	}
+
+	// params list
+	NewLine();
+	Text::Text("Params:").show();
+	ImGui::BeginChild("params", ImVec2(0, 200), true);
+	m_tableListView->show();
+	ImGui::EndChild();
+
+	// param control panel
+	if (Button::StdButton("+").present()) {
+		addNewParam();
+	}
+	if (m_selectedParam) {
+		SameLine();
+		if (Button::ButtonArrow(ImGuiDir_Up).present()) {
+			m_clonedDataType->getParameters().moveParameter(m_selectedParam->getParamIdx(), -1);
+			m_clonedDataType->updateParameterStorages();
+		}
+		SameLine();
+		if (Button::ButtonArrow(ImGuiDir_Down).present()) {
+			m_clonedDataType->getParameters().moveParameter(m_selectedParam->getParamIdx(), 1);
+			m_clonedDataType->updateParameterStorages();
+		}
+		SameLine();
+		if (Button::StdButton("x").present()) {
+			m_clonedDataType->getParameters().removeParameter(m_selectedParam->getParamIdx());
+			delete m_selectedParam;
+			m_clonedDataType->updateParameterStorages();
+			m_selectedParam = nullptr;
+		}
+	}
+
+	NewLine();
+	Text::Text("Click the left mouse button hovering on a value you wish to edit.").show();
+}

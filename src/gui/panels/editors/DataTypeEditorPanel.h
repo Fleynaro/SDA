@@ -407,55 +407,24 @@ namespace GUI
 		}
 
 	protected:
-		void renderExtra() override {
-			NewLine();
-			Text::Text("Params:").show();
-			ImGui::BeginChild("params", ImVec2(0, 200), true);
-			m_tableListView->show();
-			ImGui::EndChild();
-
-			if (Button::StdButton("+").present()) {
-				addNewParam();
-			}
-			if (m_selectedParam) {
-				SameLine();
-				if (Button::ButtonArrow(ImGuiDir_Up).present()) {
-					m_clonedDataType->getParameters().moveParameter(m_selectedParam->getParamIdx(), -1);
-					m_clonedDataType->updateParameterStorages();
-				}
-				SameLine();
-				if (Button::ButtonArrow(ImGuiDir_Down).present()) {
-					m_clonedDataType->getParameters().moveParameter(m_selectedParam->getParamIdx(), 1);
-					m_clonedDataType->updateParameterStorages();
-				}
-				SameLine();
-				if (Button::StdButton("x").present()) {
-					m_clonedDataType->getParameters().removeParameter(m_selectedParam->getParamIdx());
-					delete m_selectedParam;
-					m_clonedDataType->updateParameterStorages();
-					m_selectedParam = nullptr;
-				}
-			}
-			
-			NewLine();
-			Text::Text("Click the left mouse button hovering on a value you wish to edit.").show();
-		}
+		void renderExtra() override;
 
 		void save() override {
 			saveName();
-			
+
+			const auto transaction = m_dataType->getTypeManager()->getProject()->getTransaction();
 			for (int i = 0; i < m_dataType->getParameters().getParamsCount(); i++) {
 				// todo: params could be owned by other objects then mark as removed(no delete). think about removing it correctly
-				m_dataType->getTypeManager()->getProject()->getTransaction()->markAsRemoved(m_dataType->getParameters()[i]);
+				transaction->markAsRemoved(m_dataType->getParameters()[i]);
 			}
 
 			for (int i = 0; i < m_clonedDataType->getParameters().getParamsCount(); i++) {
 				const auto param = m_clonedDataType->getParameters()[i];
-				m_dataType->getTypeManager()->getProject()->getTransaction()->markAsNew(param);
+				transaction->markAsNew(param);
 			}
 			
 			m_dataType->apply(m_clonedDataType);
-			m_dataType->getTypeManager()->getProject()->getTransaction()->markAsDirty(m_dataType);
+			transaction->markAsDirty(m_dataType);
 		}
 
 		void addNewParam() {

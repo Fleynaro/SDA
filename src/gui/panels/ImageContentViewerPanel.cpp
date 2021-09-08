@@ -509,6 +509,7 @@ void GUI::ImageContentViewerPanel::decompile(CE::Decompiler::FunctionPCodeGraph*
 			m_curDecGraph = decCodeGraph;
 			panel->m_decompiledCodeViewer->setInfoToShowAsm(m_imageDec->getImage(), new InstructionViewDecoderX86);
 			panel->m_decompiledCodeViewer->setInfoToShowExecCtxs(primaryDecompiler);
+			panel->m_decompiledCodeViewer->m_childName = "dec_func_0x" + Helper::String::NumberToHex(function->getOffset());
 			if (m_decompiledCodeViewerWindow) {
 				if (auto prevPanel = dynamic_cast<DecompiledCodeViewerPanel*>(m_decompiledCodeViewerWindow->getPanel()))
 					panel->m_decompiledCodeViewer->m_show = prevPanel->m_decompiledCodeViewer->m_show;
@@ -536,6 +537,18 @@ void GUI::ImageContentViewerPanel::renderMenuBar() {
 			delete m_popupModalWindow;
 			m_popupModalWindow = new PopupModalWindow(new GoToPanel(this));
 			m_popupModalWindow->open();
+		}
+
+		if (const auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer)) {
+			if(!codeSectionViewer->m_selectedRows.empty()) {
+				if (ImGui::MenuItem("Go To Selected Row")) {
+					try {
+						const auto row = *codeSectionViewer->m_selectedRows.begin();
+						codeSectionViewer->goToOffset(row.m_byteOffset);
+					}
+					catch (WarningException&) {}
+				}
+			}
 		}
 		ImGui::EndMenu();
 	}
@@ -791,7 +804,8 @@ void GUI::ImageContentViewerPanel::processDecompiledCodeViewerEvents() {
 			// select instructions by code selection
 			if (!decCodeViewerPanel->m_decompiledCodeViewer->m_selectedInstrs.empty()) {
 				codeSectionViewer->m_selectedRows.clear();
-				for (const auto instr : decCodeViewerPanel->m_decompiledCodeViewer->m_selectedInstrs) {
+				const auto instrs = decCodeViewerPanel->m_decompiledCodeViewer->m_selectedInstrs;
+				for (const auto instr : instrs) {
 					codeSectionViewer->m_selectedRows.emplace_back(instr->getOffset(), true);
 				}
 			}

@@ -673,6 +673,7 @@ namespace GUI
 		std::string m_selectedText;
 		bool m_codeChanged = false;
 		float m_maxLineSize = 0.0f;
+		std::string m_childName; // for storing scroll value when move across functions in decompiling history
 		
 		DecompiledCodeViewer(CE::Decompiler::LinearView::BlockList* blockList)
 			: m_blockList(blockList)
@@ -725,8 +726,8 @@ namespace GUI
 			Show(m_ctxWindow);
 			Show(m_builtinWindow);
 			Show(m_stdWindow);
-			
-			ImGui::BeginChild(getId().c_str(), ImVec2(0, 0), false, ImGuiWindowFlags_NoMove);
+
+			ImGui::BeginChild(m_childName.c_str(), ImVec2(0, 0), false, ImGuiWindowFlags_NoMove);
 			if (ImGui::IsWindowHovered()) {
 				if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
 					m_selectedSymbol = nullptr;
