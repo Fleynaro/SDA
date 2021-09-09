@@ -34,27 +34,12 @@ GUI::DebuggerAttachProcessPanel::DebuggerAttachProcessPanel(CE::Project* project
 	m_addrSpaceController.m_filter.m_showDebug = false;
 }
 
-void GUI::PCodeEmulator::updateByDecGraph(CE::Decompiler::DecompiledCodeGraph* decGraph) {
-	if (m_lastExecutedInstr) {
-		const auto instrOffset = m_lastExecutedInstr->getOffset();
-		// after the last executed instruction
-		updateSymbolValuesByDecGraph(decGraph, instrOffset, true);
-	}
-	if (m_curInstr) {
-		const auto instrOffset = m_curInstr->getOffset();
-		m_curBlockTopNode = decGraph->findBlockTopNodeAtOffset(instrOffset);
-		m_relStackPointerValue = decGraph->getStackPointerValueAtOffset(instrOffset);
-		// before the current instruction
-		updateSymbolValuesByDecGraph(decGraph, instrOffset, false);
-	}
-}
-
 void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::DecompiledCodeGraph* decGraph,
                                                       CE::ComplexOffset offset, bool after) {
 	const auto& symbolValues = decGraph->getSymbolValues();
 	const auto it = symbolValues.find(offset);
 	if (it != symbolValues.end()) {
-		const auto symbolValueMap = getSymbolValueMap();
+		const auto stackFrame = getCurStackFrameInfo();
 		for (const auto& valueInfo : it->second) {
 			if (valueInfo.m_after != after)
 				continue;
@@ -66,8 +51,8 @@ void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::Decompiled
 			auto userDefined = false;
 			CE::Decompiler::DataValue userValue = 0;
 			{
-				const auto it2 = symbolValueMap->find(symbolHash);
-				if (it2 != symbolValueMap->end()) {
+				const auto it2 = stackFrame->m_symbolValueMap.find(symbolHash);
+				if (it2 != stackFrame->m_symbolValueMap.end()) {
 					if (it2->second.m_userDefined) {
 						userValue = it2->second.m_value;
 						it2->second.m_userDefined = false;
@@ -87,7 +72,7 @@ void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::Decompiled
 				} else {
 					CE::Decompiler::DataValue value;
 					if (m_execCtx.getRegisterValue(reg, value)) {
-						(*symbolValueMap)[symbolHash] = { value >> storage.getOffset(), false };
+						stackFrame->m_symbolValueMap[symbolHash] = { value >> storage.getOffset(), false };
 					}
 				}
 			}
@@ -111,19 +96,19 @@ void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::Decompiled
 					} else {
 						CE::Decompiler::DataValue value;
 						if (m_memCtx.getValue(baseAddr + memOffset, value)) {
-							(*symbolValueMap)[symbolHash] = { value, false };
+							stackFrame->m_symbolValueMap[symbolHash] = { value, false };
 						}
 					}
 				}
 			} else {
 				// memVar
 				if (userDefined) {
-					if(const auto outputVarnode = m_lastExecutedInstr->m_output) {
+					if(const auto outputVarnode = stackFrame->m_lastExecutedInstr->m_output) {
 						m_execCtx.setValue(outputVarnode, userValue);
 					}
 				}
 				else {
-					(*symbolValueMap)[symbolHash] = { m_lastExecutedInstrValue, false };
+					stackFrame->m_symbolValueMap[symbolHash] = { stackFrame->m_lastExecutedInstrValue, false };
 				}
 			}
 		}
@@ -147,6 +132,75 @@ void GUI::PCodeEmulator::renderControl() {
 	}
 	if (isWorking()) {
 		Show(m_valueViewerWin);
+	}
+}
+
+bool GUI::PCodeEmulator::defineCurPCodeInstruction() {
+	m_curInstr = m_imageDec->getInstrPool()->getPCodeInstructionAt(m_offset);
+	if (m_curInstr) {
+		m_curPCodeBlock = m_imageDec->getPCodeGraph()->getBlockAtOffset(m_offset);
+	}
+	else {
+		m_curPCodeBlock = nullptr;
+		m_curBlockTopNode = nullptr;
+		m_curDecGraph = nullptr;
+	}
+
+	if (m_locationHandler.isInit()) {
+		const auto newAddr = m_imageDec->getImage()->getAddress() + m_offset.getByteOffset();
+		const auto delta = std::abs(static_cast<int64_t>(m_curAddr) - static_cast<int64_t>(newAddr));
+		m_curAddr = newAddr;
+		m_locationHandler(delta);
+
+		// dec. graph
+		if (m_curInstr && m_curDecGraph) {
+			m_curBlockTopNode = m_curDecGraph->findBlockTopNodeAtOffset(m_offset);
+			m_relStackPointerValue = m_curDecGraph->getStackPointerValueAtOffset(m_offset - 1);
+
+			// update symbol values
+			const auto stackFrame = getCurStackFrameInfo();
+			if (stackFrame->m_lastExecutedInstr) {
+				const auto instrOffset = stackFrame->m_lastExecutedInstr->getOffset();
+				// after the last executed instruction
+				updateSymbolValuesByDecGraph(m_curDecGraph, instrOffset, true);
+			}
+			// before the current instruction
+			updateSymbolValuesByDecGraph(m_curDecGraph, m_offset, false);
+		}
+	}
+
+	if (!m_curInstr) {
+		// there may not be PCode instruction in real debugging
+		m_isStopped = true;
+		return false;
+	}
+	return true;
+}
+
+void GUI::PCodeEmulator::stepNextPCodeInstr() {
+	// execute the current instruction
+	m_vm.execute(m_curInstr);
+
+	// stack frame
+	if (m_curDecGraph) {
+		m_relStackPointerValue = m_curDecGraph->getStackPointerValueAtOffset(m_curInstr->getOffset());
+		const auto stackFrameInfo = getCurStackFrameInfo();
+		if (m_curInstr->m_id == CE::Decompiler::InstructionId::RETURN) {
+			m_stackFrameInfo.erase(getCurrentStackFrame());
+		}
+		stackFrameInfo->m_lastExecutedInstr = m_curInstr;
+		stackFrameInfo->m_lastExecutedInstrValue = m_vm.m_result;
+	}
+
+	// go to the next instruction
+	defineNextInstrOffset();
+	if (!isWorking())
+		return;
+	if (isNewOrigInstruction()) {
+		sync();
+	}
+	else {
+		defineCurPCodeInstruction();
 	}
 }
 

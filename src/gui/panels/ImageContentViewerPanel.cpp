@@ -521,7 +521,7 @@ void GUI::ImageContentViewerPanel::decompile(CE::Decompiler::FunctionPCodeGraph*
 			m_decompiledCodeViewerWindow = panel->createStdWindow();
 
 			if (const auto emulator = m_projectPanel->getEmulator()) {
-				emulator->updateByDecGraph(decCodeGraph);
+				emulator->m_curDecGraph = decCodeGraph;
 			}
 		}
 	}
@@ -542,7 +542,7 @@ void GUI::ImageContentViewerPanel::renderMenuBar() {
 			m_popupModalWindow->open();
 		}
 
-		if (const auto codeSectionViewer = dynamic_cast<CodeSectionViewer*>(m_imageSectionViewer)) {
+		if (codeSectionViewer) {
 			if(!codeSectionViewer->m_selectedRows.empty()) {
 				if (ImGui::MenuItem("Go To Selected Row")) {
 					try {
@@ -550,6 +550,16 @@ void GUI::ImageContentViewerPanel::renderMenuBar() {
 						codeSectionViewer->goToOffset(row.m_byteOffset);
 					}
 					catch (WarningException&) {}
+				}
+			}
+			if (const auto emulator = m_projectPanel->getEmulator()) {
+				if (emulator->m_imageDec == m_imageDec) {
+					if (ImGui::MenuItem("Go To Debug Row")) {
+						try {
+							codeSectionViewer->goToOffset(emulator->m_offset.getByteOffset());
+						}
+						catch (WarningException&) {}
+					}
 				}
 			}
 		}

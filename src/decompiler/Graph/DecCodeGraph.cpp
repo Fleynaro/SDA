@@ -125,7 +125,7 @@ std::map<CE::ComplexOffset, int>& DecompiledCodeGraph::getStackPointerValues() {
 int DecompiledCodeGraph::getStackPointerValueAtOffset(ComplexOffset offset) {
 	if (m_stackPointerValues.empty())
 		return 0;
-	const auto it = std::prev(m_stackPointerValues.lower_bound(offset));
+	const auto it = std::prev(m_stackPointerValues.upper_bound(offset));
 	if (it == m_stackPointerValues.end())
 		return 0;
 	return it->second;

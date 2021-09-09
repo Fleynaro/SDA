@@ -711,15 +711,20 @@ namespace GUI
 		CE::Decompiler::PCode::Instruction* m_curInstr = nullptr;
 		CE::Decompiler::PCodeBlock* m_curPCodeBlock = nullptr;
 		CE::Decompiler::DecBlock::BlockTopNode* m_curBlockTopNode = nullptr;
+		CE::Decompiler::DecompiledCodeGraph* m_curDecGraph = nullptr;
 		
 		// contexts
 		bool m_showContexts = false;
 		
 		// for value viewer
-		std::map<std::uintptr_t, SymbolValueMap> m_symbolValueMaps;
+		struct StackFrameInfo
+		{
+			SymbolValueMap m_symbolValueMap;
+			CE::Decompiler::PCode::Instruction* m_lastExecutedInstr = nullptr;
+			CE::Decompiler::DataValue m_lastExecutedInstrValue = 0;
+		};
+		std::map<std::uintptr_t, StackFrameInfo> m_stackFrameInfo;
 		int m_relStackPointerValue = 0;
-		CE::Decompiler::PCode::Instruction* m_lastExecutedInstr = nullptr;
-		CE::Decompiler::DataValue m_lastExecutedInstrValue = 0;
 		PopupBuiltinWindow* m_valueViewerWin = nullptr;
 		
 		PCodeEmulator(CE::AddressSpace* addressSpace, CE::ImageDecorator* imageDec, CE::ComplexOffset startOffset)
@@ -769,8 +774,6 @@ namespace GUI
 			return true;
 		}
 
-		void updateByDecGraph(CE::Decompiler::DecompiledCodeGraph* decGraph);
-
 		void updateSymbolValuesByDecGraph(CE::Decompiler::DecompiledCodeGraph* decGraph, CE::ComplexOffset offset,
 		                                  bool after);
 
@@ -780,7 +783,7 @@ namespace GUI
 				return;
 			
 			delete m_valueViewerWin;
-			const auto panel = new ValueViewerPanel(name, location, dataType, getSymbolValueMap(), &m_execCtx, &m_memCtx);
+			const auto panel = new ValueViewerPanel(name, location, dataType, &getCurStackFrameInfo()->m_symbolValueMap, &m_execCtx, &m_memCtx);
 			if (m_curPCodeBlock) {
 				panel->m_takeValueFromRegister = m_offset == m_curPCodeBlock->m_funcPCodeGraph->getStartBlock()->getMinOffset();
 			}
@@ -850,49 +853,9 @@ namespace GUI
 			}
 		}
 
-		bool defineCurPCodeInstruction() {
-			m_curInstr = m_imageDec->getInstrPool()->getPCodeInstructionAt(m_offset);
-			if (m_curInstr) {
-				m_curPCodeBlock = m_imageDec->getPCodeGraph()->getBlockAtOffset(m_offset);
-			}
-			else {
-				m_curPCodeBlock = nullptr;
-				m_curBlockTopNode = nullptr;
-			}
+		bool defineCurPCodeInstruction();
 
-			if (m_locationHandler.isInit()) {
-				const auto newAddr = m_imageDec->getImage()->getAddress() + m_offset.getByteOffset();
-				const auto delta = std::abs(static_cast<int64_t>(m_curAddr) - static_cast<int64_t>(newAddr));
-				m_curAddr = newAddr;
-				m_locationHandler(delta);
-			}
-
-			if (!m_curInstr) {
-				// there may not be PCode instruction in real debugging
-				m_isStopped = true;
-				return false;
-			}
-			return true;
-		}
-
-		void stepNextPCodeInstr() {
-			m_vm.execute(m_curInstr);
-			if (m_curInstr->m_id == CE::Decompiler::InstructionId::RETURN) {
-				getSymbolValueMap()->clear();
-			}
-			m_lastExecutedInstr = m_curInstr;
-			m_lastExecutedInstrValue = m_vm.m_result;
-			
-			defineNextInstrOffset();
-			if (!isWorking())
-				return;
-			if (isNewOrigInstruction()) {
-				sync();
-			}
-			else {
-				defineCurPCodeInstruction();
-			}
-		}
+		void stepNextPCodeInstr();
 
 		void stepNextOrigInstr() {
 			do {
@@ -937,9 +900,9 @@ namespace GUI
 			return m_offset.getOrderId() == 0;
 		}
 
-		SymbolValueMap* getSymbolValueMap() {
+		StackFrameInfo* getCurStackFrameInfo() {
 			const auto curStackFrame = getCurrentStackFrame();
-			return &m_symbolValueMaps[curStackFrame];
+			return &m_stackFrameInfo[curStackFrame];
 		}
 
 		std::uintptr_t getCurrentStackFrame() const {
@@ -969,9 +932,9 @@ namespace GUI
 							baseAddr -= m_offset.getByteOffset();
 						}
 					} else {
-						const auto symbolValueMap = getSymbolValueMap();
-						const auto it = symbolValueMap->find(location.m_symbol->getHash());
-						if (it == symbolValueMap->end())
+						const auto stackFrameInfo = getCurStackFrameInfo();
+						const auto it = stackFrameInfo->m_symbolValueMap.find(location.m_symbol->getHash());
+						if (it == stackFrameInfo->m_symbolValueMap.end())
 							return false;
 						baseAddr = it->second.m_value;
 					}
@@ -1016,6 +979,10 @@ namespace GUI
 			}
 
 			void newOrigInstructionExecuted() {
+				if (!m_isSyncing) {
+					m_stackFrameInfo.clear();
+				}
+				
 				m_execCtx.m_nextInstrAddr = 0;
 				syncContext();
 
@@ -1030,8 +997,6 @@ namespace GUI
 							else stepOver();
 						}
 					}
-				} else {
-					m_symbolValueMaps.clear();
 				}
 			}
 

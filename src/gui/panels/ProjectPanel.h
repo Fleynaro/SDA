@@ -140,7 +140,7 @@ namespace GUI
 				if(isNewFuncGraph) {
 					panel->decompile(m_prevFuncPCodeGraph);
 				}
-				emulator->updateByDecGraph(panel->m_curDecGraph);
+				emulator->m_curDecGraph = panel->m_curDecGraph;
 			}
 		}
 
