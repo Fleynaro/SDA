@@ -257,8 +257,10 @@ namespace GUI
 
 			// todo: array
 
+			// get value
 			CE::Decompiler::DataValue value;
-			const auto hasValue = getValue(location, value);
+			auto isTakenFromRegister = false; // mark value as can-be-invalid
+			const auto hasValue = getValue(location, value, isTakenFromRegister);
 			ImGui::TableNextRow();
 
 			// +
@@ -291,18 +293,19 @@ namespace GUI
 			// value
 			ImGui::TableNextColumn();
 			if (hasValue) {
+				const auto color = isTakenFromRegister ? 0xe6d8c3FF : 0xffffffFF;
 				if(isPointer) {
 					const auto addrStr = "0x" + Helper::String::NumberToHex(value);
-					Text::Text("-> " + addrStr).show();
+					Text::ColoredText("-> " + addrStr, color).show();
 				}
 				else {
 					const auto valueStr = ValueToStr(value, dataType->getType(), m_hexView);
-					Text::Text(valueStr).show();
+					Text::ColoredText(valueStr, color).show();
 					renderEditor(valueStr, location, dataType);
 				}
 			}
 			else {
-				Text::Text("cannot read").show();
+				Text::ColoredText("cannot read", 0xd6b0b0FF).show();
 				if (!isPointer) {
 					renderEditor("0", location, dataType);
 				}
@@ -331,16 +334,24 @@ namespace GUI
 			}
 		}
 		
-		bool getValue(const Location& location, CE::Decompiler::DataValue& value) const {
+		bool getValue(const Location& location, CE::Decompiler::DataValue& value, bool& isTakenFromRegister) const {
 			if (location.m_isSymbol) {
-				const auto regSymbol = dynamic_cast<CE::Decompiler::Symbol::RegisterVariable*>(location.m_symbol);
-				if (regSymbol && (m_takeValueFromRegister || regSymbol->m_register.isPointer())) {
-					// rip/rsp
-					return m_execCtx->getRegisterValue(regSymbol->m_register, value);
+				// from register
+				CE::Decompiler::Register reg;
+				bool hasRegValue = false;
+				if(GetRegister(location.m_symbol, reg)) {
+					hasRegValue = m_execCtx->getRegisterValue(reg, value);
+					if (m_takeValueFromRegister || reg.isPointer()) // rip/rsp
+						return hasRegValue;
 				}
+				
+				// from symbol value map
 				const auto it = m_symbolValueMap->find(location.m_symbol->getHash());
-				if (it == m_symbolValueMap->end())
-					return false;
+				if (it == m_symbolValueMap->end()) {
+					// if we cannot take value from symbol value map then take from register right away but this value can be invalid (orange color)
+					isTakenFromRegister = true;
+					return hasRegValue;
+				}
 				value = it->second.m_value;
 				return true;
 			}
@@ -349,9 +360,10 @@ namespace GUI
 
 		void setValue(const Location& location, CE::Decompiler::DataValue value) const {
 			if (location.m_isSymbol) {
-				if (const auto regSymbol = dynamic_cast<CE::Decompiler::Symbol::RegisterVariable*>(location.m_symbol)) {
-					if (m_takeValueFromRegister || regSymbol->m_register.isPointer()) {
-						m_execCtx->setRegisterValue(regSymbol->m_register, value);
+				CE::Decompiler::Register reg;
+				if (GetRegister(location.m_symbol, reg)) {
+					if (m_takeValueFromRegister || reg.isPointer()) {
+						m_execCtx->setRegisterValue(reg, value);
 						(*m_symbolValueMap)[location.m_symbol->getHash()] = { value, false };
 					}
 					return;
@@ -365,6 +377,22 @@ namespace GUI
 			else {
 				m_memCtx->setValue(location.m_address, value);
 			}
+		}
+
+		static bool GetRegister(CE::Decompiler::Symbol::Symbol* symbol, CE::Decompiler::Register& reg) {
+			if(const auto regSymbol = dynamic_cast<CE::Decompiler::Symbol::RegisterVariable*>(symbol)) {
+				reg = regSymbol->m_register;
+				return true;
+			}
+			if (const auto localSymbol = dynamic_cast<CE::Decompiler::Symbol::LocalVariable*>(symbol)) {
+				reg = localSymbol->m_register;
+				return true;
+			}
+			if (const auto funcSymbol = dynamic_cast<CE::Decompiler::Symbol::FunctionResultVar*>(symbol)) {
+				reg = funcSymbol->m_register;
+				return true;
+			}
+			return false;
 		}
 		
 		static std::string ValueToStr(uint64_t value, CE::DataType::IType* dataType, bool hexView) {
