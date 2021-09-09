@@ -42,6 +42,9 @@ generateNode(CE::Decompiler::INode* node, bool& hasGroup, MultiLineGroup::Group&
 					CE::DataTypePtr dataType;
 					if (const auto sdaNode = dynamic_cast<CE::Decompiler::ISdaNode*>(node)) {
 						if (const auto sdaSymbolLeaf = dynamic_cast<CE::Decompiler::SdaSymbolLeaf*>(node)) {
+							// don't show function address because it's useless
+							if (dynamic_cast<CE::Symbol::FunctionSymbol*>(sdaSymbolLeaf->getSdaSymbol()))
+								return;
 							name = sdaSymbolLeaf->getSdaSymbol()->getName();
 							dataType = sdaSymbolLeaf->getSdaSymbol()->getDataType();
 						}

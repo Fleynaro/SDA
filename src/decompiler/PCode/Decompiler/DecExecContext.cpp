@@ -130,7 +130,7 @@ void RegisterExecContext::join(RegisterExecContext* ctx) {
 				{
 					// new register
 					auto& sampleReg = regs1.begin()->m_register;
-					auto newRegister = Register(sampleReg.getGenericId(), sampleReg.getIndex(), resultMask, sampleReg.getType());
+					auto newRegister = Register(sampleReg.getId(), resultMask, sampleReg.getType());
 					// using states
 					auto hasFullyUsed = false;
 					auto hasPartlyUsed = false;

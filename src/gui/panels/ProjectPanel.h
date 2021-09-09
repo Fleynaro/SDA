@@ -112,9 +112,11 @@ namespace GUI
 				return;
 
 			auto isNewLocation = delta > 100;
+			auto isNewFuncGraph = false;
 			if(emulator->m_curPCodeBlock) {
 				const auto newFuncGraph = emulator->m_curPCodeBlock->m_funcPCodeGraph;
-				isNewLocation |= m_prevFuncPCodeGraph != newFuncGraph;
+				isNewFuncGraph = m_prevFuncPCodeGraph != newFuncGraph;
+				isNewLocation |= isNewFuncGraph;
 				m_prevFuncPCodeGraph = newFuncGraph;
 			}
 			if (isNewLocation) {
@@ -132,10 +134,12 @@ namespace GUI
 				try {
 					panel->goToOffset(emulator->m_offset.getByteOffset());
 				} catch(WarningException&) {}
-				return;
 			}
 
 			if (panel->m_curDecGraph) {
+				if(isNewFuncGraph) {
+					panel->decompile(m_prevFuncPCodeGraph);
+				}
 				emulator->updateByDecGraph(panel->m_curDecGraph);
 			}
 		}

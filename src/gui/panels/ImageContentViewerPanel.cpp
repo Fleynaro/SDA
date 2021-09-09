@@ -385,8 +385,11 @@ void GUI::ImageContentViewerPanel::goToOffset(CE::Offset offset) {
 	m_projectPanel->addVisitedLocation(m_imageDec, offset);
 }
 
-void GUI::ImageContentViewerPanel::decompile(CE::Decompiler::FunctionPCodeGraph* functionPCodeGraph) {
+void GUI::ImageContentViewerPanel::decompile(CE::Decompiler::FunctionPCodeGraph* functionPCodeGraph, bool redecompile) {
 	using namespace CE::Decompiler;
+
+	if (!redecompile && functionPCodeGraph == m_curDecGraph->getFuncGraph())
+		return;
 
 	RegisterFactoryX86 registerFactoryX86;
 	const auto funcOffset = functionPCodeGraph->getStartBlock()->getMinOffset().getByteOffset();
@@ -742,7 +745,7 @@ void GUI::ImageContentViewerPanel::processSectionViewerEvents() {
 			
 			// select row that new function graph is on
 			if(codeSectionViewer->m_pcodeGraphChanged) {
-				decompile(codeSectionViewer->m_selectedFuncPCodeGraph);
+				decompile(codeSectionViewer->m_selectedFuncPCodeGraph, false);
 				return;
 			}
 			// select block list by instruction selection

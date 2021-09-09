@@ -80,7 +80,7 @@ void GUI::PCodeEmulator::updateSymbolValuesByDecGraph(CE::Decompiler::Decompiled
 			if(storage.getType() == CE::Decompiler::Storage::STORAGE_REGISTER) {
 				// param registers (rcx, rdx)
 				const auto regMask = CE::Decompiler::BitMask64(symbol->getSize(), static_cast<int>(storage.getOffset()));
-				const auto reg = CE::Decompiler::Register(storage.getRegisterId(), regMask);
+				const auto reg = CE::Decompiler::Register(storage.getRegId(), regMask);
 
 				if (userDefined) {
 					m_execCtx.setRegisterValue(reg, userValue);

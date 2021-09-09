@@ -190,7 +190,7 @@ json DataTypeMapper::createExtraJson(UserDefinedType* userDefType) {
 			json json_storage;
 			json_storage["idx"] = idx;
 			json_storage["type"] = storage.getType();
-			json_storage["reg_id"] = storage.getRegisterId();
+			json_storage["reg_id"] = storage.getRegGenericId();
 			json_storage["offset"] = storage.getOffset();
 			json_storages.push_back(json_storage);
 		}

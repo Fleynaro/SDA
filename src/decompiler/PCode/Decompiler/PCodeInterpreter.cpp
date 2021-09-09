@@ -338,7 +338,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 		const auto retInfo = funcCallInfo.getReturnInfo();
 		Register dstRegister;
 		if (retInfo.m_storage.getType() != Storage::STORAGE_NONE) {
-			dstRegister = m_decompiler->getRegisterFactory()->createRegister(retInfo.m_storage.getRegisterId(), retInfo.m_size, retInfo.m_storage.getOffset());
+			dstRegister = m_decompiler->getRegisterFactory()->createRegister(retInfo.m_storage.getRegGenericId(), retInfo.m_size, retInfo.m_storage.getOffset());
 		}
 
 		auto funcResultVar = new Symbol::FunctionResultVar(m_instr, dstRegister.getSize(), dstRegister);
@@ -360,7 +360,7 @@ void InstructionInterpreter::execute(Instruction* instr) {
 		if (const auto endBlock = dynamic_cast<EndDecBlock*>(m_block)) {
 			const auto& retInfo = m_decompiler->m_returnInfo;
 			if (retInfo.m_storage.getType() != Storage::STORAGE_NONE) {
-				const auto dstRegister = m_decompiler->getRegisterFactory()->createRegister(retInfo.m_storage.getRegisterId(), retInfo.m_size, retInfo.m_storage.getOffset());
+				const auto dstRegister = m_decompiler->getRegisterFactory()->createRegister(retInfo.m_storage.getRegGenericId(), retInfo.m_size, retInfo.m_storage.getOffset());
 				const auto returnExpr = m_ctx->m_registerExecCtx.requestRegister(dstRegister, nullptr);
 				endBlock->setReturnNode(returnExpr);
 			}
@@ -375,9 +375,9 @@ ExprTree::INode* InstructionInterpreter::buildParameterInfoExpr(ParameterInfo& p
 
 	// memory
 	if (storage.getType() == Storage::STORAGE_STACK || storage.getType() == Storage::STORAGE_GLOBAL) {
-		const auto fixedStorage = Storage(storage.getType(), storage.getRegisterId(), storage.getOffset() - 0x8);
+		const auto fixedStorage = Storage(storage.getType(), storage.getRegGenericId(), storage.getOffset() - 0x8);
 		
-		const auto reg = m_decompiler->getRegisterFactory()->createRegister(fixedStorage.getRegisterId(), 0x8); // RIP or RSP (8 bytes = size of pointer)
+		const auto reg = m_decompiler->getRegisterFactory()->createRegister(fixedStorage.getRegGenericId(), 0x8); // RIP or RSP (8 bytes = size of pointer)
 		auto regSymbol = requestRegister(reg);
 		const auto offsetNumber = new ExprTree::NumberLeaf(static_cast<uint64_t>(fixedStorage.getOffset()), regSymbol->getSize());
 		const auto opAddNode = new ExprTree::OperationalNode(regSymbol, offsetNumber, ExprTree::Add);
@@ -389,7 +389,7 @@ ExprTree::INode* InstructionInterpreter::buildParameterInfoExpr(ParameterInfo& p
 	}
 
 	// register
-	const auto reg = m_decompiler->getRegisterFactory()->createRegister(storage.getRegisterId(), paramInfo.m_size, storage.getOffset());
+	const auto reg = m_decompiler->getRegisterFactory()->createRegister(storage.getRegGenericId(), paramInfo.m_size, storage.getOffset());
 	const auto regSymbol = requestRegister(reg);
 	return regSymbol;
 }

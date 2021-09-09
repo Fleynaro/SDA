@@ -176,7 +176,7 @@ namespace GUI
 				const auto& storage = paramInfo.m_storage;
 				std::string text;
 				if (storage.getType() == Storage::STORAGE_REGISTER) {
-					const auto reg = PCode::Register(storage.getRegisterId(), 0, paramInfo.m_size);
+					const auto reg = PCode::Register(storage.getRegGenericId(), 0, paramInfo.m_size);
 					text = PCode::InstructionViewGenerator::GenerateRegisterName(reg);
 				}
 				else {

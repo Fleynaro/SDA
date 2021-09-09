@@ -31,7 +31,7 @@ int FunctionCallInfo::findIndex(const Register& reg, int64_t offset) {
 	for (auto paramInfo : m_paramInfos) {
 		auto& storage = paramInfo.m_storage;
 		const auto storageRegIndex = static_cast<int>(storage.getOffset()) / 8;
-		if (storage.getType() == Storage::STORAGE_REGISTER && (reg.getGenericId() == storage.getRegisterId() && reg.getIndex() == storageRegIndex) ||
+		if (storage.getType() == Storage::STORAGE_REGISTER && (reg.getId() == storage.getRegId() && reg.getIndex() == storageRegIndex) ||
 			(offset == storage.getOffset() && (storage.getType() == Storage::STORAGE_STACK && reg.getType() == Register::Type::StackPointer ||
 				storage.getType() == Storage::STORAGE_GLOBAL && reg.getType() == Register::Type::InstructionPointer))) {
 			return paramInfo.getIndex();
@@ -40,12 +40,12 @@ int FunctionCallInfo::findIndex(const Register& reg, int64_t offset) {
 	return -1;
 }
 
-Storage::Storage(StorageType storageType, int registerId, int64_t offset)
-	: m_storageType(storageType), m_registerId(registerId), m_offset(offset)
+Storage::Storage(StorageType storageType, int regGenericId, int64_t offset)
+	: m_storageType(storageType), m_regId(regGenericId << 8), m_offset(offset)
 {}
 
 Storage::Storage(const Register& reg)
-	: Storage(STORAGE_REGISTER, reg.getId(), reg.getOffset())
+	: m_storageType(STORAGE_REGISTER), m_regId(reg.getId()), m_offset(reg.getOffset())
 {}
 
 Storage::StorageType Storage::getType() const
@@ -53,18 +53,19 @@ Storage::StorageType Storage::getType() const
 	return m_storageType;
 }
 
-int Storage::getRegisterId() const
-{
-	return m_registerId;
+int Storage::getRegId() const {
+	return m_regId;
 }
 
-int64_t Storage::getOffset() const
-{
+int Storage::getRegGenericId() const {
+	return m_regId >> 8;
+}
+
+int64_t Storage::getOffset() const {
 	return m_offset;
 }
 
-int ParameterInfo::getIndex() const
-{
+int ParameterInfo::getIndex() const {
 	return m_index;
 }
 

@@ -404,7 +404,7 @@ namespace GUI
 
 		void goToOffset(CE::Offset offset);
 
-		void decompile(CE::Decompiler::FunctionPCodeGraph* functionPCodeGraph);
+		void decompile(CE::Decompiler::FunctionPCodeGraph* functionPCodeGraph, bool redecompile = true);
 
 	private:
 		void renderPanel() override {

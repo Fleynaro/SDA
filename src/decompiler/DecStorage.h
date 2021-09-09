@@ -13,19 +13,23 @@ namespace CE::Decompiler
 			STORAGE_GLOBAL
 		};
 
-		Storage(StorageType storageType = STORAGE_NONE, int registerId = 0, int64_t offset = 0);
+		Storage(StorageType storageType = STORAGE_NONE, int regGenericId = 0, int64_t offset = 0);
 
 		Storage(const PCode::Register& reg);
 
 		StorageType getType() const;
 
-		int getRegisterId() const;
+		// generic id + index
+		int getRegId() const;
+
+		// generic id only
+		int getRegGenericId() const;
 
 		int64_t getOffset() const;
 	
 	private:
 		StorageType m_storageType;
-		int m_registerId;
+		int m_regId; // generic id + index
 		int64_t m_offset;
 	};
 
