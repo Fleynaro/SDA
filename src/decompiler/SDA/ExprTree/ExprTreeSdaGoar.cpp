@@ -176,6 +176,11 @@ DataTypePtr GoarFieldNode::getSrcDataType() {
 	return m_field->getDataType();
 }
 
+HS GoarFieldNode::getHash() {
+	return GoarNode::getHash()
+		<< m_field->getOffset();
+}
+
 ISdaNode* GoarFieldNode::cloneSdaNode(NodeCloneContext* ctx) {
 	return new GoarFieldNode(dynamic_cast<ISdaNode*>(m_base->clone()), m_field);
 }

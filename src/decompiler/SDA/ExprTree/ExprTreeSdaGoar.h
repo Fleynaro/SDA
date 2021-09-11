@@ -65,6 +65,8 @@ namespace CE::Decompiler::ExprTree
 
 		DataTypePtr getSrcDataType() override;
 
+		HS getHash() override;
+
 		ISdaNode* cloneSdaNode(NodeCloneContext* ctx) override;
 
 		StoragePath getStoragePath() override;

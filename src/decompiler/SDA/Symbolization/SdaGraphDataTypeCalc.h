@@ -27,7 +27,7 @@ namespace CE::Decompiler::Symbolization
 		//used to proceed passing
 		bool m_nextPassRequired = false;
 
-		virtual void calculateDataTypes(INode* node);
+		virtual void calculateDataTypes(INode*& node);
 
 		virtual void handleFunctionNode(SdaFunctionNode* sdaFunctionNode);
 

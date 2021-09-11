@@ -23,12 +23,14 @@ namespace CE::Decompiler
 			};
 			std::map<int64_t, Field> m_fields;
 			
+			int m_id = 0;
+			
 			// for hierarchy
 			std::list<RawStructure*> m_parentRawStructures;
 			std::list<RawStructure*> m_childRawStructures;
 
-			RawStructure(TypeManager* typeManager)
-				: AbstractType(typeManager, "RawStructure")
+			RawStructure(TypeManager* typeManager, int id)
+				: AbstractType(typeManager, "RawStructure"), m_id(id)
 			{}
 
 			void addParent(RawStructure* rawStructure) {
@@ -227,7 +229,7 @@ namespace CE::Decompiler
 				return false;
 			}
 
-			void calculateDataTypes(INode* node) override {
+			void calculateDataTypes(INode*& node) override {
 				SdaDataTypesCalculater::calculateDataTypes(node);
 
 				// only reading from memory is a trigger to define structures
@@ -444,7 +446,10 @@ namespace CE::Decompiler
 		~ImagePCodeGraphAnalyzer() {
 			delete m_globalSymbolTable;
 			delete m_funcBodySymbolTable;
-			for(const auto& [offset, rawSigOwner] : m_funcOffsetToSig) {
+			for(const auto rawStructure : m_rawStructures) {
+				delete rawStructure;
+			}
+			for (const auto& [offset, rawSigOwner] : m_funcOffsetToSig) {
 				delete rawSigOwner;
 			}
 		}
@@ -468,8 +473,39 @@ namespace CE::Decompiler
 		}
 
 		void finish(bool markAsNew) {
+			std::map<RawStructure*, DataType::IStructure*> rawStructToStruct;
+			
 			for (const auto symbol : m_allSymbols) {
 				const auto dataType = symbol->getDataType();
+
+				if (const auto rawStructure = dynamic_cast<RawStructure*>(dataType->getType())) {
+					DataType::IStructure* structure;
+
+					const auto it = rawStructToStruct.find(rawStructure);
+					if (it != rawStructToStruct.end()) {
+						structure = it->second;
+					} else {
+						std::string comment = "Parents:\n";
+						for (const auto parentStruct : rawStructure->m_parentRawStructures)
+							comment += "- struct_"+ std::to_string(parentStruct->m_id) +"\n";
+						comment += "\nChilds:\n";
+						for (const auto childStruct : rawStructure->m_childRawStructures)
+							comment += "- struct_" + std::to_string(childStruct->m_id) + "\n";
+
+						const auto typeFactory = m_project->getTypeManager()->getFactory(markAsNew);
+						const auto symFactory = m_project->getSymbolManager()->getFactory(markAsNew);
+						structure = typeFactory.createStructure("struct_" + std::to_string(rawStructure->m_id), comment);
+						for(const auto& [offset, field] : rawStructure->m_fields) {
+							const auto fieldSymbol = symFactory.createStructFieldSymbol(
+								field.m_dataType->getSize() * 0x8, field.m_dataType, "field_0x" + Helper::String::NumberToHex(field.m_offset));
+							structure->getFields().addField(static_cast<int>(field.m_offset) * 0x8, fieldSymbol);
+						}
+						rawStructToStruct[rawStructure] = structure;
+					}
+
+					symbol->setDataType(GetUnit(structure, dataType->getPointerLevels()));
+				}
+				
 				if (const auto rawSigOwner = dynamic_cast<RawSignatureOwner*>(dataType->getType())) {
 					const auto sig = rawSigOwner->m_rawSignature->m_signature;
 					symbol->setDataType(GetUnit(sig, dataType->getPointerLevels()));
@@ -760,7 +796,7 @@ namespace CE::Decompiler
 		}
 
 		RawStructure* createRawStructure() {
-			const auto rawStructOwner = new RawStructure(m_project->getTypeManager());
+			const auto rawStructOwner = new RawStructure(m_project->getTypeManager(), static_cast<int>(m_rawStructures.size()) + 1);
 			m_rawStructures.push_back(rawStructOwner);
 			return rawStructOwner;
 		}

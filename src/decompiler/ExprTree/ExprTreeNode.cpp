@@ -74,9 +74,9 @@ INode* INode::clone() {
 }
 
 void INode::iterateChildNodes(std::function<void(INode*)> func) {
-	if (auto agregator = dynamic_cast<INodeAgregator*>(this)) {
-		auto list = agregator->getNodesList();
-		for (auto node : list) {
+	if (const auto agregator = dynamic_cast<INodeAgregator*>(this)) {
+		const auto list = agregator->getNodesList();
+		for (const auto node : list) {
 			if (node) {
 				func(node);
 			}

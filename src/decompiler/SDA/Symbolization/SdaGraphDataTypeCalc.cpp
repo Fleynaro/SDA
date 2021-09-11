@@ -34,7 +34,7 @@ void SdaDataTypesCalculater::start() {
 
 void SdaDataTypesCalculater::pass_up(const std::list<DecBlock::BlockTopNode*>& topNodes) {
 	for (auto topNode : topNodes) {
-		const auto node = topNode->getNode();
+		auto node = topNode->getNode();
 		UpdateDebugInfo(node);
 		calculateDataTypes(node);
 
@@ -89,7 +89,7 @@ void SdaDataTypesCalculater::moveExplicitCastsDown(INode* node) {
 		});
 }
 
-void SdaDataTypesCalculater::calculateDataTypes(INode* node) {
+void SdaDataTypesCalculater::calculateDataTypes(INode*& node) {
 	// first iterate over all childs
 	node->iterateChildNodes([&](INode* childNode) {
 		calculateDataTypes(childNode);
@@ -218,6 +218,7 @@ void SdaDataTypesCalculater::calculateDataTypes(INode* node) {
 				linearExpr->addParentNode(unknownLocation);
 				sdaGenNode->replaceWith(unknownLocation);
 				delete sdaGenNode;
+				node = nullptr;
 
 				// should be (float*)((uint64_t)param1 + 0x10)
 				//cast(unknownLocation, sdaPointerNode->getDataType());
@@ -267,6 +268,7 @@ void SdaDataTypesCalculater::calculateDataTypes(INode* node) {
 						mappedToMemory->setAddrGetting(false); // &globalVar -> globalVar
 						sdaReadValueNode->replaceWith(mappedToMemory);
 						delete sdaReadValueNode;
+						node = nullptr;
 						return;
 					}
 				}
