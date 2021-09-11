@@ -19,7 +19,7 @@ void DecoderX86::translateCurInstruction() {
 	auto operandsCount = getFirstExplicitOperandsCount();
 
 	switch (mnemonic)
-	{
+	{	
 	case ZYDIS_MNEMONIC_CBW:
 	case ZYDIS_MNEMONIC_CWDE:
 	case ZYDIS_MNEMONIC_CDQE:
@@ -932,6 +932,13 @@ void DecoderX86::translateCurInstruction() {
 		auto varnodeRsp = CreateVarnode(ZYDIS_REGISTER_RSP, 0x8);
 		addMicroInstruction(InstructionId::LOAD, varnodeRsp, nullptr, varnodeReg);
 		addMicroInstruction(InstructionId::INT_ADD, varnodeRsp, m_instrPool->createConstantVarnode(size, 0x8), varnodeRsp);
+		break;
+	}
+
+	case ZYDIS_MNEMONIC_INT:
+	case ZYDIS_MNEMONIC_INT3: {
+		auto varnodeRip = CreateVarnode(ZYDIS_REGISTER_RIP, 0x8);
+		addMicroInstruction(InstructionId::RETURN, varnodeRip, nullptr);
 		break;
 	}
 

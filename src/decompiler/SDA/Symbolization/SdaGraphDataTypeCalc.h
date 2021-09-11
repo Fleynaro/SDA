@@ -33,7 +33,7 @@ namespace CE::Decompiler::Symbolization
 
 		virtual void handleUnknownLocation(UnknownLocation* unknownLocation);
 
-		virtual void onDataTypeCasting(DataTypePtr fromDataType, DataTypePtr toDataType);
+		virtual void onDataTypeCasting(DataTypePtr fromDataType, DataTypePtr& toDataType);
 
 		// casting {sdaNode} to {toDataType}
 		void cast(ISdaNode* sdaNode, DataTypePtr toDataType);

@@ -12,87 +12,46 @@ namespace CE::Decompiler
 {
 	class ImagePCodeGraphAnalyzer
 	{
-		// it owns raw-structure that can be changed by another during the main pass
-		class RawStructureOwner : public DataType::AbstractType
+		class RawStructure : public DataType::AbstractType
 		{
 		public:
-			class RawStructure
-			{
-			public:
-				struct Field {
-					int64_t m_offset;
-					DataTypePtr m_dataType;
-					bool m_isArray = false;
-					// todo: add stat info like "instr. offset to datatype"
-				};
-
-				std::map<int64_t, Field> m_fields;
-				std::list<RawStructureOwner*> m_owners;
-
-				// for hierarchy
-				std::list<RawStructure*> m_parentRawStructures;
-				std::list<RawStructure*> m_childRawStructures;
-
-				RawStructure(RawStructureOwner* owner)
-				{
-					m_owners.push_back(owner);
-				}
-
-				void removeFromOwner(RawStructureOwner* owner) {
-					m_owners.remove(owner);
-					if (m_owners.empty())
-						delete this;
-				}
-
-				void addParent(RawStructure* rawStructure) {
-					m_parentRawStructures.push_back(rawStructure);
-					rawStructure->m_childRawStructures.push_back(this);
-				}
-
-				bool isSpaceEmpty(int64_t bitOffset, int bitSize) {
-					if (bitOffset < 0 || bitSize <= 0)
-						return false;
-					return bitSize < getNextEmptyBitsCount(bitOffset);
-				}
-
-			private:
-				int getNextEmptyBitsCount(int64_t bitOffset) {
-					const auto it = m_fields.upper_bound(bitOffset);
-					if (it != m_fields.end()) {
-						return static_cast<int>(it->first - bitOffset);
-					}
-					return 0x1000;
-				}
+			struct Field {
+				int64_t m_offset;
+				DataTypePtr m_dataType;
+				bool m_isArray = false;
+				// todo: add stat info like "instr. offset to datatype"
 			};
+			std::map<int64_t, Field> m_fields;
+			
+			// for hierarchy
+			std::list<RawStructure*> m_parentRawStructures;
+			std::list<RawStructure*> m_childRawStructures;
 
-			RawStructure* m_rawStructure;
-
-			RawStructureOwner(TypeManager* typeManager)
+			RawStructure(TypeManager* typeManager)
 				: AbstractType(typeManager, "RawStructure")
-			{
-				m_rawStructure = new RawStructure(this);
+			{}
+
+			void addParent(RawStructure* rawStructure) {
+				m_parentRawStructures.push_back(rawStructure);
+				rawStructure->m_childRawStructures.push_back(this);
+			}
+
+			bool isSpaceEmpty(int64_t bitOffset, int bitSize) const {
+				if (bitOffset < 0 || bitSize <= 0)
+					return false;
+				return bitSize < getNextEmptyBitsCount(bitOffset);
 			}
 
 			// if there's an empty space or there's a field with the same size
 			bool canFieldBeAddedAtOffset(int64_t bitOffset, int size) const {
-				auto it = m_rawStructure->m_fields.find(bitOffset);
-				if (it != m_rawStructure->m_fields.end())
+				const auto it = m_fields.find(bitOffset);
+				if (it != m_fields.end())
 					return it->second.m_dataType->getSize() == size;
-				return m_rawStructure->isSpaceEmpty(bitOffset, size * 0x8);
+				return isSpaceEmpty(bitOffset, size * 0x8);
 			}
 
-			void addField(RawStructure::Field field) const {
-				m_rawStructure->m_fields[field.m_offset] = field;
-			}
-
-			void makeAsParent(RawStructure* rawStruct) {
-				const auto rawStruct1 = m_rawStructure;
-				const auto rawStruct2 = rawStruct;
-				
-				m_rawStructure->removeFromOwner(this);
-				m_rawStructure = new RawStructure(this);
-				rawStruct1->addParent(m_rawStructure);
-				rawStruct2->addParent(m_rawStructure);
+			void addField(const Field& field) {
+				m_fields[field.m_offset] = field;
 			}
 
 			std::string getDisplayName() override {
@@ -109,6 +68,15 @@ namespace CE::Decompiler
 
 			bool isUserDefined() override {
 				return false;
+			}
+
+		private:
+			int getNextEmptyBitsCount(int64_t bitOffset) const {
+				const auto it = m_fields.upper_bound(bitOffset);
+				if (it != m_fields.end()) {
+					return static_cast<int>(it->first - bitOffset);
+				}
+				return 0x1000;
 			}
 		};
 
@@ -269,15 +237,12 @@ namespace CE::Decompiler
 					// for {[rcx] + [rdx] * 0x5 + 0x10} the {sdaPointerNode} is [rcx] with the size of 8, no [rdx] * 0x5 (ambigious in the case of [rcx] + [rdx])
 					ISdaNode* sdaPointerNode = nullptr;
 					if (const auto sdaGenNode = dynamic_cast<SdaGenericNode*>(addrSdaNode)) {
-						if (const auto linearExpr = dynamic_cast<LinearExpr*>(sdaGenNode)) {
+						if (const auto linearExpr = dynamic_cast<LinearExpr*>(sdaGenNode->getNode())) {
 							for (const auto term : linearExpr->getTerms()) {
 								if (const auto sdaTermNode = dynamic_cast<ISdaNode*>(term)) {
 									if (sdaTermNode->getSize() == 0x8 && !IsArrayIndexNode(sdaTermNode)) {
-										if (!sdaPointerNode) {
-											sdaPointerNode = nullptr;
-											break;
-										}
 										sdaPointerNode = sdaTermNode;
+										break;
 									}
 								}
 							}
@@ -291,8 +256,8 @@ namespace CE::Decompiler
 
 					// create a raw structure
 					if (sdaPointerNode) {
-						const auto rawStructOwner = m_imagePCodeGraphAnalyzer->createRawStructureOwner();
-						sdaPointerNode->setDataType(GetUnit(rawStructOwner, "[1]"));
+						const auto rawStructure = m_imagePCodeGraphAnalyzer->createRawStructure();
+						sdaPointerNode->setDataType(GetUnit(rawStructure, "[1]"));
 						m_nextPassRequired = true;
 					}
 				}
@@ -327,22 +292,22 @@ namespace CE::Decompiler
 					{
 						const auto baseSdaNode = unknownLoc->getBaseSdaNode();
 						// if it is raw structure
-						if (const auto rawStructOwner = dynamic_cast<RawStructureOwner*>(baseSdaNode->getSrcDataType()->getType())) {
+						if (const auto rawStructure = dynamic_cast<RawStructure*>(baseSdaNode->getSrcDataType()->getType())) {
 							const auto fieldOffset = unknownLoc->getConstTermValue();
 							const auto newFieldDataType = sdaReadValueNode->getDataType();
 
-							if (!rawStructOwner->canFieldBeAddedAtOffset(fieldOffset, newFieldDataType->getSize())) {
+							if (!rawStructure->canFieldBeAddedAtOffset(fieldOffset, newFieldDataType->getSize())) {
 								// warning here (dynamic_cast required, can be only resolved by user)
 							}
 
-							const auto it = rawStructOwner->m_rawStructure->m_fields.find(fieldOffset);
-							if (it == rawStructOwner->m_rawStructure->m_fields.end() || it->second.m_dataType->getPriority() < newFieldDataType->getPriority()) {
+							const auto it = rawStructure->m_fields.find(fieldOffset);
+							if (it == rawStructure->m_fields.end() || it->second.m_dataType->getPriority() < newFieldDataType->getPriority()) {
 								// set data type to the field from something
-								RawStructureOwner::RawStructure::Field field;
+								RawStructure::Field field;
 								field.m_offset = fieldOffset;
 								field.m_dataType = newFieldDataType;
 								field.m_isArray = unknownLoc->getArrTerms().size() > 0; // if it is an array
-								rawStructOwner->addField(field);
+								rawStructure->addField(field);
 							}
 							else {
 								// set data type to something from the field
@@ -353,7 +318,7 @@ namespace CE::Decompiler
 				}
 			}
 
-			void onDataTypeCasting(DataTypePtr fromDataType, DataTypePtr toDataType) override {
+			void onDataTypeCasting(DataTypePtr fromDataType, DataTypePtr& toDataType) override {
 				const auto dataType1 = fromDataType->getType();
 				const auto dataType2 = toDataType->getType();
 
@@ -363,13 +328,16 @@ namespace CE::Decompiler
 					}
 				}
 
-				if (const auto rawStructOwner1 = dynamic_cast<RawStructureOwner*>(dataType1)) {
-					if (const auto rawStructOwner2 = dynamic_cast<RawStructureOwner*>(dataType2)) {
+				if (const auto rawStructure1 = dynamic_cast<RawStructure*>(dataType1)) {
+					if (const auto rawStructure2 = dynamic_cast<RawStructure*>(dataType2)) {
 						if (m_excludeFunctionNodes) {
-							rawStructOwner2->makeAsParent(rawStructOwner1->m_rawStructure);
+							const auto rawStructure = m_imagePCodeGraphAnalyzer->createRawStructure();
+							rawStructure1->addParent(rawStructure);
+							rawStructure2->addParent(rawStructure);
+							toDataType = GetUnit(rawStructure, "[1]");
 						} else {
 							// for function parameters (where type of a symbol param is more abstract than type of a param node)
-							rawStructOwner2->m_rawStructure->addParent(rawStructOwner1->m_rawStructure);
+							rawStructure2->addParent(rawStructure1);
 						}
 					}
 				}
@@ -457,7 +425,7 @@ namespace CE::Decompiler
 		ImageDecorator* m_imageDec;
 		Project* m_project;
 		PCodeGraphReferenceSearch* m_graphReferenceSearch;
-		std::list<RawStructureOwner*> m_rawStructOwners;
+		std::list<RawStructure*> m_rawStructures;
 		std::map<int64_t, RawSignatureOwner*> m_funcOffsetToSig;
 		std::map<int64_t, RawSignatureOwner*> m_virtFuncCallOffsetToSig;
 		CE::Symbol::GlobalSymbolTable* m_globalSymbolTable;
@@ -495,6 +463,7 @@ namespace CE::Decompiler
 					visitedGraphs.clear();
 					doMainPass(headFuncGraph, visitedGraphs);
 				}
+				break;
 			} while (m_nextPassRequired);
 		}
 
@@ -525,6 +494,7 @@ namespace CE::Decompiler
 			for (const auto& [funcOffset , rawSigOwner] : m_funcOffsetToSig) {
 				auto& retValStatInfo = rawSigOwner->m_rawSignature->m_retValStatInfo;
 
+				const auto baseScore = retValStatInfo.m_score;
 				// need to define if the return value from a function call requested somewhere
 				if (retValStatInfo.m_totalMarkesCount != 0) {
 					retValStatInfo.m_score += retValStatInfo.m_meetMarkesCount * 5 / retValStatInfo.m_totalMarkesCount;
@@ -537,6 +507,15 @@ namespace CE::Decompiler
 						retValStatInfo.m_register.getSize(), false, retValStatInfo.m_register.isVector());
 					rawSigOwner->setReturnType(retType);
 				}
+
+				// add comment
+				std::string comment = rawSigOwner->m_rawSignature->m_signature->getComment();
+				comment += "Return value statistic:\n" \
+					"register: "+ InstructionViewGenerator::GenerateRegisterName(retValStatInfo.m_register) +"\n" \
+					"total score: "+ std::to_string(retValStatInfo.m_score) +" (base score: "+ std::to_string(baseScore) +")\n" \
+					"meetMarkesCount/totalMarkesCount: "+ std::to_string(retValStatInfo.m_meetMarkesCount) +"/"+ std::to_string(retValStatInfo.m_totalMarkesCount) +"\n" \
+					"\n";
+				rawSigOwner->m_rawSignature->m_signature->setComment(comment);
 
 				retValStatInfo.m_score = 0;
 			}
@@ -653,7 +632,7 @@ namespace CE::Decompiler
 
 			// data type calculating
 			StructureFinder structureFinder(sdaCodeGraph, this, true);
-			//structureFinder.start();
+			structureFinder.start();
 			// including function params
 			StructureFinder structureFinder2(sdaCodeGraph, this, false);
 			//structureFinder2.start();
@@ -758,13 +737,13 @@ namespace CE::Decompiler
 		// create vtables that have been found during reference search
 		void createVTables() {
 			for (const auto& vtable : m_graphReferenceSearch->m_vtables) {
-				const auto rawStructOwner = createRawStructureOwner();
+				const auto rawStructOwner = createRawStructure();
 				// fill the structure with virtual functions
 				int offset = 0;
 				for (auto funcOffset : vtable.m_funcOffsets) {
 					auto it = m_funcOffsetToSig.find(funcOffset);
 					if (it != m_funcOffsetToSig.end()) {
-						RawStructureOwner::RawStructure::Field field;
+						RawStructure::Field field;
 						field.m_offset = offset;
 						field.m_dataType = GetUnit(it->second->m_rawSignature->m_signature, "[1]");
 						rawStructOwner->addField(field);
@@ -776,12 +755,13 @@ namespace CE::Decompiler
 				const auto vtableGlobalVar = m_project->getSymbolManager()->getFactory(false)
 					.createGlobalVarSymbol(vtable.m_offset, GetUnit(rawStructOwner), "vtable_0x" + Helper::String::NumberToHex(vtable.m_offset));
 				m_globalSymbolTable->addSymbol(vtableGlobalVar, vtable.m_offset); // todo: intersecting might be
+				m_allSymbols.push_back(vtableGlobalVar);
 			}
 		}
 
-		RawStructureOwner* createRawStructureOwner() {
-			const auto rawStructOwner = new RawStructureOwner(m_project->getTypeManager());
-			m_rawStructOwners.push_back(rawStructOwner);
+		RawStructure* createRawStructure() {
+			const auto rawStructOwner = new RawStructure(m_project->getTypeManager());
+			m_rawStructures.push_back(rawStructOwner);
 			return rawStructOwner;
 		}
 	};

@@ -11,15 +11,13 @@ namespace GUI
 {
 	class UserDataTypeEditorPanel : public AbstractPanel
 	{
-		CE::DataType::IUserDefinedType* m_dataType;
+		CE::DataType::IUserDefinedType* m_dataType = nullptr;
 		Input::TextInput m_nameInput;
 		PopupBuiltinWindow* m_builtinWin = nullptr;
 	public:
-		UserDataTypeEditorPanel(CE::DataType::IUserDefinedType* dataType, const std::string& name)
-			: AbstractPanel(name), m_dataType(dataType)
-		{
-			m_nameInput.setInputText(m_dataType->getName());
-		}
+		UserDataTypeEditorPanel(const std::string& name)
+			: AbstractPanel(name)
+		{}
 
 		void createWindow(AbstractPanel* panel) {
 			delete m_builtinWin;
@@ -29,6 +27,11 @@ namespace GUI
 		}
 	
 	protected:
+		void setDataType(CE::DataType::IUserDefinedType* dataType) {
+			m_dataType = dataType;
+			m_nameInput.setInputText(m_dataType->getName());
+		}
+		
 		virtual void renderExtra() = 0;
 
 		virtual void save() = 0;
@@ -54,6 +57,16 @@ namespace GUI
 				m_window->close();
 			}
 
+			const std::string comment = m_dataType->getComment();
+			if (!comment.empty()) {
+				NewLine();
+				if (ImGui::CollapsingHeader("Comment")) {
+					ImGui::BeginChild("comment", ImVec2(0, 150), true);
+					Text::Text(comment).show();
+					ImGui::EndChild();
+				}
+			}
+
 			Show(m_builtinWin);
 		}
 	};
@@ -65,9 +78,10 @@ namespace GUI
 		PopupBuiltinWindow* m_builtinWin = nullptr;
 	public:
 		TypedefEditorPanel(CE::DataType::Typedef* dataType)
-			: UserDataTypeEditorPanel(dataType, "Typedef Editor"), m_dataType(dataType)
+			: UserDataTypeEditorPanel("Typedef Editor"), m_dataType(dataType)
 		{
 			m_refDataType = dataType->getRefType();
+			setDataType(dataType);
 		}
 
 	protected:
@@ -141,9 +155,10 @@ namespace GUI
 		FieldTableListView* m_tableListView;
 	public:
 		EnumEditorPanel(CE::DataType::Enum* dataType)
-			: UserDataTypeEditorPanel(dataType, "Enum Editor"), m_dataType(dataType), m_listModel(&m_fields), m_fields(m_dataType->getFields())
+			: UserDataTypeEditorPanel("Enum Editor"), m_dataType(dataType), m_listModel(&m_fields), m_fields(m_dataType->getFields())
 		{
 			m_tableListView = new FieldTableListView(this);
+			setDataType(dataType);
 		}
 
 		~EnumEditorPanel() {
@@ -221,12 +236,13 @@ namespace GUI
 		// todo: slow work. solution is to use clipper
 		
 		StructureEditorPanel(CE::DataType::IStructure* dataType)
-			: UserDataTypeEditorPanel(dataType, "Structure Editor"),
+			: UserDataTypeEditorPanel("Structure Editor"),
 		m_dataType(dataType), m_clonedDataType(dataType->clone()), m_listModel(&m_clonedDataType->getFields())
 		{
 			m_sizeInput.setInputValue(dataType->getSize());
 			m_tableListView = new FieldTableListView(this);
 			m_hexView = Input::BoolInput("Hex view");
+			setDataType(m_clonedDataType);
 		}
 
 		~StructureEditorPanel() {
@@ -395,10 +411,11 @@ namespace GUI
 		ParamTableListView* m_tableListView;
 	public:
 		FuncSigEditorPanel(CE::DataType::IFunctionSignature* dataType)
-			: UserDataTypeEditorPanel(dataType, "Function Signature Editor"),
-		m_dataType(dataType), m_clonedDataType(dataType->clone()), m_listModel(&m_clonedDataType->getParameters())
+			: UserDataTypeEditorPanel("Function Signature Editor"),
+			m_dataType(dataType), m_clonedDataType(dataType->clone()), m_listModel(&m_clonedDataType->getParameters())
 		{
 			m_tableListView = new ParamTableListView(this);
+			setDataType(m_clonedDataType);
 		}
 
 		~FuncSigEditorPanel() {

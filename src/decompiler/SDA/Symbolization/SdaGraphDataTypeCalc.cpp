@@ -95,7 +95,7 @@ void SdaDataTypesCalculater::calculateDataTypes(INode* node) {
 		calculateDataTypes(childNode);
 		});
 
-	auto sdaNode = dynamic_cast<ISdaNode*>(node);
+	const auto sdaNode = dynamic_cast<ISdaNode*>(node);
 	if (!sdaNode)
 		return;
 	sdaNode->getCast()->clearCast();
@@ -359,12 +359,16 @@ void SdaDataTypesCalculater::handleUnknownLocation(UnknownLocation* unknownLocat
 	}
 }
 
-void SdaDataTypesCalculater::onDataTypeCasting(DataTypePtr fromDataType, DataTypePtr toDataType) {
+void SdaDataTypesCalculater::onDataTypeCasting(DataTypePtr fromDataType, DataTypePtr& toDataType) {
 }
 
 // casting {sdaNode} to {toDataType}
 
 void SdaDataTypesCalculater::cast(ISdaNode* sdaNode, DataTypePtr toDataType) {
+	// callback
+	const auto fromDataType = sdaNode->getSrcDataType();
+	onDataTypeCasting(fromDataType, toDataType); // toDataType can be changed
+	
 	//exception case (better change number view between HEX and non-HEX than do the cast)
 	if (const auto sdaNumberLeaf = dynamic_cast<SdaNumberLeaf*>(sdaNode)) {
 		if (!toDataType->isPointer()) {
@@ -401,10 +405,8 @@ void SdaDataTypesCalculater::cast(ISdaNode* sdaNode, DataTypePtr toDataType) {
 		}
 	}
 
-	//CASTING
-	const auto fromDataType = sdaNode->getSrcDataType();
+	// casting
 	const auto explicitCast = isExplicitCast(fromDataType, toDataType);
-	onDataTypeCasting(fromDataType, toDataType);
 	sdaNode->getCast()->setCastDataType(toDataType, explicitCast);
 }
 
