@@ -75,10 +75,18 @@ namespace GUI
 					builtinWin->open();
 				}
 				if(const auto funcSymbol = dynamic_cast<CE::Symbol::FunctionSymbol*>(m_symbol)) {
+					if (ImGui::MenuItem("Go To Function")) {
+						m_decCodeViewer->m_clickedFunction = funcSymbol->getFunction();
+					}
 					if (ImGui::MenuItem("Edit Function")) {
 						delete m_decCodeViewer->m_stdWindow;
 						const auto panel = new FunctionEditorPanel(funcSymbol->getFunction());
 						m_decCodeViewer->m_stdWindow = new StdWindow(panel);
+					}
+				}
+				else if (const auto gvarSymbol = dynamic_cast<CE::Symbol::GlobalVarSymbol*>(m_symbol)) {
+					if (ImGui::MenuItem("Go To Global Variable")) {
+						m_decCodeViewer->m_clickedGlobalVar = gvarSymbol;
 					}
 				}
 				else {

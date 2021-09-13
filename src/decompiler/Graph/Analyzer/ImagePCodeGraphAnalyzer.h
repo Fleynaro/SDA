@@ -339,7 +339,7 @@ namespace CE::Decompiler
 							toDataType = GetUnit(rawStructure, "[1]");
 						} else {
 							// for function parameters (where type of a symbol param is more abstract than type of a param node)
-							rawStructure2->addParent(rawStructure1);
+							rawStructure1->addParent(rawStructure2);
 						}
 					}
 				}
@@ -671,7 +671,7 @@ namespace CE::Decompiler
 			structureFinder.start();
 			// including function params
 			StructureFinder structureFinder2(sdaCodeGraph, this, false);
-			//structureFinder2.start();
+			structureFinder2.start();
 
 			// gather all new symbols (only after parameters of all function will be defined)
 			for (const auto symbol : sdaBuilding.getNewAutoSymbols()) {
