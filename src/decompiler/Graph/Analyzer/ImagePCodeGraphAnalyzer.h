@@ -12,30 +12,41 @@ namespace CE::Decompiler
 {
 	class ImagePCodeGraphAnalyzer
 	{
+		struct Field {
+			int64_t m_offset;
+			DataTypePtr m_dataType;
+			bool m_isArray = false;
+			// todo: add stat info like "instr. offset to datatype"
+		};
+		
 		class RawStructure : public DataType::AbstractType
 		{
 		public:
-			struct Field {
-				int64_t m_offset;
-				DataTypePtr m_dataType;
-				bool m_isArray = false;
-				// todo: add stat info like "instr. offset to datatype"
-			};
+			std::map<int64_t, Field> m_fields;
+
+			RawStructure(TypeManager* typeManager)
+				: AbstractType(typeManager, "RawStructure")
+			{}
+		};
+		
+		class StructureFrame : public DataType::AbstractType
+		{
+		public:
+			int m_id = 0;
+			RawStructure* m_rawStructure = nullptr;
 			std::map<int64_t, Field> m_fields;
 			
-			int m_id = 0;
-			
 			// for hierarchy
-			std::list<RawStructure*> m_parentRawStructures;
-			std::list<RawStructure*> m_childRawStructures;
+			std::list<StructureFrame*> m_parentStructFrames;
+			std::list<StructureFrame*> m_childStructFrames;
 
-			RawStructure(TypeManager* typeManager, int id)
-				: AbstractType(typeManager, "RawStructure"), m_id(id)
+			StructureFrame(TypeManager* typeManager, int id)
+				: AbstractType(typeManager, "StructFrame"), m_id(id)
 			{}
 
-			void addParent(RawStructure* rawStructure) {
-				m_parentRawStructures.push_back(rawStructure);
-				rawStructure->m_childRawStructures.push_back(this);
+			void addParent(StructureFrame* structFrame) {
+				m_parentStructFrames.push_back(structFrame);
+				structFrame->m_childStructFrames.push_back(this);
 			}
 
 			bool isSpaceEmpty(int64_t bitOffset, int bitSize) const {
@@ -57,7 +68,7 @@ namespace CE::Decompiler
 			}
 
 			std::string getDisplayName() override {
-				return "RawStructure";
+				return "StructFrame";
 			}
 
 			Group getGroup() override {
@@ -258,8 +269,8 @@ namespace CE::Decompiler
 
 					// create a raw structure
 					if (sdaPointerNode) {
-						const auto rawStructure = m_imagePCodeGraphAnalyzer->createRawStructure();
-						sdaPointerNode->setDataType(GetUnit(rawStructure, "[1]"));
+						const auto structFrame = m_imagePCodeGraphAnalyzer->createStructFrame();
+						sdaPointerNode->setDataType(GetUnit(structFrame, "[1]"));
 						m_nextPassRequired = true;
 					}
 				}
@@ -294,22 +305,22 @@ namespace CE::Decompiler
 					{
 						const auto baseSdaNode = unknownLoc->getBaseSdaNode();
 						// if it is raw structure
-						if (const auto rawStructure = dynamic_cast<RawStructure*>(baseSdaNode->getSrcDataType()->getType())) {
+						if (const auto structFrame = dynamic_cast<StructureFrame*>(baseSdaNode->getSrcDataType()->getType())) {
 							const auto fieldOffset = unknownLoc->getConstTermValue();
 							const auto newFieldDataType = sdaReadValueNode->getDataType();
 
-							if (!rawStructure->canFieldBeAddedAtOffset(fieldOffset, newFieldDataType->getSize())) {
+							if (!structFrame->canFieldBeAddedAtOffset(fieldOffset, newFieldDataType->getSize())) {
 								// warning here (dynamic_cast required, can be only resolved by user)
 							}
 
-							const auto it = rawStructure->m_fields.find(fieldOffset);
-							if (it == rawStructure->m_fields.end() || it->second.m_dataType->getPriority() < newFieldDataType->getPriority()) {
+							const auto it = structFrame->m_fields.find(fieldOffset);
+							if (it == structFrame->m_fields.end() || it->second.m_dataType->getPriority() < newFieldDataType->getPriority()) {
 								// set data type to the field from something
-								RawStructure::Field field;
+								Field field;
 								field.m_offset = fieldOffset;
 								field.m_dataType = newFieldDataType;
 								field.m_isArray = unknownLoc->getArrTerms().size() > 0; // if it is an array
-								rawStructure->addField(field);
+								structFrame->addField(field);
 							}
 							else {
 								// set data type to something from the field
@@ -330,16 +341,16 @@ namespace CE::Decompiler
 					}
 				}
 
-				if (const auto rawStructure1 = dynamic_cast<RawStructure*>(dataType1)) {
-					if (const auto rawStructure2 = dynamic_cast<RawStructure*>(dataType2)) {
+				if (const auto structFrame1 = dynamic_cast<StructureFrame*>(dataType1)) {
+					if (const auto structFrame2 = dynamic_cast<StructureFrame*>(dataType2)) {
 						if (m_excludeFunctionNodes) {
-							const auto rawStructure = m_imagePCodeGraphAnalyzer->createRawStructure();
-							rawStructure1->addParent(rawStructure);
-							rawStructure2->addParent(rawStructure);
-							toDataType = GetUnit(rawStructure, "[1]");
+							const auto structFrame = m_imagePCodeGraphAnalyzer->createStructFrame();
+							structFrame1->addParent(structFrame);
+							structFrame2->addParent(structFrame);
+							toDataType = GetUnit(structFrame, "[1]");
 						} else {
 							// for function parameters (where type of a symbol param is more abstract than type of a param node)
-							rawStructure2->addParent(rawStructure1);
+							structFrame2->addParent(structFrame1);
 						}
 					}
 				}
@@ -427,7 +438,7 @@ namespace CE::Decompiler
 		ImageDecorator* m_imageDec;
 		Project* m_project;
 		PCodeGraphReferenceSearch* m_graphReferenceSearch;
-		std::list<RawStructure*> m_rawStructures;
+		std::list<StructureFrame*> m_structFrames;
 		std::map<int64_t, RawSignatureOwner*> m_funcOffsetToSig;
 		std::map<int64_t, RawSignatureOwner*> m_virtFuncCallOffsetToSig;
 		CE::Symbol::GlobalSymbolTable* m_globalSymbolTable;
@@ -446,8 +457,8 @@ namespace CE::Decompiler
 		~ImagePCodeGraphAnalyzer() {
 			delete m_globalSymbolTable;
 			delete m_funcBodySymbolTable;
-			for(const auto rawStructure : m_rawStructures) {
-				delete rawStructure;
+			for(const auto structFrame : m_structFrames) {
+				delete structFrame;
 			}
 			for (const auto& [offset, rawSigOwner] : m_funcOffsetToSig) {
 				delete rawSigOwner;
@@ -473,34 +484,34 @@ namespace CE::Decompiler
 		}
 
 		void finish(bool markAsNew) {
-			std::map<RawStructure*, DataType::IStructure*> rawStructToStruct;
+			std::map<StructureFrame*, DataType::IStructure*> rawStructToStruct;
 			
 			for (const auto symbol : m_allSymbols) {
 				const auto dataType = symbol->getDataType();
 
-				if (const auto rawStructure = dynamic_cast<RawStructure*>(dataType->getType())) {
+				if (const auto structFrame = dynamic_cast<StructureFrame*>(dataType->getType())) {
 					DataType::IStructure* structure;
 
-					const auto it = rawStructToStruct.find(rawStructure);
+					const auto it = rawStructToStruct.find(structFrame);
 					if (it != rawStructToStruct.end()) {
 						structure = it->second;
 					} else {
 						std::string comment = "Parents:\n";
-						for (const auto parentStruct : rawStructure->m_parentRawStructures)
+						for (const auto parentStruct : structFrame->m_parentStructFrames)
 							comment += "- struct_"+ std::to_string(parentStruct->m_id) +"\n";
 						comment += "\nChilds:\n";
-						for (const auto childStruct : rawStructure->m_childRawStructures)
+						for (const auto childStruct : structFrame->m_childStructFrames)
 							comment += "- struct_" + std::to_string(childStruct->m_id) + "\n";
 
 						const auto typeFactory = m_project->getTypeManager()->getFactory(markAsNew);
 						const auto symFactory = m_project->getSymbolManager()->getFactory(markAsNew);
-						structure = typeFactory.createStructure("struct_" + std::to_string(rawStructure->m_id), comment);
-						for(const auto& [offset, field] : rawStructure->m_fields) {
+						structure = typeFactory.createStructure("struct_" + std::to_string(structFrame->m_id), comment);
+						for(const auto& [offset, field] : structFrame->m_fields) {
 							const auto fieldSymbol = symFactory.createStructFieldSymbol(
 								field.m_dataType->getSize() * 0x8, field.m_dataType, "field_0x" + Helper::String::NumberToHex(field.m_offset));
 							structure->getFields().addField(static_cast<int>(field.m_offset) * 0x8, fieldSymbol);
 						}
-						rawStructToStruct[rawStructure] = structure;
+						rawStructToStruct[structFrame] = structure;
 					}
 
 					symbol->setDataType(GetUnit(structure, dataType->getPointerLevels()));
@@ -773,13 +784,13 @@ namespace CE::Decompiler
 		// create vtables that have been found during reference search
 		void createVTables() {
 			for (const auto& vtable : m_graphReferenceSearch->m_vtables) {
-				const auto rawStructOwner = createRawStructure();
+				const auto rawStructOwner = createStructFrame();
 				// fill the structure with virtual functions
 				int offset = 0;
 				for (auto funcOffset : vtable.m_funcOffsets) {
 					auto it = m_funcOffsetToSig.find(funcOffset);
 					if (it != m_funcOffsetToSig.end()) {
-						RawStructure::Field field;
+						Field field;
 						field.m_offset = offset;
 						field.m_dataType = GetUnit(it->second->m_rawSignature->m_signature, "[1]");
 						rawStructOwner->addField(field);
@@ -795,9 +806,9 @@ namespace CE::Decompiler
 			}
 		}
 
-		RawStructure* createRawStructure() {
-			const auto rawStructOwner = new RawStructure(m_project->getTypeManager(), static_cast<int>(m_rawStructures.size()) + 1);
-			m_rawStructures.push_back(rawStructOwner);
+		StructureFrame* createStructFrame() {
+			const auto rawStructOwner = new StructureFrame(m_project->getTypeManager(), static_cast<int>(m_structFrames.size()) + 1);
+			m_structFrames.push_back(rawStructOwner);
 			return rawStructOwner;
 		}
 	};
