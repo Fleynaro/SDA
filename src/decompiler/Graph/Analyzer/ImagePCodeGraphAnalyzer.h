@@ -470,12 +470,11 @@ namespace CE::Decompiler
 					if (isParentLevel) {
 						mark = frame->getSize() > m_rawStructure->getStartOffset();
 						m_visitedParentStructFrame.insert(frame);
-					} else {
-						m_visitedChildStructFrame.insert(frame);
 					}
 
 					if (mark) {
 						frame->m_rawStructure = m_rawStructure;
+						m_visitedChildStructFrame.insert(frame);
 						for (const auto childFrame : frame->m_childStructFrames) {
 							if (m_visitedChildStructFrame.find(childFrame) != m_visitedChildStructFrame.end())
 								continue;
@@ -484,6 +483,8 @@ namespace CE::Decompiler
 					}
 					for (const auto parentFrame : frame->m_parentStructFrames) {
 						if (m_visitedParentStructFrame.find(parentFrame) != m_visitedParentStructFrame.end())
+							continue;
+						if (m_visitedChildStructFrame.find(parentFrame) != m_visitedChildStructFrame.end())
 							continue;
 						start(parentFrame, true);
 					}
@@ -524,12 +525,13 @@ namespace CE::Decompiler
 						structFrame->m_rawStructure = initStruct;
 					}
 
+					// start iterations to grow up raw structures and make new branches if needed
 					bool isNextIterationNeeded;
 					do {
 						std::list<ActiveBranch> newActiveBranches;
 						for (const auto& branch : m_activeBranches) {
 							bool hasConflict = false;
-							std::list<std::pair<StructureFrame*, Field*>> structFramesWithField;
+							std::list<std::pair<StructureFrame*, const Field*>> structFramesWithField;
 							const Field* insertField = nullptr;
 							int maxBranchSize = 0;
 							
@@ -551,7 +553,7 @@ namespace CE::Decompiler
 
 							if(!hasConflict) {
 								if (insertField) {
-									// with no conflict
+									// with no field conflict
 									for (const auto& [structFrame, field] : structFramesWithField) {
 										addFieldToStruct(structFrame->m_rawStructure, *field);
 									}
@@ -564,7 +566,7 @@ namespace CE::Decompiler
 								}
 							}
 							else {
-								// with conflict
+								// with field conflict
 								for (const auto& [structFrame, field] : structFramesWithField) {
 									if (structFrame->m_rawStructure != branch.m_structure) {
 										addFieldToStruct(structFrame->m_rawStructure, *field);
@@ -582,11 +584,14 @@ namespace CE::Decompiler
 								}
 
 								// for remaining structure frames
-								const auto newChildDefStruct = createRawStructure();
-								newChildDefStruct->setParent(branch.m_structure);
+								RawStructure* newChildDefStruct = nullptr;
 								for (const auto structFrame : m_structFrames) {
 									if (structFrame->m_rawStructure != branch.m_structure)
 										continue;
+									if(!newChildDefStruct) {
+										newChildDefStruct = createRawStructure();
+										newChildDefStruct->setParent(branch.m_structure);
+									}
 									structFrame->m_rawStructure = newChildDefStruct;
 								}
 							}
@@ -690,9 +695,12 @@ namespace CE::Decompiler
 				const auto structure = typeFactory.createStructure("struct_" + std::to_string(rawStructure->m_hierarchyId) + "_" + std::to_string(rawStructure->m_id), "");
 
 				// base structure field
-				const auto baseStructType = GetUnit(rawStructToStruct[rawStructure]);
-				const auto baseFieldSymbol = symFactory.createStructFieldSymbol(baseStructType->getSize() * 0x8, baseStructType, "base_struct");
-				structure->getFields().addField(0x0, baseFieldSymbol);
+				const auto it = rawStructToStruct.find(rawStructure);
+				if (it != rawStructToStruct.end()) {
+					const auto baseStructType = GetUnit(it->second);
+					const auto baseFieldSymbol = symFactory.createStructFieldSymbol(baseStructType->getSize() * 0x8, baseStructType, "base_struct");
+					structure->getFields().addField(0x0, baseFieldSymbol);
+				}
 
 				// other fields
 				for (const auto& [offset, field] : rawStructure->m_fields) {
