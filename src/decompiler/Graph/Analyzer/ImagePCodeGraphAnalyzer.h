@@ -19,13 +19,12 @@ namespace CE::Decompiler
 			// todo: add stat info like "instr. offset to datatype"
 		};
 		
-		class RawStructure : public DataType::AbstractType
+		class RawStructure
 		{
 		public:
 			std::map<int64_t, Field> m_fields;
 
-			RawStructure(TypeManager* typeManager)
-				: AbstractType(typeManager, "RawStructure")
+			RawStructure()
 			{}
 		};
 		
@@ -37,16 +36,16 @@ namespace CE::Decompiler
 			std::map<int64_t, Field> m_fields;
 			
 			// for hierarchy
-			std::list<StructureFrame*> m_parentStructFrames;
-			std::list<StructureFrame*> m_childStructFrames;
+			std::set<StructureFrame*> m_parentStructFrames;
+			std::set<StructureFrame*> m_childStructFrames;
 
 			StructureFrame(TypeManager* typeManager, int id)
 				: AbstractType(typeManager, "StructFrame"), m_id(id)
 			{}
 
 			void addParent(StructureFrame* structFrame) {
-				m_parentStructFrames.push_back(structFrame);
-				structFrame->m_childStructFrames.push_back(this);
+				m_parentStructFrames.insert(structFrame);
+				structFrame->m_childStructFrames.insert(this);
 			}
 
 			bool isSpaceEmpty(int64_t bitOffset, int bitSize) const {
@@ -343,14 +342,17 @@ namespace CE::Decompiler
 
 				if (const auto structFrame1 = dynamic_cast<StructureFrame*>(dataType1)) {
 					if (const auto structFrame2 = dynamic_cast<StructureFrame*>(dataType2)) {
-						if (m_excludeFunctionNodes) {
-							const auto structFrame = m_imagePCodeGraphAnalyzer->createStructFrame();
-							structFrame1->addParent(structFrame);
-							structFrame2->addParent(structFrame);
-							toDataType = GetUnit(structFrame, "[1]");
-						} else {
-							// for function parameters (where type of a symbol param is more abstract than type of a param node)
-							structFrame2->addParent(structFrame1);
+						if (structFrame1 != structFrame2) {
+							if (m_excludeFunctionNodes) {
+								const auto structFrame = m_imagePCodeGraphAnalyzer->createStructFrame();
+								structFrame1->addParent(structFrame);
+								structFrame2->addParent(structFrame);
+								toDataType = GetUnit(structFrame, "[1]");
+							}
+							else {
+								// for function parameters (where type of a symbol param is more abstract than type of a param node)
+								structFrame1->addParent(structFrame2);
+							}
 						}
 					}
 				}
@@ -435,10 +437,156 @@ namespace CE::Decompiler
 			}
 		};
 
+		class ClassHierarchyRecover
+		{
+			struct ClassHierarchy
+			{
+				std::list<StructureFrame*> m_structFrames;
+				std::list<RawStructure*> m_rawStructures;
+
+				struct ActiveBranch
+				{
+					RawStructure* m_structure;
+					int m_offset;
+				};
+				std::list<ActiveBranch> m_activeBranches;
+
+				void free() {
+					for (const auto structFrame : m_structFrames)
+						structFrame->m_rawStructure = nullptr;
+					for (const auto rawStructure : m_rawStructures)
+						delete rawStructure;
+				}
+
+				void start() {
+					// set init structure to all frames
+					const auto initStruct = createRawStructure();
+					m_activeBranches.push_back({ initStruct, 0x0 });
+					for (const auto structFrame : m_structFrames) {
+						structFrame->m_rawStructure = initStruct;
+					}
+
+					bool isNextIterationNeeded;
+					do {
+						isNextIterationNeeded = false;
+						
+						for (auto& branch : m_activeBranches) {
+							struct InsertFieldInfo
+							{
+								Field m_field;
+								std::list<StructureFrame*> m_structFrames;
+							};
+							std::list<InsertFieldInfo> insertFieldInfos;
+							
+							for (const auto structFrame : m_structFrames) {
+								if (structFrame->m_rawStructure != branch.m_structure)
+									continue;
+								const auto it = structFrame->m_fields.find(branch.m_offset);
+								if(it != structFrame->m_fields.end()) {
+									const auto& field = it->second;
+									
+									InsertFieldInfo* insertFieldInfo = nullptr;
+									for(auto& insertFieldInfo_ : insertFieldInfos) {
+										if(!HasFieldConflictInserting(insertFieldInfo_.m_field, field)) {
+											insertFieldInfo = &insertFieldInfo_;
+											break;
+										}
+									}
+
+									if(insertFieldInfo) {
+										insertFieldInfo->m_structFrames.push_back(structFrame);
+									} else {
+										insertFieldInfos.push_back({ field, {structFrame} });
+									}
+								}
+							}
+
+							if(insertFieldInfos.size() == 1) {
+								const auto insertField = insertFieldInfos.begin()->m_field;
+								branch.m_structure->m_fields[insertField.m_offset] = insertField;
+								branch.m_offset += insertField.m_dataType->getSize();
+							}
+							else {
+								for (const auto& insertFieldInfo : insertFieldInfos) {
+
+								}
+							}
+
+							if (!isNextIterationNeeded)
+								isNextIterationNeeded = !insertFieldInfos.empty();
+						}
+					} while (isNextIterationNeeded);
+				}
+
+				void fillClassHierarchy(StructureFrame* frame, std::set<StructureFrame*>& visitedStructFrames) {
+					if (visitedStructFrames.find(frame) != visitedStructFrames.end())
+						return;
+					visitedStructFrames.insert(frame);
+					m_structFrames.push_back(frame);
+					for (const auto childFrame : frame->m_childStructFrames)
+						fillClassHierarchy(childFrame, visitedStructFrames);
+					for (const auto parentFrame : frame->m_parentStructFrames)
+						fillClassHierarchy(parentFrame, visitedStructFrames);
+				}
+
+			private:
+				RawStructure* createRawStructure() {
+					const auto rawStructure = new RawStructure;
+					m_rawStructures.push_back(rawStructure);
+					return rawStructure;
+				}
+
+				static bool HasFieldConflictInserting(const Field& field1, const Field& field2) {
+					return field1.m_dataType->getSize() != field2.m_dataType->getSize()
+						|| field1.m_dataType->isPointer() != field2.m_dataType->isPointer()
+						|| field1.m_dataType->isFloatingPoint() != field2.m_dataType->isFloatingPoint();
+				}
+			};
+			std::list<ClassHierarchy> m_classHierarchies;
+			
+			ImagePCodeGraphAnalyzer* m_graphAnalyzer;
+		public:
+			ClassHierarchyRecover(ImagePCodeGraphAnalyzer* imagePCodeGraphAnalyzer)
+				: m_graphAnalyzer(imagePCodeGraphAnalyzer)
+			{}
+
+			~ClassHierarchyRecover() {
+				
+			}
+
+			void start() {
+				// clear all old class hierarchies
+				for (auto& classHierarchy : m_classHierarchies)
+					classHierarchy.free();
+				m_classHierarchies.clear();
+
+				// find all new class hierarchies
+				findAllClassHierarchies();
+
+				// process new class hierarchies
+				for(auto& classHierarchy : m_classHierarchies) {
+					classHierarchy.start();
+				}
+			}
+
+		private:
+			void findAllClassHierarchies() {
+				std::set<StructureFrame*> visitedStructFrames;
+				for (const auto structFrame : m_graphAnalyzer->m_structFrames) {
+					ClassHierarchy classHierarchy;
+					classHierarchy.fillClassHierarchy(structFrame, visitedStructFrames);
+					if (!classHierarchy.m_structFrames.empty()) {
+						m_classHierarchies.push_back(classHierarchy);
+					}
+				}
+			}
+		};
+
 		ImageDecorator* m_imageDec;
 		Project* m_project;
 		PCodeGraphReferenceSearch* m_graphReferenceSearch;
 		std::list<StructureFrame*> m_structFrames;
+		ClassHierarchyRecover* m_classHierarchyRecover;
 		std::map<int64_t, RawSignatureOwner*> m_funcOffsetToSig;
 		std::map<int64_t, RawSignatureOwner*> m_virtFuncCallOffsetToSig;
 		CE::Symbol::GlobalSymbolTable* m_globalSymbolTable;
@@ -452,11 +600,13 @@ namespace CE::Decompiler
 		{
 			m_globalSymbolTable = m_project->getSymTableManager()->getFactory(false).createGlobalSymbolTable();
 			m_funcBodySymbolTable = m_project->getSymTableManager()->getFactory(false).createGlobalSymbolTable();
+			m_classHierarchyRecover = new ClassHierarchyRecover(this);
 		}
 
 		~ImagePCodeGraphAnalyzer() {
 			delete m_globalSymbolTable;
 			delete m_funcBodySymbolTable;
+			delete m_classHierarchyRecover;
 			for(const auto structFrame : m_structFrames) {
 				delete structFrame;
 			}
@@ -478,6 +628,8 @@ namespace CE::Decompiler
 					
 					visitedGraphs.clear();
 					doMainPass(headFuncGraph, visitedGraphs);
+
+					m_classHierarchyRecover->start();
 				}
 				break;
 			} while (m_nextPassRequired);
@@ -682,7 +834,7 @@ namespace CE::Decompiler
 			structureFinder.start();
 			// including function params
 			StructureFinder structureFinder2(sdaCodeGraph, this, false);
-			//structureFinder2.start();
+			structureFinder2.start();
 
 			// gather all new symbols (only after parameters of all function will be defined)
 			for (const auto symbol : sdaBuilding.getNewAutoSymbols()) {
@@ -811,5 +963,6 @@ namespace CE::Decompiler
 			m_structFrames.push_back(rawStructOwner);
 			return rawStructOwner;
 		}
+		
 	};
 };
