@@ -22,16 +22,41 @@ namespace CE::Decompiler
 		class RawStructure
 		{
 		public:
+			int m_hierarchyId;
+			int m_id;
+			RawStructure* m_parent = nullptr;
+			std::list<RawStructure*> m_childs;
 			std::map<int64_t, Field> m_fields;
 
-			RawStructure()
+			RawStructure(int hierarchyId, int id)
+				: m_hierarchyId(hierarchyId), m_id(id)
 			{}
+
+			void setParent(RawStructure* parent) {
+				parent->m_childs.push_back(parent);
+				m_parent = parent;
+			}
+
+			const Field* getField(int64_t offset) const {
+				const auto it = m_fields.find(offset);
+				if (it != m_fields.end())
+					return &it->second;
+				if (m_parent)
+					return m_parent->getField(offset);
+				return nullptr;
+			}
+
+			int getStartOffset() const {
+				if (m_fields.empty())
+					return 0;
+				return static_cast<int>(m_fields.begin()->first);
+			}
 		};
 		
 		class StructureFrame : public DataType::AbstractType
 		{
 		public:
-			int m_id = 0;
+			int m_id;
 			RawStructure* m_rawStructure = nullptr;
 			std::map<int64_t, Field> m_fields;
 			
@@ -75,7 +100,10 @@ namespace CE::Decompiler
 			}
 
 			int getSize() override {
-				return 0x100;
+				if (m_fields.empty())
+					return 0;
+				const auto& [lastOffset, lastField] = *m_fields.rbegin();
+				return static_cast<int>(lastOffset) + lastField.m_dataType->getSize();
 			}
 
 			bool isUserDefined() override {
@@ -312,18 +340,30 @@ namespace CE::Decompiler
 								// warning here (dynamic_cast required, can be only resolved by user)
 							}
 
-							const auto it = structFrame->m_fields.find(fieldOffset);
-							if (it == structFrame->m_fields.end() || it->second.m_dataType->getPriority() < newFieldDataType->getPriority()) {
-								// set data type to the field from something
-								Field field;
-								field.m_offset = fieldOffset;
-								field.m_dataType = newFieldDataType;
-								field.m_isArray = unknownLoc->getArrTerms().size() > 0; // if it is an array
-								structFrame->addField(field);
+							// after first graph pass it's possible to use a raw structure
+							bool rawStructUsing = false;
+							if(false && structFrame->m_rawStructure) {
+								if (const auto field = structFrame->m_rawStructure->getField(fieldOffset)) {
+									cast(sdaReadValueNode, field->m_dataType);
+									rawStructUsing = true;
+								}
 							}
-							else {
-								// set data type to something from the field
-								cast(sdaReadValueNode, it->second.m_dataType);
+
+							if (!rawStructUsing) {
+								const auto it = structFrame->m_fields.find(fieldOffset);
+								if (it == structFrame->m_fields.end() || it->second.m_dataType->getPriority() < newFieldDataType->getPriority()) {
+									// set data type to the field from something
+									Field field;
+									field.m_offset = fieldOffset;
+									field.m_dataType = newFieldDataType;
+									field.m_isArray = unknownLoc->getArrTerms().size() > 0; // if it is an array
+									structFrame->addField(field);
+								}
+								else {
+									// set data type to something from the field
+									const auto& field = it->second;
+									cast(sdaReadValueNode, field.m_dataType);
+								}
 							}
 						}
 					}
@@ -331,31 +371,7 @@ namespace CE::Decompiler
 			}
 
 			void onDataTypeCasting(DataTypePtr fromDataType, DataTypePtr& toDataType) override {
-				const auto dataType1 = fromDataType->getType();
-				const auto dataType2 = toDataType->getType();
-
-				if (const auto rawSigOwner1 = dynamic_cast<RawSignatureOwner*>(dataType1)) {
-					if (const auto rawSigOwner2 = dynamic_cast<RawSignatureOwner*>(dataType2)) {
-						rawSigOwner1->merge(rawSigOwner2);
-					}
-				}
-
-				if (const auto structFrame1 = dynamic_cast<StructureFrame*>(dataType1)) {
-					if (const auto structFrame2 = dynamic_cast<StructureFrame*>(dataType2)) {
-						if (structFrame1 != structFrame2) {
-							if (m_excludeFunctionNodes) {
-								const auto structFrame = m_imagePCodeGraphAnalyzer->createStructFrame();
-								structFrame1->addParent(structFrame);
-								structFrame2->addParent(structFrame);
-								toDataType = GetUnit(structFrame, "[1]");
-							}
-							else {
-								// for function parameters (where type of a symbol param is more abstract than type of a param node)
-								structFrame1->addParent(structFrame2);
-							}
-						}
-					}
-				}
+				m_imagePCodeGraphAnalyzer->cast(fromDataType, toDataType, m_excludeFunctionNodes);
 			}
 		};
 
@@ -439,10 +455,52 @@ namespace CE::Decompiler
 
 		class ClassHierarchyRecover
 		{
-			struct ClassHierarchy
+			class StructureFrameMarking
 			{
+				RawStructure* m_rawStructure;
+				std::set<StructureFrame*> m_visitedChildStructFrame;
+				std::set<StructureFrame*> m_visitedParentStructFrame;
+			public:
+				StructureFrameMarking(RawStructure* rawStructure)
+					: m_rawStructure(rawStructure)
+				{}
+
+				void start(StructureFrame* frame, bool isParentLevel = false) {
+					bool mark = !isParentLevel;
+					if (isParentLevel) {
+						mark = frame->getSize() > m_rawStructure->getStartOffset();
+						m_visitedParentStructFrame.insert(frame);
+					} else {
+						m_visitedChildStructFrame.insert(frame);
+					}
+
+					if (mark) {
+						frame->m_rawStructure = m_rawStructure;
+						for (const auto childFrame : frame->m_childStructFrames) {
+							if (m_visitedChildStructFrame.find(childFrame) != m_visitedChildStructFrame.end())
+								continue;
+							start(childFrame);
+						}
+					}
+					for (const auto parentFrame : frame->m_parentStructFrames) {
+						if (m_visitedParentStructFrame.find(parentFrame) != m_visitedParentStructFrame.end())
+							continue;
+						start(parentFrame, true);
+					}
+				}
+			};
+			
+			class ClassHierarchy
+			{
+			public:
 				std::list<StructureFrame*> m_structFrames;
 				std::list<RawStructure*> m_rawStructures;
+				ImagePCodeGraphAnalyzer* m_graphAnalyzer;
+				int m_hierarchyId = 0;
+				
+				ClassHierarchy(ImagePCodeGraphAnalyzer* graphAnalyzer)
+					: m_graphAnalyzer(graphAnalyzer)
+				{}
 
 				struct ActiveBranch
 				{
@@ -468,56 +526,78 @@ namespace CE::Decompiler
 
 					bool isNextIterationNeeded;
 					do {
-						isNextIterationNeeded = false;
-						
-						for (auto& branch : m_activeBranches) {
-							struct InsertFieldInfo
-							{
-								Field m_field;
-								std::list<StructureFrame*> m_structFrames;
-							};
-							std::list<InsertFieldInfo> insertFieldInfos;
+						std::list<ActiveBranch> newActiveBranches;
+						for (const auto& branch : m_activeBranches) {
+							bool hasConflict = false;
+							std::list<std::pair<StructureFrame*, Field*>> structFramesWithField;
+							const Field* insertField = nullptr;
+							int maxBranchSize = 0;
 							
 							for (const auto structFrame : m_structFrames) {
 								if (structFrame->m_rawStructure != branch.m_structure)
 									continue;
+								maxBranchSize = std::max(maxBranchSize, structFrame->getSize());
+								
 								const auto it = structFrame->m_fields.find(branch.m_offset);
-								if(it != structFrame->m_fields.end()) {
+								if (it != structFrame->m_fields.end()) {
 									const auto& field = it->second;
-									
-									InsertFieldInfo* insertFieldInfo = nullptr;
-									for(auto& insertFieldInfo_ : insertFieldInfos) {
-										if(!HasFieldConflictInserting(insertFieldInfo_.m_field, field)) {
-											insertFieldInfo = &insertFieldInfo_;
-											break;
-										}
+									if (insertField && !hasConflict) {
+										hasConflict = HasFieldConflictInserting(*insertField, field);
 									}
-
-									if(insertFieldInfo) {
-										insertFieldInfo->m_structFrames.push_back(structFrame);
-									} else {
-										insertFieldInfos.push_back({ field, {structFrame} });
-									}
+									structFramesWithField.emplace_back(structFrame, &field);
+									insertField = &field;
 								}
 							}
 
-							if(insertFieldInfos.size() == 1) {
-								const auto insertField = insertFieldInfos.begin()->m_field;
-								branch.m_structure->m_fields[insertField.m_offset] = insertField;
-								branch.m_offset += insertField.m_dataType->getSize();
+							if(!hasConflict) {
+								if (insertField) {
+									// with no conflict
+									for (const auto& [structFrame, field] : structFramesWithField) {
+										addFieldToStruct(structFrame->m_rawStructure, *field);
+									}
+									
+									newActiveBranches.push_back({ branch.m_structure, branch.m_offset + insertField->m_dataType->getSize() });
+								} else {
+									if (branch.m_offset + 1 < maxBranchSize) {
+										newActiveBranches.push_back({ branch.m_structure, branch.m_offset + 1 });
+									}
+								}
 							}
 							else {
-								for (const auto& insertFieldInfo : insertFieldInfos) {
+								// with conflict
+								for (const auto& [structFrame, field] : structFramesWithField) {
+									if (structFrame->m_rawStructure != branch.m_structure) {
+										addFieldToStruct(structFrame->m_rawStructure, *field);
+										continue;
+									}
+									const auto newChildStruct = createRawStructure();
+									newChildStruct->setParent(branch.m_structure);
+									addFieldToStruct(newChildStruct, *field);
 
+									// explore graph region of structure frames to mark them as belonging to {newChildStruct}
+									StructureFrameMarking structureFrameMarking(newChildStruct);
+									structureFrameMarking.start(structFrame);
+									
+									newActiveBranches.push_back({ newChildStruct, branch.m_offset + field->m_dataType->getSize() });
+								}
+
+								// for remaining structure frames
+								const auto newChildDefStruct = createRawStructure();
+								newChildDefStruct->setParent(branch.m_structure);
+								for (const auto structFrame : m_structFrames) {
+									if (structFrame->m_rawStructure != branch.m_structure)
+										continue;
+									structFrame->m_rawStructure = newChildDefStruct;
 								}
 							}
-
-							if (!isNextIterationNeeded)
-								isNextIterationNeeded = !insertFieldInfos.empty();
 						}
+
+						m_activeBranches = newActiveBranches;
+						isNextIterationNeeded = !newActiveBranches.empty();
 					} while (isNextIterationNeeded);
 				}
 
+				// find graph connectivity component
 				void fillClassHierarchy(StructureFrame* frame, std::set<StructureFrame*>& visitedStructFrames) {
 					if (visitedStructFrames.find(frame) != visitedStructFrames.end())
 						return;
@@ -531,11 +611,26 @@ namespace CE::Decompiler
 
 			private:
 				RawStructure* createRawStructure() {
-					const auto rawStructure = new RawStructure;
+					const auto id = static_cast<int>(m_rawStructures.size()) + 1;
+					const auto rawStructure = new RawStructure(m_hierarchyId, id);
 					m_rawStructures.push_back(rawStructure);
 					return rawStructure;
 				}
 
+				// insert field into raw structure and make cast if needed
+				void addFieldToStruct(RawStructure* rawStructure, const Field& field) const {
+					const auto it = rawStructure->m_fields.find(field.m_offset);
+					if (it != rawStructure->m_fields.end()) {
+						auto& prevField = it->second;
+						auto newDataType = field.m_dataType;
+						m_graphAnalyzer->cast(prevField.m_dataType, newDataType);
+						prevField.m_dataType = newDataType;
+					} else {
+						rawStructure->m_fields[field.m_offset] = field;
+					}
+				}
+
+				// is there a conflict between two fields
 				static bool HasFieldConflictInserting(const Field& field1, const Field& field2) {
 					return field1.m_dataType->getSize() != field2.m_dataType->getSize()
 						|| field1.m_dataType->isPointer() != field2.m_dataType->isPointer()
@@ -551,7 +646,8 @@ namespace CE::Decompiler
 			{}
 
 			~ClassHierarchyRecover() {
-				
+				for (auto& classHierarchy : m_classHierarchies)
+					classHierarchy.free();
 			}
 
 			void start() {
@@ -569,16 +665,46 @@ namespace CE::Decompiler
 				}
 			}
 
+			void createStructures(std::map<RawStructure*, DataType::IStructure*>& rawStructToStruct, bool markAsNew = false) const {
+				for(const auto& classHierarchy : m_classHierarchies) {
+					createStructures(*classHierarchy.m_rawStructures.begin(), rawStructToStruct, markAsNew);
+				}
+			}
+
 		private:
 			void findAllClassHierarchies() {
 				std::set<StructureFrame*> visitedStructFrames;
 				for (const auto structFrame : m_graphAnalyzer->m_structFrames) {
-					ClassHierarchy classHierarchy;
+					ClassHierarchy classHierarchy(m_graphAnalyzer);
 					classHierarchy.fillClassHierarchy(structFrame, visitedStructFrames);
 					if (!classHierarchy.m_structFrames.empty()) {
+						classHierarchy.m_hierarchyId = static_cast<int>(m_classHierarchies.size()) + 1;
 						m_classHierarchies.push_back(classHierarchy);
 					}
 				}
+			}
+
+			void createStructures(RawStructure* rawStructure, std::map<RawStructure*, DataType::IStructure*>& rawStructToStruct, bool markAsNew) const {
+				const auto typeFactory = m_graphAnalyzer->m_project->getTypeManager()->getFactory(markAsNew);
+				const auto symFactory = m_graphAnalyzer->m_project->getSymbolManager()->getFactory(markAsNew);
+				const auto structure = typeFactory.createStructure("struct_" + std::to_string(rawStructure->m_hierarchyId) + "_" + std::to_string(rawStructure->m_id), "");
+
+				// base structure field
+				const auto baseStructType = GetUnit(rawStructToStruct[rawStructure]);
+				const auto baseFieldSymbol = symFactory.createStructFieldSymbol(baseStructType->getSize() * 0x8, baseStructType, "base_struct");
+				structure->getFields().addField(0x0, baseFieldSymbol);
+
+				// other fields
+				for (const auto& [offset, field] : rawStructure->m_fields) {
+					const auto fieldSymbol = symFactory.createStructFieldSymbol(
+						field.m_dataType->getSize() * 0x8, field.m_dataType, "field_0x" + Helper::String::NumberToHex(field.m_offset));
+					structure->getFields().addField(static_cast<int>(field.m_offset) * 0x8, fieldSymbol);
+				}
+				rawStructToStruct[rawStructure] = structure;
+
+				// go to childs
+				for (const auto child : rawStructure->m_childs)
+					createStructures(child, rawStructToStruct, markAsNew);
 			}
 		};
 
@@ -636,37 +762,19 @@ namespace CE::Decompiler
 		}
 
 		void finish(bool markAsNew) {
-			std::map<StructureFrame*, DataType::IStructure*> rawStructToStruct;
+			std::map<RawStructure*, DataType::IStructure*> rawStructToStruct;
+			m_classHierarchyRecover->createStructures(rawStructToStruct, markAsNew);
 			
 			for (const auto symbol : m_allSymbols) {
 				const auto dataType = symbol->getDataType();
 
 				if (const auto structFrame = dynamic_cast<StructureFrame*>(dataType->getType())) {
-					DataType::IStructure* structure;
-
-					const auto it = rawStructToStruct.find(structFrame);
-					if (it != rawStructToStruct.end()) {
-						structure = it->second;
-					} else {
-						std::string comment = "Parents:\n";
-						for (const auto parentStruct : structFrame->m_parentStructFrames)
-							comment += "- struct_"+ std::to_string(parentStruct->m_id) +"\n";
-						comment += "\nChilds:\n";
-						for (const auto childStruct : structFrame->m_childStructFrames)
-							comment += "- struct_" + std::to_string(childStruct->m_id) + "\n";
-
-						const auto typeFactory = m_project->getTypeManager()->getFactory(markAsNew);
-						const auto symFactory = m_project->getSymbolManager()->getFactory(markAsNew);
-						structure = typeFactory.createStructure("struct_" + std::to_string(structFrame->m_id), comment);
-						for(const auto& [offset, field] : structFrame->m_fields) {
-							const auto fieldSymbol = symFactory.createStructFieldSymbol(
-								field.m_dataType->getSize() * 0x8, field.m_dataType, "field_0x" + Helper::String::NumberToHex(field.m_offset));
-							structure->getFields().addField(static_cast<int>(field.m_offset) * 0x8, fieldSymbol);
+					if (structFrame->m_rawStructure) {
+						const auto it = rawStructToStruct.find(structFrame->m_rawStructure);
+						if (it != rawStructToStruct.end()) {
+							symbol->setDataType(GetUnit(it->second, dataType->getPointerLevels()));
 						}
-						rawStructToStruct[structFrame] = structure;
 					}
-
-					symbol->setDataType(GetUnit(structure, dataType->getPointerLevels()));
 				}
 				
 				if (const auto rawSigOwner = dynamic_cast<RawSignatureOwner*>(dataType->getType())) {
@@ -900,6 +1008,36 @@ namespace CE::Decompiler
 
 			delete sdaCodeGraph;
 			delete decCodeGraph;
+		}
+
+		// extended cast from type1 to type2
+		void cast(DataTypePtr fromDataType, DataTypePtr& toDataType, bool createThirdStruct = true) {
+			const auto dataType1 = fromDataType->getType();
+			const auto dataType2 = toDataType->getType();
+
+			if (const auto rawSigOwner1 = dynamic_cast<RawSignatureOwner*>(dataType1)) {
+				if (const auto rawSigOwner2 = dynamic_cast<RawSignatureOwner*>(dataType2)) {
+					rawSigOwner1->merge(rawSigOwner2);
+				}
+			}
+
+			if (const auto structFrame1 = dynamic_cast<StructureFrame*>(dataType1)) {
+				if (const auto structFrame2 = dynamic_cast<StructureFrame*>(dataType2)) {
+					if (structFrame1 != structFrame2) {
+						if (createThirdStruct) {
+							// create 3rd structure frame that's a parent of two existing ones
+							const auto structFrame = createStructFrame();
+							structFrame1->addParent(structFrame);
+							structFrame2->addParent(structFrame);
+							toDataType = GetUnit(structFrame, "[1]");
+						}
+						else {
+							// for function parameters (where type of a symbol param is more abstract than type of a param node)
+							structFrame1->addParent(structFrame2);
+						}
+					}
+				}
+			}
 		}
 		
 		// find func. signature for the function call (virt. or non-virt.)
