@@ -96,7 +96,7 @@ int Unit::getPriority() {
 	bool isFloatingPoint = false;
 	if (auto sysType = dynamic_cast<SystemType*>(baseType))
 		isFloatingPoint = (sysType->getSet() == SystemType::Real);
-	return size | (hasPointerLvl << 4) | (isSigned << 5) | (isNotSimple << 6) | (isFloatingPoint << 7);
+	return size | (hasPointerLvl << 4) | (isSigned << 5) | (isNotSimple << 6) | (isFloatingPoint << 7) | (baseType->getPriority() << 8);
 }
 
 int Unit::getConversionPriority() {

@@ -44,8 +44,10 @@ void SdaDataTypesCalculater::pass_up(const std::list<DecBlock::BlockTopNode*>& t
 				if (const auto returnNode = dynamic_cast<ISdaNode*>(returnTopNode->getNode())) {
 					if(m_signature->isAuto()) {
 						auto resultDataType = returnNode->getDataType();
-						onDataTypeCasting(m_signature ->getReturnType(),resultDataType);
-						m_signature->setReturnType(resultDataType);
+						if (onDataTypeTransfer(m_signature->getReturnType(), resultDataType)
+							|| m_signature->getReturnType()->getPriority() < resultDataType->getPriority()) {
+							m_signature->setReturnType(resultDataType);
+						}
 					}
 					else {
 						const auto retDataType = m_signature->getReturnType();
@@ -245,7 +247,8 @@ void SdaDataTypesCalculater::calculateDataTypes(INode*& node) {
 						auto srcNodeDataType = srcSdaNode->getDataType();
 
 						// todo: if the structure has size of 8 bytes then troubles here
-						if (dstNodeDataType->getSize() == srcNodeDataType->getSize() && dstNodeDataType->getPriority() < srcNodeDataType->getPriority()) {
+						if (onDataTypeTransfer(dstNodeDataType, srcNodeDataType) ||
+							dstNodeDataType->getSize() == srcNodeDataType->getSize() && dstNodeDataType->getPriority() < srcNodeDataType->getPriority()) {
 							cast(dstSdaNode, srcNodeDataType);
 							dstSdaNode->getCast()->clearCast();
 							dstNodeDataType = dstSdaNode->getDataType();
@@ -348,10 +351,12 @@ void SdaDataTypesCalculater::handleFunctionNode(SdaFunctionNode* sdaFunctionNode
 					nodeDataType->isFloatingPoint() == sigDataType->isFloatingPoint() && // fastcall specific (not allow to change param storage rcx -> xmm0 here)
 					nodeDataType->getPriority() > sigDataType->getPriority()) {
 					// change a type of the parameter symbol
+					onDataTypeTransfer(sigDataType, nodeDataType);
 					funcParamSymbol->setDataType(nodeDataType);
-					onDataTypeCasting(sigDataType, nodeDataType);
 				}
 				else {
+					if (onDataTypeTransfer(nodeDataType, sigDataType, true))
+						paramSdaNode->setDataType(sigDataType);
 					cast(paramSdaNode, sigDataType);
 				}
 			}
@@ -369,16 +374,9 @@ void SdaDataTypesCalculater::handleUnknownLocation(UnknownLocation* unknownLocat
 	}
 }
 
-void SdaDataTypesCalculater::onDataTypeCasting(DataTypePtr fromDataType, DataTypePtr& toDataType) {
-}
-
 // casting {sdaNode} to {toDataType}
 
 void SdaDataTypesCalculater::cast(ISdaNode* sdaNode, DataTypePtr toDataType) {
-	// callback
-	const auto fromDataType = sdaNode->getSrcDataType();
-	onDataTypeCasting(fromDataType, toDataType); // toDataType can be changed
-	
 	//exception case (better change number view between HEX and non-HEX than do the cast)
 	if (const auto sdaNumberLeaf = dynamic_cast<SdaNumberLeaf*>(sdaNode)) {
 		if (!toDataType->isPointer()) {
@@ -416,6 +414,7 @@ void SdaDataTypesCalculater::cast(ISdaNode* sdaNode, DataTypePtr toDataType) {
 	}
 
 	// casting
+	const auto fromDataType = sdaNode->getSrcDataType();
 	const auto explicitCast = isExplicitCast(fromDataType, toDataType);
 	sdaNode->getCast()->setCastDataType(toDataType, explicitCast);
 }

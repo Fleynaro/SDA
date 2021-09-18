@@ -54,7 +54,7 @@ namespace CE
 
 			bool equal(Unit* typeUnit);
 
-			int getPriority();
+			int getPriority() override;
 
 			int getConversionPriority();
 

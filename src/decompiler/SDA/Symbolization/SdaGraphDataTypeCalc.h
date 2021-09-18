@@ -33,7 +33,10 @@ namespace CE::Decompiler::Symbolization
 
 		virtual void handleUnknownLocation(UnknownLocation* unknownLocation);
 
-		virtual void onDataTypeCasting(DataTypePtr fromDataType, DataTypePtr& toDataType);
+		// need for structure finder during image analyzing where {toDataType} can be replaced by 3rd abstract structure frame
+		virtual bool onDataTypeTransfer(DataTypePtr fromDataType, DataTypePtr& toDataType, bool isFuncParam = false) {
+			return false;
+		}
 
 		// casting {sdaNode} to {toDataType}
 		void cast(ISdaNode* sdaNode, DataTypePtr toDataType);

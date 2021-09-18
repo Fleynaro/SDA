@@ -5,9 +5,9 @@
 #include "decompiler/PCode/ImageAnalyzer/DecImageAnalyzer.h"
 #include "managers/ImageManager.h"
 #include "managers/SymbolTableManager.h"
-#include <fstream>
 #include <decompiler/SDA/Symbolization/DecGraphSdaBuilding.h>
 #include <decompiler/SDA/Symbolization/SdaGraphDataTypeCalc.h>
+#include <fstream>
 
 namespace CE::Decompiler
 {
@@ -34,7 +34,7 @@ namespace CE::Decompiler
 			{}
 
 			void setParent(RawStructure* parent) {
-				parent->m_childs.push_back(parent);
+				parent->m_childs.push_back(this);
 				m_parent = parent;
 			}
 
@@ -60,6 +60,7 @@ namespace CE::Decompiler
 			int m_id;
 			RawStructure* m_rawStructure = nullptr;
 			std::map<int64_t, Field> m_fields;
+			bool m_isAbstract = false;
 			
 			// for hierarchy
 			std::set<StructureFrame*> m_parentStructFrames;
@@ -109,6 +110,10 @@ namespace CE::Decompiler
 
 			int getSize() override {
 				return 0x100;
+			}
+
+			int getPriority() override {
+				return m_isAbstract ? 1 : 0;
 			}
 
 			bool isUserDefined() override {
@@ -364,8 +369,8 @@ namespace CE::Decompiler
 				}
 			}
 
-			void onDataTypeCasting(DataTypePtr fromDataType, DataTypePtr& toDataType) override {
-				m_imagePCodeGraphAnalyzer->cast(fromDataType, toDataType, m_excludeFunctionNodes);
+			bool onDataTypeTransfer(DataTypePtr fromDataType, DataTypePtr& toDataType, bool isFuncParam) override {
+				return m_imagePCodeGraphAnalyzer->onDataTypeTransfer(fromDataType, toDataType, !isFuncParam);
 			}
 		};
 
@@ -622,8 +627,10 @@ namespace CE::Decompiler
 					if (it != rawStructure->m_fields.end()) {
 						auto& prevField = it->second;
 						auto newDataType = field.m_dataType;
-						m_graphAnalyzer->cast(prevField.m_dataType, newDataType);
-						prevField.m_dataType = newDataType;
+						if (m_graphAnalyzer->onDataTypeTransfer(prevField.m_dataType, newDataType) ||
+							prevField.m_dataType->getPriority() < newDataType->getPriority()) {
+							prevField.m_dataType = newDataType;
+						}
 					} else {
 						rawStructure->m_fields[field.m_offset] = field;
 					}
@@ -689,11 +696,14 @@ namespace CE::Decompiler
 				const auto structure = typeFactory.createStructure("struct_" + std::to_string(rawStructure->m_hierarchyId) + "_" + std::to_string(rawStructure->m_id), "");
 
 				// base structure field
-				const auto it = rawStructToStruct.find(rawStructure);
-				if (it != rawStructToStruct.end()) {
-					const auto baseStructType = GetUnit(it->second);
-					const auto baseFieldSymbol = symFactory.createStructFieldSymbol(baseStructType->getSize() * 0x8, baseStructType, "base_struct");
-					structure->getFields().addField(0x0, baseFieldSymbol);
+				if (rawStructure->m_parent) {
+					const auto it = rawStructToStruct.find(rawStructure->m_parent);
+					if (it != rawStructToStruct.end()) {
+						const auto baseStructType = GetUnit(it->second);
+						const auto baseFieldSymbol = symFactory.createStructFieldSymbol(baseStructType->getSize() * 0x8, baseStructType, "base");
+						structure->getFields().addField(0x0, baseFieldSymbol);
+						m_graphAnalyzer->m_allSymbols.push_back(baseFieldSymbol);
+					}
 				}
 
 				// other fields
@@ -701,6 +711,7 @@ namespace CE::Decompiler
 					const auto fieldSymbol = symFactory.createStructFieldSymbol(
 						field.m_dataType->getSize() * 0x8, field.m_dataType, "field_0x" + Helper::String::NumberToHex(field.m_offset));
 					structure->getFields().addField(static_cast<int>(field.m_offset) * 0x8, fieldSymbol);
+					m_graphAnalyzer->m_allSymbols.push_back(fieldSymbol);
 				}
 				rawStructToStruct[rawStructure] = structure;
 
@@ -750,38 +761,66 @@ namespace CE::Decompiler
 			do {
 				m_nextPassRequired = false;
 				for (const auto headFuncGraph : m_imageDec->getPCodeGraph()->getHeadFuncGraphs()) {
-					std::set<FunctionPCodeGraph*> visitedGraphs;
-					doPassToDefineReturnValues(headFuncGraph, visitedGraphs);
-					changeFunctionSignaturesByRetValStat();
+					do {
+						std::set<FunctionPCodeGraph*> visitedGraphs;
+						doPassToDefineReturnValues(headFuncGraph, visitedGraphs);
+					} while (changeFunctionSignaturesByRetValStat() > 0);
 					
-					visitedGraphs.clear();
+					std::set<FunctionPCodeGraph*> visitedGraphs;
 					doMainPass(headFuncGraph, visitedGraphs);
 
-					//m_classHierarchyRecover->start();
+					printGraphOfStructFrames();
+					m_classHierarchyRecover->start();
 				}
 				break;
 			} while (m_nextPassRequired);
 		}
 
-		void finish2(bool markAsNew) {
-			printGraphOfStructFrames();
+		void finish(bool markAsNew) {
 			std::map<RawStructure*, DataType::IStructure*> rawStructToStruct;
 			m_classHierarchyRecover->createStructures(rawStructToStruct, markAsNew);
-			
+
+			// replace all structure frames
 			for (const auto symbol : m_allSymbols) {
 				const auto dataType = symbol->getDataType();
 
 				if (const auto structFrame = dynamic_cast<StructureFrame*>(dataType->getType())) {
+					bool found = false;
 					if (structFrame->m_rawStructure) {
 						const auto it = rawStructToStruct.find(structFrame->m_rawStructure);
 						if (it != rawStructToStruct.end()) {
 							symbol->setDataType(GetUnit(it->second, dataType->getPointerLevels()));
+							found = true;
 						}
 					}
+
+					if (!found) {
+						symbol->setDataType(m_project->getTypeManager()->getDefaultType(0x8));
+					}
 				}
-				
+			}
+
+			// replace all raw signatures
+			for (const auto symbol : m_allSymbols) {
+				const auto dataType = symbol->getDataType();
 				if (const auto rawSigOwner = dynamic_cast<RawSignatureOwner*>(dataType->getType())) {
 					const auto sig = rawSigOwner->m_rawSignature->m_signature;
+					
+					if (const auto structFrame = dynamic_cast<StructureFrame*>(sig->getReturnType()->getType())) {
+						bool found = false;
+						if (structFrame->m_rawStructure) {
+							const auto it = rawStructToStruct.find(structFrame->m_rawStructure);
+							if (it != rawStructToStruct.end()) {
+								sig->setReturnType(GetUnit(it->second, sig->getReturnType()->getPointerLevels()));
+								found = true;
+							}
+						}
+						
+						if(!found) {
+							sig->setReturnType(GetUnit(m_project->getTypeManager()->getFactory().getDefaultReturnType()));
+						}
+					}
+					
 					symbol->setDataType(GetUnit(sig, dataType->getPointerLevels()));
 					if (const auto funcSymbol = dynamic_cast<CE::Symbol::FunctionSymbol*>(symbol))
 						funcSymbol->setSignature(sig);
@@ -798,9 +837,7 @@ namespace CE::Decompiler
 			}
 		}
 
-		void finish(bool markAsNew) {
-			printGraphOfStructFrames();
-			
+		void finish2(bool markAsNew) {
 			std::map<StructureFrame*, DataType::IStructure*> rawStructToStruct;
 
 			for (const auto symbol : m_allSymbols) {
@@ -862,9 +899,12 @@ namespace CE::Decompiler
 
 	private:
 		// need call after pass "to define return values"
-		void changeFunctionSignaturesByRetValStat() {
+		int changeFunctionSignaturesByRetValStat() {
+			int changesCount = 0;
 			for (const auto& [funcOffset , rawSigOwner] : m_funcOffsetToSig) {
 				auto& retValStatInfo = rawSigOwner->m_rawSignature->m_retValStatInfo;
+				if (retValStatInfo.m_score == -1)
+					continue;
 
 				const auto baseScore = retValStatInfo.m_score;
 				// need to define if the return value from a function call requested somewhere
@@ -875,9 +915,11 @@ namespace CE::Decompiler
 				// set return type if score is high enough
 				if (retValStatInfo.m_score >= 2) {
 					// todo: counting on fastcall
+					// todo: call also this in doPassToDefineReturnValues for optimization
 					const auto retType = m_project->getTypeManager()->getDefaultType(
 						retValStatInfo.m_register.getSize(), false, retValStatInfo.m_register.isVector());
 					rawSigOwner->setReturnType(retType);
+					changesCount++;
 				}
 
 				// add comment
@@ -889,8 +931,10 @@ namespace CE::Decompiler
 					"\n";
 				rawSigOwner->m_rawSignature->m_signature->setComment(comment);
 
-				retValStatInfo.m_score = 0;
+				if(retValStatInfo.m_score > 0)
+					retValStatInfo.m_score = -1;
 			}
+			return changesCount;
 		}
 
 		// first pass to define return values
@@ -1076,7 +1120,10 @@ namespace CE::Decompiler
 		}
 
 		// extended cast from type1 to type2
-		void cast(DataTypePtr fromDataType, DataTypePtr& toDataType, bool createThirdStruct = true) {
+		bool onDataTypeTransfer(DataTypePtr fromDataType, DataTypePtr& toDataType, bool createThirdStruct = true) {
+			if (fromDataType->getPointerLevels().size() != toDataType->getPointerLevels().size())
+				return false;
+			
 			const auto dataType1 = fromDataType->getType();
 			const auto dataType2 = toDataType->getType();
 
@@ -1090,11 +1137,15 @@ namespace CE::Decompiler
 				if (const auto structFrame2 = dynamic_cast<StructureFrame*>(dataType2)) {
 					if (structFrame1 != structFrame2) {
 						if (createThirdStruct) {
-							// create 3rd structure frame that's a parent of two existing ones
-							const auto structFrame = createStructFrame();
-							structFrame1->addParent(structFrame);
-							structFrame2->addParent(structFrame);
-							toDataType = GetUnit(structFrame, "[1]");
+							if (!structFrame1->m_isAbstract) {
+								// create 3rd abstract structure frame that's a parent of two existing ones
+								const auto structFrame = createStructFrame();
+								structFrame->m_isAbstract = true;
+								structFrame1->addParent(structFrame);
+								structFrame2->addParent(structFrame);
+								toDataType = GetUnit(structFrame, "[1]");
+								return true;
+							}
 						}
 						else {
 							// for function parameters (where type of a symbol param is more abstract than type of a param node)
@@ -1103,6 +1154,8 @@ namespace CE::Decompiler
 					}
 				}
 			}
+
+			return false;
 		}
 		
 		// find func. signature for the function call (virt. or non-virt.)
@@ -1177,7 +1230,10 @@ namespace CE::Decompiler
 
 			std::ofstream f2("graph_fields.txt", std::ofstream::trunc);
 			for (const auto structFrame : m_structFrames) {
-				f2 << "struct: " << Helper::String::NumberToHex(structFrame->m_id) << " (size = " << Helper::String::NumberToHex(structFrame->getSizeByLastField()) << ")\n";
+				f2 << "struct: " << Helper::String::NumberToHex(structFrame->m_id) << " (size = " << Helper::String::NumberToHex(structFrame->getSizeByLastField());
+				if (structFrame->m_isAbstract)
+					f2 << ", abstract";
+				f2 << ")\n";
 				for (const auto& [offset, field] : structFrame->m_fields) {
 					f2 << "0x" << Helper::String::NumberToHex(offset) << " - 0x" << Helper::String::NumberToHex(offset + field.m_dataType->getSize()) << ": " << field.m_dataType->getDisplayName() << "\n";
 				}

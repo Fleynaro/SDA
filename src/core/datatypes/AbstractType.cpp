@@ -25,6 +25,10 @@ bool AbstractType::isSigned() {
 	return false;
 }
 
+int AbstractType::getPriority() {
+	return 0x0;
+}
+
 void AbstractType::setTypeManager(TypeManager* typeManager) {
 	m_typeManager = typeManager;
 }

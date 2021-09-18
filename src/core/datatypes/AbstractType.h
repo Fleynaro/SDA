@@ -36,6 +36,8 @@ namespace CE::DataType
 
 		virtual bool isSigned() = 0;
 
+		virtual int getPriority() = 0;
+
 		virtual IType* getBaseType(bool refType = true, bool dereferencedType = true) = 0;
 
 		virtual TypeManager* getTypeManager() = 0;
@@ -53,6 +55,8 @@ namespace CE::DataType
 		bool isSystem() override;
 
 		bool isSigned() override;
+
+		int getPriority() override;
 
 		void setTypeManager(TypeManager* typeManager);
 
