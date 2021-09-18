@@ -38,12 +38,19 @@ void SdaDataTypesCalculater::pass_up(const std::list<DecBlock::BlockTopNode*>& t
 		UpdateDebugInfo(node);
 		calculateDataTypes(node);
 
-		//for return statement
+		// for return statement
 		if (m_signature) {
 			if (const auto returnTopNode = dynamic_cast<DecBlock::ReturnTopNode*>(topNode)) {
 				if (const auto returnNode = dynamic_cast<ISdaNode*>(returnTopNode->getNode())) {
-					const auto retDataType = m_signature->getReturnType();
-					cast(returnNode, retDataType);
+					if(m_signature->isAuto()) {
+						auto resultDataType = returnNode->getDataType();
+						onDataTypeCasting(m_signature ->getReturnType(),resultDataType);
+						m_signature->setReturnType(resultDataType);
+					}
+					else {
+						const auto retDataType = m_signature->getReturnType();
+						cast(returnNode, retDataType);
+					}
 				}
 			}
 		}
@@ -237,6 +244,7 @@ void SdaDataTypesCalculater::calculateDataTypes(INode*& node) {
 						auto dstNodeDataType = dstSdaNode->getDataType();
 						auto srcNodeDataType = srcSdaNode->getDataType();
 
+						// todo: if the structure has size of 8 bytes then troubles here
 						if (dstNodeDataType->getSize() == srcNodeDataType->getSize() && dstNodeDataType->getPriority() < srcNodeDataType->getPriority()) {
 							cast(dstSdaNode, srcNodeDataType);
 							dstSdaNode->getCast()->clearCast();

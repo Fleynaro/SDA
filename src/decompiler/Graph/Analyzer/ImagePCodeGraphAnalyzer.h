@@ -5,6 +5,7 @@
 #include "decompiler/PCode/ImageAnalyzer/DecImageAnalyzer.h"
 #include "managers/ImageManager.h"
 #include "managers/SymbolTableManager.h"
+#include <fstream>
 #include <decompiler/SDA/Symbolization/DecGraphSdaBuilding.h>
 #include <decompiler/SDA/Symbolization/SdaGraphDataTypeCalc.h>
 
@@ -99,11 +100,15 @@ namespace CE::Decompiler
 				return Structure;
 			}
 
-			int getSize() override {
+			int getSizeByLastField() {
 				if (m_fields.empty())
 					return 0;
 				const auto& [lastOffset, lastField] = *m_fields.rbegin();
 				return static_cast<int>(lastOffset) + lastField.m_dataType->getSize();
+			}
+
+			int getSize() override {
+				return 0x100;
 			}
 
 			bool isUserDefined() override {
@@ -248,8 +253,8 @@ namespace CE::Decompiler
 			ImagePCodeGraphAnalyzer* m_imagePCodeGraphAnalyzer;
 			bool m_excludeFunctionNodes = false;
 		public:
-			StructureFinder(SdaCodeGraph* sdaCodeGraph, ImagePCodeGraphAnalyzer* imagePCodeGraphAnalyzer, bool excludeFunctionNodes)
-				: SdaDataTypesCalculater(sdaCodeGraph, nullptr, imagePCodeGraphAnalyzer->m_project), m_imagePCodeGraphAnalyzer(imagePCodeGraphAnalyzer), m_excludeFunctionNodes(excludeFunctionNodes)
+			StructureFinder(SdaCodeGraph* sdaCodeGraph, DataType::IFunctionSignature* signature, ImagePCodeGraphAnalyzer* imagePCodeGraphAnalyzer, bool excludeFunctionNodes)
+				: SdaDataTypesCalculater(sdaCodeGraph, signature, imagePCodeGraphAnalyzer->m_project), m_imagePCodeGraphAnalyzer(imagePCodeGraphAnalyzer), m_excludeFunctionNodes(excludeFunctionNodes)
 			{}
 
 		private:
@@ -339,31 +344,20 @@ namespace CE::Decompiler
 							if (!structFrame->canFieldBeAddedAtOffset(fieldOffset, newFieldDataType->getSize())) {
 								// warning here (dynamic_cast required, can be only resolved by user)
 							}
-
-							// after first graph pass it's possible to use a raw structure
-							bool rawStructUsing = false;
-							if(false && structFrame->m_rawStructure) {
-								if (const auto field = structFrame->m_rawStructure->getField(fieldOffset)) {
-									cast(sdaReadValueNode, field->m_dataType);
-									rawStructUsing = true;
-								}
+							
+							const auto it = structFrame->m_fields.find(fieldOffset);
+							if (it == structFrame->m_fields.end() || it->second.m_dataType->getPriority() < newFieldDataType->getPriority()) {
+								// set data type to the field from something
+								Field field;
+								field.m_offset = fieldOffset;
+								field.m_dataType = newFieldDataType;
+								field.m_isArray = unknownLoc->getArrTerms().size() > 0; // if it is an array
+								structFrame->addField(field);
 							}
-
-							if (!rawStructUsing) {
-								const auto it = structFrame->m_fields.find(fieldOffset);
-								if (it == structFrame->m_fields.end() || it->second.m_dataType->getPriority() < newFieldDataType->getPriority()) {
-									// set data type to the field from something
-									Field field;
-									field.m_offset = fieldOffset;
-									field.m_dataType = newFieldDataType;
-									field.m_isArray = unknownLoc->getArrTerms().size() > 0; // if it is an array
-									structFrame->addField(field);
-								}
-								else {
-									// set data type to something from the field
-									const auto& field = it->second;
-									cast(sdaReadValueNode, field.m_dataType);
-								}
+							else {
+								// set data type to something from the field
+								const auto& field = it->second;
+								cast(sdaReadValueNode, field.m_dataType);
 							}
 						}
 					}
@@ -468,7 +462,7 @@ namespace CE::Decompiler
 				void start(StructureFrame* frame, bool isParentLevel = false) {
 					bool mark = !isParentLevel;
 					if (isParentLevel) {
-						mark = frame->getSize() > m_rawStructure->getStartOffset();
+						mark = frame->getSizeByLastField() > m_rawStructure->getStartOffset();
 						m_visitedParentStructFrame.insert(frame);
 					}
 
@@ -538,7 +532,7 @@ namespace CE::Decompiler
 							for (const auto structFrame : m_structFrames) {
 								if (structFrame->m_rawStructure != branch.m_structure)
 									continue;
-								maxBranchSize = std::max(maxBranchSize, structFrame->getSize());
+								maxBranchSize = std::max(maxBranchSize, structFrame->getSizeByLastField());
 								
 								const auto it = structFrame->m_fields.find(branch.m_offset);
 								if (it != structFrame->m_fields.end()) {
@@ -675,7 +669,7 @@ namespace CE::Decompiler
 					createStructures(*classHierarchy.m_rawStructures.begin(), rawStructToStruct, markAsNew);
 				}
 			}
-
+		
 		private:
 			void findAllClassHierarchies() {
 				std::set<StructureFrame*> visitedStructFrames;
@@ -763,13 +757,14 @@ namespace CE::Decompiler
 					visitedGraphs.clear();
 					doMainPass(headFuncGraph, visitedGraphs);
 
-					m_classHierarchyRecover->start();
+					//m_classHierarchyRecover->start();
 				}
 				break;
 			} while (m_nextPassRequired);
 		}
 
-		void finish(bool markAsNew) {
+		void finish2(bool markAsNew) {
+			printGraphOfStructFrames();
 			std::map<RawStructure*, DataType::IStructure*> rawStructToStruct;
 			m_classHierarchyRecover->createStructures(rawStructToStruct, markAsNew);
 			
@@ -798,6 +793,68 @@ namespace CE::Decompiler
 				for (const auto symbol : m_allSymbols) {
 					if (const auto symbolDb = dynamic_cast<CE::Symbol::AbstractSymbol*>(symbol)) {
 						m_project->getTransaction()->markAsNew(symbolDb);
+					}
+				}
+			}
+		}
+
+		void finish(bool markAsNew) {
+			printGraphOfStructFrames();
+			
+			std::map<StructureFrame*, DataType::IStructure*> rawStructToStruct;
+
+			for (const auto symbol : m_allSymbols) {
+				const auto dataType = symbol->getDataType();
+
+				if (const auto structFrame = dynamic_cast<StructureFrame*>(dataType->getType())) {
+					DataType::IStructure* structure;
+
+					const auto it = rawStructToStruct.find(structFrame);
+					if (it != rawStructToStruct.end()) {
+						structure = it->second;
+					}
+					else {
+						std::string comment = "Parents:\n";
+						for (const auto parentStruct : structFrame->m_parentStructFrames)
+							comment += "- struct_" + std::to_string(parentStruct->m_id) + "\n";
+						comment += "\nChilds:\n";
+						for (const auto childStruct : structFrame->m_childStructFrames)
+							comment += "- struct_" + std::to_string(childStruct->m_id) + "\n";
+
+						const auto typeFactory = m_project->getTypeManager()->getFactory(markAsNew);
+						const auto symFactory = m_project->getSymbolManager()->getFactory(markAsNew);
+						structure = typeFactory.createStructure("struct_" + Helper::String::NumberToHex(structFrame->m_id), comment);
+						for (const auto& [offset, field] : structFrame->m_fields) {
+							const auto fieldSymbol = symFactory.createStructFieldSymbol(
+								field.m_dataType->getSize() * 0x8, field.m_dataType, "field_0x" + Helper::String::NumberToHex(field.m_offset));
+							structure->getFields().addField(static_cast<int>(field.m_offset) * 0x8, fieldSymbol);
+							m_allSymbols.push_back(fieldSymbol);
+						}
+						rawStructToStruct[structFrame] = structure;
+					}
+
+					symbol->setDataType(GetUnit(structure, dataType->getPointerLevels()));
+				}
+			}
+			for (const auto symbol : m_allSymbols) {
+				const auto dataType = symbol->getDataType();
+				if (const auto rawSigOwner = dynamic_cast<RawSignatureOwner*>(dataType->getType())) {
+					const auto sig = rawSigOwner->m_rawSignature->m_signature;
+					if (const auto structFrame = dynamic_cast<StructureFrame*>(sig->getReturnType()->getType())) {
+						sig->setReturnType(GetUnit(rawStructToStruct[structFrame], sig->getReturnType()->getPointerLevels()));
+					}
+					symbol->setDataType(GetUnit(sig, dataType->getPointerLevels()));
+					if (const auto funcSymbol = dynamic_cast<CE::Symbol::FunctionSymbol*>(symbol))
+						funcSymbol->setSignature(sig);
+				}
+			}
+
+			// insert all new symbols into database
+			if (markAsNew) {
+				for (const auto symbol : m_allSymbols) {
+					if (const auto symbolDb = dynamic_cast<CE::Symbol::AbstractSymbol*>(symbol)) {
+						m_project->getTransaction()->markAsNew(symbolDb);
+						symbolDb->setAutoSymbol(false);
 					}
 				}
 			}
@@ -946,10 +1003,10 @@ namespace CE::Decompiler
 			sdaBuilding.start();
 
 			// data type calculating
-			StructureFinder structureFinder(sdaCodeGraph, this, true);
+			StructureFinder structureFinder(sdaCodeGraph, function->getSignature(), this, true);
 			structureFinder.start();
 			// including function params
-			StructureFinder structureFinder2(sdaCodeGraph, this, false);
+			StructureFinder structureFinder2(sdaCodeGraph, function->getSignature(), this, false);
 			structureFinder2.start();
 
 			// gather all new symbols (only after parameters of all function will be defined)
@@ -1108,6 +1165,24 @@ namespace CE::Decompiler
 			const auto rawStructOwner = new StructureFrame(m_project->getTypeManager(), static_cast<int>(m_structFrames.size()) + 1);
 			m_structFrames.push_back(rawStructOwner);
 			return rawStructOwner;
+		}
+
+		void printGraphOfStructFrames() const {
+			std::ofstream f1("graph_edges.txt", std::ofstream::trunc);
+			for (const auto structFrame : m_structFrames) {
+				for (const auto child : structFrame->m_childStructFrames) {
+					f1 << Helper::String::NumberToHex(structFrame->m_id) << " " << Helper::String::NumberToHex(child->m_id) << "\n";
+				}
+			}
+
+			std::ofstream f2("graph_fields.txt", std::ofstream::trunc);
+			for (const auto structFrame : m_structFrames) {
+				f2 << "struct: " << Helper::String::NumberToHex(structFrame->m_id) << " (size = " << Helper::String::NumberToHex(structFrame->getSizeByLastField()) << ")\n";
+				for (const auto& [offset, field] : structFrame->m_fields) {
+					f2 << "0x" << Helper::String::NumberToHex(offset) << " - 0x" << Helper::String::NumberToHex(offset + field.m_dataType->getSize()) << ": " << field.m_dataType->getDisplayName() << "\n";
+				}
+				f2 << "\n";
+			}
 		}
 		
 	};
