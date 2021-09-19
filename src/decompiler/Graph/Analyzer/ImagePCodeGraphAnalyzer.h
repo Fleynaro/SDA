@@ -19,7 +19,8 @@ namespace CE::Decompiler
 			bool m_isArray = false;
 			// todo: add stat info like "instr. offset to datatype"
 		};
-		
+
+		class StructureFrame;
 		class RawStructure
 		{
 		public:
@@ -27,6 +28,7 @@ namespace CE::Decompiler
 			int m_id;
 			RawStructure* m_parent = nullptr;
 			std::list<RawStructure*> m_childs;
+			std::list<StructureFrame*> m_structFrames;
 			std::map<int64_t, Field> m_fields;
 
 			RawStructure(int hierarchyId, int id)
@@ -69,6 +71,13 @@ namespace CE::Decompiler
 			StructureFrame(TypeManager* typeManager, int id)
 				: AbstractType(typeManager, "StructFrame"), m_id(id)
 			{}
+
+			void setRawStructure(RawStructure* rawStructure, bool removeOld = true) {
+				if(removeOld && m_rawStructure)
+					m_rawStructure->m_structFrames.remove(this);
+				m_rawStructure = rawStructure;
+				rawStructure->m_structFrames.push_back(this);
+			}
 
 			void addParent(StructureFrame* structFrame) {
 				m_parentStructFrames.insert(structFrame);
@@ -350,19 +359,31 @@ namespace CE::Decompiler
 								// warning here (dynamic_cast required, can be only resolved by user)
 							}
 							
-							const auto it = structFrame->m_fields.find(fieldOffset);
-							if (it == structFrame->m_fields.end() || it->second.m_dataType->getPriority() < newFieldDataType->getPriority()) {
-								// set data type to the field from something
-								Field field;
-								field.m_offset = fieldOffset;
-								field.m_dataType = newFieldDataType;
-								field.m_isArray = unknownLoc->getArrTerms().size() > 0; // if it is an array
-								structFrame->addField(field);
+							// after first graph pass it's possible to use a raw structure
+							bool rawStructUsing = false;
+							if (structFrame->m_rawStructure) {
+								// it need because abstract frame structure can be created for field during class hierarchy recover process
+								if (const auto field = structFrame->m_rawStructure->getField(fieldOffset)) {
+									cast(sdaReadValueNode, field->m_dataType);
+									rawStructUsing = true;
+								}
 							}
-							else {
-								// set data type to something from the field
-								const auto& field = it->second;
-								cast(sdaReadValueNode, field.m_dataType);
+
+							if (!rawStructUsing) {
+								const auto it = structFrame->m_fields.find(fieldOffset);
+								if (it == structFrame->m_fields.end() || it->second.m_dataType->getPriority() < newFieldDataType->getPriority()) {
+									// set data type to the field from something
+									Field field;
+									field.m_offset = fieldOffset;
+									field.m_dataType = newFieldDataType;
+									field.m_isArray = unknownLoc->getArrTerms().size() > 0; // if it is an array
+									structFrame->addField(field);
+								}
+								else {
+									// set data type to something from the field
+									const auto& field = it->second;
+									cast(sdaReadValueNode, field.m_dataType);
+								}
 							}
 						}
 					}
@@ -377,6 +398,7 @@ namespace CE::Decompiler
 		// decompiler for definition of return values for each function
 		class PrimaryDecompilerForReturnVal : public AbstractPrimaryDecompiler
 		{
+		public:
 			// it appeared after a function call that have potentially a return value
 			class MarkerNode : public Node
 			{
@@ -414,12 +436,8 @@ namespace CE::Decompiler
 			};
 
 			ImagePCodeGraphAnalyzer* m_imagePCodeGraphAnalyzer = nullptr;
-		public:
-			using AbstractPrimaryDecompiler::AbstractPrimaryDecompiler;
 
-			void setImagePCodeGraphAnalyzer(ImagePCodeGraphAnalyzer* imagePCodeGraphAnalyzer) {
-				m_imagePCodeGraphAnalyzer = imagePCodeGraphAnalyzer;
-			}
+			using AbstractPrimaryDecompiler::AbstractPrimaryDecompiler;
 
 		private:
 			FunctionCallInfo requestFunctionCallInfo(ExecContext* ctx, Instruction* instr, int funcOffset) override {
@@ -430,6 +448,7 @@ namespace CE::Decompiler
 						const auto markerNode = new MarkerNode(reg, rawSigOwner);
 						ctx->m_registerExecCtx.setRegister(reg, markerNode, instr);
 					}
+					return rawSigOwner->getCallInfo();
 				}
 				return FunctionCallInfo({});
 			}
@@ -472,7 +491,7 @@ namespace CE::Decompiler
 					}
 
 					if (mark) {
-						frame->m_rawStructure = m_rawStructure;
+						frame->setRawStructure(m_rawStructure);
 						m_visitedChildStructFrame.insert(frame);
 						for (const auto childFrame : frame->m_childStructFrames) {
 							if (m_visitedChildStructFrame.find(childFrame) != m_visitedChildStructFrame.end())
@@ -521,7 +540,7 @@ namespace CE::Decompiler
 					const auto initStruct = createRawStructure();
 					m_activeBranches.push_back({ initStruct, 0x0 });
 					for (const auto structFrame : m_structFrames) {
-						structFrame->m_rawStructure = initStruct;
+						structFrame->setRawStructure(initStruct);
 					}
 
 					// start iterations to grow up raw structures and make new branches if needed
@@ -585,13 +604,13 @@ namespace CE::Decompiler
 								// for remaining structure frames
 								RawStructure* newChildDefStruct = nullptr;
 								for (const auto structFrame : m_structFrames) {
-									if (structFrame->m_rawStructure != branch.m_structure)
+									if (structFrame->m_rawStructure != branch.m_structure || structFrame->getSizeByLastField() <= branch.m_offset)
 										continue;
 									if(!newChildDefStruct) {
 										newChildDefStruct = createRawStructure();
 										newChildDefStruct->setParent(branch.m_structure);
 									}
-									structFrame->m_rawStructure = newChildDefStruct;
+									structFrame->setRawStructure(newChildDefStruct);
 								}
 							}
 						}
@@ -611,6 +630,33 @@ namespace CE::Decompiler
 						fillClassHierarchy(childFrame, visitedStructFrames);
 					for (const auto parentFrame : frame->m_parentStructFrames)
 						fillClassHierarchy(parentFrame, visitedStructFrames);
+				}
+
+				// optimize hierarchy structure to look more simple
+				void optimize() {
+					// if a raw structure has only one child then join them
+					bool isFound;
+					do {
+						isFound = false;
+						for (const auto rawStructure : m_rawStructures) {
+							if (rawStructure->m_childs.size() == 1) {
+								const auto childRawStructure = *rawStructure->m_childs.begin();
+								if (childRawStructure->m_childs.empty()) {
+									rawStructure->m_childs.clear();
+									for (const auto& [offset, field] : childRawStructure->m_fields) {
+										addFieldToStruct(rawStructure, field);
+									}
+									for (const auto structFrame : childRawStructure->m_structFrames) {
+										structFrame->setRawStructure(rawStructure, false);
+									}
+									m_rawStructures.remove(childRawStructure);
+									delete childRawStructure;
+									isFound = true;
+									break;
+								}
+							}
+						}
+					} while (isFound);
 				}
 
 			private:
@@ -668,6 +714,7 @@ namespace CE::Decompiler
 				// process new class hierarchies
 				for(auto& classHierarchy : m_classHierarchies) {
 					classHierarchy.start();
+					classHierarchy.optimize();
 				}
 			}
 
@@ -911,28 +958,29 @@ namespace CE::Decompiler
 				if (retValStatInfo.m_totalMarkesCount != 0) {
 					retValStatInfo.m_score += retValStatInfo.m_meetMarkesCount * 5 / retValStatInfo.m_totalMarkesCount;
 				}
+
+				// add comment
+				std::string comment = rawSigOwner->m_rawSignature->m_signature->getComment();
+				comment += "Return value statistic:\n" \
+					"register: " + InstructionViewGenerator::GenerateRegisterName(retValStatInfo.m_register) + "\n" \
+					"total score: " + std::to_string(retValStatInfo.m_score) + " (base score: " + std::to_string(baseScore) + ")\n" \
+					"meetMarkesCount/totalMarkesCount: " + std::to_string(retValStatInfo.m_meetMarkesCount) + "/" + std::to_string(retValStatInfo.m_totalMarkesCount) + "\n" \
+					"\n";
+				rawSigOwner->m_rawSignature->m_signature->setComment(comment);
 				
 				// set return type if score is high enough
-				if (retValStatInfo.m_score >= 2) {
+				if (retValStatInfo.m_score >= 3) {
 					// todo: counting on fastcall
 					// todo: call also this in doPassToDefineReturnValues for optimization
 					const auto retType = m_project->getTypeManager()->getDefaultType(
 						retValStatInfo.m_register.getSize(), false, retValStatInfo.m_register.isVector());
 					rawSigOwner->setReturnType(retType);
 					changesCount++;
-				}
 
-				// add comment
-				std::string comment = rawSigOwner->m_rawSignature->m_signature->getComment();
-				comment += "Return value statistic:\n" \
-					"register: "+ InstructionViewGenerator::GenerateRegisterName(retValStatInfo.m_register) +"\n" \
-					"total score: "+ std::to_string(retValStatInfo.m_score) +" (base score: "+ std::to_string(baseScore) +")\n" \
-					"meetMarkesCount/totalMarkesCount: "+ std::to_string(retValStatInfo.m_meetMarkesCount) +"/"+ std::to_string(retValStatInfo.m_totalMarkesCount) +"\n" \
-					"\n";
-				rawSigOwner->m_rawSignature->m_signature->setComment(comment);
-
-				if(retValStatInfo.m_score > 0)
 					retValStatInfo.m_score = -1;
+				} else {
+					retValStatInfo.m_score = 0;
+				}
 			}
 			return changesCount;
 		}
@@ -955,7 +1003,7 @@ namespace CE::Decompiler
 
 			DecompiledCodeGraph decompiledCodeGraph(funcGraph);
 			auto decompiler = PrimaryDecompilerForReturnVal(&decompiledCodeGraph, m_imageDec->getRegisterFactory(), ReturnInfo());
-			decompiler.setImagePCodeGraphAnalyzer(this);
+			decompiler.m_imagePCodeGraphAnalyzer = this;
 			decompiler.start();
 
 			// gather all end blocks (where RET command) joining them into one context
@@ -979,8 +1027,10 @@ namespace CE::Decompiler
 				// select min register (AL inside EAX)
 				BitMask64 minMask(8);
 				const RegisterExecContext::RegisterInfo* minRegInfo = nullptr;
-				for (auto& regInfo : regList) {
+				for (const auto& regInfo : regList) {
 					if (regInfo.m_register.m_valueRangeMask <= minMask) {
+						if (dynamic_cast<PrimaryDecompilerForReturnVal::MarkerNode*>(regInfo.m_expr->getNode()))
+							continue;
 						minMask = regInfo.m_register.m_valueRangeMask;
 						minRegInfo = &regInfo;
 					}
