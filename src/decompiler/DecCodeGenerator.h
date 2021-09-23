@@ -715,8 +715,15 @@ namespace CE::Decompiler
 				else if (const auto codeBlock = dynamic_cast<LinearView::CodeBlock*>(block)) {
 					generateBlock(codeBlock);
 					if (const auto endBlock = dynamic_cast<EndDecBlock*>(codeBlock->m_decBlock)) {
-						if (endBlock->getReturnTopNode()->getNode() != nullptr)
-							generateReturnStatement(endBlock->getReturnTopNode());
+						if(endBlock->m_hasException) {
+							generateTabs();
+							generateToken("// exception here", TOKEN_COMMENT);
+							generateEndLine();
+						}
+						else {
+							if (endBlock->getReturnTopNode()->getNode() != nullptr)
+								generateReturnStatement(endBlock->getReturnTopNode());
+						}
 					}
 				}
 			}

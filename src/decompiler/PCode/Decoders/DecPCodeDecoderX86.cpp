@@ -938,7 +938,7 @@ void DecoderX86::translateCurInstruction() {
 	case ZYDIS_MNEMONIC_INT:
 	case ZYDIS_MNEMONIC_INT3: {
 		auto varnodeRip = CreateVarnode(ZYDIS_REGISTER_RIP, 0x8);
-		addMicroInstruction(InstructionId::RETURN, varnodeRip, nullptr);
+		addMicroInstruction(InstructionId::INT, varnodeRip, nullptr);
 		break;
 	}
 

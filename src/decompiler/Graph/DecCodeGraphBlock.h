@@ -156,6 +156,8 @@ namespace CE::Decompiler
 	{
 		ReturnTopNode* m_returnNode = nullptr; // operator return where the result is
 	public:
+		bool m_hasException = false; // if this block interrupts control flow with some exception
+		
 		EndDecBlock(DecompiledCodeGraph* decompiledGraph, PCodeBlock* pcodeBlock, int level);
 
 		~EndDecBlock();

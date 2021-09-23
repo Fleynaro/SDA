@@ -270,7 +270,7 @@ void ImageAnalyzer::createPCodeBlocksAtOffset(ComplexOffset startInstrOffset, Fu
 		}
 		else {
 			// calculate the next offset
-			if (instr->m_id != InstructionId::RETURN) {
+			if (instr->m_id != InstructionId::RETURN && instr->m_id != InstructionId::INT) {
 				if (const auto nextBlock = m_imageGraph->getBlockAtOffset(nextInstrOffset, false)) {
 					if (curBlock != nextBlock)
 						curBlock->setNextNearBlock(nextBlock);

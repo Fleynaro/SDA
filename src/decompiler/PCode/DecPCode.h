@@ -206,7 +206,9 @@ namespace CE::Decompiler::PCode
 		SUBPIECE,
 		//Managed Code
 		CPOOLREF,
-		NEW
+		NEW,
+		//Interruption
+		INT
 	};
 
 	// PCode instruction (e.g. result = SUM op1, op2)

@@ -88,11 +88,8 @@ void UnknownLocation::setDataType(DataTypePtr dataType) {
 }
 
 bool UnknownLocation::getLocation(MemLocation& location) {
-	auto baseSdaNode = getBaseSdaNode();
-	auto valueDataType = CloneUnit(baseSdaNode->getDataType());
-	valueDataType->removePointerLevelFromTop();
-
-	if (auto locatableNode = dynamic_cast<ILocatable*>(baseSdaNode)) {
+	const auto baseSdaNode = getBaseSdaNode();
+	if (const auto locatableNode = dynamic_cast<ILocatable*>(baseSdaNode)) {
 		if (!locatableNode->getLocation(location))
 			return false;
 	}
@@ -101,8 +98,13 @@ bool UnknownLocation::getLocation(MemLocation& location) {
 		location.m_baseAddrHash = baseSdaNode->getHash();
 	}
 	location.m_offset += getConstTermValue();
+
+	// get item size of array
+	const auto valueDataType = CloneUnit(baseSdaNode->getSrcDataType());
+	valueDataType->removePointerLevelFromTop();
 	location.m_valueSize = valueDataType->getSize();
-	for (auto term : getArrTerms()) {
+	
+	for (const auto term : getArrTerms()) {
 		auto multiplier = term.getMultiplier();
 		const auto itemSize = multiplier ? static_cast<int>(multiplier->getValue()) : 1;
 		location.addArrayDim(itemSize);

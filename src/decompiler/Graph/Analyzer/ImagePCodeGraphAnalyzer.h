@@ -146,7 +146,7 @@ namespace CE::Decompiler
 			// it have stat info about return value
 			struct ReturnValueStatInfo {
 				Register m_register;
-				int m_score = 0;
+				float m_score = 0.0;
 				// for marker nodes
 				int m_meetMarkesCount = 0;
 				int m_totalMarkesCount = 0;
@@ -443,7 +443,7 @@ namespace CE::Decompiler
 			FunctionCallInfo requestFunctionCallInfo(ExecContext* ctx, Instruction* instr, int funcOffset) override {
 				if (const auto rawSigOwner = m_imagePCodeGraphAnalyzer->getRawSignatureOwner(instr, funcOffset)) {
 					const auto& retValStatInfo = rawSigOwner->m_rawSignature->m_retValStatInfo;
-					if (retValStatInfo.m_score > 0) {
+					if (retValStatInfo.m_score > 0.0f) {
 						const auto& reg = retValStatInfo.m_register;
 						const auto markerNode = new MarkerNode(reg, rawSigOwner);
 						ctx->m_registerExecCtx.setRegister(reg, markerNode, instr);
@@ -945,18 +945,18 @@ namespace CE::Decompiler
 		}
 
 	private:
-		// need call after pass "to define return values"
+		// need call after pass "to define return values", it returns count of signature changes
 		int changeFunctionSignaturesByRetValStat() {
 			int changesCount = 0;
 			for (const auto& [funcOffset , rawSigOwner] : m_funcOffsetToSig) {
 				auto& retValStatInfo = rawSigOwner->m_rawSignature->m_retValStatInfo;
-				if (retValStatInfo.m_score == -1)
+				if (retValStatInfo.m_score == -1.0f)
 					continue;
 
 				const auto baseScore = retValStatInfo.m_score;
 				// need to define if the return value from a function call requested somewhere
 				if (retValStatInfo.m_totalMarkesCount != 0) {
-					retValStatInfo.m_score += retValStatInfo.m_meetMarkesCount * 5 / retValStatInfo.m_totalMarkesCount;
+					retValStatInfo.m_score += static_cast<float>(retValStatInfo.m_meetMarkesCount) * 5.0f / retValStatInfo.m_totalMarkesCount;
 				}
 
 				// add comment
@@ -969,7 +969,7 @@ namespace CE::Decompiler
 				rawSigOwner->m_rawSignature->m_signature->setComment(comment);
 				
 				// set return type if score is high enough
-				if (retValStatInfo.m_score >= 3) {
+				if (retValStatInfo.m_score >= 3.0f) {
 					// todo: counting on fastcall
 					// todo: call also this in doPassToDefineReturnValues for optimization
 					const auto retType = m_project->getTypeManager()->getDefaultType(
@@ -977,9 +977,9 @@ namespace CE::Decompiler
 					rawSigOwner->setReturnType(retType);
 					changesCount++;
 
-					retValStatInfo.m_score = -1;
+					retValStatInfo.m_score = -1.0f;
 				} else {
-					retValStatInfo.m_score = 0;
+					retValStatInfo.m_score = 0.0f;
 				}
 			}
 			return changesCount;
@@ -1006,57 +1006,71 @@ namespace CE::Decompiler
 			decompiler.m_imagePCodeGraphAnalyzer = this;
 			decompiler.start();
 
-			// gather all end blocks (where RET command) joining them into one context
-			ExecContext execContext(&decompiler);
+			// gather all end blocks (where RET command)
+			std::list<ExecContext*> retExecContexts;
 			for (const auto& [pcodeBlock, decBlockInfo] : decompiler.m_decompiledBlocks) {
-				if (dynamic_cast<EndDecBlock*>(decBlockInfo.m_decBlock)) {
-					execContext.join(decBlockInfo.m_execCtx);
+				if (const auto endBlock = dynamic_cast<EndDecBlock*>(decBlockInfo.m_decBlock)) {
+					if (!endBlock->m_hasException) {
+						retExecContexts.push_back(decBlockInfo.m_execCtx);
+					}
 				}
 			}
 
-			// iterate over all return registers within {execContext}
+			// iterate over all return registers in gathered contexts
 			auto retRegIds = { ZYDIS_REGISTER_RAX << 8, ZYDIS_REGISTER_XMM0 << 8 };
 			RawSignatureOwner::ReturnValueStatInfo resultRetValueStatInfo;
-			for (auto regId : retRegIds) {
-				const auto& registers = execContext.m_registerExecCtx.m_registers;
-				const auto it = registers.find(regId);
-				if (it == registers.end())
-					continue;
-				const auto& regList = it->second;
+			for (const auto regId : retRegIds)
+			{
+				RawSignatureOwner::ReturnValueStatInfo regRetValueStatInfo;
+				
+				for (const auto ctx : retExecContexts) {
+					const auto& registers = ctx->m_registerExecCtx.m_registers;
+					const auto it = registers.find(regId);
+					if (it == registers.end())
+						continue;
+					const auto& regList = it->second;
 
-				// select min register (AL inside EAX)
-				BitMask64 minMask(8);
-				const RegisterExecContext::RegisterInfo* minRegInfo = nullptr;
-				for (const auto& regInfo : regList) {
-					if (regInfo.m_register.m_valueRangeMask <= minMask) {
-						if (dynamic_cast<PrimaryDecompilerForReturnVal::MarkerNode*>(regInfo.m_expr->getNode()))
-							continue;
-						minMask = regInfo.m_register.m_valueRangeMask;
-						minRegInfo = &regInfo;
+					// select min register (AL inside EAX)
+					BitMask64 minMask(8);
+					const RegisterExecContext::RegisterInfo* minRegInfo = nullptr;
+					for (const auto& regInfo : regList) {
+						if (regInfo.m_register.m_valueRangeMask <= minMask) {
+							if (dynamic_cast<PrimaryDecompilerForReturnVal::MarkerNode*>(regInfo.m_expr->getNode()))
+								continue;
+							minMask = regInfo.m_register.m_valueRangeMask;
+							minRegInfo = &regInfo;
+						}
+					}
+
+					// give scores to the register
+					if (minRegInfo) {
+						// select min register again
+						if (!regRetValueStatInfo.m_register.isValid() ||
+							minRegInfo->m_register.m_valueRangeMask.getValue() < regRetValueStatInfo.m_register.m_valueRangeMask.getValue()) {
+							regRetValueStatInfo.m_register = minRegInfo->m_register;
+						}
+						
+						switch (minRegInfo->m_using)
+						{
+						case RegisterExecContext::RegisterInfo::REGISTER_NOT_USING:
+							regRetValueStatInfo.m_score += 5.0f;
+							break;
+						case RegisterExecContext::RegisterInfo::REGISTER_PARTIALLY_USING:
+							regRetValueStatInfo.m_score += 2.0f;
+							break;
+						case RegisterExecContext::RegisterInfo::REGISTER_FULLY_USING:
+							regRetValueStatInfo.m_score += 1.0f;
+							break;
+						}
 					}
 				}
 
-				// give scores to the register
-				if (minRegInfo) {
-					RawSignatureOwner::ReturnValueStatInfo regRetValueStatInfo;
-					regRetValueStatInfo.m_register = minRegInfo->m_register;
-					switch (minRegInfo->m_using)
-					{
-					case RegisterExecContext::RegisterInfo::REGISTER_NOT_USING:
-						regRetValueStatInfo.m_score += 5;
-						break;
-					case RegisterExecContext::RegisterInfo::REGISTER_PARTIALLY_USING:
-						regRetValueStatInfo.m_score += 2;
-						break;
-					case RegisterExecContext::RegisterInfo::REGISTER_FULLY_USING:
-						regRetValueStatInfo.m_score += 1;
-						break;
-					}
-
-					if (resultRetValueStatInfo.m_score < regRetValueStatInfo.m_score)
-						resultRetValueStatInfo = regRetValueStatInfo;
-				}
+				// select return register (eax/xmm0)
+				regRetValueStatInfo.m_score /= static_cast<float>(retExecContexts.size());
+				if (resultRetValueStatInfo.m_score < regRetValueStatInfo.m_score)
+					resultRetValueStatInfo = regRetValueStatInfo;
 			}
+			
 			// set register with the biggest score
 			funcSigOwner->m_rawSignature->m_retValStatInfo = resultRetValueStatInfo;
 		}

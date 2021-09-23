@@ -367,6 +367,16 @@ void InstructionInterpreter::execute(Instruction* instr) {
 		}
 		break;
 	}
+
+	case InstructionId::INT:
+	{
+		// no return value, this is an exception, rax register stores exception class
+		// todo: exception handling
+		if (const auto endBlock = dynamic_cast<EndDecBlock*>(m_block)) {
+			endBlock->m_hasException = true;
+		}
+		break;
+	}
 	}
 }
 
