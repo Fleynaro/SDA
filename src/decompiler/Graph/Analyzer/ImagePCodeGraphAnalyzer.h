@@ -443,7 +443,7 @@ namespace CE::Decompiler
 			FunctionCallInfo requestFunctionCallInfo(ExecContext* ctx, Instruction* instr, int funcOffset) override {
 				if (const auto rawSigOwner = m_imagePCodeGraphAnalyzer->getRawSignatureOwner(instr, funcOffset)) {
 					const auto& retValStatInfo = rawSigOwner->m_rawSignature->m_retValStatInfo;
-					if (retValStatInfo.m_score > 0.0f) {
+					if (retValStatInfo.m_score > 0.0f && retValStatInfo.m_score < 3.0f) {
 						const auto& reg = retValStatInfo.m_register;
 						const auto markerNode = new MarkerNode(reg, rawSigOwner);
 						ctx->m_registerExecCtx.setRegister(reg, markerNode, instr);
@@ -609,6 +609,7 @@ namespace CE::Decompiler
 									if(!newChildDefStruct) {
 										newChildDefStruct = createRawStructure();
 										newChildDefStruct->setParent(branch.m_structure);
+										newActiveBranches.push_back({ newChildDefStruct, branch.m_offset + 1 });
 									}
 									structFrame->setRawStructure(newChildDefStruct);
 								}
@@ -1264,7 +1265,7 @@ namespace CE::Decompiler
 					if (it != m_funcOffsetToSig.end()) {
 						Field field;
 						field.m_offset = offset;
-						field.m_dataType = GetUnit(it->second->m_rawSignature->m_signature, "[1]");
+						field.m_dataType = GetUnit(it->second, "[1]");
 						rawStructOwner->addField(field);
 					}
 					offset += 0x8;
