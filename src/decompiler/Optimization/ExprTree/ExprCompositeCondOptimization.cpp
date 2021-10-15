@@ -70,6 +70,8 @@ void Optimization::ExprCompositeConditionOptimization::MakeOrderInCompositeCondi
 	}
 }
 
+//(x < 2 || x == 2)		->		(x <= 2)
+
 void Optimization::ExprCompositeConditionOptimization::optimizeCompositeCondition() {
 	const auto compCond = getCompCondition();
 	

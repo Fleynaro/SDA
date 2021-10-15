@@ -35,7 +35,7 @@ void Optimization::ExprConcatAndSubpieceBuilding::processOpNode(OperationalNode*
 		if (pairOp2.second < pairOp1.second)
 			std::swap(pairOp1, pairOp2);
 		if (pairOp2.second - pairOp1.second == pairOp1.first->getSize() * 0x8) {
-			auto sumSize = pairOp1.first->getSize() + pairOp2.first->getSize();
+			//auto sumSize = pairOp1.first->getSize() + pairOp2.first->getSize();
 			auto newNode = new OperationalNode(pairOp2.first, pairOp1.first, Concat);
 			if (pairOp1.second)
 				newNode = new OperationalNode(newNode, new NumberLeaf(static_cast<uint64_t>(pairOp1.second), 4), Shl);
@@ -48,6 +48,7 @@ void Optimization::ExprConcatAndSubpieceBuilding::processOpNode(OperationalNode*
 	}
 }
 
+// find expr. like this: x << 8,	y << 32
 std::pair<INode*, int> Optimization::ExprConcatAndSubpieceBuilding::GetConcatOperand(INode* node) {
 	if (auto curExpr = dynamic_cast<OperationalNode*>(node)) {
 		if (curExpr->m_operation == Shl) {
