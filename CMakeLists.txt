@@ -13,9 +13,6 @@ include(cmake/func_thrift_generator.cmake)
 include(cmake/compiler_flags.cmake)
 include(cmake/CMakeRC.cmake)
 
-# Using vcpkg you should install the required libraries.
-# Command: vcpkg install nlohmann-json magic-enum sqlitecpp gtest zydis asmjit thrift minhook imgui --triplet x64-windows
-# Build command: cmake .. -G "Visual Studio 16 2019" -A x64 "-DCMAKE_TOOLCHAIN_FILE=C:\src\vcpkg\scripts\buildsystems\vcpkg.cmake"
 # packages:
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
