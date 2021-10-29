@@ -34,7 +34,7 @@ set_target_properties(asmjit PROPERTIES FOLDER "external")
 set_target_properties(asmtk PROPERTIES FOLDER "external")
 
 # all options
-option(USE_TESTS "Use unit tests" ON)
+option(USE_TESTS "Use unit tests" OFF)
 
 add_subdirectory(libs/imgui_wrapper)
 set_target_properties(imgui_wrapper PROPERTIES FOLDER "libs")

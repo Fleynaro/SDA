@@ -1,7 +1,7 @@
 # What is it?
 SDA is a rich cross-platform tool for reverse engineering that focused firstly on analysis of computer games. I'm trying to create a mix of the Ghidra, Cheat Engine and x64dbg. My tool will combine static and dynamic analysis of programs.
 
-Now SDA is being developed.
+Now SDA is being developed. You can use it only as demo as there are many bugs and there is much to do.
 
 # Features
 SDA has the features:
