@@ -3,21 +3,23 @@
 #include <Module.hpp>
 #include <iostream>
 
-#include <boost/dll/alias.hpp>
-
 class DatabaseModule : public IModule
 {
 public:
     std::string getName();
+
+    boost::dll::fs::path location() const override {
+        return boost::dll::this_line_location();
+    }
 
     void doSomething() {
         std::cout << "Database Module doSomething called" << std::endl;
         core();
     }
 
-    static std::shared_ptr<DatabaseModule> Create() {
-        return std::make_shared<DatabaseModule>();
+    static std::unique_ptr<IModule> Create() {
+        return std::make_unique<DatabaseModule>();
     }
 };
 
-BOOST_DLL_ALIAS(DatabaseModule::Create, createDatabaseModule)
+EXPORT_MODULE(DatabaseModule)
