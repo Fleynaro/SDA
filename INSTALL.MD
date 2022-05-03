@@ -4,7 +4,7 @@
 (Mac and Linux are not supported, Linux support is planned)
 
 # 1. Install dependencies
-`vcpkg install nlohmann-json magic-enum sqlitecpp gtest zydis asmjit thrift minhook imgui --triplet x64-windows`
+`vcpkg install boost-dll --triplet x64-windows`
 
 # 2. Building
 
