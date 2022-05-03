@@ -2,8 +2,10 @@
 #include <boost/function.hpp>
 #include <boost/dll/import.hpp>
 
+using namespace sda;
+
 // Bind module object to the shared library to prevent it from being unloaded
-std::shared_ptr<IModule> Bind(std::unique_ptr<IModule> module) {
+IModulePtr Bind(std::unique_ptr<IModule> module) {
     // getting location of the shared library that holds the plugin
     auto location = module->location();
 
@@ -19,7 +21,7 @@ std::shared_ptr<IModule> Bind(std::unique_ptr<IModule> module) {
     return std::shared_ptr<IModule>(module.release(), deleter);
 }
 
-std::shared_ptr<IModule> GetModule(const boost::dll::fs::path& path) {
+IModulePtr sda::GetModule(const boost::dll::fs::path& path) {
     typedef std::unique_ptr<IModule> (moduleapi_create_t)();
 
     /*
