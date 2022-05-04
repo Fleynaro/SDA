@@ -3,6 +3,7 @@
 #include <boost/dll/alias.hpp>
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <Program.hpp>
+#include <Context.hpp>
 #include <Utils.hpp>
 
 namespace sda
@@ -17,6 +18,9 @@ namespace sda
 
         // Initialization callback
         virtual void init(Program* program) = 0;
+
+        // Create a new context that presents the module
+        virtual IContextPtr createContext() = 0;
     };
     DECL_SHARED_PTR(IModule)
 

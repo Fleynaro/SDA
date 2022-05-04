@@ -1,7 +1,7 @@
 #pragma once
-#include <string>
+#include <list>
 #include <map>
-#include <Utils.hpp>
+#include <Project.hpp>
 
 namespace sda
 {
@@ -9,12 +9,19 @@ namespace sda
 
     class Program
     {
+        // for access to Program::m_projects
+        friend Project* Project::Create(Program* program, const std::string& name);
+
         std::map<std::string, IModulePtr> m_modules;
+        std::list<ProjectPtr> m_projects;
     public:
+        // Add module to the program
+        void addModule(IModulePtr module);
+
         // Get module by name
         IModulePtr getModule(const std::string& name);
 
-        // Add module to the program
-        void addModule(const std::string& name, IModulePtr module);
+        // Get list of projects
+        const std::list<ProjectPtr>& getProjects();
     };
 };

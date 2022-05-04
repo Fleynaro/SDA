@@ -1,4 +1,9 @@
 {
+    "CppHelper.SourcePattern": [
+        "{FILE}.cpp",
+        "../{FILE}.cpp"
+    ],
+
     "files.associations": {
         "iostream": "cpp",
         "algorithm": "cpp",

@@ -3,10 +3,12 @@
 
 namespace sda
 {
-    class DatabaseModule : public IModule
+    class CoreModule : public IModule
     {
     public:
-        std::string getName();
+        std::string getName() {
+            return "Core";
+        }
 
         boost::dll::fs::path location() const override {
             return boost::dll::this_line_location();
@@ -17,9 +19,9 @@ namespace sda
         }
 
         static std::unique_ptr<IModule> Create() {
-            return std::make_unique<DatabaseModule>();
+            return std::make_unique<CoreModule>();
         }
     };
 };
 
-EXPORT_MODULE(sda::DatabaseModule)
+EXPORT_MODULE(sda::CoreModule)

@@ -3,23 +3,12 @@
 
 int main(int argc, char *argv[])
 {
-    // for third party plugin only!
-    {
-        auto module = sda::GetModule("database");
-        
-        // use loaded module
-        std::cout << "module name: " << module->getName() << std::endl;
-    }
+    using namespace sda;
 
-    std::cout << "-----" << std::endl;
+    Program program;
+    program.addModule(DatabaseModule::Create());
 
-    // another way
-    {
-        auto module = sda::DatabaseModule::Create();
-        std::cout << "module name: " << module->getName() << std::endl;
-    }
-
-    sda::Program program;
-    program.addModule("database", sda::DatabaseModule::Create());
+    auto project = Project::Create(&program, "Test");
+    
     return 0;
 }
