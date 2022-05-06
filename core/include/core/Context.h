@@ -1,10 +1,9 @@
 #pragma once
 #include <string>
-#include <Utils.hpp>
+#include <memory>
 
 namespace sda
 {
-    DECL_SHARED_PTR_BEFORE(IContext);
     class IContext
     {
     public:

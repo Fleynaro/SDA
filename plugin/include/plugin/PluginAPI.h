@@ -1,14 +1,11 @@
 #pragma once
-#include <string>
 #include <boost/dll/alias.hpp>
 #include <boost/dll/runtime_symbol_info.hpp>
-#include <Program.hpp>
-#include <Context.hpp>
-#include <Utils.hpp>
+#include "core/Program.h"
 
 namespace sda
 {
-    class IModule {
+    class IPlugin {
     public:
         // Get name of the module
         virtual std::string getName() = 0;
@@ -18,16 +15,9 @@ namespace sda
 
         // Initialization callback
         virtual void init(Program* program) = 0;
-
-        // Create a new context that presents the module
-        virtual IContextPtr createContext() = 0;
     };
-    DECL_SHARED_PTR(IModule)
 
     // Define exported module
     #define EXPORT_MODULE(module_name) \
         BOOST_DLL_ALIAS(module_name::Create, CreateModule)
-
-    // Get a third-party module by path (name)
-    IModulePtr GetModule(const boost::dll::fs::path& path);
 };

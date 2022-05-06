@@ -1,15 +1,12 @@
 #include <iostream>
-#include <CoreModule.hpp>
-#include <DatabaseModule.hpp>
+#include "core/Program.h"
+#include "core/Project.h"
 
 int main(int argc, char *argv[])
 {
     using namespace sda;
 
     Program program;
-    program.addModule(CoreModule::Create());
-    program.addModule(DatabaseModule::Create());
-
     auto project = Project::Create(&program, "Test");
 
     return 0;

@@ -1,28 +1,28 @@
-#include <Module.hpp>
+#include "plugin/PluginLoader.h"
 #include <boost/function.hpp>
 #include <boost/dll/import.hpp>
 
 using namespace sda;
 
 // Bind module object to the shared library to prevent it from being unloaded
-IModulePtr Bind(std::unique_ptr<IModule> module) {
+std::shared_ptr<IPlugin> Bind(std::unique_ptr<IPlugin> module) {
     // getting location of the shared library that holds the plugin
     auto location = module->location();
 
     struct {
         std::shared_ptr<boost::dll::shared_library> lib;
 
-        void operator()(IModule* p) const {
+        void operator()(IPlugin* p) const {
             delete p;
         }
     } deleter;
     deleter.lib = std::make_shared<boost::dll::shared_library>(location);
 
-    return std::shared_ptr<IModule>(module.release(), deleter);
+    return std::shared_ptr<IPlugin>(module.release(), deleter);
 }
 
-IModulePtr sda::GetModule(const boost::dll::fs::path& path) {
-    typedef std::unique_ptr<IModule> (moduleapi_create_t)();
+std::shared_ptr<IPlugin> sda::GetModule(const boost::dll::fs::path& path) {
+    typedef std::unique_ptr<IPlugin> (moduleapi_create_t)();
 
     /*
         Module creator variable holds a reference to the shared library (module).

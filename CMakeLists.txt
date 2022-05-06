@@ -10,7 +10,6 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 # packages:
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 
-add_subdirectory(src/shared)
-add_subdirectory(src/core)
-add_subdirectory(src/database)
-add_subdirectory(src/launcher)
+add_subdirectory(core)
+add_subdirectory(plugin)
+add_subdirectory(launcher)
