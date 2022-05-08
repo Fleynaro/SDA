@@ -1,7 +1,7 @@
 #pragma once
 #include <boost/dll/alias.hpp>
 #include <boost/dll/runtime_symbol_info.hpp>
-#include "core/Program.h"
+#include "Program.h"
 
 namespace sda
 {

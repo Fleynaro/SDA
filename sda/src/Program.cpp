@@ -1,4 +1,4 @@
-#include "core/Program.h"
+#include "Program.h"
 
 using namespace sda;
 

@@ -1,7 +1,8 @@
 {
     "CppHelper.SourcePattern": [
         "{FILE}.cpp",
-        "../{FILE}.cpp"
+        "../src/{FILE}.cpp",
+        "../../src/{FILE}.cpp"
     ],
 
     "files.associations": {

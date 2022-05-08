@@ -1,6 +1,6 @@
 #include <iostream>
-#include "core/Program.h"
-#include "core/Project.h"
+#include "Program.h"
+#include "Project.h"
 
 int main(int argc, char *argv[])
 {

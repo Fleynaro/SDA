@@ -1,4 +1,4 @@
-#include "core/Program.h"
+#include "Program.h"
 
 using namespace sda;
 
@@ -12,6 +12,10 @@ std::string Project::getName() {
 
 IContext* Project::getContext(const std::string& name) {
     return m_contexts.at(name).get();
+}
+
+void Project::registerContext(std::unique_ptr<IContext> context) {
+    
 }
 
 Project* Project::Create(Program* program, const std::string& name) {

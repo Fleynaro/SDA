@@ -1,6 +1,6 @@
 #pragma once
 #include <map>
-#include "Context.h"
+#include "core/Context.h"
 
 namespace sda
 {
@@ -11,14 +11,17 @@ namespace sda
         Program* m_program;
         std::string m_name;
         std::map<std::string, std::unique_ptr<IContext>> m_contexts;
-
-        Project(Program* program, const std::string& name);
     public:
+        Project(Program* program, const std::string& name);
+
         // Get name of the project
         std::string getName();
 
         // Get context of the project
         IContext* getContext(const std::string& name);
+
+        // Register a context
+        void registerContext(std::unique_ptr<IContext> context);
 
         // Create a new project
         static Project* Create(Program* program, const std::string& name);
