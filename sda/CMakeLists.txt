@@ -10,6 +10,4 @@ target_include_directories(
 
 target_link_libraries(
     sda PUBLIC
-    core
-    Boost::boost
-    Boost::system Boost::filesystem)
+    core)

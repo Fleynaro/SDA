@@ -20,8 +20,9 @@ void Project::registerContext(std::unique_ptr<IContext> context) {
 
 Project* Project::Create(Program* program, const std::string& name) {
     auto project = std::make_unique<Project>(program, name);
+    auto pProject = project.get();
     
     program->m_projects.push_back(std::move(project));
 
-    return project.get();
+    return pProject;
 }
