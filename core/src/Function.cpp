@@ -8,11 +8,10 @@ int64_t Function::getOffset() const {
 }
 
 Function* Function::Create(Context* context, int64_t offset) {
-    auto function = std::make_unique<Function>();
-    auto pFunction = function.get();
-
+    auto function = new Function();
     function->m_offset = offset;
-    context->getFunctions()->add(std::move(function));
+    
+    context->getFunctions()->add(std::unique_ptr<Function>(function));
 
-    return pFunction;
+    return function;
 }

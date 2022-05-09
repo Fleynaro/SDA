@@ -8,27 +8,33 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <fstream>
 
+using namespace sda;
+
+BOOST_CLASS_EXPORT(Function)
+
 int main(int argc, char *argv[])
 {
-    using namespace sda;
     Program program;
     auto project = Project::Create(&program, "Test");
 
     auto ctx = new Context();
-    
+
     auto func = Function::Create(ctx, 1000);
+    IObject* obj = func;
     {
         std::ofstream ofs("filename.dat");
         boost::archive::text_oarchive oa(ofs);
-        oa << func;
+        oa << obj;
     }
 
     auto func2 = Function::Create(ctx, 0);
+    IObject* obj2;
     {
         std::ifstream ifs("filename.dat");
         boost::archive::text_iarchive ia(ifs);
-        ia >> func2;
+        ia >> obj2;
     }
+    func2 = dynamic_cast<Function*>(obj2);
 
     return 0;
 }

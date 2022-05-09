@@ -3,7 +3,11 @@
 #include <memory>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
-#include "Serialization.h"
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/uuid/uuid_serialize.hpp>
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/base_object.hpp>
+#include <boost/serialization/export.hpp>
 
 namespace sda
 {
@@ -13,6 +17,8 @@ namespace sda
     // Interface for all domain objects
     class IObject
     {
+        friend class boost::serialization::access;
+        template<class Archive> void serialize(Archive&, unsigned) {}
     public:
         // Get the unique identifier of the object
         virtual ObjectId getId() const = 0;
@@ -30,12 +36,23 @@ namespace sda
         virtual void setComment(const std::string& comment) = 0;
     };
 
+    BOOST_SERIALIZATION_ASSUME_ABSTRACT(IObject)
+
+    // BOOST_SERIALIZATION_ASSUME_ABSTRACT(IObject)
+
     // Base class for all domain objects
-    class Object : public virtual IObject, public ISerializable
+    class Object : public virtual IObject
     {
+        friend class boost::serialization::access;
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version) {
+            boost::serialization::base_object<IObject>(*this);
+            ar & m_id & m_name & m_comment;
+        }    
+    
         ObjectId m_id;
-        std::string m_name;
-        std::string m_comment;
+        std::string m_name = "name";
+        std::string m_comment = "comment";
     public:
         Object();
 
@@ -53,13 +70,9 @@ namespace sda
 
         // Set the comment of the object
         void setComment(const std::string& comment);
-
-        // Serialize the object
-        void serialize(JsonData& json) const override {}
-
-        // Deserialize the object
-        void deserialize(const JsonData& json) override {}
     };
+
+    BOOST_SERIALIZATION_ASSUME_ABSTRACT(Object)
 
     // Base class for all domain object's lists
     template<typename T = IObject>
