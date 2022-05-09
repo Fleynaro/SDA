@@ -4,10 +4,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
-#include <boost/uuid/uuid_serialize.hpp>
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/base_object.hpp>
-#include <boost/serialization/export.hpp>
+#include "Serialization.h"
 
 namespace sda
 {
@@ -17,8 +14,6 @@ namespace sda
     // Interface for all domain objects
     class IObject
     {
-        friend class boost::serialization::access;
-        template<class Archive> void serialize(Archive&, unsigned) {}
     public:
         // Get the unique identifier of the object
         virtual ObjectId getId() const = 0;
@@ -36,23 +31,19 @@ namespace sda
         virtual void setComment(const std::string& comment) = 0;
     };
 
-    BOOST_SERIALIZATION_ASSUME_ABSTRACT(IObject)
-
-    // BOOST_SERIALIZATION_ASSUME_ABSTRACT(IObject)
-
     // Base class for all domain objects
-    class Object : public virtual IObject
+    class Object : public virtual IObject, public virtual ISerializable
     {
         friend class boost::serialization::access;
         template<class Archive>
         void serialize(Archive & ar, const unsigned int version) {
-            boost::serialization::base_object<IObject>(*this);
+            boost::serialization::base_object<ISerializable>(*this);
             ar & m_id & m_name & m_comment;
         }    
     
         ObjectId m_id;
-        std::string m_name = "name";
-        std::string m_comment = "comment";
+        std::string m_name = "";
+        std::string m_comment = "";
     public:
         Object();
 

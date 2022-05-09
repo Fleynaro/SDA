@@ -1,15 +1,26 @@
 #pragma once
-#include <boost/json.hpp>
+#include <boost/uuid/uuid_serialize.hpp>
+#include <boost/serialization/serialization.hpp>
+#include <boost/serialization/base_object.hpp>
+#include <boost/serialization/export.hpp>
 
 namespace sda
 {
-    using JsonData = boost::json::value;
-
+    // Interface for objects that can be serialized
     class ISerializable
     {
-    public:
-        virtual void serialize(JsonData& json) const = 0;
+        friend class boost::serialization::access;
+        template<class Archive> void serialize(Archive&, unsigned) {}
 
-        virtual void deserialize(const JsonData& json) = 0;
+    public:
+        virtual ~ISerializable() = default;
     };
+
+    BOOST_SERIALIZATION_ASSUME_ABSTRACT(ISerializable)
+
+    // Serialize object to stream
+    void Serialize(const ISerializable* obj, std::ostream& os);
+
+    // Deserialize object from stream
+    ISerializable* Deserialize(std::istream& is);
 };

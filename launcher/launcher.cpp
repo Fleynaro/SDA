@@ -4,13 +4,9 @@
 #include "Core/Context.h"
 #include "Core/Function.h"
 
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
 #include <fstream>
 
 using namespace sda;
-
-BOOST_CLASS_EXPORT(Function)
 
 int main(int argc, char *argv[])
 {
@@ -20,21 +16,18 @@ int main(int argc, char *argv[])
     auto ctx = new Context();
 
     auto func = Function::Create(ctx, 1000);
-    IObject* obj = func;
     {
+        ISerializable* obj = func;
         std::ofstream ofs("filename.dat");
-        boost::archive::text_oarchive oa(ofs);
-        oa << obj;
+        Serialize(obj, ofs);
     }
 
-    auto func2 = Function::Create(ctx, 0);
-    IObject* obj2;
+    Function* func2;
     {
         std::ifstream ifs("filename.dat");
-        boost::archive::text_iarchive ia(ifs);
-        ia >> obj2;
+        auto obj = Deserialize(ifs);
+        func2 = dynamic_cast<Function*>(obj);
     }
-    func2 = dynamic_cast<Function*>(obj2);
 
     return 0;
 }
