@@ -26,3 +26,8 @@ void Object::setComment(const std::string& comment) {
     m_comment = comment;
 }
 
+std::list<Object::KeyValue> Object::getKeyValues() const {
+    return {
+        {"id", KeyValue::Text, boost::uuids::to_string(m_id)}
+    };
+}

@@ -1,6 +1,8 @@
 #pragma once
 #include <list>
+#include <map>
 #include <filesystem>
+#include <Core/Serialization.h>
 
 namespace sda
 {
@@ -34,7 +36,7 @@ namespace sda
     {
         std::filesystem::path m_path;
         std::unique_ptr<Schema> m_schema;
-        std::list<std::unique_ptr<Collection>> m_collections;
+        std::map<std::string, std::unique_ptr<Collection>> m_collections;
     public:
         Database(const std::filesystem::path& path, std::unique_ptr<Schema> schema);
 
@@ -57,6 +59,12 @@ namespace sda
         std::string m_name;
         Database* m_database;
     public:
-        Collection(std::string name, Database* database);
+        Collection(const std::string& name, Database* database);
+
+        // Write object to the collection
+        void write(ISerializable* object);
+
+        // Get all objects from the collection
+        std::list<ISerializable*> getAll();
     };
 };

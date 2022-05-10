@@ -11,6 +11,7 @@ include(cmake/compiler_flags.cmake)
 
 # packages:
 find_package(Boost REQUIRED COMPONENTS system filesystem serialization)
+find_package(unofficial-sqlite3 CONFIG REQUIRED)
 
 add_subdirectory(core)
 add_subdirectory(sda)

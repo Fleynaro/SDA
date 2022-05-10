@@ -67,6 +67,9 @@ namespace sda
 
         // Set the comment of the object
         void setComment(const std::string& comment);
+
+        // Get the list of key values
+        std::list<KeyValue> getKeyValues() const override;
     };
 
     BOOST_SERIALIZATION_ASSUME_ABSTRACT(Object)

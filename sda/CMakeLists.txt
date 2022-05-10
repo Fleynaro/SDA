@@ -10,4 +10,5 @@ target_include_directories(
 
 target_link_libraries(
     sda PUBLIC
-    core)
+    core
+    unofficial::sqlite3::sqlite3)
