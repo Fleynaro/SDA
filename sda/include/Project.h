@@ -21,8 +21,5 @@ namespace sda
 
         // Register a context
         void registerContext(std::unique_ptr<IContext> context);
-
-        // Create a new project
-        static Project* Create(Program* program, const std::string& name);
     };
 };

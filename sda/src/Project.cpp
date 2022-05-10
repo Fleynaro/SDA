@@ -4,7 +4,9 @@ using namespace sda;
 
 Project::Project(Program* program, const std::string& name)
     : m_program(program), m_name(name)
-{}
+{
+    program->m_projects.push_back(std::unique_ptr<Project>(this));
+}
 
 std::string Project::getName() {
     return m_name;
@@ -16,12 +18,4 @@ IContext* Project::getContext(const std::string& name) {
 
 void Project::registerContext(std::unique_ptr<IContext> context) {
     
-}
-
-Project* Project::Create(Program* program, const std::string& name) {
-    auto project = new Project(program, name);
-    
-    program->m_projects.push_back(std::unique_ptr<Project>(project));
-
-    return project;
 }

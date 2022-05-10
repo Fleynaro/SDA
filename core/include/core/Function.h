@@ -10,7 +10,8 @@ namespace sda
     };
 
     class FunctionList : public ObjectList<IFunction>
-    {};
+    {
+    };
 
     class Function : public Object, public IFunction
     {
@@ -25,8 +26,10 @@ namespace sda
     public:
         Function() = default;
 
+        Function(Context* context, int64_t offset);
+
         int64_t getOffset() const override;
 
-        static Function* Create(Context* context, int64_t offset);
+        void bind(IContext* context) override;
     };
 };

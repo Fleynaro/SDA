@@ -9,6 +9,7 @@
 namespace sda
 {
     using ObjectId = boost::uuids::uuid;
+    class IContext;
     class Context;
 
     // Interface for all domain objects
@@ -29,6 +30,9 @@ namespace sda
 
         // Set the comment of the object
         virtual void setComment(const std::string& comment) = 0;
+
+        // Bind the object to the context
+        virtual void bind(IContext* context) = 0;
     };
 
     // Base class for all domain objects
@@ -38,7 +42,9 @@ namespace sda
         template<class Archive>
         void serialize(Archive & ar, const unsigned int version) {
             boost::serialization::base_object<ISerializable>(*this);
-            ar & m_id & m_name & m_comment;
+            ar & m_id;
+            ar & m_name;
+            ar & m_comment;
         }    
     
         ObjectId m_id;
@@ -69,8 +75,47 @@ namespace sda
     template<typename T = IObject>
     class ObjectList
     {
-        std::map<ObjectId, std::unique_ptr<T>> m_objects;
+        using ObjectListType = std::map<ObjectId, std::unique_ptr<T>>;
+        ObjectListType m_objects;
     public:
+        // Iterator wrapper over the map
+        struct Iterator 
+        {
+            using iterator_category = std::input_iterator_tag;
+            using difference_type = std::ptrdiff_t;
+            using reference = T*;
+
+            Iterator(const typename ObjectListType::iterator& it)
+                : m_it(it)
+            {}
+
+            reference operator*() {
+                return m_it->second.get();
+            }
+
+            Iterator& operator++() {
+                ++m_it;
+                return *this;
+            }
+
+            Iterator operator++(int) {
+                Iterator it = *this;
+                ++(*this);
+                return it;
+            }
+
+            bool operator==(const Iterator& it) const {
+                return m_it == it.m_it;
+            }
+
+            bool operator!=(const Iterator& it) const {
+                return !(*this == it);
+            }
+
+        private:
+            typename ObjectListType::iterator m_it;
+        };
+
         ObjectList() = default;
 
         // Add an object to the list
@@ -85,6 +130,16 @@ namespace sda
                 return nullptr;
             }
             return it->second.get();
+        }
+
+        // Get iterator to the first object
+        Iterator begin() {
+            return Iterator(m_objects.begin());
+        }
+
+        // Get iterator to the last object
+        Iterator end() {
+            return Iterator(m_objects.end());
         }
     };
 };
