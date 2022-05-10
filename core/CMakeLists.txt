@@ -15,4 +15,4 @@ target_link_libraries(
     Boost::boost
     Boost::system
     Boost::filesystem
-    Boost::serialization)
+    Boost::json)

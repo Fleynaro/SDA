@@ -1,4 +1,7 @@
 #include "Core/Object.h"
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <boost/uuid/string_generator.hpp>
 
 using namespace sda;
 
@@ -26,8 +29,15 @@ void Object::setComment(const std::string& comment) {
     m_comment = comment;
 }
 
-std::list<Object::KeyValue> Object::getKeyValues() const {
-    return {
-        {"id", KeyValue::Text, boost::uuids::to_string(m_id)}
-    };
+void Object::serialize(boost::json::object& data) const {
+    data["uuid"] = boost::uuids::to_string(m_id);
+    data["name"] = m_name;
+    data["comment"] = m_comment;
+}
+
+void Object::deserialize(boost::json::object& data) {
+    std::string uuid(data["uuid"].get_string());
+    m_id = boost::uuids::string_generator()(uuid);
+    m_name = data["name"].get_string();
+    m_comment = data["comment"].get_string();
 }

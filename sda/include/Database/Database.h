@@ -2,7 +2,8 @@
 #include <list>
 #include <map>
 #include <filesystem>
-#include <Core/Serialization.h>
+#include <sqlite3.h>
+#include <boost/json.hpp>
 
 namespace sda
 {
@@ -17,10 +18,10 @@ namespace sda
 
         struct Collection {
             std::string name;
-            std::vector<Field> fields;
+            std::list<Field> fields;
         };
 
-        Schema() = default;
+        Schema(const std::list<Collection>& collections);
 
         // Get list of collections
         const std::list<Collection>& getCollections() const;
@@ -36,18 +37,13 @@ namespace sda
     {
         std::filesystem::path m_path;
         std::unique_ptr<Schema> m_schema;
+        sqlite3* m_db;
         std::map<std::string, std::unique_ptr<Collection>> m_collections;
     public:
         Database(const std::filesystem::path& path, std::unique_ptr<Schema> schema);
 
         // Initialize the database
         void init();
-
-        // Get path to the database
-        const std::filesystem::path& getPath() const;
-
-        // Get schema of the database
-        Schema* getSchema();
 
         // Get collection of the database
         Collection* getCollection(const std::string& name);
@@ -56,15 +52,27 @@ namespace sda
     // Collection stores a list of objects
     class Collection
     {
-        std::string m_name;
+        Schema::Collection* m_schemaCollection;
         Database* m_database;
     public:
-        Collection(const std::string& name, Database* database);
+        class Iterator {
+            Collection* m_collection;
+        public:
+            Iterator(Collection* collection);
+
+            // Check if the next object is available
+            bool hasNext() const;
+
+            // Get next object
+            boost::json::object next();
+        };
+
+        Collection(Database* database, Schema::Collection* schemaCollection);
 
         // Write object to the collection
-        void write(ISerializable* object);
+        void write(boost::json::object& data);
 
         // Get all objects from the collection
-        std::list<ISerializable*> getAll();
+        Iterator getAll();
     };
 };

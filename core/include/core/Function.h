@@ -15,13 +15,6 @@ namespace sda
 
     class Function : public Object, public IFunction
     {
-        friend class boost::serialization::access;
-        template<class Archive>
-        void serialize(Archive & ar, const unsigned int version) {
-            ar & boost::serialization::base_object<Object>(*this);
-            ar & m_offset;
-        }
-
         int64_t m_offset;
     public:
         Function() = default;
@@ -31,5 +24,9 @@ namespace sda
         int64_t getOffset() const override;
 
         void bind(IContext* context) override;
+
+        void serialize(boost::json::object& data) const override;
+
+        void deserialize(boost::json::object& data) override;
     };
 };

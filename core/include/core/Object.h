@@ -2,8 +2,6 @@
 #include <map>
 #include <memory>
 #include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
 #include "Serialization.h"
 
 namespace sda
@@ -38,15 +36,6 @@ namespace sda
     // Base class for all domain objects
     class Object : public virtual IObject, public virtual ISerializable
     {
-        friend class boost::serialization::access;
-        template<class Archive>
-        void serialize(Archive & ar, const unsigned int version) {
-            boost::serialization::base_object<ISerializable>(*this);
-            ar & m_id;
-            ar & m_name;
-            ar & m_comment;
-        }    
-    
         ObjectId m_id;
         std::string m_name = "";
         std::string m_comment = "";
@@ -68,11 +57,10 @@ namespace sda
         // Set the comment of the object
         void setComment(const std::string& comment);
 
-        // Get the list of key values
-        std::list<KeyValue> getKeyValues() const override;
-    };
+        void serialize(boost::json::object& data) const override;
 
-    BOOST_SERIALIZATION_ASSUME_ABSTRACT(Object)
+        void deserialize(boost::json::object& data) override;
+    };
 
     // Base class for all domain object's lists
     template<typename T = IObject>
