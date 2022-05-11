@@ -1,5 +1,6 @@
 #pragma once
 #include "Object.h"
+#include "ObjectList.h"
 
 namespace sda
 {
@@ -11,6 +12,8 @@ namespace sda
 
     class FunctionList : public ObjectList<IFunction>
     {
+    public:
+        using ObjectList<IFunction>::ObjectList;
     };
 
     class Function : public Object, public IFunction

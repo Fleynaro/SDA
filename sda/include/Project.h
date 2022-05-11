@@ -1,5 +1,6 @@
 #pragma once
 #include "Core/Context.h"
+#include "Callbacks/ContextCallbacks.h"
 
 namespace sda
 {
@@ -9,17 +10,17 @@ namespace sda
     {
         Program* m_program;
         std::string m_name;
-        std::map<std::string, std::unique_ptr<IContext>> m_contexts;
+        Context* m_context;
     public:
-        Project(Program* program, const std::string& name);
+        Project(Program* program, const std::string& name, Context* context);
 
         // Get name of the project
         std::string getName();
 
         // Get context of the project
-        IContext* getContext(const std::string& name);
+        Context* getContext();
 
-        // Register a context
-        void registerContext(std::unique_ptr<IContext> context);
+        // Get context callbacks
+        ContextCallbacks* getContextCallbacks();
     };
 };

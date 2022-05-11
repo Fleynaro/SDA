@@ -1,10 +1,11 @@
 #pragma once
 #include <boost/dll/alias.hpp>
 #include <boost/dll/runtime_symbol_info.hpp>
-#include "Program.h"
 
 namespace sda
 {
+    class Program;
+
     class IPlugin {
     public:
         // Get name of the module
