@@ -3,6 +3,8 @@
 #include "Project.h"
 #include "Core/Context.h"
 #include "Core/Function.h"
+#include "Database/Database.h"
+#include "Database/Schema.h"
 
 using namespace sda;
 
@@ -35,6 +37,20 @@ int main(int argc, char *argv[])
 
     // print json
     std::cout << root << std::endl;
+
+    // create database
+    auto db = new Database("test.db", GetSchema());
+    db->init();
+
+    boost::json::object funcData;
+    func1->serialize(funcData);
+    db->getCollection("functions")->write(funcData);
+
+    auto iter = db->getCollection("functions")->getAll();
+    while(iter->hasNext()) {
+        auto obj = iter->next();
+        std::cout << obj << std::endl;
+    }
 
     return 0;
 }

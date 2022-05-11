@@ -7,7 +7,6 @@
 namespace sda
 {
     using ObjectId = boost::uuids::uuid;
-    class IContext;
     class Context;
 
     // Interface for all domain objects
@@ -28,9 +27,6 @@ namespace sda
 
         // Set the comment of the object
         virtual void setComment(const std::string& comment) = 0;
-
-        // Bind the object to the context
-        virtual void bind(IContext* context) = 0;
     };
 
     // Base class for all domain objects
@@ -114,8 +110,13 @@ namespace sda
             m_objects[object->getId()] = std::move(object);
         }
 
+        // Remove an object from the list
+        void remove(const ObjectId& id) {
+            m_objects.erase(id);
+        }
+
         // Get an object by its unique identifier
-        T* get(ObjectId id) {
+        T* get(const ObjectId& id) {
             auto it = m_objects.find(id);
             if (it == m_objects.end()) {
                 return nullptr;

@@ -4,19 +4,21 @@
 using namespace sda;
 
 Function::Function(Context* context, int64_t offset)
-    : m_offset(offset)
+    : m_context(context), m_offset(offset)
 {
-    bind(context);
+    m_context->getFunctions()->add(std::unique_ptr<IFunction>(this));
 }
 
 int64_t Function::getOffset() const {
     return m_offset;
 }
 
-void Function::bind(IContext* context) {
-    if(auto ctx = dynamic_cast<Context*>(context)) {
-        ctx->getFunctions()->add(std::unique_ptr<Function>(this));
-    }
+Function* Function::clone() const {
+    auto clonedFunc = new Function(m_context);
+    boost::json::object data;
+    serialize(data);
+    clonedFunc->deserialize(data);
+    return clonedFunc;
 }
 
 void Function::serialize(boost::json::object& data) const {

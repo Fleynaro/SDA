@@ -11,11 +11,19 @@ namespace sda
     class Schema
     {
     public:
+        // Field is a column in a table
         struct Field {
             std::string name;
-            bool isKey = false;
+            enum {
+                INTEGER,
+                REAL,
+                TEXT
+            } type;
+            bool isNotNull = false;
+            bool isUniqueKey = false;
         };
 
+        // Collection is a table in the database
         struct Collection {
             std::string name;
             std::list<Field> fields;
@@ -35,6 +43,7 @@ namespace sda
     // Database allows to store and retrieve data
     class Database
     {
+        friend class Collection;
         std::filesystem::path m_path;
         std::unique_ptr<Schema> m_schema;
         sqlite3* m_db;
@@ -47,18 +56,24 @@ namespace sda
 
         // Get collection of the database
         Collection* getCollection(const std::string& name);
+
+    private:
+        // Create table in the database if it doesn't exist
+        void createTableIfNotExists(const Schema::Collection& collection);
     };
 
     // Collection stores a list of objects
     class Collection
     {
-        Schema::Collection* m_schemaCollection;
+        const Schema::Collection* m_schemaCollection;
         Database* m_database;
     public:
         class Iterator {
-            Collection* m_collection;
+            sqlite3_stmt* m_stmt;
         public:
-            Iterator(Collection* collection);
+            Iterator(sqlite3_stmt* stmt);
+
+            ~Iterator();
 
             // Check if the next object is available
             bool hasNext() const;
@@ -67,12 +82,16 @@ namespace sda
             boost::json::object next();
         };
 
-        Collection(Database* database, Schema::Collection* schemaCollection);
+        Collection(Database* database, const Schema::Collection* schemaCollection);
 
         // Write object to the collection
         void write(boost::json::object& data);
 
         // Get all objects from the collection
-        Iterator getAll();
+        std::unique_ptr<Iterator> getAll();
+
+    private:
+        // Query the database
+        std::unique_ptr<Iterator> query(const std::string& suffix);
     };
 };

@@ -15,15 +15,14 @@ namespace sda
 
     class Function : public Object, public IFunction
     {
+        Context* m_context;
         int64_t m_offset;
     public:
-        Function() = default;
-
-        Function(Context* context, int64_t offset);
+        Function(Context* context, int64_t offset = 0);
 
         int64_t getOffset() const override;
-
-        void bind(IContext* context) override;
+        
+        Function* clone() const;
 
         void serialize(boost::json::object& data) const override;
 

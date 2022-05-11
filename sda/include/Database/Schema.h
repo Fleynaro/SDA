@@ -4,8 +4,9 @@
 namespace sda
 {
     std::unique_ptr<Schema> GetSchema() {
-        return std::make_unique<Schema>({
-            {"functions", {}}
-        });
+        std::list<Schema::Collection> collections = {
+            { "functions" }
+        };
+        return std::make_unique<Schema>(collections);
     }
 };
