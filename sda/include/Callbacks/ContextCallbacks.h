@@ -18,10 +18,10 @@ namespace sda
         // Called when an object is added to the context
         void onObjectAdded(IObject* obj) override;
 
-        // Called when an object is removed from the context
-        void onObjectRemoved(IObject* obj) override;
-
         // Called when an object is modified in the context
         void onObjectModified(IObject* obj) override;
+
+        // Called when an object is removed from the context
+        void onObjectRemoved(IObject* obj) override;
     };
 };

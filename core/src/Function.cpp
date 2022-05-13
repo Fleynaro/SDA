@@ -23,10 +23,12 @@ Function* Function::clone() const {
 
 void Function::serialize(boost::json::object& data) const {
     Object::serialize(data);
+    data["collection"] = "functions";
     data["offset"] = m_offset;
 }
 
 void Function::deserialize(boost::json::object& data) {
+    m_context->getCallbacks()->onObjectModified(this);
     Object::deserialize(data);
     m_offset = data["offset"].get_int64();
 }

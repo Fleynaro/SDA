@@ -8,7 +8,7 @@ namespace sda
     class Program
     {
         // for access to Program::m_projects
-        friend Project::Project(Program* program, const std::string& name, Context* context);
+        friend Project::Project(Program* program, const std::filesystem::path& path, Context* context);
 
         std::list<std::unique_ptr<Project>> m_projects;
         std::map<std::string, std::unique_ptr<IPlugin>> m_plugins;

@@ -87,6 +87,9 @@ namespace sda
         // Write object to the collection
         void write(boost::json::object& data);
 
+        // Remove object from the collection
+        void remove(boost::json::object& data);
+
         // Get all objects from the collection
         std::unique_ptr<Iterator> getAll();
 

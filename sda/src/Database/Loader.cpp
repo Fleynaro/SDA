@@ -9,16 +9,21 @@ Loader::Loader(Database* database, Context* context)
 {}
 
 void Loader::load() {
-    loadCollection("functions", [&]() { return new Function(m_context); });
+    loadCollection("functions", [&](int type) { return new Function(m_context); });
 
     for (auto& [object, data] : m_objects) {
         object->deserialize(data);
     }
 }
 
-void Loader::loadCollection(const std::string& name, std::function<ISerializable*()> creator) {
+void Loader::loadCollection(const std::string& name, std::function<ISerializable*(int)> creator) {
     auto it = m_database->getCollection(name)->getAll();
     while (it->hasNext()) {
-        m_objects.push_back(std::make_pair(creator(), it->next()));
+        auto data = it->next();
+        int type = 0;
+        if (data.find("type") != data.end()) {
+            type = static_cast<int>(data["type"].get_int64());
+        }
+        m_objects.push_back(std::make_pair(creator(type), data));
     }
 }

@@ -1,4 +1,5 @@
 #include "Callbacks/ContextCallbacks.h"
+#include "Database/Transaction.h"
 #include "Project.h"
 
 using namespace sda;
@@ -16,14 +17,23 @@ void ContextCallbacks::add(std::unique_ptr<Callbacks> callback) {
 void ContextCallbacks::onObjectAdded(IObject* obj) {
     for (const auto& callback : m_callbacks)
         callback->onObjectAdded(obj);
-}
 
-void ContextCallbacks::onObjectRemoved(IObject* obj) {
-    for (const auto& callback : m_callbacks)
-        callback->onObjectRemoved(obj);
+    if (auto serObj = dynamic_cast<ISerializable*>(obj))
+        m_project->getTransaction()->markAsNew(serObj);
 }
 
 void ContextCallbacks::onObjectModified(IObject* obj) {
     for (const auto& callback : m_callbacks)
         callback->onObjectModified(obj);
+
+    if (auto serObj = dynamic_cast<ISerializable*>(obj))
+        m_project->getTransaction()->markAsModified(serObj);
+}
+
+void ContextCallbacks::onObjectRemoved(IObject* obj) {
+    for (const auto& callback : m_callbacks)
+        callback->onObjectRemoved(obj);
+
+    if (auto serObj = dynamic_cast<ISerializable*>(obj))
+        m_project->getTransaction()->markAsRemoved(serObj);
 }

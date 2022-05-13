@@ -29,10 +29,19 @@ void Object::setComment(const std::string& comment) {
     m_comment = comment;
 }
 
+bool Object::isTemporary() const {
+    return m_temporary;
+}
+
+void Object::setTemporary(bool temporary) {
+    m_temporary = temporary;
+}
+
 void Object::serialize(boost::json::object& data) const {
     data["uuid"] = boost::uuids::to_string(m_id);
     data["name"] = m_name;
     data["comment"] = m_comment;
+    data["temporary"] = m_temporary;
 }
 
 void Object::deserialize(boost::json::object& data) {

@@ -96,6 +96,15 @@ void Collection::write(boost::json::object& data) {
     }
 }
 
+void Collection::remove(boost::json::object& data) {
+    std::stringstream sql;
+    sql << "DELETE FROM " << m_schemaCollection->name << " WHERE uuid = '" << data["uuid"] << "';";
+
+    if (sqlite3_exec(m_database->m_db, sql.str().c_str(), nullptr, nullptr, nullptr) != SQLITE_OK) {
+        throw std::runtime_error(std::string("Can't remove data: ") + sqlite3_errmsg(m_database->m_db));
+    }
+}
+
 std::unique_ptr<Collection::Iterator> Collection::getAll() {
     return query("");
 }

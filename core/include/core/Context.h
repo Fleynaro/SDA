@@ -22,11 +22,11 @@ namespace sda
             // Called when an object is added to the context
             virtual void onObjectAdded(IObject* obj) {}
 
-            // Called when an object is removed from the context
-            virtual void onObjectRemoved(IObject* obj) {}
-
             // Called when an object is modified in the context
             virtual void onObjectModified(IObject* obj) {}
+
+            // Called when an object is removed from the context
+            virtual void onObjectRemoved(IObject* obj) {}
         };
 
         // Set the callbacks for the context

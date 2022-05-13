@@ -28,6 +28,9 @@ namespace sda
 
         // Set the comment of the object
         virtual void setComment(const std::string& comment) = 0;
+
+        // Check if the object is temporary
+        virtual bool isTemporary() const = 0;
     };
 
     // Base class for all domain objects
@@ -36,6 +39,7 @@ namespace sda
         ObjectId m_id;
         std::string m_name = "";
         std::string m_comment = "";
+        bool m_temporary = false;
     public:
         Object();
 
@@ -53,6 +57,12 @@ namespace sda
 
         // Set the comment of the object
         void setComment(const std::string& comment);
+
+        // Check if the object is temporary
+        bool isTemporary() const;
+
+        // Set the object as temporary
+        void setTemporary(bool temporary);
 
         void serialize(boost::json::object& data) const override;
 

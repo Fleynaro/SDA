@@ -19,6 +19,6 @@ namespace sda
 
     private:
         // Load all objects from a collection
-        void loadCollection(const std::string& name, std::function<ISerializable*()> creator);
+        void loadCollection(const std::string& name, std::function<ISerializable*(int)> creator);
     };
 };
