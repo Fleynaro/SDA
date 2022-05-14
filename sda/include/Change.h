@@ -1,5 +1,7 @@
 #pragma once
-#include "Core/Object.h"
+#include <set>
+#include "Core/Serialization.h"
+#include "Core/Destroy.h"
 
 namespace sda
 {
@@ -9,16 +11,13 @@ namespace sda
     public:
         // Cancel changes
         virtual void undo() = 0;
-
-        // Apply canceled changes
-        virtual void redo() = 0;
     };
 
     class ObjectChange;
-    class Context;
+    class IContext;
     class IFactory;
 
-    // Change list stores changes and can undo and redo them in one go
+    // Change list stores changes and can undo them in one go
     class ChangeList : public IChange
     {
         std::list<std::unique_ptr<IChange>> m_changes;
@@ -26,37 +25,42 @@ namespace sda
         // Cancel all changes
         void undo() override;
 
-        // Apply all canceled changes
-        void redo() override;
-
         // Add new change
         void add(std::unique_ptr<IChange> change);
 
         // Get or create object change
-        ObjectChange* getOrCreateObjectChange(Context* context, IFactory* factory);
+        ObjectChange* getOrCreateObjectChange(IContext* context, IFactory* factory);
     };
 
-    // Change chain stores changes and can undo and redo them one by one
-    class ChangeChain : public IChange
+    // Change chain stores change points
+    class ChangeChain
     {
-        std::list<ChangeList> m_changes;
-        std::list<ChangeList>::iterator m_curChangeIt;
-        bool m_locked = false;
+        struct ChangePoint {
+            ChangeList changeList;
+            ChangeList changeListBack;
+            bool isVisited = false;
+        };
+        std::list<ChangePoint> m_changePoints;
+        std::list<ChangePoint>::iterator m_changePointsIt = m_changePoints.end();
+        bool m_isUndoing = false;
     public:
-        // Move to the previous change list
-        void undo() override;
+        // Move to the previous change point
+        void undo();
 
-        // Move to the next change list
-        void redo() override;
+        // Move to the next change point
+        void redo();
+
+        // Check if we are at the beginning of the change chain
+        bool isAtBeginning() const;
+
+        // Check if we are at the end of the change chain
+        bool isAtEnd() const;
 
         // Create a new change list
         void newChangeList();
 
         // Get the current change list
-        ChangeList* getChangeList();
-
-        // Check if the change chain is locked
-        bool isLocked();
+        ChangeList* getChangeList() const;
     };
 
     // Object change stores changes of objects (new, modified, removed)
@@ -68,22 +72,20 @@ namespace sda
                 Modified,
                 Removed
             } type;
-            boost::json::object beforeState;
-            boost::json::object afterState;
+            ISerializable* object; 
+            boost::json::object initState;
         };
 
-        Context* m_context;
+        IContext* m_context;
         IFactory* m_factory;
-        std::map<ISerializable*, ObjectChangeData> m_changes;
+        std::list<ObjectChangeData> m_changes;
+        std::set<ISerializable*> m_affectedObjects;
     public:
-        ObjectChange(Context* context, IFactory* factory);
+        ObjectChange(IContext* context, IFactory* factory);
 
         // Cancel object changes
         void undo() override;
-
-        // Apply canceled object changes
-        void redo() override;
-
+        
         // Mark an object as new
         void markAsNew(ISerializable* obj);
 

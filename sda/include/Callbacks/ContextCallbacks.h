@@ -4,6 +4,7 @@
 namespace sda
 {
     class Project;
+    class ObjectChange;
 
     class ContextCallbacks : public Context::Callbacks
     {
@@ -26,6 +27,6 @@ namespace sda
 
     private:
         // Get or create object change
-        ObjectChange* getOrCreateObjectChange();
+        ObjectChange* getOrCreateObjectChange() const;
     };
 };

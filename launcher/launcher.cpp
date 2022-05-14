@@ -23,8 +23,11 @@ int main(int argc, char *argv[])
 
     project->getChangeChain()->newChangeList();
     auto func1 = new Function(ctx, nullptr, 1000);
+    func1->setOffset(1001);
     auto func2 = new Function(ctx, nullptr, 1002);
     project->getTransaction()->commit();
+
+    project->getChangeChain()->undo();
 
     auto ctx2 = new Context();
     Loader loader(project->getDatabase(), ctx2, program.getFactory());

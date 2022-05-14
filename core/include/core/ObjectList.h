@@ -62,7 +62,7 @@ namespace sda
         // Remove an object from the list
         void remove(const ObjectId& uuid) {
             auto it = m_objects.find(uuid);
-            if (it != m_objects.end())
+            if (it == m_objects.end())
                 throw std::runtime_error("Object not found");
             m_context->getCallbacks()->onObjectRemoved(it->second.get());
             m_objects.erase(it);

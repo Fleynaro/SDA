@@ -5,8 +5,15 @@ namespace sda
 {
     class FunctionList;
 
+    // Context interface
+    class IContext
+    {
+    public:
+        virtual ~IContext() = default;
+    };
+
     // Core context that contains all important entities
-    class Context
+    class Context : public IContext
     {
         std::unique_ptr<FunctionList> m_functions;
     public:

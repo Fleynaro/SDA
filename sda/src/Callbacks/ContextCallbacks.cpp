@@ -23,9 +23,9 @@ void ContextCallbacks::onObjectAdded(IObject* obj) {
 
     if (auto serObj = dynamic_cast<ISerializable*>(obj)) {
         m_project->getTransaction()->markAsNew(serObj);
-        
-        if(!m_project->getChangeChain()->isLocked())
-            getOrCreateObjectChange()->markAsNew(serObj);
+
+        if(auto objChange = getOrCreateObjectChange())
+            objChange->markAsNew(serObj);
     }
 }
 
@@ -36,8 +36,8 @@ void ContextCallbacks::onObjectModified(IObject* obj) {
     if (auto serObj = dynamic_cast<ISerializable*>(obj)) {
         m_project->getTransaction()->markAsModified(serObj);
         
-        if(!m_project->getChangeChain()->isLocked())
-            getOrCreateObjectChange()->markAsModified(serObj);
+        if(auto objChange = getOrCreateObjectChange())
+            objChange->markAsModified(serObj);
     }
 }
 
@@ -48,12 +48,15 @@ void ContextCallbacks::onObjectRemoved(IObject* obj) {
     if (auto serObj = dynamic_cast<ISerializable*>(obj)) {
         m_project->getTransaction()->markAsRemoved(serObj);
 
-        if(!m_project->getChangeChain()->isLocked())
-            getOrCreateObjectChange()->markAsRemoved(serObj);
+        if(auto objChange = getOrCreateObjectChange())
+            objChange->markAsRemoved(serObj);
     }
 }
 
-ObjectChange* ContextCallbacks::getOrCreateObjectChange() {
-    return m_project->getChangeChain()->getChangeList()
-        ->getOrCreateObjectChange(m_project->getContext(), m_project->getProgram()->getFactory());
+ObjectChange* ContextCallbacks::getOrCreateObjectChange() const {
+    auto changeList = m_project->getChangeChain()->getChangeList();
+    if(!changeList)
+        return nullptr;
+    return changeList->getOrCreateObjectChange(
+        m_project->getContext(), m_project->getProgram()->getFactory());
 }

@@ -3,12 +3,17 @@
 
 namespace sda
 {
+    class IContext;
+
     // Factory interface
     class IFactory
     {
     public:
+        // Create an object from a data
+        ISerializable* create(IContext* context, boost::json::object& data);
+        
         // Create an object
-        virtual IObject* create(Context* context, ObjectId* id, const std::string& collection, ObjectType type) = 0;
+        virtual ISerializable* create(IContext* context, ObjectId* id, const std::string& collection, ObjectType type) = 0;
     };
 
     // Factory stores factories and can create objects
@@ -17,7 +22,7 @@ namespace sda
         std::list<std::unique_ptr<IFactory>> m_factories;
     public:
         // Create an object
-        IObject* create(Context* context, ObjectId* id, const std::string& collection, ObjectType type) override;
+        ISerializable* create(IContext* context, ObjectId* id, const std::string& collection, ObjectType type) override;
 
         // Add a new factory
         void add(std::unique_ptr<IFactory> factory);

@@ -24,11 +24,15 @@ namespace sda
         Function(Context* context, ObjectId* id = nullptr, int64_t offset = 0);
 
         int64_t getOffset() const override;
+
+        void setOffset(int64_t offset);
         
         Function* clone() const;
 
         void serialize(boost::json::object& data) const override;
 
         void deserialize(boost::json::object& data) override;
+
+        void destroy() override;
     };
 };

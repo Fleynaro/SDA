@@ -4,6 +4,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/string_generator.hpp>
 #include "Serialization.h"
+#include "Destroy.h"
 
 namespace sda
 {
@@ -35,7 +36,7 @@ namespace sda
     };
 
     // Base class for all domain objects
-    class Object : public virtual IObject, public virtual ISerializable
+    class Object : public virtual IObject, public virtual ISerializable, public virtual IDestroyable
     {
         ObjectId m_id;
         std::string m_name = "";
