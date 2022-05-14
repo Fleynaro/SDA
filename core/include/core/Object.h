@@ -8,6 +8,7 @@
 namespace sda
 {
     using ObjectId = boost::uuids::uuid;
+    using ObjectType = int;
     class Context;
 
     // Interface for all domain objects
@@ -41,7 +42,7 @@ namespace sda
         std::string m_comment = "";
         bool m_temporary = false;
     public:
-        Object();
+        Object(ObjectId* id);
 
         // Get the unique identifier of the object
         ObjectId getId() const;

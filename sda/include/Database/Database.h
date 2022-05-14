@@ -57,6 +57,9 @@ namespace sda
         // Get collection of the database
         Collection* getCollection(const std::string& name);
 
+        // Get schema of the database
+        Schema* getSchema();
+
     private:
         // Create table in the database if it doesn't exist
         void createTableIfNotExists(const Schema::Collection& collection);

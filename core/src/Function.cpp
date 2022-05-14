@@ -3,8 +3,8 @@
 
 using namespace sda;
 
-Function::Function(Context* context, int64_t offset)
-    : m_context(context), m_offset(offset)
+Function::Function(Context* context, ObjectId* id, int64_t offset)
+    : Object(id), m_context(context), m_offset(offset)
 {
     m_context->getFunctions()->add(std::unique_ptr<IFunction>(this));
 }

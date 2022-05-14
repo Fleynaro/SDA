@@ -14,6 +14,10 @@ namespace sda
         virtual void redo() = 0;
     };
 
+    class ObjectChange;
+    class Context;
+    class IFactory;
+
     // Change list stores changes and can undo and redo them in one go
     class ChangeList : public IChange
     {
@@ -27,6 +31,9 @@ namespace sda
 
         // Add new change
         void add(std::unique_ptr<IChange> change);
+
+        // Get or create object change
+        ObjectChange* getOrCreateObjectChange(Context* context, IFactory* factory);
     };
 
     // Change chain stores changes and can undo and redo them one by one
@@ -34,6 +41,7 @@ namespace sda
     {
         std::list<ChangeList> m_changes;
         std::list<ChangeList>::iterator m_curChangeIt;
+        bool m_locked = false;
     public:
         // Move to the previous change list
         void undo() override;
@@ -46,13 +54,30 @@ namespace sda
 
         // Get the current change list
         ChangeList* getChangeList();
+
+        // Check if the change chain is locked
+        bool isLocked();
     };
 
     // Object change stores changes of objects (new, modified, removed)
     class ObjectChange : public IChange
     {
+        struct ObjectChangeData {
+            enum {
+                New,
+                Modified,
+                Removed
+            } type;
+            boost::json::object beforeState;
+            boost::json::object afterState;
+        };
 
+        Context* m_context;
+        IFactory* m_factory;
+        std::map<ISerializable*, ObjectChangeData> m_changes;
     public:
+        ObjectChange(Context* context, IFactory* factory);
+
         // Cancel object changes
         void undo() override;
 

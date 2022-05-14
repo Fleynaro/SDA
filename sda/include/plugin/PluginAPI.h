@@ -5,6 +5,7 @@
 namespace sda
 {
     class Program;
+    class Project;
 
     class IPlugin {
     public:
@@ -14,8 +15,11 @@ namespace sda
         // Get location of the module
         virtual boost::dll::fs::path location() const = 0;
 
-        // Initialization callback
-        virtual void init(Program* program) = 0;
+        // Plugin loading callback
+        virtual void onPluginLoaded(Program* program) = 0;
+
+        // Project creation callback
+        virtual void onProjectCreated(Project* project) = 0;
     };
 
     // Define exported module

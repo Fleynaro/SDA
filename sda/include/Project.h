@@ -2,13 +2,13 @@
 #include <filesystem>
 #include "Core/Context.h"
 #include "Callbacks/ContextCallbacks.h"
+#include "Database/Database.h"
+#include "Database/Transaction.h"
+#include "Change.h"
 
 namespace sda
 {
     class Program;
-    class Database;
-    class Transaction;
-    class ChangeChain;
 
     class Project
     {
@@ -21,22 +21,25 @@ namespace sda
     public:
         Project(Program* program, const std::filesystem::path& path, Context* context);
 
+        // Get the program
+        Program* getProgram() const;
+
         // Get path of the project
         const std::filesystem::path& getPath() const;
 
         // Get context of the project
-        Context* getContext();
+        Context* getContext() const;
 
         // Get context callbacks
-        ContextCallbacks* getContextCallbacks();
+        ContextCallbacks* getContextCallbacks() const;
 
         // Get database of the project
-        Database* getDatabase();
+        Database* getDatabase() const;
 
         // Get transaction of the project
-        Transaction* getTransaction();
+        Transaction* getTransaction() const;
 
         // Get change chain of the project
-        ChangeChain* getChangeChain();
+        ChangeChain* getChangeChain() const;
     };
 };

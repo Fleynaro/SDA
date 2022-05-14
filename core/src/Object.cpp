@@ -5,8 +5,8 @@
 
 using namespace sda;
 
-Object::Object()
-    : m_id(boost::uuids::random_generator()())
+Object::Object(ObjectId* id)
+    : m_id(id ? *id : boost::uuids::random_generator()())
 {}
 
 ObjectId Object::getId() const {
@@ -45,8 +45,6 @@ void Object::serialize(boost::json::object& data) const {
 }
 
 void Object::deserialize(boost::json::object& data) {
-    std::string uuid(data["uuid"].get_string());
-    m_id = boost::uuids::string_generator()(uuid);
     m_name = data["name"].get_string();
     m_comment = data["comment"].get_string();
 }

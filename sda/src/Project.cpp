@@ -1,7 +1,5 @@
 #include "Program.h"
-#include "Database/Transaction.h"
 #include "Database/Schema.h"
-#include "Change.h"
 
 using namespace sda;
 
@@ -15,29 +13,33 @@ Project::Project(Program* program, const std::filesystem::path& path, Context* c
     program->m_projects.push_back(std::unique_ptr<Project>(this));
     m_database = std::make_unique<Database>(m_path / "storage.db", GetSchema());
     m_transaction = std::make_unique<Transaction>(m_database.get());
-    m_changeChain = std::make_unique<ChangeChain>(this);
+    m_changeChain = std::make_unique<ChangeChain>();
+}
+
+Program* Project::getProgram() const {
+    return m_program;
 }
 
 const std::filesystem::path& Project::getPath() const {
     return m_path;
 }
 
-Context* Project::getContext() {
+Context* Project::getContext() const {
     return m_context;
 }
 
-ContextCallbacks* Project::getContextCallbacks() {
+ContextCallbacks* Project::getContextCallbacks() const {
     return dynamic_cast<ContextCallbacks*>(m_context->getCallbacks());
 }
 
-Database* Project::getDatabase() {
+Database* Project::getDatabase() const {
     return m_database.get();
 }
 
-Transaction* Project::getTransaction() {
+Transaction* Project::getTransaction() const {
     return m_transaction.get();
 }
 
-ChangeChain* Project::getChangeChain() {
+ChangeChain* Project::getChangeChain() const {
     return m_changeChain.get();
 }

@@ -23,5 +23,9 @@ namespace sda
 
         // Called when an object is removed from the context
         void onObjectRemoved(IObject* obj) override;
+
+    private:
+        // Get or create object change
+        ObjectChange* getOrCreateObjectChange();
     };
 };

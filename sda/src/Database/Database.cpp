@@ -35,6 +35,10 @@ Collection* Database::getCollection(const std::string& name) {
     return it->second.get();
 }
 
+Schema* Database::getSchema() {
+    return m_schema.get();
+}
+
 void Database::createTableIfNotExists(const Schema::Collection& collection) {
     std::stringstream sql;
     sql << "CREATE TABLE IF NOT EXISTS " << collection.name << " (";

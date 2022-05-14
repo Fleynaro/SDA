@@ -21,7 +21,7 @@ namespace sda
         Context* m_context;
         int64_t m_offset;
     public:
-        Function(Context* context, int64_t offset = 0);
+        Function(Context* context, ObjectId* id = nullptr, int64_t offset = 0);
 
         int64_t getOffset() const override;
         
