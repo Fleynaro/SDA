@@ -1,6 +1,7 @@
 #pragma once
 #include <filesystem>
 #include "Core/Context.h"
+#include "Factory.h"
 #include "Callbacks/ContextCallbacks.h"
 #include "Database/Database.h"
 #include "Database/Transaction.h"
@@ -15,6 +16,7 @@ namespace sda
         Program* m_program;
         std::filesystem::path m_path;
         Context* m_context;
+        std::unique_ptr<Factory> m_factory;
         std::unique_ptr<Database> m_database;
         std::unique_ptr<Transaction> m_transaction;
         std::unique_ptr<ChangeChain> m_changeChain;
@@ -29,6 +31,9 @@ namespace sda
 
         // Get context of the project
         Context* getContext() const;
+
+        // Get factory
+        Factory* getFactory();
 
         // Get context callbacks
         ContextCallbacks* getContextCallbacks() const;

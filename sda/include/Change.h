@@ -14,7 +14,6 @@ namespace sda
     };
 
     class ObjectChange;
-    class IContext;
     class IFactory;
 
     // Change list stores changes and can undo them in one go
@@ -29,7 +28,7 @@ namespace sda
         void add(std::unique_ptr<IChange> change);
 
         // Get or create object change
-        ObjectChange* getOrCreateObjectChange(IContext* context, IFactory* factory);
+        ObjectChange* getOrCreateObjectChange(IFactory* factory);
     };
 
     // Change chain stores change points
@@ -76,12 +75,11 @@ namespace sda
             boost::json::object initState;
         };
 
-        IContext* m_context;
         IFactory* m_factory;
         std::list<ObjectChangeData> m_changes;
         std::set<ISerializable*> m_affectedObjects;
     public:
-        ObjectChange(IContext* context, IFactory* factory);
+        ObjectChange(IFactory* factory);
 
         // Cancel object changes
         void undo() override;

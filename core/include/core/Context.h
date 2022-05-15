@@ -5,15 +5,8 @@ namespace sda
 {
     class FunctionList;
 
-    // Context interface
-    class IContext
-    {
-    public:
-        virtual ~IContext() = default;
-    };
-
     // Core context that contains all important entities
-    class Context : public IContext
+    class Context
     {
         std::unique_ptr<FunctionList> m_functions;
     public:
@@ -37,7 +30,7 @@ namespace sda
         };
 
         // Set the callbacks for the context
-        void setCallbacks(std::unique_ptr<Callbacks> callbacks);
+        std::unique_ptr<Callbacks> setCallbacks(std::unique_ptr<Callbacks> callbacks);
 
         // Get the callbacks for the context
         Callbacks* getCallbacks();

@@ -1,4 +1,5 @@
 #include <iostream>
+#include "Plugin/PluginLoader.h"
 #include "Program.h"
 #include "Project.h"
 #include "Factory.h"
@@ -30,8 +31,11 @@ int main(int argc, char *argv[])
     project->getChangeChain()->undo();
 
     auto ctx2 = new Context();
-    Loader loader(project->getDatabase(), ctx2, program.getFactory());
+    auto oldCallbacks = ctx2->setCallbacks(std::make_unique<Context::Callbacks>());
+    Factory factory(ctx2);
+    Loader loader(project->getDatabase(), &factory);
     loader.load();
+    ctx2->setCallbacks(std::move(oldCallbacks));
 
     return 0;
 }

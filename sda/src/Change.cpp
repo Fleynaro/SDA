@@ -13,13 +13,13 @@ void ChangeList::add(std::unique_ptr<IChange> change) {
     m_changes.push_back(std::move(change));
 }
 
-ObjectChange* ChangeList::getOrCreateObjectChange(IContext* context, IFactory* factory) {
+ObjectChange* ChangeList::getOrCreateObjectChange(IFactory* factory) {
     if(!m_changes.empty())
         if(auto objectChange = dynamic_cast<ObjectChange*>(m_changes.back().get()))
             return objectChange;
             
     // if no object change is found, create one
-    auto objectChange = new ObjectChange(context, factory);
+    auto objectChange = new ObjectChange(factory);
     m_changes.push_back(std::unique_ptr<IChange>(objectChange));
     return objectChange;
 }
@@ -64,8 +64,8 @@ ChangeList* ChangeChain::getChangeList() const {
     return &std::prev(m_changePointsIt)->changeList;
 }
 
-ObjectChange::ObjectChange(IContext* context, IFactory* factory)
-    : m_context(context), m_factory(factory)
+ObjectChange::ObjectChange(IFactory* factory)
+    : m_factory(factory)
 {}
 
 void ObjectChange::undo() {
@@ -88,7 +88,7 @@ void ObjectChange::undo() {
             break;
 
         case ObjectChangeData::Removed:
-            auto object = m_factory->create(m_context, it->initState);
+            auto object = m_factory->create(it->initState);
             objectsToDeserialize.emplace_back(object, &it->initState);
             break;
         }

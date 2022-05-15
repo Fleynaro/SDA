@@ -6,13 +6,15 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-# import cmake files
+# Import cmake files
 include(cmake/compiler_flags.cmake)
 
-# packages:
+# Packages:
 find_package(Boost REQUIRED COMPONENTS system filesystem json)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 
 add_subdirectory(core)
 add_subdirectory(sda)
-add_subdirectory(launcher)
+if (NOT SDA_PLUGIN_DEV)
+    add_subdirectory(launcher)
+endif()

@@ -6,8 +6,8 @@
 
 using namespace sda;
 
-Loader::Loader(Database* database, Context* context, IFactory* factory)
-    : m_database(database), m_context(context), m_factory(factory)
+Loader::Loader(Database* database, IFactory* factory)
+    : m_database(database), m_factory(factory)
 {}
 
 void Loader::load() {
@@ -24,7 +24,7 @@ void Loader::loadCollection(const std::string& name) {
     auto it = m_database->getCollection(name)->getAll();
     while (it->hasNext()) {
         auto data = it->next();
-        auto object = m_factory->create(m_context, data);
+        auto object = m_factory->create(data);
         m_objects.push_back(std::make_pair(object, data));
     }
 }

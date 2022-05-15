@@ -57,6 +57,5 @@ ObjectChange* ContextCallbacks::getOrCreateObjectChange() const {
     auto changeList = m_project->getChangeChain()->getChangeList();
     if(!changeList)
         return nullptr;
-    return changeList->getOrCreateObjectChange(
-        m_project->getContext(), m_project->getProgram()->getFactory());
+    return changeList->getOrCreateObjectChange(m_project->getFactory());
 }

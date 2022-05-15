@@ -4,7 +4,7 @@
 
 using namespace sda;
 
-ISerializable* IFactory::create(IContext* context, boost::json::object& data) {
+ISerializable* IFactory::create(boost::json::object& data) {
     // uuid
     if (data.find("uuid") == data.end())
         throw std::runtime_error("Object without uuid");
@@ -20,18 +20,20 @@ ISerializable* IFactory::create(IContext* context, boost::json::object& data) {
         type = static_cast<ObjectType>(data["type"].get_int64());
     }
 
-    return create(context, &id, collection, type);
+    return create(&id, collection, type);
 }
 
-ISerializable* Factory::create(IContext* context, ObjectId* id, const std::string& collection, ObjectType type) {
-    if (auto ctx = dynamic_cast<Context*>(context)) {
-        if (collection == "functions") {
-            return new Function(ctx, id);
-        }
+Factory::Factory(Context* context)
+    : m_context(context)
+{}
+
+ISerializable* Factory::create(ObjectId* id, const std::string& collection, ObjectType type) {
+    if (collection == "functions") {
+        return new Function(m_context, id);
     }
 
     for (auto& factory : m_factories) {
-        if (auto object = factory->create(context, id, collection, type))
+        if (auto object = factory->create(id, collection, type))
             return object;
     }
 

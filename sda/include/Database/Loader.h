@@ -3,7 +3,6 @@
 
 namespace sda
 {
-    class Context;
     class IFactory;
     class ISerializable;
 
@@ -11,11 +10,10 @@ namespace sda
     class Loader
     {
         Database* m_database;
-        Context* m_context;
         IFactory* m_factory;
         std::list<std::pair<ISerializable*, boost::json::object>> m_objects;
     public:
-        Loader(Database* database, Context* context, IFactory* factory);
+        Loader(Database* database, IFactory* factory);
 
         void load();
 

@@ -11,6 +11,7 @@ Project::Project(Program* program, const std::filesystem::path& path, Context* c
         std::filesystem::create_directory(path);
 
     program->m_projects.push_back(std::unique_ptr<Project>(this));
+    m_factory = std::make_unique<Factory>(context);
     m_database = std::make_unique<Database>(m_path / "storage.db", GetSchema());
     m_transaction = std::make_unique<Transaction>(m_database.get());
     m_changeChain = std::make_unique<ChangeChain>();
@@ -26,6 +27,10 @@ const std::filesystem::path& Project::getPath() const {
 
 Context* Project::getContext() const {
     return m_context;
+}
+
+Factory* Project::getFactory() {
+    return m_factory.get();
 }
 
 ContextCallbacks* Project::getContextCallbacks() const {
