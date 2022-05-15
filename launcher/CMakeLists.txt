@@ -3,7 +3,7 @@ add_executable(
     ${CMAKE_CURRENT_SOURCE_DIR}/launcher.cpp)
 
 target_link_libraries(
-    launcher PRIVATE sda)
+    launcher PRIVATE sda myplugin)
 
 if(CMAKE_DL_LIBS)
     target_link_libraries(launcher PRIVATE ${CMAKE_DL_LIBS})

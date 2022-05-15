@@ -17,6 +17,11 @@ using namespace sda;
 int main(int argc, char *argv[])
 {
     Program program;
+    for (auto plugin : GetPlugins("plugins")) {
+        plugin->onPluginLoaded(&program);
+        program.addPlugin(std::unique_ptr<IPlugin>(plugin.get()));
+    }
+
     auto ctx = new Context();
     auto project = new Project(&program, "Test", ctx);
     auto ctxCallbacks = new ContextCallbacks(ctx, project);

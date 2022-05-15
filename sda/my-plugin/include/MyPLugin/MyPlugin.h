@@ -19,5 +19,9 @@ namespace sda
 
         // Project creation callback
         void onProjectCreated(Project* project) override;
+
+        static std::unique_ptr<IPlugin> Create();
     };
+
+    EXPORT_PLUGIN(MyPlugin)
 };

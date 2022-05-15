@@ -9,10 +9,12 @@ file(GLOB_RECURSE PLUGIN_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
-    
-# Import the SDA project
-set(SDA_PLUGIN_DEV ON)
-add_subdirectory(${SDA_ROOT_DIR} ${CMAKE_CURRENT_BINARY_DIR}/sda)
+
+if (NOT SDA_DEV)
+    # Import the SDA project
+    set(SDA_PLUGIN_DEV ON)
+    add_subdirectory(${SDA_ROOT_DIR} ${CMAKE_CURRENT_BINARY_DIR}/sda)
+endif()
 
 # Create shared library
 add_library(

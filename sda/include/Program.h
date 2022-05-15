@@ -20,5 +20,8 @@ namespace sda
 
         // Get plugin by name
         IPlugin* getPlugin(const std::string& name);
+
+        // Add a plugin
+        void addPlugin(std::unique_ptr<IPlugin> plugin);
     };
 };

@@ -23,6 +23,6 @@ namespace sda
     };
 
     // Define exported module
-    #define EXPORT_MODULE(module_name) \
-        BOOST_DLL_ALIAS(module_name::Create, CreateModule)
+    #define EXPORT_PLUGIN(plugin_name) \
+        BOOST_DLL_ALIAS(plugin_name::Create, CreatePlugin)
 };

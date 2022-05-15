@@ -9,12 +9,17 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 # Import cmake files
 include(cmake/compiler_flags.cmake)
 
-# Packages:
+# Packages
 find_package(Boost REQUIRED COMPONENTS system filesystem json)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 
 add_subdirectory(core)
 add_subdirectory(sda)
 if (NOT SDA_PLUGIN_DEV)
+    set(SDA_DEV ON)
+    add_subdirectory(sda/my-plugin)
+    set_target_properties(myplugin PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY $<TARGET_FILE_DIR:sda>/plugins)
+        
     add_subdirectory(launcher)
 endif()

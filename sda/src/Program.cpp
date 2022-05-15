@@ -17,3 +17,7 @@ IPlugin* Program::getPlugin(const std::string& name) {
     }
     return it->second.get();
 }
+
+void Program::addPlugin(std::unique_ptr<IPlugin> plugin) {
+    m_plugins[plugin->getName()] = std::move(plugin);
+}

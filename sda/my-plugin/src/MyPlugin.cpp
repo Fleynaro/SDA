@@ -8,7 +8,7 @@ std::string MyPlugin::getName() {
 }
 
 boost::dll::fs::path MyPlugin::location() const {
-    return boost::dll::program_location();
+    return boost::dll::this_line_location();
 }
 
 void MyPlugin::onPluginLoaded(Program* program) {
@@ -19,4 +19,8 @@ void MyPlugin::onPluginLoaded(Program* program) {
 void MyPlugin::onProjectCreated(Project* project) {
     // Do something
     std::cout << "MyPlugin::onProjectCreated" << std::endl;
+}
+
+std::unique_ptr<IPlugin> MyPlugin::Create() {
+    return std::make_unique<MyPlugin>();
 }
