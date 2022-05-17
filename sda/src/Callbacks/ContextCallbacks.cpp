@@ -17,7 +17,7 @@ void ContextCallbacks::add(std::unique_ptr<Callbacks> callback) {
     m_callbacks.push_back(std::move(callback));
 }
 
-void ContextCallbacks::onObjectAdded(IObject* obj) {
+void ContextCallbacks::onObjectAdded(ContextObject* obj) {
     for (const auto& callback : m_callbacks)
         callback->onObjectAdded(obj);
 
@@ -29,7 +29,7 @@ void ContextCallbacks::onObjectAdded(IObject* obj) {
     }
 }
 
-void ContextCallbacks::onObjectModified(IObject* obj) {
+void ContextCallbacks::onObjectModified(ContextObject* obj) {
     for (const auto& callback : m_callbacks)
         callback->onObjectModified(obj);
 
@@ -41,7 +41,7 @@ void ContextCallbacks::onObjectModified(IObject* obj) {
     }
 }
 
-void ContextCallbacks::onObjectRemoved(IObject* obj) {
+void ContextCallbacks::onObjectRemoved(ContextObject* obj) {
     for (const auto& callback : m_callbacks)
         callback->onObjectRemoved(obj);
 

@@ -5,8 +5,8 @@
 
 using namespace sda;
 
-Object::Object(ObjectId* id)
-    : m_id(id ? *id : boost::uuids::random_generator()())
+Object::Object(ObjectId* id, const std::string& name)
+    : m_id(id ? *id : boost::uuids::random_generator()()), m_name(name)
 {}
 
 ObjectId Object::getId() const {
@@ -47,4 +47,18 @@ void Object::serialize(boost::json::object& data) const {
 void Object::deserialize(boost::json::object& data) {
     m_name = data["name"].get_string();
     m_comment = data["comment"].get_string();
+}
+
+ContextObject::ContextObject(Context* context, ObjectId* id, const std::string& name)
+    : Object(id, name), m_context(context)
+{}
+
+void ContextObject::setName(const std::string& name) {
+    m_context->getCallbacks()->onObjectModified(this);
+    Object::setName(name);
+}
+
+void ContextObject::setComment(const std::string& comment) {
+    m_context->getCallbacks()->onObjectModified(this);
+    Object::setComment(comment);
 }

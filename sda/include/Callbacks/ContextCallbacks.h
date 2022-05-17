@@ -17,13 +17,13 @@ namespace sda
         void add(std::unique_ptr<Callbacks> callback);
 
         // Called when an object is added to the context
-        void onObjectAdded(IObject* obj) override;
+        void onObjectAdded(ContextObject* obj) override;
 
         // Called when an object is modified in the context
-        void onObjectModified(IObject* obj) override;
+        void onObjectModified(ContextObject* obj) override;
 
         // Called when an object is removed from the context
-        void onObjectRemoved(IObject* obj) override;
+        void onObjectRemoved(ContextObject* obj) override;
 
     private:
         // Get or create object change

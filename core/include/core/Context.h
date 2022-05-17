@@ -20,13 +20,13 @@ namespace sda
         {
         public:
             // Called when an object is added to the context
-            virtual void onObjectAdded(IObject* obj) {}
+            virtual void onObjectAdded(ContextObject* obj) {}
 
             // Called when an object is modified in the context
-            virtual void onObjectModified(IObject* obj) {}
+            virtual void onObjectModified(ContextObject* obj) {}
 
             // Called when an object is removed from the context
-            virtual void onObjectRemoved(IObject* obj) {}
+            virtual void onObjectRemoved(ContextObject* obj) {}
         };
 
         // Set the callbacks for the context

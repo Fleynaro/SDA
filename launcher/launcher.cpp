@@ -28,9 +28,9 @@ int main(int argc, char *argv[])
     project->getDatabase()->init();
 
     project->getChangeChain()->newChangeList();
-    auto func1 = new Function(ctx, nullptr, 1000);
+    auto func1 = new Function(ctx, nullptr, "func1", 1000);
     func1->setOffset(1001);
-    auto func2 = new Function(ctx, nullptr, 1002);
+    auto func2 = new Function(ctx, nullptr, "func2", 1002);
     project->getTransaction()->commit();
 
     project->getChangeChain()->undo();

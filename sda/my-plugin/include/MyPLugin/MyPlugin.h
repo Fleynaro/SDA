@@ -1,8 +1,6 @@
 #pragma once
 #include "Plugin/PluginAPI.h"
 
-// TODO: разработка внутри SDA, а не отдельно!
-
 namespace sda
 {
     class MyPlugin : public IPlugin
@@ -20,8 +18,10 @@ namespace sda
         // Project creation callback
         void onProjectCreated(Project* project) override;
 
+        // Create plugin instance
         static std::unique_ptr<IPlugin> Create();
     };
 
+    // Export plugin
     EXPORT_PLUGIN(MyPlugin)
 };
