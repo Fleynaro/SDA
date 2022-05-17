@@ -1,5 +1,5 @@
 #pragma once
-#include "Core/Object.h"
+#include "Core/Serialization.h"
 
 namespace sda
 {

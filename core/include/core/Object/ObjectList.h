@@ -1,10 +1,10 @@
 #pragma once
-#include "Context.h"
+#include "Core/Context.h"
 
 namespace sda
 {
     // Base class for all domain object's lists
-    template<typename T = IObject>
+    template<typename T = Object>
     class ObjectList
     {
         using ObjectListType = std::map<ObjectId, std::unique_ptr<T>>;
@@ -78,8 +78,9 @@ namespace sda
         }
 
         // Get an object by its string unique identifier
-        T* get(const std::string& uuid) {
-            return get(boost::uuids::string_generator()(uuid));
+        T* get(const boost::json::value& uuid) {
+            std::string uuid_str(uuid.get_string());
+            return get(boost::uuids::string_generator()(uuid_str));
         }
 
         // Get iterator to the first object

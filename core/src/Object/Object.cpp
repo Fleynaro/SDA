@@ -1,4 +1,4 @@
-#include "Core/Object.h"
+#include "Core/Object/Object.h"
 #include "Core/Context.h"
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -37,8 +37,12 @@ void Object::setTemporary(bool temporary) {
     m_temporary = temporary;
 }
 
+boost::json::string Object::serializeId() const {
+    return boost::uuids::to_string(m_id);
+}
+
 void Object::serialize(boost::json::object& data) const {
-    data["uuid"] = boost::uuids::to_string(m_id);
+    data["uuid"] = serializeId();
     data["name"] = m_name;
     data["comment"] = m_comment;
     data["temporary"] = m_temporary;
@@ -61,4 +65,9 @@ void ContextObject::setName(const std::string& name) {
 void ContextObject::setComment(const std::string& comment) {
     m_context->getCallbacks()->onObjectModified(this);
     Object::setComment(comment);
+}
+
+void ContextObject::deserialize(boost::json::object& data) {
+    m_context->getCallbacks()->onObjectModified(this);
+    Object::deserialize(data);
 }

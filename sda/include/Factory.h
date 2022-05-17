@@ -1,5 +1,6 @@
 #pragma once
-#include "Core/Object.h"
+#include <boost/uuid/uuid.hpp>
+#include "Core/Serialization.h"
 
 namespace sda
 {
@@ -11,7 +12,7 @@ namespace sda
         ISerializable* create(boost::json::object& data);
         
         // Create an object
-        virtual ISerializable* create(ObjectId* id, const std::string& collection, ObjectType type) = 0;
+        virtual ISerializable* create(boost::uuids::uuid* id, const std::string& collection, boost::json::object& data) = 0;
     };
 
     class Context;
@@ -25,7 +26,7 @@ namespace sda
         Factory(Context* context);
 
         // Create an object
-        ISerializable* create(ObjectId* id, const std::string& collection, ObjectType type) override;
+        ISerializable* create(boost::uuids::uuid* id, const std::string& collection, boost::json::object& data) override;
 
         // Add a new factory
         void add(std::unique_ptr<IFactory> factory);

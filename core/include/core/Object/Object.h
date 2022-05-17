@@ -3,13 +3,12 @@
 #include <memory>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/string_generator.hpp>
-#include "Serialization.h"
-#include "Destroy.h"
+#include "Core/Serialization.h"
+#include "Core/Destroy.h"
 
 namespace sda
 {
     using ObjectId = boost::uuids::uuid;
-    using ObjectType = int;
     class Context;
 
     // Base class for all domain objects
@@ -43,6 +42,9 @@ namespace sda
         // Set the object as temporary
         void setTemporary(bool temporary);
 
+        // Serialize the object id to a json string
+        boost::json::string serializeId() const;
+
         void serialize(boost::json::object& data) const override;
 
         void deserialize(boost::json::object& data) override;
@@ -62,5 +64,7 @@ namespace sda
 
         // Set the comment of the object
         void setComment(const std::string& comment) override;
+
+        void deserialize(boost::json::object& data) override;
     };
 };
