@@ -59,5 +59,5 @@ void PEImageAnalyser::analyseSections() {
 }
 
 void PEImageAnalyser::serialize(boost::json::object& data) const {
-    data["type"] = "PEImageAnalyser";
+    data["type"] = Name;
 }

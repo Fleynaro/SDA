@@ -6,20 +6,37 @@ namespace sda
     class DataType : public ContextObject
     {
     public:
-        static inline const std::string CollectionName = "data_types";
+        static inline const std::string Collection = "data_types";
 
         DataType(Context* context, ObjectId* id = nullptr, const std::string& name = "");
 
-        void serialize(boost::json::object& data) const override;
-
-        void deserialize(boost::json::object& data) override;
+        virtual size_t getSize() const = 0;
 
         void destroy() override;
     };
 
+    class ScalarDataType;
+
     class DataTypeList : public ObjectList<DataType>
     {
+        struct ScalarInfo {
+            bool isFloatingPoint;
+            bool isSigned;
+            size_t size;
+        };
+
+        std::map<std::string, DataType*> m_dataTypes;
+        std::map<ScalarInfo, ScalarDataType*> m_scalarDataTypes;
     public:
         using ObjectList<DataType>::ObjectList;
+
+        DataType* getByName(const std::string& name) const;
+
+        ScalarDataType* getScalar(bool isFloatingPoint, bool isSigned, size_t size);
+
+    private:
+        void onObjectAdded(DataType* dataType) override;
+
+        void onObjectRemoved(DataType* dataType) override;
     };
 };

@@ -33,10 +33,13 @@ namespace sda
 		size_t toImageFileOffset(Offset offset) const;
 	};
 
+    class ImageContext;
+
     class Image : public ContextObject
     {
-        inline const static ImageSection DefaultSection = ImageSection();
+        static inline const ImageSection DefaultSection = ImageSection();
 
+        ImageContext* m_imageContext;
         std::unique_ptr<IImageReader> m_reader;
         std::shared_ptr<IImageAnalyser> m_analyser;
         std::uintptr_t m_baseAddress = 0;
@@ -44,14 +47,15 @@ namespace sda
         std::list<ImageSection> m_imageSections;
 
     public:
-        static inline const std::string CollectionName = "images";
+        static inline const std::string Collection = "images";
 
         Image(
             Context* context,
             std::unique_ptr<IImageReader> reader,
             std::shared_ptr<IImageAnalyser> analyser,
             ObjectId* id = nullptr,
-            const std::string& name = "");
+            const std::string& name = "",
+            ImageContext* imageContext = nullptr);
 
         void analyse();
 

@@ -18,6 +18,8 @@ namespace sda
         std::unique_ptr<windows::__IMAGE_DOS_HEADER> m_imgDosHeader;
         std::unique_ptr<windows::__IMAGE_NT_HEADERS> m_imgNtHeaders;
     public:
+        static inline const std::string Name = "PEImageAnalyser";
+
         void analyse(Image* image) override;
 
     private:

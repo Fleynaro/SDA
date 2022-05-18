@@ -1,6 +1,7 @@
 #include "Core/Context.h"
 #include "Core/Image/AddressSpace.h"
 #include "Core/Image/Image.h"
+#include "Core/Image/ImageContext.h"
 #include "Core/DataType/DataType.h"
 #include "Core/Symbol/Symbol.h"
 #include "Core/Symbol/SymbolTable.h"
@@ -11,6 +12,7 @@ Context::Context()
 {
     m_addressSpaces = std::make_unique<AddressSpaceList>(this);
     m_images = std::make_unique<ImageList>(this);
+    m_imageContexts = std::make_unique<ImageContextList>(this);
     m_dataTypes = std::make_unique<DataTypeList>(this);
     m_symbols = std::make_unique<SymbolList>(this);
     m_symbolTables = std::make_unique<SymbolTableList>(this);
@@ -23,6 +25,10 @@ AddressSpaceList* Context::getAddressSpaces() const {
 
 ImageList* Context::getImages() const {
     return m_images.get();
+}
+
+ImageContextList* Context::getImageContexts() const {
+    return m_imageContexts.get();
 }
 
 DataTypeList* Context::getDataTypes() const {

@@ -1,4 +1,5 @@
 #include "Core/Image/Image.h"
+#include "Core/Image/ImageContext.h"
 #include "Core/Context.h"
 
 using namespace sda;
@@ -28,8 +29,12 @@ Image::Image(
         std::unique_ptr<IImageReader> reader,
         std::shared_ptr<IImageAnalyser> analyser,
         ObjectId* id,
-        const std::string& name)
-    : ContextObject(context, id, name), m_reader(std::move(reader)), m_analyser(analyser)
+        const std::string& name,
+        ImageContext* imageContext)
+    : ContextObject(context, id, name),
+    m_reader(std::move(reader)),
+    m_analyser(analyser),
+    m_imageContext(imageContext)
 {
     m_context->getImages()->add(std::unique_ptr<Image>(this));
 }
@@ -92,6 +97,8 @@ Image* Image::clone(std::unique_ptr<IImageReader> reader) const {
 void Image::serialize(boost::json::object& data) const {
     ContextObject::serialize(data);
 
+    data["image_context"] = m_imageContext->serializeId();
+
     if(auto serReader = dynamic_cast<ISerializable*>(m_reader.get())) {
         boost::json::object readerData;
         serReader->serialize(readerData);
@@ -107,6 +114,8 @@ void Image::serialize(boost::json::object& data) const {
 
 void Image::deserialize(boost::json::object& data) {
     ContextObject::deserialize(data);
+
+    m_imageContext = m_context->getImageContexts()->get(data["image_context"]);
 
     if(auto serReader = dynamic_cast<ISerializable*>(m_reader.get())) {
         serReader->deserialize(data["reader"].get_object());

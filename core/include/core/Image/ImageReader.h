@@ -45,6 +45,8 @@ namespace sda
 		std::filesystem::path m_pathToImgFile;
 		std::unique_ptr<VectorImageReader> m_reader;
 	public:
+		static inline const std::string Name = "FileImageReader";
+
 		FileImageReader(const std::filesystem::path& pathToImgFile = "");
 
 		void readFile();

@@ -56,6 +56,7 @@ namespace sda
         // Add an object to the list
         void add(std::unique_ptr<T> object) {
             m_context->getCallbacks()->onObjectAdded(object.get());
+            onObjectAdded(object.get());
             m_objects[object->getId()] = std::move(object);
         }
 
@@ -65,6 +66,7 @@ namespace sda
             if (it == m_objects.end())
                 throw std::runtime_error("Object not found");
             m_context->getCallbacks()->onObjectRemoved(it->second.get());
+            onObjectRemoved(it->second.get());
             m_objects.erase(it);
         }
 
@@ -92,5 +94,10 @@ namespace sda
         Iterator end() {
             return Iterator(m_objects.end());
         }
+
+    protected:
+        virtual void onObjectAdded(T* object) {}
+
+        virtual void onObjectRemoved(T* object) {}
     };
 };

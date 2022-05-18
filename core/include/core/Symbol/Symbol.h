@@ -1,15 +1,23 @@
 #pragma once
 #include "Core/Object/ObjectList.h"
 
-
 namespace sda
 {
+    class DataType;
+
     class Symbol : public ContextObject
     {
+        DataType* m_dataType;
     public:
-        static inline const std::string CollectionName = "symbols";
+        static inline const std::string Collection = "symbols";
 
-        Symbol(Context* context, ObjectId* id = nullptr, const std::string& name = "");
+        Symbol(
+            Context* context,
+            ObjectId* id = nullptr,
+            const std::string& name = "",
+            DataType* dataType = nullptr);
+
+        DataType* getDataType() const;
 
         void serialize(boost::json::object& data) const override;
 

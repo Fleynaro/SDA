@@ -31,13 +31,12 @@ Image* AddressSpace::getImageAt(std::uintptr_t address) const {
 void AddressSpace::serialize(boost::json::object& data) const {
     ContextObject::serialize(data);
 
-    data["collection"] = CollectionName;
+    data["collection"] = Collection;
 
     // serialize the list of images
     auto imagesIds = boost::json::array();
-    for (auto image : m_images) {
+    for (auto image : m_images)
         imagesIds.push_back(image->serializeId());
-    }
     data["images"] = imagesIds;
 }
 
@@ -45,8 +44,9 @@ void AddressSpace::deserialize(boost::json::object& data) {
     ContextObject::deserialize(data);
 
     // deserialize the list of images
-    auto imagesIds = data["images"].get_array();
-    for (auto imageId : imagesIds) {
+    m_images.clear();
+    const auto& imagesIds = data["images"].get_array();
+    for (const auto& imageId : imagesIds) {
         auto image = m_context->getImages()->get(imageId);
         m_images.push_back(image);
     }

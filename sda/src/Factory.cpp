@@ -2,7 +2,14 @@
 #include "Core/Context.h"
 #include "Core/Image/AddressSpace.h"
 #include "Core/Image/Image.h"
-#include "Core/DataType/DataType.h"
+#include "Core/Image/ImageContext.h"
+#include "Core/DataType/PointerDataType.h"
+#include "Core/DataType/ArrayDataType.h"
+#include "Core/DataType/TypedefDataType.h"
+#include "Core/DataType/ScalarDataType.h"
+#include "Core/DataType/EnumDataType.h"
+#include "Core/DataType/SignatureDataType.h"
+#include "Core/DataType/StructureDataType.h"
 #include "Core/Symbol/Symbol.h"
 #include "Core/Symbol/SymbolTable.h"
 
@@ -26,27 +33,45 @@ Factory::Factory(Context* context)
 {}
 
 ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collection, boost::json::object& data) {
-    if (collection == AddressSpace::CollectionName) {
+    if (collection == AddressSpace::Collection) {
         return new AddressSpace(m_context, id);
-    } else if (collection == Image::CollectionName) {
+    } else if (collection == Image::Collection) {
         if(data.find("reader") != data.end() && data.find("analyser") != data.end()) {  
             std::string readerType(data["reader"].get_object()["type"].get_string());
             std::unique_ptr<IImageReader> reader;
-            if (readerType == "FileImageReader")
+            if (readerType == FileImageReader::Name)
                 reader = std::make_unique<FileImageReader>();
             
             std::string analyserType(data["analyser"].get_object()["type"].get_string());
             std::shared_ptr<IImageAnalyser> analyser;
-            if (analyserType == "PEImageAnalyser")
+            if (analyserType == PEImageAnalyser::Name)
                 analyser = std::make_shared<PEImageAnalyser>();
   
             return new Image(m_context, std::move(reader), analyser, id);
         }
-    } else if (collection == DataType::CollectionName) {
-        return new DataType(m_context, id);
-    } else if (collection == Symbol::CollectionName) {
+    } else if (collection == ImageContext::Collection) {
+        return new ImageContext(m_context, id);
+    } else if (collection == DataType::Collection) {
+        if (data.find("type") != data.end()) {
+            std::string type(data["type"].get_string());
+            if (type == PointerDataType::Type)
+                return new PointerDataType(m_context, id);
+            else if (type == ArrayDataType::Type)
+                return new ArrayDataType(m_context, id);
+            else if (type == TypedefDataType::Type)
+                return new TypedefDataType(m_context, id);
+            else if (type == ScalarDataType::Type)
+                return new ScalarDataType(m_context, id);
+            else if (type == EnumDataType::Type)
+                return new EnumDataType(m_context, id);
+            else if (type == SignatureDataType::Type)
+                return new SignatureDataType(m_context, id);
+            else if (type == StructureDataType::Type)
+                return new StructureDataType(m_context, id);
+        }
+    } else if (collection == Symbol::Collection) {
         return new Symbol(m_context, id);
-    } else if (collection == SymbolTable::CollectionName) {
+    } else if (collection == SymbolTable::Collection) {
         return new SymbolTable(m_context, id);
     }
 

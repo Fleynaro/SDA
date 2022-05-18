@@ -56,11 +56,11 @@ size_t FileImageReader::getImageSize() {
 }
 
 void FileImageReader::serialize(boost::json::object& data) const {
-    data["type"] = "FileImageReader";
-    data["pathToImgFile"] = m_pathToImgFile.string();
+    data["type"] = Name;
+    data["path_to_img_file"] = m_pathToImgFile.string();
 }
 
 void FileImageReader::deserialize(boost::json::object& data) {
-    m_pathToImgFile = std::string(data["pathToImgFile"].get_string());
+    m_pathToImgFile = std::string(data["path_to_img_file"].get_string());
     readFile();
 }
