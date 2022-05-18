@@ -10,7 +10,12 @@ namespace sda
     {
         std::list<Image*> m_images;
     public:
+        static inline const std::string CollectionName = "address_spaces";
+
         AddressSpace(Context* context, ObjectId* id = nullptr, const std::string& name = "");
+
+        // Add an image to the address space
+        void addImage(Image* image);
 
         // Get the list of images in the address space
         const std::list<Image*>& getImages() const;
@@ -23,8 +28,6 @@ namespace sda
         void deserialize(boost::json::object& data) override;
 
         void destroy() override;
-        
-        static std::string GetCollectionName();
     };
 
     class AddressSpaceList : public ObjectList<AddressSpace>

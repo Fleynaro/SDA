@@ -26,25 +26,27 @@ Factory::Factory(Context* context)
 {}
 
 ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collection, boost::json::object& data) {
-    if (collection == AddressSpace::GetCollectionName()) {
+    if (collection == AddressSpace::CollectionName) {
         return new AddressSpace(m_context, id);
-    } else if (collection == Image::GetCollectionName()) {
-        if(data.find("reader") != data.end() && data.find("analyser") != data.end()) {   
-            std::string readerStr(data["reader"].get_string());
+    } else if (collection == Image::CollectionName) {
+        if(data.find("reader") != data.end() && data.find("analyser") != data.end()) {  
+            std::string readerType(data["reader"].get_object()["type"].get_string());
             std::unique_ptr<IImageReader> reader;
+            if (readerType == "FileImageReader")
+                reader = std::make_unique<FileImageReader>();
             
-            std::string analyserStr(data["analyser"].get_string());
+            std::string analyserType(data["analyser"].get_object()["type"].get_string());
             std::shared_ptr<IImageAnalyser> analyser;
-
-            auto image = new Image(m_context, std::move(reader), analyser, id);
-            image->analyse();
-            return image;
+            if (analyserType == "PEImageAnalyser")
+                analyser = std::make_shared<PEImageAnalyser>();
+  
+            return new Image(m_context, std::move(reader), analyser, id);
         }
-    } else if (collection == DataType::GetCollectionName()) {
+    } else if (collection == DataType::CollectionName) {
         return new DataType(m_context, id);
-    } else if (collection == Symbol::GetCollectionName()) {
+    } else if (collection == Symbol::CollectionName) {
         return new Symbol(m_context, id);
-    } else if (collection == SymbolTable::GetCollectionName()) {
+    } else if (collection == SymbolTable::CollectionName) {
         return new SymbolTable(m_context, id);
     }
 

@@ -9,11 +9,11 @@ using namespace sda;
 
 std::unique_ptr<Schema> sda::GetSchema() {
     std::list<Schema::Collection> collections = {
-        { AddressSpace::GetCollectionName() },
-        { Image::GetCollectionName() },
-        { DataType::GetCollectionName() },
-        { Symbol::GetCollectionName() },
-        { SymbolTable::GetCollectionName() }
+        { AddressSpace::CollectionName },
+        { Image::CollectionName },
+        { DataType::CollectionName },
+        { Symbol::CollectionName },
+        { SymbolTable::CollectionName }
     };
     return std::make_unique<Schema>(collections);
 }

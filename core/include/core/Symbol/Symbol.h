@@ -7,6 +7,8 @@ namespace sda
     class Symbol : public ContextObject
     {
     public:
+        static inline const std::string CollectionName = "symbols";
+
         Symbol(Context* context, ObjectId* id = nullptr, const std::string& name = "");
 
         void serialize(boost::json::object& data) const override;
@@ -14,8 +16,6 @@ namespace sda
         void deserialize(boost::json::object& data) override;
 
         void destroy() override;
-
-        static std::string GetCollectionName();
     };
 
     class SymbolList : public ObjectList<Symbol>

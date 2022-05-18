@@ -11,6 +11,6 @@ namespace sda
         virtual void serialize(boost::json::object& data) const = 0;
 
         // Deserialize the object
-        virtual void deserialize(boost::json::object& data) = 0;
+        virtual void deserialize(boost::json::object& data) {}
     };
 };

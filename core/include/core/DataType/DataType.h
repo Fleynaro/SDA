@@ -6,6 +6,8 @@ namespace sda
     class DataType : public ContextObject
     {
     public:
+        static inline const std::string CollectionName = "data_types";
+
         DataType(Context* context, ObjectId* id = nullptr, const std::string& name = "");
 
         void serialize(boost::json::object& data) const override;
@@ -13,8 +15,6 @@ namespace sda
         void deserialize(boost::json::object& data) override;
 
         void destroy() override;
-
-        static std::string GetCollectionName();
     };
 
     class DataTypeList : public ObjectList<DataType>
