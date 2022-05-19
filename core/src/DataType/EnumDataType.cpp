@@ -6,14 +6,9 @@ EnumDataType::EnumDataType(Context* context, Object::Id* id, const std::string& 
     : DataType(context, id, name)
 {}
 
-void EnumDataType::addField(Key key, const std::string& name) {
+void EnumDataType::setFields(const std::map<Key, std::string>& fields) {
     m_context->getCallbacks()->onObjectModified(this);
-    m_fields[key] = name;
-}
-
-void EnumDataType::removeField(Key key) {
-    m_context->getCallbacks()->onObjectModified(this);
-    m_fields.erase(key);
+    m_fields = fields;
 }
 
 const std::map<EnumDataType::Key, std::string>& EnumDataType::getFields() const {

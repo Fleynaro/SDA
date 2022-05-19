@@ -15,6 +15,10 @@ namespace sda
             const std::string& name = "",
             DataType* pointedType = nullptr);
 
+        void setPointedType(DataType* pointedType);
+
+        DataType* getPointedType() const;
+
         size_t getSize() const override;
 
         void serialize(boost::json::object& data) const override;

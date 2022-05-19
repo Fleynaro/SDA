@@ -14,9 +14,9 @@ namespace sda
 
         SymbolTable(Context* context, Object::Id* id = nullptr, const std::string& name = "");
 
-        void addSymbol(Offset offset, Symbol* symbol);
+        void setSymbols(const std::map<Offset, Symbol*>& symbols);
 
-        Symbol* getSymbolAt(Offset offset) const;
+        const std::map<Offset, Symbol*>& getSymbols() const;
 
         void serialize(boost::json::object& data) const override;
 

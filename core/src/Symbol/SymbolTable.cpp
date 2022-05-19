@@ -9,17 +9,13 @@ SymbolTable::SymbolTable(Context* context, Object::Id* id, const std::string& na
     m_context->getSymbolTables()->add(std::unique_ptr<SymbolTable>(this));
 }
 
-void SymbolTable::addSymbol(Offset offset, Symbol* symbol) {
+void SymbolTable::setSymbols(const std::map<Offset, Symbol*>& symbols) {
     m_context->getCallbacks()->onObjectModified(this);
-    m_symbols[offset] = symbol;
+    m_symbols = symbols;
 }
 
-Symbol* SymbolTable::getSymbolAt(Offset offset) const {
-    auto it = m_symbols.find(offset);
-    if (it == m_symbols.end()) {
-        return nullptr;
-    }
-    return it->second;
+const std::map<Offset, Symbol*>& SymbolTable::getSymbols() const {
+    return m_symbols;
 }
 
 void SymbolTable::serialize(boost::json::object& data) const {
@@ -39,6 +35,7 @@ void SymbolTable::deserialize(boost::json::object& data) {
     ContextObject::deserialize(data);
 
     // deserialize all symbols
+    m_symbols.clear();
     const auto& symbols = data["symbol"].get_array();
     for (auto symbolData : symbols) {
         auto offset = symbolData.get_object()["offset"].get_uint64();

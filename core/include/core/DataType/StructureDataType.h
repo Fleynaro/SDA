@@ -12,13 +12,10 @@ namespace sda
 
         StructureDataType(Context* context, Object::Id* id = nullptr, const std::string& name = "");
 
-        void addField(StructureFieldSymbol* field);
-
-        void removeField(StructureFieldSymbol* field);
+        // todo: to change the fields, use setFields() only (like in react js)
+        void setFields(const std::map<Offset, StructureFieldSymbol*>& fields);
 
         const std::map<Offset, StructureFieldSymbol*>& getFields() const;
-
-        StructureFieldSymbol* getFieldAt(Offset offset) const;
 
         size_t getSize() const override;
 

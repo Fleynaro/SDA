@@ -11,6 +11,15 @@ TypedefDataType::TypedefDataType(
     , m_pointedType(pointedType)
 {}
 
+void TypedefDataType::setPointedType(DataType* pointedType) {
+    m_context->getCallbacks()->onObjectModified(this);
+    m_pointedType = pointedType;
+}
+
+DataType* TypedefDataType::getPointedType() const {
+    return m_pointedType;
+}
+
 size_t TypedefDataType::getSize() const {
     return m_pointedType->getSize();
 }

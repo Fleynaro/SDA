@@ -14,8 +14,7 @@ namespace sda
 
         AddressSpace(Context* context, Object::Id* id = nullptr, const std::string& name = "");
 
-        // Add an image to the address space
-        void addImage(Image* image);
+        void setImages(const std::list<Image*>& images);
 
         // Get the list of images in the address space
         const std::list<Image*>& getImages() const;

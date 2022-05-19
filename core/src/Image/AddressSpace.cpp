@@ -10,9 +10,9 @@ AddressSpace::AddressSpace(Context* context, Object::Id* id, const std::string& 
     m_context->getAddressSpaces()->add(std::unique_ptr<AddressSpace>(this));
 }
 
-void AddressSpace::addImage(Image* image) {
+void AddressSpace::setImages(const std::list<Image*>& images) {
     m_context->getCallbacks()->onObjectModified(this);
-    m_images.push_back(image);
+    m_images = images;
 }
 
 const std::list<Image*>& AddressSpace::getImages() const {
@@ -37,7 +37,7 @@ void AddressSpace::serialize(boost::json::object& data) const {
     auto imagesIds = boost::json::array();
     for (auto image : m_images)
         imagesIds.push_back(image->serializeId());
-    data["image"] = imagesIds;
+    data["images"] = imagesIds;
 }
 
 void AddressSpace::deserialize(boost::json::object& data) {
@@ -45,7 +45,7 @@ void AddressSpace::deserialize(boost::json::object& data) {
 
     // deserialize the list of images
     m_images.clear();
-    const auto& imagesIds = data["image"].get_array();
+    const auto& imagesIds = data["images"].get_array();
     for (const auto& imageId : imagesIds) {
         auto image = m_context->getImages()->get(imageId);
         m_images.push_back(image);

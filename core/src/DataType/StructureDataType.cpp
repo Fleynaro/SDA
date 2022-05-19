@@ -7,26 +7,13 @@ StructureDataType::StructureDataType(Context* context, Object::Id* id, const std
     : DataType(context, id, name)
 {}
 
-void StructureDataType::addField(StructureFieldSymbol* field) {
+void StructureDataType::setFields(const std::map<Offset, StructureFieldSymbol*>& fields) {
     m_context->getCallbacks()->onObjectModified(this);
-    m_fields[field->getOffset()] = field;
-}
-
-void StructureDataType::removeField(StructureFieldSymbol* field) {
-    m_context->getCallbacks()->onObjectModified(this);
-    m_fields.erase(field->getOffset());
+    m_fields = fields;
 }
 
 const std::map<Offset, StructureFieldSymbol*>& StructureDataType::getFields() const {
     return m_fields;
-}
-
-StructureFieldSymbol* StructureDataType::getFieldAt(Offset offset) const {
-    auto it = m_fields.find(offset);
-    if (it != m_fields.end()) {
-        return it->second;
-    }
-    return nullptr;
 }
 
 void StructureDataType::serialize(boost::json::object& data) const {
@@ -47,6 +34,7 @@ void StructureDataType::deserialize(boost::json::object& data) {
     DataType::deserialize(data);
 
     // deserialize all fields
+    m_fields.clear();
     const auto& fields = data["fields"].get_array();
     for (auto fieldData : fields) {
         auto offset = fieldData.get_object()["offset"].get_uint64();

@@ -13,9 +13,8 @@ namespace sda
 
         EnumDataType(Context* context, Object::Id* id = nullptr, const std::string& name = "");
 
-        void addField(Key key, const std::string& name);
-
-        void removeField(Key key);
+        // todo: to change the fields, use setFields() only (like in react js)
+        void setFields(const std::map<Key, std::string>& fields);
 
         const std::map<Key, std::string>& getFields() const;
 
