@@ -11,7 +11,7 @@ namespace sda
 
         PointerDataType(
             Context* context,
-            ObjectId* id = nullptr,
+            Object::Id* id = nullptr,
             DataType* pointedType = nullptr);
 
         DataType* getPointedType() const;
@@ -21,8 +21,5 @@ namespace sda
         void serialize(boost::json::object& data) const override;
 
         void deserialize(boost::json::object& data) override;
-
-    private:
-        void createName();
     };
 };

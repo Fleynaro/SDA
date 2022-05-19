@@ -12,7 +12,7 @@ namespace sda
     public:
         static inline const std::string Collection = "image_contexts";
 
-        ImageContext(Context* context, ObjectId* id = nullptr, const std::string& name = "");
+        ImageContext(Context* context, Object::Id* id = nullptr, const std::string& name = "");
 
         SymbolTable* getGlobalSymbolTable() const;
 

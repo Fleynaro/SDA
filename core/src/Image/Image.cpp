@@ -4,31 +4,11 @@
 
 using namespace sda;
 
-Offset ImageSection::getMinOffset() const {
-    return m_relVirtualAddress;
-}
-
-Offset ImageSection::getMaxOffset() const {
-    return m_relVirtualAddress + m_virtualSize;
-}
-
-bool ImageSection::contains(Offset offset) const {
-    return offset >= getMinOffset() && offset < getMaxOffset();
-}
-
-Offset ImageSection::toOffset(size_t offset) const {
-    return offset - m_pointerToRawData + m_relVirtualAddress;
-}
-
-size_t ImageSection::toImageFileOffset(Offset offset) const {
-    return offset - m_relVirtualAddress + m_pointerToRawData;
-}
-
 Image::Image(
         Context* context,
         std::unique_ptr<IImageReader> reader,
         std::shared_ptr<IImageAnalyser> analyser,
-        ObjectId* id,
+        Object::Id* id,
         const std::string& name,
         ImageContext* imageContext)
     : ContextObject(context, id, name),
@@ -129,5 +109,5 @@ void Image::deserialize(boost::json::object& data) {
 }
 
 void Image::destroy() {
-    m_context->getImages()->remove(getId());
+    m_context->getImages()->remove(this);
 }

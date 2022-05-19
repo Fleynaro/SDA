@@ -4,7 +4,7 @@ using namespace sda;
 
 ArrayDataType::ArrayDataType(
     Context* context,
-    ObjectId* id,
+    Object::Id* id,
     DataType* elementType,
     const std::list<size_t>& dimensions)
     : DataType(context, id),
@@ -12,7 +12,10 @@ ArrayDataType::ArrayDataType(
     m_dimensions(dimensions)
 {
     if (elementType) {
-        createName();
+        auto name = m_elementType->getName();
+        for (auto dimension : m_dimensions)
+            name += "[" + std::to_string(dimension) + "]";
+        setName(name);
     }
 }
 
@@ -33,7 +36,7 @@ size_t ArrayDataType::getSize() const {
 
 void ArrayDataType::serialize(boost::json::object& data) const {
     DataType::serialize(data);
-    data["type"] = ArrayDataType::Type;
+    data["type"] = Type;
 
     data["element_type"] = m_elementType->serializeId();
 
@@ -52,13 +55,4 @@ void ArrayDataType::deserialize(boost::json::object& data) {
     const auto& dimensions = data["dimensions"].get_array();
     for (auto dimension : dimensions)
         m_dimensions.push_back(dimension.get_uint64());
-
-    createName();
-}
-
-void ArrayDataType::createName() {
-    std::string name = m_elementType->getName();
-    for (auto dimension : m_dimensions)
-        name += "[" + std::to_string(dimension) + "]";
-    setName(name);
 }

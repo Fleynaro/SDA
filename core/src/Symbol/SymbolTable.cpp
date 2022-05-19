@@ -3,10 +3,15 @@
 
 using namespace sda;
 
-SymbolTable::SymbolTable(Context* context, ObjectId* id, const std::string& name)
+SymbolTable::SymbolTable(Context* context, Object::Id* id, const std::string& name)
     : ContextObject(context, id, name)
 {
     m_context->getSymbolTables()->add(std::unique_ptr<SymbolTable>(this));
+}
+
+void SymbolTable::addSymbol(Offset offset, Symbol* symbol) {
+    m_context->getCallbacks()->onObjectModified(this);
+    m_symbols[offset] = symbol;
 }
 
 Symbol* SymbolTable::getSymbolAt(Offset offset) const {
@@ -23,7 +28,9 @@ void SymbolTable::serialize(boost::json::object& data) const {
     // serialize all symbols
     boost::json::array symbols;
     for (const auto& [offset, symbol] : m_symbols) {
-        symbols.push_back(symbol->serializeId());
+        boost::json::object symbolData;
+        symbolData["offset"] = offset;
+        symbolData["symbol"] = symbol->serializeId();
     }
     data["symbols"] = symbols;
 }
@@ -32,13 +39,14 @@ void SymbolTable::deserialize(boost::json::object& data) {
     ContextObject::deserialize(data);
 
     // deserialize all symbols
-    const auto& symbolIds = data["symbols"].get_array();
-    for (const auto& symbolId : symbolIds) {
-        auto symbol = m_context->getSymbols()->get(symbolId);
-        //m_symbols[symbol->getOffset()] = symbol;
+    const auto& symbols = data["symbol"].get_array();
+    for (auto symbolData : symbols) {
+        auto offset = symbolData.get_object()["offset"].get_uint64();
+        auto symbol = m_context->getSymbols()->get(symbolData.get_object()["symbol"]);
+        m_symbols[offset] = symbol;
     }
 }
 
 void SymbolTable::destroy() {
-    m_context->getSymbolTables()->remove(getId());
+    m_context->getSymbolTables()->remove(this);
 }

@@ -8,7 +8,7 @@ namespace sda
     public:
         static inline const std::string Collection = "data_types";
 
-        DataType(Context* context, ObjectId* id = nullptr, const std::string& name = "");
+        DataType(Context* context, Object::Id* id = nullptr, const std::string& name = "");
 
         virtual size_t getSize() const = 0;
 
@@ -19,14 +19,19 @@ namespace sda
 
     class DataTypeList : public ObjectList<DataType>
     {
+    public:
         struct ScalarInfo {
             bool isFloatingPoint;
             bool isSigned;
             size_t size;
+
+            bool operator<(const ScalarInfo& other) const;
         };
 
+    private:
         std::map<std::string, DataType*> m_dataTypes;
         std::map<ScalarInfo, ScalarDataType*> m_scalarDataTypes;
+
     public:
         using ObjectList<DataType>::ObjectList;
 

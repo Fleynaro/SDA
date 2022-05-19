@@ -2,7 +2,7 @@
 
 using namespace sda;
 
-EnumDataType::EnumDataType(Context* context, ObjectId* id, const std::string& name)
+EnumDataType::EnumDataType(Context* context, Object::Id* id, const std::string& name)
     : DataType(context, id, name)
 {}
 
@@ -26,7 +26,7 @@ size_t EnumDataType::getSize() const {
 
 void EnumDataType::serialize(boost::json::object& data) const {
     DataType::serialize(data);
-    data["type"] = EnumDataType::Type;
+    data["type"] = Type;
 
     // serialize all fields
     boost::json::array fields;
@@ -46,8 +46,8 @@ void EnumDataType::deserialize(boost::json::object& data) {
     const auto& fields = data["fields"].get_array();
     for (const auto& fieldVal : fields) {
         auto field = fieldVal.get_object();
-        const auto& key = field["key"].get_int64();
-        const auto& name = field["name"].get_string();
+        const auto key = static_cast<Key>(field["key"].get_int64());
+        const auto name = field["name"].get_string();
         m_fields[key] = name;
     }
 }

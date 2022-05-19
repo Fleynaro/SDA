@@ -4,7 +4,7 @@ using namespace sda;
 
 ScalarDataType::ScalarDataType(
     Context* context,
-    ObjectId* id,
+    Object::Id* id,
     const std::string& name,
     bool isFloatingPoint,
     bool isSigned,
@@ -29,7 +29,7 @@ size_t ScalarDataType::getSize() const {
 
 void ScalarDataType::serialize(boost::json::object& data) const {
     DataType::serialize(data);
-    data["type"] = ScalarDataType::Type;
+    data["type"] = Type;
     data["is_fp"] = m_isFloatingPoint;
     data["is_signed"] = m_isSigned;
     data["size"] = m_size;

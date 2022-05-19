@@ -10,7 +10,11 @@
 #include "Core/DataType/EnumDataType.h"
 #include "Core/DataType/SignatureDataType.h"
 #include "Core/DataType/StructureDataType.h"
-#include "Core/Symbol/Symbol.h"
+#include "Core/Symbol/MemoryVariableSymbol.h"
+#include "Core/Symbol/RegisterVariableSymbol.h"
+#include "Core/Symbol/FunctionSymbol.h"
+#include "Core/Symbol/FunctionParameterSymbol.h"
+#include "Core/Symbol/StructureFieldSymbol.h"
 #include "Core/Symbol/SymbolTable.h"
 
 using namespace sda;
@@ -70,7 +74,19 @@ ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collec
                 return new StructureDataType(m_context, id);
         }
     } else if (collection == Symbol::Collection) {
-        return new Symbol(m_context, id);
+        if (data.find("type") != data.end()) {
+            std::string type(data["type"].get_string());
+            if (type == MemoryVariableSymbol::Type)
+                return new MemoryVariableSymbol(m_context, id);
+            else if (type == RegisterVariableSymbol::Type)
+                return new RegisterVariableSymbol(m_context, id);
+            else if (type == FunctionSymbol::Type)
+                return new FunctionSymbol(m_context, id);
+            else if (type == FunctionParameterSymbol::Type)
+                return new FunctionParameterSymbol(m_context, id);
+            else if (type == StructureFieldSymbol::Type)
+                return new StructureFieldSymbol(m_context, id);
+        }
     } else if (collection == SymbolTable::Collection) {
         return new SymbolTable(m_context, id);
     }

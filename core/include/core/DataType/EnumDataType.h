@@ -11,7 +11,7 @@ namespace sda
     public:
         static inline const std::string Type = "enum";
 
-        EnumDataType(Context* context, ObjectId* id = nullptr, const std::string& name = "");
+        EnumDataType(Context* context, Object::Id* id = nullptr, const std::string& name = "");
 
         void addField(Key key, const std::string& name);
 

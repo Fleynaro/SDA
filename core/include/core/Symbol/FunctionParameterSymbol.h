@@ -1,21 +1,18 @@
 #pragma once
-#include "Core/DataType/DataType.h"
+#include "Symbol.h"
 
 namespace sda
 {
-    class TypedefDataType : public DataType
+    class FunctionParameterSymbol : public Symbol
     {
-        DataType* m_pointedType;
     public:
-        static inline const std::string Type = "typedef";
+        static inline const std::string Type = "memory_variable";
 
-        TypedefDataType(
+        FunctionParameterSymbol(
             Context* context,
             Object::Id* id = nullptr,
             const std::string& name = "",
-            DataType* pointedType = nullptr);
-
-        size_t getSize() const override;
+            DataType* dataType = nullptr);
 
         void serialize(boost::json::object& data) const override;
 

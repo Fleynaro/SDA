@@ -7,7 +7,7 @@ namespace sda
     template<typename T = Object>
     class ObjectList
     {
-        using ObjectListType = std::map<ObjectId, std::unique_ptr<T>>;
+        using ObjectListType = std::map<Object::Id, std::unique_ptr<T>>;
         Context* m_context;
         ObjectListType m_objects;
     public:
@@ -61,17 +61,17 @@ namespace sda
         }
 
         // Remove an object from the list
-        void remove(const ObjectId& uuid) {
-            auto it = m_objects.find(uuid);
+        void remove(T* object) {
+            auto it = m_objects.find(object->getId());
             if (it == m_objects.end())
                 throw std::runtime_error("Object not found");
-            m_context->getCallbacks()->onObjectRemoved(it->second.get());
-            onObjectRemoved(it->second.get());
+            m_context->getCallbacks()->onObjectRemoved(object);
+            onObjectRemoved(object);
             m_objects.erase(it);
         }
 
         // Get an object by its unique identifier
-        T* get(const ObjectId& uuid) {
+        T* get(const Object::Id& uuid) {
             auto it = m_objects.find(uuid);
             if (it == m_objects.end()) {
                 return nullptr;

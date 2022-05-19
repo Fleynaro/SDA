@@ -5,7 +5,7 @@ using namespace sda;
 
 Symbol::Symbol(
     Context* context,
-    ObjectId* id,
+    Object::Id* id,
     const std::string& name,
     DataType* dataType)
     : ContextObject(context, id, name),
@@ -16,6 +16,11 @@ Symbol::Symbol(
 
 DataType* Symbol::getDataType() const {
     return m_dataType;
+}
+
+void Symbol::setDataType(DataType* dataType) {
+    m_context->getCallbacks()->onObjectModified(this);
+    m_dataType = dataType;
 }
 
 void Symbol::serialize(boost::json::object& data) const {
@@ -31,5 +36,5 @@ void Symbol::deserialize(boost::json::object& data) {
 }
 
 void Symbol::destroy() {
-    m_context->getSymbols()->remove(getId());
+    m_context->getSymbols()->remove(this);
 }

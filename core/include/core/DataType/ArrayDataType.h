@@ -12,7 +12,7 @@ namespace sda
 
         ArrayDataType(
             Context* context,
-            ObjectId* id = nullptr,
+            Object::Id* id = nullptr,
             DataType* elementType = nullptr,
             const std::list<size_t>& dimensions = std::list<size_t>());
 
@@ -25,8 +25,5 @@ namespace sda
         void serialize(boost::json::object& data) const override;
 
         void deserialize(boost::json::object& data) override;
-
-    private:
-        void createName();
     };
 };

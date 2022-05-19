@@ -3,7 +3,7 @@
 
 using namespace sda;
 
-ImageContext::ImageContext(Context* context, ObjectId* id, const std::string& name)
+ImageContext::ImageContext(Context* context, Object::Id* id, const std::string& name)
     : ContextObject(context, id, name)
 {
     m_context->getImageContexts()->add(std::unique_ptr<ImageContext>(this));
@@ -32,5 +32,5 @@ void ImageContext::deserialize(boost::json::object& data) {
 }
 
 void ImageContext::destroy() {
-    m_context->getImageContexts()->remove(getId());
+    m_context->getImageContexts()->remove(this);
 }

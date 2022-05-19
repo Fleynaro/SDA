@@ -12,7 +12,9 @@ namespace sda
     public:
         static inline const std::string Collection = "symbol_tables";
 
-        SymbolTable(Context* context, ObjectId* id = nullptr, const std::string& name = "");
+        SymbolTable(Context* context, Object::Id* id = nullptr, const std::string& name = "");
+
+        void addSymbol(Offset offset, Symbol* symbol);
 
         Symbol* getSymbolAt(Offset offset) const;
 

@@ -3,14 +3,22 @@
 
 using namespace sda;
 
-DataType::DataType(Context* context, ObjectId* id, const std::string& name)
+DataType::DataType(Context* context, Object::Id* id, const std::string& name)
     : ContextObject(context, id, name)
 {
     m_context->getDataTypes()->add(std::unique_ptr<DataType>(this));
 }
 
 void DataType::destroy() {
-    m_context->getDataTypes()->remove(getId());
+    m_context->getDataTypes()->remove(this);
+}
+
+bool DataTypeList::ScalarInfo::operator<(const ScalarInfo& other) const {
+    if (isFloatingPoint != other.isFloatingPoint)
+        return isFloatingPoint;
+    if (isSigned != other.isSigned)
+        return isSigned;
+    return size < other.size;
 }
 
 DataType* DataTypeList::getByName(const std::string& name) const {

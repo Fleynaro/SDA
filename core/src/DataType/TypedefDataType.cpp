@@ -4,7 +4,7 @@ using namespace sda;
 
 TypedefDataType::TypedefDataType(
     Context* context,
-    ObjectId* id,
+    Object::Id* id,
     const std::string& name,
     DataType* pointedType)
     : DataType(context, id, name)
@@ -17,7 +17,7 @@ size_t TypedefDataType::getSize() const {
 
 void TypedefDataType::serialize(boost::json::object& data) const {
     DataType::serialize(data);
-    data["type"] = TypedefDataType::Type;
+    data["type"] = Type;
     data["pointed_type"] = m_pointedType->serializeId();
 }
 

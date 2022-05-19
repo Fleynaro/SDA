@@ -12,7 +12,7 @@ namespace sda
     public:
         static inline const std::string Collection = "address_spaces";
 
-        AddressSpace(Context* context, ObjectId* id = nullptr, const std::string& name = "");
+        AddressSpace(Context* context, Object::Id* id = nullptr, const std::string& name = "");
 
         // Add an image to the address space
         void addImage(Image* image);

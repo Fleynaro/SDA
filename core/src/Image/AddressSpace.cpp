@@ -4,7 +4,7 @@
 
 using namespace sda;
 
-AddressSpace::AddressSpace(Context* context, ObjectId* id, const std::string& name)
+AddressSpace::AddressSpace(Context* context, Object::Id* id, const std::string& name)
     : ContextObject(context, id, name)
 {
     m_context->getAddressSpaces()->add(std::unique_ptr<AddressSpace>(this));
@@ -37,7 +37,7 @@ void AddressSpace::serialize(boost::json::object& data) const {
     auto imagesIds = boost::json::array();
     for (auto image : m_images)
         imagesIds.push_back(image->serializeId());
-    data["images"] = imagesIds;
+    data["image"] = imagesIds;
 }
 
 void AddressSpace::deserialize(boost::json::object& data) {
@@ -45,7 +45,7 @@ void AddressSpace::deserialize(boost::json::object& data) {
 
     // deserialize the list of images
     m_images.clear();
-    const auto& imagesIds = data["images"].get_array();
+    const auto& imagesIds = data["image"].get_array();
     for (const auto& imageId : imagesIds) {
         auto image = m_context->getImages()->get(imageId);
         m_images.push_back(image);
@@ -53,5 +53,5 @@ void AddressSpace::deserialize(boost::json::object& data) {
 }
 
 void AddressSpace::destroy() {
-    m_context->getAddressSpaces()->remove(getId());
+    m_context->getAddressSpaces()->remove(this);
 }

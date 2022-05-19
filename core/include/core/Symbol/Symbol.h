@@ -13,11 +13,13 @@ namespace sda
 
         Symbol(
             Context* context,
-            ObjectId* id = nullptr,
+            Object::Id* id = nullptr,
             const std::string& name = "",
             DataType* dataType = nullptr);
 
         DataType* getDataType() const;
+
+        void setDataType(DataType* dataType);
 
         void serialize(boost::json::object& data) const override;
 

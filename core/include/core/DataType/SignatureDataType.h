@@ -8,7 +8,7 @@ namespace sda
     public:
         static inline const std::string Type = "signature";
 
-        SignatureDataType(Context* context, ObjectId* id = nullptr, const std::string& name = "");
+        SignatureDataType(Context* context, Object::Id* id = nullptr, const std::string& name = "");
 
         size_t getSize() const override;
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "Core/Object/Object.h"
+#include "Core/Object/ContextObject.h"
 
 namespace sda
 {

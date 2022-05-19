@@ -13,7 +13,7 @@ namespace sda
 
         ScalarDataType(
             Context* context,
-            ObjectId* id = nullptr,
+            Object::Id* id = nullptr,
             const std::string& name = "",
             bool isFloatingPoint = false,
             bool isSigned = false,

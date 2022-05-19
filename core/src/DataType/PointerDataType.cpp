@@ -4,13 +4,13 @@ using namespace sda;
 
 PointerDataType::PointerDataType(
     Context* context,
-    ObjectId* id,
+    Object::Id* id,
     DataType* pointedType)
     : DataType(context, id),
     m_pointedType(pointedType)
 {
     if (pointedType) {
-        createName();
+        setName(m_pointedType->getName() + "*");
     }
 }
 
@@ -24,16 +24,11 @@ size_t PointerDataType::getSize() const {
 
 void PointerDataType::serialize(boost::json::object& data) const {
     DataType::serialize(data);
-    data["type"] = PointerDataType::Type;
+    data["type"] = Type;
     data["pointed_type"] = m_pointedType->serializeId();
 }
 
 void PointerDataType::deserialize(boost::json::object& data) {
     DataType::deserialize(data);
     m_pointedType = m_context->getDataTypes()->get(data["pointed_type"]);
-    createName();
-}
-
-void PointerDataType::createName() {
-    setName(m_pointedType->getName() + "*");
 }
