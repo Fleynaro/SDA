@@ -5,7 +5,6 @@ namespace sda
 {
     class AddressSpaceList;
     class ImageList;
-    class ImageContextList;
     class DataTypeList;
     class SymbolList;
     class SymbolTableList;
@@ -15,7 +14,6 @@ namespace sda
     {
         std::unique_ptr<AddressSpaceList> m_addressSpaces;
         std::unique_ptr<ImageList> m_images;
-        std::unique_ptr<ImageContextList> m_imageContexts;
         std::unique_ptr<DataTypeList> m_dataTypes;
         std::unique_ptr<SymbolList> m_symbols;
         std::unique_ptr<SymbolTableList> m_symbolTables;
@@ -27,9 +25,6 @@ namespace sda
 
         // Get the list of images
         ImageList* getImages() const;
-
-        // Get the list of image contexts
-        ImageContextList* getImageContexts() const;
 
         // Get the list of data types
         DataTypeList* getDataTypes() const;

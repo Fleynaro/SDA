@@ -7,11 +7,11 @@ RegisterVariableSymbol::RegisterVariableSymbol(
     Object::Id* id,
     const std::string& name,
     DataType* dataType,
-    const std::list<ComplexOffset>& offsets)
+    const std::list<Offset>& offsets)
     : Symbol(context, id, name, dataType), m_offsets(offsets)
 {}
 
-const std::list<ComplexOffset>& RegisterVariableSymbol::getOffsets() const {
+const std::list<Offset>& RegisterVariableSymbol::getOffsets() const {
     return m_offsets;
 }
 
@@ -32,5 +32,5 @@ void RegisterVariableSymbol::deserialize(boost::json::object& data) {
     // deserialize the list of offsets
     const auto& offsets = data["offsets"].get_array();
     for (const auto& offset : offsets)
-        m_offsets.push_back(ComplexOffset(offset.get_uint64()));
+        m_offsets.push_back(Offset(offset.get_uint64()));
 }

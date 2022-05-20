@@ -1,23 +1,17 @@
 #pragma once
 #include "Core/Object/ObjectList.h"
-#include "ImageSection.h"
 #include "ImageReader.h"
 #include "ImageAnalyser.h"
 
 namespace sda
 {
-    class ImageContext;
+    class SymbolTable;
 
     class Image : public ContextObject
     {
-        static inline const ImageSection DefaultSection = ImageSection();
-
-        ImageContext* m_imageContext;
         std::unique_ptr<IImageReader> m_reader;
-        std::shared_ptr<IImageAnalyser> m_analyser;
-        std::uintptr_t m_baseAddress = 0;
-        size_t m_entryPointOffset = 0;
-        std::list<ImageSection> m_imageSections;
+        std::shared_ptr<ImageAnalyser> m_analyser;
+        SymbolTable* m_globalSymbolTable;
 
     public:
         static inline const std::string Collection = "images";
@@ -25,20 +19,20 @@ namespace sda
         Image(
             Context* context,
             std::unique_ptr<IImageReader> reader,
-            std::shared_ptr<IImageAnalyser> analyser,
+            std::shared_ptr<ImageAnalyser> analyser,
             Object::Id* id = nullptr,
             const std::string& name = "",
-            ImageContext* imageContext = nullptr);
+            SymbolTable* globalSymbolTable = nullptr);
 
         void analyse();
 
         IImageReader* getReader() const;
 
-        std::uintptr_t& getBaseAddress();
+        std::uintptr_t getBaseAddress() const;
 
-        size_t& getEntryPointOffset();
+        size_t getEntryPointOffset() const;
 
-        std::list<ImageSection>& getImageSections();
+        const std::list<ImageSection>& getImageSections() const;
 
         const ImageSection* getImageSectionAt(Offset offset) const;
 
@@ -49,6 +43,8 @@ namespace sda
         Offset toOffset(std::uintptr_t address) const;
 
         size_t toImageFileOffset(Offset offset) const;
+
+        SymbolTable* getGlobalSymbolTable() const;
 
         Image* clone(std::unique_ptr<IImageReader> reader) const;
 

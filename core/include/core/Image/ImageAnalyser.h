@@ -1,4 +1,5 @@
 #pragma once
+#include "ImageSection.h"
 #include "Core/Serialization.h"
 #include "Core/Image/WinImageHeaders.h"
 
@@ -6,13 +7,17 @@ namespace sda
 {
     class Image;
 
-    class IImageAnalyser
+    class ImageAnalyser
     {
     public:
+        std::uintptr_t m_baseAddress = 0;
+        size_t m_entryPointOffset = 0;
+        std::list<ImageSection> m_imageSections;
+
         virtual void analyse(Image* image) = 0;
     };
 
-    class PEImageAnalyser : public IImageAnalyser, public ISerializable
+    class PEImageAnalyser : public ImageAnalyser, public ISerializable
     {
         Image* m_image = nullptr;
         std::unique_ptr<windows::__IMAGE_DOS_HEADER> m_imgDosHeader;

@@ -16,9 +16,19 @@ const std::map<Offset, StructureFieldSymbol*>& StructureDataType::getFields() co
     return m_fields;
 }
 
+void StructureDataType::setSize(size_t size) {
+    m_context->getCallbacks()->onObjectModified(this);
+    m_size = size;
+}
+
+size_t StructureDataType::getSize() const {
+    return m_size;
+}
+
 void StructureDataType::serialize(boost::json::object& data) const {
     DataType::serialize(data);
     data["type"] = Type;
+    data["size"] = m_size;
 
     // serialize all fields
     boost::json::array fields;
@@ -32,6 +42,7 @@ void StructureDataType::serialize(boost::json::object& data) const {
 
 void StructureDataType::deserialize(boost::json::object& data) {
     DataType::deserialize(data);
+    m_size = data["size"].get_uint64();
 
     // deserialize all fields
     m_fields.clear();

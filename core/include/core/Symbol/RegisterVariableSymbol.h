@@ -6,7 +6,7 @@ namespace sda
 {
     class RegisterVariableSymbol : public Symbol
     {
-        std::list<ComplexOffset> m_offsets;
+        std::list<Offset> m_offsets;
     public:
         static inline const std::string Type = "register_variable";
 
@@ -15,9 +15,9 @@ namespace sda
             Object::Id* id = nullptr,
             const std::string& name = "",
             DataType* dataType = nullptr,
-            const std::list<ComplexOffset>& offsets = std::list<ComplexOffset>());
+            const std::list<Offset>& offsets = std::list<Offset>());
 
-        const std::list<ComplexOffset>& getOffsets() const;
+        const std::list<Offset>& getOffsets() const;
 
         void serialize(boost::json::object& data) const override;
 

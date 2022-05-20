@@ -29,15 +29,15 @@ void PEImageAnalyser::analyseHeaders() {
 	if (std::string(signature, 2) != "PE")
 		throw std::runtime_error("Invalid NT header");
 
-    m_image->getBaseAddress() = m_imgNtHeaders->OptionalHeader.ImageBase;
-    m_image->getEntryPointOffset() = m_imgNtHeaders->OptionalHeader.AddressOfEntryPoint;
+    m_baseAddress = m_imgNtHeaders->OptionalHeader.ImageBase;
+    m_entryPointOffset = m_imgNtHeaders->OptionalHeader.AddressOfEntryPoint;
 }
 
 void PEImageAnalyser::analyseSections() {
     ImageSection headerSection;
 	headerSection.m_name = "PE HEADER";
 	headerSection.m_virtualSize = m_imgDosHeader->e_lfanew + sizeof(__IMAGE_NT_HEADERS);
-	m_image->getImageSections().push_back(headerSection);
+	m_imageSections.push_back(headerSection);
 
 	for (int i = 0; i < m_imgNtHeaders->FileHeader.NumberOfSections; i++) {
 		std::vector<uint8_t> imgSecHeader(sizeof __IMAGE_SECTION_HEADER);
@@ -54,7 +54,7 @@ void PEImageAnalyser::analyseSections() {
 		section.m_relVirtualAddress = pSeh->VirtualAddress;
 		section.m_virtualSize = pSeh->Misc.VirtualSize;
 		section.m_pointerToRawData = pSeh->PointerToRawData;
-		m_image->getImageSections().push_back(section);
+		m_imageSections.push_back(section);
 	}
 }
 

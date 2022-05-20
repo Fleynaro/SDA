@@ -6,6 +6,7 @@ namespace sda
 {
     class StructureDataType : public DataType
     {
+        size_t m_size;
         std::map<Offset, StructureFieldSymbol*> m_fields;
     public:
         static inline const std::string Type = "structure";
@@ -16,6 +17,8 @@ namespace sda
         void setFields(const std::map<Offset, StructureFieldSymbol*>& fields);
 
         const std::map<Offset, StructureFieldSymbol*>& getFields() const;
+
+        void setSize(size_t size);
 
         size_t getSize() const override;
 

@@ -25,6 +25,10 @@ DataType* SignatureDataType::getReturnType() const {
     return m_returnType;
 }
 
+size_t SignatureDataType::getSize() const {
+    return 0;
+}
+
 void SignatureDataType::serialize(boost::json::object& data) const {
     DataType::serialize(data);
     data["type"] = Type;

@@ -2,7 +2,6 @@
 #include "Core/Context.h"
 #include "Core/Image/AddressSpace.h"
 #include "Core/Image/Image.h"
-#include "Core/Image/ImageContext.h"
 #include "Core/DataType/PointerDataType.h"
 #include "Core/DataType/ArrayDataType.h"
 #include "Core/DataType/TypedefDataType.h"
@@ -47,14 +46,12 @@ ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collec
                 reader = std::make_unique<FileImageReader>();
             
             std::string analyserType(data["analyser"].get_object()["type"].get_string());
-            std::shared_ptr<IImageAnalyser> analyser;
+            std::shared_ptr<ImageAnalyser> analyser;
             if (analyserType == PEImageAnalyser::Name)
                 analyser = std::make_shared<PEImageAnalyser>();
   
             return new Image(m_context, std::move(reader), analyser, id);
         }
-    } else if (collection == ImageContext::Collection) {
-        return new ImageContext(m_context, id);
     } else if (collection == DataType::Collection) {
         if (data.find("type") != data.end()) {
             std::string type(data["type"].get_string());
