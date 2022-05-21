@@ -11,9 +11,21 @@ size_t Varnode::getSize() const {
     return m_size;
 }
 
+BitMask Varnode::getMask() const {
+    return BitMask(m_size, 0);
+}
+
 RegisterVarnode::RegisterVarnode(Type type, size_t id, size_t index, BitMask mask, size_t size)
     : Varnode(size), m_type(type), m_id(id), m_index(index), m_mask(mask)
-{}
+{
+    if (type == Type::StackPointer) {
+        m_id = StackPointerId;
+    } else if (type == Type::InstructionPointer) {
+        m_id = InstructionPointerId;
+    } else if (type == Type::Flag) {
+        m_id = FlagId;
+    }
+}
 
 RegisterVarnode::Type RegisterVarnode::getType() const {
     return m_type;

@@ -1,6 +1,5 @@
 if(WIN32)
     option(ZYDIS_FEATURE_ENCODER OFF)
-    option(ZYDIS_FEATURE_KNC OFF)
     option(ZYDIS_BUILD_EXAMPLES OFF)
     option(ZYDIS_BUILD_TOOLS OFF)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third-party/zydis)

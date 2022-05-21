@@ -90,6 +90,7 @@
         "xutility": "cpp",
         "numeric": "cpp",
         "*.ipp": "cpp",
-        "memory_resource": "cpp"
+        "memory_resource": "cpp",
+        "*.inc": "cpp"
     }
 }

@@ -4,10 +4,17 @@ namespace sda
 {
     class BitMask
     {
-        size_t m_mask;
     public:
-        BitMask(size_t mask);
+        using Value = size_t;
 
-        size_t getMask() const;
+    private:
+        Value m_mask;
+
+    public:
+        BitMask(Value mask);
+
+        BitMask(size_t size, size_t offset);
+
+        operator size_t() const;
     };
 };

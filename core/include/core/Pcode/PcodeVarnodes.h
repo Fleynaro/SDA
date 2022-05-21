@@ -12,11 +12,17 @@ namespace sda::pcode
         virtual ~Varnode() {}
 
         size_t getSize() const;
+
+        BitMask getMask() const;
     };
 
     class RegisterVarnode : public Varnode
     {
     public:
+        inline const static size_t StackPointerId = 100000000;
+        inline const static size_t InstructionPointerId = 100000001;
+        inline const static size_t FlagId = 100000002;
+
         enum Type {
 			Generic,
 			StackPointer,
