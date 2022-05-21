@@ -2,10 +2,18 @@
 
 using namespace sda::pcode;
 
-Block::Block(const std::map<InstructionOffset, Instruction>& instructions)
+Block::Block(const std::list<Instruction*>& instructions)
     : m_instructions(instructions)
 {}
 
-const std::map<InstructionOffset, Instruction>& Block::getInstructions() const {
+const std::list<Instruction*>& Block::getInstructions() const {
     return m_instructions;
+}
+
+Block* Block::getNearNextBlock() const {
+    return m_nearNextBlock;
+}
+
+Block* Block::getFarNextBlock() const {
+    return m_farNextBlock;
 }

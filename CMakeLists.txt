@@ -9,11 +9,8 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 # Import cmake files
 include(cmake/compiler_flags.cmake)
 
-# Packages
-find_package(Boost REQUIRED COMPONENTS system filesystem json)
-find_package(unofficial-sqlite3 CONFIG REQUIRED)
-
 add_subdirectory(core)
+add_subdirectory(disasm)
 add_subdirectory(sda)
 if (NOT SDA_PLUGIN_DEV)
     set(SDA_DEV ON)

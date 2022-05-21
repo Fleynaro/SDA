@@ -70,6 +70,14 @@ SymbolTable* Image::getGlobalSymbolTable() const {
     return m_globalSymbolTable;
 }
 
+std::map<pcode::InstructionOffset, pcode::Instruction>& Image::getInstructions() {
+    return m_instructions;
+}
+
+std::map<pcode::InstructionOffset, pcode::Block>& Image::getBlocks() {
+    return m_blocks;
+}
+
 Image* Image::clone(std::unique_ptr<IImageReader> reader) const {
     auto clone = new Image(m_context, std::move(reader), m_analyser);
     boost::json::object data;

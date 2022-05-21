@@ -1,3 +1,6 @@
+find_package(
+    unofficial-sqlite3 CONFIG REQUIRED)
+
 file(GLOB_RECURSE SDA_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
@@ -11,4 +14,5 @@ target_include_directories(
 target_link_libraries(
     sda PUBLIC
     core
+    disasm
     unofficial::sqlite3::sqlite3)

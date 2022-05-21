@@ -1,3 +1,9 @@
+find_package(
+    Boost REQUIRED COMPONENTS
+    system
+    filesystem
+    json)
+
 file(GLOB_RECURSE CORE_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
