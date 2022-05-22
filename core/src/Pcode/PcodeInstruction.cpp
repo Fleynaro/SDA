@@ -81,3 +81,11 @@ void Instruction::Render::renderVarnode(const Varnode* varnode) const {
         renderToken(ss.str(), Token::Number);
     }
 }
+
+Instruction::StreamRender::StreamRender(std::ostream& output, const RegisterVarnode::Render* registerRender)
+    : Render(registerRender), m_output(output)
+{}
+
+void Instruction::StreamRender::renderToken(const std::string& text, Token token) const {
+    m_output << text;
+}

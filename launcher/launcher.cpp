@@ -13,6 +13,7 @@
 #include "Callbacks/ContextCallbacks.h"
 #include "Change.h"
 #include "Disasm/Zydis/ZydisDecoderPcodeX86.h"
+#include "Disasm/Zydis/ZydisInstructionRenderX86.h"
 
 using namespace sda;
 
@@ -34,14 +35,26 @@ void testDecompiler() {
     ZydisDecoder decoder;
     ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_STACK_WIDTH_64);
     disasm::ZydisDecoderPcodeX86 pcodeDecoder(&decoder);
+    disasm::ZydisDecoderRenderX86 decoderRender(&decoder);
     
     auto offset = image->getEntryPointOffset();
 
+    disasm::ZydisRegisterVarnodeRender regRender;
+    pcode::Instruction::StreamRender pcodeInstrRender(std::cout, &regRender);
+    disasm::Instruction::StreamRender srcInstrRender(std::cout);
     while (offset < image->getSize()) {
         std::vector<uint8_t> data(0x100);
         image->getReader()->readBytesAtOffset(offset, data);
         pcodeDecoder.decode(offset, data);
+        
+        decoderRender.decode(data);
+        srcInstrRender.render(decoderRender.getDecodedInstruction());
+        std::cout << std::endl;
         auto decodedInstructions = pcodeDecoder.getDecodedInstructions();
+        for (auto& decodedInstruction : decodedInstructions) {
+            pcodeInstrRender.render(&decodedInstruction);
+            std::cout << std::endl;
+        }
 
         offset += pcodeDecoder.getInstructionLength();
     }

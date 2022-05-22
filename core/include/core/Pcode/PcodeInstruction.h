@@ -160,5 +160,14 @@ namespace sda::pcode
 
 			virtual void renderToken(const std::string& text, Token token) const = 0;
 		};
+
+		class StreamRender : public Render {
+			std::ostream& m_output;
+		public:
+			StreamRender(std::ostream& output, const RegisterVarnode::Render* registerRender);
+
+		protected:
+			void renderToken(const std::string& text, Token token) const override;
+		};
     };
 };
