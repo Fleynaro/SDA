@@ -36,8 +36,7 @@ namespace sda
         SymbolTableList* getSymbolTables() const;
     
         // Callbacks for the context
-        class Callbacks
-        {
+        class Callbacks {
         public:
             // Called when an object is added to the context
             virtual void onObjectAdded(ContextObject* obj) {}

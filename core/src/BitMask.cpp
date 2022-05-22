@@ -20,6 +20,21 @@ BitMask::BitMask(size_t size, size_t offset)
     : m_mask(GetBitMask64BySize(size) << (offset % 8) * 8)
 {}
 
+size_t BitMask::getMaxSizeInBits() const {
+	return sizeof(Value) * 8;
+}
+
+size_t BitMask::getOffset() const {
+	size_t offset = 0;
+	auto mask = m_mask;
+	const auto maxSizeInBits = getMaxSizeInBits() - 1;
+	while (offset <= maxSizeInBits && static_cast<bool>(mask & 0b1) == 0) {
+		offset += 1;
+		mask = mask >> 1;
+	}
+	return offset;
+}
+
 BitMask::operator size_t() const {
     return m_mask;
 }

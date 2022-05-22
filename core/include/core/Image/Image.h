@@ -33,7 +33,7 @@ namespace sda
 
         std::uintptr_t getBaseAddress() const;
 
-        size_t getEntryPointOffset() const;
+        Offset getEntryPointOffset() const;
 
         const std::list<ImageSection>& getImageSections() const;
 

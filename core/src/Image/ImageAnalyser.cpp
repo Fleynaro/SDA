@@ -4,15 +4,27 @@
 using namespace sda;
 using namespace sda::windows;
 
-void PEImageAnalyser::analyse(Image* image) {
-    m_image = image;
+void TestAnalyser::analyse(IImageReader* reader) {
+	ImageSection section;
+	section.m_type = ImageSection::CODE_SEGMENT;
+	section.m_virtualSize = reader->getImageSize();
+	m_imageSections.push_back(section);
+
+	static int counter = 0;
+	counter++;
+	m_baseAddress = 0x1000000 * counter;
+	m_entryPointOffset = 0x0;
+}
+
+void PEImageAnalyser::analyse(IImageReader* reader) {
+    m_reader = reader;
     analyseHeaders();
     analyseSections();
 }
 
 void PEImageAnalyser::analyseHeaders() {
     std::vector<uint8_t> imgDosHeader(sizeof __IMAGE_DOS_HEADER);
-	m_image->getReader()->readBytesAtOffset(0x0, imgDosHeader);
+	m_reader->readBytesAtOffset(0x0, imgDosHeader);
     m_imgDosHeader = std::make_unique<__IMAGE_DOS_HEADER>();
 	*m_imgDosHeader = *reinterpret_cast<__IMAGE_DOS_HEADER*>(imgDosHeader.data());
 	
@@ -21,7 +33,7 @@ void PEImageAnalyser::analyseHeaders() {
 		throw std::runtime_error("Invalid DOS header");
 
 	std::vector<uint8_t> imgNtHeaders(sizeof __IMAGE_NT_HEADERS);
-    m_image->getReader()->readBytesAtOffset(m_imgDosHeader->e_lfanew, imgNtHeaders);
+    m_reader->readBytesAtOffset(m_imgDosHeader->e_lfanew, imgNtHeaders);
     m_imgNtHeaders = std::make_unique<__IMAGE_NT_HEADERS>();
 	*m_imgNtHeaders = *reinterpret_cast<__IMAGE_NT_HEADERS*>(imgNtHeaders.data());
 
@@ -41,7 +53,7 @@ void PEImageAnalyser::analyseSections() {
 
 	for (int i = 0; i < m_imgNtHeaders->FileHeader.NumberOfSections; i++) {
 		std::vector<uint8_t> imgSecHeader(sizeof __IMAGE_SECTION_HEADER);
-		m_image->getReader()->readBytesAtOffset(
+		m_reader->readBytesAtOffset(
             m_imgDosHeader->e_lfanew + sizeof(__IMAGE_NT_HEADERS) + sizeof(__IMAGE_SECTION_HEADER) * i, imgSecHeader);
 		const auto pSeh = reinterpret_cast<__IMAGE_SECTION_HEADER*>(imgSecHeader.data());
 

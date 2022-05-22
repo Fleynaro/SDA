@@ -26,6 +26,10 @@ void ZydisDecoderPcodeX86::decode(Offset offset, const std::vector<uint8_t>& dat
     }
 }
 
+size_t ZydisDecoderPcodeX86::getInstructionLength() const {
+	return m_curInstr.length;
+}
+
 void ZydisDecoderPcodeX86::generatePcodeInstructions() {
     auto mnemonic = m_curInstr.mnemonic;
 	auto size = m_curOperands[0].size / 0x8;
@@ -1556,7 +1560,7 @@ std::shared_ptr<Varnode> ZydisDecoderPcodeX86::getConditionFlagVarnode(FlagCond 
 
 std::shared_ptr<RegisterVarnode> ZydisDecoderPcodeX86::getRegisterVarnode(ZydisRegister regId, size_t size, int offset) const {
     auto type = RegisterVarnode::Generic;
-    size_t id = InstructionId::NONE;
+    size_t id = 0;
     size_t index = static_cast<size_t>(offset) / 8;
     auto mask = BitMask(size, offset);
 

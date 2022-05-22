@@ -11,6 +11,8 @@ namespace sda::disasm
     public:
         virtual void decode(Offset offset, const std::vector<uint8_t>& data) = 0;
 
+        virtual size_t getInstructionLength() const = 0;
+
         std::list<pcode::Instruction>&& getDecodedInstructions();
 
         // Callbacks for the decoder

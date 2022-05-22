@@ -1,12 +1,13 @@
 #pragma once
 #include <memory>
+#include <magic_enum.hpp>
 #include "PcodeVarnodes.h"
 #include "Core/Offset.h"
 
 namespace sda::pcode
 {
     // Pcode instruction id
-	enum InstructionId {
+	enum class InstructionId {
 		NONE,
 		UNKNOWN,
 
@@ -138,5 +139,26 @@ namespace sda::pcode
         std::shared_ptr<Varnode> getInput1() const;
 
         std::shared_ptr<Varnode> getOutput() const;
+
+		class Render {
+			const RegisterVarnode::Render* m_registerRender;
+		public:
+			Render(const RegisterVarnode::Render* registerRender);
+
+			virtual void render(const Instruction* instruction) const;
+
+		protected:
+			virtual void renderVarnode(const Varnode* varnode) const;
+
+			enum class Token {
+				Mnemonic,
+				Register,
+				Variable,
+				Number,
+				Other
+			};
+
+			virtual void renderToken(const std::string& text, Token token) const = 0;
+		};
     };
 };

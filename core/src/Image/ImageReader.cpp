@@ -7,7 +7,7 @@ PointerImageReader::PointerImageReader(uint8_t* data, size_t size)
     : m_data(data), m_size(size)
 {}
 
-void PointerImageReader::readBytesAtOffset(size_t offset, std::vector<uint8_t>& data) {
+void PointerImageReader::readBytesAtOffset(Offset offset, std::vector<uint8_t>& data) {
     const auto size = std::min(getImageSize() - offset, data.size());
 	std::copy_n(&m_data[offset], size, data.begin());
 }
@@ -20,7 +20,7 @@ VectorImageReader::VectorImageReader(const std::vector<uint8_t>& data)
     : m_data(std::move(data))
 {}
 
-void VectorImageReader::readBytesAtOffset(size_t offset, std::vector<uint8_t>& data) {
+void VectorImageReader::readBytesAtOffset(Offset offset, std::vector<uint8_t>& data) {
     const auto size = std::min(getImageSize() - offset, data.size());
     std::copy_n(m_data.begin() + offset, size, data.begin());
 }
@@ -47,7 +47,7 @@ void FileImageReader::readFile() {
     m_reader = std::make_unique<VectorImageReader>(std::move(data));
 }
 
-void FileImageReader::readBytesAtOffset(size_t offset, std::vector<uint8_t>& data) {
+void FileImageReader::readBytesAtOffset(Offset offset, std::vector<uint8_t>& data) {
     m_reader->readBytesAtOffset(offset, data);
 }
 

@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include "Core/BitMask.h"
 
 namespace sda::pcode
@@ -47,6 +48,11 @@ namespace sda::pcode
         size_t getIndex() const;
 
         BitMask getMask() const;
+
+        class Render {
+		public:
+            virtual std::string getRegisterName(const RegisterVarnode* varnode) const = 0;
+        };
     };
 
     class SymbolVarnode : public Varnode

@@ -20,7 +20,7 @@ Image::Image(
 }
 
 void Image::analyse() {
-    m_analyser->analyse(this);
+    m_analyser->analyse(getReader());
 }
 
 IImageReader* Image::getReader() const {
@@ -31,7 +31,7 @@ std::uintptr_t Image::getBaseAddress() const {
     return m_analyser->m_baseAddress;
 }
 
-size_t Image::getEntryPointOffset() const {
+Offset Image::getEntryPointOffset() const {
     return m_analyser->m_entryPointOffset;
 }
 

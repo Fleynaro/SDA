@@ -15,6 +15,10 @@ namespace sda
 
         BitMask(size_t size, size_t offset);
 
+        size_t getMaxSizeInBits() const;
+
+        size_t getOffset() const;
+
         operator size_t() const;
     };
 };

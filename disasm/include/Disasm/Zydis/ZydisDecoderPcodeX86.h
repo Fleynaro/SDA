@@ -1,5 +1,5 @@
 #pragma once
-#include "DecoderPcode.h"
+#include "Disasm/DecoderPcode.h"
 #include <Zydis/Zydis.h>
 
 namespace sda::disasm
@@ -8,14 +8,17 @@ namespace sda::disasm
     {
         ZydisDecoder* m_decoder;
         ZydisDecodedInstruction m_curInstr;
-        std::string m_curInstrView;
         ZydisDecodedOperand m_curOperands[ZYDIS_MAX_OPERAND_COUNT_VISIBLE];
         Offset m_curOffset = 0;
         size_t m_curInstrIndex = 0;
     public:
+        std::string m_curInstrView; // for debug purposes
+
         ZydisDecoderPcodeX86(ZydisDecoder* decoder);
 
         void decode(Offset offset, const std::vector<uint8_t>& data) override;
+
+        size_t getInstructionLength() const override;
 
     private:
         void generatePcodeInstructions();

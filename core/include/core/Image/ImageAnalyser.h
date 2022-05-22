@@ -5,27 +5,33 @@
 
 namespace sda
 {
-    class Image;
+    class IImageReader;
 
     class ImageAnalyser
     {
     public:
         std::uintptr_t m_baseAddress = 0;
-        size_t m_entryPointOffset = 0;
+        Offset m_entryPointOffset = 0;
         std::list<ImageSection> m_imageSections;
 
-        virtual void analyse(Image* image) = 0;
+        virtual void analyse(IImageReader* reader) = 0;
+    };
+
+    class TestAnalyser : public ImageAnalyser
+    {
+    public:
+        void analyse(IImageReader* reader) override;
     };
 
     class PEImageAnalyser : public ImageAnalyser, public ISerializable
     {
-        Image* m_image = nullptr;
+        IImageReader* m_reader = nullptr;
         std::unique_ptr<windows::__IMAGE_DOS_HEADER> m_imgDosHeader;
         std::unique_ptr<windows::__IMAGE_NT_HEADERS> m_imgNtHeaders;
     public:
         static inline const std::string Name = "PEImageAnalyser";
 
-        void analyse(Image* image) override;
+        void analyse(IImageReader* reader) override;
 
     private:
         void analyseHeaders();

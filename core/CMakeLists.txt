@@ -3,6 +3,8 @@ find_package(
     system
     filesystem
     json)
+find_package(
+    magic_enum CONFIG REQUIRED)
 
 file(GLOB_RECURSE CORE_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
