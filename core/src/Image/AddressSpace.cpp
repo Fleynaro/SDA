@@ -30,7 +30,6 @@ Image* AddressSpace::getImageAt(std::uintptr_t address) const {
 
 void AddressSpace::serialize(boost::json::object& data) const {
     ContextObject::serialize(data);
-
     data["collection"] = Collection;
 
     // serialize the list of images

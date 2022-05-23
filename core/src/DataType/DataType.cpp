@@ -9,6 +9,11 @@ DataType::DataType(Context* context, Object::Id* id, const std::string& name)
     m_context->getDataTypes()->add(std::unique_ptr<DataType>(this));
 }
 
+void DataType::serialize(boost::json::object& data) const {
+    ContextObject::serialize(data);
+    data["collection"] = Collection;
+}
+
 void DataType::destroy() {
     m_context->getDataTypes()->remove(this);
 }

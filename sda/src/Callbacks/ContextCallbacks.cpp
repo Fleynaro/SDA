@@ -17,40 +17,31 @@ void ContextCallbacks::add(std::unique_ptr<Callbacks> callback) {
     m_callbacks.push_back(std::move(callback));
 }
 
-void ContextCallbacks::onObjectAdded(ContextObject* obj) {
+void ContextCallbacks::onObjectAdded(Object* obj) {
     for (const auto& callback : m_callbacks)
         callback->onObjectAdded(obj);
 
-    if (auto serObj = dynamic_cast<ISerializable*>(obj)) {
-        m_project->getTransaction()->markAsNew(serObj);
-
-        if(auto objChange = getOrCreateObjectChange())
-            objChange->markAsNew(serObj);
-    }
+    m_project->getTransaction()->markAsNew(obj);
+    if(auto objChange = getOrCreateObjectChange())
+        objChange->markAsNew(obj);
 }
 
-void ContextCallbacks::onObjectModified(ContextObject* obj) {
+void ContextCallbacks::onObjectModified(Object* obj) {
     for (const auto& callback : m_callbacks)
         callback->onObjectModified(obj);
 
-    if (auto serObj = dynamic_cast<ISerializable*>(obj)) {
-        m_project->getTransaction()->markAsModified(serObj);
-        
-        if(auto objChange = getOrCreateObjectChange())
-            objChange->markAsModified(serObj);
-    }
+    m_project->getTransaction()->markAsModified(obj);
+    if(auto objChange = getOrCreateObjectChange())
+        objChange->markAsModified(obj);
 }
 
-void ContextCallbacks::onObjectRemoved(ContextObject* obj) {
+void ContextCallbacks::onObjectRemoved(Object* obj) {
     for (const auto& callback : m_callbacks)
         callback->onObjectRemoved(obj);
 
-    if (auto serObj = dynamic_cast<ISerializable*>(obj)) {
-        m_project->getTransaction()->markAsRemoved(serObj);
-
-        if(auto objChange = getOrCreateObjectChange())
-            objChange->markAsRemoved(serObj);
-    }
+    m_project->getTransaction()->markAsRemoved(obj);
+    if(auto objChange = getOrCreateObjectChange())
+        objChange->markAsRemoved(obj);
 }
 
 ObjectChange* ContextCallbacks::getOrCreateObjectChange() const {

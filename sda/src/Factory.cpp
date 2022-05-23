@@ -14,7 +14,8 @@
 #include "Core/Symbol/FunctionSymbol.h"
 #include "Core/Symbol/FunctionParameterSymbol.h"
 #include "Core/Symbol/StructureFieldSymbol.h"
-#include "Core/Symbol/SymbolTable.h"
+#include "Core/SymbolTable/StandartSymbolTable.h"
+#include "Core/SymbolTable/OptimizedSymbolTable.h"
 
 using namespace sda;
 
@@ -85,7 +86,13 @@ ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collec
                 return new StructureFieldSymbol(m_context, id);
         }
     } else if (collection == SymbolTable::Collection) {
-        return new SymbolTable(m_context, id);
+        if (data.find("type") != data.end()) {
+            std::string type(data["type"].get_string());
+            if (type == StandartSymbolTable::Type)
+                return new StandartSymbolTable(m_context, id);
+            else if (type == OptimizedSymbolTable::Type)
+                return new OptimizedSymbolTable(m_context, id);
+        }
     }
 
     for (auto& factory : m_factories) {

@@ -14,13 +14,13 @@ namespace sda
 
         SymbolTable(Context* context, Object::Id* id = nullptr, const std::string& name = "");
 
-        void setSymbols(const std::map<Offset, Symbol*>& symbols);
+        virtual void addSymbol(Offset offset, Symbol* symbol) = 0;
 
-        const std::map<Offset, Symbol*>& getSymbols() const;
+        virtual void removeSymbol(Offset offset) = 0;
+
+        virtual Symbol* getSymbolAt(Offset offset) = 0;
 
         void serialize(boost::json::object& data) const override;
-
-        void deserialize(boost::json::object& data) override;
 
         void destroy() override;
     };

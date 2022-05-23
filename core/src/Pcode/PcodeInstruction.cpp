@@ -75,7 +75,7 @@ void Instruction::Render::renderVarnode(const Varnode* varnode) const {
     }
     else if (auto constVarnode = dynamic_cast<const ConstantVarnode*>(varnode)) {
         std::stringstream ss;
-        ss << utils::to_hex() << constVarnode->getValue();
+        ss << utils::to_hex() << constVarnode->getValue() << ":";
         if (constVarnode->isAddress())
             ss << "addr"; else ss << constVarnode->getSize();
         renderToken(ss.str(), Token::Number);

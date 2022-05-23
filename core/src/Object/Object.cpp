@@ -5,32 +5,12 @@
 
 using namespace sda;
 
-Object::Object(Id* id, const std::string& name)
-    : m_id(id ? *id : boost::uuids::random_generator()()), m_name(name)
+Object::Object(Id* id)
+    : m_id(id ? *id : boost::uuids::random_generator()())
 {}
 
 Object::Id Object::getId() const {
     return m_id;
-}
-
-const std::string& Object::getName() const {
-    return m_name;
-}
-
-void Object::setName(const std::string& name) {
-    m_name = name;
-}
-
-const std::string& Object::getComment() const {
-    return m_comment;
-}
-
-void Object::setComment(const std::string& comment) {
-    m_comment = comment;
-}
-
-bool Object::isTemporary() const {
-    return m_temporary;
 }
 
 void Object::setTemporary(bool temporary) {
@@ -38,17 +18,10 @@ void Object::setTemporary(bool temporary) {
 }
 
 boost::json::string Object::serializeId() const {
-    return boost::uuids::to_string(m_id);
+    return boost::uuids::to_string(getId());
 }
 
 void Object::serialize(boost::json::object& data) const {
     data["uuid"] = serializeId();
-    data["name"] = m_name;
-    data["comment"] = m_comment;
     data["temporary"] = m_temporary;
-}
-
-void Object::deserialize(boost::json::object& data) {
-    m_name = data["name"].get_string();
-    m_comment = data["comment"].get_string();
 }

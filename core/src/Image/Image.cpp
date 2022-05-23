@@ -1,5 +1,5 @@
 #include "Core/Image/Image.h"
-#include "Core/Symbol/SymbolTable.h"
+#include "Core/SymbolTable/SymbolTable.h"
 #include "Core/Context.h"
 
 using namespace sda;
@@ -88,6 +88,7 @@ Image* Image::clone(std::unique_ptr<IImageReader> reader) const {
 
 void Image::serialize(boost::json::object& data) const {
     ContextObject::serialize(data);
+    data["collection"] = Collection;
 
     if(auto serReader = dynamic_cast<ISerializable*>(m_reader.get())) {
         boost::json::object readerData;

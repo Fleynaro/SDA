@@ -39,13 +39,13 @@ namespace sda
         class Callbacks {
         public:
             // Called when an object is added to the context
-            virtual void onObjectAdded(ContextObject* obj) {}
+            virtual void onObjectAdded(Object* obj) {}
 
             // Called when an object is modified in the context
-            virtual void onObjectModified(ContextObject* obj) {}
+            virtual void onObjectModified(Object* obj) {}
 
             // Called when an object is removed from the context
-            virtual void onObjectRemoved(ContextObject* obj) {}
+            virtual void onObjectRemoved(Object* obj) {}
         };
 
         // Set the callbacks for the context

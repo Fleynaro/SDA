@@ -12,6 +12,8 @@ namespace sda
 
         virtual size_t getSize() const = 0;
 
+        void serialize(boost::json::object& data) const override;
+
         void destroy() override;
     };
 

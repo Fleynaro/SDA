@@ -1,5 +1,6 @@
 #pragma once
 #include "Core/Context.h"
+#include <boost/uuid/string_generator.hpp>
 
 namespace sda
 {

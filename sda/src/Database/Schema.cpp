@@ -3,7 +3,7 @@
 #include "Core/Image/Image.h"
 #include "Core/DataType/DataType.h"
 #include "Core/Symbol/Symbol.h"
-#include "Core/Symbol/SymbolTable.h"
+#include "Core/SymbolTable/SymbolTable.h"
 
 using namespace sda;
 
