@@ -2,7 +2,7 @@
 #include "Core/Object/ObjectList.h"
 #include "ImageReader.h"
 #include "ImageAnalyser.h"
-#include "Core/Pcode/PcodeBlock.h"
+#include "Core/Pcode/PcodeGraph.h"
 
 namespace sda
 {
@@ -13,8 +13,7 @@ namespace sda
         std::unique_ptr<IImageReader> m_reader;
         std::shared_ptr<ImageAnalyser> m_analyser;
         SymbolTable* m_globalSymbolTable;
-        std::map<pcode::InstructionOffset, pcode::Instruction> m_instructions;
-        std::map<pcode::InstructionOffset, pcode::Block> m_blocks;
+        std::unique_ptr<pcode::Graph> m_pcodeGraph;
 
     public:
         static inline const std::string Collection = "images";
@@ -49,9 +48,7 @@ namespace sda
 
         SymbolTable* getGlobalSymbolTable() const;
 
-        std::map<pcode::InstructionOffset, pcode::Instruction>& getInstructions();
-
-        std::map<pcode::InstructionOffset, pcode::Block>& getBlocks();
+        pcode::Graph* getPcodeGraph() const;
 
         Image* clone(std::unique_ptr<IImageReader> reader) const;
 

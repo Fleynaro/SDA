@@ -1350,7 +1350,12 @@ Instruction* ZydisDecoderPcodeX86::generateInstruction(
     std::shared_ptr<Varnode> output,
     bool zext)
 {
-    auto instr = Instruction(id, input0, input1, output);
+    auto instr = Instruction(
+		id,
+		input0,
+		input1,
+		output,
+		InstructionOffset(m_curOffset, m_curInstrIndex));
     m_curInstrIndex++;
 
 	if (m_curInstrIndex == 1) {

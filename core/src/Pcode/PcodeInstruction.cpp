@@ -20,8 +20,9 @@ Instruction::Instruction(
     InstructionId id,
     std::shared_ptr<Varnode> input0,
     std::shared_ptr<Varnode> input1,
-    std::shared_ptr<Varnode> output)
-    : m_id(id), m_input0(input0), m_input1(input1), m_output(output)
+    std::shared_ptr<Varnode> output,
+    InstructionOffset offset)
+    : m_id(id), m_input0(input0), m_input1(input1), m_output(output), m_offset(offset)
 {}
 
 InstructionId Instruction::getId() const {
@@ -38,6 +39,18 @@ std::shared_ptr<Varnode> Instruction::getInput1() const {
 
 std::shared_ptr<Varnode> Instruction::getOutput() const {
     return m_output;
+}
+
+InstructionOffset Instruction::getOffset() const {
+    return m_offset;
+}
+
+bool Instruction::isAnyJump() const {
+    return m_id >= InstructionId::BRANCH && m_id <= InstructionId::RETURN;
+}
+
+bool Instruction::isBranching() const {
+    return m_id >= InstructionId::BRANCH && m_id <= InstructionId::BRANCHIND;
 }
 
 Instruction::Render::Render(const RegisterVarnode::Render* registerRender)

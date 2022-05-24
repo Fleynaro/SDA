@@ -125,12 +125,14 @@ namespace sda::pcode
         std::shared_ptr<Varnode> m_input0;
         std::shared_ptr<Varnode> m_input1;
         std::shared_ptr<Varnode> m_output;
+		InstructionOffset m_offset;
     public:
         Instruction(
             InstructionId id,
             std::shared_ptr<Varnode> input0,
             std::shared_ptr<Varnode> input1,
-            std::shared_ptr<Varnode> output);
+            std::shared_ptr<Varnode> output,
+			InstructionOffset offset);
 
         InstructionId getId() const;
 
@@ -139,6 +141,14 @@ namespace sda::pcode
         std::shared_ptr<Varnode> getInput1() const;
 
         std::shared_ptr<Varnode> getOutput() const;
+
+		InstructionOffset getOffset() const;
+
+		// Check if the instruction is some kind of jump (BRANCH/CALL/RETURN)
+		bool isAnyJump() const;
+
+		// Check if the instruction is some kind of branching (BRANCH, CBRANCH, BRANCHIND)
+		bool isBranching() const;
 
 		class Render {
 			const RegisterVarnode::Render* m_registerRender;
