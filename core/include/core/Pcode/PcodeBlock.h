@@ -1,21 +1,28 @@
 #pragma once
+#include <map>
 #include <list>
 #include "PcodeInstruction.h"
 
 namespace sda::pcode
 {
+    class FunctionGraph;
+
     class Block
     {
-        std::list<const Instruction*> m_instructions;
-        Block* m_nearNextBlock;
-        Block* m_farNextBlock;
+        std::map<InstructionOffset, const Instruction*> m_instructions;
+        Block* m_nearNextBlock = nullptr;
+        Block* m_farNextBlock = nullptr;
         std::list<Block*> m_referencedBlocks;
-        InstructionOffset m_minOffset;
-        InstructionOffset m_maxOffset;
+        InstructionOffset m_minOffset = 0;
+        InstructionOffset m_maxOffset = 0;
+        FunctionGraph* m_functionGraph = nullptr;
+        size_t m_level = 0;
     public:
+        Block() = default;
+
         Block(InstructionOffset minOffset);
 
-        std::list<const Instruction*>& getInstructions();
+        std::map<InstructionOffset, const Instruction*>& getInstructions();
 
         void setNearNextBlock(Block* nearNextBlock);
 
@@ -33,6 +40,15 @@ namespace sda::pcode
 
         InstructionOffset getMaxOffset() const;
 
+        FunctionGraph* getFunctionGraph() const;
+
+        size_t getLevel() const;
+
         bool contains(InstructionOffset offset, bool halfInterval = true) const;
+
+        // Called where the block was changed (nearNextBlock/farNextBlock)
+        void update();
+
+        void update(std::list<Block*>& path, FunctionGraph* funcGraph);
     };
 };

@@ -17,7 +17,7 @@ Image::Image(
     m_globalSymbolTable(globalSymbolTable)
 {
     m_context->getImages()->add(std::unique_ptr<Image>(this));
-    m_pcodeGraph = std::make_unique<pcode::Graph>(this);
+    m_pcodeGraph = std::make_unique<pcode::Graph>();
 }
 
 void Image::analyse() {

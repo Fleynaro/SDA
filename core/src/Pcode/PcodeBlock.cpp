@@ -1,4 +1,5 @@
 #include "Core/Pcode/PcodeBlock.h"
+#include "Core/Pcode/PcodeGraph.h"
 
 using namespace sda::pcode;
 
@@ -6,7 +7,7 @@ Block::Block(InstructionOffset minOffset)
     : m_minOffset(minOffset), m_maxOffset(minOffset)
 {}
 
-std::list<const Instruction*>& Block::getInstructions() {
+std::map<InstructionOffset, const Instruction*>& Block::getInstructions() {
     return m_instructions;
 }
 
@@ -46,7 +47,40 @@ InstructionOffset Block::getMaxOffset() const {
     return m_maxOffset;
 }
 
+FunctionGraph* Block::getFunctionGraph() const {
+    return m_functionGraph;
+}
+
+size_t Block::getLevel() const {
+    return m_level;
+}
+
 bool Block::contains(InstructionOffset offset, bool halfInterval) const {
 	return offset >= m_minOffset &&
         (halfInterval ? offset < m_maxOffset : offset <= m_maxOffset);
+}
+
+void Block::update() {
+    if (m_functionGraph) {
+        std::list<Block*> path;
+        m_functionGraph->getEntryBlock()->update(path, m_functionGraph);
+    }
+}
+
+void Block::update(std::list<Block*>& path, FunctionGraph* funcGraph) {
+    //check if there's a loop
+	for (auto it = path.rbegin(); it != path.rend(); it++) {
+		if (this == *it) {
+			return;
+		}
+	}
+
+    path.push_back(this);
+	m_level = std::max(m_level, path.size());
+    m_functionGraph = funcGraph;
+    if (m_nearNextBlock)
+        m_nearNextBlock->update(path, funcGraph);
+    if (m_farNextBlock)
+        m_farNextBlock->update(path, funcGraph);
+	path.pop_back();
 }

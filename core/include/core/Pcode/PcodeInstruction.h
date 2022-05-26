@@ -118,15 +118,16 @@ namespace sda::pcode
         operator size_t() const;
     };
     
-
     class Instruction
     {
-        InstructionId m_id;
+        InstructionId m_id = InstructionId::NONE;
         std::shared_ptr<Varnode> m_input0;
         std::shared_ptr<Varnode> m_input1;
         std::shared_ptr<Varnode> m_output;
-		InstructionOffset m_offset;
+		InstructionOffset m_offset = 0;
     public:
+		Instruction() = default;
+
         Instruction(
             InstructionId id,
             std::shared_ptr<Varnode> input0,
