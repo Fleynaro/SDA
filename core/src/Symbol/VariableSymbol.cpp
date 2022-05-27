@@ -1,8 +1,8 @@
-#include "Core/Symbol/StructureFieldSymbol.h"
+#include "Core/Symbol/VariableSymbol.h"
 
 using namespace sda;
 
-StructureFieldSymbol::StructureFieldSymbol(
+VariableSymbol::VariableSymbol(
     Context* context,
     Object::Id* id,
     const std::string& name,
@@ -10,11 +10,11 @@ StructureFieldSymbol::StructureFieldSymbol(
     : Symbol(context, id, name, dataType)
 {}
 
-void StructureFieldSymbol::serialize(boost::json::object& data) const {
+void VariableSymbol::serialize(boost::json::object& data) const {
     Symbol::serialize(data);
     data["type"] = Type;
 }
 
-void StructureFieldSymbol::deserialize(boost::json::object& data) {
+void VariableSymbol::deserialize(boost::json::object& data) {
     Symbol::deserialize(data);
 }

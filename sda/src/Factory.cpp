@@ -9,8 +9,7 @@
 #include "Core/DataType/EnumDataType.h"
 #include "Core/DataType/SignatureDataType.h"
 #include "Core/DataType/StructureDataType.h"
-#include "Core/Symbol/MemoryVariableSymbol.h"
-#include "Core/Symbol/RegisterVariableSymbol.h"
+#include "Core/Symbol/VariableSymbol.h"
 #include "Core/Symbol/FunctionSymbol.h"
 #include "Core/Symbol/FunctionParameterSymbol.h"
 #include "Core/Symbol/StructureFieldSymbol.h"
@@ -40,18 +39,18 @@ ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collec
     if (collection == AddressSpace::Collection) {
         return new AddressSpace(m_context, id);
     } else if (collection == Image::Collection) {
-        if(data.find("reader") != data.end() && data.find("analyser") != data.end()) {  
-            std::string readerType(data["reader"].get_object()["type"].get_string());
-            std::unique_ptr<IImageReader> reader;
-            if (readerType == FileImageReader::Name)
-                reader = std::make_unique<FileImageReader>();
+        if(data.find("rw") != data.end() && data.find("analyser") != data.end()) {  
+            std::string rwType(data["rw"].get_object()["type"].get_string());
+            std::unique_ptr<IImageRW> rw;
+            if (rwType == FileImageRW::Name)
+                rw = std::make_unique<FileImageRW>();
             
             std::string analyserType(data["analyser"].get_object()["type"].get_string());
             std::shared_ptr<ImageAnalyser> analyser;
             if (analyserType == PEImageAnalyser::Name)
                 analyser = std::make_shared<PEImageAnalyser>();
   
-            return new Image(m_context, std::move(reader), analyser, id);
+            return new Image(m_context, std::move(rw), analyser, id);
         }
     } else if (collection == DataType::Collection) {
         if (data.find("type") != data.end()) {
@@ -74,10 +73,8 @@ ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collec
     } else if (collection == Symbol::Collection) {
         if (data.find("type") != data.end()) {
             std::string type(data["type"].get_string());
-            if (type == MemoryVariableSymbol::Type)
-                return new MemoryVariableSymbol(m_context, id);
-            else if (type == RegisterVariableSymbol::Type)
-                return new RegisterVariableSymbol(m_context, id);
+            if (type == VariableSymbol::Type)
+                return new VariableSymbol(m_context, id);
             else if (type == FunctionSymbol::Type)
                 return new FunctionSymbol(m_context, id);
             else if (type == FunctionParameterSymbol::Type)

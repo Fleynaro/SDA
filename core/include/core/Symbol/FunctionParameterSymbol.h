@@ -6,7 +6,7 @@ namespace sda
     class FunctionParameterSymbol : public Symbol
     {
     public:
-        static inline const std::string Type = "memory_variable";
+        static inline const std::string Type = "function_parameter";
 
         FunctionParameterSymbol(
             Context* context,

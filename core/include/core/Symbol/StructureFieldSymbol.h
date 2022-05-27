@@ -6,7 +6,6 @@ namespace sda
 {
     class StructureFieldSymbol : public Symbol
     {
-        Offset m_offset;
     public:
         static inline const std::string Type = "structure_field";
 
@@ -14,10 +13,7 @@ namespace sda
             Context* context,
             Object::Id* id = nullptr,
             const std::string& name = "",
-            DataType* dataType = nullptr,
-            Offset offset = 0);
-
-        Offset getOffset() const;
+            DataType* dataType = nullptr);
 
         void serialize(boost::json::object& data) const override;
 

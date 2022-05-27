@@ -1,6 +1,6 @@
 #pragma once
 #include "Core/Object/ObjectList.h"
-#include "ImageReader.h"
+#include "ImageRW.h"
 #include "ImageAnalyser.h"
 #include "Core/Pcode/PcodeGraph.h"
 
@@ -10,7 +10,7 @@ namespace sda
 
     class Image : public ContextObject
     {
-        std::unique_ptr<IImageReader> m_reader;
+        std::unique_ptr<IImageRW> m_rw;
         std::shared_ptr<ImageAnalyser> m_analyser;
         SymbolTable* m_globalSymbolTable;
         std::unique_ptr<pcode::Graph> m_pcodeGraph;
@@ -20,7 +20,7 @@ namespace sda
 
         Image(
             Context* context,
-            std::unique_ptr<IImageReader> reader,
+            std::unique_ptr<IImageRW> rw,
             std::shared_ptr<ImageAnalyser> analyser,
             Object::Id* id = nullptr,
             const std::string& name = "",
@@ -28,7 +28,7 @@ namespace sda
 
         void analyse();
 
-        IImageReader* getReader() const;
+        IImageRW* getRW() const;
 
         std::uintptr_t getBaseAddress() const;
 
@@ -50,7 +50,10 @@ namespace sda
 
         pcode::Graph* getPcodeGraph() const;
 
-        Image* clone(std::unique_ptr<IImageReader> reader) const;
+        // compare this image with another image on code sections
+        void compare(Image* otherImage, std::list<std::pair<Offset, Offset>>& regions) const;
+
+        Image* clone(std::unique_ptr<IImageRW> rw) const;
 
         void serialize(boost::json::object& data) const override;
 

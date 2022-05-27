@@ -3,6 +3,10 @@
 
 using namespace sda::pcode;
 
+Graph::Graph() {
+    m_callbacks = std::make_unique<Callbacks>();
+}
+
 void Graph::addInstruction(const Instruction& instruction) {
     m_instructions[instruction.getOffset()] = instruction;
 }
@@ -143,8 +147,11 @@ FunctionGraph* Graph::createFunctionGraph(Block* entryBlock) {
         throw std::runtime_error("Function graph already exists");
 
     m_functionGraphs[offset] = FunctionGraph(entryBlock);
+    auto functionGraph = &m_functionGraphs[offset];
+    
+    getCallbacks()->onFunctionGraphCreated(functionGraph);
 
-    return &m_functionGraphs[offset];
+    return functionGraph;
 }
 
 void Graph::removeFunctionGraph(FunctionGraph* functionGraph) {
@@ -153,12 +160,19 @@ void Graph::removeFunctionGraph(FunctionGraph* functionGraph) {
     if (it == m_functionGraphs.end())
         throw std::runtime_error("Function graph not found");
 
-    auto funcGraph = &it->second;
+    getCallbacks()->onFunctionGraphRemoved(functionGraph);
+
     std::list<Block*> path;
-    funcGraph->getEntryBlock()->update(path, nullptr);
+    functionGraph->getEntryBlock()->update(path, nullptr);
     m_functionGraphs.erase(it);
 }
 
-const std::map<InstructionOffset, FunctionGraph>& Graph::getFunctionGraphs() const {
-    return m_functionGraphs;
+std::unique_ptr<Graph::Callbacks> Graph::setCallbacks(std::unique_ptr<Callbacks> callbacks) {
+    auto oldCallbacks = std::move(m_callbacks);
+    m_callbacks = std::move(callbacks);
+    return oldCallbacks;
+}
+
+Graph::Callbacks* Graph::getCallbacks() const {
+    return m_callbacks.get();
 }

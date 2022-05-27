@@ -21,9 +21,10 @@ namespace sda::disasm
 
         void addUnvisitedOffset(pcode::InstructionOffset offset);
 
-        // Callbacks for the builder
-        struct Callbacks
+        // Callbacks for the block builder
+        class Callbacks
         {
+        public:
             // Called when an instruction is passed
             virtual void onInstructionPassed(const pcode::Instruction* instr, pcode::InstructionOffset nextOffset) {}
 
@@ -32,11 +33,18 @@ namespace sda::disasm
         };
 
         // Handle jump instructions
-        struct StdCallbacks : Callbacks
+        class StdCallbacks : public Callbacks
         {
+        protected:
             PcodeBlockBuilder* m_builder;
-            std::unique_ptr<Callbacks> m_nextCallbacks;
+            std::unique_ptr<Callbacks> m_nextCallbacks; // chain of responsibility pattern
             std::set<pcode::Block*> m_affectedBlocks;
+        public:
+            StdCallbacks(PcodeBlockBuilder* builder);
+
+            std::unique_ptr<Callbacks> setNextCallbacks(std::unique_ptr<Callbacks> nextCallbacks);
+
+            const std::set<pcode::Block*>& getAffectedBlocks() const;
 
             // Called when an instruction is passed
             void onInstructionPassed(const pcode::Instruction* instr, pcode::InstructionOffset nextOffset) override;

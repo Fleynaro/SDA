@@ -4,20 +4,16 @@
 
 namespace sda
 {
-    class MemoryVariableSymbol : public Symbol
+    class VariableSymbol : public Symbol
     {
-        Offset m_offset;
     public:
-        static inline const std::string Type = "memory_variable";
+        static inline const std::string Type = "variable";
 
-        MemoryVariableSymbol(
+        VariableSymbol(
             Context* context,
             Object::Id* id = nullptr,
             const std::string& name = "",
-            DataType* dataType = nullptr,
-            Offset offset = 0);
-
-        Offset getOffset() const;
+            DataType* dataType = nullptr);
 
         void serialize(boost::json::object& data) const override;
 

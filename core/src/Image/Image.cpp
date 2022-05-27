@@ -1,18 +1,18 @@
 #include "Core/Image/Image.h"
-#include "Core/SymbolTable/SymbolTable.h"
+#include "Core/SymbolTable/OptimizedSymbolTable.h"
 #include "Core/Context.h"
 
 using namespace sda;
 
 Image::Image(
         Context* context,
-        std::unique_ptr<IImageReader> reader,
+        std::unique_ptr<IImageRW> rw,
         std::shared_ptr<ImageAnalyser> analyser,
         Object::Id* id,
         const std::string& name,
         SymbolTable* globalSymbolTable)
     : ContextObject(context, id, name),
-    m_reader(std::move(reader)),
+    m_rw(std::move(rw)),
     m_analyser(analyser),
     m_globalSymbolTable(globalSymbolTable)
 {
@@ -21,11 +21,11 @@ Image::Image(
 }
 
 void Image::analyse() {
-    m_analyser->analyse(getReader());
+    m_analyser->analyse(getRW());
 }
 
-IImageReader* Image::getReader() const {
-    return m_reader.get();
+IImageRW* Image::getRW() const {
+    return m_rw.get();
 }
 
 std::uintptr_t Image::getBaseAddress() const {
@@ -50,7 +50,7 @@ const ImageSection* Image::getImageSectionAt(Offset offset) const {
 }
 
 size_t Image::getSize() const {
-    return m_reader->getImageSize();
+    return m_rw->getImageSize();
 }
 
 bool Image::contains(std::uintptr_t address) const {
@@ -75,8 +75,51 @@ pcode::Graph* Image::getPcodeGraph() const {
     return m_pcodeGraph.get();
 }
 
-Image* Image::clone(std::unique_ptr<IImageReader> reader) const {
-    auto clone = new Image(m_context, std::move(reader), m_analyser);
+void Image::compare(Image* otherImage, std::list<std::pair<Offset, Offset>>& regions) const {
+    if (getSize() != otherImage->getSize())
+        throw std::runtime_error("Images have different sizes");
+
+    for (const auto& section : getImageSections()) {
+        if (section.m_type == ImageSection::CODE_SEGMENT) {
+            auto offset = section.getMinOffset();
+            auto otherSection = otherImage->getImageSectionAt(offset);
+            if (!otherSection || otherSection->m_type != ImageSection::CODE_SEGMENT ||
+                otherSection->getMinOffset() != section.getMinOffset() ||
+                otherSection->getMaxOffset() != section.getMaxOffset())
+                throw std::runtime_error("Images have different code sections");
+
+            while (offset < section.getMaxOffset()) {
+                // load blocks
+                std::vector<uint8_t> block1(128);
+                m_rw->readBytesAtOffset(offset, block1);
+                std::vector<uint8_t> block2(block1.size());
+                otherImage->m_rw->readBytesAtOffset(offset, block2);
+
+                // compare blocks
+                std::pair<Offset, Offset> region;
+                bool isDifferenceFound = false;
+                for (size_t i = 0; i < block1.size(); i++) {
+                    if (block1[i] != block2[i]) {
+                        region.first = offset + i;
+                        isDifferenceFound = true;
+                        break;
+                    } else {
+                        if (isDifferenceFound) {
+                            region.second = offset + i;
+                            regions.push_back(region);
+                            isDifferenceFound = false;
+                        }
+                    }
+                }
+
+                offset += block1.size();
+            }
+        }
+    }
+}
+
+Image* Image::clone(std::unique_ptr<IImageRW> rw) const {
+    auto clone = new Image(m_context, std::move(rw), m_analyser);
     boost::json::object data;
     serialize(data);
     clone->deserialize(data);
@@ -87,10 +130,10 @@ void Image::serialize(boost::json::object& data) const {
     ContextObject::serialize(data);
     data["collection"] = Collection;
 
-    if(auto serReader = dynamic_cast<ISerializable*>(m_reader.get())) {
-        boost::json::object readerData;
-        serReader->serialize(readerData);
-        data["reader"] = readerData;
+    if(auto serRW = dynamic_cast<ISerializable*>(m_rw.get())) {
+        boost::json::object rwData;
+        serRW->serialize(rwData);
+        data["rw"] = rwData;
     }
 
     if(auto serAnalyser = dynamic_cast<ISerializable*>(m_analyser.get())) {
@@ -105,8 +148,8 @@ void Image::serialize(boost::json::object& data) const {
 void Image::deserialize(boost::json::object& data) {
     ContextObject::deserialize(data);
 
-    if(auto serReader = dynamic_cast<ISerializable*>(m_reader.get())) {
-        serReader->deserialize(data["reader"].get_object());
+    if(auto serRW = dynamic_cast<ISerializable*>(m_rw.get())) {
+        serRW->deserialize(data["rw"].get_object());
     }
 
     if(auto serAnalyser = dynamic_cast<ISerializable*>(m_analyser.get())) {

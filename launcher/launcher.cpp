@@ -14,14 +14,16 @@
 #include "Change.h"
 #include "Disasm/Zydis/ZydisDecoderPcodeX86.h"
 #include "Disasm/Zydis/ZydisInstructionRenderX86.h"
+#include "Disasm/PcodeGraphBuilder.h"
+#include "Disasm/VtableLookup.h"
 
 using namespace sda;
 
-void testDecompiler() {
+void testPcodeDecoder() {
     auto ctx = new Context();
     auto image = new Image(
         ctx,
-        std::make_unique<VectorImageReader>(
+        std::make_unique<VectorImageRW>(
             std::vector<uint8_t>({
 				0x48, 0xC7, 0xC0, 0x01, 0x00, 0x00, 0x00, 0x48, 0x83, 0xF8, 0x02, 0x0F, 0x10, 0x44, 0x24, 0x20, 0x75,
 				0x05, 0x0F, 0x10, 0x44, 0x24, 0x10, 0x0F, 0x11, 0x44, 0x24, 0x10
@@ -32,6 +34,8 @@ void testDecompiler() {
         "xmm registers in incomplete blocks"
     );
 
+
+    // P-code decoder
     ZydisDecoder decoder;
     ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_STACK_WIDTH_64);
     disasm::ZydisDecoderPcodeX86 pcodeDecoder(&decoder);
@@ -44,7 +48,7 @@ void testDecompiler() {
     disasm::Instruction::StreamRender srcInstrRender(std::cout);
     while (offset < image->getSize()) {
         std::vector<uint8_t> data(0x100);
-        image->getReader()->readBytesAtOffset(offset, data);
+        image->getRW()->readBytesAtOffset(offset, data);
         pcodeDecoder.decode(offset, data);
         
         decoderRender.decode(data);
@@ -58,6 +62,36 @@ void testDecompiler() {
 
         offset += pcodeDecoder.getInstructionLength();
     }
+
+
+
+    // P-code graph builder
+    disasm::PcodeGraphBuilder graphBuilder(image->getPcodeGraph(), image, &pcodeDecoder);
+
+    class GraphCallbacks : public pcode::Graph::Callbacks {
+    public:
+        void onFunctionGraphCreated(pcode::FunctionGraph* functionGraph) override {
+            // create function symbol here
+            std::cout << "Function graph created: " << functionGraph->getEntryBlock()->getMinOffset() << std::endl;
+        }
+
+        void onFunctionGraphRemoved(pcode::FunctionGraph* functionGraph) override {
+            std::cout << "Function graph removed: " << functionGraph->getEntryBlock()->getMinOffset() << std::endl;
+        }
+    };
+    auto graphCallbacks = std::make_unique<GraphCallbacks>();
+    auto oldCallbacks = image->getPcodeGraph()->setCallbacks(std::move(graphCallbacks));
+
+    // remove old instructions
+    // image->getPcodeGraph()->removeInstruction();
+
+    // reanalyse
+    auto funcCallLookupCallbacks = std::make_unique<disasm::VtableLookupCallbacks>(
+        image, graphBuilder.getBlockBuilder());
+    graphBuilder.getBlockBuilder()->setCallbacks(std::move(funcCallLookupCallbacks));
+    graphBuilder.start({ pcode::InstructionOffset(image->getEntryPointOffset(), 0) });
+
+    image->getPcodeGraph()->setCallbacks(std::move(oldCallbacks));
 }
 
 void testGeneral() {
@@ -90,7 +124,7 @@ void testGeneral() {
 
 int main(int argc, char *argv[])
 {
-    testDecompiler();
+    testPcodeDecoder();
     //testGeneral();
     return 0;
 }

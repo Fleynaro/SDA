@@ -4,9 +4,12 @@
 
 namespace sda
 {
+    class SymbolTable;
+
     class FunctionSymbol : public Symbol
     {
-        Offset m_offset;
+        SymbolTable* m_stackSymbolTable;
+        SymbolTable* m_instructionSymbolTable;
     public:
         static inline const std::string Type = "function";
 
@@ -15,9 +18,12 @@ namespace sda
             Object::Id* id = nullptr,
             const std::string& name = "",
             DataType* dataType = nullptr,
-            Offset offset = 0);
+            SymbolTable* stackSymbolTable = nullptr,
+            SymbolTable* instructionSymbolTable = nullptr);
 
-        Offset getOffset() const;
+        SymbolTable* getStackSymbolTable() const;
+
+        SymbolTable* getInstructionSymbolTable() const;
 
         void serialize(boost::json::object& data) const override;
 

@@ -7,52 +7,65 @@
 
 namespace sda
 {
-    // Image reader interface
-    class IImageReader
+    // Image reader-writer interface
+    class IImageRW
 	{
 	public:
         // Read bytes from the image at the given offset
 		virtual void readBytesAtOffset(Offset offset, std::vector<uint8_t>& bytes) = 0;
 
+		// Write bytes to the image at the given offset
+		virtual void writeBytesAtOffset(Offset offset, const std::vector<uint8_t>& bytes) = 0;
+
         // Get the size of the image
 		virtual size_t getImageSize() = 0;
 	};
 
-    class PointerImageReader : public IImageReader
+    class PointerImageRW : public IImageRW
 	{
         uint8_t* m_data;
 		size_t m_size;
 	public:
-		PointerImageReader(uint8_t* data, size_t size);
+		PointerImageRW(uint8_t* data, size_t size);
 
 		void readBytesAtOffset(Offset offset, std::vector<uint8_t>& data) override;
+
+		void writeBytesAtOffset(Offset offset, const std::vector<uint8_t>& data) override;
 
 		size_t getImageSize() override;
 	};
 
-    class VectorImageReader : public IImageReader
+    class VectorImageRW : public IImageRW
 	{
 		std::vector<uint8_t> m_data;
 	public:
-		VectorImageReader(const std::vector<uint8_t>& data);
+		VectorImageRW(const std::vector<uint8_t>& data);
 
 		void readBytesAtOffset(Offset offset, std::vector<uint8_t>& data) override;
 
+		void writeBytesAtOffset(Offset offset, const std::vector<uint8_t>& data) override;
+
 		size_t getImageSize() override;
+
+		const std::vector<uint8_t>& getData() const;
 	};
 
-	class FileImageReader : public IImageReader, public ISerializable
+	class FileImageRW : public IImageRW, public ISerializable
 	{
 		std::filesystem::path m_pathToImgFile;
-		std::unique_ptr<VectorImageReader> m_reader;
+		std::unique_ptr<VectorImageRW> m_rw;
 	public:
-		static inline const std::string Name = "FileImageReader";
+		static inline const std::string Name = "FileImageRW";
 
-		FileImageReader(const std::filesystem::path& pathToImgFile = "");
+		FileImageRW(const std::filesystem::path& pathToImgFile = "");
 
 		void readFile();
 
+		void saveFile();
+
 		void readBytesAtOffset(Offset offset, std::vector<uint8_t>& data) override;
+
+		void writeBytesAtOffset(Offset offset, const std::vector<uint8_t>& data) override;
 
 		size_t getImageSize() override;
 

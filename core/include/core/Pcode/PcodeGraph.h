@@ -9,6 +9,8 @@ namespace sda::pcode
         std::map<InstructionOffset, Block> m_blocks;
         std::map<InstructionOffset, FunctionGraph> m_functionGraphs;
     public:
+        Graph();
+
         void addInstruction(const Instruction& instruction);
 
         void removeInstruction(const Instruction* instruction);
@@ -32,6 +34,24 @@ namespace sda::pcode
 
         void removeFunctionGraph(FunctionGraph* functionGraph);
 
-        const std::map<InstructionOffset, FunctionGraph>& getFunctionGraphs() const;
+         // Callbacks for the graph (todo: remove?)
+        class Callbacks
+        {
+        public:
+            // Called when a function graph is created
+            virtual void onFunctionGraphCreated(FunctionGraph* functionGraph) {}
+
+            // Called when a function graph is removed
+            virtual void onFunctionGraphRemoved(FunctionGraph* functionGraph) {}
+        };
+
+        // Set the callbacks for the graph
+        std::unique_ptr<Callbacks> setCallbacks(std::unique_ptr<Callbacks> callbacks);
+
+        // Get the callbacks for the graph
+        Callbacks* getCallbacks() const;
+
+    private:
+        std::unique_ptr<Callbacks> m_callbacks;
     };
 };

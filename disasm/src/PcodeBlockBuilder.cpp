@@ -32,7 +32,7 @@ void PcodeBlockBuilder::start() {
                 continue;
 
             std::vector<uint8_t> data(100);
-            m_image->getReader()->readBytesAtOffset(byteOffset, data);
+            m_image->getRW()->readBytesAtOffset(byteOffset, data);
             m_decoder->decode(byteOffset, data);
             for (const auto& instr : m_decoder->getDecodedInstructions())
                 m_graph->addInstruction(instr);
@@ -67,6 +67,20 @@ void PcodeBlockBuilder::start() {
 
 void PcodeBlockBuilder::addUnvisitedOffset(pcode::InstructionOffset offset) {
     m_unvisitedOffsets.push_back(offset);
+}
+
+PcodeBlockBuilder::StdCallbacks::StdCallbacks(PcodeBlockBuilder* builder)
+    : m_builder(builder)
+{}
+
+std::unique_ptr<PcodeBlockBuilder::Callbacks> PcodeBlockBuilder::StdCallbacks::setNextCallbacks(std::unique_ptr<PcodeBlockBuilder::Callbacks> nextCallbacks) {
+    auto oldCallbacks = std::move(m_nextCallbacks);
+    m_nextCallbacks = std::move(nextCallbacks);
+    return oldCallbacks;
+}
+
+const std::set<pcode::Block*>& PcodeBlockBuilder::StdCallbacks::getAffectedBlocks() const {
+    return m_affectedBlocks;
 }
 
 void PcodeBlockBuilder::StdCallbacks::onInstructionPassed(const pcode::Instruction* instr, pcode::InstructionOffset nextOffset) {
