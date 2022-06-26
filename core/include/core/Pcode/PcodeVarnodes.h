@@ -41,11 +41,11 @@ namespace sda::pcode
     public:
         RegisterVarnode(Type type, size_t id, size_t index, BitMask mask, size_t size);
 
-        Type getType() const;
+        Type getRegType() const;
 
-        size_t getId() const;
+        size_t getRegId() const;
 
-        size_t getIndex() const;
+        size_t getRegIndex() const;
 
         BitMask getMask() const;
 

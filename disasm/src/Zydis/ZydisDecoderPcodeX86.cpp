@@ -22,6 +22,7 @@ void ZydisDecoderPcodeX86::decode(Offset offset, const std::vector<uint8_t>& dat
 
     if (ZYAN_SUCCESS(status)) {
         m_curOffset = offset;
+		m_curInstrIndex = 0;
         generatePcodeInstructions();
     }
 }
@@ -227,7 +228,7 @@ void ZydisDecoderPcodeX86::generatePcodeInstructions() {
 		while (offset < maxSize) {
 			auto srcOpVarnode = getOperandVarnode(srcOperand, srcSize, offset);
 			auto varnodeRegOutput = getRegisterVarnode(dstOperand.reg.value, dstSize, offset);
-			if (float2intForNonVector && varnodeRegOutput->getType() != RegisterVarnode::Vector) {
+			if (float2intForNonVector && varnodeRegOutput->getRegType() != RegisterVarnode::Vector) {
 				//all float values store in vector registers then need cast when moving to non-vector register
 				auto varnodeOutput = getSymbolVarnode(size);
 				generateInstruction(instrId, srcOpVarnode, nullptr, varnodeOutput);

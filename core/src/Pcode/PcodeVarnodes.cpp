@@ -27,15 +27,15 @@ RegisterVarnode::RegisterVarnode(Type type, size_t id, size_t index, BitMask mas
     }
 }
 
-RegisterVarnode::Type RegisterVarnode::getType() const {
+RegisterVarnode::Type RegisterVarnode::getRegType() const {
     return m_type;
 }
 
-size_t RegisterVarnode::getId() const {
+size_t RegisterVarnode::getRegId() const {
     return m_id;
 }
 
-size_t RegisterVarnode::getIndex() const {
+size_t RegisterVarnode::getRegIndex() const {
     return m_index;
 }
 

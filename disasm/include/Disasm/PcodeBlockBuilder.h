@@ -40,9 +40,7 @@ namespace sda::disasm
             std::unique_ptr<Callbacks> m_nextCallbacks; // chain of responsibility pattern
             std::set<pcode::Block*> m_affectedBlocks;
         public:
-            StdCallbacks(PcodeBlockBuilder* builder);
-
-            std::unique_ptr<Callbacks> setNextCallbacks(std::unique_ptr<Callbacks> nextCallbacks);
+            StdCallbacks(PcodeBlockBuilder* builder, std::unique_ptr<Callbacks> nextCallbacks = nullptr);
 
             const std::set<pcode::Block*>& getAffectedBlocks() const;
 

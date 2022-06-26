@@ -4,13 +4,9 @@
 using namespace sda;
 using namespace sda::disasm;
 
-VtableLookupCallbacks::VtableLookupCallbacks(Image* image, PcodeBlockBuilder* builder)
-    : m_image(image), PcodeBlockBuilder::StdCallbacks(builder)
+VtableLookupCallbacks::VtableLookupCallbacks(std::list<VTable>* vtables, Image* image, PcodeBlockBuilder* builder, std::unique_ptr<Callbacks> nextCallbacks)
+    : m_vtables(vtables), m_image(image), PcodeBlockBuilder::StdCallbacks(builder, std::move(nextCallbacks))
 {}
-
-const std::list<VtableLookupCallbacks::VTable>& VtableLookupCallbacks::getVtables() const {
-    return m_vtables;
-}
 
 void VtableLookupCallbacks::onInstructionPassed(const pcode::Instruction* instr, pcode::InstructionOffset nextOffset) {
     if (instr->getId() == pcode::InstructionId::COPY) {
@@ -40,7 +36,7 @@ void VtableLookupCallbacks::onInstructionPassed(const pcode::Instruction* instr,
                     }
 
                     if (funcOffsets.empty())
-                        m_vtables.push_back(VTable({vtableRva, funcOffsets}));
+                        m_vtables->push_back(VTable({vtableRva, funcOffsets}));
                 }
             }
         }

@@ -18,16 +18,17 @@ PcodeBlockBuilder* PcodeGraphBuilder::getBlockBuilder() {
 
 void PcodeGraphBuilder::start(const std::list<pcode::InstructionOffset>& startOffsets)
 {
+    auto oldCallbacks = m_blockBuilder.setCallbacks(nullptr);
+
     // function call lookup
-    auto funcCallLookupCallbacks = std::make_unique<FunctionCallLookupCallbacks>(&m_blockBuilder);
+    std::list<std::pair<pcode::InstructionOffset, pcode::InstructionOffset>> constFunctionOffsets;
+    auto funcCallLookupCallbacks = std::make_unique<FunctionCallLookupCallbacks>(&constFunctionOffsets, &m_blockBuilder, std::move(oldCallbacks));
     
     // builder for jumps
-    auto stdBuilderCallbacks = std::make_unique<PcodeBlockBuilder::StdCallbacks>(&m_blockBuilder);
-    stdBuilderCallbacks->setNextCallbacks(std::move(funcCallLookupCallbacks));
+    auto stdBuilderCallbacks = std::make_unique<PcodeBlockBuilder::StdCallbacks>(&m_blockBuilder, std::move(funcCallLookupCallbacks));
 
     // set new callbacks
-    funcCallLookupCallbacks->setNextCallbacks(
-        m_blockBuilder.setCallbacks(std::move(stdBuilderCallbacks)));
+    m_blockBuilder.setCallbacks(std::move(stdBuilderCallbacks));
 
     // start the block builder with the callbacks above
     for (auto startOffset : startOffsets) {
@@ -36,7 +37,7 @@ void PcodeGraphBuilder::start(const std::list<pcode::InstructionOffset>& startOf
     m_blockBuilder.start();
 
     // create the function graphs
-    for (const auto& [_, funcOffset] : funcCallLookupCallbacks->getConstFunctionOffsets()) {
+    for (const auto& [_, funcOffset] : constFunctionOffsets) {
         if (auto entryBlock = m_graph->getBlockAt(funcOffset)) {
             if (!entryBlock->getFunctionGraph()) {
                 // todo: check references to entry block (JMP -> CALL)
@@ -46,7 +47,7 @@ void PcodeGraphBuilder::start(const std::list<pcode::InstructionOffset>& startOf
     }
 
     // create function references (after the function graphs are created)
-    for (const auto& [fromOffset, toOffset] : funcCallLookupCallbacks->getConstFunctionOffsets()) {
+    for (const auto& [fromOffset, toOffset] : constFunctionOffsets) {
         if (auto fromBlock = m_graph->getBlockAt(fromOffset)) {
             if (auto fromFuncGraph = fromBlock->getFunctionGraph()) {
                 if (auto toEntryBlock = m_graph->getBlockAt(toOffset)) {

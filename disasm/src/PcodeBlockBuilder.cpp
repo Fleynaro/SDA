@@ -55,7 +55,7 @@ void PcodeBlockBuilder::start() {
 
         // calculate the next offset
         auto nextOffset = pcode::InstructionOffset(offset + 1);
-        if (!m_graph->getInstructionAt(offset))
+        if (!m_graph->getInstructionAt(nextOffset))
             nextOffset = pcode::InstructionOffset(offset.byteOffset + m_curOrigInstrLength, 0);
         if (block->getMaxOffset() < nextOffset)
             block->setMaxOffset(nextOffset);
@@ -69,15 +69,9 @@ void PcodeBlockBuilder::addUnvisitedOffset(pcode::InstructionOffset offset) {
     m_unvisitedOffsets.push_back(offset);
 }
 
-PcodeBlockBuilder::StdCallbacks::StdCallbacks(PcodeBlockBuilder* builder)
-    : m_builder(builder)
+PcodeBlockBuilder::StdCallbacks::StdCallbacks(PcodeBlockBuilder* builder, std::unique_ptr<Callbacks> nextCallbacks)
+    : m_builder(builder), m_nextCallbacks(std::move(nextCallbacks))
 {}
-
-std::unique_ptr<PcodeBlockBuilder::Callbacks> PcodeBlockBuilder::StdCallbacks::setNextCallbacks(std::unique_ptr<PcodeBlockBuilder::Callbacks> nextCallbacks) {
-    auto oldCallbacks = std::move(m_nextCallbacks);
-    m_nextCallbacks = std::move(nextCallbacks);
-    return oldCallbacks;
-}
 
 const std::set<pcode::Block*>& PcodeBlockBuilder::StdCallbacks::getAffectedBlocks() const {
     return m_affectedBlocks;
@@ -126,7 +120,7 @@ void PcodeBlockBuilder::StdCallbacks::onInstructionPassed(const pcode::Instructi
         m_affectedBlocks.insert(block);
     }
     else if (instr->getId() != pcode::InstructionId::RETURN && instr->getId() != pcode::InstructionId::INT) {
-        if (auto nextBlock = m_builder->m_graph->getBlockAt(nextOffset, false)) {
+        if (auto nextBlock = m_builder->m_graph->getBlockAt(nextOffset)) {
             /*
                 Case 1:
                     0x... {instructions above}

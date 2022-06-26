@@ -10,6 +10,9 @@ ZydisDecoderRenderX86::ZydisDecoderRenderX86(ZydisDecoder* decoder)
 }
 
 void ZydisDecoderRenderX86::decode(const std::vector<uint8_t>& data) {
+    m_decodedInstruction.m_tokens.clear();
+    m_decodedInstruction.m_length = 0;
+
     ZydisDecodedInstruction instr;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT_VISIBLE];
 
@@ -31,7 +34,7 @@ void ZydisDecoderRenderX86::decode(const std::vector<uint8_t>& data) {
         &m_formatter,
         &instr,
         operands,
-        instr.operand_count,
+        instr.operand_count_visible,
         buffer,
         sizeof(buffer),
         ZYDIS_RUNTIME_ADDRESS_NONE,
@@ -67,28 +70,28 @@ void ZydisDecoderRenderX86::decode(const std::vector<uint8_t>& data) {
 
 std::string GetFlagName(size_t flag) {
     std::string flagName = "flag";
-    if (flag == ZYDIS_CPUFLAG_CF)
+    if ((flag & ZYDIS_CPUFLAG_CF) != 0)
         flagName = "CF";
-    else if (flag == ZYDIS_CPUFLAG_OF)
+    else if ((flag & ZYDIS_CPUFLAG_OF) != 0)
         flagName = "OF";
-    else if (flag == ZYDIS_CPUFLAG_SF)
+    else if ((flag & ZYDIS_CPUFLAG_SF) != 0)
         flagName = "SF";
-    else if (flag == ZYDIS_CPUFLAG_ZF)
+    else if ((flag & ZYDIS_CPUFLAG_ZF) != 0)
         flagName = "ZF";
-    else if (flag == ZYDIS_CPUFLAG_AF)
+    else if ((flag & ZYDIS_CPUFLAG_AF) != 0)
         flagName = "AF";
-    else if (flag == ZYDIS_CPUFLAG_PF)
+    else if ((flag & ZYDIS_CPUFLAG_PF) != 0)
         flagName = "PF";
     return flagName;
 }
 
 std::string ZydisRegisterVarnodeRender::getRegisterName(const pcode::RegisterVarnode* varnode) const {
-    if (varnode->getType() == pcode::RegisterVarnode::Flag)
-        return GetFlagName(varnode->getId()) + ":1";
+    if (varnode->getRegType() == pcode::RegisterVarnode::Flag)
+        return GetFlagName(varnode->getMask()) + ":1";
 
     auto size = varnode->getSize();
     auto maskStr = std::to_string(size);
-    if (varnode->getType() == pcode::RegisterVarnode::Vector) {
+    if (varnode->getRegType() == pcode::RegisterVarnode::Vector) {
         if (size == 4 || size == 8) {
             maskStr = std::string(size == 4 ? "D" : "Q");
             auto maskOffset = varnode->getMask().getOffset();
@@ -96,6 +99,12 @@ std::string ZydisRegisterVarnodeRender::getRegisterName(const pcode::RegisterVar
         }
     }
 
-    const auto regId = static_cast<ZydisRegister>(varnode->getId());
+    if (varnode->getRegType() == pcode::RegisterVarnode::StackPointer) {
+        return std::string("RSP:") + maskStr;
+    } else if (varnode->getRegType() == pcode::RegisterVarnode::InstructionPointer) {
+        return std::string("RIP:") + maskStr;
+    }
+
+    const auto regId = static_cast<ZydisRegister>(varnode->getRegId());
     return std::string(ZydisRegisterGetString(regId)) + ":" + maskStr;
 }
