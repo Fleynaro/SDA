@@ -28,6 +28,11 @@ const std::map<Offset, Symbol*>& StandartSymbolTable::getSymbols() const {
     return m_symbols;
 }
 
+void StandartSymbolTable::setSymbols(const std::map<Offset, Symbol*>& symbols) {
+    m_context->getCallbacks()->onObjectModified(this);
+    m_symbols = symbols;
+}
+
 void StandartSymbolTable::serialize(boost::json::object& data) const {
     SymbolTable::serialize(data);
     data["type"] = Type;

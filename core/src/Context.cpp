@@ -37,12 +37,10 @@ SymbolTableList* Context::getSymbolTables() const {
     return m_symbolTables.get();
 }
 
-std::unique_ptr<Context::Callbacks> Context::setCallbacks(std::unique_ptr<Callbacks> callbacks) {
-    auto oldCallbacks = std::move(m_callbacks);
-    m_callbacks = std::move(callbacks);
-    return oldCallbacks;
+void Context::setCallbacks(std::shared_ptr<Callbacks> callbacks) {
+    m_callbacks = callbacks;
 }
 
-Context::Callbacks* Context::getCallbacks() const {
-    return m_callbacks.get();
+std::shared_ptr<Context::Callbacks> Context::getCallbacks() const {
+    return m_callbacks;
 }

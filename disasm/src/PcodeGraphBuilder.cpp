@@ -16,19 +16,18 @@ PcodeBlockBuilder* PcodeGraphBuilder::getBlockBuilder() {
     return &m_blockBuilder;
 }
 
-void PcodeGraphBuilder::start(const std::list<pcode::InstructionOffset>& startOffsets)
+void PcodeGraphBuilder::start(const std::list<pcode::InstructionOffset>& startOffsets, bool fromEntryPoints)
 {
-    auto oldCallbacks = m_blockBuilder.setCallbacks(nullptr);
-
     // function call lookup
-    std::list<std::pair<pcode::InstructionOffset, pcode::InstructionOffset>> constFunctionOffsets;
-    auto funcCallLookupCallbacks = std::make_unique<FunctionCallLookupCallbacks>(&constFunctionOffsets, &m_blockBuilder, std::move(oldCallbacks));
+    auto funcCallLookupCallbacks = std::make_shared<FunctionCallLookupCallbacks>(
+        &m_blockBuilder, m_blockBuilder.getCallbacks());
     
     // builder for jumps
-    auto stdBuilderCallbacks = std::make_unique<PcodeBlockBuilder::StdCallbacks>(&m_blockBuilder, std::move(funcCallLookupCallbacks));
+    auto stdBuilderCallbacks = std::make_shared<PcodeBlockBuilder::StdCallbacks>(
+        &m_blockBuilder, funcCallLookupCallbacks);
 
     // set new callbacks
-    m_blockBuilder.setCallbacks(std::move(stdBuilderCallbacks));
+    m_blockBuilder.setCallbacks(stdBuilderCallbacks);
 
     // start the block builder with the callbacks above
     for (auto startOffset : startOffsets) {
@@ -37,17 +36,17 @@ void PcodeGraphBuilder::start(const std::list<pcode::InstructionOffset>& startOf
     m_blockBuilder.start();
 
     // create the function graphs
-    for (const auto& [_, funcOffset] : constFunctionOffsets) {
-        if (auto entryBlock = m_graph->getBlockAt(funcOffset)) {
-            if (!entryBlock->getFunctionGraph()) {
-                // todo: check references to entry block (JMP -> CALL)
-                m_graph->createFunctionGraph(entryBlock);
-            }
+    if (fromEntryPoints) {
+        for (auto startOffset : startOffsets) {
+            createFunctionGraph(startOffset);
         }
+    }
+    for (const auto& [_, funcOffset] : funcCallLookupCallbacks->getConstFunctionOffsets()) {
+        createFunctionGraph(funcOffset);
     }
 
     // create function references (after the function graphs are created)
-    for (const auto& [fromOffset, toOffset] : constFunctionOffsets) {
+    for (const auto& [fromOffset, toOffset] : funcCallLookupCallbacks->getConstFunctionOffsets()) {
         if (auto fromBlock = m_graph->getBlockAt(fromOffset)) {
             if (auto fromFuncGraph = fromBlock->getFunctionGraph()) {
                 if (auto toEntryBlock = m_graph->getBlockAt(toOffset)) {
@@ -65,12 +64,19 @@ void PcodeGraphBuilder::start(const std::list<pcode::InstructionOffset>& startOf
     }
 }
 
-std::unique_ptr<PcodeGraphBuilder::Callbacks> PcodeGraphBuilder::setCallbacks(std::unique_ptr<Callbacks> callbacks) {
-    auto oldCallbacks = std::move(m_callbacks);
-    m_callbacks = std::move(callbacks);
-    return oldCallbacks;
+void PcodeGraphBuilder::setCallbacks(std::shared_ptr<Callbacks> callbacks) {
+    m_callbacks = callbacks;
 }
 
-PcodeGraphBuilder::Callbacks* PcodeGraphBuilder::getCallbacks() const {
-    return m_callbacks.get();
+std::shared_ptr<PcodeGraphBuilder::Callbacks> PcodeGraphBuilder::getCallbacks() const {
+    return m_callbacks;
+}
+
+void PcodeGraphBuilder::createFunctionGraph(pcode::InstructionOffset offset) {
+    if (auto entryBlock = m_graph->getBlockAt(offset)) {
+        if (!entryBlock->getFunctionGraph()) {
+            // todo: check references to entry block (JMP -> CALL)
+            m_graph->createFunctionGraph(entryBlock);
+        }
+    }
 }

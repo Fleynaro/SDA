@@ -15,7 +15,7 @@ namespace sda::disasm
 
         PcodeBlockBuilder* getBlockBuilder();
 
-        void start(const std::list<pcode::InstructionOffset>& startOffsets);
+        void start(const std::list<pcode::InstructionOffset>& startOffsets, bool fromEntryPoints = false);
 
         // Callbacks for the graph builder
         class Callbacks
@@ -26,12 +26,14 @@ namespace sda::disasm
         };
 
         // Set the callbacks for the builder
-        std::unique_ptr<Callbacks> setCallbacks(std::unique_ptr<Callbacks> callbacks);
+        void setCallbacks(std::shared_ptr<Callbacks> callbacks);
 
         // Get the callbacks for the builder
-        Callbacks* getCallbacks() const;
+        std::shared_ptr<Callbacks> getCallbacks() const;
 
     private:
-        std::unique_ptr<Callbacks> m_callbacks;
+        std::shared_ptr<Callbacks> m_callbacks;
+
+        void createFunctionGraph(pcode::InstructionOffset offset);
     };
 };

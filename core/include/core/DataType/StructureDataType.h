@@ -4,19 +4,22 @@
 
 namespace sda
 {
+    class StandartSymbolTable;
+
     class StructureDataType : public DataType
     {
         size_t m_size;
-        std::map<Offset, StructureFieldSymbol*> m_fields;
+        StandartSymbolTable* m_symbolTable;
     public:
         static inline const std::string Type = "structure";
 
-        StructureDataType(Context* context, Object::Id* id = nullptr, const std::string& name = "");
+        StructureDataType(
+            Context* context,
+            Object::Id* id = nullptr,
+            const std::string& name = "",
+            bool symbolTable = false);
 
-        // todo: to change the fields, use setFields() only (like in react js)
-        void setFields(const std::map<Offset, StructureFieldSymbol*>& fields);
-
-        const std::map<Offset, StructureFieldSymbol*>& getFields() const;
+        StandartSymbolTable* getSymbolTable();
 
         void setSize(size_t size);
 

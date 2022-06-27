@@ -46,12 +46,12 @@ namespace sda::pcode
         };
 
         // Set the callbacks for the graph
-        std::unique_ptr<Callbacks> setCallbacks(std::unique_ptr<Callbacks> callbacks);
+        void setCallbacks(std::shared_ptr<Callbacks> callbacks);
 
         // Get the callbacks for the graph
-        Callbacks* getCallbacks() const;
+        std::shared_ptr<Callbacks> getCallbacks() const;
 
     private:
-        std::unique_ptr<Callbacks> m_callbacks;
+        std::shared_ptr<Callbacks> m_callbacks;
     };
 };

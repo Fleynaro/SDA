@@ -36,7 +36,7 @@ namespace sda
         Factory* getFactory();
 
         // Get context callbacks
-        ContextCallbacks* getContextCallbacks() const;
+        std::shared_ptr<ContextCallbacks> getContextCallbacks() const;
 
         // Get database of the project
         Database* getDatabase() const;

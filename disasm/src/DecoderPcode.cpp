@@ -7,12 +7,10 @@ std::list<pcode::Instruction>&& DecoderPcode::getDecodedInstructions() {
     return std::move(m_decodedInstructions);
 }
 
-std::unique_ptr<DecoderPcode::Callbacks> DecoderPcode::setCallbacks(std::unique_ptr<Callbacks> callbacks) {
-    auto oldCallbacks = std::move(m_callbacks);
-    m_callbacks = std::move(callbacks);
-    return oldCallbacks;
+void DecoderPcode::setCallbacks(std::shared_ptr<Callbacks> callbacks) {
+    m_callbacks = callbacks;
 }
 
-DecoderPcode::Callbacks* DecoderPcode::getCallbacks() const {
-    return m_callbacks.get();
+std::shared_ptr<DecoderPcode::Callbacks> DecoderPcode::getCallbacks() const {
+    return m_callbacks;
 }

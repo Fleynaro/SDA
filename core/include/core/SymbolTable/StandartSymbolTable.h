@@ -20,6 +20,8 @@ namespace sda
 
         const std::map<Offset, Symbol*>& getSymbols() const;
 
+        void setSymbols(const std::map<Offset, Symbol*>& symbols);
+
         void serialize(boost::json::object& data) const override;
 
         void deserialize(boost::json::object& data) override;

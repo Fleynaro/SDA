@@ -24,13 +24,13 @@ namespace sda::disasm
         };
 
         // Set the callbacks for the decoder
-        std::unique_ptr<Callbacks> setCallbacks(std::unique_ptr<Callbacks> callbacks);
+        void setCallbacks(std::shared_ptr<Callbacks> callbacks);
 
         // Get the callbacks for the decoder
-        Callbacks* getCallbacks() const;
+        std::shared_ptr<Callbacks> getCallbacks() const;
 
     private:
-        std::unique_ptr<Callbacks> m_callbacks;
+        std::shared_ptr<Callbacks> m_callbacks;
 
     protected:
         std::list<pcode::Instruction> m_decodedInstructions;

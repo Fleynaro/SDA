@@ -69,7 +69,7 @@ void PcodeBlockBuilder::addUnvisitedOffset(pcode::InstructionOffset offset) {
     m_unvisitedOffsets.push_back(offset);
 }
 
-PcodeBlockBuilder::StdCallbacks::StdCallbacks(PcodeBlockBuilder* builder, std::unique_ptr<Callbacks> nextCallbacks)
+PcodeBlockBuilder::StdCallbacks::StdCallbacks(PcodeBlockBuilder* builder, std::shared_ptr<Callbacks> nextCallbacks)
     : m_builder(builder), m_nextCallbacks(std::move(nextCallbacks))
 {}
 
@@ -177,12 +177,10 @@ pcode::InstructionOffset PcodeBlockBuilder::StdCallbacks::getTargetOffset(const 
     return targetOffset;
 }
 
-std::unique_ptr<PcodeBlockBuilder::Callbacks> PcodeBlockBuilder::setCallbacks(std::unique_ptr<Callbacks> callbacks) {
-    auto oldCallbacks = std::move(m_callbacks);
-    m_callbacks = std::move(callbacks);
-    return oldCallbacks;
+void PcodeBlockBuilder::setCallbacks(std::shared_ptr<Callbacks> callbacks) {
+    m_callbacks = callbacks;
 }
 
-PcodeBlockBuilder::Callbacks* PcodeBlockBuilder::getCallbacks() const {
-    return m_callbacks.get();
+std::shared_ptr<PcodeBlockBuilder::Callbacks> PcodeBlockBuilder::getCallbacks() const {
+    return m_callbacks;
 }

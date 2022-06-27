@@ -7,12 +7,11 @@ namespace sda::disasm
     // Lookup for function calls and gather function offsets
     class FunctionCallLookupCallbacks : public PcodeBlockBuilder::StdCallbacks
     {
-        std::list<std::pair<pcode::InstructionOffset, pcode::InstructionOffset>>* m_constFunctionOffsets; // from -> to
+        std::list<std::pair<pcode::InstructionOffset, pcode::InstructionOffset>> m_constFunctionOffsets; // from -> to
     public:
-        FunctionCallLookupCallbacks(
-            std::list<std::pair<pcode::InstructionOffset, pcode::InstructionOffset>>* constFunctionOffsets,
-            PcodeBlockBuilder* builder,
-            std::unique_ptr<Callbacks> nextCallbacks = nullptr);
+        using PcodeBlockBuilder::StdCallbacks::StdCallbacks;
+
+        const std::list<std::pair<pcode::InstructionOffset, pcode::InstructionOffset>>& getConstFunctionOffsets() const;
 
         // Called when an instruction is passed
         void onInstructionPassed(const pcode::Instruction* instr, pcode::InstructionOffset nextOffset) override;

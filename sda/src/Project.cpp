@@ -33,8 +33,8 @@ Factory* Project::getFactory() {
     return m_factory.get();
 }
 
-ContextCallbacks* Project::getContextCallbacks() const {
-    return dynamic_cast<ContextCallbacks*>(m_context->getCallbacks());
+std::shared_ptr<ContextCallbacks> Project::getContextCallbacks() const {
+    return std::dynamic_pointer_cast<ContextCallbacks>(m_context->getCallbacks());
 }
 
 Database* Project::getDatabase() const {

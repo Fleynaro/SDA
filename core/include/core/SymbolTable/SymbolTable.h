@@ -8,7 +8,6 @@ namespace sda
 
     class SymbolTable : public ContextObject
     {
-        std::map<Offset, Symbol*> m_symbols;
     public:
         static inline const std::string Collection = "symbol_tables";
 

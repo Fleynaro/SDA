@@ -167,12 +167,10 @@ void Graph::removeFunctionGraph(FunctionGraph* functionGraph) {
     m_functionGraphs.erase(it);
 }
 
-std::unique_ptr<Graph::Callbacks> Graph::setCallbacks(std::unique_ptr<Callbacks> callbacks) {
-    auto oldCallbacks = std::move(m_callbacks);
-    m_callbacks = std::move(callbacks);
-    return oldCallbacks;
+void Graph::setCallbacks(std::shared_ptr<Callbacks> callbacks) {
+    m_callbacks = callbacks;
 }
 
-Graph::Callbacks* Graph::getCallbacks() const {
-    return m_callbacks.get();
+std::shared_ptr<Graph::Callbacks> Graph::getCallbacks() const {
+    return m_callbacks;
 }

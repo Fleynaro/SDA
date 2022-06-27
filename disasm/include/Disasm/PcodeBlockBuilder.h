@@ -37,10 +37,10 @@ namespace sda::disasm
         {
         protected:
             PcodeBlockBuilder* m_builder;
-            std::unique_ptr<Callbacks> m_nextCallbacks; // chain of responsibility pattern
+            std::shared_ptr<Callbacks> m_nextCallbacks; // chain of responsibility pattern
             std::set<pcode::Block*> m_affectedBlocks;
         public:
-            StdCallbacks(PcodeBlockBuilder* builder, std::unique_ptr<Callbacks> nextCallbacks = nullptr);
+            StdCallbacks(PcodeBlockBuilder* builder, std::shared_ptr<Callbacks> nextCallbacks = nullptr);
 
             const std::set<pcode::Block*>& getAffectedBlocks() const;
 
@@ -55,12 +55,12 @@ namespace sda::disasm
         };
 
         // Set the callbacks for the builder
-        std::unique_ptr<Callbacks> setCallbacks(std::unique_ptr<Callbacks> callbacks);
+        void setCallbacks(std::shared_ptr<Callbacks> callbacks);
 
         // Get the callbacks for the builder
-        Callbacks* getCallbacks() const;
+        std::shared_ptr<Callbacks> getCallbacks() const;
 
     private:
-        std::unique_ptr<Callbacks> m_callbacks;
+        std::shared_ptr<Callbacks> m_callbacks;
     };
 };

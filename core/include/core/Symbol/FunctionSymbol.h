@@ -8,8 +8,8 @@ namespace sda
 
     class FunctionSymbol : public Symbol
     {
-        SymbolTable* m_stackSymbolTable;
-        SymbolTable* m_instructionSymbolTable;
+        SymbolTable* m_stackSymbolTable = nullptr;
+        SymbolTable* m_instructionSymbolTable = nullptr;
     public:
         static inline const std::string Type = "function";
 
@@ -18,8 +18,8 @@ namespace sda
             Object::Id* id = nullptr,
             const std::string& name = "",
             DataType* dataType = nullptr,
-            SymbolTable* stackSymbolTable = nullptr,
-            SymbolTable* instructionSymbolTable = nullptr);
+            bool stackSymbolTable = false,
+            bool instructionSymbolTable = false);
 
         SymbolTable* getStackSymbolTable() const;
 

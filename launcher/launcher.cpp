@@ -70,28 +70,33 @@ void testPcodeDecoder() {
 
     class GraphCallbacks : public pcode::Graph::Callbacks {
     public:
+        std::shared_ptr<pcode::Graph::Callbacks> m_otherCallbacks;
+
         void onFunctionGraphCreated(pcode::FunctionGraph* functionGraph) override {
             // create function symbol here
             std::cout << "Function graph created: " << functionGraph->getEntryBlock()->getMinOffset() << std::endl;
+            m_otherCallbacks->onFunctionGraphCreated(functionGraph);
         }
 
         void onFunctionGraphRemoved(pcode::FunctionGraph* functionGraph) override {
             std::cout << "Function graph removed: " << functionGraph->getEntryBlock()->getMinOffset() << std::endl;
+            m_otherCallbacks->onFunctionGraphRemoved(functionGraph);
         }
     };
-    auto graphCallbacks = std::make_unique<GraphCallbacks>();
-    auto oldCallbacks = image->getPcodeGraph()->setCallbacks(std::move(graphCallbacks));
-
+    auto graphCallbacks = std::make_shared<GraphCallbacks>();
+    graphCallbacks->m_otherCallbacks = image->getPcodeGraph()->getCallbacks();
+    image->getPcodeGraph()->setCallbacks(graphCallbacks);
+    
     // remove old instructions
     // image->getPcodeGraph()->removeInstruction();
 
     // reanalyse
-    auto funcCallLookupCallbacks = std::make_unique<disasm::VtableLookupCallbacks>(
+    auto funcCallLookupCallbacks = std::make_shared<disasm::VtableLookupCallbacks>(
         image, graphBuilder.getBlockBuilder());
-    graphBuilder.getBlockBuilder()->setCallbacks(std::move(funcCallLookupCallbacks));
-    graphBuilder.start({ pcode::InstructionOffset(image->getEntryPointOffset(), 0) });
+    graphBuilder.getBlockBuilder()->setCallbacks(funcCallLookupCallbacks);
+    graphBuilder.start({ pcode::InstructionOffset(image->getEntryPointOffset(), 0) }, true);
 
-    image->getPcodeGraph()->setCallbacks(std::move(oldCallbacks));
+    image->getPcodeGraph()->setCallbacks(graphCallbacks->m_otherCallbacks);
 }
 
 void testGeneral() {
@@ -115,11 +120,12 @@ void testGeneral() {
     project->getChangeChain()->undo();
 
     auto ctx2 = new Context();
-    auto oldCallbacks = ctx2->setCallbacks(std::make_unique<Context::Callbacks>());
+    auto oldCallbacks = ctx2->getCallbacks();
+    ctx2->setCallbacks(std::make_shared<Context::Callbacks>());
     Factory factory(ctx2);
     Loader loader(project->getDatabase(), &factory);
     loader.load();
-    ctx2->setCallbacks(std::move(oldCallbacks));
+    ctx2->setCallbacks(oldCallbacks);
 }
 
 int main(int argc, char *argv[])
