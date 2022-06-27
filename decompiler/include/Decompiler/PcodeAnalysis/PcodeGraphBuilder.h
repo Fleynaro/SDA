@@ -1,7 +1,7 @@
 #pragma once
 #include "PcodeBlockBuilder.h"
 
-namespace sda::disasm
+namespace sda::decompiler
 {
     // Builds p-code blocks and function graphs
     class PcodeGraphBuilder
@@ -11,7 +11,7 @@ namespace sda::disasm
         PcodeBlockBuilder m_blockBuilder;
         
     public:
-        PcodeGraphBuilder(pcode::Graph* graph, Image* image, DecoderPcode* decoder);
+        PcodeGraphBuilder(pcode::Graph* graph, Image* image, disasm::DecoderPcode* decoder);
 
         PcodeBlockBuilder* getBlockBuilder();
 

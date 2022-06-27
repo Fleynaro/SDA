@@ -1,8 +1,8 @@
-#include "Disasm/VtableLookup.h"
+#include "Decompiler/PcodeAnalysis/VtableLookup.h"
 #include "Core/Utils.h"
 
 using namespace sda;
-using namespace sda::disasm;
+using namespace sda::decompiler;
 
 VtableLookupCallbacks::VtableLookupCallbacks(Image* image, PcodeBlockBuilder* builder, std::unique_ptr<Callbacks> nextCallbacks)
     : m_image(image), PcodeBlockBuilder::StdCallbacks(builder, std::move(nextCallbacks))

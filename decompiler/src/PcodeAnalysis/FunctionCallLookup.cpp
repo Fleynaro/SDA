@@ -1,8 +1,8 @@
-#include "Disasm/FunctionCallLookup.h"
+#include "Decompiler/PcodeAnalysis/FunctionCallLookup.h"
 #include "Core/Utils.h"
 
 using namespace sda;
-using namespace sda::disasm;
+using namespace sda::decompiler;
 
 const std::list<std::pair<pcode::InstructionOffset, pcode::InstructionOffset>>& FunctionCallLookupCallbacks::getConstFunctionOffsets() const {
     return m_constFunctionOffsets;

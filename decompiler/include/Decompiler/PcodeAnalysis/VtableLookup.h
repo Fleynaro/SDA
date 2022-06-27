@@ -1,7 +1,7 @@
 #pragma once
 #include "PcodeBlockBuilder.h"
 
-namespace sda::disasm
+namespace sda::decompiler
 {
     // Lookup for vtables and gather them with virtual function offsets
     class VtableLookupCallbacks : public PcodeBlockBuilder::StdCallbacks

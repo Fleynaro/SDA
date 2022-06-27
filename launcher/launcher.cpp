@@ -14,8 +14,8 @@
 #include "Change.h"
 #include "Disasm/Zydis/ZydisDecoderPcodeX86.h"
 #include "Disasm/Zydis/ZydisInstructionRenderX86.h"
-#include "Disasm/PcodeGraphBuilder.h"
-#include "Disasm/VtableLookup.h"
+#include "Decompiler/PcodeAnalysis/PcodeGraphBuilder.h"
+#include "Decompiler/PcodeAnalysis/VtableLookup.h"
 
 using namespace sda;
 
@@ -67,7 +67,7 @@ void testPcodeDecoder() {
 
 
     // P-code graph builder
-    disasm::PcodeGraphBuilder graphBuilder(image->getPcodeGraph(), image, &pcodeDecoder);
+    decompiler::PcodeGraphBuilder graphBuilder(image->getPcodeGraph(), image, &pcodeDecoder);
 
     class GraphCallbacks : public pcode::Graph::Callbacks {
     public:
@@ -92,7 +92,7 @@ void testPcodeDecoder() {
     // image->getPcodeGraph()->removeInstruction();
 
     // reanalyse
-    auto funcCallLookupCallbacks = std::make_shared<disasm::VtableLookupCallbacks>(
+    auto funcCallLookupCallbacks = std::make_shared<decompiler::VtableLookupCallbacks>(
         image, graphBuilder.getBlockBuilder());
     graphBuilder.getBlockBuilder()->setCallbacks(funcCallLookupCallbacks);
     graphBuilder.start({ pcode::InstructionOffset(image->getEntryPointOffset(), 0) }, true);

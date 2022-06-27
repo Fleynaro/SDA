@@ -10,7 +10,7 @@ namespace sda::ircode
         std::list<Operation> m_operations;
         Block* m_nearNextBlock = nullptr;
         Block* m_farNextBlock = nullptr;
-        std::list<Block*> m_referencedBlocks;
+        std::list<Block*> m_previousBlocks;
         pcode::Block* m_pcodeBlock = nullptr;
     public:
         Block(pcode::Block* pcodeBlock);
@@ -21,6 +21,8 @@ namespace sda::ircode
 
         Block* getFarNextBlock() const;
 
-        void setNearNextBlocks(Block* nearNextBlock, Block* farNextBlock);
+        void setNextBlocks(Block* nearNextBlock, Block* farNextBlock);
+
+        const std::list<Block*>& getPreviousBlocks() const;
     };
 };

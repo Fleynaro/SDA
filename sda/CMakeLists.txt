@@ -15,4 +15,5 @@ target_link_libraries(
     sda PUBLIC
     core
     disasm
+    decompiler
     unofficial::sqlite3::sqlite3)

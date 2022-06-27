@@ -1,10 +1,10 @@
-#include "Disasm/PcodeGraphBuilder.h"
+#include "Decompiler/PcodeAnalysis/PcodeGraphBuilder.h"
 #include "Core/Utils.h"
 
 using namespace sda;
-using namespace sda::disasm;
+using namespace sda::decompiler;
 
-PcodeBlockBuilder::PcodeBlockBuilder(pcode::Graph* graph, Image* image, DecoderPcode* decoder)
+PcodeBlockBuilder::PcodeBlockBuilder(pcode::Graph* graph, Image* image, disasm::DecoderPcode* decoder)
     : m_graph(graph), m_image(image), m_decoder(decoder)
 {
     m_callbacks = std::make_unique<Callbacks>();

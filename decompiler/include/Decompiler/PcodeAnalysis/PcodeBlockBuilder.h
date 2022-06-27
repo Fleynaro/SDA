@@ -1,21 +1,21 @@
 #pragma once
 #include <set>
 #include "Core/Image/Image.h"
-#include "DecoderPcode.h"
+#include "Disasm/DecoderPcode.h"
 
-namespace sda::disasm
+namespace sda::decompiler
 {
     // Builds p-code blocks
     class PcodeBlockBuilder
     {
         pcode::Graph* m_graph;
         Image* m_image;
-        DecoderPcode* m_decoder;
+        disasm::DecoderPcode* m_decoder;
         std::list<pcode::InstructionOffset> m_unvisitedOffsets;
         std::set<pcode::InstructionOffset> m_visitedOffsets;
         size_t m_curOrigInstrLength = 0;
     public:
-        PcodeBlockBuilder(pcode::Graph* graph, Image* image, DecoderPcode* decoder);
+        PcodeBlockBuilder(pcode::Graph* graph, Image* image, disasm::DecoderPcode* decoder);
 
         void start();
 

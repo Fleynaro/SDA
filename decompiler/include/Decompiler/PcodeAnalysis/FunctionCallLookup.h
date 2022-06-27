@@ -2,7 +2,7 @@
 #include <list>
 #include "PcodeBlockBuilder.h"
 
-namespace sda::disasm
+namespace sda::decompiler
 {
     // Lookup for function calls and gather function offsets
     class FunctionCallLookupCallbacks : public PcodeBlockBuilder::StdCallbacks

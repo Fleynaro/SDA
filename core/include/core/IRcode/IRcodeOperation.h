@@ -77,7 +77,7 @@ namespace sda::ircode
         std::shared_ptr<Variable> m_output;
         std::set<pcode::Instruction> m_pcodeInstructions;
     public:
-        Operation() = default;
+        Operation(OperationId id);
 
         OperationId getId() const;
 
