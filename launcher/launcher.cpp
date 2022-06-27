@@ -56,6 +56,7 @@ void testPcodeDecoder() {
         std::cout << std::endl;
         auto decodedInstructions = pcodeDecoder.getDecodedInstructions();
         for (auto& decodedInstruction : decodedInstructions) {
+            std::cout << "    ";
             pcodeInstrRender.render(&decodedInstruction);
             std::cout << std::endl;
         }
@@ -86,7 +87,7 @@ void testPcodeDecoder() {
     auto graphCallbacks = std::make_shared<GraphCallbacks>();
     graphCallbacks->m_otherCallbacks = image->getPcodeGraph()->getCallbacks();
     image->getPcodeGraph()->setCallbacks(graphCallbacks);
-    
+
     // remove old instructions
     // image->getPcodeGraph()->removeInstruction();
 
