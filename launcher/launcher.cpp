@@ -16,6 +16,7 @@
 #include "Disasm/Zydis/ZydisInstructionRenderX86.h"
 #include "Decompiler/PcodeAnalysis/PcodeGraphBuilder.h"
 #include "Decompiler/PcodeAnalysis/VtableLookup.h"
+#include <boost/functional/hash.hpp>
 
 using namespace sda;
 
@@ -98,6 +99,14 @@ void testPcodeDecoder() {
     graphBuilder.start({ pcode::InstructionOffset(image->getEntryPointOffset(), 0) }, true);
 
     image->getPcodeGraph()->setCallbacks(graphCallbacks->m_otherCallbacks);
+
+    // combine hashes when order matters
+    std::size_t seed = 0;
+    boost::hash_combine(seed, 1);
+    boost::hash_combine(seed, 2);
+
+    // get hash of value 10
+    std::size_t seed2 = std::hash<int>()(1);
 }
 
 void testGeneral() {
@@ -127,6 +136,8 @@ void testGeneral() {
     Loader loader(project->getDatabase(), &factory);
     loader.load();
     ctx2->setCallbacks(oldCallbacks);
+
+    int a = 5;
 }
 
 int main(int argc, char *argv[])

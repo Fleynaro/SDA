@@ -6,7 +6,7 @@ Block::Block(pcode::Block* pcodeBlock)
     : m_pcodeBlock(pcodeBlock)
 {}
 
-std::list<Operation>& Block::getOperations() {
+std::list<std::unique_ptr<Operation>>& Block::getOperations() {
     return m_operations;
 }
 

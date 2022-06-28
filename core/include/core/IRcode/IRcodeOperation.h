@@ -73,18 +73,61 @@ namespace sda::ircode
     class Operation
     {
         OperationId m_id = OperationId::NONE;
-        std::vector<std::shared_ptr<Value>> m_inputs;
         std::shared_ptr<Variable> m_output;
         std::set<pcode::Instruction> m_pcodeInstructions;
     public:
-        Operation(OperationId id);
+        Operation(
+			OperationId id,
+			std::shared_ptr<Variable> output);
 
         OperationId getId() const;
-
-        const std::vector<std::shared_ptr<Value>>& getInputs() const;
 
         std::shared_ptr<Variable> getOutput() const;
 
         const std::set<pcode::Instruction>& getPcodeInstructions() const;
     };
+
+	class UnaryOperation : public Operation
+	{
+		std::shared_ptr<Value> m_input;
+	public:
+		UnaryOperation(
+			OperationId id,
+			std::shared_ptr<Value> input,
+			std::shared_ptr<Variable> output);
+
+		std::shared_ptr<Value> getInput() const;
+	};
+
+	class BinaryOperation : public Operation
+	{
+		std::shared_ptr<Value> m_input1;
+		std::shared_ptr<Value> m_input2;
+	public:
+		BinaryOperation(
+			OperationId id,
+			std::shared_ptr<Value> input1,
+			std::shared_ptr<Value> input2,
+			std::shared_ptr<Variable> output);
+
+		std::shared_ptr<Value> getInput1() const;
+
+		std::shared_ptr<Value> getInput2() const;
+	};
+
+	class ExtractOperation : public UnaryOperation
+	{
+		size_t m_offset;
+		size_t m_size;
+	public:
+		ExtractOperation(
+			std::shared_ptr<Value> input,
+			size_t offset,
+			size_t size,
+			std::shared_ptr<Variable> output);
+
+		size_t getOffset() const;
+
+		size_t getSize() const;
+	};
 };

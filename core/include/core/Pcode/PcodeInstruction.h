@@ -164,7 +164,7 @@ namespace sda::pcode
 			enum class Token {
 				Mnemonic,
 				Register,
-				Variable,
+				VirtRegister,
 				Number,
 				Other
 			};

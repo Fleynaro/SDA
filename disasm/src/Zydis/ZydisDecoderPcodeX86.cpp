@@ -79,7 +79,7 @@ void ZydisDecoderPcodeX86::generatePcodeInstructions() {
 			break;
 		}
 
-		auto varnode = getSymbolVarnode(srcRegSize * 2);
+		auto varnode = getVirtRegisterVarnode(srcRegSize * 2);
         auto raxVarnode = getRegisterVarnode(ZYDIS_REGISTER_RAX, srcRegSize);
         auto rdxVarnode = getRegisterVarnode(ZYDIS_REGISTER_RDX, srcRegSize);
         auto sizeVarnode = getConstantVarnode(srcRegSize, 0x4);
@@ -230,7 +230,7 @@ void ZydisDecoderPcodeX86::generatePcodeInstructions() {
 			auto varnodeRegOutput = getRegisterVarnode(dstOperand.reg.value, dstSize, offset);
 			if (float2intForNonVector && varnodeRegOutput->getRegType() != RegisterVarnode::Vector) {
 				//all float values store in vector registers then need cast when moving to non-vector register
-				auto varnodeOutput = getSymbolVarnode(size);
+				auto varnodeOutput = getVirtRegisterVarnode(size);
 				generateInstruction(instrId, srcOpVarnode, nullptr, varnodeOutput);
 				generateInstruction(InstructionId::FLOAT2INT, varnodeOutput, nullptr, varnodeRegOutput);
 			}
@@ -258,20 +258,20 @@ void ZydisDecoderPcodeX86::generatePcodeInstructions() {
 		auto op1Varnode = getOperandVarnode(m_curOperands[0], size);
 		auto op2Varnode = getOperandVarnode(m_curOperands[1], size);
 
-		auto varnodeNan1 = getSymbolVarnode(1);
+		auto varnodeNan1 = getVirtRegisterVarnode(1);
 		generateInstruction(InstructionId::FLOAT_NAN, op1Varnode, nullptr, varnodeNan1);
 
-		auto varnodeNan2 = getSymbolVarnode(1);
+		auto varnodeNan2 = getVirtRegisterVarnode(1);
 		generateInstruction(InstructionId::FLOAT_NAN, op2Varnode, nullptr, varnodeNan2);
 
 		auto flagPF = getRegisterVarnode(ZYDIS_CPUFLAG_PF);
 		generateInstruction(InstructionId::BOOL_OR, varnodeNan1, varnodeNan2, flagPF);
 
-		auto varnodeEq = getSymbolVarnode(1);
+		auto varnodeEq = getVirtRegisterVarnode(1);
 		generateInstruction(InstructionId::FLOAT_EQUAL, op1Varnode, op2Varnode, varnodeEq);
 		generateInstruction(InstructionId::BOOL_OR, flagPF, varnodeEq, getRegisterVarnode(ZYDIS_CPUFLAG_ZF));
 
-		auto varnodeFl = getSymbolVarnode(1);
+		auto varnodeFl = getVirtRegisterVarnode(1);
 		generateInstruction(InstructionId::FLOAT_LESS, op1Varnode, op2Varnode, varnodeFl);
 		generateInstruction(InstructionId::BOOL_OR, flagPF, varnodeFl, getRegisterVarnode(ZYDIS_CPUFLAG_CF));
 
@@ -661,7 +661,7 @@ void ZydisDecoderPcodeX86::generatePcodeInstructions() {
 	{
 		auto varnodeInput0 = getOperandVarnode(m_curOperands[0], size);
 		auto varnodeInput1 = getOperandVarnode(m_curOperands[1], size);
-		auto varnodeTemp = getSymbolVarnode(size);
+		auto varnodeTemp = getVirtRegisterVarnode(size);
 		generateInstruction(InstructionId::COPY, varnodeInput0, nullptr, varnodeTemp);
 		generateInstruction(InstructionId::COPY, varnodeInput1, nullptr, varnodeInput0);
 		generateInstruction(InstructionId::COPY, varnodeTemp, nullptr, varnodeInput1);
@@ -792,11 +792,11 @@ void ZydisDecoderPcodeX86::generatePcodeInstructions() {
 			if (mnemonic == ZYDIS_MNEMONIC_IMUL)
 				instrExt = InstructionId::INT_SEXT;
 
-			auto varnodeZext1 = getSymbolVarnode(size * 2);
+			auto varnodeZext1 = getVirtRegisterVarnode(size * 2);
 			generateInstruction(instrExt, varnodeMul1, nullptr, varnodeZext1);
-			auto varnodeZext2 = getSymbolVarnode(size * 2);
+			auto varnodeZext2 = getVirtRegisterVarnode(size * 2);
 			generateInstruction(instrExt, varnodeMul2, nullptr, varnodeZext2);
-			auto varnodeMult = getSymbolVarnode(size * 2);
+			auto varnodeMult = getVirtRegisterVarnode(size * 2);
 			generateInstruction(InstructionId::INT_MULT, varnodeZext1, varnodeZext2, varnodeMult);
 
 			std::shared_ptr<Varnode> varnodeSubpiece;
@@ -804,16 +804,16 @@ void ZydisDecoderPcodeX86::generatePcodeInstructions() {
 				varnodeSubpiece = getRegisterVarnode(ZYDIS_REGISTER_RDX, size);
 			}
 			else {
-				varnodeSubpiece = getSymbolVarnode(size * 2);
+				varnodeSubpiece = getVirtRegisterVarnode(size * 2);
 			}
 			if (mnemonic == ZYDIS_MNEMONIC_IMUL) {
 				generateInstruction(InstructionId::INT_MULT, varnodeMul1, varnodeMul2, varnodeDst);
 				generateInstruction(InstructionId::SUBPIECE, varnodeMult, getConstantVarnode(size, 0x4), varnodeSubpiece);
-				auto varnodeNe1 = getSymbolVarnode(0x1);
+				auto varnodeNe1 = getVirtRegisterVarnode(0x1);
 				generateInstruction(InstructionId::INT_NOTEQUAL, varnodeSubpiece, getConstantVarnode(0x0, size), varnodeNe1);
-				auto varnode2Cmp = getSymbolVarnode(size);
+				auto varnode2Cmp = getVirtRegisterVarnode(size);
 				generateInstruction(InstructionId::INT_2COMP, getConstantVarnode(0x1, size), nullptr, varnode2Cmp);
-				auto varnodeNe2 = getSymbolVarnode(0x1);
+				auto varnodeNe2 = getVirtRegisterVarnode(0x1);
 				generateInstruction(InstructionId::INT_NOTEQUAL, varnodeSubpiece, varnode2Cmp, varnodeNe2);
 				generateInstruction(InstructionId::INT_AND, varnodeNe1, varnodeNe2, varnodeCF);
 			}
@@ -841,23 +841,23 @@ void ZydisDecoderPcodeX86::generatePcodeInstructions() {
 
 			auto varnodeRax = getRegisterVarnode(ZYDIS_REGISTER_RAX, size);
 			auto varnodeRdx = getRegisterVarnode(ZYDIS_REGISTER_RDX, size);
-			auto varnodeExt = getSymbolVarnode(size * 2);
+			auto varnodeExt = getVirtRegisterVarnode(size * 2);
 			generateInstruction(instrExt, varnodeInput0, nullptr, varnodeExt);
 
-			auto varnodeZext1 = getSymbolVarnode(size * 2);
+			auto varnodeZext1 = getVirtRegisterVarnode(size * 2);
 			generateInstruction(InstructionId::INT_ZEXT, varnodeRdx, nullptr, varnodeZext1);
-			auto varnodeLeft = getSymbolVarnode(size * 2);
+			auto varnodeLeft = getVirtRegisterVarnode(size * 2);
 			generateInstruction(InstructionId::INT_LEFT, varnodeZext1, getConstantVarnode(size * 0x8, 0x4), varnodeLeft);
-			auto varnodeZext2 = getSymbolVarnode(size * 2);
+			auto varnodeZext2 = getVirtRegisterVarnode(size * 2);
 			generateInstruction(InstructionId::INT_ZEXT, varnodeRax, nullptr, varnodeZext2);
-			auto varnodeOr = getSymbolVarnode(size * 2);
+			auto varnodeOr = getVirtRegisterVarnode(size * 2);
 			generateInstruction(InstructionId::INT_OR, varnodeLeft, varnodeZext2, varnodeOr);
 
-			auto varnodeDiv = getSymbolVarnode(size * 2);
+			auto varnodeDiv = getVirtRegisterVarnode(size * 2);
 			generateInstruction(instrDiv, varnodeOr, varnodeExt, varnodeDiv);
 
 			generateInstruction(InstructionId::SUBPIECE, varnodeDiv, getConstantVarnode(0x0, 0x4), varnodeRax);
-			auto varnodeRem = getSymbolVarnode(size * 2);
+			auto varnodeRem = getVirtRegisterVarnode(size * 2);
 			generateInstruction(instrRem, varnodeOr, varnodeExt, varnodeRem);
 			generateInstruction(InstructionId::SUBPIECE, varnodeRem, getConstantVarnode(0x0, 0x4), varnodeRdx);
 			break;
@@ -908,7 +908,7 @@ void ZydisDecoderPcodeX86::generatePcodeInstructions() {
 				instrId = InstructionId::INT_SRIGHT;
 				break;
 			}
-			auto varnodeAndInput1 = getSymbolVarnode(0x8);
+			auto varnodeAndInput1 = getVirtRegisterVarnode(0x8);
 			generateInstruction(InstructionId::INT_AND, varnodeInput1, getConstantVarnode(63, size), varnodeAndInput1);
 			generateGenericOperation(instrId, varnodeInput0, varnodeAndInput1, memLocVarnode);
 			//flags ...
@@ -918,17 +918,17 @@ void ZydisDecoderPcodeX86::generatePcodeInstructions() {
 		case ZYDIS_MNEMONIC_BT:
 		case ZYDIS_MNEMONIC_BTR:
 		{
-			auto varnodeAndInput1 = getSymbolVarnode(0x8);
+			auto varnodeAndInput1 = getVirtRegisterVarnode(0x8);
 			generateInstruction(InstructionId::INT_AND, varnodeInput1, getConstantVarnode(63, size), varnodeAndInput1);
-			auto varnodeRight = getSymbolVarnode(0x8);
+			auto varnodeRight = getVirtRegisterVarnode(0x8);
 			generateInstruction(InstructionId::INT_RIGHT, varnodeInput0, varnodeAndInput1, varnodeRight);
-			auto varnodeAnd = getSymbolVarnode(0x8);
+			auto varnodeAnd = getVirtRegisterVarnode(0x8);
 			generateInstruction(InstructionId::INT_AND, varnodeRight, getConstantVarnode(1, size), varnodeAnd);
 
 			if (mnemonic != ZYDIS_MNEMONIC_BT) {
-				auto varnodeLeft = getSymbolVarnode(0x8);
+				auto varnodeLeft = getVirtRegisterVarnode(0x8);
 				generateInstruction(InstructionId::INT_LEFT, getConstantVarnode(1, size), varnodeAndInput1, varnodeLeft);
-				auto varnodeNegate = getSymbolVarnode(0x8);
+				auto varnodeNegate = getVirtRegisterVarnode(0x8);
 				generateInstruction(InstructionId::INT_NEGATE, varnodeLeft, nullptr, varnodeNegate);
 				generateGenericOperation(InstructionId::INT_AND, varnodeInput0, varnodeNegate, memLocVarnode);
 			}
@@ -1078,7 +1078,7 @@ void ZydisDecoderPcodeX86::generatePcodeInstructions() {
 		}
 
 		auto varnodeFlagCond = getConditionFlagVarnode(flagCond);
-		auto varnodeNeg = getSymbolVarnode(1);
+		auto varnodeNeg = getVirtRegisterVarnode(1);
 		generateInstruction(InstructionId::BOOL_NEGATE, varnodeFlagCond, nullptr, varnodeNeg);
 		auto varnodeNextInstrOffset = getConstantVarnode(getJumpOffset(0x0), 0x8);
 		generateInstruction(InstructionId::CBRANCH, varnodeNextInstrOffset, varnodeNeg);
@@ -1329,7 +1329,7 @@ std::shared_ptr<Varnode> ZydisDecoderPcodeX86::generateGenericOperation(
 		varnodeOutput = getRegisterVarnode(operand.reg.value, size, offset);
 	}
 	else {
-		varnodeOutput = getSymbolVarnode(size);
+		varnodeOutput = getVirtRegisterVarnode(size);
 	}
 
 	generateInstruction(instrId, varnodeInput0, varnodeInput1, varnodeOutput);
@@ -1419,15 +1419,15 @@ std::shared_ptr<Varnode> ZydisDecoderPcodeX86::getOperandVarnode(
 		if (operand.mem.index != ZYDIS_REGISTER_NONE) {
 			resultVarnode = indexRegVarnode = getRegisterVarnode(operand.mem.index, memLocExprSize);
 			if (operand.mem.scale != 1) {
-				const auto symbolVarnode = getSymbolVarnode(memLocExprSize);
+				const auto virtRegVarnode = getVirtRegisterVarnode(memLocExprSize);
                 auto input1 = getConstantVarnode(operand.mem.scale & resultVarnode->getMask(), memLocExprSize);
-				generateInstruction(InstructionId::INT_MULT, resultVarnode, input1, symbolVarnode);
-				resultVarnode = symbolVarnode;
+				generateInstruction(InstructionId::INT_MULT, resultVarnode, input1, virtRegVarnode);
+				resultVarnode = virtRegVarnode;
 			}
 			if (baseRegVarnode != nullptr) {
-				const auto symbolVarnode = getSymbolVarnode(memLocExprSize);
-				generateInstruction(InstructionId::INT_ADD, baseRegVarnode, resultVarnode, symbolVarnode);
-				resultVarnode = symbolVarnode;
+				const auto virtRegVarnode = getVirtRegisterVarnode(memLocExprSize);
+				generateInstruction(InstructionId::INT_ADD, baseRegVarnode, resultVarnode, virtRegVarnode);
+				resultVarnode = virtRegVarnode;
 			}
 		}
 		else {
@@ -1438,9 +1438,9 @@ std::shared_ptr<Varnode> ZydisDecoderPcodeX86::getOperandVarnode(
 			const auto constValue = (size_t&)operand.mem.disp.value & resultVarnode->getMask();
 			const auto dispVarnode = getConstantVarnode(constValue, memLocExprSize);
 			if (resultVarnode != nullptr) {
-				const auto symbolVarnode = getSymbolVarnode(memLocExprSize);
-				generateInstruction(InstructionId::INT_ADD, resultVarnode, dispVarnode, symbolVarnode);
-				resultVarnode = symbolVarnode;
+				const auto virtRegVarnode = getVirtRegisterVarnode(memLocExprSize);
+				generateInstruction(InstructionId::INT_ADD, resultVarnode, dispVarnode, virtRegVarnode);
+				resultVarnode = virtRegVarnode;
 			}
 			else {
 				resultVarnode = dispVarnode;
@@ -1448,9 +1448,9 @@ std::shared_ptr<Varnode> ZydisDecoderPcodeX86::getOperandVarnode(
 		}
 
 		if (offset > 0) {
-			const auto symbolVarnode = getSymbolVarnode(memLocExprSize);
-			generateInstruction(InstructionId::INT_ADD, resultVarnode, getConstantVarnode(offset, memLocExprSize), symbolVarnode);
-			resultVarnode = symbolVarnode;
+			const auto virtRegVarnode = getVirtRegisterVarnode(memLocExprSize);
+			generateInstruction(InstructionId::INT_ADD, resultVarnode, getConstantVarnode(offset, memLocExprSize), virtRegVarnode);
+			resultVarnode = virtRegVarnode;
 		}
 
 		if (memLocVarnode) {
@@ -1458,9 +1458,9 @@ std::shared_ptr<Varnode> ZydisDecoderPcodeX86::getOperandVarnode(
 		}
 
 		if (isMemLocLoaded) { //check for LEA instruction
-			const auto symbolVarnode = getSymbolVarnode(size);
-			generateInstruction(InstructionId::LOAD, resultVarnode, nullptr, symbolVarnode);
-			resultVarnode = symbolVarnode;
+			const auto virtRegVarnode = getVirtRegisterVarnode(size);
+			generateInstruction(InstructionId::LOAD, resultVarnode, nullptr, virtRegVarnode);
+			resultVarnode = virtRegVarnode;
 		}
 		return resultVarnode;
 	}
@@ -1506,7 +1506,7 @@ std::shared_ptr<Varnode> ZydisDecoderPcodeX86::getConditionFlagVarnode(FlagCond 
 
 		varnodeCond = getRegisterVarnode(flag);
 		if (flagCond == FlagCond::NZ || flagCond == FlagCond::NC || flagCond == FlagCond::NP || flagCond == FlagCond::NO) {
-			const auto varnodeNeg = getSymbolVarnode(1);
+			const auto varnodeNeg = getVirtRegisterVarnode(1);
 			generateInstruction(InstructionId::BOOL_NEGATE, varnodeCond, nullptr, varnodeNeg);
 			varnodeCond = varnodeNeg;
 		}
@@ -1515,10 +1515,10 @@ std::shared_ptr<Varnode> ZydisDecoderPcodeX86::getConditionFlagVarnode(FlagCond 
 	case FlagCond::L:
 	case FlagCond::LE:
 	{
-		const auto varnodeNe = getSymbolVarnode(1);
+		const auto varnodeNe = getVirtRegisterVarnode(1);
 		generateInstruction(InstructionId::INT_NOTEQUAL, getRegisterVarnode(ZYDIS_CPUFLAG_OF), getRegisterVarnode(ZYDIS_CPUFLAG_SF), varnodeNe);
 		if (flagCond == FlagCond::LE) {
-			const auto varnodeOr = getSymbolVarnode(1);
+			const auto varnodeOr = getVirtRegisterVarnode(1);
 			generateInstruction(InstructionId::BOOL_OR, getRegisterVarnode(ZYDIS_CPUFLAG_ZF), varnodeNe, varnodeOr);
 			varnodeCond = varnodeOr;
 		}
@@ -1530,12 +1530,12 @@ std::shared_ptr<Varnode> ZydisDecoderPcodeX86::getConditionFlagVarnode(FlagCond 
 	case FlagCond::NL:
 	case FlagCond::NLE:
 	{
-		const auto varnodeEq = getSymbolVarnode(1);
+		const auto varnodeEq = getVirtRegisterVarnode(1);
 		generateInstruction(InstructionId::INT_EQUAL, getRegisterVarnode(ZYDIS_CPUFLAG_OF), getRegisterVarnode(ZYDIS_CPUFLAG_SF), varnodeEq);
 		if (flagCond == FlagCond::NLE) {
-			const auto varnodeNeg = getSymbolVarnode(1);
+			const auto varnodeNeg = getVirtRegisterVarnode(1);
 			generateInstruction(InstructionId::BOOL_NEGATE, getRegisterVarnode(ZYDIS_CPUFLAG_ZF), nullptr, varnodeNeg);
-			const auto varnodeAnd = getSymbolVarnode(1);
+			const auto varnodeAnd = getVirtRegisterVarnode(1);
 			generateInstruction(InstructionId::BOOL_AND, varnodeEq, varnodeNeg, varnodeAnd);
 			varnodeCond = varnodeAnd;
 		}
@@ -1547,10 +1547,10 @@ std::shared_ptr<Varnode> ZydisDecoderPcodeX86::getConditionFlagVarnode(FlagCond 
 	case FlagCond::A:
 	case FlagCond::NA:
 	{
-		const auto varnodeOr = getSymbolVarnode(1);
+		const auto varnodeOr = getVirtRegisterVarnode(1);
 		generateInstruction(InstructionId::BOOL_OR, getRegisterVarnode(ZYDIS_CPUFLAG_CF), getRegisterVarnode(ZYDIS_CPUFLAG_ZF), varnodeOr);
 		if (flagCond == FlagCond::A) {
-			const auto varnodeNe = getSymbolVarnode(1);
+			const auto varnodeNe = getVirtRegisterVarnode(1);
 			generateInstruction(InstructionId::BOOL_NEGATE, varnodeOr, nullptr, varnodeNe);
 			varnodeCond = varnodeNe;
 		}
@@ -1618,8 +1618,14 @@ std::shared_ptr<RegisterVarnode> ZydisDecoderPcodeX86::getRegisterVarnode(ZydisA
     );
 }
 
-std::shared_ptr<pcode::SymbolVarnode> ZydisDecoderPcodeX86::getSymbolVarnode(size_t size) const {
-    return std::make_shared<SymbolVarnode>(size);
+std::shared_ptr<pcode::RegisterVarnode> ZydisDecoderPcodeX86::getVirtRegisterVarnode(size_t size) const {
+    return std::make_shared<RegisterVarnode>(
+        RegisterVarnode::Virtual,
+        RegisterVarnode::VirtualId,
+        0, // index
+        BitMask(size, 0),
+        size
+    );
 }
 
 std::shared_ptr<pcode::ConstantVarnode> ZydisDecoderPcodeX86::getConstantVarnode(size_t value, size_t size, bool isAddress) const {

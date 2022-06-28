@@ -97,7 +97,7 @@ namespace sda::disasm
 
         std::shared_ptr<pcode::RegisterVarnode> getRegisterVarnode(ZydisAccessedFlagsMask flagMask) const;
 
-        std::shared_ptr<pcode::SymbolVarnode> getSymbolVarnode(size_t size) const;
+        std::shared_ptr<pcode::RegisterVarnode> getVirtRegisterVarnode(size_t size) const;
 
         std::shared_ptr<pcode::ConstantVarnode> getConstantVarnode(size_t value, size_t size, bool isAddress = false) const;
     };

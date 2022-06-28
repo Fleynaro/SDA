@@ -20,11 +20,13 @@ namespace sda::pcode
     class RegisterVarnode : public Varnode
     {
     public:
-        inline const static size_t StackPointerId = 100000000;
-        inline const static size_t InstructionPointerId = 100000001;
-        inline const static size_t FlagId = 100000002;
+        inline const static size_t VirtualId = 100000000;
+        inline const static size_t StackPointerId = 100000001;
+        inline const static size_t InstructionPointerId = 100000002;
+        inline const static size_t FlagId = 100000003;
 
         enum Type {
+            Virtual,
 			Generic,
 			StackPointer,
 			InstructionPointer,
@@ -53,12 +55,6 @@ namespace sda::pcode
 		public:
             virtual std::string getRegisterName(const RegisterVarnode* varnode) const = 0;
         };
-    };
-
-    class SymbolVarnode : public Varnode
-    {
-    public:
-        SymbolVarnode(size_t size);
     };
 
     class ConstantVarnode : public Varnode

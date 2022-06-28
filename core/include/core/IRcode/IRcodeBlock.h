@@ -7,7 +7,7 @@ namespace sda::ircode
 {
     class Block
     {
-        std::list<Operation> m_operations;
+        std::list<std::unique_ptr<Operation>> m_operations;
         Block* m_nearNextBlock = nullptr;
         Block* m_farNextBlock = nullptr;
         std::list<Block*> m_previousBlocks;
@@ -15,7 +15,7 @@ namespace sda::ircode
     public:
         Block(pcode::Block* pcodeBlock);
 
-        std::list<Operation>& getOperations();
+        std::list<std::unique_ptr<Operation>>& getOperations();
 
         Block* getNearNextBlock() const;
 

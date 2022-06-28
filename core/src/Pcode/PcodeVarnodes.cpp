@@ -43,10 +43,6 @@ BitMask RegisterVarnode::getMask() const {
     return m_mask;
 }
 
-SymbolVarnode::SymbolVarnode(size_t size)
-    : Varnode(size)
-{}
-
 ConstantVarnode::ConstantVarnode(size_t value, size_t size, bool isAddress)
     : Varnode(size), m_value(value), m_isAddress(isAddress)
 {}

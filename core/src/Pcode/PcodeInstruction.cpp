@@ -77,14 +77,15 @@ void Instruction::Render::render(const Instruction* instruction) const {
 
 void Instruction::Render::renderVarnode(const Varnode* varnode) const {
     if (auto regVarnode = dynamic_cast<const RegisterVarnode*>(varnode)) {
-        auto regName = m_registerRender->getRegisterName(regVarnode);
-        renderToken(regName, Token::Register);
-    }
-    else if (auto symbolVarnode = dynamic_cast<const SymbolVarnode*>(varnode)) {
-        auto uniqueId = (size_t)symbolVarnode % 10000;
-        std::stringstream ss;
-        ss << "$U" << uniqueId << ":" << symbolVarnode->getSize();
-        renderToken(ss.str(), Token::Variable);
+        if (regVarnode->getRegType() == RegisterVarnode::Virtual) {
+            auto uniqueId = (size_t)regVarnode % 10000;
+            std::stringstream ss;
+            ss << "$U" << uniqueId << ":" << regVarnode->getSize();
+            renderToken(ss.str(), Token::VirtRegister);
+        } else {
+            auto regName = m_registerRender->getRegisterName(regVarnode);
+            renderToken(regName, Token::Register);
+        }
     }
     else if (auto constVarnode = dynamic_cast<const ConstantVarnode*>(varnode)) {
         std::stringstream ss;
