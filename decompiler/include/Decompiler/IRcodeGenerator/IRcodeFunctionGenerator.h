@@ -4,12 +4,12 @@
 
 namespace sda::decompiler
 {
-    class IRcodeGenerator
+    class IRcodeFunctionGenerator
     {
         ircode::Function* m_function;
         pcode::FunctionGraph* m_functionGraph;
     public:
-        IRcodeGenerator(ircode::Function* function, pcode::FunctionGraph* functionGraph);
+        IRcodeFunctionGenerator(ircode::Function* function, pcode::FunctionGraph* functionGraph);
 
         void start();
     };

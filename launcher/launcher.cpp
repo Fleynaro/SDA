@@ -99,14 +99,6 @@ void testPcodeDecoder() {
     graphBuilder.start({ pcode::InstructionOffset(image->getEntryPointOffset(), 0) }, true);
 
     image->getPcodeGraph()->setCallbacks(graphCallbacks->m_otherCallbacks);
-
-    // combine hashes when order matters
-    std::size_t seed = 0;
-    boost::hash_combine(seed, 1);
-    boost::hash_combine(seed, 2);
-
-    // get hash of value 10
-    std::size_t seed2 = std::hash<int>()(1);
 }
 
 void testGeneral() {

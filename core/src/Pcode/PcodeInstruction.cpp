@@ -78,9 +78,8 @@ void Instruction::Render::render(const Instruction* instruction) const {
 void Instruction::Render::renderVarnode(const Varnode* varnode) const {
     if (auto regVarnode = dynamic_cast<const RegisterVarnode*>(varnode)) {
         if (regVarnode->getRegType() == RegisterVarnode::Virtual) {
-            auto uniqueId = (size_t)regVarnode % 10000;
             std::stringstream ss;
-            ss << "$U" << uniqueId << ":" << regVarnode->getSize();
+            ss << "$U" << (regVarnode->getRegIndex() + 1) << ":" << regVarnode->getSize();
             renderToken(ss.str(), Token::VirtRegister);
         } else {
             auto regName = m_registerRender->getRegisterName(regVarnode);

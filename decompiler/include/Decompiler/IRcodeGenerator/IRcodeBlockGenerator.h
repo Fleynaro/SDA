@@ -18,9 +18,11 @@ namespace sda::decompiler
         void executePcode(pcode::Instruction* instr);
 
     private:
+        void writeMemory(MemorySpace* memSpace, std::shared_ptr<ircode::Variable> variable);
+
         struct VariableReadInfo {
             std::shared_ptr<ircode::Variable> variable;
-            BitMask mask;
+            size_t offset;
         };
 
         std::list<VariableReadInfo> readMemory(MemorySpace* memSpace, size_t readOffset, size_t readSize, BitMask& readMask);
@@ -31,6 +33,6 @@ namespace sda::decompiler
 
         MemorySpace* getMemSpace(ircode::Hash baseAddrHash);
 
-        void addOperation(std::unique_ptr<ircode::Operation> operation);
+        void generateOperation(std::unique_ptr<ircode::Operation> operation);
     };
 };

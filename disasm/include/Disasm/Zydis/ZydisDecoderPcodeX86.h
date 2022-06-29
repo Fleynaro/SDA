@@ -11,6 +11,7 @@ namespace sda::disasm
         ZydisDecodedOperand m_curOperands[ZYDIS_MAX_OPERAND_COUNT_VISIBLE];
         Offset m_curOffset = 0;
         size_t m_curInstrIndex = 0;
+        size_t m_curVirtRegIndex = 0;
     public:
         std::string m_curInstrView; // for debug purposes
 
@@ -97,7 +98,7 @@ namespace sda::disasm
 
         std::shared_ptr<pcode::RegisterVarnode> getRegisterVarnode(ZydisAccessedFlagsMask flagMask) const;
 
-        std::shared_ptr<pcode::RegisterVarnode> getVirtRegisterVarnode(size_t size) const;
+        std::shared_ptr<pcode::RegisterVarnode> getVirtRegisterVarnode(size_t size);
 
         std::shared_ptr<pcode::ConstantVarnode> getConstantVarnode(size_t value, size_t size, bool isAddress = false) const;
     };

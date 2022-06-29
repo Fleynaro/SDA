@@ -8,7 +8,7 @@ namespace sda::ircode
     using Hash = size_t;
 
     struct MemoryAddress {
-        Value* base = nullptr;
+        std::shared_ptr<Value> base = nullptr;
         size_t offset = 0;
     };
 
@@ -16,6 +16,7 @@ namespace sda::ircode
     {
         Hash m_hash;
         std::list<Operation*> m_operations;
+        
     public:
         Value(Hash hash);
 

@@ -67,7 +67,10 @@ namespace sda::ircode
 		FLOAT_LESSEQUAL,
 
 		// Other
-        EXTRACT
+		PHI,
+        EXTRACT,
+		CONCAT,
+		CALL
 	};
 
     class Operation
@@ -81,6 +84,8 @@ namespace sda::ircode
 			std::shared_ptr<Variable> output);
 
         OperationId getId() const;
+
+		size_t getSize() const;
 
         std::shared_ptr<Variable> getOutput() const;
 
@@ -118,16 +123,25 @@ namespace sda::ircode
 	class ExtractOperation : public UnaryOperation
 	{
 		size_t m_offset;
-		size_t m_size;
 	public:
 		ExtractOperation(
 			std::shared_ptr<Value> input,
 			size_t offset,
-			size_t size,
 			std::shared_ptr<Variable> output);
 
 		size_t getOffset() const;
+	};
 
-		size_t getSize() const;
+	class ConcatOperation : public BinaryOperation
+	{
+		size_t m_offset;
+	public:
+		ConcatOperation(
+			std::shared_ptr<Value> input1,
+			std::shared_ptr<Value> input2,
+			size_t offset,
+			std::shared_ptr<Variable> output);
+
+		size_t getOffset() const;
 	};
 };

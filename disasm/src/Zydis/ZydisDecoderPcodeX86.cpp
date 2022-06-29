@@ -23,6 +23,7 @@ void ZydisDecoderPcodeX86::decode(Offset offset, const std::vector<uint8_t>& dat
     if (ZYAN_SUCCESS(status)) {
         m_curOffset = offset;
 		m_curInstrIndex = 0;
+		m_curVirtRegIndex = 0;
         generatePcodeInstructions();
     }
 }
@@ -1351,6 +1352,14 @@ Instruction* ZydisDecoderPcodeX86::generateInstruction(
     std::shared_ptr<Varnode> output,
     bool zext)
 {
+	// that is the feature of x86: setting value to EAX cleans fully RAX
+	if (auto regOutput = std::dynamic_pointer_cast<RegisterVarnode>(output)) {
+		if (regOutput->getSize() == 0x4) {
+			output = getRegisterVarnode(static_cast<ZydisRegister>(regOutput->getRegId()), 0x8, 0);
+			// or we could generate "RAX:8 = COPY 0:8" before
+		}
+	}
+
     auto instr = Instruction(
 		id,
 		input0,
@@ -1618,11 +1627,11 @@ std::shared_ptr<RegisterVarnode> ZydisDecoderPcodeX86::getRegisterVarnode(ZydisA
     );
 }
 
-std::shared_ptr<pcode::RegisterVarnode> ZydisDecoderPcodeX86::getVirtRegisterVarnode(size_t size) const {
+std::shared_ptr<pcode::RegisterVarnode> ZydisDecoderPcodeX86::getVirtRegisterVarnode(size_t size) {
     return std::make_shared<RegisterVarnode>(
         RegisterVarnode::Virtual,
         RegisterVarnode::VirtualId,
-        0, // index
+        m_curVirtRegIndex++, // index
         BitMask(size, 0),
         size
     );
