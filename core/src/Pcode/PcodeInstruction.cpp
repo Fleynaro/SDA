@@ -53,6 +53,23 @@ bool Instruction::isBranching() const {
     return m_id >= InstructionId::BRANCH && m_id <= InstructionId::BRANCHIND;
 }
 
+bool Instruction::isComutative() const {
+    return
+        // integers
+        m_id == InstructionId::INT_ADD ||
+        m_id == InstructionId::INT_MULT ||
+        m_id == InstructionId::INT_XOR ||
+        m_id == InstructionId::INT_AND ||
+        m_id == InstructionId::INT_OR ||
+        m_id == InstructionId::INT_EQUAL ||
+        m_id == InstructionId::INT_NOTEQUAL ||
+        // floats
+        m_id == InstructionId::FLOAT_ADD ||
+        m_id == InstructionId::FLOAT_MULT ||
+        m_id == InstructionId::FLOAT_EQUAL ||
+        m_id == InstructionId::FLOAT_NOTEQUAL;
+}
+
 Instruction::Render::Render(const RegisterVarnode::Render* registerRender)
     : m_registerRender(registerRender)
 {}

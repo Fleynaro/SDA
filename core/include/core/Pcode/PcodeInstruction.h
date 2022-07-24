@@ -151,6 +151,9 @@ namespace sda::pcode
 		// Check if the instruction is some kind of branching (BRANCH, CBRANCH, BRANCHIND)
 		bool isBranching() const;
 
+		// Check if the instruction has comutative operands (INT_ADD, INT_MULT, INT_XOR, INT_AND, INT_OR)
+		bool isComutative() const;
+
 		class Render {
 			const RegisterVarnode::Render* m_registerRender;
 		public:

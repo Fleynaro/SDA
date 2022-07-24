@@ -2,6 +2,7 @@
 #include <memory>
 #include <vector>
 #include <set>
+#include <map>
 #include "IRcodeValue.h"
 #include "Core/Pcode/PcodeInstruction.h"
 
@@ -12,6 +13,7 @@ namespace sda::ircode
 		UNKNOWN,
 
 		// Data Moving
+		COPY,
 		LOAD,
 
 		// Arithmetic

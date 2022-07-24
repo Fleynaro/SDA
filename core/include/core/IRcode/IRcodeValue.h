@@ -2,6 +2,7 @@
 #include <list>
 #include <memory>
 #include "Core/Pcode/PcodeVarnodes.h"
+#include "IRcodeLinearExpr.h"
 
 namespace sda::ircode
 {
@@ -12,16 +13,17 @@ namespace sda::ircode
     {
         Hash m_hash;
         std::list<Operation*> m_operations;
-        struct {
-            struct Term {
-                std::shared_ptr<Value> value;
-                size_t factor = 0;
-            };
-            std::list<Term> terms;
-        } m_linearExpr;
-        
+        LinearExpression m_linearExpr;
     public:
         Value(Hash hash);
+
+        enum Type {
+            Constant,
+            Register,
+            Variable
+        };
+
+        virtual Type getType() const = 0;
 
         Hash getHash() const;
 
@@ -29,7 +31,7 @@ namespace sda::ircode
 
         std::list<Operation*>& getOperations();
 
-        auto& getLinearExpr();
+        LinearExpression& getLinearExpr();
     };
 
     class Constant : public Value
@@ -37,6 +39,8 @@ namespace sda::ircode
         const pcode::ConstantVarnode* m_constVarnode;
     public:
         Constant(const pcode::ConstantVarnode* constVarnode, Hash hash);
+
+        Type getType() const override;
 
         const pcode::ConstantVarnode* getConstVarnode() const;
 
@@ -48,6 +52,8 @@ namespace sda::ircode
         const pcode::RegisterVarnode* m_regVarnode;
     public:
         Register(const pcode::RegisterVarnode* regVarnode, Hash hash);
+
+        Type getType() const override;
 
         const pcode::RegisterVarnode* getRegVarnode() const;
 
@@ -65,6 +71,8 @@ namespace sda::ircode
         size_t m_size;
     public:
         Variable(const MemoryAddress& memAddress, Hash hash, size_t size);
+
+        Type getType() const override;
 
         const MemoryAddress& getMemAddress() const;
 
