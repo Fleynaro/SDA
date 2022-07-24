@@ -61,7 +61,8 @@ namespace sda::ircode
     };
 
     struct MemoryAddress {
-        std::shared_ptr<Value> base = nullptr;
+        std::shared_ptr<Value> value = nullptr;
+        Hash baseAddrHash = 0; // this hash can be different from the hash of the value!
         size_t offset = 0;
     };
 
