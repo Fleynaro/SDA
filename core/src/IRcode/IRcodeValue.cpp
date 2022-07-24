@@ -15,11 +15,15 @@ std::list<Operation*>& Value::getOperations() {
     return m_operations;
 }
 
-Constant::Constant(pcode::ConstantVarnode* constVarnode, Hash hash)
+auto& Value::getLinearExpr() {
+    return m_linearExpr;
+}
+
+Constant::Constant(const pcode::ConstantVarnode* constVarnode, Hash hash)
     : Value(hash), m_constVarnode(constVarnode)
 {}
 
-pcode::ConstantVarnode* Constant::getConstVarnode() const {
+const pcode::ConstantVarnode* Constant::getConstVarnode() const {
     return m_constVarnode;
 }
 
@@ -27,11 +31,11 @@ size_t Constant::getSize() const {
     return m_constVarnode->getSize();
 }
 
-Register::Register(pcode::RegisterVarnode* regVarnode, Hash hash)
+Register::Register(const pcode::RegisterVarnode* regVarnode, Hash hash)
     : Value(hash), m_regVarnode(regVarnode)
 {}
 
-pcode::RegisterVarnode* Register::getRegVarnode() const {
+const pcode::RegisterVarnode* Register::getRegVarnode() const {
     return m_regVarnode;
 }
 

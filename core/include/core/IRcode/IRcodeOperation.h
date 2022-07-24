@@ -72,7 +72,7 @@ namespace sda::ircode
 		CONCAT,
 		CALL
 	};
-
+	
     class Operation
     {
         OperationId m_id = OperationId::NONE;

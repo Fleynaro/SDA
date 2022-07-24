@@ -33,6 +33,6 @@ void ContextObject::serialize(boost::json::object& data) const {
 
 void ContextObject::deserialize(boost::json::object& data) {
     m_context->getCallbacks()->onObjectModified(this);
-    m_name = data["name"].get_string();
-    m_comment = data["comment"].get_string();
+    m_name = data["name"].get_string().c_str();
+    m_comment = data["comment"].get_string().c_str();
 }

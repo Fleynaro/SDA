@@ -82,7 +82,7 @@ namespace sda
 
         // Get an object by its string unique identifier
         T* get(const boost::json::value& uuid) {
-            std::string uuid_str(uuid.get_string());
+            std::string uuid_str(uuid.get_string().c_str());
             return get(boost::uuids::string_generator()(uuid_str));
         }
 

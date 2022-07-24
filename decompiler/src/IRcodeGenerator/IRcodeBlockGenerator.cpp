@@ -4,15 +4,24 @@
 using namespace sda;
 using namespace sda::decompiler;
 
-IRcodeBlockGenerator::IRcodeBlockGenerator(ircode::Block* block)
-    : m_block(block)
+MemorySpace* MemorySpacePool::getMemSpace(ircode::Hash baseAddrHash) {
+    auto it = m_memorySpaces.find(baseAddrHash);
+    if (it == m_memorySpaces.end()) {
+        m_memorySpaces[baseAddrHash] = MemorySpace();
+        return &m_memorySpaces[baseAddrHash];
+    }
+    return &it->second;
+}
+
+IRcodeBlockGenerator::IRcodeBlockGenerator(ircode::Block* block, MemorySpacePool* memSpacePool)
+    : m_block(block), m_memSpacePool(memSpacePool)
 {}
 
 void IRcodeBlockGenerator::executePcode(pcode::Instruction* instr) {
 
 }
 
-void IRcodeBlockGenerator::writeMemory(MemorySpace* memSpace, std::shared_ptr<ircode::Variable> newVariable) {
+void IRcodeBlockGenerator::genWriteMemory(MemorySpace* memSpace, std::shared_ptr<ircode::Variable> newVariable) {
     auto& variables = memSpace->variables;
     auto newVarOffset = newVariable->getMemAddress().offset;
     auto newVarSize = newVariable->getSize();
@@ -33,7 +42,7 @@ void IRcodeBlockGenerator::writeMemory(MemorySpace* memSpace, std::shared_ptr<ir
     memSpace->variables.push_front(newVariable);
 }
 
-std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::readMemory(MemorySpace* memSpace, size_t readOffset, size_t readSize, BitMask& readMask) {
+std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadMemory(MemorySpace* memSpace, size_t readOffset, size_t readSize, BitMask& readMask) {
     std::list<VariableReadInfo> varReadInfos;
 
     for (auto variable : memSpace->variables) {
@@ -91,7 +100,7 @@ std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::readMemo
                 boost::hash_combine(hash, extractSize);
 
                 resultVariable = std::make_shared<ircode::Variable>(memAddress, hash, extractSize);
-                generateOperation(std::make_unique<ircode::ExtractOperation>(variable, extractOffset, resultVariable));
+                genOperation(std::make_unique<ircode::ExtractOperation>(variable, extractOffset, resultVariable));
             }
 
             varReadInfos.push_front({ resultVariable, varMask.getOffset() / 0x8 });
@@ -105,17 +114,17 @@ std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::readMemo
     return varReadInfos;
 }
 
-std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::readRegisterVarnode(const pcode::RegisterVarnode* regVarnode) {
+std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadRegisterVarnode(const pcode::RegisterVarnode* regVarnode) {
     auto baseAddrHash = std::hash<size_t>()(regVarnode->getRegId());
     if (regVarnode->getRegType() == pcode::RegisterVarnode::Virtual) {
         boost::hash_combine(baseAddrHash, (std::uintptr_t)regVarnode);
     }
-    auto memSpace = getMemSpace(baseAddrHash);
+    auto memSpace = m_memSpacePool->getMemSpace(baseAddrHash);
     auto readOffset = regVarnode->getRegIndex() * 0x8 + regVarnode->getMask().getOffset() / 0x8;
     auto readSize = regVarnode->getSize();
     auto readMask = BitMask(readSize, 0);
 
-    auto varReadInfos = readMemory(memSpace, readOffset, readSize, readMask);
+    auto varReadInfos = genReadMemory(memSpace, readOffset, readSize, readMask);
 
     if (readMask != 0) { // todo: readMask can be 0xFF00FF00, which is not a valid mask
         // todo: request eax, then rax
@@ -129,7 +138,7 @@ std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::readRegi
         boost::hash_combine(hash, readSize);
 
         auto regVariable = std::make_shared<ircode::Variable>(memAddress, hash, readSize);
-        generateOperation(std::make_unique<ircode::UnaryOperation>(ircode::OperationId::LOAD, memAddress.base, regVariable));
+        genOperation(std::make_unique<ircode::UnaryOperation>(ircode::OperationId::LOAD, memAddress.base, regVariable));
         memSpace->variables.push_back(regVariable);
 
         varReadInfos.push_front({ regVariable, 0 });
@@ -138,9 +147,9 @@ std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::readRegi
     return varReadInfos;
 }
 
-std::shared_ptr<ircode::Value> IRcodeBlockGenerator::readVarnode(const pcode::Varnode* varnode) {
+std::shared_ptr<ircode::Value> IRcodeBlockGenerator::genReadVarnode(const pcode::Varnode* varnode) {
     if (auto regVarnode = dynamic_cast<const pcode::RegisterVarnode*>(varnode)) {
-        auto varReadInfos = readRegisterVarnode(regVarnode);
+        auto varReadInfos = genReadRegisterVarnode(regVarnode);
 
         auto concatVariable = varReadInfos.front().variable;
         varReadInfos.pop_front();
@@ -151,9 +160,9 @@ std::shared_ptr<ircode::Value> IRcodeBlockGenerator::readVarnode(const pcode::Va
             boost::hash_combine(hash, varReadInfo.variable->getHash());
             boost::hash_combine(hash, varReadInfo.offset);
             boost::hash_combine(hash, regVarnode->getSize());
-
-            auto newConcatVariable = std::make_shared<ircode::Variable>(hash, regVarnode->getSize());
-            generateOperation(std::make_unique<ircode::ConcatOperation>(
+            
+            auto newConcatVariable = std::make_shared<ircode::Variable>(ircode::MemoryAddress(), hash, regVarnode->getSize());
+            genOperation(std::make_unique<ircode::ConcatOperation>(
                 concatVariable,
                 varReadInfo.variable,
                 varReadInfo.offset,
@@ -167,17 +176,10 @@ std::shared_ptr<ircode::Value> IRcodeBlockGenerator::readVarnode(const pcode::Va
         auto hash = std::hash<size_t>()(constVarnode->getValue());
         return std::make_shared<ircode::Constant>(constVarnode, hash);
     }
+    
+    throw std::runtime_error("unsupported varnode type");
 }
 
-IRcodeBlockGenerator::MemorySpace* IRcodeBlockGenerator::getMemSpace(ircode::Hash baseAddrHash) {
-    auto it = m_memorySpaces.find(baseAddrHash);
-    if (it == m_memorySpaces.end()) {
-        m_memorySpaces[baseAddrHash] = MemorySpace();
-        return &m_memorySpaces[baseAddrHash];
-    }
-    return &it->second;
-}
-
-void IRcodeBlockGenerator::generateOperation(std::unique_ptr<ircode::Operation> operation) {
+void IRcodeBlockGenerator::genOperation(std::unique_ptr<ircode::Operation> operation) {
     m_block->getOperations().push_back(std::move(operation));
 }

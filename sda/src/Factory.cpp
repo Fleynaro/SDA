@@ -22,11 +22,11 @@ ISerializable* IFactory::create(boost::json::object& data) {
     // uuid
     if (data.find("uuid") == data.end())
         throw std::runtime_error("Object without uuid");
-    std::string uuid(data["uuid"].get_string());
+    std::string uuid(data["uuid"].get_string().c_str());
     auto id = boost::uuids::string_generator()(uuid);
 
     // collection name
-    std::string collection(data["collection"].get_string());
+    std::string collection(data["collection"].get_string().c_str());
 
     return create(&id, collection, data);
 }
@@ -40,12 +40,12 @@ ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collec
         return new AddressSpace(m_context, id);
     } else if (collection == Image::Collection) {
         if(data.find("rw") != data.end() && data.find("analyser") != data.end()) {  
-            std::string rwType(data["rw"].get_object()["type"].get_string());
+            std::string rwType(data["rw"].get_object()["type"].get_string().c_str());
             std::unique_ptr<IImageRW> rw;
             if (rwType == FileImageRW::Name)
                 rw = std::make_unique<FileImageRW>();
             
-            std::string analyserType(data["analyser"].get_object()["type"].get_string());
+            std::string analyserType(data["analyser"].get_object()["type"].get_string().c_str());
             std::shared_ptr<ImageAnalyser> analyser;
             if (analyserType == PEImageAnalyser::Name)
                 analyser = std::make_shared<PEImageAnalyser>();
@@ -54,7 +54,7 @@ ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collec
         }
     } else if (collection == DataType::Collection) {
         if (data.find("type") != data.end()) {
-            std::string type(data["type"].get_string());
+            std::string type(data["type"].get_string().c_str());
             if (type == PointerDataType::Type)
                 return new PointerDataType(m_context, id);
             else if (type == ArrayDataType::Type)
@@ -72,7 +72,7 @@ ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collec
         }
     } else if (collection == Symbol::Collection) {
         if (data.find("type") != data.end()) {
-            std::string type(data["type"].get_string());
+            std::string type(data["type"].get_string().c_str());
             if (type == VariableSymbol::Type)
                 return new VariableSymbol(m_context, id);
             else if (type == FunctionSymbol::Type)
@@ -84,7 +84,7 @@ ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collec
         }
     } else if (collection == SymbolTable::Collection) {
         if (data.find("type") != data.end()) {
-            std::string type(data["type"].get_string());
+            std::string type(data["type"].get_string().c_str());
             if (type == StandartSymbolTable::Type)
                 return new StandartSymbolTable(m_context, id);
             else if (type == OptimizedSymbolTable::Type)

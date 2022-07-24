@@ -90,6 +90,6 @@ void FileImageRW::serialize(boost::json::object& data) const {
 }
 
 void FileImageRW::deserialize(boost::json::object& data) {
-    m_pathToImgFile = std::string(data["path_to_img_file"].get_string());
+    m_pathToImgFile = std::string(data["path_to_img_file"].get_string().c_str());
     readFile();
 }
