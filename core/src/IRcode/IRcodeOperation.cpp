@@ -24,11 +24,11 @@ std::shared_ptr<Variable> Operation::getOutput() const {
     return m_output;
 }
 
-const std::set<pcode::Instruction>& Operation::getPcodeInstructions() const {
+std::set<pcode::Instruction*>& Operation::getPcodeInstructions() {
     return m_pcodeInstructions;
 }
 
-std::list<std::shared_ptr<Variable>>& Operation::getOverwrittenVariables() {
+std::set<std::shared_ptr<Variable>>& Operation::getOverwrittenVariables() {
     return m_overwrittenVariables;
 }
 

@@ -79,8 +79,8 @@ namespace sda::ircode
     {
         OperationId m_id = OperationId::NONE;
         std::shared_ptr<Variable> m_output;
-        std::set<pcode::Instruction> m_pcodeInstructions;
-		std::list<std::shared_ptr<Variable>> m_overwrittenVariables;
+        std::set<pcode::Instruction*> m_pcodeInstructions;
+		std::set<std::shared_ptr<Variable>> m_overwrittenVariables;
     public:
         Operation(
 			OperationId id,
@@ -92,9 +92,9 @@ namespace sda::ircode
 
         std::shared_ptr<Variable> getOutput() const;
 
-        const std::set<pcode::Instruction>& getPcodeInstructions() const;
+        std::set<pcode::Instruction*>& getPcodeInstructions();
 
-		std::list<std::shared_ptr<Variable>>& getOverwrittenVariables();
+		std::set<std::shared_ptr<Variable>>& getOverwrittenVariables();
     };
 
 	class UnaryOperation : public Operation

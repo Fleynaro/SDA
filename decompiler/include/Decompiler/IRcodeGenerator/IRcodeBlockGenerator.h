@@ -19,7 +19,8 @@ namespace sda::decompiler
     {
         ircode::Block* m_block;
         TotalMemorySpace* m_totalMemSpace;
-        std::list<std::shared_ptr<ircode::Variable>> m_overwrittenVariables;
+        pcode::Instruction* m_curInstr = nullptr;
+        std::set<std::shared_ptr<ircode::Variable>> m_overwrittenVariables;
     public:
         IRcodeBlockGenerator(ircode::Block* block, TotalMemorySpace* totalMemSpace);
 

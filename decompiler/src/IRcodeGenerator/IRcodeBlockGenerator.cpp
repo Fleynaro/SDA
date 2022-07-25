@@ -72,6 +72,7 @@ const std::map<pcode::InstructionId, ircode::OperationId> InstructionToOperation
 };
 
 void IRcodeBlockGenerator::executePcode(pcode::Instruction* instr) {
+    m_curInstr = instr;
     if (instr->getId() == pcode::InstructionId::NONE || instr->getId() == pcode::InstructionId::UNKNOWN)
         return;
 
@@ -189,7 +190,7 @@ void IRcodeBlockGenerator::genWriteMemory(MemorySpace* memSpace, std::shared_ptr
 
         // check intersection (full or partial)
         if (varOffset < newVarOffset + newVarSize && varOffset + varSize > newVarOffset) {
-            m_overwrittenVariables.push_back(*it);
+            m_overwrittenVariables.insert(*it);
         }
 
         // check full intersection
@@ -349,6 +350,7 @@ std::shared_ptr<ircode::Value> IRcodeBlockGenerator::genReadVarnode(const pcode:
 }
 
 void IRcodeBlockGenerator::genOperation(std::unique_ptr<ircode::Operation> operation) {
+    operation->getPcodeInstructions().insert(m_curInstr);
     operation->getOverwrittenVariables() = m_overwrittenVariables;
     m_overwrittenVariables.clear();
     m_block->getOperations().push_back(std::move(operation));
