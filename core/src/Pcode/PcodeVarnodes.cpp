@@ -27,6 +27,10 @@ RegisterVarnode::RegisterVarnode(Type type, size_t id, size_t index, BitMask mas
     }
 }
 
+bool RegisterVarnode::isRegister() const {
+    return true;
+}
+
 RegisterVarnode::Type RegisterVarnode::getRegType() const {
     return m_type;
 }
@@ -46,6 +50,10 @@ BitMask RegisterVarnode::getMask() const {
 ConstantVarnode::ConstantVarnode(size_t value, size_t size, bool isAddress)
     : Varnode(size), m_value(value), m_isAddress(isAddress)
 {}
+
+bool ConstantVarnode::isRegister() const {
+    return false;
+}
 
 size_t ConstantVarnode::getValue() const {
     return m_value;

@@ -64,6 +64,9 @@ namespace sda::ircode
         std::shared_ptr<Value> value = nullptr;
         Hash baseAddrHash = 0; // this hash can be different from the hash of the value!
         size_t offset = 0;
+
+        // check if it is non-constant address that describes an array
+        bool isDynamic() const;
     };
 
     class Variable : public Value

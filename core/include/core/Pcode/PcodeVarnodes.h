@@ -10,7 +10,7 @@ namespace sda::pcode
     public:
         Varnode(size_t size);
 
-        virtual ~Varnode() {}
+        virtual bool isRegister() const = 0;
 
         size_t getSize() const;
 
@@ -43,6 +43,8 @@ namespace sda::pcode
     public:
         RegisterVarnode(Type type, size_t id, size_t index, BitMask mask, size_t size);
 
+        bool isRegister() const override;
+
         Type getRegType() const;
 
         size_t getRegId() const;
@@ -63,6 +65,8 @@ namespace sda::pcode
         bool m_isAddress;
     public:
         ConstantVarnode(size_t value, size_t size, bool isAddress);
+
+        bool isRegister() const override;
 
         size_t getValue() const;
 

@@ -51,6 +51,10 @@ size_t Register::getSize() const {
     return m_regVarnode->getSize();
 }
 
+bool MemoryAddress::isDynamic() const {
+    return value->getLinearExpr().getTerms().size() > 1;
+}
+
 Variable::Variable(const MemoryAddress& memAddress, Hash hash, size_t size)
     : Value(hash)
     , m_memAddress(memAddress)

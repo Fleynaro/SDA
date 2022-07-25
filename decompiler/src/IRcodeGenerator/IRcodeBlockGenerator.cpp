@@ -72,23 +72,10 @@ const std::map<pcode::InstructionId, ircode::OperationId> InstructionToOperation
 };
 
 void IRcodeBlockGenerator::executePcode(pcode::Instruction* instr) {
-    /* TODO:
-        - учитывать небольшую проблему испольования значений во время чтения памяти;
-    */
     if (instr->getId() == pcode::InstructionId::NONE || instr->getId() == pcode::InstructionId::UNKNOWN)
         return;
 
-    std::shared_ptr<ircode::Value> inputVal1;
-    std::shared_ptr<ircode::Value> inputVal2;
-    if (auto input0 = instr->getInput0()) {
-        inputVal1 = genReadVarnode(input0.get());
-    } else {
-        assert(false && "Invalid instruction");
-    }
-    if (auto input1 = instr->getInput1()) {
-        inputVal2 = genReadVarnode(input1.get());
-    }
-
+    // get output address (this is always a register)
     ircode::MemoryAddress outputMemAddr;
     if (auto output = instr->getOutput()) {
         if (auto regVarnode = std::dynamic_pointer_cast<pcode::RegisterVarnode>(output)) {
@@ -101,84 +88,90 @@ void IRcodeBlockGenerator::executePcode(pcode::Instruction* instr) {
 
     auto it = InstructionToOperation.find(instr->getId());
     if (it != InstructionToOperation.end()) {
-        auto [instrId, operationId] = *it;
-
-        // calculate hash
-        ircode::Hash hash;
-        if (instr->isComutative()) {
-            if (instrId == pcode::InstructionId::INT_ADD) {
-                hash = inputVal1->getHash() + inputVal2->getHash();
-            } if (instrId == pcode::InstructionId::INT_MULT) {
-                hash = inputVal1->getHash() * inputVal2->getHash();
-            } else {
-                boost::hash_combine(hash, operationId);
-                boost::hash_combine(hash, inputVal1->getHash() + inputVal2->getHash());
-            }
-        } else {
-            boost::hash_combine(hash, operationId);
-            boost::hash_combine(hash, inputVal1->getHash());
-            if (inputVal2) {
-                boost::hash_combine(hash, inputVal2->getHash());
-            }
-        }
-        auto outputMemSpace = m_totalMemSpace->getMemSpace(outputMemAddr.baseAddrHash);
-        auto outputVar = createVariable(outputMemAddr, hash, outputMemAddr.value->getSize());
-        genWriteMemory(outputMemSpace, outputVar);
-
-        if (inputVal2) {
-            genOperation(std::make_unique<ircode::BinaryOperation>(operationId, inputVal1, inputVal2, outputVar));
-        } else {
-            genOperation(std::make_unique<ircode::UnaryOperation>(operationId, inputVal1, outputVar));
-        }
-
-        // calculate address as linear expression
-        const auto& linearExprInp1 = inputVal1->getLinearExpr();
-        const auto& linearExprInp2 = inputVal2->getLinearExpr();
-        if (instrId == pcode::InstructionId::INT_ADD) {
-            outputVar->getLinearExpr() = linearExprInp1 + linearExprInp2;
-        } else if (instrId == pcode::InstructionId::INT_MULT) {
-            if (linearExprInp1.getTerms().empty() || linearExprInp2.getTerms().empty())
-                outputVar->getLinearExpr() = linearExprInp1 * linearExprInp2;
-        }
+        genGenericOperation(instr, it->second, outputMemAddr);
     } else {
         auto isCopyInstr = instr->getId() == pcode::InstructionId::COPY;
         auto isLoadInstr = instr->getId() == pcode::InstructionId::LOAD;
-        if (isCopyInstr || isLoadInstr) {
-            auto operationId = ircode::OperationId::COPY;
-            auto inputVal = inputVal1;
-            if (isLoadInstr || isCopyInstr && inputVal1->getType() == ircode::Value::Register) {
-                std::list<IRcodeBlockGenerator::VariableReadInfo> readInfos;
+        auto isStoreInstr = instr->getId() == pcode::InstructionId::STORE;
 
-                if (auto regVarnode = std::dynamic_pointer_cast<pcode::RegisterVarnode>(inputVal1)) {
-                    
+        if (isCopyInstr && !instr->getInput0()->isRegister()) {
+            // constant value copying (RAX:4 = COPY 100:4)
+            genGenericOperation(instr, ircode::OperationId::COPY, outputMemAddr);
+        }
+        else if (isCopyInstr || isLoadInstr || isStoreInstr) {
+            std::list<IRcodeBlockGenerator::VariableReadInfo> varReadInfos;
+
+            // 1) just get values from memory or generate load operations otherwise
+            if (isCopyInstr) {
+                // register value copying (RAX:4 = COPY RCX:4)
+                if (auto regVarnode = std::dynamic_pointer_cast<pcode::RegisterVarnode>(instr->getInput0())) {
+                    varReadInfos = genReadRegisterVarnode(regVarnode.get());
                 }
-                auto baseAddrValue = inputVal1->getLinearExpr().getTerms().front().value;
-                assert(baseAddrValue->getSize() == 8 && "Invalid address size");
-                auto baseAddrHash = baseAddrValue->getHash();
-                auto loadOffset = inputVal1->getLinearExpr().getConstTermValue();
-                auto loadSize = outputMemAddr.value->getSize();
-                const auto& [ baseAddrHash, readOffset ] = getRegisterMemoryAddress(regVarnode);
+            }
+            else if (isStoreInstr) {
+                // register value storing (STORE [RAX:8], RCX:4)
+                if (auto regVarnode = std::dynamic_pointer_cast<pcode::RegisterVarnode>(instr->getInput1())) {
+                    varReadInfos = genReadRegisterVarnode(regVarnode.get());
+                }
 
-                // if it is not array, then use variable from memory
-                if (inputVal1->getLinearExpr().getTerms().size() == 1) {
-                    auto memSpace = m_totalMemSpace->getMemSpace(baseAddrHash);
+                // get destination address value ([RCX:8 + 0x10:8])
+                std::shared_ptr<ircode::Value> addrValue;
+                if (auto input0 = instr->getInput0()) {
+                    addrValue = genReadVarnode(input0.get());
+                }
+
+                // parse destination address value into base and offset (RCX:8 and 0x10:8)
+                outputMemAddr = getMemoryAddress(addrValue);
+            } 
+            else if (isLoadInstr) {
+                // memory value copying (RAX:4 = LOAD [RCX:8 + 0x10:8])
+
+                // get source address value ([RCX:8 + 0x10:8])
+                std::shared_ptr<ircode::Value> addrValue;
+                if (auto input0 = instr->getInput0()) {
+                    addrValue = genReadVarnode(input0.get());
+                }
+
+                // parse source address value into base and offset (RCX:8 and 0x10:8)
+                auto memAddr = getMemoryAddress(addrValue);
+
+                // get memory space and load size
+                auto loadSize = instr->getOutput()->getSize();
+                auto memSpace = m_totalMemSpace->getMemSpace(memAddr.baseAddrHash);
+
+                // check if it is an array
+                if (!memAddr.isDynamic()) {
+                    // see non-array case
                     auto readMask = BitMask(loadSize, 0);
-                    auto varReadInfos = genReadMemory(memSpace, loadOffset, loadSize, readMask);
+                    varReadInfos = genReadMemory(memSpace, memAddr.offset, loadSize, readMask);
+                    if (readMask != 0) {
+                        // this logic is similar to genReadRegisterVarnode()
+                        auto outVariable = genLoadOperation(memAddr, loadSize);
+                        memSpace->variables.push_back(outVariable);
+                        varReadInfos.push_front({ outVariable, 0 });
+                    }
+                } else {
+                    // see array case (e.g. RAX:4 = LOAD [RCX:8 + RDX:8 * 0x4:8 + 0x10:8])
+                    auto outVariable = genLoadOperation(memAddr, loadSize);
+                    varReadInfos.push_front({ outVariable, 0 });
                 }
             }
 
-            ircode::Hash hash;
-            boost::hash_combine(hash, operationId);
-            boost::hash_combine(hash, inputVal->getHash());
+            // 2) generate copy operations
+            for (const auto& varReadInfo : varReadInfos) {
+                auto srcVar = varReadInfo.variable;
 
-            auto outputMemSpace = m_totalMemSpace->getMemSpace(outputMemAddr.baseAddrHash);
-            auto outputVar = createVariable(outputMemAddr, hash, outputMemAddr.value->getSize());
-            genWriteMemory(outputMemSpace, outputVar);
+                ircode::Hash hash;
+                boost::hash_combine(hash, ircode::OperationId::COPY);
+                boost::hash_combine(hash, srcVar->getHash());
 
-            genOperation(std::make_unique<ircode::UnaryOperation>(operationId, inputVal, outputVar));
-        }
-        else if (instr->getId() == pcode::InstructionId::STORE) {
-
+                auto dstMemAddr = outputMemAddr;
+                dstMemAddr.offset = varReadInfo.offset;
+                auto dstMemSpace = m_totalMemSpace->getMemSpace(dstMemAddr.baseAddrHash);
+                auto dstVar = createVariable(dstMemAddr, hash, dstMemAddr.value->getSize());
+                genWriteMemory(dstMemSpace, dstVar);
+                genOperation(std::make_unique<ircode::UnaryOperation>(ircode::OperationId::COPY, srcVar, dstVar));
+            }
         }
     }
 }
@@ -193,6 +186,12 @@ void IRcodeBlockGenerator::genWriteMemory(MemorySpace* memSpace, std::shared_ptr
     while(it != variables.end()) {
         auto varOffset = (*it)->getMemAddress().offset;
         auto varSize = (*it)->getSize();
+
+        // check intersection (full or partial)
+        if (varOffset < newVarOffset + newVarSize && varOffset + varSize > newVarOffset) {
+            m_overwrittenVariables.push_back(*it);
+        }
+
         // check full intersection
         if (varOffset >= newVarOffset && varOffset + varSize <= newVarOffset + newVarSize) {
             it = variables.erase(it);
@@ -259,7 +258,6 @@ std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadM
                 boost::hash_combine(hash, ircode::OperationId::EXTRACT);
                 boost::hash_combine(hash, variable->getHash());
                 boost::hash_combine(hash, extractOffset);
-                boost::hash_combine(hash, extractSize);
 
                 resultVariable = createVariable(memAddress, hash, extractSize);
                 genOperation(std::make_unique<ircode::ExtractOperation>(variable, extractOffset, resultVariable));
@@ -287,6 +285,18 @@ ircode::MemoryAddress IRcodeBlockGenerator::getRegisterMemoryAddress(const pcode
     return { nullptr, baseAddrHash, offset };
 }
 
+ircode::MemoryAddress IRcodeBlockGenerator::getMemoryAddress(std::shared_ptr<ircode::Value> addrValue) const {
+    const auto& addrExpr = addrValue->getLinearExpr();
+    assert(!addrExpr.getTerms().empty());
+    auto baseAddrValue = addrExpr.getTerms().front().value;
+    assert(baseAddrValue->getSize() == 8 && "Invalid address size");
+    return {
+        addrValue,
+        baseAddrValue->getHash(),
+        addrExpr.getConstTermValue()
+    };
+}
+
 std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadRegisterVarnode(const pcode::RegisterVarnode* regVarnode) {
     auto memAddr = getRegisterMemoryAddress(regVarnode);
     auto memSpace = m_totalMemSpace->getMemSpace(memAddr.baseAddrHash);
@@ -297,22 +307,15 @@ std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadR
 
     if (readMask != 0) { // todo: readMask can be 0xFF00FF00, which is not a valid mask
         // todo: see case when request eax, then rax
-        auto regValue = createRegister(regVarnode, memAddr);
-
-        ircode::Hash hash;
-        boost::hash_combine(hash, ircode::OperationId::LOAD);
-        boost::hash_combine(hash, regValue->getHash());
-
-        memAddr.value = regValue;
-        auto regVariable = createVariable(memAddr, hash, readSize);
-        genOperation(std::make_unique<ircode::UnaryOperation>(ircode::OperationId::LOAD, regValue, regVariable));
-        memSpace->variables.push_back(regVariable);
-
-        varReadInfos.push_front({ regVariable, 0 });
+        memAddr.value = createRegister(regVarnode, memAddr);
+        auto outVariable = genLoadOperation(memAddr, readSize);
+        memSpace->variables.push_back(outVariable);
+        varReadInfos.push_front({ outVariable, 0 });
     }
 
     return varReadInfos;
 }
+
 
 std::shared_ptr<ircode::Value> IRcodeBlockGenerator::genReadVarnode(const pcode::Varnode* varnode) {
     if (auto regVarnode = dynamic_cast<const pcode::RegisterVarnode*>(varnode)) {
@@ -326,7 +329,6 @@ std::shared_ptr<ircode::Value> IRcodeBlockGenerator::genReadVarnode(const pcode:
             boost::hash_combine(hash, concatVariable->getHash());
             boost::hash_combine(hash, varReadInfo.variable->getHash());
             boost::hash_combine(hash, varReadInfo.offset);
-            boost::hash_combine(hash, regVarnode->getSize());
             
             auto newConcatVariable = createVariable(ircode::MemoryAddress(), hash, regVarnode->getSize());
             genOperation(std::make_unique<ircode::ConcatOperation>(
@@ -347,7 +349,73 @@ std::shared_ptr<ircode::Value> IRcodeBlockGenerator::genReadVarnode(const pcode:
 }
 
 void IRcodeBlockGenerator::genOperation(std::unique_ptr<ircode::Operation> operation) {
+    operation->getOverwrittenVariables() = m_overwrittenVariables;
+    m_overwrittenVariables.clear();
     m_block->getOperations().push_back(std::move(operation));
+}
+
+void IRcodeBlockGenerator::genGenericOperation(pcode::Instruction* instr, ircode::OperationId operationId, const ircode::MemoryAddress& outputMemAddr) {
+    // get input values
+    std::shared_ptr<ircode::Value> inputVal1;
+    std::shared_ptr<ircode::Value> inputVal2;
+    if (auto input0 = instr->getInput0()) {
+        inputVal1 = genReadVarnode(input0.get());
+    } else {
+        assert(false && "Invalid instruction");
+    }
+    if (auto input1 = instr->getInput1()) {
+        inputVal2 = genReadVarnode(input1.get());
+    }
+    
+    // calculate hash
+    ircode::Hash hash;
+    if (instr->isComutative()) {
+        // INT_ADD, INT_MULT used for address calculation ([x+4y]*2 == 2x+8y == 8y+2x)
+        if (instr->getId() == pcode::InstructionId::INT_ADD) {
+            hash = inputVal1->getHash() + inputVal2->getHash();
+        } if (instr->getId() == pcode::InstructionId::INT_MULT) {
+            hash = inputVal1->getHash() * inputVal2->getHash();
+        } else {
+            boost::hash_combine(hash, operationId);
+            boost::hash_combine(hash, inputVal1->getHash() + inputVal2->getHash());
+        }
+    } else {
+        boost::hash_combine(hash, operationId);
+        boost::hash_combine(hash, inputVal1->getHash());
+        if (inputVal2) {
+            boost::hash_combine(hash, inputVal2->getHash());
+        }
+    }
+    // create variable and save it to the memory space
+    auto outputMemSpace = m_totalMemSpace->getMemSpace(outputMemAddr.baseAddrHash);
+    auto outputVar = createVariable(outputMemAddr, hash, outputMemAddr.value->getSize());
+    genWriteMemory(outputMemSpace, outputVar);
+
+    // generate operation
+    if (inputVal2) {
+        genOperation(std::make_unique<ircode::BinaryOperation>(operationId, inputVal1, inputVal2, outputVar));
+    } else {
+        genOperation(std::make_unique<ircode::UnaryOperation>(operationId, inputVal1, outputVar));
+    }
+
+    // calculate address as linear expression
+    const auto& linearExprInp1 = inputVal1->getLinearExpr();
+    const auto& linearExprInp2 = inputVal2->getLinearExpr();
+    if (instr->getId() == pcode::InstructionId::INT_ADD) {
+        outputVar->getLinearExpr() = linearExprInp1 + linearExprInp2;
+    } else if (instr->getId() == pcode::InstructionId::INT_MULT) {
+        if (linearExprInp1.getTerms().empty() || linearExprInp2.getTerms().empty())
+            outputVar->getLinearExpr() = linearExprInp1 * linearExprInp2;
+    }
+}
+
+std::shared_ptr<ircode::Variable> IRcodeBlockGenerator::genLoadOperation(const ircode::MemoryAddress& memAddr, size_t loadSize) {
+    ircode::Hash hash;
+    boost::hash_combine(hash, ircode::OperationId::LOAD);
+    boost::hash_combine(hash, memAddr.value->getHash());
+
+    auto regVariable = createVariable(memAddr, hash, loadSize);
+    genOperation(std::make_unique<ircode::UnaryOperation>(ircode::OperationId::LOAD, memAddr.value, regVariable));
 }
 
 std::shared_ptr<ircode::Constant> IRcodeBlockGenerator::createConstant(const pcode::ConstantVarnode* constVarnode) const {
@@ -369,6 +437,7 @@ std::shared_ptr<ircode::Register> IRcodeBlockGenerator::createRegister(const pco
 }
 
 std::shared_ptr<ircode::Variable> IRcodeBlockGenerator::createVariable(const ircode::MemoryAddress& memAddress, ircode::Hash hash, size_t size) const {
+    boost::hash_combine(hash, size);
     boost::hash_combine(hash, ircode::Value::Variable);
     auto value = std::make_shared<ircode::Variable>(memAddress, hash, size);
     value->getLinearExpr() = ircode::LinearExpression(value);

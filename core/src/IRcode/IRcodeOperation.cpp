@@ -28,6 +28,10 @@ const std::set<pcode::Instruction>& Operation::getPcodeInstructions() const {
     return m_pcodeInstructions;
 }
 
+std::list<std::shared_ptr<Variable>>& Operation::getOverwrittenVariables() {
+    return m_overwrittenVariables;
+}
+
 UnaryOperation::UnaryOperation(
     OperationId id,
     std::shared_ptr<Value> input,
