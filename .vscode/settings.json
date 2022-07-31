@@ -92,5 +92,9 @@
         "*.ipp": "cpp",
         "memory_resource": "cpp",
         "*.inc": "cpp"
+    },
+
+    "search.exclude": {
+        "**/third-party/**": true
     }
 }

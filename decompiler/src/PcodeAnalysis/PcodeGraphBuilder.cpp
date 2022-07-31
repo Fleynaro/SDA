@@ -1,7 +1,7 @@
 #include "Decompiler/PcodeAnalysis/PcodeGraphBuilder.h"
 #include "Decompiler/PcodeAnalysis/FunctionCallLookup.h"
 #include "Decompiler/PcodeAnalysis/VtableLookup.h"
-#include "Core/Utils.h"
+#include "Core/Utils/IOManip.h"
 
 using namespace sda;
 using namespace sda::decompiler;

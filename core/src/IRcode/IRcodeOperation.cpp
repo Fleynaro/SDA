@@ -24,7 +24,7 @@ std::shared_ptr<Variable> Operation::getOutput() const {
     return m_output;
 }
 
-std::set<pcode::Instruction*>& Operation::getPcodeInstructions() {
+std::set<const pcode::Instruction*>& Operation::getPcodeInstructions() {
     return m_pcodeInstructions;
 }
 

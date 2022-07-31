@@ -19,12 +19,12 @@ namespace sda::decompiler
     {
         ircode::Block* m_block;
         TotalMemorySpace* m_totalMemSpace;
-        pcode::Instruction* m_curInstr = nullptr;
+        const pcode::Instruction* m_curInstr = nullptr;
         std::set<std::shared_ptr<ircode::Variable>> m_overwrittenVariables;
     public:
         IRcodeBlockGenerator(ircode::Block* block, TotalMemorySpace* totalMemSpace);
 
-        void executePcode(pcode::Instruction* instr);
+        void executePcode(const pcode::Instruction* instr);
 
     private:
         void genWriteMemory(MemorySpace* memSpace, std::shared_ptr<ircode::Variable> variable);
@@ -46,7 +46,7 @@ namespace sda::decompiler
 
         void genOperation(std::unique_ptr<ircode::Operation> operation);
 
-        void genGenericOperation(pcode::Instruction* instr, ircode::OperationId operationId, const ircode::MemoryAddress& outputMemAddr);
+        void genGenericOperation(const pcode::Instruction* instr, ircode::OperationId operationId, const ircode::MemoryAddress& outputMemAddr);
 
         std::shared_ptr<ircode::Variable> genLoadOperation(const ircode::MemoryAddress& memAddr, size_t loadSize);
 

@@ -71,7 +71,7 @@ const std::map<pcode::InstructionId, ircode::OperationId> InstructionToOperation
     { pcode::InstructionId::FLOAT_LESSEQUAL, ircode::OperationId::FLOAT_LESSEQUAL },
 };
 
-void IRcodeBlockGenerator::executePcode(pcode::Instruction* instr) {
+void IRcodeBlockGenerator::executePcode(const pcode::Instruction* instr) {
     m_curInstr = instr;
     if (instr->getId() == pcode::InstructionId::NONE || instr->getId() == pcode::InstructionId::UNKNOWN)
         return;
@@ -346,7 +346,7 @@ std::shared_ptr<ircode::Value> IRcodeBlockGenerator::genReadVarnode(const pcode:
         return createConstant(constVarnode);
     }
     
-    assert(false && "unsupported varnode type");
+    throw std::runtime_error("Invalid varnode type");
 }
 
 void IRcodeBlockGenerator::genOperation(std::unique_ptr<ircode::Operation> operation) {
@@ -356,7 +356,7 @@ void IRcodeBlockGenerator::genOperation(std::unique_ptr<ircode::Operation> opera
     m_block->getOperations().push_back(std::move(operation));
 }
 
-void IRcodeBlockGenerator::genGenericOperation(pcode::Instruction* instr, ircode::OperationId operationId, const ircode::MemoryAddress& outputMemAddr) {
+void IRcodeBlockGenerator::genGenericOperation(const pcode::Instruction* instr, ircode::OperationId operationId, const ircode::MemoryAddress& outputMemAddr) {
     // get input values
     std::shared_ptr<ircode::Value> inputVal1;
     std::shared_ptr<ircode::Value> inputVal2;
@@ -418,6 +418,7 @@ std::shared_ptr<ircode::Variable> IRcodeBlockGenerator::genLoadOperation(const i
 
     auto regVariable = createVariable(memAddr, hash, loadSize);
     genOperation(std::make_unique<ircode::UnaryOperation>(ircode::OperationId::LOAD, memAddr.value, regVariable));
+    return regVariable;
 }
 
 std::shared_ptr<ircode::Constant> IRcodeBlockGenerator::createConstant(const pcode::ConstantVarnode* constVarnode) const {

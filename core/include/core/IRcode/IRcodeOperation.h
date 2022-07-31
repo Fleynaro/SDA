@@ -79,7 +79,7 @@ namespace sda::ircode
     {
         OperationId m_id = OperationId::NONE;
         std::shared_ptr<Variable> m_output;
-        std::set<pcode::Instruction*> m_pcodeInstructions;
+        std::set<const pcode::Instruction*> m_pcodeInstructions;
 		std::set<std::shared_ptr<Variable>> m_overwrittenVariables;
     public:
         Operation(
@@ -92,7 +92,7 @@ namespace sda::ircode
 
         std::shared_ptr<Variable> getOutput() const;
 
-        std::set<pcode::Instruction*>& getPcodeInstructions();
+        std::set<const pcode::Instruction*>& getPcodeInstructions();
 
 		std::set<std::shared_ptr<Variable>>& getOverwrittenVariables();
     };

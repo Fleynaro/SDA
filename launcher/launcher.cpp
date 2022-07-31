@@ -16,6 +16,7 @@
 #include "Disasm/Zydis/ZydisInstructionRenderX86.h"
 #include "Decompiler/PcodeAnalysis/PcodeGraphBuilder.h"
 #include "Decompiler/PcodeAnalysis/VtableLookup.h"
+#include "Decompiler/IRcodeGenerator/IRcodeBlockGenerator.h"
 #include <boost/functional/hash.hpp>
 
 using namespace sda;
@@ -101,6 +102,40 @@ void testPcodeDecoder() {
     image->getPcodeGraph()->setCallbacks(graphCallbacks->m_otherCallbacks);
 }
 
+#include "Core/Utils/Lexer/Lexer.h"
+void testDecompiler() {
+    using namespace utils;
+
+    std::stringstream ss;
+    ss << " /*str --> */ 'hello!' /*numbers --> */ 0 012 5 5.5 0x10 0b11 // some comment";
+
+    lexer::IO io(&ss, &std::cout);
+    lexer::Lexer lexer(&io, {
+        { "LOAD", 1 }
+    });
+
+    auto token = lexer.nextToken();
+    while (token) {
+        std::cout << token->toString() << std::endl;
+        token = lexer.nextToken();
+    };
+
+    // using namespace decompiler;
+
+    // const auto pcodeInstructions = {
+    //     pcode::Instruction()
+    // };
+
+    // pcode::Block pcodeBlock;
+    // ircode::Block ircodeBlock(&pcodeBlock);
+    // TotalMemorySpace memorySpace;
+    // IRcodeBlockGenerator ircodeGen(&ircodeBlock, &memorySpace);
+
+    // for (const auto& pcodeInstruction : pcodeInstructions) {
+    //     ircodeGen.executePcode(&pcodeInstruction);
+    // }
+}
+
 void testGeneral() {
     Program program;
     for (auto plugin : GetPlugins("plugins")) {
@@ -134,7 +169,8 @@ void testGeneral() {
 
 int main(int argc, char *argv[])
 {
-    testPcodeDecoder();
+    //testPcodeDecoder();
+    testDecompiler();
     //testGeneral();
     return 0;
 }
