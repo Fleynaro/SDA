@@ -1,4 +1,5 @@
 #include "Disasm/Zydis/ZydisDecoderPcodeX86.h"
+#include "Disasm/Zydis/ZydisPlatformSpec.h"
 #include <sstream>
 #include <iomanip>
 
@@ -1345,7 +1346,7 @@ std::shared_ptr<Varnode> ZydisDecoderPcodeX86::generateGenericOperation(
 	return varnodeOutput;
 }
 
-Instruction* ZydisDecoderPcodeX86::generateInstruction(
+pcode::Instruction* ZydisDecoderPcodeX86::generateInstruction(
     InstructionId id,
     std::shared_ptr<Varnode> input0,
     std::shared_ptr<Varnode> input1,
@@ -1360,7 +1361,7 @@ Instruction* ZydisDecoderPcodeX86::generateInstruction(
 		}
 	}
 
-    auto instr = Instruction(
+    auto instr = pcode::Instruction(
 		id,
 		input0,
 		input1,
@@ -1574,46 +1575,11 @@ std::shared_ptr<Varnode> ZydisDecoderPcodeX86::getConditionFlagVarnode(FlagCond 
 }
 
 std::shared_ptr<RegisterVarnode> ZydisDecoderPcodeX86::getRegisterVarnode(ZydisRegister regId, size_t size, int offset) const {
-    auto type = RegisterVarnode::Generic;
-    size_t id = 0;
-    size_t index = static_cast<size_t>(offset) / 8;
+	ZydisPlatformSpec platformSpec;
+    auto id = platformSpec.transformZydisRegId(regId);
+	auto type = platformSpec.getRegisterType(id);
+    size_t index = static_cast<size_t>(offset) / MaxMaskSizeInBytes;
     auto mask = BitMask(size, offset);
-
-	if (regId == ZYDIS_REGISTER_RIP) {
-		id = RegisterVarnode::InstructionPointerId;
-        type = RegisterVarnode::InstructionPointer;
-    }
-    else if (regId == ZYDIS_REGISTER_RSP) {
-		id = RegisterVarnode::StackPointerId;
-        type = RegisterVarnode::StackPointer;
-    }
-	else if (regId >= ZYDIS_REGISTER_AL && regId <= ZYDIS_REGISTER_BL) {
-		id = ZYDIS_REGISTER_RAX + regId - ZYDIS_REGISTER_AL;
-	}
-	else if (regId >= ZYDIS_REGISTER_AH && regId <= ZYDIS_REGISTER_BH) {
-		id = ZYDIS_REGISTER_RAX + regId - ZYDIS_REGISTER_AH;
-	}
-	else if (regId >= ZYDIS_REGISTER_SPL && regId <= ZYDIS_REGISTER_R15B) {
-		id = ZYDIS_REGISTER_RAX + regId - ZYDIS_REGISTER_AH;
-	}
-	else if (regId >= ZYDIS_REGISTER_AX && regId <= ZYDIS_REGISTER_R15W) {
-		id = ZYDIS_REGISTER_RAX + regId - ZYDIS_REGISTER_AX;
-	}
-	else if (regId >= ZYDIS_REGISTER_EAX && regId <= ZYDIS_REGISTER_R15D) {
-		id = ZYDIS_REGISTER_RAX + regId - ZYDIS_REGISTER_EAX;
-	}
-	else if (regId >= ZYDIS_REGISTER_RAX && regId <= ZYDIS_REGISTER_R15) {
-		id = regId;
-	}
-	else if (regId >= ZYDIS_REGISTER_MM0 && regId <= ZYDIS_REGISTER_MM7) {
-		id = regId;
-        type = RegisterVarnode::Vector;
-	}
-	else if (regId >= ZYDIS_REGISTER_XMM0 && regId <= ZYDIS_REGISTER_XMM31) {
-		id = regId;
-        type = RegisterVarnode::Vector;
-	}
-
     return std::make_shared<RegisterVarnode>(type, id, index, mask, size);
 }
 

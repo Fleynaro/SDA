@@ -14,6 +14,7 @@
 #include "Change.h"
 #include "Disasm/Zydis/ZydisDecoderPcodeX86.h"
 #include "Disasm/Zydis/ZydisInstructionRenderX86.h"
+#include "Disasm/Zydis/ZydisPlatformSpec.h"
 #include "Decompiler/PcodeAnalysis/PcodeGraphBuilder.h"
 #include "Decompiler/PcodeAnalysis/VtableLookup.h"
 #include "Decompiler/IRcodeGenerator/IRcodeBlockGenerator.h"
@@ -45,8 +46,8 @@ void testPcodeDecoder() {
     
     auto offset = image->getEntryPointOffset();
 
-    disasm::ZydisRegisterVarnodeRender regRender;
-    pcode::Instruction::StreamRender pcodeInstrRender(std::cout, &regRender);
+    disasm::ZydisPlatformSpec platformSpec;
+    pcode::Instruction::StreamRender pcodeInstrRender(std::cout, &platformSpec);
     disasm::Instruction::StreamRender srcInstrRender(std::cout);
     while (offset < image->getSize()) {
         std::vector<uint8_t> data(0x100);
@@ -102,38 +103,42 @@ void testPcodeDecoder() {
     image->getPcodeGraph()->setCallbacks(graphCallbacks->m_otherCallbacks);
 }
 
-#include "Core/Utils/Lexer/Lexer.h"
+#include "Core/Pcode/PcodeParser.h"
 void testDecompiler() {
-    using namespace utils;
-
     std::stringstream ss;
-    ss << " /*str --> */ 'hello!' /*numbers --> */ 0 012 5 5.5 0x10 0b11 // some comment";
+    ss << "\
+        $U1:4 = COPY 2:4 \
+        $U2:4 = COPY 3:4 \
+        $U3:4 = INT_ADD $U1:4, $U2:4 \
+    ";
 
-    lexer::IO io(&ss, &std::cout);
-    lexer::Lexer lexer(&io, {
-        { "LOAD", 1 }
-    });
+    disasm::ZydisPlatformSpec platformSpec;
 
-    auto token = lexer.nextToken();
-    while (token) {
-        std::cout << token->toString() << std::endl;
-        token = lexer.nextToken();
+    pcode::Instruction::StreamRender pcodeInstrRender(std::cout, &platformSpec);
+
+    utils::lexer::IO io(ss, std::cout);
+    pcode::Parser parser(&io, &platformSpec);
+    auto instructions = parser.parse();
+    for (auto& instr : instructions) {
+        std::cout << "    ";
+        pcodeInstrRender.render(&instr);
+        std::cout << std::endl;
+    }
+
+    using namespace decompiler;
+
+    const auto pcodeInstructions = {
+        pcode::Instruction()
     };
 
-    // using namespace decompiler;
+    pcode::Block pcodeBlock;
+    ircode::Block ircodeBlock(&pcodeBlock);
+    TotalMemorySpace memorySpace;
+    IRcodeBlockGenerator ircodeGen(&ircodeBlock, &memorySpace);
 
-    // const auto pcodeInstructions = {
-    //     pcode::Instruction()
-    // };
-
-    // pcode::Block pcodeBlock;
-    // ircode::Block ircodeBlock(&pcodeBlock);
-    // TotalMemorySpace memorySpace;
-    // IRcodeBlockGenerator ircodeGen(&ircodeBlock, &memorySpace);
-
-    // for (const auto& pcodeInstruction : pcodeInstructions) {
-    //     ircodeGen.executePcode(&pcodeInstruction);
-    // }
+    for (const auto& pcodeInstruction : pcodeInstructions) {
+        ircodeGen.executePcode(&pcodeInstruction);
+    }
 }
 
 void testGeneral() {

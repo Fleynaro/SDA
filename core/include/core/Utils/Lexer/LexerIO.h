@@ -14,8 +14,8 @@ namespace utils::lexer
             size_t m_column = 0;
         };
 
-        std::istream* m_streamIn;
-        std::ostream* m_streamOut;
+        std::istream& m_streamIn;
+        std::ostream& m_streamOut;
         std::string m_curLine;
         std::size_t m_errorsCount = 0;
         std::size_t m_errorsCountOnLine = 0;
@@ -26,7 +26,7 @@ namespace utils::lexer
         char m_letter;
         LetterPosition m_letterPos;
     public:
-        IO(std::istream* streamIn, std::ostream* streamOut);
+        IO(std::istream& streamIn, std::ostream& streamOut);
 
         // Reads the next letter from the input stream.
         char nextLetter();

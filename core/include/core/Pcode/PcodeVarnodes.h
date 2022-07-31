@@ -53,10 +53,7 @@ namespace sda::pcode
 
         BitMask getMask() const;
 
-        class Render {
-		public:
-            virtual std::string getRegisterName(const RegisterVarnode* varnode) const = 0;
-        };
+        size_t getOffset() const;
     };
 
     class ConstantVarnode : public Varnode

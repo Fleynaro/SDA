@@ -2,7 +2,9 @@
 #include <memory>
 #include <magic_enum.hpp>
 #include "PcodeVarnodes.h"
+#include "PcodePlatformSpec.h"
 #include "Core/Offset.h"
+#include "Core/Utils/Lexer/Lexer.h"
 
 namespace sda::pcode
 {
@@ -155,9 +157,9 @@ namespace sda::pcode
 		bool isComutative() const;
 
 		class Render {
-			const RegisterVarnode::Render* m_registerRender;
+			const PlatformSpec* m_platformSpec;
 		public:
-			Render(const RegisterVarnode::Render* registerRender);
+			Render(const PlatformSpec* platformSpec);
 
 			virtual void render(const Instruction* instruction) const;
 
@@ -178,7 +180,7 @@ namespace sda::pcode
 		class StreamRender : public Render {
 			std::ostream& m_output;
 		public:
-			StreamRender(std::ostream& output, const RegisterVarnode::Render* registerRender);
+			StreamRender(std::ostream& output, const PlatformSpec* platformSpec);
 
 		protected:
 			void renderToken(const std::string& text, Token token) const override;

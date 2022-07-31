@@ -70,8 +70,8 @@ bool Instruction::isComutative() const {
         m_id == InstructionId::FLOAT_NOTEQUAL;
 }
 
-Instruction::Render::Render(const RegisterVarnode::Render* registerRender)
-    : m_registerRender(registerRender)
+Instruction::Render::Render(const PlatformSpec* platformSpec)
+    : m_platformSpec(platformSpec)
 {}
 
 void Instruction::Render::render(const Instruction* instruction) const {
@@ -99,8 +99,27 @@ void Instruction::Render::renderVarnode(const Varnode* varnode) const {
             ss << "$U" << (regVarnode->getRegIndex() + 1) << ":" << regVarnode->getSize();
             renderToken(ss.str(), Token::VirtRegister);
         } else {
-            auto regName = m_registerRender->getRegisterName(regVarnode);
-            renderToken(regName, Token::Register);
+            std::stringstream ss;
+            if (regVarnode->getRegType() == pcode::RegisterVarnode::Flag) {
+                ss << m_platformSpec->getRegisterFlagName(varnode->getMask()) + ":1";
+            } else {
+                auto size = regVarnode->getSize();
+                auto maskStr = std::to_string(size);
+                if (regVarnode->getRegType() == pcode::RegisterVarnode::Vector) {
+                    if (size == 4 || size == 8) {
+                        maskStr = std::string(size == 4 ? "D" : "Q");
+                        maskStr += static_cast<char>('a' + static_cast<char>(regVarnode->getOffset() / (size * BitsInBytes)));
+                    }
+                }
+                if (regVarnode->getRegType() == pcode::RegisterVarnode::StackPointer) {
+                    ss << "RSP:" << maskStr;
+                } else if (regVarnode->getRegType() == pcode::RegisterVarnode::InstructionPointer) {
+                    ss << "RIP:" << maskStr;
+                } else {
+                    ss << m_platformSpec->getRegisterName(regVarnode->getRegId()) << ":" << maskStr;
+                }
+            }
+            renderToken(ss.str(), Token::Register);
         }
     }
     else if (auto constVarnode = dynamic_cast<const ConstantVarnode*>(varnode)) {
@@ -112,8 +131,8 @@ void Instruction::Render::renderVarnode(const Varnode* varnode) const {
     }
 }
 
-Instruction::StreamRender::StreamRender(std::ostream& output, const RegisterVarnode::Render* registerRender)
-    : Render(registerRender), m_output(output)
+Instruction::StreamRender::StreamRender(std::ostream& output, const PlatformSpec* platformSpec)
+    : Render(platformSpec), m_output(output)
 {}
 
 void Instruction::StreamRender::renderToken(const std::string& text, Token token) const {

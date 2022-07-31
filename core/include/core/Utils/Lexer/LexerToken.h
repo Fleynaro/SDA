@@ -14,29 +14,26 @@ namespace utils::lexer
 
         Type type;
 
-        virtual bool isKeyword(size_t id) const;
+        virtual bool isKeyword(const std::string& keyword) const;
 
         virtual bool isSymbol(char symbol) const;
+
+        bool isEnd() const;
         
         virtual std::string toString() const = 0;
     };
 
-    struct TokenIdent : Token {
+    // Identifier or keyword
+    struct IdentToken : Token {
         std::string name;
+
+        bool isKeyword(const std::string& keyword) const override;
 
         std::string toString() const override;
     };
 
-    struct TokenKeyword : Token {
-        size_t id;
-        std::string name;
-
-        bool isKeyword(size_t id) const override;
-
-        std::string toString() const override;
-    };
-
-    struct TokenSymbol : Token {
+    // Symbol (e.g. '+', '-', '*', '/', '=', ';', etc.)
+    struct SymbolToken : Token {
         char symbol;
 
         bool isSymbol(char symbol) const override;
@@ -44,7 +41,8 @@ namespace utils::lexer
         std::string toString() const override;
     };
 
-    struct TokenConst : Token {
+    // Constant (integer, real, string)
+    struct ConstToken : Token {
         enum ValueType {
             Integer,
             Real,

@@ -2,6 +2,10 @@
 
 namespace sda
 {
+    const size_t BitsInBytes = 8;
+    const size_t MaxMaskSizeInBytes = 8;
+    const size_t MaxMaskSizeInBits = MaxMaskSizeInBytes * BitsInBytes;
+
     class BitMask
     {
     public:

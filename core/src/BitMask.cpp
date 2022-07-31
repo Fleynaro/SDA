@@ -3,13 +3,13 @@
 using namespace sda;
 
 size_t GetBitMask64BySizeInBits(size_t sizeInBits) {
-	if (sizeInBits >= 64) // todo: increase from 8 to 16 bytes (it requires 128-bit arithmetic implementation)
+	if (sizeInBits >= MaxMaskSizeInBits) // todo: increase from 8 to 16 bytes (it requires 128-bit arithmetic implementation)
 		return -1;
 	return (static_cast<size_t>(1) << sizeInBits) - 1;
 }
 
 size_t GetBitMask64BySize(size_t size) {
-	return GetBitMask64BySizeInBits(size * 8);
+	return GetBitMask64BySizeInBits(size * BitsInBytes);
 }
 
 BitMask::BitMask(Value mask)
@@ -17,11 +17,11 @@ BitMask::BitMask(Value mask)
 {}
 
 BitMask::BitMask(size_t size, size_t offset)
-    : m_mask(GetBitMask64BySize(size) << (offset % 8) * 8)
+    : m_mask(GetBitMask64BySize(size) << (offset % MaxMaskSizeInBytes) * BitsInBytes)
 {}
 
 size_t BitMask::getMaxSizeInBits() const {
-	return sizeof(Value) * 8;
+	return sizeof(Value) * BitsInBytes;
 }
 
 size_t BitMask::getOffset() const {

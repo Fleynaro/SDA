@@ -91,7 +91,8 @@
         "numeric": "cpp",
         "*.ipp": "cpp",
         "memory_resource": "cpp",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "register.h": "c"
     },
 
     "search.exclude": {

@@ -2,7 +2,7 @@
 
 using namespace utils::lexer;
 
-bool Token::isKeyword(size_t id) const {
+bool Token::isKeyword(const std::string& keyword) const {
     return false;
 }
 
@@ -10,27 +10,27 @@ bool Token::isSymbol(char symbol) const {
     return false;
 }
 
-std::string TokenIdent::toString() const {
+bool Token::isEnd() const {
+    return isSymbol('\0');
+}
+
+bool IdentToken::isKeyword(const std::string& keyword) const {
+    return name == keyword;
+}
+
+std::string IdentToken::toString() const {
     return name;
 }
 
-bool TokenKeyword::isKeyword(size_t id) const {
-    return id == this->id;
-}
-
-std::string TokenKeyword::toString() const {
-    return name;
-}
-
-bool TokenSymbol::isSymbol(char symbol) const {
+bool SymbolToken::isSymbol(char symbol) const {
     return symbol == this->symbol;
 }
 
-std::string TokenSymbol::toString() const {
+std::string SymbolToken::toString() const {
     return std::string(1, symbol);
 }
 
-std::string TokenConst::toString() const {
+std::string ConstToken::toString() const {
     switch (valueType) {
     case ValueType::Integer:
         return std::to_string(value.integer);

@@ -2,8 +2,8 @@
 
 using namespace utils::lexer;
 
-Lexer::Lexer(IO* io, const std::map<std::string, size_t>& keywords)
-    : m_io(io), m_keywords(keywords)
+Lexer::Lexer(IO* io)
+    : m_io(io)
 {
     nextLetter();
 }
@@ -12,8 +12,6 @@ std::unique_ptr<Token> Lexer::nextToken() {
     auto token = nextTokenInternal();
     while (!token)
         token = nextTokenInternal();
-    if (token->isSymbol('\0'))
-        return nullptr;
     return token;
 }
 
@@ -23,8 +21,8 @@ std::unique_ptr<Token> Lexer::nextTokenInternal() {
         nextLetter();
 
     // parse an identifier or keyword
-    if (std::isalpha(m_letter))
-        return nextIdentOrKeywordToken();
+    if (std::isalpha(m_letter) || m_letter == '_')
+        return nextIdentToken();
 
     // parse a number
     if (std::isdigit(m_letter))
@@ -34,26 +32,17 @@ std::unique_ptr<Token> Lexer::nextTokenInternal() {
     return nextOtherToken();
 }
 
-std::unique_ptr<Token> Lexer::nextIdentOrKeywordToken() {
+std::unique_ptr<Token> Lexer::nextIdentToken() {
     std::string name;
-    while (std::isalnum(m_letter)) {
+    while (std::isalnum(m_letter) || m_letter == '_') {
         name += m_letter;
         nextLetter();
     }
 
-    auto it = m_keywords.find(name);
-    if (it != m_keywords.end()) {
-        TokenKeyword token;
-        token.type = Token::Keyword;
-        token.id = it->second;
-        token.name = name;
-        return std::make_unique<TokenKeyword>(token);
-    }
-
-    TokenIdent token;
+    IdentToken token;
     token.type = Token::Ident;
     token.name = name;
-    return std::make_unique<TokenIdent>(token);
+    return std::make_unique<IdentToken>(token);
 }
 
 std::unique_ptr<Token> Lexer::nextNumberToken() {
@@ -90,19 +79,19 @@ std::unique_ptr<Token> Lexer::nextNumberToken() {
             nextLetter();
         }
         auto real = std::stod(strNumber);
-        TokenConst token;
+        ConstToken token;
         token.type = Token::Const;
-        token.valueType = TokenConst::Real;
+        token.valueType = ConstToken::Real;
         token.value.real = real;
-        return std::make_unique<TokenConst>(token);
+        return std::make_unique<ConstToken>(token);
     }
 
     auto integer = std::stoull(strNumber, nullptr, base);
-    TokenConst token;
+    ConstToken token;
     token.type = Token::Const;
-    token.valueType = TokenConst::Integer;
+    token.valueType = ConstToken::Integer;
     token.value.integer = integer;
-    return std::make_unique<TokenConst>(token);
+    return std::make_unique<ConstToken>(token);
 }
 
 std::unique_ptr<Token> Lexer::nextOtherToken() {
@@ -171,19 +160,19 @@ std::unique_ptr<Token> Lexer::nextOtherToken() {
             }
         }
         nextLetter();
-        TokenConst token;
+        ConstToken token;
         token.type = Token::Const;
-        token.valueType = TokenConst::String;
+        token.valueType = ConstToken::String;
         token.value.string = str;
-        return std::make_unique<TokenConst>(token);
+        return std::make_unique<ConstToken>(token);
     }
     }
 
     // other symbol (+, /, $, etc.)
-    TokenSymbol token;
+    SymbolToken token;
     token.type = Token::Symbol;
     token.symbol = startLetter;
-    return std::make_unique<TokenSymbol>(token);
+    return std::make_unique<SymbolToken>(token);
 }
 
 void Lexer::nextLetter() {

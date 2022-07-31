@@ -47,6 +47,10 @@ BitMask RegisterVarnode::getMask() const {
     return m_mask;
 }
 
+size_t RegisterVarnode::getOffset() const {
+    return m_mask.getOffset() + m_index * 64;
+}
+
 ConstantVarnode::ConstantVarnode(size_t value, size_t size, bool isAddress)
     : Varnode(size), m_value(value), m_isAddress(isAddress)
 {}
