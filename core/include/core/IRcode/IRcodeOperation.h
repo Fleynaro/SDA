@@ -86,6 +86,8 @@ namespace sda::ircode
 			OperationId id,
 			std::shared_ptr<Variable> output);
 
+		virtual ~Operation() = default;
+
         OperationId getId() const;
 
 		size_t getSize() const;

@@ -6,6 +6,9 @@
 #include "Core/Context.h"
 #include "Core/Image/AddressSpace.h"
 #include "Core/Image/Image.h"
+#include "Core/Pcode/PcodeParser.h"
+#include "Core/Pcode/PcodeRender.h"
+#include "Core/IRcode/IRcodeRender.h"
 #include "Database/Database.h"
 #include "Database/Schema.h"
 #include "Database/Loader.h"
@@ -47,7 +50,7 @@ void testPcodeDecoder() {
     auto offset = image->getEntryPointOffset();
 
     disasm::ZydisPlatformSpec platformSpec;
-    pcode::Instruction::StreamRender pcodeInstrRender(std::cout, &platformSpec);
+    pcode::StreamRender pcodeRender(std::cout, &platformSpec);
     disasm::Instruction::StreamRender srcInstrRender(std::cout);
     while (offset < image->getSize()) {
         std::vector<uint8_t> data(0x100);
@@ -60,7 +63,7 @@ void testPcodeDecoder() {
         auto decodedInstructions = pcodeDecoder.getDecodedInstructions();
         for (auto& decodedInstruction : decodedInstructions) {
             std::cout << "    ";
-            pcodeInstrRender.render(&decodedInstruction);
+            pcodeRender.renderInstruction(&decodedInstruction);
             std::cout << std::endl;
         }
 
@@ -103,33 +106,35 @@ void testPcodeDecoder() {
     image->getPcodeGraph()->setCallbacks(graphCallbacks->m_otherCallbacks);
 }
 
-#include "Core/Pcode/PcodeParser.h"
 void testDecompiler() {
     std::stringstream ss;
+    // ss << "\
+    //     $U1:4 = COPY 2:4 \
+    //     rax:4 = COPY 3:4 \
+    //     $U2:4 = COPY rax:4 \
+    //     $U3:4 = INT_ADD $U1:4, $U2:4 \
+    // ";
     ss << "\
-        $U1:4 = COPY 2:4 \
-        $U2:4 = COPY 3:4 \
-        $U3:4 = INT_ADD $U1:4, $U2:4 \
+        rbx:8 = INT_MULT rdx:8, 4:8 \
+        rbx:8 = INT_ADD rcx:8, rbx:8 \
+        rbx:8 = INT_ADD rbx:8, 0x10:8 \
+        STORE rbx:8, 1.0:8 \
     ";
 
     disasm::ZydisPlatformSpec platformSpec;
 
-    pcode::Instruction::StreamRender pcodeInstrRender(std::cout, &platformSpec);
+    pcode::StreamRender pcodeRender(std::cout, &platformSpec);
 
     utils::lexer::IO io(ss, std::cout);
     pcode::Parser parser(&io, &platformSpec);
-    auto instructions = parser.parse();
-    for (auto& instr : instructions) {
+    auto pcodeInstructions = parser.parse();
+    for (auto& instr : pcodeInstructions) {
         std::cout << "    ";
-        pcodeInstrRender.render(&instr);
+        pcodeRender.renderInstruction(&instr);
         std::cout << std::endl;
     }
 
     using namespace decompiler;
-
-    const auto pcodeInstructions = {
-        pcode::Instruction()
-    };
 
     pcode::Block pcodeBlock;
     ircode::Block ircodeBlock(&pcodeBlock);
@@ -138,6 +143,14 @@ void testDecompiler() {
 
     for (const auto& pcodeInstruction : pcodeInstructions) {
         ircodeGen.executePcode(&pcodeInstruction);
+    }
+
+    ircode::StreamRender ircodeRender(std::cout, &pcodeRender);
+    ircodeRender.setExtendInfo(true);
+    for (const auto& ircodeOp : ircodeBlock.getOperations()) {
+        std::cout << "    ";
+        ircodeRender.renderOperation(ircodeOp.get());
+        std::cout << std::endl;
     }
 }
 

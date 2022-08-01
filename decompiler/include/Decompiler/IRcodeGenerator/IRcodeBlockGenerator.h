@@ -19,10 +19,11 @@ namespace sda::decompiler
     {
         ircode::Block* m_block;
         TotalMemorySpace* m_totalMemSpace;
+        size_t m_nextVarId;
         const pcode::Instruction* m_curInstr = nullptr;
         std::set<std::shared_ptr<ircode::Variable>> m_overwrittenVariables;
     public:
-        IRcodeBlockGenerator(ircode::Block* block, TotalMemorySpace* totalMemSpace);
+        IRcodeBlockGenerator(ircode::Block* block, TotalMemorySpace* totalMemSpace, size_t nextVarId = 1);
 
         void executePcode(const pcode::Instruction* instr);
 
@@ -54,6 +55,6 @@ namespace sda::decompiler
 
         std::shared_ptr<ircode::Register> createRegister(const pcode::RegisterVarnode* regVarnode, const ircode::MemoryAddress& memAddr) const;
 
-        std::shared_ptr<ircode::Variable> createVariable(const ircode::MemoryAddress& memAddress, ircode::Hash hash, size_t size) const;
+        std::shared_ptr<ircode::Variable> createVariable(const ircode::MemoryAddress& memAddress, ircode::Hash hash, size_t size);
     };
 };

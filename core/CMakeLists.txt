@@ -5,6 +5,8 @@ find_package(
     json)
 find_package(
     magic_enum CONFIG REQUIRED)
+find_path(
+    RANG_INCLUDE_DIRS "rang.hpp")
 
 file(GLOB_RECURSE CORE_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
@@ -16,7 +18,8 @@ add_library(
 target_include_directories(
     core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${Boost_INCLUDE_DIRS})
+    ${Boost_INCLUDE_DIRS}
+    ${RANG_INCLUDE_DIRS})
 
 target_link_libraries(
     core PUBLIC

@@ -13,8 +13,8 @@ MemorySpace* TotalMemorySpace::getMemSpace(ircode::Hash baseAddrHash) {
     return &it->second;
 }
 
-IRcodeBlockGenerator::IRcodeBlockGenerator(ircode::Block* block, TotalMemorySpace* totalMemSpace)
-    : m_block(block), m_totalMemSpace(totalMemSpace)
+IRcodeBlockGenerator::IRcodeBlockGenerator(ircode::Block* block, TotalMemorySpace* totalMemSpace, size_t nextVarId)
+    : m_block(block), m_totalMemSpace(totalMemSpace), m_nextVarId(nextVarId)
 {}
 
 const std::map<pcode::InstructionId, ircode::OperationId> InstructionToOperation = {
@@ -396,18 +396,18 @@ void IRcodeBlockGenerator::genGenericOperation(const pcode::Instruction* instr, 
     // generate operation
     if (inputVal2) {
         genOperation(std::make_unique<ircode::BinaryOperation>(operationId, inputVal1, inputVal2, outputVar));
+
+        // calculate address as linear expression
+        const auto& linearExprInp1 = inputVal1->getLinearExpr();
+        const auto& linearExprInp2 = inputVal2->getLinearExpr();
+        if (instr->getId() == pcode::InstructionId::INT_ADD) {
+            outputVar->getLinearExpr() = linearExprInp1 + linearExprInp2;
+        } else if (instr->getId() == pcode::InstructionId::INT_MULT) {
+            if (linearExprInp1.getTerms().empty() || linearExprInp2.getTerms().empty())
+                outputVar->getLinearExpr() = linearExprInp1 * linearExprInp2;
+        }
     } else {
         genOperation(std::make_unique<ircode::UnaryOperation>(operationId, inputVal1, outputVar));
-    }
-
-    // calculate address as linear expression
-    const auto& linearExprInp1 = inputVal1->getLinearExpr();
-    const auto& linearExprInp2 = inputVal2->getLinearExpr();
-    if (instr->getId() == pcode::InstructionId::INT_ADD) {
-        outputVar->getLinearExpr() = linearExprInp1 + linearExprInp2;
-    } else if (instr->getId() == pcode::InstructionId::INT_MULT) {
-        if (linearExprInp1.getTerms().empty() || linearExprInp2.getTerms().empty())
-            outputVar->getLinearExpr() = linearExprInp1 * linearExprInp2;
     }
 }
 
@@ -439,10 +439,10 @@ std::shared_ptr<ircode::Register> IRcodeBlockGenerator::createRegister(const pco
     return value;
 }
 
-std::shared_ptr<ircode::Variable> IRcodeBlockGenerator::createVariable(const ircode::MemoryAddress& memAddress, ircode::Hash hash, size_t size) const {
+std::shared_ptr<ircode::Variable> IRcodeBlockGenerator::createVariable(const ircode::MemoryAddress& memAddress, ircode::Hash hash, size_t size) {
     boost::hash_combine(hash, size);
     boost::hash_combine(hash, ircode::Value::Variable);
-    auto value = std::make_shared<ircode::Variable>(memAddress, hash, size);
+    auto value = std::make_shared<ircode::Variable>(m_nextVarId++, memAddress, hash, size);
     value->getLinearExpr() = ircode::LinearExpression(value);
     return value;
 }

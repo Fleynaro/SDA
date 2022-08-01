@@ -71,12 +71,15 @@ namespace sda::ircode
 
     class Variable : public Value
     {
+        size_t m_id;
         MemoryAddress m_memAddress;
         size_t m_size;
     public:
-        Variable(const MemoryAddress& memAddress, Hash hash, size_t size);
+        Variable(size_t id, const MemoryAddress& memAddress, Hash hash, size_t size);
 
         Type getType() const override;
+
+        size_t getId() const;
 
         const MemoryAddress& getMemAddress() const;
 

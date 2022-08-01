@@ -155,35 +155,5 @@ namespace sda::pcode
 
 		// Check if the instruction has comutative operands (INT_ADD, INT_MULT, INT_XOR, INT_AND, INT_OR)
 		bool isComutative() const;
-
-		class Render {
-			const PlatformSpec* m_platformSpec;
-		public:
-			Render(const PlatformSpec* platformSpec);
-
-			virtual void render(const Instruction* instruction) const;
-
-		protected:
-			virtual void renderVarnode(const Varnode* varnode) const;
-
-			enum class Token {
-				Mnemonic,
-				Register,
-				VirtRegister,
-				Number,
-				Other
-			};
-
-			virtual void renderToken(const std::string& text, Token token) const = 0;
-		};
-
-		class StreamRender : public Render {
-			std::ostream& m_output;
-		public:
-			StreamRender(std::ostream& output, const PlatformSpec* platformSpec);
-
-		protected:
-			void renderToken(const std::string& text, Token token) const override;
-		};
     };
 };

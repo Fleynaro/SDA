@@ -55,14 +55,19 @@ bool MemoryAddress::isDynamic() const {
     return value->getLinearExpr().getTerms().size() > 1;
 }
 
-Variable::Variable(const MemoryAddress& memAddress, Hash hash, size_t size)
+Variable::Variable(size_t id, const MemoryAddress& memAddress, Hash hash, size_t size)
     : Value(hash)
+    , m_id(id)
     , m_memAddress(memAddress)
     , m_size(size)
 {}
 
 Value::Type Variable::getType() const {
     return Type::Variable;
+}
+
+size_t Variable::getId() const {
+    return m_id;
 }
 
 const MemoryAddress& Variable::getMemAddress() const {

@@ -26,15 +26,23 @@ std::list<Instruction> Parser::parse() {
 }
 
 Instruction Parser::parseInstruction(InstructionOffset offset) {
-    auto output = parseRegisterVarnode();
-    accept('=');
-    auto instrId = parseInstructionId();
-    auto input0 = parseVarnode();
+    std::shared_ptr<Varnode> output;
+    std::shared_ptr<Varnode> input0;
     std::shared_ptr<Varnode> input1;
+
+    if (!m_token->isKeyword("STORE")) {
+        output = parseRegisterVarnode();
+        accept('=');
+    }
+
+    auto instrId = parseInstructionId();
+
+    input0 = parseVarnode();
     if (m_token->isSymbol(',')) {
         nextToken();
         input1 = parseVarnode();
     }
+    
     return Instruction(instrId, input0, input1, output, offset);
 }
 

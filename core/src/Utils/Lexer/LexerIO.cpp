@@ -1,4 +1,5 @@
 #include "Core/Utils/Lexer/LexerIO.h"
+#include "rang.hpp"
 
 using namespace utils::lexer;
 
@@ -37,9 +38,12 @@ void IO::error(const ErrorCode errorCode, const std::string& text, size_t colPos
         listCurLineOnce();
 
         if (m_errorsCountOnLine < MAX_ERRORS_ON_LINE) {
+            m_streamOut << rang::fg::gray;
             m_streamOut << "**" << std::setfill('0') << std::setw(2) << (m_errorsCount + 1) << "**";
             for (int i = 0; i < colPos - 2; ++i)
                 m_streamOut << " ";
+
+            m_streamOut << rang::fg::red;
             m_streamOut << "^ error code " << errorCode << std::endl;
             m_streamOut << "******  " << text << std::endl;
 
@@ -47,8 +51,11 @@ void IO::error(const ErrorCode errorCode, const std::string& text, size_t colPos
             m_lastErrorColPos = colPos;
         }
         else  if (m_errorsCountOnLine == MAX_ERRORS_ON_LINE) {
+            m_streamOut << rang::fg::red;
             m_streamOut << "******  " << "Too many errors on this line" << std::endl;
         }
+
+        m_streamOut << rang::fg::reset;
     }
 
     m_errorsCount++;

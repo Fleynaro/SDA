@@ -95,6 +95,10 @@
         "register.h": "c"
     },
 
+    "cmake.debugConfig": {
+        "console": "integratedTerminal"
+    },
+
     "search.exclude": {
         "**/third-party/**": true
     }
