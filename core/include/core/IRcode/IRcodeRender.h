@@ -12,7 +12,7 @@ namespace sda::ircode
     public:
         Render(pcode::Render* pcodeRender);
 
-        virtual void renderOperation(const Operation* operation);
+        virtual void renderOperation(Operation* operation);
 
         virtual void renderValue(const Value* value, bool extended = false) const;
 

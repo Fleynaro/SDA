@@ -47,7 +47,7 @@ namespace sda::decompiler
 
         void genOperation(std::unique_ptr<ircode::Operation> operation);
 
-        void genGenericOperation(const pcode::Instruction* instr, ircode::OperationId operationId, const ircode::MemoryAddress& outputMemAddr);
+        void genGenericOperation(const pcode::Instruction* instr, ircode::OperationId operationId, ircode::MemoryAddress& outputMemAddr);
 
         std::shared_ptr<ircode::Variable> genLoadOperation(const ircode::MemoryAddress& memAddr, size_t loadSize);
 

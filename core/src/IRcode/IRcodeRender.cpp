@@ -8,7 +8,7 @@ Render::Render(pcode::Render* pcodeRender)
     : m_pcodeRender(pcodeRender)
 {}
 
-void Render::renderOperation(const Operation* operation) {
+void Render::renderOperation(Operation* operation) {
     renderValue(operation->getOutput().get(), true);
     renderToken(" = ", Token::Other);
     renderToken(magic_enum::enum_name(operation->getId()).data(), Token::Operation);
@@ -32,10 +32,24 @@ void Render::renderOperation(const Operation* operation) {
     }
 
     if (m_extendInfo) {
-        if (operation->getOutput()->getLinearExpr().getTerms().size() > 1) {
+        const auto& terms = operation->getOutput()->getLinearExpr().getTerms();
+        if (terms.size() > 1 || terms.size() == 1 && terms.front().factor != 1) {
             commenting(true);
             renderToken(" // ", Token::Comment);
             renderLinearExpr(&operation->getOutput()->getLinearExpr());
+            commenting(false);
+        }
+
+        const auto& vars = operation->getOverwrittenVariables();
+        if (!vars.empty()) {
+            commenting(true);
+            renderToken(" (overwrites ", Token::Comment);
+            for (const auto& var : vars) {
+                renderValue(var.get());
+                if (var != *vars.rbegin())
+                    renderToken(", ", Token::Comment);
+            }
+            renderToken(")", Token::Comment);
             commenting(false);
         }
     }

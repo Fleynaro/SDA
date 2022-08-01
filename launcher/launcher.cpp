@@ -145,6 +145,8 @@ void testDecompiler() {
         ircodeGen.executePcode(&pcodeInstruction);
     }
 
+    std::cout << std::endl;
+    
     ircode::StreamRender ircodeRender(std::cout, &pcodeRender);
     ircodeRender.setExtendInfo(true);
     for (const auto& ircodeOp : ircodeBlock.getOperations()) {

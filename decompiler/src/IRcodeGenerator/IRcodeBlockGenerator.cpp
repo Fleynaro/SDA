@@ -99,6 +99,10 @@ void IRcodeBlockGenerator::executePcode(const pcode::Instruction* instr) {
             // constant value copying (RAX:4 = COPY 100:4)
             genGenericOperation(instr, ircode::OperationId::COPY, outputMemAddr);
         }
+        else if (isStoreInstr && !instr->getInput1()->isRegister()) {
+            // constant value storing (STORE [RAX:8], 100:4)
+            genGenericOperation(instr, ircode::OperationId::COPY, outputMemAddr);
+        }
         else if (isCopyInstr || isLoadInstr || isStoreInstr) {
             std::list<IRcodeBlockGenerator::VariableReadInfo> varReadInfos;
 
@@ -356,17 +360,22 @@ void IRcodeBlockGenerator::genOperation(std::unique_ptr<ircode::Operation> opera
     m_block->getOperations().push_back(std::move(operation));
 }
 
-void IRcodeBlockGenerator::genGenericOperation(const pcode::Instruction* instr, ircode::OperationId operationId, const ircode::MemoryAddress& outputMemAddr) {
+void IRcodeBlockGenerator::genGenericOperation(const pcode::Instruction* instr, ircode::OperationId operationId, ircode::MemoryAddress& outputMemAddr) {
     // get input values
     std::shared_ptr<ircode::Value> inputVal1;
     std::shared_ptr<ircode::Value> inputVal2;
-    if (auto input0 = instr->getInput0()) {
+    if (auto input0 = instr->getInput0())
         inputVal1 = genReadVarnode(input0.get());
-    } else {
-        assert(false && "Invalid instruction");
-    }
-    if (auto input1 = instr->getInput1()) {
+    if (auto input1 = instr->getInput1())
         inputVal2 = genReadVarnode(input1.get());
+    if (!inputVal1)
+        throw std::runtime_error("Invalid instruction");
+
+    // exception for STORE instruction
+    if (instr->getId() == pcode::InstructionId::STORE) {
+        outputMemAddr = getMemoryAddress(inputVal1);
+        inputVal1 = inputVal2;
+        inputVal2 = nullptr;
     }
     
     // calculate hash
@@ -375,7 +384,7 @@ void IRcodeBlockGenerator::genGenericOperation(const pcode::Instruction* instr, 
         // INT_ADD, INT_MULT used for address calculation ([x+4y]*2 == 2x+8y == 8y+2x)
         if (instr->getId() == pcode::InstructionId::INT_ADD) {
             hash = inputVal1->getHash() + inputVal2->getHash();
-        } if (instr->getId() == pcode::InstructionId::INT_MULT) {
+        } else if (instr->getId() == pcode::InstructionId::INT_MULT) {
             hash = inputVal1->getHash() * inputVal2->getHash();
         } else {
             boost::hash_combine(hash, operationId);
@@ -425,7 +434,7 @@ std::shared_ptr<ircode::Constant> IRcodeBlockGenerator::createConstant(const pco
     auto hash = std::hash<size_t>()(constVarnode->getValue());
     boost::hash_combine(hash, ircode::Value::Constant);
     auto value = std::make_shared<ircode::Constant>(constVarnode, hash);
-    value->getLinearExpr() = ircode::LinearExpression(value);
+    value->getLinearExpr() = ircode::LinearExpression(value->getConstVarnode()->getValue());
     return value;
 }
 
