@@ -17,6 +17,11 @@ const std::list<LinearExpression::Term>& LinearExpression::getTerms() const {
     return m_terms;
 }
 
+std::shared_ptr<Value> LinearExpression::getBaseValue() const {
+    assert(!m_terms.empty());
+    return m_terms.front().value;
+}
+
 size_t LinearExpression::getConstTermValue() const {
     return m_constTermValue;
 }
@@ -28,7 +33,11 @@ LinearExpression LinearExpression::operator+(const LinearExpression& other) cons
         for (const auto& term : other.m_terms) {
             auto it = termMap.find(term.value->getHash());
             if (it == termMap.end()) {
-                result.m_terms.push_back(term);
+                if (term.value->getDataType()->isPointer()) {
+                    result.m_terms.push_front(term);
+                } else {
+                    result.m_terms.push_back(term);
+                }
             } else {
                 it->second->factor += term.factor;
             }

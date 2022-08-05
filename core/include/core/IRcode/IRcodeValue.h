@@ -1,8 +1,10 @@
 #pragma once
 #include <list>
 #include <memory>
-#include "Core/Pcode/PcodeVarnodes.h"
 #include "IRcodeLinearExpr.h"
+#include "Core/Pcode/PcodeVarnodes.h"
+#include "Core/DataType/DataType.h"
+#include "Core/SymbolTable/SymbolTable.h"
 
 namespace sda::ircode
 {
@@ -14,6 +16,10 @@ namespace sda::ircode
         Hash m_hash;
         std::list<Operation*> m_operations;
         LinearExpression m_linearExpr;
+        DataType* m_dataType = nullptr;
+        // if the value is a pointer (RSP/RIP or pointer to an user structure), it stores a symbol table
+        SymbolTable* m_symbolTable = nullptr;
+
     public:
         Value(Hash hash);
 
@@ -32,6 +38,14 @@ namespace sda::ircode
         std::list<Operation*>& getOperations();
 
         LinearExpression& getLinearExpr();
+
+        void setDataType(DataType* dataType);
+
+        DataType* getDataType();
+
+        void setSymbolTable(SymbolTable* symbolTable);
+
+        SymbolTable* getSymbolTable();
     };
 
     class Constant : public Value
@@ -56,6 +70,8 @@ namespace sda::ircode
         Type getType() const override;
 
         const pcode::RegisterVarnode* getRegVarnode() const;
+
+        const pcode::Register& getRegister() const;
 
         size_t getSize() const override;
     };

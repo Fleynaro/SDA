@@ -1,4 +1,5 @@
 #include "Core/DataType/DataType.h"
+#include "Core/DataType/PointerDataType.h"
 #include "Core/DataType/ScalarDataType.h"
 
 using namespace sda;
@@ -7,6 +8,10 @@ DataType::DataType(Context* context, Object::Id* id, const std::string& name)
     : ContextObject(context, id, name)
 {
     m_context->getDataTypes()->add(std::unique_ptr<DataType>(this));
+}
+
+PointerDataType* DataType::getPointerTo() const {
+    return new PointerDataType(m_context, nullptr, this);
 }
 
 void DataType::serialize(boost::json::object& data) const {

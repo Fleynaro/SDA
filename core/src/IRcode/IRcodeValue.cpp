@@ -19,6 +19,22 @@ LinearExpression& Value::getLinearExpr() {
     return m_linearExpr;
 }
 
+void Value::setDataType(DataType* dataType) {
+    m_dataType = dataType;
+}
+
+DataType* Value::getDataType() {
+    return m_dataType;
+}
+
+void Value::setSymbolTable(SymbolTable* symbolTable) {
+    m_symbolTable = symbolTable;
+}
+
+SymbolTable* Value::getSymbolTable() {
+    return m_symbolTable;
+}
+
 Constant::Constant(const pcode::ConstantVarnode* constVarnode, Hash hash)
     : Value(hash), m_constVarnode(constVarnode)
 {}
@@ -45,6 +61,10 @@ Value::Type Register::getType() const {
 
 const pcode::RegisterVarnode* Register::getRegVarnode() const {
     return m_regVarnode;
+}
+
+const pcode::Register& Register::getRegister() const {
+    return m_regVarnode->getRegister();
 }
 
 size_t Register::getSize() const {

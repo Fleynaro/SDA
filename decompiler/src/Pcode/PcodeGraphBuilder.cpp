@@ -1,6 +1,6 @@
-#include "Decompiler/PcodeAnalysis/PcodeGraphBuilder.h"
-#include "Decompiler/PcodeAnalysis/FunctionCallLookup.h"
-#include "Decompiler/PcodeAnalysis/VtableLookup.h"
+#include "Decompiler/Pcode/PcodeGraphBuilder.h"
+#include "Decompiler/Pcode/FunctionCallLookup.h"
+#include "Decompiler/Pcode/VtableLookup.h"
 #include "Core/Utils/IOManip.h"
 
 using namespace sda;

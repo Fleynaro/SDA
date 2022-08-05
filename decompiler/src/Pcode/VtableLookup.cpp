@@ -1,4 +1,4 @@
-#include "Decompiler/PcodeAnalysis/VtableLookup.h"
+#include "Decompiler/Pcode/VtableLookup.h"
 #include "Core/Utils/IOManip.h"
 
 using namespace sda;

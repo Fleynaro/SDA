@@ -1,4 +1,4 @@
-#include "Decompiler/PcodeAnalysis/PcodeGraphBuilder.h"
+#include "Decompiler/Pcode/PcodeGraphBuilder.h"
 #include "Core/Utils/IOManip.h"
 
 using namespace sda;

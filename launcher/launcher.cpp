@@ -18,9 +18,9 @@
 #include "Disasm/Zydis/ZydisDecoderPcodeX86.h"
 #include "Disasm/Zydis/ZydisInstructionRenderX86.h"
 #include "Disasm/Zydis/ZydisPlatformSpec.h"
-#include "Decompiler/PcodeAnalysis/PcodeGraphBuilder.h"
-#include "Decompiler/PcodeAnalysis/VtableLookup.h"
-#include "Decompiler/IRcodeGenerator/IRcodeBlockGenerator.h"
+#include "Decompiler/Pcode/PcodeGraphBuilder.h"
+#include "Decompiler/Pcode/VtableLookup.h"
+#include "Decompiler/IRcode/Generator/IRcodeBlockGenerator.h"
 #include <boost/functional/hash.hpp>
 
 using namespace sda;
@@ -115,6 +115,7 @@ void testDecompiler() {
     //     $U3:4 = INT_ADD $U1:4, $U2:4 \
     // ";
     ss << "\
+        rcx:8 = COPY rcx:8 \
         rbx:8 = INT_MULT rdx:8, 4:8 \
         rbx:8 = INT_ADD rcx:8, rbx:8 \
         rbx:8 = INT_ADD rbx:8, 0x10:8 \
@@ -139,7 +140,8 @@ void testDecompiler() {
     pcode::Block pcodeBlock;
     ircode::Block ircodeBlock(&pcodeBlock);
     TotalMemorySpace memorySpace;
-    IRcodeBlockGenerator ircodeGen(&ircodeBlock, &memorySpace);
+    IRcodeDataTypePropagator dataTypePropagator(nullptr, nullptr, nullptr);
+    IRcodeBlockGenerator ircodeGen(&ircodeBlock, &memorySpace, &dataTypePropagator);
 
     for (const auto& pcodeInstruction : pcodeInstructions) {
         ircodeGen.executePcode(&pcodeInstruction);

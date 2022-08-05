@@ -3,12 +3,16 @@
 
 namespace sda
 {
+    class PointerDataType;
+
     class DataType : public ContextObject
     {
     public:
         static inline const std::string Collection = "data_types";
 
         DataType(Context* context, Object::Id* id = nullptr, const std::string& name = "");
+
+        PointerDataType* getPointerTo() const;
 
         virtual size_t getSize() const = 0;
 

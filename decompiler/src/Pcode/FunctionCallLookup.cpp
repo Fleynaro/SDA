@@ -1,4 +1,4 @@
-#include "Decompiler/PcodeAnalysis/FunctionCallLookup.h"
+#include "Decompiler/Pcode/FunctionCallLookup.h"
 #include "Core/Utils/IOManip.h"
 
 using namespace sda;

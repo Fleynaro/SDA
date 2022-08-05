@@ -1,4 +1,4 @@
-#include "Decompiler/IRcodeGenerator/IRcodeBlockGenerator.h"
+#include "Decompiler/IRcode/Generator/IRcodeBlockGenerator.h"
 #include <boost/functional/hash.hpp>
 
 using namespace sda;
@@ -13,8 +13,15 @@ MemorySpace* TotalMemorySpace::getMemSpace(ircode::Hash baseAddrHash) {
     return &it->second;
 }
 
-IRcodeBlockGenerator::IRcodeBlockGenerator(ircode::Block* block, TotalMemorySpace* totalMemSpace, size_t nextVarId)
-    : m_block(block), m_totalMemSpace(totalMemSpace), m_nextVarId(nextVarId)
+IRcodeBlockGenerator::IRcodeBlockGenerator(
+    ircode::Block* block,
+    TotalMemorySpace* totalMemSpace,
+    IRcodeDataTypePropagator* dataTypePropagator,
+    size_t nextVarId)
+    : m_block(block),
+    m_totalMemSpace(totalMemSpace),
+    m_dataTypePropagator(dataTypePropagator),
+    m_nextVarId(nextVarId)
 {}
 
 const std::map<pcode::InstructionId, ircode::OperationId> InstructionToOperation = {
@@ -166,14 +173,10 @@ void IRcodeBlockGenerator::executePcode(const pcode::Instruction* instr) {
             for (const auto& varReadInfo : varReadInfos) {
                 auto srcVar = varReadInfo.variable;
 
-                ircode::Hash hash;
-                boost::hash_combine(hash, ircode::OperationId::COPY);
-                boost::hash_combine(hash, srcVar->getHash());
-
                 auto dstMemAddr = outputMemAddr;
                 dstMemAddr.offset = varReadInfo.offset;
                 auto dstMemSpace = m_totalMemSpace->getMemSpace(dstMemAddr.baseAddrHash);
-                auto dstVar = createVariable(dstMemAddr, hash, dstMemAddr.value->getSize());
+                auto dstVar = createVariable(dstMemAddr, srcVar->getHash(), dstMemAddr.value->getSize());
                 genWriteMemory(dstMemSpace, dstVar);
                 genOperation(std::make_unique<ircode::UnaryOperation>(ircode::OperationId::COPY, srcVar, dstVar));
             }
@@ -292,8 +295,7 @@ ircode::MemoryAddress IRcodeBlockGenerator::getRegisterMemoryAddress(const pcode
 
 ircode::MemoryAddress IRcodeBlockGenerator::getMemoryAddress(std::shared_ptr<ircode::Value> addrValue) const {
     const auto& addrExpr = addrValue->getLinearExpr();
-    assert(!addrExpr.getTerms().empty());
-    auto baseAddrValue = addrExpr.getTerms().front().value;
+    auto baseAddrValue = addrExpr.getBaseValue();
     assert(baseAddrValue->getSize() == 8 && "Invalid address size");
     return {
         addrValue,
@@ -354,6 +356,7 @@ std::shared_ptr<ircode::Value> IRcodeBlockGenerator::genReadVarnode(const pcode:
 }
 
 void IRcodeBlockGenerator::genOperation(std::unique_ptr<ircode::Operation> operation) {
+    m_dataTypePropagator->propagate(operation.get());
     operation->getPcodeInstructions().insert(m_curInstr);
     operation->getOverwrittenVariables() = m_overwrittenVariables;
     m_overwrittenVariables.clear();

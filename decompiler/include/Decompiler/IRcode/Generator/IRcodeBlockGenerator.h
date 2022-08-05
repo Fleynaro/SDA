@@ -1,6 +1,7 @@
 #pragma once
 #include "Core/IRcode/IRcodeBlock.h"
 #include "Core/Pcode/PcodeInstruction.h"
+#include "Decompiler/IRcode/Semantics/IRcodeDataTypePropagator.h"
 
 namespace sda::decompiler
 {
@@ -19,11 +20,16 @@ namespace sda::decompiler
     {
         ircode::Block* m_block;
         TotalMemorySpace* m_totalMemSpace;
+        IRcodeDataTypePropagator* m_dataTypePropagator;
         size_t m_nextVarId;
         const pcode::Instruction* m_curInstr = nullptr;
         std::set<std::shared_ptr<ircode::Variable>> m_overwrittenVariables;
     public:
-        IRcodeBlockGenerator(ircode::Block* block, TotalMemorySpace* totalMemSpace, size_t nextVarId = 1);
+        IRcodeBlockGenerator(
+            ircode::Block* block,
+            TotalMemorySpace* totalMemSpace,
+            IRcodeDataTypePropagator* dataTypePropagator,
+            size_t nextVarId = 1);
 
         void executePcode(const pcode::Instruction* instr);
 
