@@ -37,7 +37,7 @@ namespace sda::decompiler
 
         std::list<VariableReadInfo> genReadMemory(MemorySpace* memSpace, size_t readOffset, size_t readSize, BitMask& readMask);
 
-        ircode::MemoryAddress getRegisterMemoryAddress(const pcode::RegisterVarnode* regVarnode) const;
+        ircode::MemoryAddress getRegisterMemoryAddress(const pcode::Register& reg) const;
 
         ircode::MemoryAddress getMemoryAddress(std::shared_ptr<ircode::Value> addrValue) const;
 

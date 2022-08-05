@@ -230,7 +230,7 @@ void ZydisDecoderPcodeX86::generatePcodeInstructions() {
 		while (offset < maxSize) {
 			auto srcOpVarnode = getOperandVarnode(srcOperand, srcSize, offset);
 			auto varnodeRegOutput = getRegisterVarnode(dstOperand.reg.value, dstSize, offset);
-			if (float2intForNonVector && varnodeRegOutput->getRegType() != RegisterVarnode::Vector) {
+			if (float2intForNonVector && varnodeRegOutput->getRegister().getRegType() != Register::Vector) {
 				//all float values store in vector registers then need cast when moving to non-vector register
 				auto varnodeOutput = getVirtRegisterVarnode(size);
 				generateInstruction(instrId, srcOpVarnode, nullptr, varnodeOutput);
@@ -1356,7 +1356,7 @@ pcode::Instruction* ZydisDecoderPcodeX86::generateInstruction(
 	// that is the feature of x86: setting value to EAX cleans fully RAX
 	if (auto regOutput = std::dynamic_pointer_cast<RegisterVarnode>(output)) {
 		if (regOutput->getSize() == 0x4) {
-			output = getRegisterVarnode(static_cast<ZydisRegister>(regOutput->getRegId()), 0x8, 0);
+			output = getRegisterVarnode(static_cast<ZydisRegister>(regOutput->getRegister().getRegId()), 0x8, 0);
 			// or we could generate "RAX:8 = COPY 0:8" before
 		}
 	}
@@ -1580,27 +1580,27 @@ std::shared_ptr<RegisterVarnode> ZydisDecoderPcodeX86::getRegisterVarnode(ZydisR
 	auto type = platformSpec.getRegisterType(id);
     size_t index = static_cast<size_t>(offset) / MaxMaskSizeInBytes;
     auto mask = BitMask(size, offset);
-    return std::make_shared<RegisterVarnode>(type, id, index, mask, size);
+    return std::make_shared<RegisterVarnode>(Register(type, id, index, mask));
 }
 
 std::shared_ptr<RegisterVarnode> ZydisDecoderPcodeX86::getRegisterVarnode(ZydisAccessedFlagsMask flagMask) const {
-    return std::make_shared<RegisterVarnode>(
-        RegisterVarnode::Flag,
-        RegisterVarnode::FlagId,
+    auto reg = Register(
+        Register::Flag,
+        Register::FlagId,
         0, // index
-        BitMask(flagMask),
-        1 // register size
+        BitMask(flagMask)
     );
+	return std::make_shared<RegisterVarnode>(reg);
 }
 
 std::shared_ptr<pcode::RegisterVarnode> ZydisDecoderPcodeX86::getVirtRegisterVarnode(size_t size) {
-    return std::make_shared<RegisterVarnode>(
-        RegisterVarnode::Virtual,
-        RegisterVarnode::VirtualId,
-        m_curVirtRegIndex++, // index
-        BitMask(size, 0),
-        size
+    auto reg = Register(
+        Register::Virtual,
+        Register::VirtualId,
+        m_curVirtRegIndex++,
+        BitMask(size, 0)
     );
+	return std::make_shared<RegisterVarnode>(reg);
 }
 
 std::shared_ptr<pcode::ConstantVarnode> ZydisDecoderPcodeX86::getConstantVarnode(size_t value, size_t size, bool isAddress) const {

@@ -1,5 +1,5 @@
 #pragma once
-#include "PcodeVarnodes.h"
+#include "PcodeRegister.h"
 
 namespace sda::pcode
 {
@@ -11,7 +11,7 @@ namespace sda::pcode
 
         virtual size_t getRegisterId(const std::string& regName) const = 0;
 
-        virtual RegisterVarnode::Type getRegisterType(size_t regId) const = 0;
+        virtual Register::Type getRegisterType(size_t regId) const = 0;
 
         virtual std::string getRegisterFlagName(size_t flagMask) const = 0;
 

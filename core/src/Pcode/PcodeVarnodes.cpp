@@ -11,44 +11,20 @@ size_t Varnode::getSize() const {
     return m_size;
 }
 
-BitMask Varnode::getMask() const {
-    return BitMask(m_size, 0);
-}
-
-RegisterVarnode::RegisterVarnode(Type type, size_t id, size_t index, BitMask mask, size_t size)
-    : Varnode(size), m_type(type), m_id(id), m_index(index), m_mask(mask)
-{
-    if (type == Type::StackPointer) {
-        m_id = StackPointerId;
-    } else if (type == Type::InstructionPointer) {
-        m_id = InstructionPointerId;
-    } else if (type == Type::Flag) {
-        m_id = FlagId;
-    }
-}
+RegisterVarnode::RegisterVarnode(const Register& reg)
+    : Varnode(reg.getSize()), m_register(reg)
+{}
 
 bool RegisterVarnode::isRegister() const {
     return true;
 }
 
-RegisterVarnode::Type RegisterVarnode::getRegType() const {
-    return m_type;
-}
-
-size_t RegisterVarnode::getRegId() const {
-    return m_id;
-}
-
-size_t RegisterVarnode::getRegIndex() const {
-    return m_index;
-}
-
 BitMask RegisterVarnode::getMask() const {
-    return m_mask;
+    return m_register.getMask();
 }
 
-size_t RegisterVarnode::getOffset() const {
-    return m_mask.getOffset() + m_index * 64;
+const Register& RegisterVarnode::getRegister() const {
+    return m_register;
 }
 
 ConstantVarnode::ConstantVarnode(size_t value, size_t size, bool isAddress)
@@ -57,6 +33,10 @@ ConstantVarnode::ConstantVarnode(size_t value, size_t size, bool isAddress)
 
 bool ConstantVarnode::isRegister() const {
     return false;
+}
+
+BitMask ConstantVarnode::getMask() const {
+    return BitMask(getSize(), 0);
 }
 
 size_t ConstantVarnode::getValue() const {

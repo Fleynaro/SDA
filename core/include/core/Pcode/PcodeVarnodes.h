@@ -1,6 +1,5 @@
 #pragma once
-#include <string>
-#include "Core/BitMask.h"
+#include "PcodeRegister.h"
 
 namespace sda::pcode
 {
@@ -12,48 +11,22 @@ namespace sda::pcode
 
         virtual bool isRegister() const = 0;
 
-        size_t getSize() const;
+        virtual BitMask getMask() const = 0;
 
-        BitMask getMask() const;
+        size_t getSize() const;
     };
 
     class RegisterVarnode : public Varnode
     {
+        Register m_register;
     public:
-        inline const static size_t VirtualId = 100000000;
-        inline const static size_t StackPointerId = 100000001;
-        inline const static size_t InstructionPointerId = 100000002;
-        inline const static size_t FlagId = 100000003;
-
-        enum Type {
-            Virtual,
-			Generic,
-			StackPointer,
-			InstructionPointer,
-			Flag,
-			Vector
-		};
-
-    private:
-        Type m_type;
-        size_t m_id;
-        size_t m_index;
-        BitMask m_mask;
-
-    public:
-        RegisterVarnode(Type type, size_t id, size_t index, BitMask mask, size_t size);
+        RegisterVarnode(const Register& reg);
 
         bool isRegister() const override;
 
-        Type getRegType() const;
+        BitMask getMask() const override;
 
-        size_t getRegId() const;
-
-        size_t getRegIndex() const;
-
-        BitMask getMask() const;
-
-        size_t getOffset() const;
+        const Register& getRegister() const;
     };
 
     class ConstantVarnode : public Varnode
@@ -64,6 +37,8 @@ namespace sda::pcode
         ConstantVarnode(size_t value, size_t size, bool isAddress);
 
         bool isRegister() const override;
+
+        BitMask getMask() const override;
 
         size_t getValue() const;
 

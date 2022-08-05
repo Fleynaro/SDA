@@ -13,6 +13,8 @@ namespace sda::pcode
         virtual void renderInstruction(const Instruction* instruction) const;
 
         virtual void renderVarnode(const Varnode* varnode, bool renderSizeAndOffset = true) const;
+        
+        virtual void renderRegister(const Register& reg, bool renderSizeAndOffset = true) const;
 
         void commenting(bool toggle);
 

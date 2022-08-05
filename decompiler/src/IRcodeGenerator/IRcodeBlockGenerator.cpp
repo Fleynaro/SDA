@@ -80,7 +80,7 @@ void IRcodeBlockGenerator::executePcode(const pcode::Instruction* instr) {
     ircode::MemoryAddress outputMemAddr;
     if (auto output = instr->getOutput()) {
         if (auto regVarnode = std::dynamic_pointer_cast<pcode::RegisterVarnode>(output)) {
-            outputMemAddr = getRegisterMemoryAddress(regVarnode.get());
+            outputMemAddr = getRegisterMemoryAddress(regVarnode->getRegister());
             outputMemAddr.value = createRegister(regVarnode.get(), outputMemAddr);
         } else {
             assert(false && "Output varnode is not a register");
@@ -279,13 +279,13 @@ std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadM
     return varReadInfos;
 }
 
-ircode::MemoryAddress IRcodeBlockGenerator::getRegisterMemoryAddress(const pcode::RegisterVarnode* regVarnode) const {
-    auto baseAddrHash = std::hash<size_t>()(regVarnode->getRegId());
+ircode::MemoryAddress IRcodeBlockGenerator::getRegisterMemoryAddress(const pcode::Register& reg) const {
+    auto baseAddrHash = std::hash<size_t>()(reg.getRegId());
     size_t offset = 0;
-    if (regVarnode->getRegType() == pcode::RegisterVarnode::Virtual) {
-        boost::hash_combine(baseAddrHash, regVarnode->getRegIndex());
+    if (reg.getRegType() == pcode::Register::Virtual) {
+        boost::hash_combine(baseAddrHash, reg.getRegIndex());
     } else {
-        offset = regVarnode->getRegIndex() * 0x8 + regVarnode->getMask().getOffset() / 0x8;
+        offset = reg.getRegIndex() * 0x8 + reg.getMask().getOffset() / 0x8;
     }
     return { nullptr, baseAddrHash, offset };
 }
@@ -303,7 +303,7 @@ ircode::MemoryAddress IRcodeBlockGenerator::getMemoryAddress(std::shared_ptr<irc
 }
 
 std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadRegisterVarnode(const pcode::RegisterVarnode* regVarnode) {
-    auto memAddr = getRegisterMemoryAddress(regVarnode);
+    auto memAddr = getRegisterMemoryAddress(regVarnode->getRegister());
     auto memSpace = m_totalMemSpace->getMemSpace(memAddr.baseAddrHash);
     auto readSize = regVarnode->getSize();
     auto readMask = BitMask(readSize, 0);

@@ -21,6 +21,8 @@ namespace sda
 
         size_t getMaxSizeInBits() const;
 
+        size_t getSize() const;
+
         size_t getOffset() const;
 
         operator size_t() const;

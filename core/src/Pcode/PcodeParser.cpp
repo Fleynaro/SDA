@@ -73,12 +73,13 @@ std::shared_ptr<RegisterVarnode> Parser::parseRegisterVarnode() {
             nextToken();
             auto regIdx = std::stoull(regIdxStr) - 1;
             auto size = parseVarnodeSize();
-            return std::make_shared<RegisterVarnode>(
-                RegisterVarnode::Virtual,
-                RegisterVarnode::VirtualId,
+            auto reg = Register(
+                Register::Virtual,
+                Register::VirtualId,
                 regIdx,
-                BitMask(size, 0),
-                size);
+                BitMask(size, 0)
+            );
+            return std::make_shared<RegisterVarnode>(reg);
         }
     } else if (auto regIdentToken = dynamic_cast<const IdentToken*>(m_token.get())) {
         auto name = regIdentToken->name;
@@ -89,7 +90,7 @@ std::shared_ptr<RegisterVarnode> Parser::parseRegisterVarnode() {
             auto type = m_platformSpec->getRegisterType(regId);
             size_t size = 0;
             size_t offset = 0;
-            if (type == RegisterVarnode::Vector) {
+            if (type == Register::Vector) {
                 if (m_token->isSymbol(':')) {
                     nextToken();
                     if (auto sizeAndOffsetToken = dynamic_cast<const IdentToken*>(m_token.get())) {
@@ -111,12 +112,13 @@ std::shared_ptr<RegisterVarnode> Parser::parseRegisterVarnode() {
             }
             if (size == 0)
                 throw error(401, "Invalid size of register");
-            return std::make_shared<RegisterVarnode>(
+            auto reg = Register(
                 type,
                 regId,
                 offset / MaxMaskSizeInBytes,
-                BitMask(size, offset),
-                size);
+                BitMask(size, offset)
+            );
+            return std::make_shared<RegisterVarnode>(reg);
         } catch (const std::out_of_range&) {
             throw error(402, "Invalid register name");
         }

@@ -76,15 +76,15 @@ size_t ZydisPlatformSpec::getRegisterId(const std::string& regName) const {
     return RegisterNameToId.at(regName);
 }
 
-sda::pcode::RegisterVarnode::Type ZydisPlatformSpec::getRegisterType(size_t regId) const {
+sda::pcode::Register::Type ZydisPlatformSpec::getRegisterType(size_t regId) const {
     if (regId == ZYDIS_REGISTER_RIP)
-        return pcode::RegisterVarnode::InstructionPointer;
+        return pcode::Register::InstructionPointer;
     if (regId == ZYDIS_REGISTER_RSP)
-        return pcode::RegisterVarnode::StackPointer;
+        return pcode::Register::StackPointer;
 	if (regId >= ZYDIS_REGISTER_MM0 && regId <= ZYDIS_REGISTER_MM7 ||
         regId >= ZYDIS_REGISTER_XMM0 && regId <= ZYDIS_REGISTER_XMM31)
-		return pcode::RegisterVarnode::Vector;
-	return pcode::RegisterVarnode::Generic;
+		return pcode::Register::Vector;
+	return pcode::Register::Generic;
 }
 
 std::string ZydisPlatformSpec::getRegisterFlagName(size_t flagMask) const {
@@ -122,10 +122,10 @@ size_t ZydisPlatformSpec::getRegisterFlagIndex(const std::string& flagName) cons
 
 size_t ZydisPlatformSpec::transformZydisRegId(ZydisRegister regId) const {
     if (regId == ZYDIS_REGISTER_RIP) {
-		return pcode::RegisterVarnode::InstructionPointerId;
+		return pcode::Register::InstructionPointerId;
     }
     else if (regId == ZYDIS_REGISTER_RSP) {
-		return pcode::RegisterVarnode::StackPointerId;
+		return pcode::Register::StackPointerId;
     }
 	else if (regId >= ZYDIS_REGISTER_AL && regId <= ZYDIS_REGISTER_BL) {
 		return ZYDIS_REGISTER_RAX + regId - ZYDIS_REGISTER_AL;

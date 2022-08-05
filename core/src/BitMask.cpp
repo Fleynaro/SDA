@@ -24,6 +24,16 @@ size_t BitMask::getMaxSizeInBits() const {
 	return sizeof(Value) * BitsInBytes;
 }
 
+size_t BitMask::getSize() const {
+	size_t bitsCount = 0;
+	for (auto m = m_mask; m != 0; m = m >> 1) {
+		if (m & 0b1) {
+			bitsCount++;
+		}
+	}
+	return (bitsCount / 8) + ((bitsCount % 8) ? 1 : 0);
+}
+
 size_t BitMask::getOffset() const {
 	size_t offset = 0;
 	auto mask = m_mask;

@@ -12,7 +12,7 @@ namespace sda::disasm
 
         size_t getRegisterId(const std::string& regName) const override;
 
-        pcode::RegisterVarnode::Type getRegisterType(size_t regId) const override;
+        pcode::Register::Type getRegisterType(size_t regId) const override;
 
         std::string getRegisterFlagName(size_t flagMask) const override;
 
