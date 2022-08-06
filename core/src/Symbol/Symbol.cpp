@@ -10,9 +10,7 @@ Symbol::Symbol(
     DataType* dataType)
     : ContextObject(context, id, name),
     m_dataType(dataType)
-{
-    m_context->getSymbols()->add(std::unique_ptr<Symbol>(this));
-}
+{}
 
 DataType* Symbol::getDataType() const {
     return m_dataType;

@@ -13,6 +13,7 @@ StructureDataType::StructureDataType(
 {
     if (symbolTable)
         m_symbolTable = new StandartSymbolTable(context, nullptr, "structure");
+    m_context->getDataTypes()->add(std::unique_ptr<StructureDataType>(this));
 }
 
 StandartSymbolTable* StructureDataType::getSymbolTable() {

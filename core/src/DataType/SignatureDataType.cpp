@@ -5,7 +5,9 @@ using namespace sda;
 
 SignatureDataType::SignatureDataType(Context* context, Object::Id* id, const std::string& name)
     : DataType(context, id, name)
-{}
+{
+    m_context->getDataTypes()->add(std::unique_ptr<SignatureDataType>(this));
+}
 
 void SignatureDataType::setParameters(const std::vector<FunctionParameterSymbol*>& parameters) {
     m_context->getCallbacks()->onObjectModified(this);

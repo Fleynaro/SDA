@@ -16,10 +16,14 @@ namespace sda
 
         DataType* getPointedType() const;
 
+        bool isPointer() const override;
+
         size_t getSize() const override;
 
         void serialize(boost::json::object& data) const override;
 
         void deserialize(boost::json::object& data) override;
+
+        static std::string GetTypeName(DataType* pointedType);
     };
 };

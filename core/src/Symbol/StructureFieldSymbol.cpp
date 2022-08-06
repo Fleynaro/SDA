@@ -8,7 +8,9 @@ StructureFieldSymbol::StructureFieldSymbol(
     const std::string& name,
     DataType* dataType)
     : Symbol(context, id, name, dataType)
-{}
+{
+    m_context->getSymbols()->add(std::unique_ptr<StructureFieldSymbol>(this));
+}
 
 void StructureFieldSymbol::serialize(boost::json::object& data) const {
     Symbol::serialize(data);

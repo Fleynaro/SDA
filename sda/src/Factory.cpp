@@ -2,6 +2,7 @@
 #include "Core/Context.h"
 #include "Core/Image/AddressSpace.h"
 #include "Core/Image/Image.h"
+#include "Core/DataType/VoidDataType.h"
 #include "Core/DataType/PointerDataType.h"
 #include "Core/DataType/ArrayDataType.h"
 #include "Core/DataType/TypedefDataType.h"
@@ -55,7 +56,9 @@ ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collec
     } else if (collection == DataType::Collection) {
         if (data.find("type") != data.end()) {
             std::string type(data["type"].get_string().c_str());
-            if (type == PointerDataType::Type)
+            if (type == VoidDataType::Type)
+                return new VoidDataType(m_context, id);
+            else if (type == PointerDataType::Type)
                 return new PointerDataType(m_context, id);
             else if (type == ArrayDataType::Type)
                 return new ArrayDataType(m_context, id);

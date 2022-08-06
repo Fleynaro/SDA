@@ -6,21 +6,21 @@ ScalarDataType::ScalarDataType(
     Context* context,
     Object::Id* id,
     const std::string& name,
-    bool isFloatingPoint,
-    bool isSigned,
+    ScalarType scalarType,
     size_t size)
     : DataType(context, id, name)
-    , m_isFloatingPoint(isFloatingPoint)
-    , m_isSigned(isSigned)
+    , m_scalarType(scalarType)
     , m_size(size)
-{}
-
-bool ScalarDataType::isFloatingPoint() const {
-    return m_isFloatingPoint;
+{
+    m_context->getDataTypes()->add(std::unique_ptr<ScalarDataType>(this));
 }
 
-bool ScalarDataType::isSigned() const {
-    return m_isSigned;
+ScalarType ScalarDataType::getScalarType() const {
+    return m_scalarType;
+}
+
+bool ScalarDataType::isScalar(ScalarType type) const {
+    return m_scalarType == type;
 }
 
 size_t ScalarDataType::getSize() const {
@@ -30,14 +30,12 @@ size_t ScalarDataType::getSize() const {
 void ScalarDataType::serialize(boost::json::object& data) const {
     DataType::serialize(data);
     data["type"] = Type;
-    data["is_fp"] = m_isFloatingPoint;
-    data["is_signed"] = m_isSigned;
+    data["scalar_type"] = static_cast<size_t>(m_scalarType);
     data["size"] = m_size;
 }
 
 void ScalarDataType::deserialize(boost::json::object& data) {
     DataType::deserialize(data);
-    m_isFloatingPoint = data["is_fp"].get_bool();
-    m_isSigned = data["is_signed"].get_bool();
+    m_scalarType = static_cast<ScalarType>(data["scalar_type"].get_uint64());
     m_size = data["size"].get_uint64();
 }

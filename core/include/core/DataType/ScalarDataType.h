@@ -5,8 +5,7 @@ namespace sda
 {
     class ScalarDataType : public DataType
     {
-        bool m_isFloatingPoint;
-        bool m_isSigned;
+        ScalarType m_scalarType;
         size_t m_size;
     public:
         static inline const std::string Type = "scalar";
@@ -15,14 +14,13 @@ namespace sda
             Context* context,
             Object::Id* id = nullptr,
             const std::string& name = "",
-            bool isFloatingPoint = false,
-            bool isSigned = false,
+            ScalarType scalarType = ScalarType::UnsignedInt,
             size_t size = 0
         );
 
-        bool isFloatingPoint() const;
+        ScalarType getScalarType() const;
 
-        bool isSigned() const;
+        bool isScalar(ScalarType type) const override;
 
         size_t getSize() const override;
 

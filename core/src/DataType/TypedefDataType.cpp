@@ -9,7 +9,9 @@ TypedefDataType::TypedefDataType(
     DataType* pointedType)
     : DataType(context, id, name)
     , m_pointedType(pointedType)
-{}
+{
+    m_context->getDataTypes()->add(std::unique_ptr<TypedefDataType>(this));
+}
 
 void TypedefDataType::setPointedType(DataType* pointedType) {
     m_context->getCallbacks()->onObjectModified(this);

@@ -8,14 +8,15 @@ namespace sda
     class Symbol : public ContextObject
     {
         DataType* m_dataType;
-    public:
-        static inline const std::string Collection = "symbols";
-
+    protected:
         Symbol(
             Context* context,
             Object::Id* id = nullptr,
             const std::string& name = "",
             DataType* dataType = nullptr);
+            
+    public:
+        static inline const std::string Collection = "symbols";
 
         DataType* getDataType() const;
 

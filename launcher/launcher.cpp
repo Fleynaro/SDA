@@ -4,8 +4,12 @@
 #include "Project.h"
 #include "Factory.h"
 #include "Core/Context.h"
+#include "Core/DataType/VoidDataType.h"
+#include "Core/DataType/ScalarDataType.h"
+#include "Core/DataType/TypedefDataType.h"
 #include "Core/Image/AddressSpace.h"
 #include "Core/Image/Image.h"
+#include "Core/SymbolTable/StandartSymbolTable.h"
 #include "Core/Pcode/PcodeParser.h"
 #include "Core/Pcode/PcodeRender.h"
 #include "Core/IRcode/IRcodeRender.h"
@@ -106,6 +110,21 @@ void testPcodeDecoder() {
     image->getPcodeGraph()->setCallbacks(graphCallbacks->m_otherCallbacks);
 }
 
+void initDefaultDataTypes(Context* ctx) {
+    ScalarDataType* scalars[] = {
+        new ScalarDataType(ctx, nullptr, "uint8_t", ScalarType::UnsignedInt, 1),
+        new ScalarDataType(ctx, nullptr, "int8_t", ScalarType::SignedInt, 1),
+        new ScalarDataType(ctx, nullptr, "uint16_t", ScalarType::UnsignedInt, 2),
+        new ScalarDataType(ctx, nullptr, "int16_t", ScalarType::SignedInt, 2),
+        new ScalarDataType(ctx, nullptr, "uint32_t", ScalarType::UnsignedInt, 4),
+        new ScalarDataType(ctx, nullptr, "int32_t", ScalarType::SignedInt, 4),
+        new ScalarDataType(ctx, nullptr, "uint64_t", ScalarType::UnsignedInt, 8),
+        new ScalarDataType(ctx, nullptr, "int64_t", ScalarType::SignedInt, 8)
+    };
+    new TypedefDataType(ctx, nullptr, "bool", scalars[0]);
+    new VoidDataType(ctx, nullptr);
+}
+
 void testDecompiler() {
     std::stringstream ss;
     // ss << "\
@@ -137,10 +156,21 @@ void testDecompiler() {
 
     using namespace decompiler;
 
+    auto ctx = new Context();
+    initDefaultDataTypes(ctx);
+    auto globalSymbolTable = new StandartSymbolTable(ctx);
+    auto stackSymbolTable = new StandartSymbolTable(ctx);
+    auto instructionSymbolTable = new StandartSymbolTable(ctx);
+
     pcode::Block pcodeBlock;
     ircode::Block ircodeBlock(&pcodeBlock);
     TotalMemorySpace memorySpace;
-    IRcodeDataTypePropagator dataTypePropagator(nullptr, nullptr, nullptr);
+    IRcodeDataTypePropagator dataTypePropagator(
+        ctx,
+        globalSymbolTable,
+        stackSymbolTable,
+        instructionSymbolTable
+    );
     IRcodeBlockGenerator ircodeGen(&ircodeBlock, &memorySpace, &dataTypePropagator);
 
     for (const auto& pcodeInstruction : pcodeInstructions) {

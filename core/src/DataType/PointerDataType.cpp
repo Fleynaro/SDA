@@ -10,12 +10,17 @@ PointerDataType::PointerDataType(
     m_pointedType(pointedType)
 {
     if (pointedType) {
-        setName(m_pointedType->getName() + "*");
+        setName(GetTypeName(pointedType));
     }
+    m_context->getDataTypes()->add(std::unique_ptr<PointerDataType>(this));
 }
 
 DataType* PointerDataType::getPointedType() const {
     return m_pointedType;
+}
+
+bool PointerDataType::isPointer() const {
+    return true;
 }
 
 size_t PointerDataType::getSize() const {
@@ -31,4 +36,8 @@ void PointerDataType::serialize(boost::json::object& data) const {
 void PointerDataType::deserialize(boost::json::object& data) {
     DataType::deserialize(data);
     m_pointedType = m_context->getDataTypes()->get(data["pointed_type"]);
+}
+
+std::string PointerDataType::GetTypeName(DataType* pointedType) {
+    return pointedType->getName() + "*";
 }

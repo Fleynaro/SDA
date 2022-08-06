@@ -16,6 +16,7 @@ FunctionSymbol::FunctionSymbol(
         m_stackSymbolTable = new StandartSymbolTable(context, nullptr, "stack");
     if (instructionSymbolTable)
         m_instructionSymbolTable = new StandartSymbolTable(context, nullptr, "instruction");
+    m_context->getSymbols()->add(std::unique_ptr<FunctionSymbol>(this));
 }
 
 SymbolTable* FunctionSymbol::getStackSymbolTable() const {

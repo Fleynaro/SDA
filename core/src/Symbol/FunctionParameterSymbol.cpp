@@ -8,7 +8,9 @@ FunctionParameterSymbol::FunctionParameterSymbol(
     const std::string& name,
     DataType* dataType)
     : Symbol(context, id, name, dataType)
-{}
+{
+    m_context->getSymbols()->add(std::unique_ptr<FunctionParameterSymbol>(this));
+}
 
 void FunctionParameterSymbol::serialize(boost::json::object& data) const {
     Symbol::serialize(data);

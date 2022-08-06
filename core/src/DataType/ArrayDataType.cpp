@@ -17,6 +17,7 @@ ArrayDataType::ArrayDataType(
             name += "[" + std::to_string(dimension) + "]";
         setName(name);
     }
+    m_context->getDataTypes()->add(std::unique_ptr<ArrayDataType>(this));
 }
 
 DataType* ArrayDataType::getElementType() const {

@@ -4,7 +4,9 @@ using namespace sda;
 
 EnumDataType::EnumDataType(Context* context, Object::Id* id, const std::string& name)
     : DataType(context, id, name)
-{}
+{
+    m_context->getDataTypes()->add(std::unique_ptr<EnumDataType>(this));
+}
 
 void EnumDataType::setFields(const std::map<Key, std::string>& fields) {
     m_context->getCallbacks()->onObjectModified(this);
