@@ -1,8 +1,11 @@
 #pragma once
+#include <string>
 #include "Core/BitMask.h"
 
-namespace sda::pcode
+namespace sda
 {
+    class RegisterHelper;
+
     class Register
     {
     public:
@@ -40,6 +43,8 @@ namespace sda::pcode
 
         size_t getSize() const;
 
-        size_t getOffset() const;
+        size_t getBitOffset() const;
+
+        std::string toString(const RegisterHelper* regHelper, bool renderSizeAndOffset = true) const;
     };
 };

@@ -4,7 +4,7 @@
 using namespace sda;
 using namespace sda::decompiler;
 
-PcodeBlockBuilder::PcodeBlockBuilder(pcode::Graph* graph, Image* image, disasm::DecoderPcode* decoder)
+PcodeBlockBuilder::PcodeBlockBuilder(pcode::Graph* graph, Image* image, PcodeDecoder* decoder)
     : m_graph(graph), m_image(image), m_decoder(decoder)
 {
     m_callbacks = std::make_unique<Callbacks>();

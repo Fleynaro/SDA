@@ -1,10 +1,9 @@
 #pragma once
 #include <list>
-#include <vector>
 #include <string>
 #include <ostream>
 
-namespace sda::disasm
+namespace sda
 {
     // This instruction is used for rendering
     struct Instruction {
@@ -39,17 +38,5 @@ namespace sda::disasm
         protected:
             void renderToken(const std::string& text, Token::Type token) const override;
         };
-    };
-
-    // This decoder is used to decode instructions for rendering
-    class DecoderRender
-    {
-    public:
-        virtual void decode(const std::vector<uint8_t>& data) = 0;
-
-        const Instruction* getDecodedInstruction() const;
-        
-    protected:
-        Instruction m_decodedInstruction;
     };
 };

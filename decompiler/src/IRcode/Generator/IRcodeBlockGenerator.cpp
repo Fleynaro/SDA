@@ -282,13 +282,13 @@ std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadM
     return varReadInfos;
 }
 
-ircode::MemoryAddress IRcodeBlockGenerator::getRegisterMemoryAddress(const pcode::Register& reg) const {
+ircode::MemoryAddress IRcodeBlockGenerator::getRegisterMemoryAddress(const Register& reg) const {
     auto baseAddrHash = std::hash<size_t>()(reg.getRegId());
     size_t offset = 0;
-    if (reg.getRegType() == pcode::Register::Virtual) {
+    if (reg.getRegType() == Register::Virtual) {
         boost::hash_combine(baseAddrHash, reg.getRegIndex());
     } else {
-        offset = reg.getRegIndex() * 0x8 + reg.getMask().getOffset() / 0x8;
+        offset = reg.getBitOffset() / BitsInBytes;
     }
     return { nullptr, baseAddrHash, offset };
 }

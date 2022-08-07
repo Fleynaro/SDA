@@ -1,15 +1,15 @@
 #pragma once
-#include "Disasm/InstructionRender.h"
+#include "Core/Platform/InstructionDecoder.h"
 #include <Zydis/Zydis.h>
 
-namespace sda::disasm
+namespace sda::platform
 {
-    class ZydisDecoderRenderX86 : public DecoderRender
+    class InstructionDecoderX86 : public InstructionDecoder
     {
         ZydisDecoder* m_decoder;
         ZydisFormatter m_formatter;
     public:
-        ZydisDecoderRenderX86(ZydisDecoder* decoder);
+        InstructionDecoderX86(ZydisDecoder* decoder);
 
         void decode(const std::vector<uint8_t>& data) override;
     };

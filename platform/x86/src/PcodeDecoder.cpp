@@ -1,17 +1,17 @@
-#include "Disasm/Zydis/ZydisDecoderPcodeX86.h"
-#include "Disasm/Zydis/ZydisPlatformSpec.h"
+#include "Platform/X86/PcodeDecoder.h"
+#include "Platform/X86/RegisterHelper.h"
 #include <sstream>
 #include <iomanip>
 
 using namespace sda;
 using namespace sda::pcode;
-using namespace sda::disasm;
+using namespace sda::platform;
 
-ZydisDecoderPcodeX86::ZydisDecoderPcodeX86(ZydisDecoder* decoder)
+PcodeDecoderX86::PcodeDecoderX86(ZydisDecoder* decoder)
     : m_decoder(decoder)
 {}
 
-void ZydisDecoderPcodeX86::decode(Offset offset, const std::vector<uint8_t>& data) {
+void PcodeDecoderX86::decode(Offset offset, const std::vector<uint8_t>& data) {
     auto status = ZydisDecoderDecodeFull(
         m_decoder,
         data.data(),
@@ -29,11 +29,11 @@ void ZydisDecoderPcodeX86::decode(Offset offset, const std::vector<uint8_t>& dat
     }
 }
 
-size_t ZydisDecoderPcodeX86::getInstructionLength() const {
+size_t PcodeDecoderX86::getInstructionLength() const {
 	return m_curInstr.length;
 }
 
-void ZydisDecoderPcodeX86::generatePcodeInstructions() {
+void PcodeDecoderX86::generatePcodeInstructions() {
     auto mnemonic = m_curInstr.mnemonic;
 	auto size = m_curOperands[0].size / 0x8;
 	auto explicitOperandsCount = getFirstExplicitOperandsCount();
@@ -1254,7 +1254,7 @@ void ZydisDecoderPcodeX86::generatePcodeInstructions() {
 	}
 }
 
-int ZydisDecoderPcodeX86::getFirstExplicitOperandsCount() const {
+int PcodeDecoderX86::getFirstExplicitOperandsCount() const {
     int result = 0;
 	for (int i = 0; i < m_curInstr.operand_count; i++) {
 		if (m_curOperands[result].visibility != ZYDIS_OPERAND_VISIBILITY_HIDDEN)
@@ -1263,19 +1263,19 @@ int ZydisDecoderPcodeX86::getFirstExplicitOperandsCount() const {
 	return result;
 }
 
-std::shared_ptr<Varnode> ZydisDecoderPcodeX86::getJumpOffsetByOperand(const ZydisDecodedOperand& operand) {
+std::shared_ptr<Varnode> PcodeDecoderX86::getJumpOffsetByOperand(const ZydisDecodedOperand& operand) {
     if (operand.type != ZYDIS_OPERAND_TYPE_IMMEDIATE)
 		return getOperandVarnode(operand, operand.size / 0x8);
 	const auto jmpOffset = static_cast<int>(operand.imm.value.s);
     return getConstantVarnode(getJumpOffset(jmpOffset), 0x8, true);
 }
 
-size_t ZydisDecoderPcodeX86::getJumpOffset(int jmpOffset) const {
+size_t PcodeDecoderX86::getJumpOffset(int jmpOffset) const {
     const auto offset = m_curOffset + m_curInstr.length + jmpOffset;
 	return offset << 8;
 }
 
-void ZydisDecoderPcodeX86::generateVectorOperation(const VectorOperationGeneratorInfo& info) {
+void PcodeDecoderX86::generateVectorOperation(const VectorOperationGeneratorInfo& info) {
     const int operationsCount = info.maxSize / info.size;
 	auto instrId2 = info.instrId2;
 	if (instrId2 == InstructionId::NONE) {
@@ -1314,7 +1314,7 @@ void ZydisDecoderPcodeX86::generateVectorOperation(const VectorOperationGenerato
     }
 }
 
-std::shared_ptr<Varnode> ZydisDecoderPcodeX86::generateGenericOperation(
+std::shared_ptr<Varnode> PcodeDecoderX86::generateGenericOperation(
     InstructionId instrId,
     std::shared_ptr<Varnode> varnodeInput0,
     std::shared_ptr<Varnode> varnodeInput1,
@@ -1346,7 +1346,7 @@ std::shared_ptr<Varnode> ZydisDecoderPcodeX86::generateGenericOperation(
 	return varnodeOutput;
 }
 
-pcode::Instruction* ZydisDecoderPcodeX86::generateInstruction(
+pcode::Instruction* PcodeDecoderX86::generateInstruction(
     InstructionId id,
     std::shared_ptr<Varnode> input0,
     std::shared_ptr<Varnode> input1,
@@ -1388,7 +1388,7 @@ pcode::Instruction* ZydisDecoderPcodeX86::generateInstruction(
 	return &m_decodedInstructions.back();
 }
 
-std::shared_ptr<Varnode> ZydisDecoderPcodeX86::getOperandVarnode(
+std::shared_ptr<Varnode> PcodeDecoderX86::getOperandVarnode(
     const ZydisDecodedOperand& operand,
     int size,
     std::shared_ptr<Varnode>* memLocVarnode,
@@ -1398,7 +1398,7 @@ std::shared_ptr<Varnode> ZydisDecoderPcodeX86::getOperandVarnode(
     return getOperandVarnode(operand, size, 0x0, memLocVarnode, isMemLocLoaded, memLocExprSize);
 }
 
-std::shared_ptr<Varnode> ZydisDecoderPcodeX86::getOperandVarnode(
+std::shared_ptr<Varnode> PcodeDecoderX86::getOperandVarnode(
     const ZydisDecodedOperand& operand,
     int size,
     int offset,
@@ -1477,7 +1477,7 @@ std::shared_ptr<Varnode> ZydisDecoderPcodeX86::getOperandVarnode(
 	return nullptr;
 }
 
-std::shared_ptr<Varnode> ZydisDecoderPcodeX86::getConditionFlagVarnode(FlagCond flagCond) {
+std::shared_ptr<Varnode> PcodeDecoderX86::getConditionFlagVarnode(FlagCond flagCond) {
     std::shared_ptr<Varnode> varnodeCond;
 
 	switch (flagCond)
@@ -1574,16 +1574,16 @@ std::shared_ptr<Varnode> ZydisDecoderPcodeX86::getConditionFlagVarnode(FlagCond 
 	return varnodeCond;
 }
 
-std::shared_ptr<RegisterVarnode> ZydisDecoderPcodeX86::getRegisterVarnode(ZydisRegister regId, size_t size, int offset) const {
-	ZydisPlatformSpec platformSpec;
-    auto id = platformSpec.transformZydisRegId(regId);
-	auto type = platformSpec.getRegisterType(id);
+std::shared_ptr<RegisterVarnode> PcodeDecoderX86::getRegisterVarnode(ZydisRegister regId, size_t size, int offset) const {
+	RegisterHelperX86 regHelper;
+    auto id = regHelper.transformZydisRegId(regId);
+	auto type = regHelper.getRegisterType(id);
     size_t index = static_cast<size_t>(offset) / MaxMaskSizeInBytes;
     auto mask = BitMask(size, offset);
     return std::make_shared<RegisterVarnode>(Register(type, id, index, mask));
 }
 
-std::shared_ptr<RegisterVarnode> ZydisDecoderPcodeX86::getRegisterVarnode(ZydisAccessedFlagsMask flagMask) const {
+std::shared_ptr<RegisterVarnode> PcodeDecoderX86::getRegisterVarnode(ZydisAccessedFlagsMask flagMask) const {
     auto reg = Register(
         Register::Flag,
         Register::FlagId,
@@ -1593,7 +1593,7 @@ std::shared_ptr<RegisterVarnode> ZydisDecoderPcodeX86::getRegisterVarnode(ZydisA
 	return std::make_shared<RegisterVarnode>(reg);
 }
 
-std::shared_ptr<pcode::RegisterVarnode> ZydisDecoderPcodeX86::getVirtRegisterVarnode(size_t size) {
+std::shared_ptr<pcode::RegisterVarnode> PcodeDecoderX86::getVirtRegisterVarnode(size_t size) {
     auto reg = Register(
         Register::Virtual,
         Register::VirtualId,
@@ -1603,6 +1603,6 @@ std::shared_ptr<pcode::RegisterVarnode> ZydisDecoderPcodeX86::getVirtRegisterVar
 	return std::make_shared<RegisterVarnode>(reg);
 }
 
-std::shared_ptr<pcode::ConstantVarnode> ZydisDecoderPcodeX86::getConstantVarnode(size_t value, size_t size, bool isAddress) const {
+std::shared_ptr<pcode::ConstantVarnode> PcodeDecoderX86::getConstantVarnode(size_t value, size_t size, bool isAddress) const {
     return std::make_shared<ConstantVarnode>(value, size, isAddress);
 }

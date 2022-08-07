@@ -1,7 +1,7 @@
 #pragma once
 #include <set>
 #include "Core/Image/Image.h"
-#include "Disasm/DecoderPcode.h"
+#include "Core/Platform/PcodeDecoder.h"
 
 namespace sda::decompiler
 {
@@ -10,12 +10,12 @@ namespace sda::decompiler
     {
         pcode::Graph* m_graph;
         Image* m_image;
-        disasm::DecoderPcode* m_decoder;
+        PcodeDecoder* m_decoder;
         std::list<pcode::InstructionOffset> m_unvisitedOffsets;
         std::set<pcode::InstructionOffset> m_visitedOffsets;
         size_t m_curOrigInstrLength = 0;
     public:
-        PcodeBlockBuilder(pcode::Graph* graph, Image* image, disasm::DecoderPcode* decoder);
+        PcodeBlockBuilder(pcode::Graph* graph, Image* image, PcodeDecoder* decoder);
 
         void start();
 

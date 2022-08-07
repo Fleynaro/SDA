@@ -28,9 +28,9 @@ void IRcodeDataTypePropagator::propagate(const ircode::Operation* operation) {
             if (auto regValue = std::dynamic_pointer_cast<ircode::Register>(input)) {
                 const auto& reg = regValue->getRegister();
                 SymbolTable* symbolTable = nullptr;
-                if (reg.getRegId() == pcode::Register::StackPointerId)
+                if (reg.getRegId() == Register::StackPointerId)
                     symbolTable = m_stackSymbolTable;
-                else if (reg.getRegId() == pcode::Register::InstructionPointerId)
+                else if (reg.getRegId() == Register::InstructionPointerId)
                     symbolTable = m_globalSymbolTable;
                 if (symbolTable) {
                     auto voidDt = findDataType("void");

@@ -1,8 +1,9 @@
-#include "Disasm/Zydis/ZydisPlatformSpec.h"
+#include "Platform/X86/RegisterHelper.h"
 #include <map>
+#include <stdexcept>
 #include <Zydis/Zydis.h>
 
-using namespace sda::disasm;
+using namespace sda::platform;
 
 std::map<std::string, ZydisRegister> RegisterNameToId = {
     // General purpose registers 64-bit
@@ -68,26 +69,26 @@ std::map<std::string, ZydisRegister> RegisterNameToId = {
     {"xmm31", ZYDIS_REGISTER_XMM31},
 };
 
-std::string ZydisPlatformSpec::getRegisterName(size_t regId) const {
+std::string RegisterHelperX86::getRegisterName(size_t regId) const {
     return ZydisRegisterGetString(static_cast<ZydisRegister>(regId));
 }
 
-size_t ZydisPlatformSpec::getRegisterId(const std::string& regName) const {
+size_t RegisterHelperX86::getRegisterId(const std::string& regName) const {
     return RegisterNameToId.at(regName);
 }
 
-sda::pcode::Register::Type ZydisPlatformSpec::getRegisterType(size_t regId) const {
+sda::Register::Type RegisterHelperX86::getRegisterType(size_t regId) const {
     if (regId == ZYDIS_REGISTER_RIP)
-        return pcode::Register::InstructionPointer;
+        return Register::InstructionPointer;
     if (regId == ZYDIS_REGISTER_RSP)
-        return pcode::Register::StackPointer;
+        return Register::StackPointer;
 	if (regId >= ZYDIS_REGISTER_MM0 && regId <= ZYDIS_REGISTER_MM7 ||
         regId >= ZYDIS_REGISTER_XMM0 && regId <= ZYDIS_REGISTER_XMM31)
-		return pcode::Register::Vector;
-	return pcode::Register::Generic;
+		return Register::Vector;
+	return Register::Generic;
 }
 
-std::string ZydisPlatformSpec::getRegisterFlagName(size_t flagMask) const {
+std::string RegisterHelperX86::getRegisterFlagName(size_t flagMask) const {
     std::string flagName;
     if ((flagMask & ZYDIS_CPUFLAG_CF) != 0)
         flagName = "CF";
@@ -104,7 +105,7 @@ std::string ZydisPlatformSpec::getRegisterFlagName(size_t flagMask) const {
     throw std::runtime_error("Unknown flag mask");
 }
 
-size_t ZydisPlatformSpec::getRegisterFlagIndex(const std::string& flagName) const {
+size_t RegisterHelperX86::getRegisterFlagIndex(const std::string& flagName) const {
     if (flagName == "CF")
         return ZYDIS_CPUFLAG_CF;
     else if (flagName == "OF")
@@ -120,12 +121,12 @@ size_t ZydisPlatformSpec::getRegisterFlagIndex(const std::string& flagName) cons
     throw std::runtime_error("Unknown flag name");
 }
 
-size_t ZydisPlatformSpec::transformZydisRegId(ZydisRegister regId) const {
+size_t RegisterHelperX86::transformZydisRegId(ZydisRegister regId) const {
     if (regId == ZYDIS_REGISTER_RIP) {
-		return pcode::Register::InstructionPointerId;
+		return Register::InstructionPointerId;
     }
     else if (regId == ZYDIS_REGISTER_RSP) {
-		return pcode::Register::StackPointerId;
+		return Register::StackPointerId;
     }
 	else if (regId >= ZYDIS_REGISTER_AL && regId <= ZYDIS_REGISTER_BL) {
 		return ZYDIS_REGISTER_RAX + regId - ZYDIS_REGISTER_AL;

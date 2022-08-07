@@ -19,9 +19,9 @@
 #include "Database/Transaction.h"
 #include "Callbacks/ContextCallbacks.h"
 #include "Change.h"
-#include "Disasm/Zydis/ZydisDecoderPcodeX86.h"
-#include "Disasm/Zydis/ZydisInstructionRenderX86.h"
-#include "Disasm/Zydis/ZydisPlatformSpec.h"
+#include "Platform/X86/PcodeDecoder.h"
+#include "Platform/X86/InstructionDecoder.h"
+#include "Platform/X86/RegisterHelper.h"
 #include "Decompiler/Pcode/PcodeGraphBuilder.h"
 #include "Decompiler/Pcode/VtableLookup.h"
 #include "Decompiler/IRcode/Generator/IRcodeBlockGenerator.h"
@@ -48,21 +48,21 @@ void testPcodeDecoder() {
     // P-code decoder
     ZydisDecoder decoder;
     ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_STACK_WIDTH_64);
-    disasm::ZydisDecoderPcodeX86 pcodeDecoder(&decoder);
-    disasm::ZydisDecoderRenderX86 decoderRender(&decoder);
+    platform::PcodeDecoderX86 pcodeDecoder(&decoder);
+    platform::InstructionDecoderX86 instrDecoder(&decoder);
+    platform::RegisterHelperX86 regHelper;
     
     auto offset = image->getEntryPointOffset();
 
-    disasm::ZydisPlatformSpec platformSpec;
-    pcode::StreamRender pcodeRender(std::cout, &platformSpec);
-    disasm::Instruction::StreamRender srcInstrRender(std::cout);
+    pcode::StreamRender pcodeRender(std::cout, &regHelper);
+    Instruction::StreamRender srcInstrRender(std::cout);
     while (offset < image->getSize()) {
         std::vector<uint8_t> data(0x100);
         image->getRW()->readBytesAtOffset(offset, data);
         pcodeDecoder.decode(offset, data);
         
-        decoderRender.decode(data);
-        srcInstrRender.render(decoderRender.getDecodedInstruction());
+        instrDecoder.decode(data);
+        srcInstrRender.render(instrDecoder.getDecodedInstruction());
         std::cout << std::endl;
         auto decodedInstructions = pcodeDecoder.getDecodedInstructions();
         for (auto& decodedInstruction : decodedInstructions) {
@@ -141,12 +141,12 @@ void testDecompiler() {
         STORE rbx:8, 1.0:8 \
     ";
 
-    disasm::ZydisPlatformSpec platformSpec;
+    platform::RegisterHelperX86 regHelper;
 
-    pcode::StreamRender pcodeRender(std::cout, &platformSpec);
+    pcode::StreamRender pcodeRender(std::cout, &regHelper);
 
     utils::lexer::IO io(ss, std::cout);
-    pcode::Parser parser(&io, &platformSpec);
+    pcode::Parser parser(&io, &regHelper);
     auto pcodeInstructions = parser.parse();
     for (auto& instr : pcodeInstructions) {
         std::cout << "    ";

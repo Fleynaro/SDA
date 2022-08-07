@@ -1,10 +1,10 @@
 #pragma once
-#include "Disasm/DecoderPcode.h"
+#include "Core/Platform/PcodeDecoder.h"
 #include <Zydis/Zydis.h>
 
-namespace sda::disasm
+namespace sda::platform
 {
-    class ZydisDecoderPcodeX86 : public DecoderPcode
+    class PcodeDecoderX86 : public PcodeDecoder
     {
         ZydisDecoder* m_decoder;
         ZydisDecodedInstruction m_curInstr;
@@ -15,7 +15,7 @@ namespace sda::disasm
     public:
         std::string m_curInstrView; // for debug purposes
 
-        ZydisDecoderPcodeX86(ZydisDecoder* decoder);
+        PcodeDecoderX86(ZydisDecoder* decoder);
 
         void decode(Offset offset, const std::vector<uint8_t>& data) override;
 

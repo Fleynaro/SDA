@@ -4,9 +4,9 @@
 #include <list>
 #include "Core/Pcode/PcodeInstruction.h"
 
-namespace sda::disasm
+namespace sda
 {
-    class DecoderPcode
+    class PcodeDecoder
     {
     public:
         virtual void decode(Offset offset, const std::vector<uint8_t>& data) = 0;

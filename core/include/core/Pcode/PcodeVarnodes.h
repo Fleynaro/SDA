@@ -1,5 +1,5 @@
 #pragma once
-#include "PcodeRegister.h"
+#include "Core/Platform/Register.h"
 
 namespace sda::pcode
 {

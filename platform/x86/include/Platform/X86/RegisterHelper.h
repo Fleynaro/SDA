@@ -1,18 +1,17 @@
 #pragma once
-#include "Disasm/InstructionRender.h"
-#include "Core/Pcode/PcodePlatformSpec.h"
+#include "Core/Platform/RegisterHelper.h"
 #include <Zydis/Zydis.h>
 
-namespace sda::disasm
+namespace sda::platform
 {
-    class ZydisPlatformSpec : public pcode::PlatformSpec
+    class RegisterHelperX86 : public RegisterHelper
     {
     public:
         std::string getRegisterName(size_t regId) const override;
 
         size_t getRegisterId(const std::string& regName) const override;
 
-        pcode::Register::Type getRegisterType(size_t regId) const override;
+        Register::Type getRegisterType(size_t regId) const override;
 
         std::string getRegisterFlagName(size_t flagMask) const override;
 

@@ -10,7 +10,7 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 include(cmake/compiler_flags.cmake)
 
 add_subdirectory(core)
-add_subdirectory(disasm)
+add_subdirectory(platform)
 add_subdirectory(decompiler)
 add_subdirectory(sda)
 if (NOT SDA_PLUGIN_DEV)

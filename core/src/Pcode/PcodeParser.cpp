@@ -8,8 +8,8 @@ Parser::Exception::Exception(const std::string& message)
     : std::exception(message.c_str())
 {}
 
-Parser::Parser(IO* io, const PlatformSpec* platformSpec)
-    : m_io(io), m_lexer(io), m_platformSpec(platformSpec)
+Parser::Parser(IO* io, const RegisterHelper* regHelper)
+    : m_io(io), m_lexer(io), m_regHelper(regHelper)
 {
     nextToken();
 }
@@ -86,8 +86,8 @@ std::shared_ptr<RegisterVarnode> Parser::parseRegisterVarnode() {
         boost::algorithm::to_lower(name);
         nextToken();
         try {
-            auto regId = m_platformSpec->getRegisterId(name);
-            auto type = m_platformSpec->getRegisterType(regId);
+            auto regId = m_regHelper->getRegisterId(name);
+            auto type = m_regHelper->getRegisterType(regId);
             size_t size = 0;
             size_t offset = 0;
             if (type == Register::Vector) {

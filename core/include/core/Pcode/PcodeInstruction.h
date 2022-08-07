@@ -2,7 +2,7 @@
 #include <memory>
 #include <magic_enum.hpp>
 #include "PcodeVarnodes.h"
-#include "PcodePlatformSpec.h"
+#include "Core/Platform/RegisterHelper.h"
 #include "Core/Offset.h"
 #include "Core/Utils/Lexer/Lexer.h"
 

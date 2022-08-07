@@ -51,23 +51,23 @@ size_t Constant::getSize() const {
     return m_constVarnode->getSize();
 }
 
-Register::Register(const pcode::RegisterVarnode* regVarnode, Hash hash)
+ircode::Register::Register(const pcode::RegisterVarnode* regVarnode, Hash hash)
     : Value(hash), m_regVarnode(regVarnode)
 {}
 
-Value::Type Register::getType() const {
+Value::Type ircode::Register::getType() const {
     return Type::Register;
 }
 
-const pcode::RegisterVarnode* Register::getRegVarnode() const {
+const pcode::RegisterVarnode* ircode::Register::getRegVarnode() const {
     return m_regVarnode;
 }
 
-const pcode::Register& Register::getRegister() const {
+const sda::Register& ircode::Register::getRegister() const {
     return m_regVarnode->getRegister();
 }
 
-size_t Register::getSize() const {
+size_t ircode::Register::getSize() const {
     return m_regVarnode->getSize();
 }
 

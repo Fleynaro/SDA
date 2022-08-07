@@ -5,17 +5,15 @@ namespace sda::pcode
 {
     class Render
     {
-        const PlatformSpec* m_platformSpec;
+        const RegisterHelper* m_regHelper;
         size_t m_commentingCounter = 0;
     public:
-        Render(const PlatformSpec* platformSpec);
+        Render(const RegisterHelper* regHelper);
 
         virtual void renderInstruction(const Instruction* instruction) const;
 
         virtual void renderVarnode(const Varnode* varnode, bool renderSizeAndOffset = true) const;
         
-        virtual void renderRegister(const Register& reg, bool renderSizeAndOffset = true) const;
-
         void commenting(bool toggle);
 
     protected:
@@ -37,7 +35,7 @@ namespace sda::pcode
     {
         std::ostream& m_output;
     public:
-        StreamRender(std::ostream& output, const PlatformSpec* platformSpec);
+        StreamRender(std::ostream& output, const RegisterHelper* regHelper);
 
     protected:
         void renderTokenImpl(const std::string& text, Token token) const override;

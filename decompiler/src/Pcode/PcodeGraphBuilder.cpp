@@ -6,7 +6,7 @@
 using namespace sda;
 using namespace sda::decompiler;
 
-PcodeGraphBuilder::PcodeGraphBuilder(pcode::Graph* graph, Image* image, disasm::DecoderPcode* decoder)
+PcodeGraphBuilder::PcodeGraphBuilder(pcode::Graph* graph, Image* image, PcodeDecoder* decoder)
     : m_graph(graph), m_image(image), m_blockBuilder(graph, image, decoder)
 {
     m_callbacks = std::make_unique<Callbacks>();

@@ -7,7 +7,7 @@ namespace sda::pcode
     class Parser {
         utils::lexer::IO* m_io;
         utils::lexer::Lexer m_lexer;
-        const PlatformSpec* m_platformSpec;
+        const RegisterHelper* m_regHelper;
         std::unique_ptr<utils::lexer::Token> m_token;
     public:
         class Exception : public std::exception {
@@ -15,7 +15,7 @@ namespace sda::pcode
             Exception(const std::string& message);
         };
 
-        Parser(utils::lexer::IO* io, const PlatformSpec* platformSpec);
+        Parser(utils::lexer::IO* io, const RegisterHelper* regHelper);
 
         std::list<Instruction> parse();
 

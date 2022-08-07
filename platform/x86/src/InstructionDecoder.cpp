@@ -1,15 +1,15 @@
-#include "Disasm/Zydis/ZydisInstructionRenderX86.h"
+#include "Platform/X86/InstructionDecoder.h"
 #include <Zydis/Zydis.h>
 
-using namespace sda::disasm;
+using namespace sda::platform;
 
-ZydisDecoderRenderX86::ZydisDecoderRenderX86(ZydisDecoder* decoder)
+InstructionDecoderX86::InstructionDecoderX86(ZydisDecoder* decoder)
     : m_decoder(decoder)
 {
 	ZydisFormatterInit(&m_formatter, ZYDIS_FORMATTER_STYLE_INTEL);
 }
 
-void ZydisDecoderRenderX86::decode(const std::vector<uint8_t>& data) {
+void InstructionDecoderX86::decode(const std::vector<uint8_t>& data) {
     m_decodedInstruction.m_tokens.clear();
     m_decodedInstruction.m_length = 0;
 

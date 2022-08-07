@@ -11,7 +11,7 @@ namespace sda::decompiler
         PcodeBlockBuilder m_blockBuilder;
         
     public:
-        PcodeGraphBuilder(pcode::Graph* graph, Image* image, disasm::DecoderPcode* decoder);
+        PcodeGraphBuilder(pcode::Graph* graph, Image* image, PcodeDecoder* decoder);
 
         PcodeBlockBuilder* getBlockBuilder();
 

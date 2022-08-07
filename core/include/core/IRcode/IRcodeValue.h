@@ -71,7 +71,7 @@ namespace sda::ircode
 
         const pcode::RegisterVarnode* getRegVarnode() const;
 
-        const pcode::Register& getRegister() const;
+        const sda::Register& getRegister() const;
 
         size_t getSize() const override;
     };

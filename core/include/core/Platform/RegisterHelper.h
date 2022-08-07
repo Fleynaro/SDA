@@ -1,10 +1,10 @@
 #pragma once
-#include "PcodeRegister.h"
+#include "Register.h"
 
-namespace sda::pcode
+namespace sda
 {
-    // Here are some utility functions depending on the platform.
-    class PlatformSpec
+    // Here are some utility functions depending on the platform to work with registers.
+    class RegisterHelper
     {
     public:
         virtual std::string getRegisterName(size_t regId) const = 0;

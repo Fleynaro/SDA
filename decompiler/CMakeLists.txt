@@ -10,5 +10,4 @@ target_include_directories(
 
 target_link_libraries(
     decompiler PUBLIC
-    core
-    disasm)
+    core)

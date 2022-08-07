@@ -7,17 +7,17 @@ else()
     find_package(zydis CONFIG REQUIRED)
 endif()
 
-file(GLOB_RECURSE DISASM_SRC
+file(GLOB_RECURSE PLATFORM_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
 add_library(
-    disasm SHARED ${DISASM_SRC})
+    platform-x86 SHARED ${PLATFORM_SRC})
 
 target_include_directories(
-    disasm PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    platform-x86 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_link_libraries(
-    disasm PUBLIC
+    platform-x86 PUBLIC
     core
     Zydis)
