@@ -38,10 +38,10 @@ namespace sda::decompiler
 
         struct VariableReadInfo {
             std::shared_ptr<ircode::Variable> variable;
-            size_t offset;
+            Offset offset;
         };
 
-        std::list<VariableReadInfo> genReadMemory(MemorySpace* memSpace, size_t readOffset, size_t readSize, BitMask& readMask);
+        std::list<VariableReadInfo> genReadMemory(MemorySpace* memSpace, Offset readOffset, size_t readSize, BitMask& readMask);
 
         ircode::MemoryAddress getRegisterMemoryAddress(const Register& reg) const;
 

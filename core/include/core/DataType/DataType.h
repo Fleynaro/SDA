@@ -22,6 +22,8 @@ namespace sda
 
         PointerDataType* getPointerTo();
 
+        virtual bool isVoid() const;
+
         virtual bool isPointer() const;
 
         virtual bool isScalar(ScalarType type) const;

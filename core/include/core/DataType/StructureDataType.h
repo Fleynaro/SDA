@@ -1,11 +1,10 @@
 #pragma once
 #include "Core/DataType/DataType.h"
 #include "Core/Symbol/StructureFieldSymbol.h"
+#include "Core/SymbolTable/StandartSymbolTable.h"
 
 namespace sda
 {
-    class StandartSymbolTable;
-
     class StructureDataType : public DataType
     {
         size_t m_size;

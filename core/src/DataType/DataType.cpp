@@ -16,6 +16,10 @@ PointerDataType* DataType::getPointerTo() {
     return new PointerDataType(m_context, nullptr, this);
 }
 
+bool DataType::isVoid() const {
+    return false;
+}
+
 bool DataType::isPointer() const {
     return false;
 }

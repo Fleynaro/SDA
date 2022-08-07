@@ -10,6 +10,8 @@ namespace sda
 
         VoidDataType(Context* context, Object::Id* id = nullptr);
 
+        bool isVoid() const override;
+
         size_t getSize() const override;
 
         void serialize(boost::json::object& data) const override;

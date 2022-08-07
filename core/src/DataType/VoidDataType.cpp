@@ -8,6 +8,10 @@ VoidDataType::VoidDataType(Context* context, Object::Id* id)
     m_context->getDataTypes()->add(std::unique_ptr<VoidDataType>(this));
 }
 
+bool VoidDataType::isVoid() const {
+    return true;
+}
+
 size_t VoidDataType::getSize() const {
     return 0;
 }

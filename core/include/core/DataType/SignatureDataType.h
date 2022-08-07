@@ -1,17 +1,27 @@
 #pragma once
 #include "Core/DataType/DataType.h"
 #include "Core/Symbol/FunctionParameterSymbol.h"
+#include "Core/Platform/CallingConvention.h"
 
 namespace sda
 {
     class SignatureDataType : public DataType
     {
+        std::shared_ptr<CallingConvention> m_callingConvention;
         std::vector<FunctionParameterSymbol*> m_parameters;
         DataType* m_returnType;
     public:
         static inline const std::string Type = "signature";
 
-        SignatureDataType(Context* context, Object::Id* id = nullptr, const std::string& name = "");
+        SignatureDataType(
+            Context* context,
+            std::shared_ptr<CallingConvention> callingConvention,
+            Object::Id* id = nullptr,
+            const std::string& name = "");
+
+        std::shared_ptr<CallingConvention> getCallingConvention() const;
+
+        CallingConvention::Map getStorages() const;
 
         // todo: to change the parameters, use setParameters() only (like in react js)
         void setParameters(const std::vector<FunctionParameterSymbol*>& parameters);

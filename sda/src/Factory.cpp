@@ -16,6 +16,7 @@
 #include "Core/Symbol/StructureFieldSymbol.h"
 #include "Core/SymbolTable/StandartSymbolTable.h"
 #include "Core/SymbolTable/OptimizedSymbolTable.h"
+#include "Platform/X86/CallingConvention.h"
 
 using namespace sda;
 
@@ -40,18 +41,23 @@ ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collec
     if (collection == AddressSpace::Collection) {
         return new AddressSpace(m_context, id);
     } else if (collection == Image::Collection) {
-        if(data.find("rw") != data.end() && data.find("analyser") != data.end()) {  
-            std::string rwType(data["rw"].get_object()["type"].get_string().c_str());
-            std::unique_ptr<IImageRW> rw;
-            if (rwType == FileImageRW::Name)
-                rw = std::make_unique<FileImageRW>();
-            
+        if(data.find("rw") == data.end() || data.find("analyser") == data.end())
+            throw std::runtime_error("Image without rw or analyser");
+
+        std::string rwType(data["rw"].get_object()["type"].get_string().c_str());
+        std::unique_ptr<IImageRW> rw;
+        if (rwType == FileImageRW::Name)
+            rw = std::make_unique<FileImageRW>();
+
+        if (rw) {
             std::string analyserType(data["analyser"].get_object()["type"].get_string().c_str());
             std::shared_ptr<ImageAnalyser> analyser;
             if (analyserType == PEImageAnalyser::Name)
                 analyser = std::make_shared<PEImageAnalyser>();
-  
-            return new Image(m_context, std::move(rw), analyser, id);
+
+            if (analyser) {
+                return new Image(m_context, std::move(rw), analyser, id);
+            }
         }
     } else if (collection == DataType::Collection) {
         if (data.find("type") != data.end()) {
@@ -68,10 +74,23 @@ ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collec
                 return new ScalarDataType(m_context, id);
             else if (type == EnumDataType::Type)
                 return new EnumDataType(m_context, id);
-            else if (type == SignatureDataType::Type)
-                return new SignatureDataType(m_context, id);
             else if (type == StructureDataType::Type)
                 return new StructureDataType(m_context, id);
+            else if (type == SignatureDataType::Type) {
+                if(data.find("calling_convention") == data.end()) {
+                    throw std::runtime_error("SignatureDataType without callingConvention");
+                    
+                std::string ccType(data["calling_convention"].get_object()["type"].get_string().c_str());
+                std::shared_ptr<CallingConvention> callingConvention;
+                if (ccType == CustomCallingConvention::Name)
+                    callingConvention = std::make_shared<CustomCallingConvention>();
+                else if (ccType == platform::FastcallCallingConvention::Name)
+                    callingConvention = std::make_shared<platform::FastcallCallingConvention>();
+
+                if (callingConvention) {
+                    return new SignatureDataType(m_context, callingConvention, id);
+                }
+            }
         }
     } else if (collection == Symbol::Collection) {
         if (data.find("type") != data.end()) {

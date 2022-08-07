@@ -3,10 +3,23 @@
 
 using namespace sda;
 
-SignatureDataType::SignatureDataType(Context* context, Object::Id* id, const std::string& name)
+SignatureDataType::SignatureDataType(
+    Context* context,
+    std::shared_ptr<CallingConvention> callingConvention,
+    Object::Id* id,
+    const std::string& name)
     : DataType(context, id, name)
+    , m_callingConvention(callingConvention)
 {
     m_context->getDataTypes()->add(std::unique_ptr<SignatureDataType>(this));
+}
+
+std::shared_ptr<CallingConvention> SignatureDataType::getCallingConvention() const {
+    return m_callingConvention;
+}
+
+CallingConvention::Map SignatureDataType::getStorages() const {
+    return m_callingConvention->getStorages(this);
 }
 
 void SignatureDataType::setParameters(const std::vector<FunctionParameterSymbol*>& parameters) {
@@ -35,6 +48,12 @@ void SignatureDataType::serialize(boost::json::object& data) const {
     DataType::serialize(data);
     data["type"] = Type;
 
+    if(auto serCallingConvention = std::dynamic_pointer_cast<ISerializable>(m_callingConvention)) {
+        boost::json::object callingConventionData;
+        serCallingConvention->serialize(callingConventionData);
+        data["calling_convention"] = callingConventionData;
+    }
+
     // serialize the list of parameters
     auto parametersIds = boost::json::array();
     for (auto parameter : m_parameters)
@@ -46,6 +65,10 @@ void SignatureDataType::serialize(boost::json::object& data) const {
 
 void SignatureDataType::deserialize(boost::json::object& data) {
     DataType::deserialize(data);
+
+    if(auto serCallingConvention = std::dynamic_pointer_cast<ISerializable>(m_callingConvention)) {
+        serCallingConvention->deserialize(data["calling_convention"].get_object());
+    }
 
     // deserialize the list of parameters
     m_parameters.clear();

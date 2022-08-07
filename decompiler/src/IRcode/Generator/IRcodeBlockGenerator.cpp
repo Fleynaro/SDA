@@ -211,7 +211,7 @@ void IRcodeBlockGenerator::genWriteMemory(MemorySpace* memSpace, std::shared_ptr
     memSpace->variables.push_front(newVariable);
 }
 
-std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadMemory(MemorySpace* memSpace, size_t readOffset, size_t readSize, BitMask& readMask) {
+std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadMemory(MemorySpace* memSpace, Offset readOffset, size_t readSize, BitMask& readMask) {
     std::list<VariableReadInfo> varReadInfos;
 
     for (auto variable : memSpace->variables) {
@@ -226,7 +226,7 @@ std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadM
         auto endDelta = (int64_t)(varOffset + varSize) - (int64_t)(readOffset + readSize);
         
         BitMask varMask = 0;
-        size_t extractOffset = 0;
+        Offset extractOffset = 0;
         size_t extractSize = 0;
 
         // see different cases
@@ -284,7 +284,7 @@ std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadM
 
 ircode::MemoryAddress IRcodeBlockGenerator::getRegisterMemoryAddress(const Register& reg) const {
     auto baseAddrHash = std::hash<size_t>()(reg.getRegId());
-    size_t offset = 0;
+    Offset offset = 0;
     if (reg.getRegType() == Register::Virtual) {
         boost::hash_combine(baseAddrHash, reg.getRegIndex());
     } else {

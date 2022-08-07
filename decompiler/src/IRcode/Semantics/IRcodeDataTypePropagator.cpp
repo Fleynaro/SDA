@@ -1,6 +1,7 @@
 #include "Decompiler/IRcode/Semantics/IRcodeDataTypePropagator.h"
 #include "Core/DataType/PointerDataType.h"
 #include "Core/DataType/ScalarDataType.h"
+#include "Core/DataType/StructureDataType.h"
 #include "Core/Symbol/Symbol.h"
 
 using namespace sda;
@@ -8,14 +9,18 @@ using namespace sda::decompiler;
 
 IRcodeDataTypePropagator::IRcodeDataTypePropagator(
     Context* context,
+    SignatureDataType* signatureDt,
     SymbolTable* globalSymbolTable,
     SymbolTable* stackSymbolTable,
     SymbolTable* instructionSymbolTable)
     : m_context(context)
+    , m_signatureDt(signatureDt)
     , m_globalSymbolTable(globalSymbolTable)
     , m_stackSymbolTable(stackSymbolTable)
     , m_instructionSymbolTable(instructionSymbolTable)
-{}
+{
+    m_storages = signatureDt->getStorages();
+}
 
 void IRcodeDataTypePropagator::propagate(const ircode::Operation* operation) {
     auto output = operation->getOutput();
@@ -27,16 +32,38 @@ void IRcodeDataTypePropagator::propagate(const ircode::Operation* operation) {
         if (unaryOp->getId() == ircode::OperationId::LOAD) {
             if (auto regValue = std::dynamic_pointer_cast<ircode::Register>(input)) {
                 const auto& reg = regValue->getRegister();
-                SymbolTable* symbolTable = nullptr;
-                if (reg.getRegId() == Register::StackPointerId)
-                    symbolTable = m_stackSymbolTable;
-                else if (reg.getRegId() == Register::InstructionPointerId)
-                    symbolTable = m_globalSymbolTable;
-                if (symbolTable) {
-                    auto voidDt = findDataType("void");
-                    input->setDataType(voidDt->getPointerTo()->getPointerTo()); // void**
-                    output->setDataType(voidDt->getPointerTo()); // void*
-                    output->setSymbolTable(symbolTable);
+                auto it = m_storages.find({
+                    CallingConvention::Storage::Read,
+                    reg.getRegId()
+                });
+                if (it != m_storages.end()) {
+                    // if it is a parameter
+                    const auto& storageInfo = it->second;
+                    auto paramIdx = storageInfo.paramIdx;
+                    auto paramSymbol = m_signatureDt->getParameters()[paramIdx];
+                    auto paramDt = paramSymbol->getDataType();
+                    input->setDataType(paramDt->getPointerTo());
+                    output->setDataType(paramDt);
+                    if (auto structDt = dynamic_cast<StructureDataType*>(paramDt))
+                        output->setSymbolTable(structDt->getSymbolTable());
+                } else {
+                    // if it is a stack or global variable
+                    SymbolTable* symbolTable = m_stackSymbolTable;
+                    if (reg.getRegId() == Register::InstructionPointerId)
+                        symbolTable = m_globalSymbolTable;
+                    if (symbolTable) {
+                        auto voidDt = findDataType("void");
+                        input->setDataType(voidDt->getPointerTo()->getPointerTo()); // void**
+                        output->setDataType(voidDt->getPointerTo()); // void*
+                        output->setSymbolTable(symbolTable);
+                    }
+                }
+            }
+            else if (auto variable = std::dynamic_pointer_cast<ircode::Variable>(input)) {
+                if (auto pointerDt = dynamic_cast<PointerDataType*>(variable->getDataType())) {
+                    output->setDataType(pointerDt->getPointedType());
+                    if (auto structDt = dynamic_cast<StructureDataType*>(pointerDt->getPointedType()))
+                        output->setSymbolTable(structDt->getSymbolTable());
                 }
             }
         }
@@ -88,7 +115,22 @@ void IRcodeDataTypePropagator::propagate(const ircode::Operation* operation) {
                 auto baseValue = linearExpr.getBaseValue();
                 if (baseValue->getDataType()->isPointer()) {
                     if (auto symbolTable = baseValue->getSymbolTable()) {
-                        auto offset = linearExpr.getConstTermValue();
+                        Offset offset = linearExpr.getConstTermValue();
+                        
+                        CallingConvention::Storage storage;
+                        storage.useType = CallingConvention::Storage::Read;
+                        storage.registerId = Register::StackPointerId;
+                        if (symbolTable == m_globalSymbolTable)
+                            storage.registerId = Register::InstructionPointerId;
+                        storage.offset = offset;
+                        auto it = m_storages.find(storage);
+                        if (it != m_storages.end()) {
+                            const auto& storageInfo = it->second;
+                            auto paramIdx = storageInfo.paramIdx;
+                            auto paramSymbol = m_signatureDt->getParameters()[paramIdx];
+                            output->setDataType(paramSymbol->getDataType()->getPointerTo());
+                        }
+
                         if (auto symbol = symbolTable->getSymbolAt(offset)) {
                             output->setDataType(symbol->getDataType()->getPointerTo());
                         } else {

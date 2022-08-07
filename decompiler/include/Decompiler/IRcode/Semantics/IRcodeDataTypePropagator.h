@@ -1,5 +1,6 @@
 #pragma once
 #include "Core/IRcode/IRcodeOperation.h"
+#include "Core/DataType/SignatureDataType.h"
 #include "Core/SymbolTable/SymbolTable.h"
 
 namespace sda::decompiler
@@ -7,12 +8,15 @@ namespace sda::decompiler
     class IRcodeDataTypePropagator
     {
         Context* m_context;
+        SignatureDataType* m_signatureDt;
         SymbolTable* m_globalSymbolTable;
         SymbolTable* m_stackSymbolTable;
         SymbolTable* m_instructionSymbolTable;
+        CallingConvention::Map m_storages;
     public:
         IRcodeDataTypePropagator(
             Context* context,
+            SignatureDataType* signatureDt,
             SymbolTable* globalSymbolTable,
             SymbolTable* stackSymbolTable,
             SymbolTable* instructionSymbolTable);
