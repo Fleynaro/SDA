@@ -1,4 +1,6 @@
 #include "Core/IRcode/IRcodeValue.h"
+#include "Core/DataType/PointerDataType.h"
+#include "Core/DataType/StructureDataType.h"
 
 using namespace sda;
 using namespace sda::ircode;
@@ -21,6 +23,10 @@ LinearExpression& Value::getLinearExpr() {
 
 void Value::setDataType(DataType* dataType) {
     m_dataType = dataType;
+    m_symbolTable = nullptr;
+    if (auto pointerDt = dynamic_cast<PointerDataType*>(dataType))
+        if (auto structDt = dynamic_cast<StructureDataType*>(pointerDt->getPointedType()))
+            m_symbolTable = structDt->getSymbolTable();
 }
 
 DataType* Value::getDataType() {
@@ -33,6 +39,14 @@ void Value::setSymbolTable(SymbolTable* symbolTable) {
 
 SymbolTable* Value::getSymbolTable() {
     return m_symbolTable;
+}
+
+void Value::setSymbol(Symbol* symbol) {
+    m_symbol = symbol;
+}
+
+Symbol* Value::getSymbol() {
+    return m_symbol;
 }
 
 Constant::Constant(const pcode::ConstantVarnode* constVarnode, Hash hash)

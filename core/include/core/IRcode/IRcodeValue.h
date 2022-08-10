@@ -19,6 +19,7 @@ namespace sda::ircode
         DataType* m_dataType = nullptr;
         // if the value is a pointer (RSP/RIP or pointer to an user structure), it stores a symbol table
         SymbolTable* m_symbolTable = nullptr;
+        Symbol* m_symbol = nullptr;
 
     public:
         Value(Hash hash);
@@ -46,6 +47,10 @@ namespace sda::ircode
         void setSymbolTable(SymbolTable* symbolTable);
 
         SymbolTable* getSymbolTable();
+
+        void setSymbol(Symbol* symbol);
+
+        Symbol* getSymbol();
     };
 
     class Constant : public Value

@@ -1,4 +1,4 @@
-#include "Decompiler/IRcode/Semantics/IRcodeDataTypePropagator.h"
+#include "Decompiler/Semantics/IRcodeDataTypePropagator.h"
 #include "Core/DataType/PointerDataType.h"
 #include "Core/DataType/ScalarDataType.h"
 #include "Core/DataType/StructureDataType.h"
