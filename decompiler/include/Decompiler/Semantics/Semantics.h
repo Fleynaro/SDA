@@ -1,43 +1,33 @@
 #pragma once
-#include "Core/IRcode/IRcodeOperation.h"
-#include "Core/DataType/SignatureDataType.h"
 #include "Core/SymbolTable/SymbolTable.h"
 
 namespace sda::decompiler
 {
-    class SemanticsManager;
     class Semantics
     {
+        std::list<Semantics*> m_nextSemantics;
+        std::list<Semantics*> m_prevSemantics;
     public:
-        virtual std::string getName() const = 0;
+        using FilterFunction = std::function<bool(const Semantics*)>;
 
-        class Propagator {
-            SemanticsManager* m_semManager;
-        public:
-            Propagator(SemanticsManager* semManager);
+        virtual const std::string& getName() const = 0;
+    };
 
-            struct Context {
-                SymbolTable* globalSymbolTable;
-                SymbolTable* stackSymbolTable;
-                SymbolTable* instructionSymbolTable;
-                SignatureDataType* signatureDt;
-                CallingConvention::Map storages;
-            };
+    class DataTypeSemantics : public Semantics
+    {
+        DataType* m_dataType;
+        SymbolTable* m_symbolTable;
+    public:
+        DataTypeSemantics(DataType* dataType, SymbolTable* symbolTable);
 
-            virtual void init(
-                const Context* ctx,
-                const ircode::Operation* op) = 0;
+        const std::string& getName() const override;
 
-            virtual void propagate(
-                const Context* ctx,
-                const ircode::Operation* op,
-                const Semantics* sem,
-                std::list<std::shared_ptr<ircode::Variable>>& affectedVars) = 0;
+        DataType* getDataType() const;
 
-        protected:
-            SemanticsManager* getManager() const;
+        SymbolTable* getSymbolTable() const;
 
-            DataType* findDataType(const std::string& name) const;
-        };
+        using DataTypeFilterFunction = std::function<bool(const DataTypeSemantics*)>;
+
+        static FilterFunction Filter(const DataTypeFilterFunction& filter = [](const DataTypeSemantics*){ return true; });
     };
 };

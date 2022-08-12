@@ -7,7 +7,7 @@ FunctionSymbol::FunctionSymbol(
     Context* context,
     Object::Id* id,
     const std::string& name,
-    DataType* dataType,
+    SignatureDataType* dataType,
     bool stackSymbolTable,
     bool instructionSymbolTable)
     : Symbol(context, id, name, dataType)
@@ -17,6 +17,10 @@ FunctionSymbol::FunctionSymbol(
     if (instructionSymbolTable)
         m_instructionSymbolTable = new StandartSymbolTable(context, nullptr, "instruction");
     m_context->getSymbols()->add(std::unique_ptr<FunctionSymbol>(this));
+}
+
+SignatureDataType* FunctionSymbol::getSignature() const {
+    return dynamic_cast<SignatureDataType*>(getDataType());
 }
 
 SymbolTable* FunctionSymbol::getStackSymbolTable() const {

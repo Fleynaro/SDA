@@ -18,13 +18,18 @@ std::shared_ptr<CallingConvention> SignatureDataType::getCallingConvention() con
     return m_callingConvention;
 }
 
-CallingConvention::Map SignatureDataType::getStorages() const {
-    return m_callingConvention->getStorages(this);
+const CallingConvention::Map& SignatureDataType::getStorages() {
+    if (m_updateStorages) {
+        m_storages = m_callingConvention->getStorages(this);
+        m_updateStorages = false;
+    }
+    return m_storages;
 }
 
 void SignatureDataType::setParameters(const std::vector<FunctionParameterSymbol*>& parameters) {
     m_context->getCallbacks()->onObjectModified(this);
     m_parameters = parameters;
+    m_updateStorages = true;
 }
 
 const std::vector<FunctionParameterSymbol*>& SignatureDataType::getParameters() const {
@@ -34,6 +39,7 @@ const std::vector<FunctionParameterSymbol*>& SignatureDataType::getParameters() 
 void SignatureDataType::setReturnType(DataType* returnType) {
     m_context->getCallbacks()->onObjectModified(this);
     m_returnType = returnType;
+    m_updateStorages = true;
 }
 
 DataType* SignatureDataType::getReturnType() const {
@@ -80,4 +86,5 @@ void SignatureDataType::deserialize(boost::json::object& data) {
     }
 
     m_returnType = m_context->getDataTypes()->get(data["return_type"]);
+    m_updateStorages = true;
 }

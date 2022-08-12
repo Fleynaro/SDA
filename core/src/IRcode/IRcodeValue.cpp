@@ -17,36 +17,12 @@ std::list<Operation*>& Value::getOperations() {
     return m_operations;
 }
 
-LinearExpression& Value::getLinearExpr() {
+const LinearExpression& Value::getLinearExpr() const {
     return m_linearExpr;
 }
 
-void Value::setDataType(DataType* dataType) {
-    m_dataType = dataType;
-    m_symbolTable = nullptr;
-    if (auto pointerDt = dynamic_cast<PointerDataType*>(dataType))
-        if (auto structDt = dynamic_cast<StructureDataType*>(pointerDt->getPointedType()))
-            m_symbolTable = structDt->getSymbolTable();
-}
-
-DataType* Value::getDataType() {
-    return m_dataType;
-}
-
-void Value::setSymbolTable(SymbolTable* symbolTable) {
-    m_symbolTable = symbolTable;
-}
-
-SymbolTable* Value::getSymbolTable() {
-    return m_symbolTable;
-}
-
-void Value::setSymbol(Symbol* symbol) {
-    m_symbol = symbol;
-}
-
-Symbol* Value::getSymbol() {
-    return m_symbol;
+void Value::setLinearExpr(const LinearExpression& linearExpr) {
+    m_linearExpr = linearExpr;
 }
 
 Constant::Constant(const pcode::ConstantVarnode* constVarnode, Hash hash)

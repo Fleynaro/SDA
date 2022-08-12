@@ -1,6 +1,7 @@
 #pragma once
 #include "Symbol.h"
 #include "Core/Offset.h"
+#include "Core/DataType/SignatureDataType.h"
 
 namespace sda
 {
@@ -17,9 +18,11 @@ namespace sda
             Context* context,
             Object::Id* id = nullptr,
             const std::string& name = "",
-            DataType* dataType = nullptr,
+            SignatureDataType* dataType = nullptr,
             bool stackSymbolTable = false,
             bool instructionSymbolTable = false);
+
+        SignatureDataType* getSignature() const;
 
         SymbolTable* getStackSymbolTable() const;
 

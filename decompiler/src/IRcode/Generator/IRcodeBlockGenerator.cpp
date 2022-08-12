@@ -413,10 +413,10 @@ void IRcodeBlockGenerator::genGenericOperation(const pcode::Instruction* instr, 
         const auto& linearExprInp1 = inputVal1->getLinearExpr();
         const auto& linearExprInp2 = inputVal2->getLinearExpr();
         if (instr->getId() == pcode::InstructionId::INT_ADD) {
-            outputVar->getLinearExpr() = linearExprInp1 + linearExprInp2;
+            outputVar->setLinearExpr(linearExprInp1 + linearExprInp2);
         } else if (instr->getId() == pcode::InstructionId::INT_MULT) {
             if (linearExprInp1.getTerms().empty() || linearExprInp2.getTerms().empty())
-                outputVar->getLinearExpr() = linearExprInp1 * linearExprInp2;
+                outputVar->setLinearExpr(linearExprInp1 * linearExprInp2);
         }
     } else {
         genOperation(std::make_unique<ircode::UnaryOperation>(operationId, inputVal1, outputVar));

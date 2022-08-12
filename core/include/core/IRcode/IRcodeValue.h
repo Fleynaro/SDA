@@ -16,10 +16,6 @@ namespace sda::ircode
         Hash m_hash;
         std::list<Operation*> m_operations;
         LinearExpression m_linearExpr;
-        DataType* m_dataType = nullptr;
-        // if the value is a pointer (RSP/RIP or pointer to an user structure), it stores a symbol table
-        SymbolTable* m_symbolTable = nullptr;
-        Symbol* m_symbol = nullptr;
 
     public:
         Value(Hash hash);
@@ -38,19 +34,9 @@ namespace sda::ircode
 
         std::list<Operation*>& getOperations();
 
-        LinearExpression& getLinearExpr();
+        const LinearExpression& getLinearExpr() const;
 
-        void setDataType(DataType* dataType);
-
-        DataType* getDataType();
-
-        void setSymbolTable(SymbolTable* symbolTable);
-
-        SymbolTable* getSymbolTable();
-
-        void setSymbol(Symbol* symbol);
-
-        Symbol* getSymbol();
+        void setLinearExpr(const LinearExpression& linearExpr);
     };
 
     class Constant : public Value

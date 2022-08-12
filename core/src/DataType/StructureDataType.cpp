@@ -16,7 +16,7 @@ StructureDataType::StructureDataType(
     m_context->getDataTypes()->add(std::unique_ptr<StructureDataType>(this));
 }
 
-StandartSymbolTable* StructureDataType::getSymbolTable() {
+StandartSymbolTable* StructureDataType::getSymbolTable() const {
     return m_symbolTable;
 }
 

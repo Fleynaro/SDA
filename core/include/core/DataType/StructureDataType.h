@@ -18,7 +18,7 @@ namespace sda
             const std::string& name = "",
             bool symbolTable = false);
 
-        StandartSymbolTable* getSymbolTable();
+        StandartSymbolTable* getSymbolTable() const;
 
         void setSize(size_t size);
 

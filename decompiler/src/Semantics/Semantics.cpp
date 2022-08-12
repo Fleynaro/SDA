@@ -4,16 +4,28 @@
 using namespace sda;
 using namespace sda::decompiler;
 
-Semantics::Propagator::Propagator(SemanticsManager* semManager)
-    : m_semManager(semManager)
+DataTypeSemantics::DataTypeSemantics(DataType* dataType, SymbolTable* symbolTable)
+    : m_dataType(dataType)
+    , m_symbolTable(symbolTable)
 {}
 
-SemanticsManager* Semantics::Propagator::getManager() const {
-    return m_semManager;
+const std::string& DataTypeSemantics::getName() const {
+    static const std::string name = "DataTypeSemantics";
+    return name;
 }
 
-DataType* Semantics::Propagator::findDataType(const std::string& name) const {
-    auto dataType = m_semManager->getContext()->getDataTypes()->getByName(name);
-    assert(dataType);
-    return dataType;
+DataType* DataTypeSemantics::getDataType() const {
+    return m_dataType;
+}
+
+SymbolTable* DataTypeSemantics::getSymbolTable() const {
+    return m_symbolTable;
+}
+
+Semantics::FilterFunction DataTypeSemantics::Filter(const DataTypeFilterFunction& filter) {
+    return [filter](const Semantics* sem) {
+        if (auto dataTypeSem = dynamic_cast<const DataTypeSemantics*>(sem))
+            return filter(dataTypeSem);
+        return false;
+    };
 }

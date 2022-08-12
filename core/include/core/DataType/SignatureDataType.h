@@ -10,6 +10,8 @@ namespace sda
         std::shared_ptr<CallingConvention> m_callingConvention;
         std::vector<FunctionParameterSymbol*> m_parameters;
         DataType* m_returnType;
+        CallingConvention::Map m_storages;
+        bool m_updateStorages = true;
     public:
         static inline const std::string Type = "signature";
 
@@ -21,7 +23,7 @@ namespace sda
 
         std::shared_ptr<CallingConvention> getCallingConvention() const;
 
-        CallingConvention::Map getStorages() const;
+        const CallingConvention::Map& getStorages();
 
         // todo: to change the parameters, use setParameters() only (like in react js)
         void setParameters(const std::vector<FunctionParameterSymbol*>& parameters);

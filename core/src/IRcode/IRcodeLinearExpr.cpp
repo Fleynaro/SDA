@@ -33,11 +33,7 @@ LinearExpression LinearExpression::operator+(const LinearExpression& other) cons
         for (const auto& term : other.m_terms) {
             auto it = termMap.find(term.value->getHash());
             if (it == termMap.end()) {
-                if (term.value->getDataType()->isPointer()) {
-                    result.m_terms.push_front(term);
-                } else {
-                    result.m_terms.push_back(term);
-                }
+                result.m_terms.push_back(term);
             } else {
                 it->second->factor += term.factor;
             }

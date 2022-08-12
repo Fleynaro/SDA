@@ -92,7 +92,8 @@
         "*.ipp": "cpp",
         "memory_resource": "cpp",
         "*.inc": "cpp",
-        "register.h": "c"
+        "register.h": "c",
+        "*.rh": "cpp"
     },
 
     "cmake.debugConfig": {
