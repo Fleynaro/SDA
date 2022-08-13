@@ -24,8 +24,6 @@ namespace sda::ircode
 
         const std::list<Term>& getTerms() const;
 
-        std::shared_ptr<Value> getBaseValue() const;
-
         size_t getConstTermValue() const;
 
         LinearExpression operator+(const LinearExpression& other) const;

@@ -295,7 +295,8 @@ ircode::MemoryAddress IRcodeBlockGenerator::getRegisterMemoryAddress(const Regis
 
 ircode::MemoryAddress IRcodeBlockGenerator::getMemoryAddress(std::shared_ptr<ircode::Value> addrValue) const {
     const auto& addrExpr = addrValue->getLinearExpr();
-    auto baseAddrValue = addrExpr.getBaseValue();
+    assert(!addrExpr.getTerms().empty());
+    auto baseAddrValue = addrExpr.getTerms().front().value;
     assert(baseAddrValue->getSize() == 8 && "Invalid address size");
     return {
         addrValue,

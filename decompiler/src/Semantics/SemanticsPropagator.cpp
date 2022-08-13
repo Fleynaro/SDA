@@ -15,7 +15,7 @@ SemanticsManager* SemanticsPropagator::getManager() const {
     return m_semManager;
 }
 
-VariableSemObj* SemanticsPropagator::getOrCreateVarObject(std::shared_ptr<ircode::Variable> var) {
+VariableSemObj* SemanticsPropagator::getOrCreateVarObject(std::shared_ptr<ircode::Variable> var) const {
     auto id = VariableSemObj::GetId(var.get());
     if (auto obj = getManager()->getObject<VariableSemObj>(id))
         return obj;
@@ -23,15 +23,38 @@ VariableSemObj* SemanticsPropagator::getOrCreateVarObject(std::shared_ptr<ircode
     return dynamic_cast<VariableSemObj*>(newObj);
 }
 
-void SemanticsPropagator::bind(SemanticsObject* obj1, SemanticsObject* obj2) {
+void SemanticsPropagator::bindEachOther(SemanticsObject* obj1, SemanticsObject* obj2) const {
     obj1->bindTo(obj2);
     obj2->bindTo(obj1);
+}
+
+void SemanticsPropagator::propagateTo(
+    SemanticsObject* fromObj,
+    SemanticsObject* toObj,
+    Semantics::FilterFunction filter,
+    std::set<SemanticsObject*>& nextObjs) const
+{
+    if (getManager()->isSimiliarityConsidered()) {
+        auto toObjSemantics = toObj->findSemantics(filter);
+        auto oldFilter = filter;
+        filter = [oldFilter, toObjSemantics](const Semantics* sem) {
+            if (!oldFilter(sem))
+                return false;
+            for (auto sem2 : toObjSemantics) {
+                if (sem == sem2 || sem->isSimiliarTo(sem2))
+                    return false;
+            }
+            return true;
+        };
+    }
+    if (fromObj->propagateTo(toObj, filter))
+        nextObjs.insert(toObj);
 }
 
 void BaseSemanticsPropagator::propagate(
     const SemanticsContext* ctx,
     const ircode::Operation* op,
-    std::list<SemanticsObject*>& nextObjs)
+    std::set<SemanticsObject*>& nextObjs)
 {
     auto output = op->getOutput();
 
@@ -51,11 +74,10 @@ void BaseSemanticsPropagator::propagate(
                     auto paramIdx = storageInfo.paramIdx;
                     auto paramSymbol = signatureDt->getParameters()[paramIdx];
                     if (auto paramSymbolObj = getSymbolObject(paramSymbol)) {
-                        if (auto outputVarObj = getOrCreateVarObject(output)) {
-                            bind(paramSymbolObj, outputVarObj);
-                            if (paramSymbolObj->propagateTo(outputVarObj, DataTypeSemantics::Filter()))
-                                nextObjs.push_back(outputVarObj);
-                        }
+                        auto outputVarObj = getOrCreateVarObject(output);
+                        bindEachOther(paramSymbolObj, outputVarObj);
+                        propagateTo(paramSymbolObj, outputVarObj, DataTypeSemantics::Filter(), nextObjs);
+                        propagateTo(outputVarObj, paramSymbolObj, DataTypeSemantics::Filter(), nextObjs);
                     }
                 } else {
                     // if it is a stack or global variable
@@ -64,11 +86,9 @@ void BaseSemanticsPropagator::propagate(
                         symbolTable = ctx->globalSymbolTable;
                     if (symbolTable) {
                         if (auto symbolTableObj = getSymbolTableObject(symbolTable)) {
-                            if (auto outputVarObj = getOrCreateVarObject(output)) {
-                                bind(symbolTableObj, outputVarObj);
-                                if (symbolTableObj->propagateTo(outputVarObj, DataTypeSemantics::Filter()))
-                                    nextObjs.push_back(outputVarObj);
-                            }
+                            auto outputVarObj = getOrCreateVarObject(output);
+                            bindEachOther(symbolTableObj, outputVarObj);
+                            propagateTo(symbolTableObj, outputVarObj, DataTypeSemantics::Filter(), nextObjs);
                         }
                     }
                 }
@@ -76,12 +96,10 @@ void BaseSemanticsPropagator::propagate(
         }
         else if (unaryOp->getId() == ircode::OperationId::COPY) {
             if (auto variable = std::dynamic_pointer_cast<ircode::Variable>(input)) {
-                if (auto inputVarObj = getOrCreateVarObject(variable)) {
-                    if (auto outputVarObj = getOrCreateVarObject(output)) {
-                        if (outputVarObj->propagateTo(inputVarObj))
-                            nextObjs.push_back(inputVarObj);
-                    }
-                }
+                auto inputVarObj = getOrCreateVarObject(variable);
+                auto outputVarObj = getOrCreateVarObject(output);
+                propagateTo(inputVarObj, outputVarObj, Semantics::FilterAll, nextObjs);
+                propagateTo(outputVarObj, inputVarObj, Semantics::FilterAll, nextObjs);
             }
         }
         else if (unaryOp->getId() == ircode::OperationId::INT_2COMP) {
@@ -112,17 +130,33 @@ void BaseSemanticsPropagator::propagate(
             binaryOp->getId() == ircode::OperationId::INT_DIV ||
             binaryOp->getId() == ircode::OperationId::INT_REM)
         {
-            if (input1->getDataType()->isScalar(ScalarType::SignedInt) ||
-                input2->getDataType()->isScalar(ScalarType::SignedInt))
-            {
-                auto signedScalarDt = getScalarDataType(ScalarType::SignedInt, output->getSize());
-                setDataTypeFor(output, signedScalarDt, nextObjs);
+            if (auto inputVar1 = std::dynamic_pointer_cast<ircode::Variable>(input1)) {
+                if (auto inputVar2 = std::dynamic_pointer_cast<ircode::Variable>(input2)) {
+                    auto inputVarObj1 = getOrCreateVarObject(inputVar1);
+                    auto inputVarObj2 = getOrCreateVarObject(inputVar2);
+                    auto outputVarObj = getOrCreateVarObject(output);
+                    auto signedScalarDt = getScalarDataType(ScalarType::SignedInt, output->getSize());
+                    auto filter = DataTypeSemantics::Filter(signedScalarDt);
+                    propagateTo(inputVarObj1, outputVarObj, filter, nextObjs);
+                    propagateTo(inputVarObj2, outputVarObj, filter, nextObjs);
+                }
             }
 
             if (binaryOp->getId() == ircode::OperationId::INT_ADD ||
                 binaryOp->getId() == ircode::OperationId::INT_MULT)
             {
+                auto isPointerFilter = DataTypeSemantics::Filter([](const DataTypeSemantics* sem) {
+                    return sem->getDataType()->isPointer();
+                });
                 auto linearExpr = output->getLinearExpr();
+                for (auto& term : linearExpr.getTerms()) {
+                    if (auto termVar = std::dynamic_pointer_cast<ircode::Variable>(term.value)) {
+                        auto termVarSemObj = getOrCreateVarObject(termVar);
+                        auto outputVarObj = getOrCreateVarObject(output);
+                        propagateTo(termVarSemObj, outputVarObj, isPointerFilter, nextObjs);
+                    }
+                }
+
                 auto baseValue = linearExpr.getBaseValue();
                 if (baseValue->getDataType()->isPointer()) {
                     if (auto symbolTable = baseValue->getSymbolTable()) {
@@ -225,38 +259,23 @@ ScalarDataType* BaseSemanticsPropagator::getScalarDataType(ScalarType scalarType
     return getManager()->getContext()->getDataTypes()->getScalar(scalarType, size);
 }
 
-DataTypeSemantics* BaseSemanticsPropagator::createDataTypeSemantics(const DataType* dataType, const SymbolTable* symbolTable) const {
+DataTypeSemantics* BaseSemanticsPropagator::createDataTypeSemantics(SemanticsObject* sourceObject, const DataType* dataType, const SymbolTable* symbolTable) const {
     if (!symbolTable) {
         if (auto pointerDt = dynamic_cast<const PointerDataType*>(dataType))
             if (auto structDt = dynamic_cast<const StructureDataType*>(pointerDt->getPointedType()))
                 symbolTable = structDt->getSymbolTable();
     }
-    auto sem = getManager()->addSemantics(std::make_unique<DataTypeSemantics>(dataType, symbolTable));
+    auto sem = getManager()->addSemantics(std::make_unique<DataTypeSemantics>(sourceObject, dataType, symbolTable));
     return dynamic_cast<DataTypeSemantics*>(sem);
 }
 
-void BaseSemanticsPropagator::setDataTypeFor(std::shared_ptr<ircode::Value> value, const DataType* dataType, std::list<SemanticsObject*>& nextObjs) {
-    DataTypeSemantics::DataTypeFilterFunction filter;
-    if (dataType->isScalar(ScalarType::SignedInt)) {
-        filter = [](const DataTypeSemantics* sem) {
-            return sem->getDataType()->isScalar(ScalarType::SignedInt);
-        };
-    } else if (dataType->isScalar(ScalarType::FloatingPoint)) {
-        filter = [](const DataTypeSemantics* sem) {
-            return sem->getDataType()->isScalar(ScalarType::FloatingPoint);
-        };
-    } else {
-        filter = [dataType](const DataTypeSemantics* sem) {
-            return sem->getDataType()->getName() == dataType->getName();
-        };
-    }
+void BaseSemanticsPropagator::setDataTypeFor(std::shared_ptr<ircode::Value> value, const DataType* dataType, std::set<SemanticsObject*>& nextObjs) {
     if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
-        if (auto varObj = getOrCreateVarObject(var)) {
-            if (!varObj->checkSemantics(DataTypeSemantics::Filter(filter))) { // todo: need check existing? hard to calculate stats!
-                auto sem = createDataTypeSemantics(dataType);
-                varObj->addSemantics(sem);
-                nextObjs.push_back(varObj);
-            }
+        auto varObj = getOrCreateVarObject(var);
+        bool onlyEmitted = !getManager()->isSimiliarityConsidered();
+        if (!varObj->checkSemantics(DataTypeSemantics::Filter(dataType), onlyEmitted)) {
+            auto sem = createDataTypeSemantics(varObj, dataType);
+            nextObjs.insert(varObj);
         }
     }
 }

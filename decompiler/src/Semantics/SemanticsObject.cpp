@@ -3,25 +3,36 @@
 using namespace sda;
 using namespace sda::decompiler;
 
-void SemanticsObject::addSemantics(Semantics* semantics) {
-    m_semantics.insert(semantics);
-}
-
-bool SemanticsObject::checkSemantics(const Semantics::FilterFunction& filter) const {
-    for (auto& semantics : m_semantics) {
-        if (filter(semantics))
-            return true;
+bool SemanticsObject::checkSemantics(const Semantics::FilterFunction& filter, bool onlyEmitted) const {
+    if (onlyEmitted) {
+        for (auto& semantics : m_semantics) {
+            if (filter(semantics) && semantics->getSourceObject() == this)
+                return true;
+        }
+    } else {
+        for (auto& semantics : m_semantics) {
+            if (filter(semantics))
+                return true;
+        }
     }
     return false;
 }
 
+std::list<Semantics*> SemanticsObject::findSemantics(const Semantics::FilterFunction& filter) const {
+    std::list<Semantics*> result;
+    for (auto& semantics : m_semantics) {
+        if (filter(semantics))
+            result.push_back(semantics);
+    }
+    return result;
+}
+
 bool SemanticsObject::propagateTo(SemanticsObject* obj, const Semantics::FilterFunction& filter) {
     bool result = false;
-    for (auto semantics : m_semantics) {
-        if (filter(semantics)) {
-            auto pair = obj->m_semantics.insert(semantics);
-            result |= pair.second;
-        }
+    auto foundSemantics = findSemantics(filter);
+    for (auto semantics : foundSemantics) {
+        auto pair = obj->m_semantics.insert(semantics);
+        result |= pair.second;
     }
     return result;
 }

@@ -22,13 +22,19 @@ namespace sda::decompiler
         virtual void propagate(
             const SemanticsContext* ctx,
             const ircode::Operation* op,
-            std::list<SemanticsObject*>& nextObjs) = 0;
+            std::set<SemanticsObject*>& nextObjs) = 0;
     protected:
         SemanticsManager* getManager() const;
 
-        VariableSemObj* getOrCreateVarObject(std::shared_ptr<ircode::Variable> var);
+        VariableSemObj* getOrCreateVarObject(std::shared_ptr<ircode::Variable> var) const;
 
-        void bind(SemanticsObject* obj1, SemanticsObject* obj2);
+        void bindEachOther(SemanticsObject* obj1, SemanticsObject* obj2) const;
+
+        void propagateTo(
+            SemanticsObject* fromObj,
+            SemanticsObject* toObj,
+            Semantics::FilterFunction filter,
+            std::set<SemanticsObject*>& nextObjs) const;
     };
 
     class BaseSemanticsPropagator : public SemanticsPropagator
@@ -39,7 +45,7 @@ namespace sda::decompiler
         void propagate(
             const SemanticsContext* ctx,
             const ircode::Operation* op,
-            std::list<SemanticsObject*>& nextObjs) override;
+            std::set<SemanticsObject*>& nextObjs) override;
 
     private:
         SymbolSemObj* getSymbolObject(const Symbol* symbol) const;
@@ -52,8 +58,8 @@ namespace sda::decompiler
 
         ScalarDataType* getScalarDataType(ScalarType scalarType, size_t size) const;
 
-        DataTypeSemantics* createDataTypeSemantics(const DataType* dataType, const SymbolTable* symbolTable = nullptr) const;
+        DataTypeSemantics* createDataTypeSemantics(SemanticsObject* sourceObject, const DataType* dataType, const SymbolTable* symbolTable = nullptr) const;
 
-        void setDataTypeFor(std::shared_ptr<ircode::Value> value, const DataType* dataType, std::list<SemanticsObject*>& nextObjs);
+        void setDataTypeFor(std::shared_ptr<ircode::Value> value, const DataType* dataType, std::set<SemanticsObject*>& nextObjs);
     };
 };

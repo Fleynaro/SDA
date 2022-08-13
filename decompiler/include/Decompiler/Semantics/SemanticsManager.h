@@ -30,5 +30,7 @@ namespace sda::decompiler
         Semantics* addSemantics(std::unique_ptr<Semantics> semantics);
         
         void addPropagator(std::unique_ptr<SemanticsPropagator> propagator);
+
+        bool isSimiliarityConsidered() const;
     };
 };

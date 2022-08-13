@@ -4,14 +4,28 @@
 using namespace sda;
 using namespace sda::decompiler;
 
-DataTypeSemantics::DataTypeSemantics(DataType* dataType, SymbolTable* symbolTable)
-    : m_dataType(dataType)
+Semantics::Semantics(SemanticsObject* sourceObject)
+    : m_sourceObject(sourceObject)
+{
+    m_sourceObject->m_semantics.insert(this);
+}
+
+SemanticsObject* Semantics::getSourceObject() const {
+    return m_sourceObject;
+}
+
+bool Semantics::isSimiliarTo(const Semantics* other) const {
+    return false;
+}
+
+DataTypeSemantics::DataTypeSemantics(SemanticsObject* sourceObject, DataType* dataType, SymbolTable* symbolTable)
+    : Semantics(sourceObject)
+    , m_dataType(dataType)
     , m_symbolTable(symbolTable)
 {}
 
 const std::string& DataTypeSemantics::getName() const {
-    static const std::string name = "DataTypeSemantics";
-    return name;
+    return "DataTypeSemantics";
 }
 
 DataType* DataTypeSemantics::getDataType() const {
@@ -20,6 +34,28 @@ DataType* DataTypeSemantics::getDataType() const {
 
 SymbolTable* DataTypeSemantics::getSymbolTable() const {
     return m_symbolTable;
+}
+
+bool DataTypeSemantics::isSimiliarTo(const Semantics* other) const {
+    return Filter(m_dataType)(other);
+}
+
+DataTypeSemantics::FilterFunction DataTypeSemantics::Filter(const DataType* dataType) {
+    DataTypeSemantics::DataTypeFilterFunction filter;
+    if (dataType->isScalar(ScalarType::SignedInt)) {
+        filter = [](const DataTypeSemantics* sem) {
+            return sem->getDataType()->isScalar(ScalarType::SignedInt);
+        };
+    } else if (dataType->isScalar(ScalarType::FloatingPoint)) {
+        filter = [](const DataTypeSemantics* sem) {
+            return sem->getDataType()->isScalar(ScalarType::FloatingPoint);
+        };
+    } else {
+        filter = [dataType](const DataTypeSemantics* sem) {
+            return sem->getDataType()->getName() == dataType->getName();
+        };
+    }
+    return Filter(filter);
 }
 
 Semantics::FilterFunction DataTypeSemantics::Filter(const DataTypeFilterFunction& filter) {

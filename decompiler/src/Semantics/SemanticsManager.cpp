@@ -33,3 +33,7 @@ Semantics* SemanticsManager::addSemantics(std::unique_ptr<Semantics> semantics) 
 void SemanticsManager::addPropagator(std::unique_ptr<SemanticsPropagator> propagator) {
     m_propagators.push_back(std::move(propagator));
 }
+
+bool SemanticsManager::isSimiliarityConsidered() const {
+    return false;
+}

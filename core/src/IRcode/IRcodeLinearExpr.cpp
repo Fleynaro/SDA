@@ -17,11 +17,6 @@ const std::list<LinearExpression::Term>& LinearExpression::getTerms() const {
     return m_terms;
 }
 
-std::shared_ptr<Value> LinearExpression::getBaseValue() const {
-    assert(!m_terms.empty());
-    return m_terms.front().value;
-}
-
 size_t LinearExpression::getConstTermValue() const {
     return m_constTermValue;
 }

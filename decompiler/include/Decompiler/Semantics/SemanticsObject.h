@@ -11,6 +11,7 @@ namespace sda::decompiler
 {
     class SemanticsObject
     {
+        friend Semantics::Semantics(SemanticsObject* sourceObject);
         std::set<Semantics*> m_semantics;
     public:
         using Id = size_t;
@@ -21,13 +22,11 @@ namespace sda::decompiler
 
         virtual void unbindFrom(SemanticsObject* obj) = 0;
 
-        void addSemantics(Semantics* semantics);
+        bool checkSemantics(const Semantics::FilterFunction& filter, bool onlyEmitted = false) const;
 
-        bool checkSemantics(const Semantics::FilterFunction& filter) const;
+        std::list<Semantics*> findSemantics(const Semantics::FilterFunction& filter) const;
 
-        std::list<Semantics*> getSemantics(const Semantics::FilterFunction& filter) const;
-
-        bool propagateTo(SemanticsObject* obj, const Semantics::FilterFunction& filter = [](const Semantics*) { return true; });
+        bool propagateTo(SemanticsObject* obj, const Semantics::FilterFunction& filter);
     };
 
     class VariableSemObj : public SemanticsObject
