@@ -3,6 +3,10 @@
 using namespace sda;
 using namespace sda::decompiler;
 
+bool SemanticsObject::addSemantics(Semantics* sem) {
+    return m_semantics.insert(sem).second;
+}
+
 bool SemanticsObject::checkSemantics(const Semantics::FilterFunction& filter, bool onlyEmitted) const {
     if (onlyEmitted) {
         for (auto& semantics : m_semantics) {

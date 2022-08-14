@@ -12,6 +12,8 @@ namespace sda::ircode
         struct Term {
             std::shared_ptr<Value> value;
             size_t factor = 1;
+
+            bool canBePointer() const;
         };
         std::list<Term> m_terms;
         size_t m_constTermValue = 0;

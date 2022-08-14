@@ -1,9 +1,14 @@
 #include "Core/IRcode/IRcodeLinearExpr.h"
 #include "Core/IRcode/IRcodeValue.h"
+#include "Core/DataType/PointerDataType.h"
 #include <stdexcept>
 
 using namespace sda;
 using namespace sda::ircode;
+
+bool LinearExpression::Term::canBePointer() const {
+    return factor == 1 && value->getSize() == PointerSize;
+}
 
 LinearExpression::LinearExpression(size_t constTermValue)
     : m_constTermValue(constTermValue)
@@ -28,7 +33,11 @@ LinearExpression LinearExpression::operator+(const LinearExpression& other) cons
         for (const auto& term : other.m_terms) {
             auto it = termMap.find(term.value->getHash());
             if (it == termMap.end()) {
-                result.m_terms.push_back(term);
+                if (term.canBePointer()) {
+                    result.m_terms.push_front(term);
+                } else {
+                    result.m_terms.push_back(term);
+                }
             } else {
                 it->second->factor += term.factor;
             }

@@ -58,8 +58,10 @@ namespace sda::decompiler
 
         ScalarDataType* getScalarDataType(ScalarType scalarType, size_t size) const;
 
-        DataTypeSemantics* createDataTypeSemantics(SemanticsObject* sourceObject, const DataType* dataType, const SymbolTable* symbolTable = nullptr) const;
+        DataTypeSemantics* createDataTypeSemantics(SemanticsObject* sourceObject, const DataType* dataType, size_t uncertaintyDegree = 0) const;
 
-        void setDataTypeFor(std::shared_ptr<ircode::Value> value, const DataType* dataType, std::set<SemanticsObject*>& nextObjs);
+        void setDataTypeFor(std::shared_ptr<ircode::Value> value, const DataType* dataType, std::set<SemanticsObject*>& nextObjs) const;
+
+        std::set<SymbolTable*> getAllSymbolTables(const ircode::LinearExpression& linearExpr) const;
     };
 };
