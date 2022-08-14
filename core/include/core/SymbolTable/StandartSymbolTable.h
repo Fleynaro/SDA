@@ -16,7 +16,7 @@ namespace sda
 
         void removeSymbol(Offset offset) override;
 
-        Symbol* getSymbolAt(Offset offset) override;
+        SymbolInfo getSymbolAt(Offset offset) override;
 
         const std::map<Offset, Symbol*>& getSymbols() const;
 

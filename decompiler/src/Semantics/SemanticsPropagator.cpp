@@ -32,7 +32,8 @@ void SemanticsPropagator::propagateTo(
     SemanticsObject* fromObj,
     SemanticsObject* toObj,
     Semantics::FilterFunction filter,
-    std::set<SemanticsObject*>& nextObjs) const
+    std::set<SemanticsObject*>& nextObjs,
+    size_t uncertaintyDegree) const
 {
     if (getManager()->isSimiliarityConsidered()) {
         auto toObjSemantics = toObj->findSemantics(filter);
@@ -45,7 +46,20 @@ void SemanticsPropagator::propagateTo(
         };
         filter = Semantics::FilterAnd(filter, simFilter);
     }
-    if (fromObj->propagateTo(toObj, filter)) // todo: remove
+
+    bool isPropagated = false;
+    auto fromObjSemantics = fromObj->findSemantics(filter);
+    for (auto sem : fromObjSemantics) {
+        if (uncertaintyDegree > 0) {
+            auto newUncertaintyDegree = sem->getUncertaintyDegree() + uncertaintyDegree;
+            auto newSem = getManager()->addSemantics(sem->clone(newUncertaintyDegree));
+            sem->addSuccessor(newSem);
+            sem = newSem;
+        }
+        isPropagated |= toObj->addSemantics(sem);
+    }
+
+    if (isPropagated)
         nextObjs.insert(toObj);
 }
 
@@ -59,12 +73,11 @@ void BaseSemanticsPropagator::propagate(
     if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(op)) {
         auto input = unaryOp->getInput();
         if (unaryOp->getId() == ircode::OperationId::LOAD) {
-            if (auto regValue = std::dynamic_pointer_cast<ircode::Register>(input)) {
-                const auto& reg = regValue->getRegister();
+            if (auto inputReg = std::dynamic_pointer_cast<ircode::Register>(input)) {
                 auto signatureDt = ctx->functionSymbol->getSignature();
                 auto it = signatureDt->getStorages().find({
                     CallingConvention::Storage::Read,
-                    reg.getRegId()
+                    inputReg->getRegister().getRegId()
                 });
                 if (it != signatureDt->getStorages().end()) {
                     // if it is a parameter
@@ -80,7 +93,7 @@ void BaseSemanticsPropagator::propagate(
                 } else {
                     // if it is a stack or global variable
                     auto symbolTable = ctx->functionSymbol->getStackSymbolTable();
-                    if (reg.getRegId() == Register::InstructionPointerId)
+                    if (inputReg->getRegister().getRegId() == Register::InstructionPointerId)
                         symbolTable = ctx->globalSymbolTable;
                     if (symbolTable) {
                         if (auto symbolTableObj = getSymbolTableObject(symbolTable)) {
@@ -91,10 +104,35 @@ void BaseSemanticsPropagator::propagate(
                     }
                 }
             }
+            else if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
+                auto inputVarObj = getOrCreateVarObject(inputVar);
+                auto outputVarObj = getOrCreateVarObject(output);
+
+                auto linearExpr = inputVar->getLinearExpr();
+                Offset offset = linearExpr.getConstTermValue();
+                auto symbolTables = getAllSymbolTables(linearExpr);
+                for (auto& [sem, symbolTable] : symbolTables) {
+                    // load multiple symbols to structure, don't forget about func. params
+                }
+
+                auto semantics = inputVarObj->findSemantics(DataTypeSemantics::Filter());
+                for (auto sem : semantics) {
+                    if (auto dataTypeSem = dynamic_cast<DataTypeSemantics*>(sem)) {
+                        if (auto pointerDt = dynamic_cast<const PointerDataType*>(dataTypeSem->getDataType())) {
+                            auto pointedDt = pointerDt->getPointedType();
+                            DataTypeSemantics::SliceInfo sliceInfo;
+                            sliceInfo.offset = dataTypeSem->getSliceInfo().offset;
+                            sliceInfo.size = output->getSize();
+                            auto newSem = createDataTypeSemantics(outputVarObj, pointedDt, sliceInfo);
+                            sem->addSuccessor(newSem);
+                        }
+                    }
+                }
+            }
         }
         else if (unaryOp->getId() == ircode::OperationId::COPY) {
-            if (auto variable = std::dynamic_pointer_cast<ircode::Variable>(input)) {
-                auto inputVarObj = getOrCreateVarObject(variable);
+            if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
+                auto inputVarObj = getOrCreateVarObject(inputVar);
                 auto outputVarObj = getOrCreateVarObject(output);
                 propagateTo(inputVarObj, outputVarObj, Semantics::FilterAll(), nextObjs);
                 propagateTo(outputVarObj, inputVarObj, Semantics::FilterAll(), nextObjs);
@@ -129,14 +167,13 @@ void BaseSemanticsPropagator::propagate(
             binaryOp->getId() == ircode::OperationId::INT_REM)
         {
             auto outputVarObj = getOrCreateVarObject(output);
-            if (auto inputVar1 = std::dynamic_pointer_cast<ircode::Variable>(input1)) {
-                if (auto inputVar2 = std::dynamic_pointer_cast<ircode::Variable>(input2)) {
-                    auto inputVarObj1 = getOrCreateVarObject(inputVar1);
-                    auto inputVarObj2 = getOrCreateVarObject(inputVar2);
+            for (auto& input : {input1, input2}) {
+                if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
+                    auto inputVarObj = getOrCreateVarObject(inputVar);
                     auto signedScalarDt = getScalarDataType(ScalarType::SignedInt, output->getSize());
                     auto filter = DataTypeSemantics::Filter(signedScalarDt);
-                    propagateTo(inputVarObj1, outputVarObj, filter, nextObjs);
-                    propagateTo(inputVarObj2, outputVarObj, filter, nextObjs);
+                    propagateTo(inputVarObj, outputVarObj, filter, nextObjs);
+                    propagateTo(outputVarObj, inputVarObj, filter, nextObjs, 1);
                 }
             }
 
@@ -145,54 +182,40 @@ void BaseSemanticsPropagator::propagate(
             {
                 auto linearExpr = output->getLinearExpr();
                 Offset offset = linearExpr.getConstTermValue();
-                for (auto& term : linearExpr.getTerms()) {
-                    if (!term.canBePointer())
-                        continue;
-                    if (auto termVar = std::dynamic_pointer_cast<ircode::Variable>(term.value)) {
-                        auto termVarObj = getOrCreateVarObject(termVar);
-                        auto filter = Semantics::FilterOr(DataTypeSemantics::Filter(), SymbolTableSemantics::Filter());
-                        auto semantics = termVarObj->findSemantics(filter);
-                        for (auto sem : semantics) {
-                            SymbolTable* symbolTable = nullptr;
-                            if (auto symbolTableSem = dynamic_cast<SymbolTableSemantics*>(sem)) {
-                                symbolTable = symbolTableSem->getSymbolTable();
-                            } else if (auto dataTypeSem = dynamic_cast<DataTypeSemantics*>(sem)) {
-                                if (auto pointerDt = dynamic_cast<const PointerDataType*>(dataTypeSem->getDataType()))
-                                    if (auto structDt = dynamic_cast<const StructureDataType*>(pointerDt->getPointedType()))
-                                        symbolTable = structDt->getSymbolTable();
-                            }
-                            
-                            if (symbolTable) {
-                                Symbol* symbol = nullptr;
-                                if (symbolTable == ctx->globalSymbolTable ||
-                                    symbolTable == ctx->functionSymbol->getStackSymbolTable())
-                                {
-                                    CallingConvention::Storage storage;
-                                    storage.useType = CallingConvention::Storage::Read;
-                                    storage.registerId = Register::StackPointerId;
-                                    if (symbolTable == ctx->globalSymbolTable)
-                                        storage.registerId = Register::InstructionPointerId;
-                                    storage.offset = offset;
-                                    auto signatureDt = ctx->functionSymbol->getSignature();
-                                    auto it = signatureDt->getStorages().find(storage);
-                                    if (it != signatureDt->getStorages().end()) {
-                                        const auto& storageInfo = it->second;
-                                        auto paramIdx = storageInfo.paramIdx;
-                                        symbol = signatureDt->getParameters()[paramIdx];
-                                    }
-                                }
-                                if (!symbol) {
-                                    symbol = symbolTable->getSymbolAt(offset);
-                                }
+                auto symbolTables = getAllSymbolTables(linearExpr);
+                for (auto& [sem, symbolTable] : symbolTables) {
+                    std::list<Symbol*> symbols;
+                    if (symbolTable == ctx->globalSymbolTable ||
+                        symbolTable == ctx->functionSymbol->getStackSymbolTable())
+                    {
+                        CallingConvention::Storage storage;
+                        storage.useType = CallingConvention::Storage::Read;
+                        storage.registerId = Register::StackPointerId;
+                        if (symbolTable == ctx->globalSymbolTable)
+                            storage.registerId = Register::InstructionPointerId;
+                        storage.offset = offset;
+                        auto signatureDt = ctx->functionSymbol->getSignature();
+                        auto it = signatureDt->getStorages().find(storage);
+                        if (it != signatureDt->getStorages().end()) {
+                            const auto& storageInfo = it->second;
+                            auto paramIdx = storageInfo.paramIdx;
+                            auto paramSymbol = signatureDt->getParameters()[paramIdx];
+                            symbols.push_back(paramSymbol);
+                        }
+                    }
+                    if (symbols.empty()) {
+                        auto foundSymbols = symbolTable->getAllSymbolsRecursivelyAt(offset);
+                        for (auto [_, symbolOffset, symbol] : foundSymbols)
+                            if (offset == symbolOffset)
+                                symbols.push_back(symbol);
+                    }
 
-                                if (symbol) {
-                                    if (auto symbolObj = getSymbolObject(symbol)) {
-                                        bindEachOther(symbolObj, outputVarObj);
-                                        auto newSem = createDataTypeSemantics(outputVarObj, symbol->getDataType()->getPointerTo());
-                                        sem->addSuccessors(newSem);
-                                    }
-                                }
-                            }
+                    for (auto symbol : symbols) {
+                        if (auto symbolObj = getSymbolObject(symbol)) {
+                            bindEachOther(symbolObj, outputVarObj);
+                            auto symbolPtrDt = symbol->getDataType()->getPointerTo();
+                            auto newSem = createDataTypeSemantics(outputVarObj, symbolPtrDt);
+                            sem->addSuccessor(newSem);
                         }
                     }
                 }
@@ -269,8 +292,13 @@ ScalarDataType* BaseSemanticsPropagator::getScalarDataType(ScalarType scalarType
     return getManager()->getContext()->getDataTypes()->getScalar(scalarType, size);
 }
 
-DataTypeSemantics* BaseSemanticsPropagator::createDataTypeSemantics(SemanticsObject* sourceObject, const DataType* dataType, size_t uncertaintyDegree) const {
-    auto sem = getManager()->addSemantics(std::make_unique<DataTypeSemantics>(sourceObject, dataType, uncertaintyDegree));
+DataTypeSemantics* BaseSemanticsPropagator::createDataTypeSemantics(
+    SemanticsObject* sourceObject,
+    const DataType* dataType,
+    const DataTypeSemantics::SliceInfo& sliceInfo,
+    size_t uncertaintyDegree) const
+{
+    auto sem = getManager()->addSemantics(std::make_unique<DataTypeSemantics>(sourceObject, dataType, sliceInfo, uncertaintyDegree));
     return dynamic_cast<DataTypeSemantics*>(sem);
 }
 
@@ -285,8 +313,8 @@ void BaseSemanticsPropagator::setDataTypeFor(std::shared_ptr<ircode::Value> valu
     }
 }
 
-std::set<SymbolTable*> BaseSemanticsPropagator::getAllSymbolTables(const ircode::LinearExpression& linearExpr) const {
-    std::set<SymbolTable*> symbolTables;
+std::list<std::pair<Semantics*, SymbolTable*>> BaseSemanticsPropagator::getAllSymbolTables(const ircode::LinearExpression& linearExpr) const {
+    std::list<std::pair<Semantics*, SymbolTable*>> result;
     for (auto& term : linearExpr.getTerms()) {
         if (!term.canBePointer())
             continue;
@@ -296,14 +324,14 @@ std::set<SymbolTable*> BaseSemanticsPropagator::getAllSymbolTables(const ircode:
             auto semantics = termVarObj->findSemantics(filter);
             for (auto sem : semantics) {
                 if (auto symbolTableSem = dynamic_cast<SymbolTableSemantics*>(sem)) {
-                    symbolTables.insert(symbolTableSem->getSymbolTable());
+                    result.emplace_back(sem, symbolTableSem->getSymbolTable());
                 } else if (auto dataTypeSem = dynamic_cast<DataTypeSemantics*>(sem)) {
                     if (auto pointerDt = dynamic_cast<const PointerDataType*>(dataTypeSem->getDataType()))
                         if (auto structDt = dynamic_cast<const StructureDataType*>(pointerDt->getPointedType()))
-                            symbolTables.insert(structDt->getSymbolTable());
+                            result.emplace_back(sem, structDt->getSymbolTable());
                 }
             }
         }
     }
-    return symbolTables;
+    return result;
 }

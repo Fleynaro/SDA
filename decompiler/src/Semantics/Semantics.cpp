@@ -7,7 +7,7 @@ using namespace sda::decompiler;
 Semantics::Semantics(SemanticsObject* sourceObject, size_t uncertaintyDegree)
     : m_sourceObject(sourceObject), m_uncertaintyDegree(uncertaintyDegree)
 {
-    m_sourceObject->m_semantics.insert(this);
+    m_sourceObject->addSemantics(this);
 }
 
 SemanticsObject* Semantics::getSourceObject() const {
@@ -18,7 +18,7 @@ size_t Semantics::getUncertaintyDegree() const {
     return m_uncertaintyDegree;
 }
 
-void Semantics::addSuccessors(Semantics* sem) {
+void Semantics::addSuccessor(Semantics* sem) {
     m_successors.push_back(sem);
     sem->m_predecessors.push_back(this);
 }
@@ -53,10 +53,14 @@ Semantics::FilterFunction Semantics::FilterAnd(const FilterFunction& filter1, co
     };
 }
 
-DataTypeSemantics::DataTypeSemantics(SemanticsObject* sourceObject, DataType* dataType, size_t uncertaintyDegree)
+DataTypeSemantics::DataTypeSemantics(SemanticsObject* sourceObject, DataType* dataType, const SliceInfo& sliceInfo, size_t uncertaintyDegree)
     : Semantics(sourceObject, uncertaintyDegree)
     , m_dataType(dataType)
-{}
+    , m_sliceInfo(sliceInfo)
+{
+    if (!m_sliceInfo.size)
+        m_sliceInfo.size = m_dataType->getSize();
+}
 
 const std::string& DataTypeSemantics::getName() const {
     return "DataTypeSemantics";
@@ -66,8 +70,16 @@ DataType* DataTypeSemantics::getDataType() const {
     return m_dataType;
 }
 
+const DataTypeSemantics::SliceInfo& DataTypeSemantics::getSliceInfo() const {
+    return m_sliceInfo;
+}
+
 bool DataTypeSemantics::isSimiliarTo(const Semantics* other) const {
     return Filter(m_dataType)(other);
+}
+
+std::unique_ptr<Semantics> DataTypeSemantics::clone(size_t uncertaintyDegree) const {
+    return std::make_unique<DataTypeSemantics>(getSourceObject(), m_dataType, m_sliceInfo, uncertaintyDegree);
 }
 
 DataTypeSemantics::FilterFunction DataTypeSemantics::Filter(const DataType* dataType) {
@@ -111,6 +123,10 @@ bool SymbolTableSemantics::isSimiliarTo(const Semantics* other) const {
             return m_symbolTable == sem->getSymbolTable();
         }
     )(other);
+}
+
+std::unique_ptr<Semantics> SymbolTableSemantics::clone(size_t uncertaintyDegree) const {
+    return std::make_unique<SymbolTableSemantics>(getSourceObject(), m_symbolTable, uncertaintyDegree);
 }
 
 SymbolTable* SymbolTableSemantics::getSymbolTable() const {

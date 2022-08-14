@@ -54,7 +54,7 @@ void OptimizedSymbolTable::removeSymbol(Offset offset) {
     symbolTable->removeSymbol(offset);
 }
 
-Symbol* OptimizedSymbolTable::getSymbolAt(Offset offset) {
+SymbolTable::SymbolInfo OptimizedSymbolTable::getSymbolAt(Offset offset) {
     auto symbolTable = getSymbolTable(offset);
     return symbolTable->getSymbolAt(offset);
 }

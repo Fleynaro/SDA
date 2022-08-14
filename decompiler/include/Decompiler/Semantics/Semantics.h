@@ -7,8 +7,17 @@ namespace sda::decompiler
 
     class Semantics
     {
+        friend class SemanticsObject;
+    public:
+        enum DefType {
+            SystemDefined,
+            UserDefined
+        };
+    private:
+        DefType m_defType;
         SemanticsObject* m_sourceObject;
-        size_t m_uncertaintyDegree;
+        std::set<SemanticsObject*> m_holders;
+        size_t m_uncertaintyDegree; // todo: float? probability?
         std::list<Semantics*> m_successors;
         std::list<Semantics*> m_predecessors;
     public:
@@ -18,7 +27,7 @@ namespace sda::decompiler
 
         size_t getUncertaintyDegree() const;
 
-        void addSuccessors(Semantics* sem);
+        void addSuccessor(Semantics* sem);
 
         const std::list<Semantics*>& getSuccessors() const;
 
@@ -27,6 +36,8 @@ namespace sda::decompiler
         virtual const std::string& getName() const = 0;
 
         virtual bool isSimiliarTo(const Semantics* other) const;
+
+        virtual std::unique_ptr<Semantics> clone(size_t uncertaintyDegree = 0) const = 0;
 
         using FilterFunction = std::function<bool(const Semantics*)>;
 
@@ -42,15 +53,26 @@ namespace sda::decompiler
 
     class DataTypeSemantics : public Semantics
     {
-        DataType* m_dataType;
     public:
-        DataTypeSemantics(SemanticsObject* sourceObject, DataType* dataType, size_t uncertaintyDegree = 0);
+        struct SliceInfo {
+            size_t offset = 0;
+            size_t size = 0;
+        };
+    private:
+        DataType* m_dataType;
+        SliceInfo m_sliceInfo;
+    public:
+        DataTypeSemantics(SemanticsObject* sourceObject, DataType* dataType, const SliceInfo& sliceInfo, size_t uncertaintyDegree = 0);
 
         const std::string& getName() const override;
 
         bool isSimiliarTo(const Semantics* other) const override;
 
+        std::unique_ptr<Semantics> clone(size_t uncertaintyDegree = 0) const override;
+
         DataType* getDataType() const;
+
+        const SliceInfo& getSliceInfo() const;
 
         using DataTypeFilterFunction = std::function<bool(const DataTypeSemantics*)>;
 
@@ -68,6 +90,8 @@ namespace sda::decompiler
         const std::string& getName() const override;
 
         bool isSimiliarTo(const Semantics* other) const override;
+
+        std::unique_ptr<Semantics> clone(size_t uncertaintyDegree = 0) const override;
 
         SymbolTable* getSymbolTable() const;
 

@@ -34,7 +34,8 @@ namespace sda::decompiler
             SemanticsObject* fromObj,
             SemanticsObject* toObj,
             Semantics::FilterFunction filter,
-            std::set<SemanticsObject*>& nextObjs) const;
+            std::set<SemanticsObject*>& nextObjs,
+            size_t uncertaintyDegree = 0) const;
     };
 
     class BaseSemanticsPropagator : public SemanticsPropagator
@@ -58,10 +59,14 @@ namespace sda::decompiler
 
         ScalarDataType* getScalarDataType(ScalarType scalarType, size_t size) const;
 
-        DataTypeSemantics* createDataTypeSemantics(SemanticsObject* sourceObject, const DataType* dataType, size_t uncertaintyDegree = 0) const;
+        DataTypeSemantics* createDataTypeSemantics(
+            SemanticsObject* sourceObject,
+            const DataType* dataType,
+            const DataTypeSemantics::SliceInfo& sliceInfo = {},
+            size_t uncertaintyDegree = 0) const;
 
         void setDataTypeFor(std::shared_ptr<ircode::Value> value, const DataType* dataType, std::set<SemanticsObject*>& nextObjs) const;
 
-        std::set<SymbolTable*> getAllSymbolTables(const ircode::LinearExpression& linearExpr) const;
+        std::list<std::pair<Semantics*, SymbolTable*>> getAllSymbolTables(const ircode::LinearExpression& linearExpr) const;
     };
 };

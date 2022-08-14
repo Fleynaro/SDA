@@ -1,5 +1,6 @@
 #include "Core/SymbolTable/StandartSymbolTable.h"
 #include "Core/Symbol/Symbol.h"
+#include "Core/DataType/DataType.h"
 
 using namespace sda;
 
@@ -8,20 +9,39 @@ StandartSymbolTable::StandartSymbolTable(Context* context, Object::Id* id, const
 {}
 
 void StandartSymbolTable::addSymbol(Offset offset, Symbol* symbol) {
+    auto [_, _, symbol] = getSymbolAt(offset);
+    assert(!symbol);
     m_context->getCallbacks()->onObjectModified(this);
     m_symbols[offset] = symbol;
 }
 
 void StandartSymbolTable::removeSymbol(Offset offset) {
     m_context->getCallbacks()->onObjectModified(this);
-    m_symbols.erase(offset);
+    auto [_, symbolOffset, symbol] = getSymbolAt(offset);
+    if (symbol) {
+        m_symbols.erase(symbolOffset);
+    }
 }
 
-Symbol* StandartSymbolTable::getSymbolAt(Offset offset) {
-    auto it = m_symbols.find(offset);
-    if (it == m_symbols.end())
-        return nullptr;
-    return it->second;
+SymbolTable::SymbolInfo StandartSymbolTable::getSymbolAt(Offset offset) {
+    if (!m_symbols.empty()) {
+        const auto it = std::prev(m_symbols.upper_bound(offset));
+        if (it != m_symbols.end()) {
+            const auto& [symbolOffset, symbol] = *it;
+            if (offset < symbolOffset + symbol->getDataType()->getSize()) {
+                return {
+                    this,
+                    symbolOffset,
+                    symbol
+                };
+            }
+        }
+    }
+    return {
+        this,
+        0,
+        nullptr
+    };
 }
 
 const std::map<Offset, Symbol*>& StandartSymbolTable::getSymbols() const {

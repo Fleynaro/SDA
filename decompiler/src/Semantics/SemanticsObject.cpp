@@ -4,6 +4,7 @@ using namespace sda;
 using namespace sda::decompiler;
 
 bool SemanticsObject::addSemantics(Semantics* sem) {
+    sem->m_holders.insert(this);
     return m_semantics.insert(sem).second;
 }
 
@@ -27,16 +28,6 @@ std::list<Semantics*> SemanticsObject::findSemantics(const Semantics::FilterFunc
     for (auto& semantics : m_semantics) {
         if (filter(semantics))
             result.push_back(semantics);
-    }
-    return result;
-}
-
-bool SemanticsObject::propagateTo(SemanticsObject* obj, const Semantics::FilterFunction& filter) {
-    bool result = false;
-    auto foundSemantics = findSemantics(filter);
-    for (auto semantics : foundSemantics) {
-        auto pair = obj->m_semantics.insert(semantics);
-        result |= pair.second;
     }
     return result;
 }

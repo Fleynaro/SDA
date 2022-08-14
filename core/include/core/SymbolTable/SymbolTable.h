@@ -17,7 +17,15 @@ namespace sda
 
         virtual void removeSymbol(Offset offset) = 0;
 
-        virtual Symbol* getSymbolAt(Offset offset) = 0;
+        struct SymbolInfo {
+            SymbolTable* symbolTable;
+            Offset symbolOffset;
+            Symbol* symbol;
+        };
+
+        virtual SymbolInfo getSymbolAt(Offset offset) = 0;
+
+        std::list<SymbolInfo> getAllSymbolsRecursivelyAt(Offset offset);
 
         void serialize(boost::json::object& data) const override;
 
