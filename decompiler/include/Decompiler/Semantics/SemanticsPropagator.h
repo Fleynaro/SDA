@@ -68,5 +68,7 @@ namespace sda::decompiler
         void setDataTypeFor(std::shared_ptr<ircode::Value> value, const DataType* dataType, std::set<SemanticsObject*>& nextObjs) const;
 
         std::list<std::pair<Semantics*, SymbolTable*>> getAllSymbolTables(const ircode::LinearExpression& linearExpr) const;
+
+        std::list<std::pair<Offset, Symbol*>> getAllSymbolsAt(const SemanticsContext* ctx, SymbolTable* symbolTable, Offset offset, bool write = false) const;
     };
 };

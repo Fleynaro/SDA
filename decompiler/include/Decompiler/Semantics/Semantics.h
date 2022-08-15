@@ -9,12 +9,12 @@ namespace sda::decompiler
     {
         friend class SemanticsObject;
     public:
-        enum DefType {
-            SystemDefined,
-            UserDefined
+        enum CreatorType {
+            System,
+            User
         };
     private:
-        DefType m_defType;
+        CreatorType m_creatorType;
         SemanticsObject* m_sourceObject;
         std::set<SemanticsObject*> m_holders;
         size_t m_uncertaintyDegree; // todo: float? probability?
@@ -55,14 +55,20 @@ namespace sda::decompiler
     {
     public:
         struct SliceInfo {
+            enum {
+                None,
+                Load,
+                Extract
+            } type = None;
             size_t offset = 0;
             size_t size = 0;
+            BitMask sliceMask = 0;
         };
     private:
         DataType* m_dataType;
         SliceInfo m_sliceInfo;
     public:
-        DataTypeSemantics(SemanticsObject* sourceObject, DataType* dataType, const SliceInfo& sliceInfo, size_t uncertaintyDegree = 0);
+        DataTypeSemantics(SemanticsObject* sourceObject, DataType* dataType, const SliceInfo& sliceInfo = {}, size_t uncertaintyDegree = 0);
 
         const std::string& getName() const override;
 

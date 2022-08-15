@@ -1,5 +1,6 @@
 #include "Decompiler/Semantics/Semantics.h"
 #include "Decompiler/Semantics/SemanticsManager.h"
+#include "Core/DataType/StructureDataType.h"
 
 using namespace sda;
 using namespace sda::decompiler;
@@ -57,10 +58,7 @@ DataTypeSemantics::DataTypeSemantics(SemanticsObject* sourceObject, DataType* da
     : Semantics(sourceObject, uncertaintyDegree)
     , m_dataType(dataType)
     , m_sliceInfo(sliceInfo)
-{
-    if (!m_sliceInfo.size)
-        m_sliceInfo.size = m_dataType->getSize();
-}
+{}
 
 const std::string& DataTypeSemantics::getName() const {
     return "DataTypeSemantics";

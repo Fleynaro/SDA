@@ -11,6 +11,8 @@ ArrayDataType::ArrayDataType(
     m_elementType(elementType),
     m_dimensions(dimensions)
 {
+    if (dynamic_cast<ArrayDataType*>(elementType))
+        throw std::runtime_error("ArrayDataType cannot be an element of another ArrayDataType");
     if (elementType) {
         auto name = m_elementType->getName();
         for (auto dimension : m_dimensions)

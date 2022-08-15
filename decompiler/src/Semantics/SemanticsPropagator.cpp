@@ -2,6 +2,7 @@
 #include "Decompiler/Semantics/SemanticsManager.h"
 #include "Core/DataType/ScalarDataType.h"
 #include "Core/DataType/PointerDataType.h"
+#include "Core/DataType/ArrayDataType.h"
 #include "Core/DataType/StructureDataType.h"
 
 using namespace sda;
@@ -107,23 +108,56 @@ void BaseSemanticsPropagator::propagate(
             else if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
                 auto inputVarObj = getOrCreateVarObject(inputVar);
                 auto outputVarObj = getOrCreateVarObject(output);
+                auto loadSize = output->getSize();
 
                 auto linearExpr = inputVar->getLinearExpr();
                 Offset offset = linearExpr.getConstTermValue();
                 auto symbolTables = getAllSymbolTables(linearExpr);
                 for (auto& [sem, symbolTable] : symbolTables) {
-                    // load multiple symbols to structure, don't forget about func. params
+                    const auto symbols = getAllSymbolsAt(ctx, symbolTable, offset);
+                    for (auto& [symbolOffset, symbol] : symbols) {
+                        auto symbolDt = symbol->getDataType();
+                        if (loadSize <= symbolDt->getSize()) {
+                            if (auto symbolObj = getSymbolObject(symbol)) {
+                                bindEachOther(symbolObj, outputVarObj);
+                                DataTypeSemantics::SliceInfo sliceInfo = {};
+                                auto relOffset = offset - symbolOffset;
+                                if (relOffset != 0 || loadSize != symbolDt->getSize()) {
+                                    sliceInfo.type = DataTypeSemantics::SliceInfo::Load;
+                                    sliceInfo.offset = relOffset;
+                                    sliceInfo.size = loadSize;
+                                }
+                                auto newSem = createDataTypeSemantics(outputVarObj, symbolDt, sliceInfo); // outputVarObj or symbolObj?
+                                sem->addSuccessor(newSem);
+                            }
+                        }
+                    }
                 }
 
-                auto semantics = inputVarObj->findSemantics(DataTypeSemantics::Filter());
-                for (auto sem : semantics) {
-                    if (auto dataTypeSem = dynamic_cast<DataTypeSemantics*>(sem)) {
-                        if (auto pointerDt = dynamic_cast<const PointerDataType*>(dataTypeSem->getDataType())) {
-                            auto pointedDt = pointerDt->getPointedType();
-                            DataTypeSemantics::SliceInfo sliceInfo;
-                            sliceInfo.offset = dataTypeSem->getSliceInfo().offset;
-                            sliceInfo.size = output->getSize();
-                            auto newSem = createDataTypeSemantics(outputVarObj, pointedDt, sliceInfo);
+                // if loading value at address that points to a scalar or array of scalars (not structures)
+                if (symbolTables.empty()) {
+                    auto semantics = inputVarObj->findSemantics(DataTypeSemantics::Filter());
+                    for (auto sem : semantics) {
+                        if (auto dataTypeSem = dynamic_cast<DataTypeSemantics*>(sem)) {
+                            DataType* itemDt = nullptr;
+                            if (auto pointerDt = dynamic_cast<PointerDataType*>(dataTypeSem->getDataType())) {
+                                itemDt = pointerDt->getPointedType();
+                            } else if (auto arrayDt = dynamic_cast<ArrayDataType*>(dataTypeSem->getDataType())) {
+                                // "array" is just a pointer to repeated data elements but with max size constraint
+                                itemDt = arrayDt->getElementType();
+                                if (offset >= arrayDt->getSize())
+                                    continue;
+                            }
+                            // structure data type should be handled above
+                            assert(!dynamic_cast<StructureDataType*>(itemDt));
+                            DataTypeSemantics::SliceInfo sliceInfo = {};
+                            auto relOffset = offset % itemDt->getSize();
+                            if (relOffset != 0 || loadSize != itemDt->getSize()) {
+                                sliceInfo.type = DataTypeSemantics::SliceInfo::Load;
+                                sliceInfo.offset = relOffset;
+                                sliceInfo.size = loadSize;
+                            }
+                            auto newSem = createDataTypeSemantics(outputVarObj, itemDt, sliceInfo);
                             sem->addSuccessor(newSem);
                         }
                     }
@@ -183,40 +217,27 @@ void BaseSemanticsPropagator::propagate(
                 auto linearExpr = output->getLinearExpr();
                 Offset offset = linearExpr.getConstTermValue();
                 auto symbolTables = getAllSymbolTables(linearExpr);
+                auto createVoidPtrDtSem = !symbolTables.empty();
                 for (auto& [sem, symbolTable] : symbolTables) {
-                    std::list<Symbol*> symbols;
-                    if (symbolTable == ctx->globalSymbolTable ||
-                        symbolTable == ctx->functionSymbol->getStackSymbolTable())
-                    {
-                        CallingConvention::Storage storage;
-                        storage.useType = CallingConvention::Storage::Read;
-                        storage.registerId = Register::StackPointerId;
-                        if (symbolTable == ctx->globalSymbolTable)
-                            storage.registerId = Register::InstructionPointerId;
-                        storage.offset = offset;
-                        auto signatureDt = ctx->functionSymbol->getSignature();
-                        auto it = signatureDt->getStorages().find(storage);
-                        if (it != signatureDt->getStorages().end()) {
-                            const auto& storageInfo = it->second;
-                            auto paramIdx = storageInfo.paramIdx;
-                            auto paramSymbol = signatureDt->getParameters()[paramIdx];
-                            symbols.push_back(paramSymbol);
-                        }
-                    }
-                    if (symbols.empty()) {
-                        auto foundSymbols = symbolTable->getAllSymbolsRecursivelyAt(offset);
-                        for (auto [_, symbolOffset, symbol] : foundSymbols)
-                            if (offset == symbolOffset)
-                                symbols.push_back(symbol);
-                    }
-
-                    for (auto symbol : symbols) {
+                    const auto symbols = getAllSymbolsAt(ctx, symbolTable, offset);
+                    for (auto& [symbolOffset, symbol] : symbols) {
+                        if (symbolOffset != offset)
+                            continue;
                         if (auto symbolObj = getSymbolObject(symbol)) {
                             bindEachOther(symbolObj, outputVarObj);
                             auto symbolPtrDt = symbol->getDataType()->getPointerTo();
                             auto newSem = createDataTypeSemantics(outputVarObj, symbolPtrDt);
                             sem->addSuccessor(newSem);
+                            createVoidPtrDtSem = false;
                         }
+                    }
+                }
+
+                if (createVoidPtrDtSem) {
+                    auto voidDt = findDataType("void");
+                    auto newSem = createDataTypeSemantics(outputVarObj, voidDt->getPointerTo());
+                    for (auto& [sem, _] : symbolTables) {
+                        sem->addSuccessor(newSem);
                     }
                 }
             }
@@ -257,6 +278,41 @@ void BaseSemanticsPropagator::propagate(
             setDataTypeFor(input1, floatScalarDt, nextObjs);
             setDataTypeFor(input2, floatScalarDt, nextObjs);
             setDataTypeFor(output, floatScalarDt, nextObjs);
+        }
+    }
+
+    auto outputAddrVal = output->getMemAddress().value;
+    if (auto outputAddrReg = std::dynamic_pointer_cast<ircode::Register>(outputAddrVal)) {
+        auto signatureDt = ctx->functionSymbol->getSignature();
+        auto it = signatureDt->getStorages().find({
+            CallingConvention::Storage::Write,
+            outputAddrReg->getRegister().getRegId()
+        });
+        if (it != signatureDt->getStorages().end()) {
+            if (auto funcReturnObj = getFuncReturnObject(signatureDt)) {
+                auto outputVarObj = getOrCreateVarObject(output);
+                bindEachOther(funcReturnObj, outputVarObj);
+                propagateTo(funcReturnObj, outputVarObj, DataTypeSemantics::Filter(), nextObjs);
+                propagateTo(outputVarObj, funcReturnObj, DataTypeSemantics::Filter(), nextObjs);
+            }
+        }
+    }
+    else if (auto outputAddrVar = std::dynamic_pointer_cast<ircode::Variable>(outputAddrVal)) {
+        auto outputVarObj = getOrCreateVarObject(output);
+        auto linearExpr = outputAddrVar->getLinearExpr();
+        Offset offset = linearExpr.getConstTermValue();
+        auto symbolTables = getAllSymbolTables(linearExpr);
+        for (auto& [sem, symbolTable] : symbolTables) {
+            const auto symbols = getAllSymbolsAt(ctx, symbolTable, offset, true);
+            for (auto& [symbolOffset, symbol] : symbols) {
+                if (symbolOffset != offset)
+                    continue;
+                if (auto symbolObj = getSymbolObject(symbol)) {
+                    bindEachOther(symbolObj, outputVarObj);
+                    propagateTo(symbolObj, outputVarObj, DataTypeSemantics::Filter(), nextObjs);
+                    propagateTo(outputVarObj, symbolObj, DataTypeSemantics::Filter(), nextObjs);
+                }
+            }
         }
     }
 }
@@ -334,4 +390,32 @@ std::list<std::pair<Semantics*, SymbolTable*>> BaseSemanticsPropagator::getAllSy
         }
     }
     return result;
+}
+
+std::list<std::pair<Offset, Symbol*>> BaseSemanticsPropagator::getAllSymbolsAt(const SemanticsContext* ctx, SymbolTable* symbolTable, Offset offset, bool write) const {
+    std::list<std::pair<Offset, Symbol*>> symbols;
+    if (symbolTable == ctx->globalSymbolTable ||
+        symbolTable == ctx->functionSymbol->getStackSymbolTable())
+    {
+        CallingConvention::Storage storage;
+        storage.useType = write ? CallingConvention::Storage::Write : CallingConvention::Storage::Read;
+        storage.registerId = Register::StackPointerId;
+        if (symbolTable == ctx->globalSymbolTable)
+            storage.registerId = Register::InstructionPointerId;
+        storage.offset = offset;
+        auto signatureDt = ctx->functionSymbol->getSignature();
+        auto it = signatureDt->getStorages().find(storage);
+        if (it != signatureDt->getStorages().end()) {
+            const auto& storageInfo = it->second;
+            auto paramIdx = storageInfo.paramIdx;
+            auto paramSymbol = signatureDt->getParameters()[paramIdx];
+            symbols.emplace_back(offset, paramSymbol);
+        }
+    }
+    if (symbols.empty()) {
+        auto foundSymbols = symbolTable->getAllSymbolsRecursivelyAt(offset);
+        for (auto [_, symbolOffset, symbol] : foundSymbols)
+            symbols.emplace_back(symbolOffset, symbol);
+    }
+    return symbols;
 }
