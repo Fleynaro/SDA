@@ -9,23 +9,29 @@ namespace sda::decompiler
     {
         friend class SemanticsObject;
     public:
-        enum CreatorType {
-            System,
-            User
+        struct SourceInfo {
+            enum {
+                System,
+                User
+            } creatorType;
+            Semantics* sourceSemantics = nullptr;
+        };
+
+        struct MetaInfo {
+            size_t uncertaintyDegree = 0; // todo: float? probability?
         };
     private:
-        CreatorType m_creatorType;
-        SemanticsObject* m_sourceObject;
+        std::shared_ptr<SourceInfo> m_sourceInfo;
+        MetaInfo m_metaInfo;
         std::set<SemanticsObject*> m_holders;
-        size_t m_uncertaintyDegree; // todo: float? probability?
         std::list<Semantics*> m_successors;
         std::list<Semantics*> m_predecessors;
     public:
-        Semantics(SemanticsObject* sourceObject, size_t uncertaintyDegree);
+        Semantics(const std::shared_ptr<SourceInfo>& sourceInfo, const MetaInfo& metaInfo = {});
 
-        SemanticsObject* getSourceObject() const;
+        const std::shared_ptr<SourceInfo>& getSourceInfo() const;
 
-        size_t getUncertaintyDegree() const;
+        const MetaInfo& getMetaInfo() const;
 
         void addSuccessor(Semantics* sem);
 
@@ -37,7 +43,7 @@ namespace sda::decompiler
 
         virtual bool isSimiliarTo(const Semantics* other) const;
 
-        virtual std::unique_ptr<Semantics> clone(size_t uncertaintyDegree = 0) const = 0;
+        virtual std::unique_ptr<Semantics> clone(const MetaInfo& metaInfo) const = 0;
 
         using FilterFunction = std::function<bool(const Semantics*)>;
 
@@ -68,13 +74,17 @@ namespace sda::decompiler
         DataType* m_dataType;
         SliceInfo m_sliceInfo;
     public:
-        DataTypeSemantics(SemanticsObject* sourceObject, DataType* dataType, const SliceInfo& sliceInfo = {}, size_t uncertaintyDegree = 0);
+        DataTypeSemantics(
+            const std::shared_ptr<SourceInfo>& sourceInfo,
+            DataType* dataType,
+            const SliceInfo& sliceInfo = {},
+            const MetaInfo& metaInfo = {});
 
         const std::string& getName() const override;
 
         bool isSimiliarTo(const Semantics* other) const override;
 
-        std::unique_ptr<Semantics> clone(size_t uncertaintyDegree = 0) const override;
+        std::unique_ptr<Semantics> clone(const MetaInfo& metaInfo) const override;
 
         DataType* getDataType() const;
 
@@ -91,13 +101,16 @@ namespace sda::decompiler
     {
         SymbolTable* m_symbolTable;
     public:
-        SymbolTableSemantics(SemanticsObject* sourceObject, SymbolTable* symbolTable, size_t uncertaintyDegree = 0);
+        SymbolTableSemantics(
+            const std::shared_ptr<SourceInfo>& sourceInfo,
+            SymbolTable* symbolTable,
+            const MetaInfo& metaInfo = {});
         
         const std::string& getName() const override;
 
         bool isSimiliarTo(const Semantics* other) const override;
 
-        std::unique_ptr<Semantics> clone(size_t uncertaintyDegree = 0) const override;
+        std::unique_ptr<Semantics> clone(const MetaInfo& metaInfo) const override;
 
         SymbolTable* getSymbolTable() const;
 

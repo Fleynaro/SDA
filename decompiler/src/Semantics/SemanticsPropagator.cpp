@@ -29,6 +29,26 @@ void SemanticsPropagator::bindEachOther(SemanticsObject* obj1, SemanticsObject* 
     obj2->bindTo(obj1);
 }
 
+bool SemanticsPropagator::checkSemantics(
+    const SemanticsObject* obj,
+    Semantics::FilterFunction filter,
+    Semantics* predSem) const
+{
+    bool onlyEmitted;
+    if (getManager()->isSimiliarityConsidered()) {
+        onlyEmitted = false;
+    } else {
+        if (predSem) {
+            filter = [predSem](const Semantics* sem) {
+                auto preds = sem->getPredecessors();
+                return std::find(preds.begin(), preds.end(), predSem) == preds.end();
+            };
+        }
+        onlyEmitted = true;
+    }
+    return !obj->checkSemantics(filter, onlyEmitted);
+}
+
 void SemanticsPropagator::propagateTo(
     SemanticsObject* fromObj,
     SemanticsObject* toObj,
@@ -52,12 +72,14 @@ void SemanticsPropagator::propagateTo(
     auto fromObjSemantics = fromObj->findSemantics(filter);
     for (auto sem : fromObjSemantics) {
         if (uncertaintyDegree > 0) {
-            auto newUncertaintyDegree = sem->getUncertaintyDegree() + uncertaintyDegree;
-            auto newSem = getManager()->addSemantics(sem->clone(newUncertaintyDegree));
+            auto newMetaInfo = sem->getMetaInfo();
+            newMetaInfo.uncertaintyDegree = newMetaInfo.uncertaintyDegree + uncertaintyDegree;
+            auto newSem = getManager()->addSemantics(sem->clone(newMetaInfo));
             sem->addSuccessor(newSem);
-            sem = newSem;
+            isPropagated |= toObj->addSemantics(newSem, true);
+        } else {
+            isPropagated |= toObj->addSemantics(sem);
         }
-        isPropagated |= toObj->addSemantics(sem);
     }
 
     if (isPropagated)
@@ -112,44 +134,54 @@ void BaseSemanticsPropagator::propagate(
 
                 auto linearExpr = inputVar->getLinearExpr();
                 Offset offset = linearExpr.getConstTermValue();
-                auto symbolTables = getAllSymbolTables(linearExpr);
-                for (auto& [sem, symbolTable] : symbolTables) {
-                    const auto symbols = getAllSymbolsAt(ctx, symbolTable, offset);
-                    for (auto& [symbolOffset, symbol] : symbols) {
-                        auto symbolDt = symbol->getDataType();
-                        if (loadSize <= symbolDt->getSize()) {
-                            if (auto symbolObj = getSymbolObject(symbol)) {
-                                bindEachOther(symbolObj, outputVarObj);
-                                DataTypeSemantics::SliceInfo sliceInfo = {};
-                                auto relOffset = offset - symbolOffset;
-                                if (relOffset != 0 || loadSize != symbolDt->getSize()) {
-                                    sliceInfo.type = DataTypeSemantics::SliceInfo::Load;
-                                    sliceInfo.offset = relOffset;
-                                    sliceInfo.size = loadSize;
+                auto pointers = getAllPointers(linearExpr);
+                for (auto& ptr : pointers) {
+                    if (ptr.symbolTable) {
+                        const auto symbols = getAllSymbolsAt(ctx, ptr.symbolTable, offset);
+                        for (auto& [symbolOffset, symbol] : symbols) {
+                            auto symbolDt = symbol->getDataType();
+                            if (loadSize <= symbolDt->getSize()) {
+                                if (auto symbolObj = getSymbolObject(symbol)) {
+                                    bindEachOther(symbolObj, outputVarObj);       
+                                    auto semantics = symbolObj->findSemantics(DataTypeSemantics::Filter());
+                                    for (auto sem : semantics) {
+                                        if (auto dataTypeSem = dynamic_cast<DataTypeSemantics*>(sem)) {
+                                            auto symbolDt = dataTypeSem->getDataType();
+                                            if (!checkSemantics(outputVarObj, DataTypeSemantics::Filter(symbolDt), sem)) {
+                                                DataTypeSemantics::SliceInfo sliceInfo = {};
+                                                auto relOffset = offset - symbolOffset;
+                                                if (relOffset != 0 || loadSize != symbolDt->getSize()) {
+                                                    sliceInfo.type = DataTypeSemantics::SliceInfo::Load;
+                                                    sliceInfo.offset = relOffset;
+                                                    sliceInfo.size = loadSize;
+                                                    auto newSem = createDataTypeSemantics(sem->getSourceInfo(), symbolDt, sliceInfo, sem->getMetaInfo());
+                                                    if (outputVarObj->addSemantics(newSem, true))
+                                                        nextObjs.insert(outputVarObj);
+                                                    sem->addSuccessor(newSem);
+                                                } else {
+                                                    if (outputVarObj->addSemantics(sem))
+                                                        nextObjs.insert(outputVarObj);
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
-                                auto newSem = createDataTypeSemantics(outputVarObj, symbolDt, sliceInfo); // outputVarObj or symbolObj?
-                                sem->addSuccessor(newSem);
                             }
                         }
                     }
-                }
 
-                // if loading value at address that points to a scalar or array of scalars (not structures)
-                if (symbolTables.empty()) {
-                    auto semantics = inputVarObj->findSemantics(DataTypeSemantics::Filter());
-                    for (auto sem : semantics) {
-                        if (auto dataTypeSem = dynamic_cast<DataTypeSemantics*>(sem)) {
-                            DataType* itemDt = nullptr;
-                            if (auto pointerDt = dynamic_cast<PointerDataType*>(dataTypeSem->getDataType())) {
-                                itemDt = pointerDt->getPointedType();
-                            } else if (auto arrayDt = dynamic_cast<ArrayDataType*>(dataTypeSem->getDataType())) {
-                                // "array" is just a pointer to repeated data elements but with max size constraint
-                                itemDt = arrayDt->getElementType();
-                                if (offset >= arrayDt->getSize())
-                                    continue;
-                            }
-                            // structure data type should be handled above
-                            assert(!dynamic_cast<StructureDataType*>(itemDt));
+                    // if loading value at address that points to a scalar or array of scalars (not structures)
+                    if (ptr.dataType) {
+                        DataType* itemDt = nullptr;
+                        if (auto pointerDt = dynamic_cast<PointerDataType*>(ptr.dataType)) {
+                            itemDt = pointerDt->getPointedType();
+                        } else if (auto arrayDt = dynamic_cast<ArrayDataType*>(ptr.dataType)) {
+                            itemDt = arrayDt->getElementType();
+                            if (offset >= arrayDt->getSize())
+                                continue;
+                        }
+                        auto sem = ptr.semantics;
+                        if (!checkSemantics(outputVarObj, DataTypeSemantics::Filter(itemDt), sem)) {
                             DataTypeSemantics::SliceInfo sliceInfo = {};
                             auto relOffset = offset % itemDt->getSize();
                             if (relOffset != 0 || loadSize != itemDt->getSize()) {
@@ -157,7 +189,9 @@ void BaseSemanticsPropagator::propagate(
                                 sliceInfo.offset = relOffset;
                                 sliceInfo.size = loadSize;
                             }
-                            auto newSem = createDataTypeSemantics(outputVarObj, itemDt, sliceInfo);
+                            auto newSem = createDataTypeSemantics(sem->getSourceInfo(), itemDt, sliceInfo, sem->getMetaInfo());
+                            if (outputVarObj->addSemantics(newSem, true))
+                                nextObjs.insert(outputVarObj);
                             sem->addSuccessor(newSem);
                         }
                     }
@@ -216,28 +250,72 @@ void BaseSemanticsPropagator::propagate(
             {
                 auto linearExpr = output->getLinearExpr();
                 Offset offset = linearExpr.getConstTermValue();
-                auto symbolTables = getAllSymbolTables(linearExpr);
-                auto createVoidPtrDtSem = !symbolTables.empty();
-                for (auto& [sem, symbolTable] : symbolTables) {
-                    const auto symbols = getAllSymbolsAt(ctx, symbolTable, offset);
-                    for (auto& [symbolOffset, symbol] : symbols) {
-                        if (symbolOffset != offset)
-                            continue;
-                        if (auto symbolObj = getSymbolObject(symbol)) {
-                            bindEachOther(symbolObj, outputVarObj);
-                            auto symbolPtrDt = symbol->getDataType()->getPointerTo();
-                            auto newSem = createDataTypeSemantics(outputVarObj, symbolPtrDt);
-                            sem->addSuccessor(newSem);
-                            createVoidPtrDtSem = false;
+                auto pointers = getAllPointers(linearExpr);
+                auto createVoidPtrDtSem = !pointers.empty();
+                for (auto& ptr : pointers) {
+                    if (ptr.symbolTable) {
+                        const auto symbols = getAllSymbolsAt(ctx, ptr.symbolTable, offset);
+                        for (auto& [symbolOffset, symbol] : symbols) {
+                            if (symbolOffset != offset)
+                                continue;
+                            if (auto symbolObj = getSymbolObject(symbol)) {
+                                bindEachOther(symbolObj, outputVarObj);
+                                auto semantics = symbolObj->findSemantics(DataTypeSemantics::Filter());
+                                for (auto sem : semantics) {
+                                    if (auto dataTypeSem = dynamic_cast<DataTypeSemantics*>(sem)) {
+                                        auto pointerDt = dataTypeSem->getDataType()->getPointerTo();
+                                        if (!checkSemantics(outputVarObj, DataTypeSemantics::Filter(pointerDt), sem)) {
+                                            auto newSem = createDataTypeSemantics(sem->getSourceInfo(), pointerDt, {}, sem->getMetaInfo());
+                                            if (outputVarObj->addSemantics(newSem, true))
+                                                nextObjs.insert(outputVarObj);
+                                            sem->addSuccessor(newSem);
+                                        }
+                                        createVoidPtrDtSem = false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (ptr.dataType) {
+                        auto sem = ptr.semantics;
+                        if (!checkSemantics(outputVarObj, DataTypeSemantics::Filter(ptr.dataType), sem)) {
+                            DataType* itemDt = nullptr;
+                            if (auto pointerDt = dynamic_cast<PointerDataType*>(ptr.dataType)) {
+                                itemDt = pointerDt->getPointedType();
+                            } else if (auto arrayDt = dynamic_cast<ArrayDataType*>(ptr.dataType)) {
+                                itemDt = arrayDt->getElementType();
+                                if (offset >= arrayDt->getSize())
+                                    continue;
+                            }
+
+                            assert(itemDt);
+                            if (offset % itemDt->getSize() == 0) {
+                                auto newSem = createDataTypeSemantics(sem->getSourceInfo(), ptr.dataType, {}, sem->getMetaInfo());
+                                if (outputVarObj->addSemantics(newSem, true))
+                                    nextObjs.insert(outputVarObj);
+                                sem->addSuccessor(newSem);
+                            }
                         }
                     }
                 }
 
                 if (createVoidPtrDtSem) {
                     auto voidDt = findDataType("void");
-                    auto newSem = createDataTypeSemantics(outputVarObj, voidDt->getPointerTo());
-                    for (auto& [sem, _] : symbolTables) {
-                        sem->addSuccessor(newSem);
+                    if (!checkSemantics(outputVarObj, DataTypeSemantics::Filter(voidDt))) {
+                        auto sourceInfo = std::make_shared<Semantics::SourceInfo>();
+                        sourceInfo->creatorType = Semantics::SourceInfo::System;
+                        Semantics::MetaInfo metaInfo = {};
+                        for (auto& ptr : pointers) {
+                            metaInfo.uncertaintyDegree = std::min(
+                                metaInfo.uncertaintyDegree, ptr.semantics->getMetaInfo().uncertaintyDegree);
+                        }
+                        auto newSem = createDataTypeSemantics(sourceInfo, voidDt->getPointerTo(), {}, metaInfo);
+                        if (outputVarObj->addSemantics(newSem, true))
+                            nextObjs.insert(outputVarObj);
+                        for (auto& ptr : pointers) {
+                            ptr.semantics->addSuccessor(newSem);
+                        }
                     }
                 }
             }
@@ -301,9 +379,9 @@ void BaseSemanticsPropagator::propagate(
         auto outputVarObj = getOrCreateVarObject(output);
         auto linearExpr = outputAddrVar->getLinearExpr();
         Offset offset = linearExpr.getConstTermValue();
-        auto symbolTables = getAllSymbolTables(linearExpr);
-        for (auto& [sem, symbolTable] : symbolTables) {
-            const auto symbols = getAllSymbolsAt(ctx, symbolTable, offset, true);
+        auto pointers = getAllPointers(linearExpr);
+        for (auto& ptr : pointers) {
+            const auto symbols = getAllSymbolsAt(ctx, ptr.symbolTable, offset, true);
             for (auto& [symbolOffset, symbol] : symbols) {
                 if (symbolOffset != offset)
                     continue;
@@ -349,28 +427,34 @@ ScalarDataType* BaseSemanticsPropagator::getScalarDataType(ScalarType scalarType
 }
 
 DataTypeSemantics* BaseSemanticsPropagator::createDataTypeSemantics(
-    SemanticsObject* sourceObject,
-    const DataType* dataType,
+    const std::shared_ptr<Semantics::SourceInfo>& sourceInfo,
+    DataType* dataType,
     const DataTypeSemantics::SliceInfo& sliceInfo,
-    size_t uncertaintyDegree) const
+    const Semantics::MetaInfo& metaInfo) const
 {
-    auto sem = getManager()->addSemantics(std::make_unique<DataTypeSemantics>(sourceObject, dataType, sliceInfo, uncertaintyDegree));
+    auto sem = getManager()->addSemantics(std::make_unique<DataTypeSemantics>(
+        sourceInfo,
+        dataType,
+        sliceInfo,
+        metaInfo));
     return dynamic_cast<DataTypeSemantics*>(sem);
 }
 
-void BaseSemanticsPropagator::setDataTypeFor(std::shared_ptr<ircode::Value> value, const DataType* dataType, std::set<SemanticsObject*>& nextObjs) const {
+void BaseSemanticsPropagator::setDataTypeFor(std::shared_ptr<ircode::Value> value, DataType* dataType, std::set<SemanticsObject*>& nextObjs) const {
     if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
         auto varObj = getOrCreateVarObject(var);
-        bool onlyEmitted = !getManager()->isSimiliarityConsidered();
-        if (!varObj->checkSemantics(DataTypeSemantics::Filter(dataType), onlyEmitted)) {
-            auto sem = createDataTypeSemantics(varObj, dataType);
+        if (!checkSemantics(varObj, DataTypeSemantics::Filter(dataType))) {
+            auto sourceInfo = std::make_shared<Semantics::SourceInfo>();
+            sourceInfo->creatorType = Semantics::SourceInfo::System;
+            auto sem = createDataTypeSemantics(sourceInfo, dataType);
+            varObj->addSemantics(sem, true);
             nextObjs.insert(varObj);
         }
     }
 }
 
-std::list<std::pair<Semantics*, SymbolTable*>> BaseSemanticsPropagator::getAllSymbolTables(const ircode::LinearExpression& linearExpr) const {
-    std::list<std::pair<Semantics*, SymbolTable*>> result;
+std::list<BaseSemanticsPropagator::PointerInfo> BaseSemanticsPropagator::getAllPointers(const ircode::LinearExpression& linearExpr) const {
+    std::list<PointerInfo> result;
     for (auto& term : linearExpr.getTerms()) {
         if (!term.canBePointer())
             continue;
@@ -379,12 +463,22 @@ std::list<std::pair<Semantics*, SymbolTable*>> BaseSemanticsPropagator::getAllSy
             auto filter = Semantics::FilterOr(DataTypeSemantics::Filter(), SymbolTableSemantics::Filter());
             auto semantics = termVarObj->findSemantics(filter);
             for (auto sem : semantics) {
+                PointerInfo info = {};
                 if (auto symbolTableSem = dynamic_cast<SymbolTableSemantics*>(sem)) {
-                    result.emplace_back(sem, symbolTableSem->getSymbolTable());
+                    info.symbolTable = symbolTableSem->getSymbolTable();
+                    result.push_back(info);
                 } else if (auto dataTypeSem = dynamic_cast<DataTypeSemantics*>(sem)) {
-                    if (auto pointerDt = dynamic_cast<const PointerDataType*>(dataTypeSem->getDataType()))
+                    if (auto pointerDt = dynamic_cast<const PointerDataType*>(dataTypeSem->getDataType())) {
                         if (auto structDt = dynamic_cast<const StructureDataType*>(pointerDt->getPointedType()))
-                            result.emplace_back(sem, structDt->getSymbolTable());
+                            info.symbolTable = structDt->getSymbolTable();
+                        info.dataType = dataTypeSem->getDataType();
+                        result.push_back(info);
+                    }
+                    else if (dynamic_cast<const ArrayDataType*>(dataTypeSem->getDataType())) {
+                        // "array" is just a pointer to repeated data elements but with max size constraint
+                        info.dataType = dataTypeSem->getDataType();
+                        result.push_back(info);
+                    }
                 }
             }
         }

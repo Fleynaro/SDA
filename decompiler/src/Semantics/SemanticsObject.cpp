@@ -3,22 +3,20 @@
 using namespace sda;
 using namespace sda::decompiler;
 
-bool SemanticsObject::addSemantics(Semantics* sem) {
+bool SemanticsObject::addSemantics(Semantics* sem, bool emit) {
     sem->m_holders.insert(this);
+    if (emit) {
+        m_semantics.insert(sem);
+        return m_emittedSemantics.insert(sem).second;
+    }
     return m_semantics.insert(sem).second;
 }
 
 bool SemanticsObject::checkSemantics(const Semantics::FilterFunction& filter, bool onlyEmitted) const {
-    if (onlyEmitted) {
-        for (auto& semantics : m_semantics) {
-            if (filter(semantics) && semantics->getSourceObject() == this)
-                return true;
-        }
-    } else {
-        for (auto& semantics : m_semantics) {
-            if (filter(semantics))
-                return true;
-        }
+    auto& semantics = onlyEmitted ? m_emittedSemantics : m_semantics;
+    for (auto& sem : semantics) {
+        if (filter(sem))
+            return true;
     }
     return false;
 }

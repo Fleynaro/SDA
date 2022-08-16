@@ -12,6 +12,7 @@ namespace sda::decompiler
     class SemanticsObject
     {
         std::set<Semantics*> m_semantics;
+        std::set<Semantics*> m_emittedSemantics;
     public:
         using Id = size_t;
 
@@ -21,7 +22,7 @@ namespace sda::decompiler
 
         virtual void unbindFrom(SemanticsObject* obj) = 0;
 
-        bool addSemantics(Semantics* sem);
+        bool addSemantics(Semantics* sem, bool emit = false);
 
         bool checkSemantics(const Semantics::FilterFunction& filter, bool onlyEmitted = false) const;
 
