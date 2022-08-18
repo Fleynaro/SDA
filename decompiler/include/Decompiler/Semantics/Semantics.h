@@ -118,4 +118,12 @@ namespace sda::decompiler
 
         static FilterFunction Filter(const SymbolTableFilterFunction& filter = [](const SymbolTableSemantics*){ return true; });
     };
+
+    // class NameSemantics : public Semantics
+    // {
+    //     std::shared_ptr<std::string> m_name;
+    //     size_t m_pointerLevel;
+    // public:
+    //     // todo: check existence of the same name in symbol table / local var
+    // };
 };

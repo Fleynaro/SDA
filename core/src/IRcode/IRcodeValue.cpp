@@ -13,8 +13,12 @@ Hash Value::getHash() const {
     return m_hash;
 }
 
-std::list<Operation*>& Value::getOperations() {
+const std::list<Operation*>& Value::getOperations() const {
     return m_operations;
+}
+
+void Value::addOperation(Operation* operation) {
+    m_operations.push_back(operation);
 }
 
 const LinearExpression& Value::getLinearExpr() const {

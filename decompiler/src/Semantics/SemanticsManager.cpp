@@ -30,10 +30,33 @@ Semantics* SemanticsManager::addSemantics(std::unique_ptr<Semantics> semantics) 
     return pSem;
 }
 
+void SemanticsManager::removeSemantics(Semantics* semantics, SemanticsContextOperations& operations) {
+    for (auto nextSem : semantics->getSuccessors())
+        removeSemantics(nextSem, operations);
+    m_semantics.remove_if([semantics](const std::unique_ptr<Semantics>& sem) {
+        return sem.get() == semantics;
+    });
+    
+    auto srcSem = semantics->getSourceInfo()->sourceSemantics;
+    operations.join(srcSem->getr);
+}
+
 void SemanticsManager::addPropagator(std::unique_ptr<SemanticsPropagator> propagator) {
     m_propagators.push_back(std::move(propagator));
 }
 
 bool SemanticsManager::isSimiliarityConsidered() const {
     return false;
+}
+
+void SemanticsManager::propagate(SemanticsContextOperations operations) {
+    while (!operations.empty()) {
+        auto it = operations.begin();
+        auto op = *it;
+
+        for (auto& propagator : m_propagators)
+            propagator->propagate(op.context, op.operation, operations);
+
+        operations.erase(it);
+    }
 }

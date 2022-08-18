@@ -30,8 +30,8 @@ std::list<Semantics*> SemanticsObject::findSemantics(const Semantics::FilterFunc
     return result;
 }
 
-VariableSemObj::VariableSemObj(const ircode::Variable* variable)
-    : m_variable(variable)
+VariableSemObj::VariableSemObj(const ircode::Variable* variable, const std::shared_ptr<SemanticsContext>& context)
+    : m_variable(variable), m_context(context)
 {}
 
 SemanticsObject::Id VariableSemObj::getId() const {
@@ -44,6 +44,14 @@ void VariableSemObj::bindTo(SemanticsObject* obj) {
 
 void VariableSemObj::unbindFrom(SemanticsObject* obj) {
     m_relatedObjects.erase(obj);
+}
+
+SemanticsContextOperations VariableSemObj::getRelatedOperations() const {
+    SemanticsContextOperations result;
+    for (auto op : m_variable->getOperations()) {
+        result.insert({m_context, op});
+    }
+    return result;
 }
 
 const ircode::Variable* VariableSemObj::getVariable() const {
@@ -72,6 +80,15 @@ void SymbolSemObj::unbindFrom(SemanticsObject* obj) {
     if (auto varObj = dynamic_cast<VariableSemObj*>(obj)) {
         m_relatedVarObjects.erase(varObj);
     }
+}
+
+SemanticsContextOperations SymbolSemObj::getRelatedOperations() const {
+    SemanticsContextOperations result;
+    for (auto varObj : m_relatedVarObjects) {
+        auto relOps = varObj->getRelatedOperations();
+        result.insert(relOps.begin(), relOps.end());
+    }
+    return result;
 }
 
 SemanticsObject::Id SymbolSemObj::GetId(const Symbol* symbol) {
@@ -108,6 +125,18 @@ void SymbolTableSemObj::unbindFrom(SemanticsObject* obj) {
     }
 }
 
+SemanticsContextOperations SymbolTableSemObj::getRelatedOperations(Offset offset) const {
+    SemanticsContextOperations result;
+    auto it = m_offsetToRelatedVarObjects.find(offset);
+    if (it != m_offsetToRelatedVarObjects.end()) {
+        for (auto varObj : it->second) {
+            auto relOps = varObj->getRelatedOperations();
+            result.insert(relOps.begin(), relOps.end());
+        }
+    }
+    return result;
+}
+
 SemanticsObject::Id SymbolTableSemObj::GetId(const SymbolTable* symbolTable) {
     return reinterpret_cast<size_t>(symbolTable);
 }
@@ -130,4 +159,13 @@ void FuncReturnSemObj::unbindFrom(SemanticsObject* obj) {
     if (auto varObj = dynamic_cast<VariableSemObj*>(obj)) {
         m_relatedVarObjects.erase(varObj);
     }
+}
+
+SemanticsContextOperations FuncReturnSemObj::getRelatedOperations() const {
+    SemanticsContextOperations result;
+    for (auto varObj : m_relatedVarObjects) {
+        auto relOps = varObj->getRelatedOperations();
+        result.insert(relOps.begin(), relOps.end());
+    }
+    return result;
 }

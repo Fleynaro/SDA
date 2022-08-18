@@ -1,16 +1,9 @@
 #pragma once
 #include "SemanticsObject.h"
 #include "Semantics.h"
-#include "Core/IRcode/IRcodeOperation.h"
-#include "Core/Symbol/FunctionSymbol.h"
 
 namespace sda::decompiler
 {
-    struct SemanticsContext {
-        SymbolTable* globalSymbolTable;
-        FunctionSymbol* functionSymbol;
-    };
-
     class SemanticsManager;
 
     class SemanticsPropagator
@@ -20,13 +13,15 @@ namespace sda::decompiler
         SemanticsPropagator(SemanticsManager* semManager);
 
         virtual void propagate(
-            const SemanticsContext* ctx,
+            const std::shared_ptr<SemanticsContext>& ctx,
             const ircode::Operation* op,
-            std::set<SemanticsObject*>& nextObjs) = 0;
+            SemanticsContextOperations& nextOps) = 0;
     protected:
         SemanticsManager* getManager() const;
 
-        VariableSemObj* getOrCreateVarObject(std::shared_ptr<ircode::Variable> var) const;
+        VariableSemObj* getOrCreateVarObject(
+            const std::shared_ptr<SemanticsContext>& ctx,
+            const std::shared_ptr<ircode::Variable>& var) const;
 
         void bindEachOther(SemanticsObject* obj1, SemanticsObject* obj2) const;
 
@@ -35,11 +30,10 @@ namespace sda::decompiler
             Semantics::FilterFunction filter,
             Semantics* predSem = nullptr) const;
 
-        void propagateTo(
+        bool propagateTo(
             SemanticsObject* fromObj,
             SemanticsObject* toObj,
             Semantics::FilterFunction filter,
-            std::set<SemanticsObject*>& nextObjs,
             size_t uncertaintyDegree = 0) const;
     };
 
@@ -49,9 +43,9 @@ namespace sda::decompiler
         using SemanticsPropagator::SemanticsPropagator;
 
         void propagate(
-            const SemanticsContext* ctx,
+            const std::shared_ptr<SemanticsContext>& ctx,
             const ircode::Operation* op,
-            std::set<SemanticsObject*>& nextObjs) override;
+            SemanticsContextOperations& nextOps) override;
 
     private:
         SymbolSemObj* getSymbolObject(const Symbol* symbol) const;
@@ -70,15 +64,25 @@ namespace sda::decompiler
             const DataTypeSemantics::SliceInfo& sliceInfo = {},
             const Semantics::MetaInfo& metaInfo = {}) const;
 
-        void setDataTypeFor(std::shared_ptr<ircode::Value> value, DataType* dataType, std::set<SemanticsObject*>& nextObjs) const;
+        void setDataTypeFor(
+            const std::shared_ptr<SemanticsContext>& ctx,
+            std::shared_ptr<ircode::Value> value,
+            DataType* dataType,
+            SemanticsContextOperations& nextOps) const;
 
         struct PointerInfo {
             Semantics* semantics;
             SymbolTable* symbolTable = nullptr;
             DataType* dataType = nullptr;
         };
-        std::list<PointerInfo> getAllPointers(const ircode::LinearExpression& linearExpr) const;
+        std::list<PointerInfo> getAllPointers(
+            const std::shared_ptr<SemanticsContext>& ctx,
+            const ircode::LinearExpression& linearExpr) const;
 
-        std::list<std::pair<Offset, Symbol*>> getAllSymbolsAt(const SemanticsContext* ctx, SymbolTable* symbolTable, Offset offset, bool write = false) const;
+        std::list<std::pair<Offset, Symbol*>> getAllSymbolsAt(
+            const std::shared_ptr<SemanticsContext>& ctx,
+            SymbolTable* symbolTable,
+            Offset offset,
+            bool write = false) const;
     };
 };

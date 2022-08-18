@@ -9,7 +9,7 @@ Operation::Operation(
     : m_id(id)
     , m_output(output)
 {
-    m_output->getOperations().push_back(this);
+    m_output->addOperation(this);
 }
 
 OperationId Operation::getId() const {
@@ -39,7 +39,7 @@ UnaryOperation::UnaryOperation(
     : Operation(id, output)
     , m_input(input)
 {
-    m_input->getOperations().push_back(this);
+    m_input->addOperation(this);
 }
 
 std::shared_ptr<Value> UnaryOperation::getInput() const {
@@ -55,8 +55,8 @@ BinaryOperation::BinaryOperation(
     , m_input1(input1)
     , m_input2(input2)
 {
-    m_input1->getOperations().push_back(this);
-    m_input2->getOperations().push_back(this);
+    m_input1->addOperation(this);
+    m_input2->addOperation(this);
 }
 
 std::shared_ptr<Value> BinaryOperation::getInput1() const {

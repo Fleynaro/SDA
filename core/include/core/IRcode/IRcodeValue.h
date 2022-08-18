@@ -32,7 +32,9 @@ namespace sda::ircode
 
         virtual size_t getSize() const = 0;
 
-        std::list<Operation*>& getOperations();
+        const std::list<Operation*>& getOperations() const;
+
+        void addOperation(Operation* operation);
 
         const LinearExpression& getLinearExpr() const;
 

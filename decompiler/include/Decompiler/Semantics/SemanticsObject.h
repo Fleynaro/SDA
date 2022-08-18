@@ -2,9 +2,7 @@
 #include <string>
 #include <set>
 #include "Semantics.h"
-#include "Core/IRcode/IRcodeValue.h"
-#include "Core/Symbol/Symbol.h"
-#include "Core/SymbolTable/SymbolTable.h"
+#include "SemanticsContext.h"
 #include "Core/DataType/SignatureDataType.h"
 
 namespace sda::decompiler
@@ -33,14 +31,17 @@ namespace sda::decompiler
     {
         const ircode::Variable* m_variable;
         std::set<SemanticsObject*> m_relatedObjects;
+        std::shared_ptr<SemanticsContext> m_context;
     public:
-        VariableSemObj(const ircode::Variable* variable);
+        VariableSemObj(const ircode::Variable* variable, const std::shared_ptr<SemanticsContext>& context);
 
         Id getId() const override;
 
         void bindTo(SemanticsObject* obj) override;
 
         void unbindFrom(SemanticsObject* obj) override;
+
+        SemanticsContextOperations getRelatedOperations() const;
 
         const ircode::Variable* getVariable() const;
 
@@ -60,6 +61,8 @@ namespace sda::decompiler
 
         void unbindFrom(SemanticsObject* obj) override;
 
+        SemanticsContextOperations getRelatedOperations() const;
+
         static Id GetId(const Symbol* symbol);
     };
 
@@ -76,6 +79,8 @@ namespace sda::decompiler
 
         void unbindFrom(SemanticsObject* obj) override;
 
+        SemanticsContextOperations getRelatedOperations(Offset offset) const;
+
         static Id GetId(const SymbolTable* symbolTable);
     };
 
@@ -91,6 +96,8 @@ namespace sda::decompiler
         void bindTo(SemanticsObject* obj) override;
 
         void unbindFrom(SemanticsObject* obj) override;
+
+        SemanticsContextOperations getRelatedOperations() const;
 
         static Id GetId(const SignatureDataType* signatureDt);
     };
