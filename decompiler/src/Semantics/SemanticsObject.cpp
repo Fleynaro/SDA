@@ -3,18 +3,27 @@
 using namespace sda;
 using namespace sda::decompiler;
 
-bool SemanticsObject::addSemantics(Semantics* sem, bool emit) {
-    sem->m_holders.insert(this);
-    if (emit) {
-        m_semantics.insert(sem);
-        return m_emittedSemantics.insert(sem).second;
-    }
-    return m_semantics.insert(sem).second;
+SemanticsObject::~SemanticsObject() {
+    assert(m_semantics.empty());
+    for (auto obj : m_allRelatedObjects)
+        obj->m_allRelatedObjects.erase(this);
 }
 
-bool SemanticsObject::checkSemantics(const Semantics::FilterFunction& filter, bool onlyEmitted) const {
-    auto& semantics = onlyEmitted ? m_emittedSemantics : m_semantics;
-    for (auto& sem : semantics) {
+void SemanticsObject::bindTo(SemanticsObject* obj) {
+    m_allRelatedObjects.insert(obj);
+}
+
+void SemanticsObject::unbindFrom(SemanticsObject* obj) {
+    m_allRelatedObjects.erase(obj);
+}
+
+void SemanticsObject::getAllRelatedOperations(SemanticsContextOperations& operations) const {
+    for (auto obj : m_allRelatedObjects)
+        obj->getAllRelatedOperations(operations);
+}
+
+bool SemanticsObject::checkSemantics(const Semantics::FilterFunction& filter) const {
+    for (auto& sem : m_semantics) {
         if (filter(sem))
             return true;
     }
@@ -38,20 +47,10 @@ SemanticsObject::Id VariableSemObj::getId() const {
     return GetId(m_variable);
 }
 
-void VariableSemObj::bindTo(SemanticsObject* obj) {
-    m_relatedObjects.insert(obj);
-}
-
-void VariableSemObj::unbindFrom(SemanticsObject* obj) {
-    m_relatedObjects.erase(obj);
-}
-
-SemanticsContextOperations VariableSemObj::getRelatedOperations() const {
-    SemanticsContextOperations result;
+void VariableSemObj::getAllRelatedOperations(SemanticsContextOperations& operations) const {
     for (auto op : m_variable->getOperations()) {
-        result.insert({m_context, op});
+        operations.insert({m_context, op});
     }
-    return result;
 }
 
 const ircode::Variable* VariableSemObj::getVariable() const {
@@ -70,27 +69,6 @@ SemanticsObject::Id SymbolSemObj::getId() const {
     return GetId(m_symbol);
 }
 
-void SymbolSemObj::bindTo(SemanticsObject* obj) {
-    if (auto varObj = dynamic_cast<VariableSemObj*>(obj)) {
-        m_relatedVarObjects.insert(varObj);
-    }
-}
-
-void SymbolSemObj::unbindFrom(SemanticsObject* obj) {
-    if (auto varObj = dynamic_cast<VariableSemObj*>(obj)) {
-        m_relatedVarObjects.erase(varObj);
-    }
-}
-
-SemanticsContextOperations SymbolSemObj::getRelatedOperations() const {
-    SemanticsContextOperations result;
-    for (auto varObj : m_relatedVarObjects) {
-        auto relOps = varObj->getRelatedOperations();
-        result.insert(relOps.begin(), relOps.end());
-    }
-    return result;
-}
-
 SemanticsObject::Id SymbolSemObj::GetId(const Symbol* symbol) {
     return reinterpret_cast<size_t>(symbol);
 }
@@ -104,6 +82,7 @@ SemanticsObject::Id SymbolTableSemObj::getId() const {
 }
 
 void SymbolTableSemObj::bindTo(SemanticsObject* obj) {
+    SemanticsObject::bindTo(obj);
     if (auto varObj = dynamic_cast<VariableSemObj*>(obj)) {
         Offset offset = varObj->getVariable()->getLinearExpr().getConstTermValue();
         auto it = m_offsetToRelatedVarObjects.find(offset);
@@ -116,6 +95,7 @@ void SymbolTableSemObj::bindTo(SemanticsObject* obj) {
 }
 
 void SymbolTableSemObj::unbindFrom(SemanticsObject* obj) {
+    SemanticsObject::unbindFrom(obj);
     if (auto varObj = dynamic_cast<VariableSemObj*>(obj)) {
         Offset offset = varObj->getVariable()->getLinearExpr().getConstTermValue();
         auto it = m_offsetToRelatedVarObjects.find(offset);
@@ -125,16 +105,13 @@ void SymbolTableSemObj::unbindFrom(SemanticsObject* obj) {
     }
 }
 
-SemanticsContextOperations SymbolTableSemObj::getRelatedOperations(Offset offset) const {
-    SemanticsContextOperations result;
+void SymbolTableSemObj::getRelatedOperationsAtOffset(SemanticsContextOperations& operations, Offset offset) const {
     auto it = m_offsetToRelatedVarObjects.find(offset);
     if (it != m_offsetToRelatedVarObjects.end()) {
         for (auto varObj : it->second) {
-            auto relOps = varObj->getRelatedOperations();
-            result.insert(relOps.begin(), relOps.end());
+            varObj->getAllRelatedOperations(operations);
         }
     }
-    return result;
 }
 
 SemanticsObject::Id SymbolTableSemObj::GetId(const SymbolTable* symbolTable) {
@@ -147,25 +124,4 @@ FuncReturnSemObj::FuncReturnSemObj(const SignatureDataType* signatureDt)
 
 SemanticsObject::Id FuncReturnSemObj::getId() const {
     return GetId(m_signatureDt);
-}
-
-void FuncReturnSemObj::bindTo(SemanticsObject* obj) {
-    if (auto varObj = dynamic_cast<VariableSemObj*>(obj)) {
-        m_relatedVarObjects.insert(varObj);
-    }
-}
-
-void FuncReturnSemObj::unbindFrom(SemanticsObject* obj) {
-    if (auto varObj = dynamic_cast<VariableSemObj*>(obj)) {
-        m_relatedVarObjects.erase(varObj);
-    }
-}
-
-SemanticsContextOperations FuncReturnSemObj::getRelatedOperations() const {
-    SemanticsContextOperations result;
-    for (auto varObj : m_relatedVarObjects) {
-        auto relOps = varObj->getRelatedOperations();
-        result.insert(relOps.begin(), relOps.end());
-    }
-    return result;
 }

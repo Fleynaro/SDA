@@ -25,15 +25,18 @@ namespace sda::decompiler
 
         void bindEachOther(SemanticsObject* obj1, SemanticsObject* obj2) const;
 
+        void markAsEffected(SemanticsObject* obj, SemanticsContextOperations& nextOps) const;
+
         bool checkSemantics(
             const SemanticsObject* obj,
             Semantics::FilterFunction filter,
             Semantics* predSem = nullptr) const;
 
-        bool propagateTo(
+        void propagateTo(
             SemanticsObject* fromObj,
             SemanticsObject* toObj,
             Semantics::FilterFunction filter,
+            SemanticsContextOperations& nextOps,
             size_t uncertaintyDegree = 0) const;
     };
 
@@ -59,6 +62,7 @@ namespace sda::decompiler
         ScalarDataType* getScalarDataType(ScalarType scalarType, size_t size) const;
 
         DataTypeSemantics* createDataTypeSemantics(
+            SemanticsObject* holder,
             const std::shared_ptr<Semantics::SourceInfo>& sourceInfo,
             DataType* dataType,
             const DataTypeSemantics::SliceInfo& sliceInfo = {},

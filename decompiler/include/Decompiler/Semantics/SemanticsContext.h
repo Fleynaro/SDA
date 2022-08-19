@@ -19,13 +19,6 @@ namespace sda::decompiler
             return operation < other.operation;
         }
     };
-    
-    class SemanticsContextOperations : public std::set<SemanticsContextOperation> {
-    public:
-        using std::set<SemanticsContextOperation>::set;
 
-        void join(const SemanticsContextOperations& other) {
-            insert(other.begin(), other.end());
-        }
-    };
+    using SemanticsContextOperations = std::set<SemanticsContextOperation>;
 };

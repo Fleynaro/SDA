@@ -17,6 +17,13 @@ SemanticsObject* SemanticsManager::addObject(std::unique_ptr<SemanticsObject> ob
     return pObject;
 }
 
+void SemanticsManager::removeObject(SemanticsObject* object, SemanticsContextOperations& operations) {
+    auto semanitcs = object->findSemantics(Semantics::FilterAll());
+    for (auto semToRemove : semanitcs)
+        removeSemantics(semToRemove, operations);
+    m_objects.erase(object->getId());
+}
+
 SemanticsObject* SemanticsManager::getObject(SemanticsObject::Id id) const {
     auto it = m_objects.find(id);
     if (it != m_objects.end())
@@ -31,14 +38,25 @@ Semantics* SemanticsManager::addSemantics(std::unique_ptr<Semantics> semantics) 
 }
 
 void SemanticsManager::removeSemantics(Semantics* semantics, SemanticsContextOperations& operations) {
-    for (auto nextSem : semantics->getSuccessors())
-        removeSemantics(nextSem, operations);
-    m_semantics.remove_if([semantics](const std::unique_ptr<Semantics>& sem) {
-        return sem.get() == semantics;
-    });
-    
-    auto srcSem = semantics->getSourceInfo()->sourceSemantics;
-    operations.join(srcSem->getr);
+    std::list<Semantics*> semanticsToRemove = {semantics};
+    std::list<SemanticsObject*> sourceHolders;
+    while (!semanticsToRemove.empty()) {
+        auto semToRemove = semanticsToRemove.front();
+        semanticsToRemove.pop_front();
+        
+        if (semToRemove->getPredecessors().size() >= 2 || semToRemove == semantics)
+            sourceHolders.push_back(semToRemove->getHolder());
+
+        for (auto& nextSem : semToRemove->getSuccessors())
+            semanticsToRemove.push_back(nextSem);
+
+        m_semantics.remove_if([semToRemove](const std::unique_ptr<Semantics>& sem) {
+            return sem.get() == semToRemove;
+        });
+    }
+
+    for (auto holder : sourceHolders)
+        holder->getAllRelatedOperations(operations);
 }
 
 void SemanticsManager::addPropagator(std::unique_ptr<SemanticsPropagator> propagator) {
@@ -49,7 +67,7 @@ bool SemanticsManager::isSimiliarityConsidered() const {
     return false;
 }
 
-void SemanticsManager::propagate(SemanticsContextOperations operations) {
+void SemanticsManager::propagate(SemanticsContextOperations& operations) {
     while (!operations.empty()) {
         auto it = operations.begin();
         auto op = *it;

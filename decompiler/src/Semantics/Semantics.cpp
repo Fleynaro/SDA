@@ -5,15 +5,38 @@
 using namespace sda;
 using namespace sda::decompiler;
 
-Semantics::Semantics(const std::shared_ptr<SourceInfo>& sourceInfo, const MetaInfo& metaInfo)
-    : m_sourceInfo(sourceInfo), m_metaInfo(metaInfo)
+Semantics::Semantics(
+    SemanticsObject* holder,
+    const std::shared_ptr<SourceInfo>& sourceInfo,
+    const MetaInfo& metaInfo)
+    : m_holder(holder)
+    , m_sourceInfo(sourceInfo)
+    , m_metaInfo(metaInfo)
 {
+    m_holder->m_semantics.push_back(this);
     if (!m_sourceInfo->sourceSemantics)
         m_sourceInfo->sourceSemantics = this;
 }
 
+Semantics::~Semantics() {
+    m_holder->m_semantics.remove(this);
+    for (auto successor : m_successors)
+        successor->m_predecessors.remove(this);
+    for (auto predecessor : m_predecessors)
+        predecessor->m_successors.remove(this);
+}
+
+SemanticsObject* Semantics::getHolder() const {
+    return m_holder;
+}
+
 const std::shared_ptr<Semantics::SourceInfo>& Semantics::getSourceInfo() const {
     return m_sourceInfo;
+}
+
+bool Semantics::isSource(CreatorType creatorType) const {
+    return m_sourceInfo->sourceSemantics == this &&
+            m_sourceInfo->creatorType == creatorType;
 }
 
 const Semantics::MetaInfo& Semantics::getMetaInfo() const {
@@ -56,11 +79,12 @@ Semantics::FilterFunction Semantics::FilterAnd(const FilterFunction& filter1, co
 }
 
 DataTypeSemantics::DataTypeSemantics(
+    SemanticsObject* holder,
     const std::shared_ptr<SourceInfo>& sourceInfo,
     DataType* dataType,
     const SliceInfo& sliceInfo = {},
     const MetaInfo& metaInfo = {})
-    : Semantics(sourceInfo, metaInfo)
+    : Semantics(holder, sourceInfo, metaInfo)
     , m_dataType(dataType)
     , m_sliceInfo(sliceInfo)
 {}
@@ -81,8 +105,8 @@ bool DataTypeSemantics::isSimiliarTo(const Semantics* other) const {
     return Filter(m_dataType)(other);
 }
 
-std::unique_ptr<Semantics> DataTypeSemantics::clone(const MetaInfo& metaInfo) const {
-    return std::make_unique<DataTypeSemantics>(getSliceInfo(), m_dataType, m_sliceInfo, metaInfo);
+std::unique_ptr<Semantics> DataTypeSemantics::clone(SemanticsObject* holder, const MetaInfo& metaInfo) const {
+    return std::make_unique<DataTypeSemantics>(holder, getSourceInfo(), m_dataType, m_sliceInfo, metaInfo);
 }
 
 DataTypeSemantics::FilterFunction DataTypeSemantics::Filter(const DataType* dataType) {
@@ -112,10 +136,11 @@ Semantics::FilterFunction DataTypeSemantics::Filter(const DataTypeFilterFunction
 }
 
 SymbolTableSemantics::SymbolTableSemantics(
+    SemanticsObject* holder,
     const std::shared_ptr<SourceInfo>& sourceInfo,
     SymbolTable* symbolTable,
     const MetaInfo& metaInfo = {})
-    : Semantics(sourceInfo, metaInfo)
+    : Semantics(holder, sourceInfo, metaInfo)
     , m_symbolTable(symbolTable)
 {}
 
@@ -131,8 +156,8 @@ bool SymbolTableSemantics::isSimiliarTo(const Semantics* other) const {
     )(other);
 }
 
-std::unique_ptr<Semantics> SymbolTableSemantics::clone(const MetaInfo& metaInfo) const {
-    return std::make_unique<SymbolTableSemantics>(getSourceInfo(), m_symbolTable, metaInfo);
+std::unique_ptr<Semantics> SymbolTableSemantics::clone(SemanticsObject* holder, const MetaInfo& metaInfo) const {
+    return std::make_unique<SymbolTableSemantics>(holder, getSourceInfo(), m_symbolTable, metaInfo);
 }
 
 SymbolTable* SymbolTableSemantics::getSymbolTable() const {

@@ -20,6 +20,8 @@ namespace sda::decompiler
         
         SemanticsObject* addObject(std::unique_ptr<SemanticsObject> object);
 
+        void removeObject(SemanticsObject* object, SemanticsContextOperations& operations);
+
         SemanticsObject* getObject(SemanticsObject::Id id) const;
 
         template<typename T>
@@ -35,6 +37,6 @@ namespace sda::decompiler
 
         bool isSimiliarityConsidered() const;
 
-        void propagate(SemanticsContextOperations operations);
+        void propagate(SemanticsContextOperations& operations);
     };
 };

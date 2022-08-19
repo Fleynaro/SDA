@@ -32,58 +32,66 @@ void SemanticsPropagator::bindEachOther(SemanticsObject* obj1, SemanticsObject* 
     obj2->bindTo(obj1);
 }
 
+void SemanticsPropagator::markAsEffected(SemanticsObject* obj, SemanticsContextOperations& nextOps) const {
+    obj->getAllRelatedOperations(nextOps);
+}
+
 bool SemanticsPropagator::checkSemantics(
     const SemanticsObject* obj,
     Semantics::FilterFunction filter,
     Semantics* predSem) const
 {
-    bool onlyEmitted;
-    if (getManager()->isSimiliarityConsidered()) {
-        onlyEmitted = false;
-    } else {
+    if (!getManager()->isSimiliarityConsidered()) {
         if (predSem) {
             filter = [predSem](const Semantics* sem) {
-                auto preds = sem->getPredecessors();
-                return std::find(preds.begin(), preds.end(), predSem) == preds.end();
+                auto& preds = sem->getPredecessors();
+                return std::find(preds.begin(), preds.end(), predSem) != preds.end();
             };
+        } else {
+            filter = Semantics::FilterAnd(filter, [obj](const Semantics* sem) {
+                return sem->isSource(Semantics::System);
+            });
         }
-        onlyEmitted = true;
     }
-    return !obj->checkSemantics(filter, onlyEmitted);
+    return obj->checkSemantics(filter);
 }
 
-bool SemanticsPropagator::propagateTo(
+void SemanticsPropagator::propagateTo(
     SemanticsObject* fromObj,
     SemanticsObject* toObj,
     Semantics::FilterFunction filter,
+    SemanticsContextOperations& nextOps,
     size_t uncertaintyDegree) const
 {
     if (getManager()->isSimiliarityConsidered()) {
-        auto toObjSemantics = toObj->findSemantics(filter);
-        auto simFilter = [toObjSemantics](const Semantics* sem) {
-            for (auto sem2 : toObjSemantics) {
-                if (sem == sem2 || sem->isSimiliarTo(sem2))
+        auto toSemantics = toObj->findSemantics(filter);
+        filter = Semantics::FilterAnd(filter, [toSemantics](const Semantics* fromSem) {
+            for (auto toSem : toSemantics) {
+                if (fromSem->isSimiliarTo(toSem))
                     return false;
             }
             return true;
-        };
-        filter = Semantics::FilterAnd(filter, simFilter);
+        });
     }
 
-    bool isPropagated = false;
-    auto fromObjSemantics = fromObj->findSemantics(filter);
-    for (auto sem : fromObjSemantics) {
-        if (uncertaintyDegree > 0) {
-            auto newMetaInfo = sem->getMetaInfo();
-            newMetaInfo.uncertaintyDegree = newMetaInfo.uncertaintyDegree + uncertaintyDegree;
-            auto newSem = getManager()->addSemantics(sem->clone(newMetaInfo));
-            sem->addSuccessor(newSem);
-            isPropagated |= toObj->addSemantics(newSem, true);
-        } else {
-            isPropagated |= toObj->addSemantics(sem);
+    filter = Semantics::FilterAnd(filter, [toObj](const Semantics* fromSem) {
+        for (auto succ : fromSem->getSuccessors()) {
+            if (succ->getHolder() == toObj)
+                return false;
         }
+        return true;
+    });
+
+    auto fromSemantics = fromObj->findSemantics(filter);
+    for (auto fromSem : fromSemantics) {
+        auto newMetaInfo = fromSem->getMetaInfo();
+        newMetaInfo.uncertaintyDegree = newMetaInfo.uncertaintyDegree + uncertaintyDegree;
+        auto toSem = getManager()->addSemantics(fromSem->clone(toObj, newMetaInfo));
+        fromSem->addSuccessor(toSem);
     }
-    return isPropagated;
+    
+    if (!fromSemantics.empty())
+        markAsEffected(toObj, nextOps);
 }
 
 void BaseSemanticsPropagator::propagate(
@@ -110,10 +118,8 @@ void BaseSemanticsPropagator::propagate(
                     if (auto paramSymbolObj = getSymbolObject(paramSymbol)) {
                         auto outputVarObj = getOrCreateVarObject(ctx, output);
                         bindEachOther(paramSymbolObj, outputVarObj);
-                        if (propagateTo(paramSymbolObj, outputVarObj, DataTypeSemantics::Filter()))
-                            nextOps.join(outputVarObj->getRelatedOperations());
-                        if (propagateTo(outputVarObj, paramSymbolObj, DataTypeSemantics::Filter()))
-                            nextOps.join(paramSymbolObj->getRelatedOperations());
+                        propagateTo(paramSymbolObj, outputVarObj, DataTypeSemantics::Filter(), nextOps);
+                        propagateTo(outputVarObj, paramSymbolObj, DataTypeSemantics::Filter(), nextOps);
                     }
                 } else {
                     // if it is a stack or global variable
@@ -124,8 +130,7 @@ void BaseSemanticsPropagator::propagate(
                         if (auto symbolTableObj = getSymbolTableObject(symbolTable)) {
                             auto outputVarObj = getOrCreateVarObject(ctx, output);
                             bindEachOther(symbolTableObj, outputVarObj);
-                            if (propagateTo(symbolTableObj, outputVarObj, SymbolTableSemantics::Filter()))
-                                nextOps.join(outputVarObj->getRelatedOperations());
+                            propagateTo(symbolTableObj, outputVarObj, SymbolTableSemantics::Filter(), nextOps);
                         }
                     }
                 }
@@ -157,14 +162,10 @@ void BaseSemanticsPropagator::propagate(
                                                     sliceInfo.type = DataTypeSemantics::SliceInfo::Load;
                                                     sliceInfo.offset = relOffset;
                                                     sliceInfo.size = loadSize;
-                                                    auto newSem = createDataTypeSemantics(sem->getSourceInfo(), symbolDt, sliceInfo, sem->getMetaInfo());
-                                                    if (outputVarObj->addSemantics(newSem, true))
-                                                        nextOps.join(outputVarObj->getRelatedOperations());
-                                                    sem->addSuccessor(newSem);
-                                                } else {
-                                                    if (outputVarObj->addSemantics(sem))
-                                                        nextOps.join(outputVarObj->getRelatedOperations());
                                                 }
+                                                auto newSem = createDataTypeSemantics(outputVarObj, sem->getSourceInfo(), symbolDt, sliceInfo, sem->getMetaInfo());
+                                                sem->addSuccessor(newSem);
+                                                markAsEffected(outputVarObj, nextOps);
                                             }
                                         }
                                     }
@@ -192,10 +193,9 @@ void BaseSemanticsPropagator::propagate(
                                 sliceInfo.offset = relOffset;
                                 sliceInfo.size = loadSize;
                             }
-                            auto newSem = createDataTypeSemantics(sem->getSourceInfo(), itemDt, sliceInfo, sem->getMetaInfo());
-                            if (outputVarObj->addSemantics(newSem, true))
-                                nextOps.join(outputVarObj->getRelatedOperations());
+                            auto newSem = createDataTypeSemantics(outputVarObj, sem->getSourceInfo(), itemDt, sliceInfo, sem->getMetaInfo());
                             sem->addSuccessor(newSem);
+                            markAsEffected(outputVarObj, nextOps);
                         }
                     }
                 }
@@ -205,10 +205,8 @@ void BaseSemanticsPropagator::propagate(
             if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
                 auto inputVarObj = getOrCreateVarObject(ctx, inputVar);
                 auto outputVarObj = getOrCreateVarObject(ctx, output);
-                if (propagateTo(inputVarObj, outputVarObj, Semantics::FilterAll()))
-                    nextOps.join(outputVarObj->getRelatedOperations());
-                if (propagateTo(outputVarObj, inputVarObj, Semantics::FilterAll()))
-                    nextOps.join(inputVarObj->getRelatedOperations());
+                propagateTo(inputVarObj, outputVarObj, Semantics::FilterAll(), nextOps);
+                propagateTo(outputVarObj, inputVarObj, Semantics::FilterAll(), nextOps);
             }
         }
         else if (unaryOp->getId() == ircode::OperationId::INT_2COMP) {
@@ -245,10 +243,8 @@ void BaseSemanticsPropagator::propagate(
                     auto inputVarObj = getOrCreateVarObject(ctx, inputVar);
                     auto signedScalarDt = getScalarDataType(ScalarType::SignedInt, output->getSize());
                     auto filter = DataTypeSemantics::Filter(signedScalarDt);
-                    if (propagateTo(inputVarObj, outputVarObj, filter))
-                        nextOps.join(outputVarObj->getRelatedOperations());
-                    if (propagateTo(outputVarObj, inputVarObj, filter, 1))
-                        nextOps.join(inputVarObj->getRelatedOperations());
+                    propagateTo(inputVarObj, outputVarObj, filter, nextOps);
+                    propagateTo(outputVarObj, inputVarObj, filter, nextOps, 1);
                 }
             }
 
@@ -272,10 +268,9 @@ void BaseSemanticsPropagator::propagate(
                                     if (auto dataTypeSem = dynamic_cast<DataTypeSemantics*>(sem)) {
                                         auto pointerDt = dataTypeSem->getDataType()->getPointerTo();
                                         if (!checkSemantics(outputVarObj, DataTypeSemantics::Filter(pointerDt), sem)) {
-                                            auto newSem = createDataTypeSemantics(sem->getSourceInfo(), pointerDt, {}, sem->getMetaInfo());
-                                            if (outputVarObj->addSemantics(newSem, true))
-                                                nextOps.join(outputVarObj->getRelatedOperations());
+                                            auto newSem = createDataTypeSemantics(outputVarObj, sem->getSourceInfo(), pointerDt, {}, sem->getMetaInfo());
                                             sem->addSuccessor(newSem);
+                                            markAsEffected(outputVarObj, nextOps);
                                         }
                                         createVoidPtrDtSem = false;
                                     }
@@ -298,10 +293,9 @@ void BaseSemanticsPropagator::propagate(
 
                             assert(itemDt);
                             if (offset % itemDt->getSize() == 0) {
-                                auto newSem = createDataTypeSemantics(sem->getSourceInfo(), ptr.dataType, {}, sem->getMetaInfo());
-                                if (outputVarObj->addSemantics(newSem, true))
-                                    nextOps.join(outputVarObj->getRelatedOperations());
+                                auto newSem = createDataTypeSemantics(outputVarObj, sem->getSourceInfo(), ptr.dataType, {}, sem->getMetaInfo());
                                 sem->addSuccessor(newSem);
+                                markAsEffected(outputVarObj, nextOps);
                             }
                         }
                     }
@@ -311,18 +305,16 @@ void BaseSemanticsPropagator::propagate(
                     auto voidDt = findDataType("void");
                     if (!checkSemantics(outputVarObj, DataTypeSemantics::Filter(voidDt))) {
                         auto sourceInfo = std::make_shared<Semantics::SourceInfo>();
-                        sourceInfo->creatorType = Semantics::SourceInfo::System;
+                        sourceInfo->creatorType = Semantics::System;
                         Semantics::MetaInfo metaInfo = {};
                         for (auto& ptr : pointers) {
                             metaInfo.uncertaintyDegree = std::min(
                                 metaInfo.uncertaintyDegree, ptr.semantics->getMetaInfo().uncertaintyDegree);
                         }
-                        auto newSem = createDataTypeSemantics(sourceInfo, voidDt->getPointerTo(), {}, metaInfo);
-                        if (outputVarObj->addSemantics(newSem, true))
-                            nextOps.join(outputVarObj->getRelatedOperations());
-                        for (auto& ptr : pointers) {
+                        auto newSem = createDataTypeSemantics(outputVarObj, sourceInfo, voidDt->getPointerTo(), {}, metaInfo);
+                        for (auto& ptr : pointers)
                             ptr.semantics->addSuccessor(newSem);
-                        }
+                        markAsEffected(outputVarObj, nextOps);
                     }
                 }
             }
@@ -377,10 +369,8 @@ void BaseSemanticsPropagator::propagate(
             if (auto funcReturnObj = getFuncReturnObject(signatureDt)) {
                 auto outputVarObj = getOrCreateVarObject(ctx, output);
                 bindEachOther(funcReturnObj, outputVarObj);
-                if (propagateTo(funcReturnObj, outputVarObj, DataTypeSemantics::Filter()))
-                    nextOps.join(funcReturnObj->getRelatedOperations());
-                if (propagateTo(outputVarObj, funcReturnObj, DataTypeSemantics::Filter()))
-                    nextOps.join(outputVarObj->getRelatedOperations());
+                propagateTo(funcReturnObj, outputVarObj, DataTypeSemantics::Filter(), nextOps);
+                propagateTo(outputVarObj, funcReturnObj, DataTypeSemantics::Filter(), nextOps);
             }
         }
     }
@@ -396,10 +386,8 @@ void BaseSemanticsPropagator::propagate(
                     continue;
                 if (auto symbolObj = getSymbolObject(symbol)) {
                     bindEachOther(symbolObj, outputVarObj);
-                    if (propagateTo(symbolObj, outputVarObj, DataTypeSemantics::Filter()))
-                        nextOps.join(outputVarObj->getRelatedOperations());
-                    if (propagateTo(outputVarObj, symbolObj, DataTypeSemantics::Filter()))
-                        nextOps.join(symbolObj->getRelatedOperations());
+                    propagateTo(symbolObj, outputVarObj, DataTypeSemantics::Filter(), nextOps);
+                    propagateTo(outputVarObj, symbolObj, DataTypeSemantics::Filter(), nextOps);
                 }
             }
         }
@@ -438,6 +426,7 @@ ScalarDataType* BaseSemanticsPropagator::getScalarDataType(ScalarType scalarType
 }
 
 DataTypeSemantics* BaseSemanticsPropagator::createDataTypeSemantics(
+    SemanticsObject* holder,
     const std::shared_ptr<Semantics::SourceInfo>& sourceInfo,
     DataType* dataType,
     const DataTypeSemantics::SliceInfo& sliceInfo,
@@ -459,12 +448,11 @@ void BaseSemanticsPropagator::setDataTypeFor(
 {
     if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
         auto varObj = getOrCreateVarObject(ctx, var);
-        if (!checkSemantics(varObj, DataTypeSemantics::Filter(dataType))) {
+        if (!checkSemantics(varObj, DataTypeSemantics::Filter(dataType))) { // ?
             auto sourceInfo = std::make_shared<Semantics::SourceInfo>();
-            sourceInfo->creatorType = Semantics::SourceInfo::System;
-            auto sem = createDataTypeSemantics(sourceInfo, dataType);
-            varObj->addSemantics(sem, true);
-            nextOps.join(varObj->getRelatedOperations());
+            sourceInfo->creatorType = Semantics::System;
+            createDataTypeSemantics(varObj, sourceInfo, dataType);
+            markAsEffected(varObj, nextOps);
         }
     }
 }

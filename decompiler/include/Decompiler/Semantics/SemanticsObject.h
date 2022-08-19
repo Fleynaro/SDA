@@ -9,20 +9,23 @@ namespace sda::decompiler
 {
     class SemanticsObject
     {
-        std::set<Semantics*> m_semantics;
-        std::set<Semantics*> m_emittedSemantics;
+        friend class Semantics;
+        std::list<Semantics*> m_semantics;
+        std::set<SemanticsObject*> m_allRelatedObjects;
     public:
         using Id = size_t;
 
+        virtual ~SemanticsObject();
+
         virtual Id getId() const = 0;
 
-        virtual void bindTo(SemanticsObject* obj) = 0;
+        virtual void bindTo(SemanticsObject* obj);
 
-        virtual void unbindFrom(SemanticsObject* obj) = 0;
+        virtual void unbindFrom(SemanticsObject* obj);
 
-        bool addSemantics(Semantics* sem, bool emit = false);
+        virtual void getAllRelatedOperations(SemanticsContextOperations& operations) const;
 
-        bool checkSemantics(const Semantics::FilterFunction& filter, bool onlyEmitted = false) const;
+        bool checkSemantics(const Semantics::FilterFunction& filter) const;
 
         std::list<Semantics*> findSemantics(const Semantics::FilterFunction& filter) const;
     };
@@ -30,18 +33,13 @@ namespace sda::decompiler
     class VariableSemObj : public SemanticsObject
     {
         const ircode::Variable* m_variable;
-        std::set<SemanticsObject*> m_relatedObjects;
         std::shared_ptr<SemanticsContext> m_context;
     public:
         VariableSemObj(const ircode::Variable* variable, const std::shared_ptr<SemanticsContext>& context);
 
         Id getId() const override;
 
-        void bindTo(SemanticsObject* obj) override;
-
-        void unbindFrom(SemanticsObject* obj) override;
-
-        SemanticsContextOperations getRelatedOperations() const;
+        void getAllRelatedOperations(SemanticsContextOperations& operations) const override;
 
         const ircode::Variable* getVariable() const;
 
@@ -51,17 +49,10 @@ namespace sda::decompiler
     class SymbolSemObj : public SemanticsObject
     {
         const Symbol* m_symbol;
-        std::set<VariableSemObj*> m_relatedVarObjects;
     public:
         SymbolSemObj(const Symbol* symbol);
 
         Id getId() const override;
-
-        void bindTo(SemanticsObject* obj) override;
-
-        void unbindFrom(SemanticsObject* obj) override;
-
-        SemanticsContextOperations getRelatedOperations() const;
 
         static Id GetId(const Symbol* symbol);
     };
@@ -79,7 +70,7 @@ namespace sda::decompiler
 
         void unbindFrom(SemanticsObject* obj) override;
 
-        SemanticsContextOperations getRelatedOperations(Offset offset) const;
+        void getRelatedOperationsAtOffset(SemanticsContextOperations& operations, Offset offset) const;
 
         static Id GetId(const SymbolTable* symbolTable);
     };
@@ -87,17 +78,10 @@ namespace sda::decompiler
     class FuncReturnSemObj : public SemanticsObject
     {
         const SignatureDataType* m_signatureDt;
-        std::set<VariableSemObj*> m_relatedVarObjects;
     public:
         FuncReturnSemObj(const SignatureDataType* signatureDt);
 
         Id getId() const override;
-
-        void bindTo(SemanticsObject* obj) override;
-
-        void unbindFrom(SemanticsObject* obj) override;
-
-        SemanticsContextOperations getRelatedOperations() const;
 
         static Id GetId(const SignatureDataType* signatureDt);
     };
