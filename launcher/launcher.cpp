@@ -5,8 +5,10 @@
 #include "Factory.h"
 #include "Core/Context.h"
 #include "Core/DataType/VoidDataType.h"
+#include "Core/DataType/PointerDataType.h"
 #include "Core/DataType/ScalarDataType.h"
 #include "Core/DataType/TypedefDataType.h"
+#include "Core/DataType/StructureDataType.h"
 #include "Core/Image/AddressSpace.h"
 #include "Core/Image/Image.h"
 #include "Core/SymbolTable/StandartSymbolTable.h"
@@ -22,9 +24,11 @@
 #include "Platform/X86/PcodeDecoder.h"
 #include "Platform/X86/InstructionDecoder.h"
 #include "Platform/X86/RegisterHelper.h"
+#include "Platform/X86/CallingConvention.h"
 #include "Decompiler/Pcode/PcodeGraphBuilder.h"
 #include "Decompiler/Pcode/VtableLookup.h"
 #include "Decompiler/IRcode/Generator/IRcodeBlockGenerator.h"
+#include "Decompiler/Semantics/SemanticsManager.h"
 #include <boost/functional/hash.hpp>
 
 using namespace sda;
@@ -159,33 +163,46 @@ void testDecompiler() {
     auto ctx = new Context();
     initDefaultDataTypes(ctx);
     auto globalSymbolTable = new StandartSymbolTable(ctx);
-    auto stackSymbolTable = new StandartSymbolTable(ctx);
-    auto instructionSymbolTable = new StandartSymbolTable(ctx);
+    auto fastcallCallingConv = std::make_shared<platform::FastcallCallingConvention>();
+    auto functionSignature = new SignatureDataType(ctx, fastcallCallingConv, nullptr, "main");
+    {
+        auto player = new StructureDataType(ctx, nullptr, "Player");
+        player->getSymbolTable()->addSymbol(0,
+            new StructureFieldSymbol(ctx, nullptr, "item_ids", ctx->getDataTypes()->getByName("uint32_t")->getPointerTo()));
+        functionSignature->setParameters({ new FunctionParameterSymbol(ctx, nullptr, "param1", player) });
+    }
+    auto functionSymbol = new FunctionSymbol(ctx, nullptr, "main", functionSignature);
+
+    SemanticsManager semManager(ctx);
+    auto basePropagator = std::make_unique<BaseSemanticsPropagator>(&semManager);
+    semManager.addPropagator(std::move(basePropagator));
+    auto semCtx = std::make_shared<SemanticsContext>();
+    semCtx->globalSymbolTable = globalSymbolTable;
+    semCtx->functionSymbol = functionSymbol;
 
     pcode::Block pcodeBlock;
     ircode::Block ircodeBlock(&pcodeBlock);
     TotalMemorySpace memorySpace;
-    IRcodeDataTypePropagator dataTypePropagator(
-        ctx,
-        globalSymbolTable,
-        stackSymbolTable,
-        instructionSymbolTable
-    );
-    IRcodeBlockGenerator ircodeGen(&ircodeBlock, &memorySpace, &dataTypePropagator);
+    IRcodeDataTypeProvider dataTypeProvider(ctx);
+    IRcodeBlockGenerator ircodeGen(&ircodeBlock, &memorySpace, &dataTypeProvider);
+
+    ircode::StreamRender ircodeRender(std::cout, &pcodeRender);
+    ircodeRender.setExtendInfo(true);
 
     for (const auto& pcodeInstruction : pcodeInstructions) {
         ircodeGen.executePcode(&pcodeInstruction);
+        for (auto ircodeOp : ircodeGen.getGeneratedOperations()) {
+            std::cout << "    ";
+            ircodeRender.renderOperation(ircodeOp);
+            std::cout << std::endl;
+
+            SemanticsContextOperations ctxOps;
+            ctxOps.insert({ semCtx, ircodeOp });
+            semManager.propagate(ctxOps);
+        }
     }
 
     std::cout << std::endl;
-    
-    ircode::StreamRender ircodeRender(std::cout, &pcodeRender);
-    ircodeRender.setExtendInfo(true);
-    for (const auto& ircodeOp : ircodeBlock.getOperations()) {
-        std::cout << "    ";
-        ircodeRender.renderOperation(ircodeOp.get());
-        std::cout << std::endl;
-    }
 }
 
 void testGeneral() {

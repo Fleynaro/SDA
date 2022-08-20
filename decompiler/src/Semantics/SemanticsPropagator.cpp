@@ -123,8 +123,10 @@ void BaseSemanticsPropagator::propagate(
                     }
                 } else {
                     // if it is a stack or global variable
-                    auto symbolTable = ctx->functionSymbol->getStackSymbolTable();
-                    if (inputReg->getRegister().getRegId() == Register::InstructionPointerId)
+                    SymbolTable* symbolTable = nullptr;
+                    if (inputReg->getRegister().getRegId() == Register::StackPointerId)
+                        symbolTable = ctx->functionSymbol->getStackSymbolTable();
+                    else if (inputReg->getRegister().getRegId() == Register::InstructionPointerId)
                         symbolTable = ctx->globalSymbolTable;
                     if (symbolTable) {
                         if (auto symbolTableObj = getSymbolTableObject(symbolTable)) {
@@ -433,6 +435,7 @@ DataTypeSemantics* BaseSemanticsPropagator::createDataTypeSemantics(
     const Semantics::MetaInfo& metaInfo) const
 {
     auto sem = getManager()->addSemantics(std::make_unique<DataTypeSemantics>(
+        holder,
         sourceInfo,
         dataType,
         sliceInfo,

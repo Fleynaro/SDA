@@ -82,14 +82,14 @@ DataTypeSemantics::DataTypeSemantics(
     SemanticsObject* holder,
     const std::shared_ptr<SourceInfo>& sourceInfo,
     DataType* dataType,
-    const SliceInfo& sliceInfo = {},
-    const MetaInfo& metaInfo = {})
+    const SliceInfo& sliceInfo,
+    const MetaInfo& metaInfo)
     : Semantics(holder, sourceInfo, metaInfo)
     , m_dataType(dataType)
     , m_sliceInfo(sliceInfo)
 {}
 
-const std::string& DataTypeSemantics::getName() const {
+std::string DataTypeSemantics::getName() const {
     return "DataTypeSemantics";
 }
 
@@ -139,12 +139,12 @@ SymbolTableSemantics::SymbolTableSemantics(
     SemanticsObject* holder,
     const std::shared_ptr<SourceInfo>& sourceInfo,
     SymbolTable* symbolTable,
-    const MetaInfo& metaInfo = {})
+    const MetaInfo& metaInfo)
     : Semantics(holder, sourceInfo, metaInfo)
     , m_symbolTable(symbolTable)
 {}
 
-const std::string& SymbolTableSemantics::getName() const {
+std::string SymbolTableSemantics::getName() const {
     return "SymbolTableSemantics";
 }
 

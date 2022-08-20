@@ -77,7 +77,7 @@ ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collec
             else if (type == StructureDataType::Type)
                 return new StructureDataType(m_context, id);
             else if (type == SignatureDataType::Type) {
-                if(data.find("calling_convention") == data.end()) {
+                if(data.find("calling_convention") == data.end())
                     throw std::runtime_error("SignatureDataType without callingConvention");
                     
                 std::string ccType(data["calling_convention"].get_object()["type"].get_string().c_str());

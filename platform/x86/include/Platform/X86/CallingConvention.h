@@ -8,6 +8,8 @@ namespace sda::platform
     public:
         static inline const std::string Name = "FastcallCallingConvention";
 
+        std::string getName() const override;
+
         Map getStorages(const SignatureDataType* signatureDt) const override;
 
         bool getStorageInfo(const Storage& storage, StorageInfo& storageInfo) const override;

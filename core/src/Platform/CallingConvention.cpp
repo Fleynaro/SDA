@@ -10,6 +10,10 @@ CustomCallingConvention::CustomCallingConvention(Map storages)
     : m_storages(storages)
 {}
 
+std::string CustomCallingConvention::getName() const {
+    return Name;
+}
+
 CallingConvention::Map CustomCallingConvention::getStorages(const SignatureDataType* signatureDt) const {
     return m_storages;
 }

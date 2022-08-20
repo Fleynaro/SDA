@@ -9,8 +9,7 @@ StandartSymbolTable::StandartSymbolTable(Context* context, Object::Id* id, const
 {}
 
 void StandartSymbolTable::addSymbol(Offset offset, Symbol* symbol) {
-    auto [_, _, symbol] = getSymbolAt(offset);
-    assert(!symbol);
+    assert(!getSymbolAt(offset).symbol);
     m_context->getCallbacks()->onObjectModified(this);
     m_symbols[offset] = symbol;
 }

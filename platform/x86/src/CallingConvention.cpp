@@ -7,6 +7,10 @@
 using namespace sda;
 using namespace sda::platform;
 
+std::string FastcallCallingConvention::getName() const {
+    return Name;
+}
+
 CallingConvention::Map FastcallCallingConvention::getStorages(const SignatureDataType* signatureDt) const {
     static const std::vector<std::pair<size_t, size_t>> ParamRegisters = {
         std::make_pair(ZYDIS_REGISTER_RCX, ZYDIS_REGISTER_XMM0),

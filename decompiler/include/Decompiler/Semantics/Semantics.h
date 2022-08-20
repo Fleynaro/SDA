@@ -1,5 +1,7 @@
 #pragma once
+#include "Core/DataType/DataType.h"
 #include "Core/SymbolTable/SymbolTable.h"
+#include "Core/BitMask.h"
 
 namespace sda::decompiler
 {
@@ -50,7 +52,7 @@ namespace sda::decompiler
 
         const std::list<Semantics*>& getPredecessors() const;
 
-        virtual const std::string& getName() const = 0;
+        virtual std::string getName() const = 0;
 
         virtual bool isSimiliarTo(const Semantics* other) const;
 
@@ -92,7 +94,7 @@ namespace sda::decompiler
             const SliceInfo& sliceInfo = {},
             const MetaInfo& metaInfo = {});
 
-        const std::string& getName() const override;
+        std::string getName() const override;
 
         bool isSimiliarTo(const Semantics* other) const override;
 
@@ -119,7 +121,7 @@ namespace sda::decompiler
             SymbolTable* symbolTable,
             const MetaInfo& metaInfo = {});
         
-        const std::string& getName() const override;
+        std::string getName() const override;
 
         bool isSimiliarTo(const Semantics* other) const override;
 

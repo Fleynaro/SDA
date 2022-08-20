@@ -33,12 +33,12 @@ void Render::renderOperation(Operation* operation) {
     }
 
     if (m_extendInfo) {
-        if (output->getDataType()) {
-            commenting(true);
-            renderToken(" // ", Token::Comment);
-            renderToken(output->getDataType()->getName(), Token::Comment);
-            commenting(false);
-        }
+        // if (output->getDataType()) {
+        //     commenting(true);
+        //     renderToken(" // ", Token::Comment);
+        //     renderToken(output->getDataType()->getName(), Token::Comment);
+        //     commenting(false);
+        // }
 
         const auto& terms = output->getLinearExpr().getTerms();
         if (!(terms.size() == 1 && terms.front().factor == 1)) {

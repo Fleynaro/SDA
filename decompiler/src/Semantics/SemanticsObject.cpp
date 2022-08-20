@@ -125,3 +125,7 @@ FuncReturnSemObj::FuncReturnSemObj(const SignatureDataType* signatureDt)
 SemanticsObject::Id FuncReturnSemObj::getId() const {
     return GetId(m_signatureDt);
 }
+
+SemanticsObject::Id FuncReturnSemObj::GetId(const SignatureDataType* signatureDt) {
+    return reinterpret_cast<size_t>(signatureDt);
+}

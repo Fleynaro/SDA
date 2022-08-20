@@ -16,7 +16,7 @@ namespace sda
             Context* context,
             Object::Id* id = nullptr,
             const std::string& name = "",
-            bool symbolTable = false);
+            bool symbolTable = true);
 
         StandartSymbolTable* getSymbolTable() const;
 

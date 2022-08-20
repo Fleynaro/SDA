@@ -26,7 +26,7 @@ namespace sda::decompiler
 
         template<typename T>
         T* getObject(SemanticsObject::Id id) const {
-            return dynamic_cast<T*>(getObject(obj));
+            return dynamic_cast<T*>(getObject(id));
         }
 
         Semantics* addSemantics(std::unique_ptr<Semantics> semantics);

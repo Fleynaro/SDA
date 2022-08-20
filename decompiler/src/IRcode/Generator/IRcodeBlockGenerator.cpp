@@ -16,11 +16,11 @@ MemorySpace* TotalMemorySpace::getMemSpace(ircode::Hash baseAddrHash) {
 IRcodeBlockGenerator::IRcodeBlockGenerator(
     ircode::Block* block,
     TotalMemorySpace* totalMemSpace,
-    IRcodeDataTypePropagator* dataTypePropagator,
+    IRcodeDataTypeProvider* dataTypeProvider,
     size_t nextVarId)
     : m_block(block),
     m_totalMemSpace(totalMemSpace),
-    m_dataTypePropagator(dataTypePropagator),
+    m_dataTypeProvider(dataTypeProvider),
     m_nextVarId(nextVarId)
 {}
 
@@ -80,6 +80,7 @@ const std::map<pcode::InstructionId, ircode::OperationId> InstructionToOperation
 
 void IRcodeBlockGenerator::executePcode(const pcode::Instruction* instr) {
     m_curInstr = instr;
+    m_genOperations.clear();
     if (instr->getId() == pcode::InstructionId::NONE || instr->getId() == pcode::InstructionId::UNKNOWN)
         return;
 
@@ -182,6 +183,10 @@ void IRcodeBlockGenerator::executePcode(const pcode::Instruction* instr) {
             }
         }
     }
+}
+
+const std::list<ircode::Operation*>& IRcodeBlockGenerator::getGeneratedOperations() const {
+    return m_genOperations;
 }
 
 void IRcodeBlockGenerator::genWriteMemory(MemorySpace* memSpace, std::shared_ptr<ircode::Variable> newVariable) {
@@ -357,7 +362,7 @@ std::shared_ptr<ircode::Value> IRcodeBlockGenerator::genReadVarnode(const pcode:
 }
 
 void IRcodeBlockGenerator::genOperation(std::unique_ptr<ircode::Operation> operation) {
-    m_dataTypePropagator->propagate(operation.get());
+    m_genOperations.push_back(operation.get());
     operation->getPcodeInstructions().insert(m_curInstr);
     operation->getOverwrittenVariables() = m_overwrittenVariables;
     m_overwrittenVariables.clear();
@@ -438,7 +443,7 @@ std::shared_ptr<ircode::Constant> IRcodeBlockGenerator::createConstant(const pco
     auto hash = std::hash<size_t>()(constVarnode->getValue());
     boost::hash_combine(hash, ircode::Value::Constant);
     auto value = std::make_shared<ircode::Constant>(constVarnode, hash);
-    value->getLinearExpr() = ircode::LinearExpression(value->getConstVarnode()->getValue());
+    value->setLinearExpr(value->getConstVarnode()->getValue());
     return value;
 }
 
@@ -448,7 +453,7 @@ std::shared_ptr<ircode::Register> IRcodeBlockGenerator::createRegister(const pco
     boost::hash_combine(hash, regVarnode->getSize());
     boost::hash_combine(hash, ircode::Value::Register);
     auto value = std::make_shared<ircode::Register>(regVarnode, hash);
-    value->getLinearExpr() = ircode::LinearExpression(value);
+    value->setLinearExpr(ircode::LinearExpression(value));
     return value;
 }
 
@@ -456,6 +461,6 @@ std::shared_ptr<ircode::Variable> IRcodeBlockGenerator::createVariable(const irc
     boost::hash_combine(hash, size);
     boost::hash_combine(hash, ircode::Value::Variable);
     auto value = std::make_shared<ircode::Variable>(m_nextVarId++, memAddress, hash, size);
-    value->getLinearExpr() = ircode::LinearExpression(value);
+    value->setLinearExpr(ircode::LinearExpression(value));
     return value;
 }

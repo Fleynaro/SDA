@@ -2,6 +2,7 @@
 #include <map>
 #include <string>
 #include "Core/Serialization.h"
+#include "Core/Offset.h"
 
 namespace sda
 {
@@ -48,7 +49,11 @@ namespace sda
     public:
         static inline const std::string Name = "CustomCallingConvention";
 
+        CustomCallingConvention() = default;
+
         CustomCallingConvention(Map storages);
+
+        std::string getName() const override;
 
         Map getStorages(const SignatureDataType* signatureDt) const override;
 

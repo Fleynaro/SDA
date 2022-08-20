@@ -11,6 +11,7 @@ SignatureDataType::SignatureDataType(
     : DataType(context, id, name)
     , m_callingConvention(callingConvention)
 {
+    m_returnType = m_context->getDataTypes()->getByName("void");
     m_context->getDataTypes()->add(std::unique_ptr<SignatureDataType>(this));
 }
 
