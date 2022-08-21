@@ -1,4 +1,5 @@
 #include "Decompiler/Semantics/SemanticsObject.h"
+#include "Decompiler/Semantics/SemanticsManager.h"
 
 using namespace sda;
 using namespace sda::decompiler;
@@ -24,7 +25,7 @@ void SemanticsObject::getAllRelatedOperations(SemanticsContextOperations& operat
 
 bool SemanticsObject::checkSemantics(const Semantics::FilterFunction& filter) const {
     for (auto& sem : m_semantics) {
-        if (filter(sem))
+        if (filter(sem.get()))
             return true;
     }
     return false;
@@ -32,16 +33,26 @@ bool SemanticsObject::checkSemantics(const Semantics::FilterFunction& filter) co
 
 std::list<Semantics*> SemanticsObject::findSemantics(const Semantics::FilterFunction& filter) const {
     std::list<Semantics*> result;
-    for (auto& semantics : m_semantics) {
-        if (filter(semantics))
-            result.push_back(semantics);
+    for (auto& sem : m_semantics) {
+        if (filter(sem.get()))
+            result.push_back(sem.get());
     }
     return result;
 }
 
-VariableSemObj::VariableSemObj(const ircode::Variable* variable, const std::shared_ptr<SemanticsContext>& context)
-    : m_variable(variable), m_context(context)
-{}
+void SemanticsObject::addToManager(SemanticsManager* semManager) {
+    semManager->m_objects[getId()] = std::unique_ptr<SemanticsObject>(this);
+}
+
+VariableSemObj::VariableSemObj(
+    SemanticsManager* semManager,
+    const ircode::Variable* variable,
+    const std::shared_ptr<SemanticsContext>& context)
+    : m_variable(variable)
+    , m_context(context)
+{
+    addToManager(semManager);
+}
 
 SemanticsObject::Id VariableSemObj::getId() const {
     return GetId(m_variable);
@@ -61,9 +72,11 @@ SemanticsObject::Id VariableSemObj::GetId(const ircode::Variable* var) {
     return reinterpret_cast<size_t>(var);
 }
 
-SymbolSemObj::SymbolSemObj(const Symbol* symbol)
+SymbolSemObj::SymbolSemObj(SemanticsManager* semManager, const Symbol* symbol)
     : m_symbol(symbol)
-{}
+{
+    addToManager(semManager);
+}
 
 SemanticsObject::Id SymbolSemObj::getId() const {
     return GetId(m_symbol);
@@ -73,9 +86,11 @@ SemanticsObject::Id SymbolSemObj::GetId(const Symbol* symbol) {
     return reinterpret_cast<size_t>(symbol);
 }
 
-SymbolTableSemObj::SymbolTableSemObj(const SymbolTable* symbolTable)
+SymbolTableSemObj::SymbolTableSemObj(SemanticsManager* semManager, const SymbolTable* symbolTable)
     : m_symbolTable(symbolTable)
-{}
+{
+    addToManager(semManager);
+}
 
 SemanticsObject::Id SymbolTableSemObj::getId() const {
     return GetId(m_symbolTable);
@@ -118,9 +133,11 @@ SemanticsObject::Id SymbolTableSemObj::GetId(const SymbolTable* symbolTable) {
     return reinterpret_cast<size_t>(symbolTable);
 }
 
-FuncReturnSemObj::FuncReturnSemObj(const SignatureDataType* signatureDt)
+FuncReturnSemObj::FuncReturnSemObj(SemanticsManager* semManager, const SignatureDataType* signatureDt)
     : m_signatureDt(signatureDt)
-{}
+{
+    addToManager(semManager);
+}
 
 SemanticsObject::Id FuncReturnSemObj::getId() const {
     return GetId(m_signatureDt);

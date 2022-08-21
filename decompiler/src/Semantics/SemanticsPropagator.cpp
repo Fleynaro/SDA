@@ -10,7 +10,9 @@ using namespace sda::decompiler;
 
 SemanticsPropagator::SemanticsPropagator(SemanticsManager* semManager)
     : m_semManager(semManager)
-{}
+{
+    m_semManager->m_propagators.push_back(std::unique_ptr<SemanticsPropagator>(this));
+}
 
 SemanticsManager* SemanticsPropagator::getManager() const {
     return m_semManager;
@@ -23,8 +25,7 @@ VariableSemObj* SemanticsPropagator::getOrCreateVarObject(
     auto id = VariableSemObj::GetId(var.get());
     if (auto obj = getManager()->getObject<VariableSemObj>(id))
         return obj;
-    auto newObj = getManager()->addObject(std::make_unique<VariableSemObj>(var.get(), ctx));
-    return dynamic_cast<VariableSemObj*>(newObj);
+    return new VariableSemObj(getManager(), var.get(), ctx);
 }
 
 void SemanticsPropagator::bindEachOther(SemanticsObject* obj1, SemanticsObject* obj2) const {
@@ -86,7 +87,7 @@ void SemanticsPropagator::propagateTo(
     for (auto fromSem : fromSemantics) {
         auto newMetaInfo = fromSem->getMetaInfo();
         newMetaInfo.uncertaintyDegree = newMetaInfo.uncertaintyDegree + uncertaintyDegree;
-        auto toSem = getManager()->addSemantics(fromSem->clone(toObj, newMetaInfo));
+        auto toSem = fromSem->clone(toObj, newMetaInfo);
         fromSem->addSuccessor(toSem);
     }
     
@@ -165,7 +166,7 @@ void BaseSemanticsPropagator::propagate(
                                                     sliceInfo.offset = relOffset;
                                                     sliceInfo.size = loadSize;
                                                 }
-                                                auto newSem = createDataTypeSemantics(outputVarObj, sem->getSourceInfo(), symbolDt, sliceInfo, sem->getMetaInfo());
+                                                auto newSem = new DataTypeSemantics(outputVarObj, sem->getSourceInfo(), symbolDt, sliceInfo, sem->getMetaInfo());
                                                 sem->addSuccessor(newSem);
                                                 markAsEffected(outputVarObj, nextOps);
                                             }
@@ -195,7 +196,7 @@ void BaseSemanticsPropagator::propagate(
                                 sliceInfo.offset = relOffset;
                                 sliceInfo.size = loadSize;
                             }
-                            auto newSem = createDataTypeSemantics(outputVarObj, sem->getSourceInfo(), itemDt, sliceInfo, sem->getMetaInfo());
+                            auto newSem = new DataTypeSemantics(outputVarObj, sem->getSourceInfo(), itemDt, sliceInfo, sem->getMetaInfo());
                             sem->addSuccessor(newSem);
                             markAsEffected(outputVarObj, nextOps);
                         }
@@ -270,7 +271,7 @@ void BaseSemanticsPropagator::propagate(
                                     if (auto dataTypeSem = dynamic_cast<DataTypeSemantics*>(sem)) {
                                         auto pointerDt = dataTypeSem->getDataType()->getPointerTo();
                                         if (!checkSemantics(outputVarObj, DataTypeSemantics::Filter(pointerDt), sem)) {
-                                            auto newSem = createDataTypeSemantics(outputVarObj, sem->getSourceInfo(), pointerDt, {}, sem->getMetaInfo());
+                                            auto newSem = new DataTypeSemantics(outputVarObj, sem->getSourceInfo(), pointerDt, {}, sem->getMetaInfo());
                                             sem->addSuccessor(newSem);
                                             markAsEffected(outputVarObj, nextOps);
                                         }
@@ -295,7 +296,7 @@ void BaseSemanticsPropagator::propagate(
 
                             assert(itemDt);
                             if (offset % itemDt->getSize() == 0) {
-                                auto newSem = createDataTypeSemantics(outputVarObj, sem->getSourceInfo(), ptr.dataType, {}, sem->getMetaInfo());
+                                auto newSem = new DataTypeSemantics(outputVarObj, sem->getSourceInfo(), ptr.dataType, {}, sem->getMetaInfo());
                                 sem->addSuccessor(newSem);
                                 markAsEffected(outputVarObj, nextOps);
                             }
@@ -313,7 +314,7 @@ void BaseSemanticsPropagator::propagate(
                             metaInfo.uncertaintyDegree = std::min(
                                 metaInfo.uncertaintyDegree, ptr.semantics->getMetaInfo().uncertaintyDegree);
                         }
-                        auto newSem = createDataTypeSemantics(outputVarObj, sourceInfo, voidDt->getPointerTo(), {}, metaInfo);
+                        auto newSem = new DataTypeSemantics(outputVarObj, sourceInfo, voidDt->getPointerTo(), {}, metaInfo);
                         for (auto& ptr : pointers)
                             ptr.semantics->addSuccessor(newSem);
                         markAsEffected(outputVarObj, nextOps);
@@ -427,22 +428,6 @@ ScalarDataType* BaseSemanticsPropagator::getScalarDataType(ScalarType scalarType
     return getManager()->getContext()->getDataTypes()->getScalar(scalarType, size);
 }
 
-DataTypeSemantics* BaseSemanticsPropagator::createDataTypeSemantics(
-    SemanticsObject* holder,
-    const std::shared_ptr<Semantics::SourceInfo>& sourceInfo,
-    DataType* dataType,
-    const DataTypeSemantics::SliceInfo& sliceInfo,
-    const Semantics::MetaInfo& metaInfo) const
-{
-    auto sem = getManager()->addSemantics(std::make_unique<DataTypeSemantics>(
-        holder,
-        sourceInfo,
-        dataType,
-        sliceInfo,
-        metaInfo));
-    return dynamic_cast<DataTypeSemantics*>(sem);
-}
-
 void BaseSemanticsPropagator::setDataTypeFor(
     const std::shared_ptr<SemanticsContext>& ctx,
     std::shared_ptr<ircode::Value> value,
@@ -451,10 +436,10 @@ void BaseSemanticsPropagator::setDataTypeFor(
 {
     if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
         auto varObj = getOrCreateVarObject(ctx, var);
-        if (!checkSemantics(varObj, DataTypeSemantics::Filter(dataType))) { // ?
+        if (!checkSemantics(varObj, DataTypeSemantics::Filter(dataType))) {
             auto sourceInfo = std::make_shared<Semantics::SourceInfo>();
             sourceInfo->creatorType = Semantics::System;
-            createDataTypeSemantics(varObj, sourceInfo, dataType);
+            new DataTypeSemantics(varObj, sourceInfo, dataType);
             markAsEffected(varObj, nextOps);
         }
     }

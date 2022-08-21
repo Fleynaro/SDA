@@ -56,7 +56,7 @@ namespace sda::decompiler
 
         virtual bool isSimiliarTo(const Semantics* other) const;
 
-        virtual std::unique_ptr<Semantics> clone(SemanticsObject* holder, const MetaInfo& metaInfo) const = 0;
+        virtual Semantics* clone(SemanticsObject* holder, const MetaInfo& metaInfo) const = 0;
 
         using FilterFunction = std::function<bool(const Semantics*)>;
 
@@ -98,7 +98,7 @@ namespace sda::decompiler
 
         bool isSimiliarTo(const Semantics* other) const override;
 
-        std::unique_ptr<Semantics> clone(SemanticsObject* holder, const MetaInfo& metaInfo) const override;
+        Semantics* clone(SemanticsObject* holder, const MetaInfo& metaInfo) const override;
 
         DataType* getDataType() const;
 
@@ -125,7 +125,7 @@ namespace sda::decompiler
 
         bool isSimiliarTo(const Semantics* other) const override;
 
-        std::unique_ptr<Semantics> clone(SemanticsObject* holder, const MetaInfo& metaInfo) const override;
+        Semantics* clone(SemanticsObject* holder, const MetaInfo& metaInfo) const override;
 
         SymbolTable* getSymbolTable() const;
 

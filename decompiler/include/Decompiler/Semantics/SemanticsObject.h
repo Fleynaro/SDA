@@ -7,10 +7,12 @@
 
 namespace sda::decompiler
 {
+    class SemanticsManager;
+
     class SemanticsObject
     {
         friend class Semantics;
-        std::list<Semantics*> m_semantics;
+        std::list<std::unique_ptr<Semantics>> m_semantics;
         std::set<SemanticsObject*> m_allRelatedObjects;
     public:
         using Id = size_t;
@@ -28,6 +30,9 @@ namespace sda::decompiler
         bool checkSemantics(const Semantics::FilterFunction& filter) const;
 
         std::list<Semantics*> findSemantics(const Semantics::FilterFunction& filter) const;
+
+    protected:
+        void addToManager(SemanticsManager* semManager);
     };
 
     class VariableSemObj : public SemanticsObject
@@ -35,7 +40,10 @@ namespace sda::decompiler
         const ircode::Variable* m_variable;
         std::shared_ptr<SemanticsContext> m_context;
     public:
-        VariableSemObj(const ircode::Variable* variable, const std::shared_ptr<SemanticsContext>& context);
+        VariableSemObj(
+            SemanticsManager* semManager,
+            const ircode::Variable* variable,
+            const std::shared_ptr<SemanticsContext>& context);
 
         Id getId() const override;
 
@@ -50,7 +58,7 @@ namespace sda::decompiler
     {
         const Symbol* m_symbol;
     public:
-        SymbolSemObj(const Symbol* symbol);
+        SymbolSemObj(SemanticsManager* semManager, const Symbol* symbol);
 
         Id getId() const override;
 
@@ -62,7 +70,7 @@ namespace sda::decompiler
         const SymbolTable* m_symbolTable;
         std::map<Offset, std::set<VariableSemObj*>> m_offsetToRelatedVarObjects;
     public:
-        SymbolTableSemObj(const SymbolTable* symbolTable);
+        SymbolTableSemObj(SemanticsManager* semManager, const SymbolTable* symbolTable);
 
         Id getId() const override;
 
@@ -79,7 +87,7 @@ namespace sda::decompiler
     {
         const SignatureDataType* m_signatureDt;
     public:
-        FuncReturnSemObj(const SignatureDataType* signatureDt);
+        FuncReturnSemObj(SemanticsManager* semManager, const SignatureDataType* signatureDt);
 
         Id getId() const override;
 

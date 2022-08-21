@@ -9,17 +9,16 @@ namespace sda::decompiler
 {
     class SemanticsManager
     {
+        friend class SemanticsObject;
+        friend class SemanticsPropagator;
         Context* m_context;
         std::map<SemanticsObject::Id, std::unique_ptr<SemanticsObject>> m_objects;
-        std::list<std::unique_ptr<Semantics>> m_semantics;
         std::list<std::unique_ptr<SemanticsPropagator>> m_propagators;
     public:
         SemanticsManager(Context* context);
 
         Context* getContext() const;
         
-        SemanticsObject* addObject(std::unique_ptr<SemanticsObject> object);
-
         void removeObject(SemanticsObject* object, SemanticsContextOperations& operations);
 
         SemanticsObject* getObject(SemanticsObject::Id id) const;
@@ -29,12 +28,8 @@ namespace sda::decompiler
             return dynamic_cast<T*>(getObject(id));
         }
 
-        Semantics* addSemantics(std::unique_ptr<Semantics> semantics);
-
         void removeSemantics(Semantics* semantics, SemanticsContextOperations& operations);
         
-        void addPropagator(std::unique_ptr<SemanticsPropagator> propagator);
-
         bool isSimiliarityConsidered() const;
 
         void propagate(SemanticsContextOperations& operations);

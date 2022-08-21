@@ -13,13 +13,15 @@ Semantics::Semantics(
     , m_sourceInfo(sourceInfo)
     , m_metaInfo(metaInfo)
 {
-    m_holder->m_semantics.push_back(this);
+    m_holder->m_semantics.push_back(std::unique_ptr<Semantics>(this));
     if (!m_sourceInfo->sourceSemantics)
         m_sourceInfo->sourceSemantics = this;
 }
 
 Semantics::~Semantics() {
-    m_holder->m_semantics.remove(this);
+    m_holder->m_semantics.remove_if([this](const std::unique_ptr<Semantics>& sem) {
+        return sem.get() == this;
+    });
     for (auto successor : m_successors)
         successor->m_predecessors.remove(this);
     for (auto predecessor : m_predecessors)
@@ -105,8 +107,8 @@ bool DataTypeSemantics::isSimiliarTo(const Semantics* other) const {
     return Filter(m_dataType)(other);
 }
 
-std::unique_ptr<Semantics> DataTypeSemantics::clone(SemanticsObject* holder, const MetaInfo& metaInfo) const {
-    return std::make_unique<DataTypeSemantics>(holder, getSourceInfo(), m_dataType, m_sliceInfo, metaInfo);
+Semantics* DataTypeSemantics::clone(SemanticsObject* holder, const MetaInfo& metaInfo) const {
+    return new DataTypeSemantics(holder, getSourceInfo(), m_dataType, m_sliceInfo, metaInfo);
 }
 
 DataTypeSemantics::FilterFunction DataTypeSemantics::Filter(const DataType* dataType) {
@@ -156,8 +158,8 @@ bool SymbolTableSemantics::isSimiliarTo(const Semantics* other) const {
     )(other);
 }
 
-std::unique_ptr<Semantics> SymbolTableSemantics::clone(SemanticsObject* holder, const MetaInfo& metaInfo) const {
-    return std::make_unique<SymbolTableSemantics>(holder, getSourceInfo(), m_symbolTable, metaInfo);
+Semantics* SymbolTableSemantics::clone(SemanticsObject* holder, const MetaInfo& metaInfo) const {
+    return new SymbolTableSemantics(holder, getSourceInfo(), m_symbolTable, metaInfo);
 }
 
 SymbolTable* SymbolTableSemantics::getSymbolTable() const {

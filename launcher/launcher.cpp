@@ -174,8 +174,7 @@ void testDecompiler() {
     auto functionSymbol = new FunctionSymbol(ctx, nullptr, "main", functionSignature);
 
     SemanticsManager semManager(ctx);
-    auto basePropagator = std::make_unique<BaseSemanticsPropagator>(&semManager);
-    semManager.addPropagator(std::move(basePropagator));
+    new BaseSemanticsPropagator(&semManager);
     auto semCtx = std::make_shared<SemanticsContext>();
     semCtx->globalSymbolTable = globalSymbolTable;
     semCtx->functionSymbol = functionSymbol;

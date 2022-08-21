@@ -61,13 +61,6 @@ namespace sda::decompiler
 
         ScalarDataType* getScalarDataType(ScalarType scalarType, size_t size) const;
 
-        DataTypeSemantics* createDataTypeSemantics(
-            SemanticsObject* holder,
-            const std::shared_ptr<Semantics::SourceInfo>& sourceInfo,
-            DataType* dataType,
-            const DataTypeSemantics::SliceInfo& sliceInfo = {},
-            const Semantics::MetaInfo& metaInfo = {}) const;
-
         void setDataTypeFor(
             const std::shared_ptr<SemanticsContext>& ctx,
             std::shared_ptr<ircode::Value> value,
