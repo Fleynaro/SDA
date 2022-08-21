@@ -14,6 +14,8 @@ namespace utils::lexer
 
         Type type;
 
+        virtual bool isIdent(std::string& name) const;
+
         virtual bool isKeyword(const std::string& keyword) const;
 
         virtual bool isSymbol(char symbol) const;
@@ -26,6 +28,8 @@ namespace utils::lexer
     // Identifier or keyword
     struct IdentToken : Token {
         std::string name;
+
+        bool isIdent(std::string& name) const override;
 
         bool isKeyword(const std::string& keyword) const override;
 

@@ -23,4 +23,5 @@ void VoidDataType::serialize(boost::json::object& data) const {
 
 void VoidDataType::deserialize(boost::json::object& data) {
     DataType::deserialize(data);
+    notifyModified(Object::ModState::After);
 }

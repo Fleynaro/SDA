@@ -10,16 +10,18 @@ StandartSymbolTable::StandartSymbolTable(Context* context, Object::Id* id, const
 
 void StandartSymbolTable::addSymbol(Offset offset, Symbol* symbol) {
     assert(!getSymbolAt(offset).symbol);
-    m_context->getCallbacks()->onObjectModified(this);
+    notifyModified(Object::ModState::Before);
     m_symbols[offset] = symbol;
+    notifyModified(Object::ModState::After);
 }
 
 void StandartSymbolTable::removeSymbol(Offset offset) {
-    m_context->getCallbacks()->onObjectModified(this);
+    notifyModified(Object::ModState::Before);
     auto [_, symbolOffset, symbol] = getSymbolAt(offset);
     if (symbol) {
         m_symbols.erase(symbolOffset);
     }
+    notifyModified(Object::ModState::After);
 }
 
 SymbolTable::SymbolInfo StandartSymbolTable::getSymbolAt(Offset offset) {
@@ -48,7 +50,7 @@ const std::map<Offset, Symbol*>& StandartSymbolTable::getSymbols() const {
 }
 
 void StandartSymbolTable::setSymbols(const std::map<Offset, Symbol*>& symbols) {
-    m_context->getCallbacks()->onObjectModified(this);
+    notifyModified(Object::ModState::Before);
     m_symbols = symbols;
 }
 

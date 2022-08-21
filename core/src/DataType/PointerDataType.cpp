@@ -36,6 +36,7 @@ void PointerDataType::serialize(boost::json::object& data) const {
 void PointerDataType::deserialize(boost::json::object& data) {
     DataType::deserialize(data);
     m_pointedType = m_context->getDataTypes()->get(data["pointed_type"]);
+    notifyModified(Object::ModState::After);
 }
 
 std::string PointerDataType::GetTypeName(DataType* pointedType) {

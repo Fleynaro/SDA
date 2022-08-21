@@ -2,6 +2,10 @@
 
 using namespace utils::lexer;
 
+bool Token::isIdent(std::string& name) const {
+    return false;
+}
+
 bool Token::isKeyword(const std::string& keyword) const {
     return false;
 }
@@ -12,6 +16,11 @@ bool Token::isSymbol(char symbol) const {
 
 bool Token::isEnd() const {
     return isSymbol('\0');
+}
+
+bool IdentToken::isIdent(std::string& name) const {
+    name = this->name;
+    return !name.empty();
 }
 
 bool IdentToken::isKeyword(const std::string& keyword) const {

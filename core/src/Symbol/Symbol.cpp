@@ -17,8 +17,9 @@ DataType* Symbol::getDataType() const {
 }
 
 void Symbol::setDataType(DataType* dataType) {
-    m_context->getCallbacks()->onObjectModified(this);
+    notifyModified(Object::ModState::Before);
     m_dataType = dataType;
+    notifyModified(Object::ModState::After);
 }
 
 void Symbol::serialize(boost::json::object& data) const {

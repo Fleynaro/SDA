@@ -15,6 +15,10 @@ std::unique_ptr<Token> Lexer::nextToken() {
     return token;
 }
 
+IO* Lexer::getIO() const {
+    return m_io;
+}
+
 std::unique_ptr<Token> Lexer::nextTokenInternal() {
     // skip all spaces, tabs and newlines
     while (std::isspace(m_letter))

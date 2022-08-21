@@ -9,9 +9,11 @@
 #include "Core/DataType/ScalarDataType.h"
 #include "Core/DataType/TypedefDataType.h"
 #include "Core/DataType/StructureDataType.h"
+#include "Core/DataType/DataTypeParser.h"
 #include "Core/Image/AddressSpace.h"
 #include "Core/Image/Image.h"
 #include "Core/SymbolTable/StandartSymbolTable.h"
+#include "Core/SymbolTable/SymbolTableParser.h"
 #include "Core/Pcode/PcodeParser.h"
 #include "Core/Pcode/PcodeRender.h"
 #include "Core/IRcode/IRcodeRender.h"
@@ -115,6 +117,7 @@ void testPcodeDecoder() {
 }
 
 void initDefaultDataTypes(Context* ctx) {
+    // base data types
     ScalarDataType* scalars[] = {
         new ScalarDataType(ctx, nullptr, "uint8_t", ScalarType::UnsignedInt, 1),
         new ScalarDataType(ctx, nullptr, "int8_t", ScalarType::SignedInt, 1),
@@ -123,21 +126,21 @@ void initDefaultDataTypes(Context* ctx) {
         new ScalarDataType(ctx, nullptr, "uint32_t", ScalarType::UnsignedInt, 4),
         new ScalarDataType(ctx, nullptr, "int32_t", ScalarType::SignedInt, 4),
         new ScalarDataType(ctx, nullptr, "uint64_t", ScalarType::UnsignedInt, 8),
-        new ScalarDataType(ctx, nullptr, "int64_t", ScalarType::SignedInt, 8)
+        new ScalarDataType(ctx, nullptr, "int64_t", ScalarType::SignedInt, 8),
+        new ScalarDataType(ctx, nullptr, "float", ScalarType::FloatingPoint, 4),
+        new ScalarDataType(ctx, nullptr, "double", ScalarType::FloatingPoint, 8)
     };
-    new TypedefDataType(ctx, nullptr, "bool", scalars[0]);
     new VoidDataType(ctx, nullptr);
+
+    // derived data types
+    auto dataTypesStr = "\
+        bool = typedef uint8_t \
+    ";
+    DataTypeParser::Parse(dataTypesStr, ctx);
 }
 
 void testDecompiler() {
-    std::stringstream ss;
-    // ss << "\
-    //     $U1:4 = COPY 2:4 \
-    //     rax:4 = COPY 3:4 \
-    //     $U2:4 = COPY rax:4 \
-    //     $U3:4 = INT_ADD $U1:4, $U2:4 \
-    // ";
-    ss << "\
+    auto pcodeStr = "\
         rcx:8 = COPY rcx:8 \
         rbx:8 = INT_MULT rdx:8, 4:8 \
         rbx:8 = INT_ADD rcx:8, rbx:8 \
@@ -149,9 +152,7 @@ void testDecompiler() {
 
     pcode::StreamRender pcodeRender(std::cout, &regHelper);
 
-    utils::lexer::IO io(ss, std::cout);
-    pcode::Parser parser(&io, &regHelper);
-    auto pcodeInstructions = parser.parse();
+    auto pcodeInstructions = pcode::Parser::Parse(pcodeStr, &regHelper);
     for (auto& instr : pcodeInstructions) {
         std::cout << "    ";
         pcodeRender.renderInstruction(&instr);
@@ -162,15 +163,26 @@ void testDecompiler() {
 
     auto ctx = new Context();
     initDefaultDataTypes(ctx);
-    auto globalSymbolTable = new StandartSymbolTable(ctx);
-    auto fastcallCallingConv = std::make_shared<platform::FastcallCallingConvention>();
-    auto functionSignature = new SignatureDataType(ctx, fastcallCallingConv, nullptr, "main");
-    {
-        auto player = new StructureDataType(ctx, nullptr, "Player");
-        player->getSymbolTable()->addSymbol(0,
-            new StructureFieldSymbol(ctx, nullptr, "item_ids", ctx->getDataTypes()->getByName("uint32_t")->getPointerTo()));
-        functionSignature->setParameters({ new FunctionParameterSymbol(ctx, nullptr, "param1", player) });
-    }
+    auto symbolTableStr = "{}";
+    auto globalSymbolTable = SymbolTableParser::Parse(symbolTableStr, ctx);
+    
+    auto dataTypesStr = "\
+        EntityType = enum { \
+            VEHICLE, \
+            PED \
+        } \
+        \
+        ['entity can be vehicle or player'] \
+        Entity = struct { \
+            EntityType type, \
+            float x = 0x10, \
+            float y \
+        } \
+        \
+        SetEntityVelAxisSig = signature fastcall void(Entity* entity, uint32_t idx) \
+    ";
+    auto parsedDt = DataTypeParser::Parse(dataTypesStr, ctx, { std::make_shared<platform::FastcallCallingConvention>() });
+    auto functionSignature = dynamic_cast<SignatureDataType*>(parsedDt["SetEntityVelAxisSig"]);
     auto functionSymbol = new FunctionSymbol(ctx, nullptr, "main", functionSignature);
 
     SemanticsManager semManager(ctx);

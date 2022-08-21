@@ -1,5 +1,6 @@
 #include "Core/DataType/DataType.h"
 #include "Core/DataType/PointerDataType.h"
+#include "Core/DataType/ArrayDataType.h"
 #include "Core/DataType/ScalarDataType.h"
 #include <boost/functional/hash.hpp>
 
@@ -9,11 +10,23 @@ DataType::DataType(Context* context, Object::Id* id, const std::string& name)
     : ContextObject(context, id, name)
 {}
 
+void DataType::notifyModified(Object::ModState state) {
+    ContextObject::notifyModified(state);
+    m_context->getDataTypes()->notifyModified(this, state);
+}
+
 PointerDataType* DataType::getPointerTo() {
     auto dataTypeName = PointerDataType::GetTypeName(this);
     if (auto dataType = m_context->getDataTypes()->getByName(dataTypeName))
         return dynamic_cast<PointerDataType*>(dataType);
     return new PointerDataType(m_context, nullptr, this);
+}
+
+ArrayDataType* DataType::getArrayOf(const std::list<size_t>& dimensions) {
+    auto dataTypeName = ArrayDataType::GetTypeName(this, dimensions);
+    if (auto dataType = m_context->getDataTypes()->getByName(dataTypeName))
+        return dynamic_cast<ArrayDataType*>(dataType);
+    return new ArrayDataType(m_context, nullptr, this, dimensions);
 }
 
 bool DataType::isVoid() const {
@@ -51,6 +64,14 @@ ScalarDataType* DataTypeList::getScalar(ScalarType type, size_t size) {
         return it->second;
     }
     throw std::runtime_error("Scalar data type not found");
+}
+
+void DataTypeList::notifyModified(DataType* dataType, Object::ModState state) {
+    if (state == Object::ModState::Before) {
+        onObjectRemoved(dataType);
+    } else if (state == Object::ModState::After) {
+        onObjectAdded(dataType);
+    }
 }
 
 void DataTypeList::onObjectAdded(DataType* dataType) {

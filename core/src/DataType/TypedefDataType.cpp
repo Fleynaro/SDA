@@ -6,33 +6,35 @@ TypedefDataType::TypedefDataType(
     Context* context,
     Object::Id* id,
     const std::string& name,
-    DataType* pointedType)
+    DataType* refType)
     : DataType(context, id, name)
-    , m_pointedType(pointedType)
+    , m_refType(refType)
 {
     m_context->getDataTypes()->add(std::unique_ptr<TypedefDataType>(this));
 }
 
-void TypedefDataType::setPointedType(DataType* pointedType) {
-    m_context->getCallbacks()->onObjectModified(this);
-    m_pointedType = pointedType;
+void TypedefDataType::setReferenceType(DataType* refType) {
+    notifyModified(Object::ModState::Before);
+    m_refType = refType;
+    notifyModified(Object::ModState::After);
 }
 
-DataType* TypedefDataType::getPointedType() const {
-    return m_pointedType;
+DataType* TypedefDataType::getReferenceType() const {
+    return m_refType;
 }
 
 size_t TypedefDataType::getSize() const {
-    return m_pointedType->getSize();
+    return m_refType->getSize();
 }
 
 void TypedefDataType::serialize(boost::json::object& data) const {
     DataType::serialize(data);
     data["type"] = Type;
-    data["pointed_type"] = m_pointedType->serializeId();
+    data["ref_type"] = m_refType->serializeId();
 }
 
 void TypedefDataType::deserialize(boost::json::object& data) {
     DataType::deserialize(data);
-    m_pointedType = m_context->getDataTypes()->get(data["pointed_type"]);
+    m_refType = m_context->getDataTypes()->get(data["ref_type"]);
+    notifyModified(Object::ModState::After);
 }

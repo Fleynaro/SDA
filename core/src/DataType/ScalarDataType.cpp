@@ -38,4 +38,5 @@ void ScalarDataType::deserialize(boost::json::object& data) {
     DataType::deserialize(data);
     m_scalarType = static_cast<ScalarType>(data["scalar_type"].get_uint64());
     m_size = data["size"].get_uint64();
+    notifyModified(Object::ModState::After);
 }

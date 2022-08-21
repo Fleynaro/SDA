@@ -1,21 +1,17 @@
 #pragma once
 #include <list>
+#include "Core/Utils/AbstractParser.h"
 #include "PcodeInstruction.h"
 
 namespace sda::pcode
 {
-    class Parser {
-        utils::lexer::IO* m_io;
-        utils::lexer::Lexer m_lexer;
+    class Parser : public utils::AbstractParser
+    {
         const RegisterHelper* m_regHelper;
-        std::unique_ptr<utils::lexer::Token> m_token;
     public:
-        class Exception : public std::exception {
-        public:
-            Exception(const std::string& message);
-        };
+        Parser(utils::lexer::Lexer* lexer, const RegisterHelper* regHelper);
 
-        Parser(utils::lexer::IO* io, const RegisterHelper* regHelper);
+        static std::list<Instruction> Parse(const std::string& text, const RegisterHelper* regHelper);
 
         std::list<Instruction> parse();
 
@@ -31,11 +27,5 @@ namespace sda::pcode
         std::shared_ptr<ConstantVarnode> parseConstantVarnode();
 
         size_t parseVarnodeSize();
-
-        void accept(char symbol);
-
-        Exception error(utils::lexer::ErrorCode code, const std::string& message);
-
-        void nextToken();
     };
 };

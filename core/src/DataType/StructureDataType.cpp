@@ -21,8 +21,9 @@ StandartSymbolTable* StructureDataType::getSymbolTable() const {
 }
 
 void StructureDataType::setSize(size_t size) {
-    m_context->getCallbacks()->onObjectModified(this);
+    notifyModified(Object::ModState::Before);
     m_size = size;
+    notifyModified(Object::ModState::After);
 }
 
 size_t StructureDataType::getSize() const {
@@ -42,4 +43,5 @@ void StructureDataType::deserialize(boost::json::object& data) {
     m_symbolTable = dynamic_cast<StandartSymbolTable*>(m_context->getSymbolTables()->get(data["symbol_table"]));
     if (!m_symbolTable)
         throw std::runtime_error("StructureDataType::deserialize: symbol table is null");
+    notifyModified(Object::ModState::After);
 }

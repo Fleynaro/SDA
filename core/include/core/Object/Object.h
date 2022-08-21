@@ -10,12 +10,19 @@ namespace sda
     public:
         using Id = boost::uuids::uuid;
 
+        enum class ModState {
+            Before,
+            After
+        };
+
     private:
         Id m_id;
         bool m_temporary = false;
 
     public:
         Object(Id* id);
+
+        virtual ~Object() = default;
 
         // Get the unique identifier of the object
         Id getId() const;

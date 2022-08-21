@@ -38,7 +38,7 @@ void IO::error(const ErrorCode errorCode, const std::string& text, size_t colPos
         listCurLineOnce();
 
         if (m_errorsCountOnLine < MAX_ERRORS_ON_LINE) {
-            m_streamOut << rang::fg::gray;
+            m_streamOut << rang::fg::red;
             m_streamOut << "**" << std::setfill('0') << std::setw(2) << (m_errorsCount + 1) << "**";
             for (int i = 0; i < colPos - 2; ++i)
                 m_streamOut << " ";
@@ -91,6 +91,7 @@ bool IO::readNextLine() {
     m_letterPos.m_line++;
     m_errorsCountOnLine = 0;
     m_curLineShown = false;
+    m_curLine.clear();
     do {
         // if reach end of file
         if (m_streamIn.eof()) {

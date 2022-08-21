@@ -98,7 +98,7 @@ namespace sda
 
     protected:
         virtual void onObjectAdded(T* object) {}
-
+        
         virtual void onObjectRemoved(T* object) {}
     };
 };

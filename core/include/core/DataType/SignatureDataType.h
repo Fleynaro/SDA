@@ -19,7 +19,9 @@ namespace sda
             Context* context,
             std::shared_ptr<CallingConvention> callingConvention,
             Object::Id* id = nullptr,
-            const std::string& name = "");
+            const std::string& name = "",
+            DataType* returnType = nullptr,
+            const std::vector<FunctionParameterSymbol*>& parameters = {});
 
         std::shared_ptr<CallingConvention> getCallingConvention() const;
 

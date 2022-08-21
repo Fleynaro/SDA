@@ -47,7 +47,7 @@ namespace sda
     {
         Map m_storages;
     public:
-        static inline const std::string Name = "CustomCallingConvention";
+        static inline const std::string Name = "custom";
 
         CustomCallingConvention() = default;
 

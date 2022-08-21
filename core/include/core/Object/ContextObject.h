@@ -13,6 +13,9 @@ namespace sda
         std::string m_comment = "";
     protected:
         Context* m_context;
+
+        // Notify that an object has been modified
+        virtual void notifyModified(Object::ModState state);
         
     public:
         ContextObject(Context* context, Object::Id* id, const std::string& name);

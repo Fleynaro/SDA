@@ -2,15 +2,21 @@
 
 using namespace sda;
 
-EnumDataType::EnumDataType(Context* context, Object::Id* id, const std::string& name)
+EnumDataType::EnumDataType(
+    Context* context,
+    Object::Id* id,
+    const std::string& name,
+    const std::map<Key, std::string>& fields)
     : DataType(context, id, name)
+    , m_fields(fields)
 {
     m_context->getDataTypes()->add(std::unique_ptr<EnumDataType>(this));
 }
 
 void EnumDataType::setFields(const std::map<Key, std::string>& fields) {
-    m_context->getCallbacks()->onObjectModified(this);
+    notifyModified(Object::ModState::Before);
     m_fields = fields;
+    notifyModified(Object::ModState::After);
 }
 
 const std::map<EnumDataType::Key, std::string>& EnumDataType::getFields() const {
@@ -47,4 +53,6 @@ void EnumDataType::deserialize(boost::json::object& data) {
         const auto name = field["name"].get_string().c_str();
         m_fields[key] = name;
     }
+
+    notifyModified(Object::ModState::After);
 }

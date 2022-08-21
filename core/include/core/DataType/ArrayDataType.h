@@ -25,5 +25,7 @@ namespace sda
         void serialize(boost::json::object& data) const override;
 
         void deserialize(boost::json::object& data) override;
+
+        static std::string GetTypeName(DataType* elementType, const std::list<size_t>& dimensions);
     };
 };

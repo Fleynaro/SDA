@@ -6,7 +6,7 @@ namespace sda::platform
     class FastcallCallingConvention : public CallingConvention, public ISerializable
     {
     public:
-        static inline const std::string Name = "FastcallCallingConvention";
+        static inline const std::string Name = "fastcall";
 
         std::string getName() const override;
 

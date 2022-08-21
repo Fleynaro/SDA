@@ -11,16 +11,21 @@ namespace sda
     };
 
     class PointerDataType;
+    class ArrayDataType;
 
     class DataType : public ContextObject
     {
     protected:
         DataType(Context* context, Object::Id* id = nullptr, const std::string& name = "");
 
+        void notifyModified(Object::ModState state) override;
+
     public:
         static inline const std::string Collection = "data_types";
 
         PointerDataType* getPointerTo();
+
+        ArrayDataType* getArrayOf(const std::list<size_t>& dimensions);
 
         virtual bool isVoid() const;
 
@@ -49,6 +54,8 @@ namespace sda
         DataType* getByName(const std::string& name) const;
 
         ScalarDataType* getScalar(ScalarType type, size_t size);
+
+        void notifyModified(DataType* dataType, Object::ModState state);
 
     private:
         void onObjectAdded(DataType* dataType) override;

@@ -7,11 +7,16 @@ SignatureDataType::SignatureDataType(
     Context* context,
     std::shared_ptr<CallingConvention> callingConvention,
     Object::Id* id,
-    const std::string& name)
+    const std::string& name,
+    DataType* returnType,
+    const std::vector<FunctionParameterSymbol*>& parameters)
     : DataType(context, id, name)
     , m_callingConvention(callingConvention)
+    , m_returnType(returnType)
+    , m_parameters(parameters)
 {
-    m_returnType = m_context->getDataTypes()->getByName("void");
+    if (!m_returnType)
+        m_returnType = m_context->getDataTypes()->getByName("void");
     m_context->getDataTypes()->add(std::unique_ptr<SignatureDataType>(this));
 }
 
@@ -28,9 +33,10 @@ const CallingConvention::Map& SignatureDataType::getStorages() {
 }
 
 void SignatureDataType::setParameters(const std::vector<FunctionParameterSymbol*>& parameters) {
-    m_context->getCallbacks()->onObjectModified(this);
+    notifyModified(Object::ModState::Before);
     m_parameters = parameters;
     m_updateStorages = true;
+    notifyModified(Object::ModState::After);
 }
 
 const std::vector<FunctionParameterSymbol*>& SignatureDataType::getParameters() const {
@@ -38,9 +44,10 @@ const std::vector<FunctionParameterSymbol*>& SignatureDataType::getParameters() 
 }
 
 void SignatureDataType::setReturnType(DataType* returnType) {
-    m_context->getCallbacks()->onObjectModified(this);
+    notifyModified(Object::ModState::Before);
     m_returnType = returnType;
     m_updateStorages = true;
+    notifyModified(Object::ModState::After);
 }
 
 DataType* SignatureDataType::getReturnType() const {
@@ -88,4 +95,5 @@ void SignatureDataType::deserialize(boost::json::object& data) {
 
     m_returnType = m_context->getDataTypes()->get(data["return_type"]);
     m_updateStorages = true;
+    notifyModified(Object::ModState::After);
 }

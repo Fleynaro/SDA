@@ -5,13 +5,18 @@ namespace sda
 {
     class EnumDataType : public DataType
     {
-        using Key = int;
-
+    public:
+        using Key = size_t;
+    private:
         std::map<Key, std::string> m_fields;
     public:
         static inline const std::string Type = "enum";
 
-        EnumDataType(Context* context, Object::Id* id = nullptr, const std::string& name = "");
+        EnumDataType(
+            Context* context,
+            Object::Id* id = nullptr,
+            const std::string& name = "",
+            const std::map<Key, std::string>& fields = {});
 
         // todo: to change the fields, use setFields() only (like in react js)
         void setFields(const std::map<Key, std::string>& fields);

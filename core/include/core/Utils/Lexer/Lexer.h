@@ -14,6 +14,8 @@ namespace utils::lexer
         
         std::unique_ptr<Token> nextToken();
 
+        IO* getIO() const;
+
     private:
         std::unique_ptr<Token> nextTokenInternal();
 

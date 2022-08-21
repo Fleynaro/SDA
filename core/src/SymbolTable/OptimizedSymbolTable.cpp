@@ -20,7 +20,7 @@ OptimizedSymbolTable::OptimizedSymbolTable(
 }
 
 void OptimizedSymbolTable::setFragmentsCount(size_t count) {
-    m_context->getCallbacks()->onObjectModified(this);
+    notifyModified(Object::ModState::Before);
 
     // remove old symbol tables and save all symbols temporarily
     std::list<std::map<Offset, Symbol*>> allSymbols;
@@ -42,6 +42,8 @@ void OptimizedSymbolTable::setFragmentsCount(size_t count) {
             addSymbol(offset, symbol);
         }
     }
+
+    notifyModified(Object::ModState::After);
 }
 
 void OptimizedSymbolTable::addSymbol(Offset offset, Symbol* symbol) {

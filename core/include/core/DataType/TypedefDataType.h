@@ -5,7 +5,7 @@ namespace sda
 {
     class TypedefDataType : public DataType
     {
-        DataType* m_pointedType;
+        DataType* m_refType;
     public:
         static inline const std::string Type = "typedef";
 
@@ -13,11 +13,11 @@ namespace sda
             Context* context,
             Object::Id* id = nullptr,
             const std::string& name = "",
-            DataType* pointedType = nullptr);
+            DataType* refType = nullptr);
 
-        void setPointedType(DataType* pointedType);
+        void setReferenceType(DataType* refType);
 
-        DataType* getPointedType() const;
+        DataType* getReferenceType() const;
 
         size_t getSize() const override;
 
