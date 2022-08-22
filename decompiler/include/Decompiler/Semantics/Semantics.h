@@ -68,6 +68,9 @@ namespace sda::decompiler
 
         // Get intersection of two semantics set
         static FilterFunction FilterAnd(const FilterFunction& filter1, const FilterFunction& filter2);
+
+        // Check if the semantics has the source
+        static FilterFunction FilterSource(const std::shared_ptr<SourceInfo>& source);
     };
 
     class DataTypeSemantics : public Semantics

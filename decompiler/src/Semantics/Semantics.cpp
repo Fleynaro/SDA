@@ -80,6 +80,12 @@ Semantics::FilterFunction Semantics::FilterAnd(const FilterFunction& filter1, co
     };
 }
 
+Semantics::FilterFunction Semantics::FilterSource(const std::shared_ptr<SourceInfo>& source) {
+    return [source](const Semantics* sem) {
+        return source == sem->getSourceInfo();
+    };
+}
+
 DataTypeSemantics::DataTypeSemantics(
     SemanticsObject* holder,
     const std::shared_ptr<SourceInfo>& sourceInfo,

@@ -134,7 +134,8 @@ StructureDataType* DataTypeParser::parseStructureDataTypeDef() {
 
     SymbolTableParser symbolTableParser(getLexer(), m_context, true);
     symbolTableParser.init(std::move(getToken()));
-    auto symbolTable = symbolTableParser.parse();
+    auto symbolTable = dynamic_cast<StandartSymbolTable*>(symbolTableParser.parse());
+    assert(symbolTable);
     init(std::move(symbolTableParser.getToken()));
     return new StructureDataType(
         m_context,

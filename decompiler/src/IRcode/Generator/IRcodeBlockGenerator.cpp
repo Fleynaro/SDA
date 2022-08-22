@@ -16,7 +16,7 @@ MemorySpace* TotalMemorySpace::getMemSpace(ircode::Hash baseAddrHash) {
 IRcodeBlockGenerator::IRcodeBlockGenerator(
     ircode::Block* block,
     TotalMemorySpace* totalMemSpace,
-    IRcodeDataTypeProvider* dataTypeProvider,
+    ircode::DataTypeProvider* dataTypeProvider,
     size_t nextVarId)
     : m_block(block),
     m_totalMemSpace(totalMemSpace),

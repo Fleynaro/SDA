@@ -30,7 +30,7 @@ namespace sda::decompiler
         bool checkSemantics(
             const SemanticsObject* obj,
             Semantics::FilterFunction filter,
-            Semantics* predSem = nullptr) const;
+            Semantics* fromSem = nullptr) const;
 
         void propagateTo(
             SemanticsObject* fromObj,

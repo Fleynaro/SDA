@@ -1,5 +1,6 @@
 #pragma once
 #include "IRcodeOperation.h"
+#include "IRcodeDataTypeProvider.h"
 #include "Core/Pcode/PcodeRender.h"
 
 namespace sda::ircode
@@ -9,8 +10,11 @@ namespace sda::ircode
         pcode::Render* m_pcodeRender;
         size_t m_commentingCounter = 0;
         bool m_extendInfo = false;
+        DataTypeProvider* m_dataTypeProvider;
     public:
         Render(pcode::Render* pcodeRender);
+
+        void setDataTypeProvider(DataTypeProvider* dataTypeProvider);
 
         virtual void renderOperation(Operation* operation);
 

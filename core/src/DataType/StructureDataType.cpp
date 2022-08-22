@@ -8,11 +8,12 @@ StructureDataType::StructureDataType(
     Context* context,
     Object::Id* id,
     const std::string& name,
-    bool symbolTable)
+    StandartSymbolTable* symbolTable)
     : DataType(context, id, name)
+    , m_symbolTable(symbolTable)
 {
-    if (symbolTable)
-        m_symbolTable = new StandartSymbolTable(context, nullptr, "structure");
+    if (!m_symbolTable)
+        m_symbolTable = new StandartSymbolTable(context);
     m_context->getDataTypes()->add(std::unique_ptr<StructureDataType>(this));
 }
 

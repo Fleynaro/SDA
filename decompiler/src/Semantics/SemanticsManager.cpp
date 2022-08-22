@@ -50,13 +50,21 @@ bool SemanticsManager::isSimiliarityConsidered() const {
 }
 
 void SemanticsManager::propagate(SemanticsContextOperations& operations) {
-    while (!operations.empty()) {
-        auto it = operations.begin();
+    auto selectedOps = operations;
+    while (!selectedOps.empty()) {
+        auto it = selectedOps.begin();
         auto op = *it;
 
         for (auto& propagator : m_propagators)
             propagator->propagate(op.context, op.operation, operations);
 
-        operations.erase(it);
+        selectedOps.erase(it);
+        operations.erase(op);
+    }
+}
+
+void SemanticsManager::propagateThroughly(SemanticsContextOperations& operations) {
+    while (!operations.empty()) {
+        propagate(operations);
     }
 }

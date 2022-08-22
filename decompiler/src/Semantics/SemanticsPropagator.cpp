@@ -40,14 +40,11 @@ void SemanticsPropagator::markAsEffected(SemanticsObject* obj, SemanticsContextO
 bool SemanticsPropagator::checkSemantics(
     const SemanticsObject* obj,
     Semantics::FilterFunction filter,
-    Semantics* predSem) const
+    Semantics* fromSem) const
 {
     if (!getManager()->isSimiliarityConsidered()) {
-        if (predSem) {
-            filter = [predSem](const Semantics* sem) {
-                auto& preds = sem->getPredecessors();
-                return std::find(preds.begin(), preds.end(), predSem) != preds.end();
-            };
+        if (fromSem) {
+            filter = Semantics::FilterSource(fromSem->getSourceInfo());
         } else {
             filter = Semantics::FilterAnd(filter, [obj](const Semantics* sem) {
                 return sem->isSource(Semantics::System);
@@ -76,11 +73,9 @@ void SemanticsPropagator::propagateTo(
     }
 
     filter = Semantics::FilterAnd(filter, [toObj](const Semantics* fromSem) {
-        for (auto succ : fromSem->getSuccessors()) {
-            if (succ->getHolder() == toObj)
-                return false;
-        }
-        return true;
+        // any semantics object has each semantics of the only one source
+        auto sourceFilter = Semantics::FilterSource(fromSem->getSourceInfo());
+        return !toObj->checkSemantics(sourceFilter);
     });
 
     auto fromSemantics = fromObj->findSemantics(filter);
@@ -301,6 +296,7 @@ void BaseSemanticsPropagator::propagate(
                                 markAsEffected(outputVarObj, nextOps);
                             }
                         }
+                        createVoidPtrDtSem = false;
                     }
                 }
 
@@ -460,7 +456,7 @@ std::list<BaseSemanticsPropagator::PointerInfo> BaseSemanticsPropagator::getAllP
             auto filter = Semantics::FilterOr(DataTypeSemantics::Filter(), SymbolTableSemantics::Filter());
             auto semantics = termVarObj->findSemantics(filter);
             for (auto sem : semantics) {
-                PointerInfo info = {};
+                PointerInfo info = { sem };
                 if (auto symbolTableSem = dynamic_cast<SymbolTableSemantics*>(sem)) {
                     info.symbolTable = symbolTableSem->getSymbolTable();
                     result.push_back(info);

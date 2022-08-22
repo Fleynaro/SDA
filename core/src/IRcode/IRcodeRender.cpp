@@ -8,6 +8,10 @@ Render::Render(pcode::Render* pcodeRender)
     : m_pcodeRender(pcodeRender)
 {}
 
+void Render::setDataTypeProvider(DataTypeProvider* dataTypeProvider) {
+    m_dataTypeProvider = dataTypeProvider;
+}
+
 void Render::renderOperation(Operation* operation) {
     auto output = operation->getOutput();
     renderValue(output.get(), true);
@@ -33,12 +37,14 @@ void Render::renderOperation(Operation* operation) {
     }
 
     if (m_extendInfo) {
-        // if (output->getDataType()) {
-        //     commenting(true);
-        //     renderToken(" // ", Token::Comment);
-        //     renderToken(output->getDataType()->getName(), Token::Comment);
-        //     commenting(false);
-        // }
+        if (m_dataTypeProvider) {
+            if (auto dataType = m_dataTypeProvider->getDataType(output)) {
+                commenting(true);
+                renderToken(" // ", Token::Comment);
+                renderToken(dataType->getName(), Token::Comment);
+                commenting(false);
+            }
+        }
 
         const auto& terms = output->getLinearExpr().getTerms();
         if (!(terms.size() == 1 && terms.front().factor == 1)) {

@@ -28,6 +28,7 @@
 #include "Decompiler/Pcode/VtableLookup.h"
 #include "Decompiler/IRcode/Generator/IRcodeBlockGenerator.h"
 #include "Decompiler/Semantics/SemanticsManager.h"
+#include "Decompiler/Semantics/SemanticsProvider.h"
 #include <boost/functional/hash.hpp>
 
 using namespace sda;
@@ -172,14 +173,28 @@ void testDecompiler() {
             float y \
         } \
         \
-        SetEntityVelAxisSig = signature fastcall void(Entity* entity, uint32_t idx) \
+        SetEntityVelAxisSig = signature fastcall void(Entity* entity, uint64_t idx) \
     ";
     auto parsedDt = DataTypeParser::Parse(dataTypesStr, ctx);
     auto functionSignature = dynamic_cast<SignatureDataType*>(parsedDt["SetEntityVelAxisSig"]);
     auto functionSymbol = new FunctionSymbol(ctx, nullptr, "main", functionSignature);
 
     SemanticsManager semManager(ctx);
-    new BaseSemanticsPropagator(&semManager);
+    {
+        auto sourceInfo = std::make_shared<Semantics::SourceInfo>();
+        sourceInfo->creatorType = Semantics::System;
+        auto symObj = new SymbolSemObj(&semManager, functionSignature->getParameters()[0]);
+        {
+            new DataTypeSemantics(symObj, sourceInfo, ctx->getDataTypes()->getByName("Entity*"));
+        }
+        new SymbolSemObj(&semManager, functionSignature->getParameters()[1]);
+        if (auto entityStruct = dynamic_cast<StructureDataType*>(ctx->getDataTypes()->getByName("Entity"))) {
+            auto symObj = new SymbolSemObj(&semManager, entityStruct->getSymbolTable()->getSymbolAt(0x10).symbol);
+            // todo: symbol to semantic
+            new DataTypeSemantics(symObj, sourceInfo, ctx->getDataTypes()->getByName("float"));
+        }
+        new BaseSemanticsPropagator(&semManager);
+    }
     auto semCtx = std::make_shared<SemanticsContext>();
     semCtx->globalSymbolTable = globalSymbolTable;
     semCtx->functionSymbol = functionSymbol;
@@ -187,11 +202,10 @@ void testDecompiler() {
     pcode::Block pcodeBlock;
     ircode::Block ircodeBlock(&pcodeBlock);
     TotalMemorySpace memorySpace;
-    IRcodeDataTypeProvider dataTypeProvider(ctx);
+    IRcodeSemanticsDataTypeProvider dataTypeProvider(&semManager);
     IRcodeBlockGenerator ircodeGen(&ircodeBlock, &memorySpace, &dataTypeProvider);
 
     ircode::StreamRender ircodeRender(std::cout, &pcodeRender);
-    ircodeRender.setExtendInfo(true);
 
     for (const auto& pcodeInstruction : pcodeInstructions) {
         ircodeGen.executePcode(&pcodeInstruction);
@@ -204,6 +218,16 @@ void testDecompiler() {
             ctxOps.insert({ semCtx, ircodeOp });
             semManager.propagate(ctxOps);
         }
+    }
+
+    std::cout << std::endl << std::endl;
+
+    ircodeRender.setExtendInfo(true);
+    ircodeRender.setDataTypeProvider(&dataTypeProvider);
+    for (const auto& ircodeOp : ircodeBlock.getOperations()) {
+        std::cout << "    ";
+        ircodeRender.renderOperation(ircodeOp.get());
+        std::cout << std::endl;
     }
 
     std::cout << std::endl;

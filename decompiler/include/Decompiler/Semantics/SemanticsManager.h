@@ -33,5 +33,7 @@ namespace sda::decompiler
         bool isSimiliarityConsidered() const;
 
         void propagate(SemanticsContextOperations& operations);
+
+        void propagateThroughly(SemanticsContextOperations& operations);
     };
 };

@@ -3,7 +3,13 @@
 using namespace sda;
 
 bool CallingConvention::Storage::operator<(const CallingConvention::Storage& other) const {
-    return registerId < other.registerId || (registerId == other.registerId && offset < other.offset);
+    if (useType == other.useType) {
+        if (registerId == other.registerId) {
+            return offset < other.offset;
+        }
+        return registerId < other.registerId;
+    }
+    return useType < other.useType;
 }
 
 CustomCallingConvention::CustomCallingConvention(Map storages)
