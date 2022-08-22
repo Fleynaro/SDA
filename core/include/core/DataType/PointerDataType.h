@@ -3,8 +3,6 @@
 
 namespace sda
 {
-    const size_t PointerSize = 0x8; // depends on platform
-
     class PointerDataType : public DataType
     {
         DataType* m_pointedType;

@@ -6,7 +6,7 @@ namespace sda::platform
 {
     class PcodeDecoderX86 : public PcodeDecoder
     {
-        ZydisDecoder* m_decoder;
+        std::unique_ptr<ZydisDecoder> m_decoder;
         ZydisDecodedInstruction m_curInstr;
         ZydisDecodedOperand m_curOperands[ZYDIS_MAX_OPERAND_COUNT_VISIBLE];
         Offset m_curOffset = 0;
@@ -15,7 +15,7 @@ namespace sda::platform
     public:
         std::string m_curInstrView; // for debug purposes
 
-        PcodeDecoderX86(ZydisDecoder* decoder);
+        PcodeDecoderX86(std::unique_ptr<ZydisDecoder> decoder);
 
         void decode(Offset offset, const std::vector<uint8_t>& data) override;
 

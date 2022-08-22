@@ -1,20 +1,20 @@
 #include "Core/Pcode/PcodeParser.h"
-#include "Core/Platform/RegisterHelper.h"
+#include "Core/Platform/RegisterRepository.h"
 #include <sstream>
 #include <boost/algorithm/string.hpp>
 
 using namespace sda::pcode;
 using namespace utils::lexer;
 
-Parser::Parser(utils::lexer::Lexer* lexer, const RegisterHelper* regHelper)
-    : AbstractParser(lexer, 3), m_regHelper(regHelper)
+Parser::Parser(utils::lexer::Lexer* lexer, const RegisterRepository* regRepo)
+    : AbstractParser(lexer, 3), m_regRepo(regRepo)
 {}
 
-std::list<Instruction> Parser::Parse(const std::string& text, const RegisterHelper* regHelper) {
+std::list<Instruction> Parser::Parse(const std::string& text, const RegisterRepository* regRepo) {
     std::stringstream ss(text);
     IO io(ss, std::cout);
     Lexer lexer(&io);
-    Parser parser(&lexer, regHelper);
+    Parser parser(&lexer, regRepo);
     parser.init();
     return parser.parse();
 }
@@ -92,8 +92,8 @@ std::shared_ptr<RegisterVarnode> Parser::parseRegisterVarnode() {
         nextToken();
         boost::algorithm::to_lower(name);
         try {
-            auto regId = m_regHelper->getRegisterId(name);
-            auto type = m_regHelper->getRegisterType(regId);
+            auto regId = m_regRepo->getRegisterId(name);
+            auto type = m_regRepo->getRegisterType(regId);
             size_t size = 0;
             size_t offset = 0;
             if (type == Register::Vector) {

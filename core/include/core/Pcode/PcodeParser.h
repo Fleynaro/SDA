@@ -7,11 +7,11 @@ namespace sda::pcode
 {
     class Parser : public utils::AbstractParser
     {
-        const RegisterHelper* m_regHelper;
+        const RegisterRepository* m_regRepo;
     public:
-        Parser(utils::lexer::Lexer* lexer, const RegisterHelper* regHelper);
+        Parser(utils::lexer::Lexer* lexer, const RegisterRepository* regRepo);
 
-        static std::list<Instruction> Parse(const std::string& text, const RegisterHelper* regHelper);
+        static std::list<Instruction> Parse(const std::string& text, const RegisterRepository* regRepo);
 
         std::list<Instruction> parse();
 

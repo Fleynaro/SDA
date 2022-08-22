@@ -24,7 +24,7 @@ bool PointerDataType::isPointer() const {
 }
 
 size_t PointerDataType::getSize() const {
-    return PointerSize;
+    return m_context->getPlatform()->getPointerSize();
 }
 
 void PointerDataType::serialize(boost::json::object& data) const {

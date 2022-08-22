@@ -23,10 +23,7 @@
 #include "Database/Transaction.h"
 #include "Callbacks/ContextCallbacks.h"
 #include "Change.h"
-#include "Platform/X86/PcodeDecoder.h"
-#include "Platform/X86/InstructionDecoder.h"
-#include "Platform/X86/RegisterHelper.h"
-#include "Platform/X86/CallingConvention.h"
+#include "Platform/X86/Platform.h"
 #include "Decompiler/Pcode/PcodeGraphBuilder.h"
 #include "Decompiler/Pcode/VtableLookup.h"
 #include "Decompiler/IRcode/Generator/IRcodeBlockGenerator.h"
@@ -35,8 +32,9 @@
 
 using namespace sda;
 
+
 void testPcodeDecoder() {
-    auto ctx = new Context();
+    auto ctx = new Context(std::make_unique<PlatformX86>(true));
     auto image = new Image(
         ctx,
         std::make_unique<VectorImageRW>(
@@ -52,38 +50,34 @@ void testPcodeDecoder() {
 
 
     // P-code decoder
-    ZydisDecoder decoder;
-    ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_STACK_WIDTH_64);
-    platform::PcodeDecoderX86 pcodeDecoder(&decoder);
-    platform::InstructionDecoderX86 instrDecoder(&decoder);
-    platform::RegisterHelperX86 regHelper;
-    
+    auto pcodeDecoder = ctx->getPlatform()->getPcodeDecoder();
+    auto instrDecoder = ctx->getPlatform()->getInstructionDecoder();
     auto offset = image->getEntryPointOffset();
 
-    pcode::StreamRender pcodeRender(std::cout, &regHelper);
+    pcode::StreamRender pcodeRender(std::cout, ctx->getPlatform()->getRegisterRepository());
     Instruction::StreamRender srcInstrRender(std::cout);
     while (offset < image->getSize()) {
         std::vector<uint8_t> data(0x100);
         image->getRW()->readBytesAtOffset(offset, data);
-        pcodeDecoder.decode(offset, data);
+        pcodeDecoder->decode(offset, data);
         
-        instrDecoder.decode(data);
-        srcInstrRender.render(instrDecoder.getDecodedInstruction());
+        instrDecoder->decode(data);
+        srcInstrRender.render(instrDecoder->getDecodedInstruction());
         std::cout << std::endl;
-        auto decodedInstructions = pcodeDecoder.getDecodedInstructions();
+        auto decodedInstructions = pcodeDecoder->getDecodedInstructions();
         for (auto& decodedInstruction : decodedInstructions) {
             std::cout << "    ";
             pcodeRender.renderInstruction(&decodedInstruction);
             std::cout << std::endl;
         }
 
-        offset += pcodeDecoder.getInstructionLength();
+        offset += pcodeDecoder->getInstructionLength();
     }
 
 
 
     // P-code graph builder
-    decompiler::PcodeGraphBuilder graphBuilder(image->getPcodeGraph(), image, &pcodeDecoder);
+    decompiler::PcodeGraphBuilder graphBuilder(image->getPcodeGraph(), image, pcodeDecoder.get());
 
     class GraphCallbacks : public pcode::Graph::Callbacks {
     public:
@@ -140,6 +134,9 @@ void initDefaultDataTypes(Context* ctx) {
 }
 
 void testDecompiler() {
+    auto ctx = new Context(std::make_unique<PlatformX86>(true));
+    initDefaultDataTypes(ctx);
+
     auto pcodeStr = "\
         rcx:8 = COPY rcx:8 \
         rbx:8 = INT_MULT rdx:8, 4:8 \
@@ -148,11 +145,9 @@ void testDecompiler() {
         STORE rbx:8, 1.0:8 \
     ";
 
-    platform::RegisterHelperX86 regHelper;
+    pcode::StreamRender pcodeRender(std::cout, ctx->getPlatform()->getRegisterRepository());
 
-    pcode::StreamRender pcodeRender(std::cout, &regHelper);
-
-    auto pcodeInstructions = pcode::Parser::Parse(pcodeStr, &regHelper);
+    auto pcodeInstructions = pcode::Parser::Parse(pcodeStr, ctx->getPlatform()->getRegisterRepository());
     for (auto& instr : pcodeInstructions) {
         std::cout << "    ";
         pcodeRender.renderInstruction(&instr);
@@ -161,8 +156,6 @@ void testDecompiler() {
 
     using namespace decompiler;
 
-    auto ctx = new Context();
-    initDefaultDataTypes(ctx);
     auto symbolTableStr = "{}";
     auto globalSymbolTable = SymbolTableParser::Parse(symbolTableStr, ctx);
     
@@ -181,7 +174,7 @@ void testDecompiler() {
         \
         SetEntityVelAxisSig = signature fastcall void(Entity* entity, uint32_t idx) \
     ";
-    auto parsedDt = DataTypeParser::Parse(dataTypesStr, ctx, { std::make_shared<platform::FastcallCallingConvention>() });
+    auto parsedDt = DataTypeParser::Parse(dataTypesStr, ctx);
     auto functionSignature = dynamic_cast<SignatureDataType*>(parsedDt["SetEntityVelAxisSig"]);
     auto functionSymbol = new FunctionSymbol(ctx, nullptr, "main", functionSignature);
 
@@ -223,7 +216,7 @@ void testGeneral() {
         program.addPlugin(std::unique_ptr<IPlugin>(plugin.get()));
     }
 
-    auto ctx = new Context();
+    auto ctx = new Context(std::make_unique<PlatformX86>(true));
     auto project = new Project(&program, "Test", ctx);
     auto ctxCallbacks = new ContextCallbacks(ctx, project);
     project->getDatabase()->init();
@@ -236,7 +229,7 @@ void testGeneral() {
 
     project->getChangeChain()->undo();
 
-    auto ctx2 = new Context();
+    auto ctx2 = new Context(std::make_unique<PlatformX86>(true));
     auto oldCallbacks = ctx2->getCallbacks();
     ctx2->setCallbacks(std::make_shared<Context::Callbacks>());
     Factory factory(ctx2);

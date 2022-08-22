@@ -5,10 +5,10 @@ namespace sda::pcode
 {
     class Render
     {
-        const RegisterHelper* m_regHelper;
+        const RegisterRepository* m_regRepo;
         size_t m_commentingCounter = 0;
     public:
-        Render(const RegisterHelper* regHelper);
+        Render(const RegisterRepository* regRepo);
 
         virtual void renderInstruction(const Instruction* instruction) const;
 
@@ -35,7 +35,7 @@ namespace sda::pcode
     {
         std::ostream& m_output;
     public:
-        StreamRender(std::ostream& output, const RegisterHelper* regHelper);
+        StreamRender(std::ostream& output, const RegisterRepository* regRepo);
 
     protected:
         void renderTokenImpl(const std::string& text, Token token) const override;

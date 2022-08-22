@@ -1,10 +1,10 @@
 #pragma once
-#include "Core/Platform/RegisterHelper.h"
+#include "Core/Platform/RegisterRepository.h"
 #include <Zydis/Zydis.h>
 
 namespace sda::platform
 {
-    class RegisterHelperX86 : public RegisterHelper
+    class RegisterRepositoryX86 : public RegisterRepository
     {
     public:
         std::string getRegisterName(size_t regId) const override;

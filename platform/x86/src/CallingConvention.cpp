@@ -1,5 +1,5 @@
 #include "Platform/X86/CallingConvention.h"
-#include "Platform/X86/RegisterHelper.h"
+#include "Platform/X86/RegisterRepository.h"
 #include "Core/DataType/SignatureDataType.h"
 #include <Zydis/Zydis.h>
 #include <algorithm>
@@ -71,7 +71,7 @@ bool FastcallCallingConvention::getStorageInfo(const Storage& storage, StorageIn
 
     const auto it = RegToParamIdx.find(storage.registerId);
 	if (it != RegToParamIdx.end()) {
-        auto regType = RegisterHelperX86().getRegisterType(storage.registerId);
+        auto regType = RegisterRepositoryX86().getRegisterType(storage.registerId);
         storageInfo.type = StorageInfo::Parameter;
         storageInfo.paramIdx = it->second;
         storageInfo.isStoringFloat = regType == Register::Vector;

@@ -3,8 +3,8 @@
 
 namespace sda
 {
-    // Here are some utility functions depending on the platform to work with registers.
-    class RegisterHelper
+    // Here are some functions depending on the platform to get info about registers.
+    class RegisterRepository
     {
     public:
         virtual std::string getRegisterName(size_t regId) const = 0;

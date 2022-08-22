@@ -5,8 +5,8 @@
 
 using namespace sda::pcode;
 
-Render::Render(const RegisterHelper* regHelper)
-    : m_regHelper(regHelper)
+Render::Render(const RegisterRepository* regRepo)
+    : m_regRepo(regRepo)
 {}
 
 void Render::renderInstruction(const Instruction* instruction) const {
@@ -30,7 +30,7 @@ void Render::renderInstruction(const Instruction* instruction) const {
 void Render::renderVarnode(const Varnode* varnode, bool renderSizeAndOffset) const {
     if (auto regVarnode = dynamic_cast<const RegisterVarnode*>(varnode)) {
         const auto& reg = regVarnode->getRegister();
-        auto regStr = reg.toString(m_regHelper, renderSizeAndOffset);
+        auto regStr = reg.toString(m_regRepo, renderSizeAndOffset);
         if (reg.getRegType() == Register::Virtual) {
             renderToken(regStr, Token::VirtRegister);
         } else {
@@ -56,8 +56,8 @@ void Render::renderToken(const std::string& text, Token token) const {
     renderTokenImpl(text, token);
 }
 
-StreamRender::StreamRender(std::ostream& output, const RegisterHelper* regHelper)
-    : Render(regHelper), m_output(output)
+StreamRender::StreamRender(std::ostream& output, const RegisterRepository* regRepo)
+    : Render(regRepo), m_output(output)
 {}
 
 void StreamRender::renderTokenImpl(const std::string& text, Token token) const {

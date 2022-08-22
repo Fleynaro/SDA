@@ -19,11 +19,10 @@ namespace sda
     {
         friend class SymbolTableParser;
         Context* m_context;
-        std::list<std::shared_ptr<CallingConvention>> m_callingConventions; // todo: move to platform class
     public:
-        DataTypeParser(utils::lexer::Lexer* lexer, Context* context, std::list<std::shared_ptr<CallingConvention>> callingConventions = {});
+        DataTypeParser(utils::lexer::Lexer* lexer, Context* context);
 
-        static std::map<std::string, DataType*> Parse(const std::string& text, Context* context, std::list<std::shared_ptr<CallingConvention>> callingConventions = {});
+        static std::map<std::string, DataType*> Parse(const std::string& text, Context* context);
 
         std::map<std::string, DataType*> parse();
 

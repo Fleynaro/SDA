@@ -6,10 +6,10 @@ namespace sda::platform
 {
     class InstructionDecoderX86 : public InstructionDecoder
     {
-        ZydisDecoder* m_decoder;
-        ZydisFormatter m_formatter;
+        std::unique_ptr<ZydisDecoder> m_decoder;
+        std::unique_ptr<ZydisFormatter> m_formatter;
     public:
-        InstructionDecoderX86(ZydisDecoder* decoder);
+        InstructionDecoderX86(std::unique_ptr<ZydisDecoder> decoder, std::unique_ptr<ZydisFormatter> formatter);
 
         void decode(const std::vector<uint8_t>& data) override;
     };

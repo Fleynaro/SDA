@@ -1,5 +1,6 @@
 #pragma once
 #include "Core/Object/ContextObject.h"
+#include "Core/Platform/Platform.h"
 
 namespace sda
 {
@@ -12,13 +13,17 @@ namespace sda
     // Core context that contains all important entities
     class Context
     {
+        std::unique_ptr<Platform> m_platform;
         std::unique_ptr<AddressSpaceList> m_addressSpaces;
         std::unique_ptr<ImageList> m_images;
         std::unique_ptr<DataTypeList> m_dataTypes;
         std::unique_ptr<SymbolList> m_symbols;
         std::unique_ptr<SymbolTableList> m_symbolTables;
     public:
-        Context();
+        Context(std::unique_ptr<Platform> platform);
+
+        // Get the platform (e.g. x86, arm, etc.)
+        Platform* getPlatform() const;
 
         // Get the list of address spaces
         AddressSpaceList* getAddressSpaces() const;

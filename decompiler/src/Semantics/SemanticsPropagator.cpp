@@ -449,9 +449,11 @@ std::list<BaseSemanticsPropagator::PointerInfo> BaseSemanticsPropagator::getAllP
     const std::shared_ptr<SemanticsContext>& ctx,
     const ircode::LinearExpression& linearExpr) const
 {
+    auto pointerSize = getManager()->getContext()->getPlatform()->getPointerSize();
+
     std::list<PointerInfo> result;
     for (auto& term : linearExpr.getTerms()) {
-        if (!term.canBePointer())
+        if (term.factor != 1 || term.value->getSize() != pointerSize)
             continue;
         if (auto termVar = std::dynamic_pointer_cast<ircode::Variable>(term.value)) {
             auto termVarObj = getOrCreateVarObject(ctx, termVar);

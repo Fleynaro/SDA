@@ -1,5 +1,5 @@
 #include "Platform/X86/PcodeDecoder.h"
-#include "Platform/X86/RegisterHelper.h"
+#include "Platform/X86/RegisterRepository.h"
 #include <sstream>
 #include <iomanip>
 
@@ -7,13 +7,13 @@ using namespace sda;
 using namespace sda::pcode;
 using namespace sda::platform;
 
-PcodeDecoderX86::PcodeDecoderX86(ZydisDecoder* decoder)
-    : m_decoder(decoder)
+PcodeDecoderX86::PcodeDecoderX86(std::unique_ptr<ZydisDecoder> decoder)
+    : m_decoder(std::move(decoder))
 {}
 
 void PcodeDecoderX86::decode(Offset offset, const std::vector<uint8_t>& data) {
     auto status = ZydisDecoderDecodeFull(
-        m_decoder,
+        m_decoder.get(),
         data.data(),
         data.size(),
         &m_curInstr,
@@ -1575,9 +1575,9 @@ std::shared_ptr<Varnode> PcodeDecoderX86::getConditionFlagVarnode(FlagCond flagC
 }
 
 std::shared_ptr<RegisterVarnode> PcodeDecoderX86::getRegisterVarnode(ZydisRegister regId, size_t size, int offset) const {
-	RegisterHelperX86 regHelper;
-    auto id = regHelper.transformZydisRegId(regId);
-	auto type = regHelper.getRegisterType(id);
+	RegisterRepositoryX86 regRepo;
+    auto id = regRepo.transformZydisRegId(regId);
+	auto type = regRepo.getRegisterType(id);
     size_t index = static_cast<size_t>(offset) / MaxMaskSizeInBytes;
     auto mask = BitMask(size, offset);
     return std::make_shared<RegisterVarnode>(Register(type, id, index, mask));

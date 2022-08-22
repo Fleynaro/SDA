@@ -1,4 +1,4 @@
-#include "Platform/X86/RegisterHelper.h"
+#include "Platform/X86/RegisterRepository.h"
 #include <map>
 #include <stdexcept>
 #include <Zydis/Zydis.h>
@@ -69,15 +69,15 @@ std::map<std::string, ZydisRegister> RegisterNameToId = {
     {"xmm31", ZYDIS_REGISTER_XMM31},
 };
 
-std::string RegisterHelperX86::getRegisterName(size_t regId) const {
+std::string RegisterRepositoryX86::getRegisterName(size_t regId) const {
     return ZydisRegisterGetString(static_cast<ZydisRegister>(regId));
 }
 
-size_t RegisterHelperX86::getRegisterId(const std::string& regName) const {
+size_t RegisterRepositoryX86::getRegisterId(const std::string& regName) const {
     return RegisterNameToId.at(regName);
 }
 
-sda::Register::Type RegisterHelperX86::getRegisterType(size_t regId) const {
+sda::Register::Type RegisterRepositoryX86::getRegisterType(size_t regId) const {
     if (regId == ZYDIS_REGISTER_RIP)
         return Register::InstructionPointer;
     if (regId == ZYDIS_REGISTER_RSP)
@@ -88,7 +88,7 @@ sda::Register::Type RegisterHelperX86::getRegisterType(size_t regId) const {
 	return Register::Generic;
 }
 
-std::string RegisterHelperX86::getRegisterFlagName(size_t flagMask) const {
+std::string RegisterRepositoryX86::getRegisterFlagName(size_t flagMask) const {
     std::string flagName;
     if ((flagMask & ZYDIS_CPUFLAG_CF) != 0)
         flagName = "CF";
@@ -105,7 +105,7 @@ std::string RegisterHelperX86::getRegisterFlagName(size_t flagMask) const {
     throw std::runtime_error("Unknown flag mask");
 }
 
-size_t RegisterHelperX86::getRegisterFlagIndex(const std::string& flagName) const {
+size_t RegisterRepositoryX86::getRegisterFlagIndex(const std::string& flagName) const {
     if (flagName == "CF")
         return ZYDIS_CPUFLAG_CF;
     else if (flagName == "OF")
@@ -121,7 +121,7 @@ size_t RegisterHelperX86::getRegisterFlagIndex(const std::string& flagName) cons
     throw std::runtime_error("Unknown flag name");
 }
 
-size_t RegisterHelperX86::transformZydisRegId(ZydisRegister regId) const {
+size_t RegisterRepositoryX86::transformZydisRegId(ZydisRegister regId) const {
     if (regId == ZYDIS_REGISTER_RIP) {
 		return Register::InstructionPointerId;
     }

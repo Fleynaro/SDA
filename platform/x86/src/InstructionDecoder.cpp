@@ -1,13 +1,10 @@
 #include "Platform/X86/InstructionDecoder.h"
-#include <Zydis/Zydis.h>
 
 using namespace sda::platform;
 
-InstructionDecoderX86::InstructionDecoderX86(ZydisDecoder* decoder)
-    : m_decoder(decoder)
-{
-	ZydisFormatterInit(&m_formatter, ZYDIS_FORMATTER_STYLE_INTEL);
-}
+InstructionDecoderX86::InstructionDecoderX86(std::unique_ptr<ZydisDecoder> decoder, std::unique_ptr<ZydisFormatter> formatter)
+    : m_decoder(std::move(decoder)), m_formatter(std::move(formatter))
+{}
 
 void InstructionDecoderX86::decode(const std::vector<uint8_t>& data) {
     m_decodedInstruction.m_tokens.clear();
@@ -17,7 +14,7 @@ void InstructionDecoderX86::decode(const std::vector<uint8_t>& data) {
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT_VISIBLE];
 
     auto status = ZydisDecoderDecodeFull(
-        m_decoder,
+        m_decoder.get(),
         data.data(),
         data.size(),
         &instr,
@@ -31,7 +28,7 @@ void InstructionDecoderX86::decode(const std::vector<uint8_t>& data) {
     char buffer[256];
     const ZydisFormatterToken* token;
     status = ZydisFormatterTokenizeInstruction(
-        &m_formatter,
+        m_formatter.get(),
         &instr,
         operands,
         instr.operand_count_visible,

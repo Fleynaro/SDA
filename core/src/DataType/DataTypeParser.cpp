@@ -12,15 +12,15 @@
 using namespace sda;
 using namespace utils::lexer;
 
-DataTypeParser::DataTypeParser(utils::lexer::Lexer* lexer, Context* context, std::list<std::shared_ptr<CallingConvention>> callingConventions)
-    : AbstractParser(lexer, 1), m_context(context), m_callingConventions(callingConventions)
+DataTypeParser::DataTypeParser(utils::lexer::Lexer* lexer, Context* context)
+    : AbstractParser(lexer, 1), m_context(context)
 {}
 
-std::map<std::string, DataType*> DataTypeParser::Parse(const std::string& text, Context* context, std::list<std::shared_ptr<CallingConvention>> callingConventions) {
+std::map<std::string, DataType*> DataTypeParser::Parse(const std::string& text, Context* context) {
     std::stringstream ss(text);
     IO io(ss, std::cout);
     Lexer lexer(&io);
-    DataTypeParser parser(&lexer, context, callingConventions);
+    DataTypeParser parser(&lexer, context);
     parser.init();
     return parser.parse();
 }
@@ -150,7 +150,7 @@ SignatureDataType* DataTypeParser::parseSignatureDataTypeDef() {
 
     // calling convention
     std::shared_ptr<CallingConvention> callingConvention;
-    for (auto& cc : m_callingConventions) {
+    for (auto& cc : m_context->getPlatform()->getCallingConventions()) {
         if (getToken()->isKeyword(cc->getName())) {
             nextToken();
             callingConvention = cc;

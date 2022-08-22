@@ -16,7 +16,6 @@
 #include "Core/Symbol/StructureFieldSymbol.h"
 #include "Core/SymbolTable/StandartSymbolTable.h"
 #include "Core/SymbolTable/OptimizedSymbolTable.h"
-#include "Platform/X86/CallingConvention.h"
 
 using namespace sda;
 
@@ -84,8 +83,14 @@ ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collec
                 std::shared_ptr<CallingConvention> callingConvention;
                 if (ccType == CustomCallingConvention::Name)
                     callingConvention = std::make_shared<CustomCallingConvention>();
-                else if (ccType == platform::FastcallCallingConvention::Name)
-                    callingConvention = std::make_shared<platform::FastcallCallingConvention>();
+                else {
+                    for (auto& cc : m_context->getPlatform()->getCallingConventions()) {
+                        if (ccType == cc->getName()) {
+                            callingConvention = cc;
+                            break;
+                        }
+                    }
+                }
 
                 if (callingConvention) {
                     return new SignatureDataType(m_context, callingConvention, id);

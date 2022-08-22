@@ -4,7 +4,7 @@
 
 namespace sda
 {
-    class RegisterHelper;
+    class RegisterRepository;
 
     class Register
     {
@@ -45,6 +45,6 @@ namespace sda
 
         size_t getBitOffset() const;
 
-        std::string toString(const RegisterHelper* regHelper, bool renderSizeAndOffset = true) const;
+        std::string toString(const RegisterRepository* regRepo, bool renderSizeAndOffset = true) const;
     };
 };
