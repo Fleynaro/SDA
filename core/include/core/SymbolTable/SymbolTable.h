@@ -13,6 +13,8 @@ namespace sda
 
         SymbolTable(Context* context, Object::Id* id = nullptr, const std::string& name = "");
 
+        virtual size_t getUsedSize() const = 0;
+
         virtual void addSymbol(Offset offset, Symbol* symbol) = 0;
 
         virtual void removeSymbol(Offset offset) = 0;

@@ -19,8 +19,8 @@ namespace sda
             Object::Id* id = nullptr,
             const std::string& name = "",
             SignatureDataType* dataType = nullptr,
-            bool stackSymbolTable = false,
-            bool instructionSymbolTable = false);
+            SymbolTable* stackSymbolTable = nullptr,
+            SymbolTable* instructionSymbolTable = nullptr);
 
         SignatureDataType* getSignature() const;
 

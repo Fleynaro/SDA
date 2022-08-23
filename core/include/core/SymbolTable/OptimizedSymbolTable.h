@@ -24,6 +24,8 @@ namespace sda
 
         void setFragmentsCount(size_t count);
 
+        size_t getUsedSize() const override;
+
         void addSymbol(Offset offset, Symbol* symbol) override;
 
         void removeSymbol(Offset offset) override;

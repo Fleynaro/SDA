@@ -1,11 +1,11 @@
 #include "Decompiler/Semantics/SemanticsObject.h"
 #include "Decompiler/Semantics/SemanticsManager.h"
+#include "rang.hpp"
 
 using namespace sda;
 using namespace sda::decompiler;
 
-SemanticsObject::~SemanticsObject() {
-    assert(m_semantics.empty());
+void SemanticsObject::disconnect() {
     for (auto obj : m_allRelatedObjects)
         obj->m_allRelatedObjects.erase(this);
 }
@@ -40,6 +40,38 @@ std::list<Semantics*> SemanticsObject::findSemantics(const Semantics::FilterFunc
     return result;
 }
 
+void SemanticsObject::removeSemantics(Semantics* semantics, SemanticsContextOperations& operations) {
+    std::list<Semantics*> semanticsToRemove = {semantics};
+    std::list<SemanticsObject*> sourceHolders;
+    while (!semanticsToRemove.empty()) {
+        auto semToRemove = semanticsToRemove.front();
+        semanticsToRemove.pop_front();
+        
+        if (semToRemove->getPredecessors().size() >= 2 || semToRemove == semantics)
+            sourceHolders.push_back(semToRemove->getHolder());
+
+        for (auto& nextSem : semToRemove->getSuccessors())
+            semanticsToRemove.push_back(nextSem);
+
+        semToRemove->disconnect();
+        m_semantics.remove_if([semToRemove](const std::unique_ptr<Semantics>& sem) {
+            return sem.get() == semToRemove;
+        });
+    }
+
+    for (auto holder : sourceHolders)
+        holder->getAllRelatedOperations(operations);
+}
+
+void SemanticsObject::print(std::ostream& out) const {
+    out << ": " << rang::fg::reset;
+    for (auto& sem : m_semantics) {
+        sem->print(out);
+        if (sem != m_semantics.back())
+            out << ", ";
+    }
+}
+
 void SemanticsObject::addToManager(SemanticsManager* semManager) {
     semManager->m_objects[getId()] = std::unique_ptr<SemanticsObject>(this);
 }
@@ -58,10 +90,19 @@ SemanticsObject::Id VariableSemObj::getId() const {
     return GetId(m_variable);
 }
 
+std::string VariableSemObj::getName() const {
+    return m_variable->getName();
+}
+
 void VariableSemObj::getAllRelatedOperations(SemanticsContextOperations& operations) const {
     for (auto op : m_variable->getOperations()) {
         operations.insert({m_context, op});
     }
+}
+
+void VariableSemObj::print(std::ostream& out) const {
+    out << rang::fgB::gray << getName();
+    SemanticsObject::print(out);
 }
 
 const ircode::Variable* VariableSemObj::getVariable() const {
@@ -82,6 +123,19 @@ SemanticsObject::Id SymbolSemObj::getId() const {
     return GetId(m_symbol);
 }
 
+std::string SymbolSemObj::getName() const {
+    return m_symbol->getName();
+}
+
+void SymbolSemObj::print(std::ostream& out) const {
+    if (dynamic_cast<const FunctionParameterSymbol*>(m_symbol))
+        out << rang::fgB::red;
+    else
+        out << rang::fgB::blue;
+    out << getName();
+    SemanticsObject::print(out);
+}
+
 SemanticsObject::Id SymbolSemObj::GetId(const Symbol* symbol) {
     return reinterpret_cast<size_t>(symbol);
 }
@@ -94,6 +148,15 @@ SymbolTableSemObj::SymbolTableSemObj(SemanticsManager* semManager, const SymbolT
 
 SemanticsObject::Id SymbolTableSemObj::getId() const {
     return GetId(m_symbolTable);
+}
+
+std::string SymbolTableSemObj::getName() const {
+    return m_symbolTable->getName();
+}
+
+void SymbolTableSemObj::print(std::ostream& out) const {
+    out << getName();
+    SemanticsObject::print(out);
 }
 
 void SymbolTableSemObj::bindTo(SemanticsObject* obj) {
@@ -141,6 +204,15 @@ FuncReturnSemObj::FuncReturnSemObj(SemanticsManager* semManager, const Signature
 
 SemanticsObject::Id FuncReturnSemObj::getId() const {
     return GetId(m_signatureDt);
+}
+
+std::string FuncReturnSemObj::getName() const {
+    return m_signatureDt->getName() + "<return>";
+}
+
+void FuncReturnSemObj::print(std::ostream& out) const {
+    out << getName();
+    SemanticsObject::print(out);
 }
 
 SemanticsObject::Id FuncReturnSemObj::GetId(const SignatureDataType* signatureDt) {

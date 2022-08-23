@@ -21,9 +21,24 @@ SymbolTable* SymbolTableParser::Parse(const std::string& text, Context* context,
 }
 
 SymbolTable* SymbolTableParser::parse() {
-    accept('{');
     SymbolTable* symbolTable = new StandartSymbolTable(m_context);
     Offset offset = 0;
+
+    if (!m_isStruct) {
+        auto comment = parseCommentIfExists();
+        
+        std::string name;
+        if (!getToken()->isIdent(name))
+            throw error(100, "Expected symbol table name");
+        nextToken();
+
+        symbolTable->setName(name);
+        symbolTable->setComment(comment);
+
+        accept('=');
+    }
+
+    accept('{');
     while (!getToken()->isSymbol('}')) {
         // parse symbol
         auto symbol = parseSymbolDef();

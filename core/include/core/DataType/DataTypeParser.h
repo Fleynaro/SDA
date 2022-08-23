@@ -24,7 +24,7 @@ namespace sda
 
         static std::map<std::string, DataType*> Parse(const std::string& text, Context* context);
 
-        std::map<std::string, DataType*> parse();
+        std::map<std::string, DataType*> parse(char endSymbol = utils::lexer::EndSymbol);
 
     private:
         DataType* parseDataTypeDef();

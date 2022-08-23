@@ -22,6 +22,25 @@ size_t LinearExpression::getConstTermValue() const {
     return m_constTermValue;
 }
 
+bool LinearExpression::isDivisibleBy(size_t factor, bool exceptConstTerm) const {
+    if (!exceptConstTerm && m_constTermValue % factor != 0)
+        return false;
+    bool isBaseTermConsidered = false;
+    for (auto& term : m_terms) {
+        if (!isBaseTermConsidered && term.factor == 1) {
+            isBaseTermConsidered = true;
+            continue;
+        }
+        if (term.factor % factor != 0)
+            return false;
+    }
+    return true;
+}
+
+bool LinearExpression::isArrayType() const {
+    return m_terms.size() > 1;
+}
+
 LinearExpression LinearExpression::operator+(const LinearExpression& other) const {
     LinearExpression result = *this;
     if (!other.m_terms.empty()) {

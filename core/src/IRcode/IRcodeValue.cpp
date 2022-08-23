@@ -65,10 +65,6 @@ size_t ircode::Register::getSize() const {
     return m_regVarnode->getSize();
 }
 
-bool MemoryAddress::isDynamic() const {
-    return value->getLinearExpr().getTerms().size() > 1;
-}
-
 Variable::Variable(size_t id, const MemoryAddress& memAddress, Hash hash, size_t size)
     : Value(hash)
     , m_id(id)
@@ -76,12 +72,12 @@ Variable::Variable(size_t id, const MemoryAddress& memAddress, Hash hash, size_t
     , m_size(size)
 {}
 
-Value::Type Variable::getType() const {
-    return Type::Variable;
+std::string Variable::getName() const {
+    return std::string("var") + std::to_string(m_id);
 }
 
-size_t Variable::getId() const {
-    return m_id;
+Value::Type Variable::getType() const {
+    return Type::Variable;
 }
 
 const MemoryAddress& Variable::getMemAddress() const {

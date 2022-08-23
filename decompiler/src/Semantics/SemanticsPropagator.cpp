@@ -145,17 +145,22 @@ void BaseSemanticsPropagator::propagate(
                     if (ptr.symbolTable) {
                         const auto symbols = getAllSymbolsAt(ctx, ptr.symbolTable, offset);
                         for (auto& [symbolOffset, symbol] : symbols) {
-                            auto symbolDt = symbol->getDataType();
-                            if (loadSize <= symbolDt->getSize()) {
-                                if (auto symbolObj = getSymbolObject(symbol)) {
-                                    bindEachOther(symbolObj, outputVarObj);       
-                                    auto semantics = symbolObj->findSemantics(DataTypeSemantics::Filter());
-                                    for (auto sem : semantics) {
-                                        if (auto dataTypeSem = dynamic_cast<DataTypeSemantics*>(sem)) {
-                                            auto symbolDt = dataTypeSem->getDataType();
+                            if (auto symbolObj = getSymbolObject(symbol)) {
+                                bindEachOther(symbolObj, outputVarObj);       
+                                auto semantics = symbolObj->findSemantics(DataTypeSemantics::Filter());
+                                for (auto sem : semantics) {
+                                    if (auto dataTypeSem = dynamic_cast<DataTypeSemantics*>(sem)) {
+                                        auto symbolDt = dataTypeSem->getDataType();
+                                        if (auto arrayDt = dynamic_cast<ArrayDataType*>(symbolDt)) {
+                                            symbolDt = arrayDt->getElementType();
+                                        } else if (linearExpr.isArrayType()) {
+                                            continue;
+                                        }
+
+                                        if (loadSize <= symbolDt->getSize()) {
                                             if (!checkSemantics(outputVarObj, DataTypeSemantics::Filter(symbolDt), sem)) {
                                                 DataTypeSemantics::SliceInfo sliceInfo = {};
-                                                auto relOffset = offset - symbolOffset;
+                                                auto relOffset = (offset - symbolOffset) % symbolDt->getSize();
                                                 if (relOffset != 0 || loadSize != symbolDt->getSize()) {
                                                     sliceInfo.type = DataTypeSemantics::SliceInfo::Load;
                                                     sliceInfo.offset = relOffset;
@@ -182,18 +187,20 @@ void BaseSemanticsPropagator::propagate(
                             if (offset >= arrayDt->getSize())
                                 continue;
                         }
-                        auto sem = ptr.semantics;
-                        if (!checkSemantics(outputVarObj, DataTypeSemantics::Filter(itemDt), sem)) {
-                            DataTypeSemantics::SliceInfo sliceInfo = {};
-                            auto relOffset = offset % itemDt->getSize();
-                            if (relOffset != 0 || loadSize != itemDt->getSize()) {
-                                sliceInfo.type = DataTypeSemantics::SliceInfo::Load;
-                                sliceInfo.offset = relOffset;
-                                sliceInfo.size = loadSize;
+                        if (linearExpr.isDivisibleBy(itemDt->getSize(), true)) {
+                            auto sem = ptr.semantics;
+                            if (!checkSemantics(outputVarObj, DataTypeSemantics::Filter(itemDt), sem)) {
+                                DataTypeSemantics::SliceInfo sliceInfo = {};
+                                auto relOffset = offset % itemDt->getSize();
+                                if (relOffset != 0 || loadSize != itemDt->getSize()) {
+                                    sliceInfo.type = DataTypeSemantics::SliceInfo::Load;
+                                    sliceInfo.offset = relOffset;
+                                    sliceInfo.size = loadSize;
+                                }
+                                auto newSem = new DataTypeSemantics(outputVarObj, sem->getSourceInfo(), itemDt, sliceInfo, sem->getMetaInfo());
+                                sem->addSuccessor(newSem);
+                                markAsEffected(outputVarObj, nextOps);
                             }
-                            auto newSem = new DataTypeSemantics(outputVarObj, sem->getSourceInfo(), itemDt, sliceInfo, sem->getMetaInfo());
-                            sem->addSuccessor(newSem);
-                            markAsEffected(outputVarObj, nextOps);
                         }
                     }
                 }
@@ -264,8 +271,16 @@ void BaseSemanticsPropagator::propagate(
                                 auto semantics = symbolObj->findSemantics(DataTypeSemantics::Filter());
                                 for (auto sem : semantics) {
                                     if (auto dataTypeSem = dynamic_cast<DataTypeSemantics*>(sem)) {
-                                        auto pointerDt = dataTypeSem->getDataType()->getPointerTo();
+                                        auto dataType = dataTypeSem->getDataType();
+                                        if (auto arrayDt = dynamic_cast<ArrayDataType*>(dataType)) {
+                                            dataType = arrayDt->getElementType();
+                                        } else if (linearExpr.isArrayType()) {
+                                            continue;
+                                        }
+
+                                        auto pointerDt = dataType->getPointerTo();
                                         if (!checkSemantics(outputVarObj, DataTypeSemantics::Filter(pointerDt), sem)) {
+                                            // todo: join semantics into one group
                                             auto newSem = new DataTypeSemantics(outputVarObj, sem->getSourceInfo(), pointerDt, {}, sem->getMetaInfo());
                                             sem->addSuccessor(newSem);
                                             markAsEffected(outputVarObj, nextOps);
@@ -290,7 +305,7 @@ void BaseSemanticsPropagator::propagate(
                             }
 
                             assert(itemDt);
-                            if (offset % itemDt->getSize() == 0) {
+                            if (linearExpr.isDivisibleBy(itemDt->getSize())) {
                                 auto newSem = new DataTypeSemantics(outputVarObj, sem->getSourceInfo(), ptr.dataType, {}, sem->getMetaInfo());
                                 sem->addSuccessor(newSem);
                                 markAsEffected(outputVarObj, nextOps);

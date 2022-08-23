@@ -14,10 +14,6 @@ bool Token::isSymbol(char symbol) const {
     return false;
 }
 
-bool Token::isEnd() const {
-    return isSymbol('\0');
-}
-
 bool IdentToken::isIdent(std::string& name) const {
     name = this->name;
     return !name.empty();

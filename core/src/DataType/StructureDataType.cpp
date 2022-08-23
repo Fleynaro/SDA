@@ -8,8 +8,10 @@ StructureDataType::StructureDataType(
     Context* context,
     Object::Id* id,
     const std::string& name,
+    size_t size,
     StandartSymbolTable* symbolTable)
     : DataType(context, id, name)
+    , m_size(size)
     , m_symbolTable(symbolTable)
 {
     if (!m_symbolTable)

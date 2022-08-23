@@ -18,8 +18,6 @@ namespace sda::decompiler
         SemanticsManager(Context* context);
 
         Context* getContext() const;
-        
-        void removeObject(SemanticsObject* object, SemanticsContextOperations& operations);
 
         SemanticsObject* getObject(SemanticsObject::Id id) const;
 
@@ -28,12 +26,14 @@ namespace sda::decompiler
             return dynamic_cast<T*>(getObject(id));
         }
 
-        void removeSemantics(Semantics* semantics, SemanticsContextOperations& operations);
-        
+        void removeObject(SemanticsObject* object, SemanticsContextOperations& operations);
+
         bool isSimiliarityConsidered() const;
 
         void propagate(SemanticsContextOperations& operations);
 
         void propagateThroughly(SemanticsContextOperations& operations);
+
+        void print(std::ostream& out);
     };
 };

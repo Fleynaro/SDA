@@ -17,9 +17,11 @@ namespace sda::decompiler
     public:
         using Id = size_t;
 
-        virtual ~SemanticsObject();
+        void disconnect();
 
         virtual Id getId() const = 0;
+
+        virtual std::string getName() const = 0;
 
         virtual void bindTo(SemanticsObject* obj);
 
@@ -27,9 +29,13 @@ namespace sda::decompiler
 
         virtual void getAllRelatedOperations(SemanticsContextOperations& operations) const;
 
+        virtual void print(std::ostream& out) const;
+
         bool checkSemantics(const Semantics::FilterFunction& filter) const;
 
         std::list<Semantics*> findSemantics(const Semantics::FilterFunction& filter) const;
+
+        void removeSemantics(Semantics* semantics, SemanticsContextOperations& operations);
 
     protected:
         void addToManager(SemanticsManager* semManager);
@@ -47,7 +53,11 @@ namespace sda::decompiler
 
         Id getId() const override;
 
+        std::string getName() const override;
+
         void getAllRelatedOperations(SemanticsContextOperations& operations) const override;
+
+        void print(std::ostream& out) const override;
 
         const ircode::Variable* getVariable() const;
 
@@ -62,6 +72,10 @@ namespace sda::decompiler
 
         Id getId() const override;
 
+        std::string getName() const override;
+
+        void print(std::ostream& out) const override;
+
         static Id GetId(const Symbol* symbol);
     };
 
@@ -74,9 +88,13 @@ namespace sda::decompiler
 
         Id getId() const override;
 
+        std::string getName() const override;
+
         void bindTo(SemanticsObject* obj) override;
 
         void unbindFrom(SemanticsObject* obj) override;
+
+        void print(std::ostream& out) const override;
 
         void getRelatedOperationsAtOffset(SemanticsContextOperations& operations, Offset offset) const;
 
@@ -90,6 +108,10 @@ namespace sda::decompiler
         FuncReturnSemObj(SemanticsManager* semManager, const SignatureDataType* signatureDt);
 
         Id getId() const override;
+
+        std::string getName() const override;
+
+        void print(std::ostream& out) const override;
 
         static Id GetId(const SignatureDataType* signatureDt);
     };

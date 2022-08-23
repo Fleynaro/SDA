@@ -23,6 +23,8 @@ namespace utils
 
         utils::lexer::Lexer* getLexer() const;
 
+        std::string parseCommentIfExists();
+
         void accept(const std::string& keyword);
 
         void accept(char symbol);

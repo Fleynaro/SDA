@@ -27,6 +27,21 @@ utils::lexer::Lexer* AbstractParser::getLexer() const {
     return m_lexer;
 }
 
+std::string AbstractParser::parseCommentIfExists() {
+    std::string comment;
+    if (getToken()->isSymbol('[')) {
+        nextToken();
+        if (auto constToken = dynamic_cast<const ConstToken*>(getToken().get())) {
+            if (constToken->valueType == ConstToken::ValueType::String) {
+                comment = constToken->value.string;
+                nextToken();
+            }
+        }
+        accept(']');
+    }
+    return comment;
+}
+
 void AbstractParser::accept(const std::string& keyword) {
     if (!m_token->isKeyword(keyword))
         throw error(200, "Expected keyword '" + keyword + "'");

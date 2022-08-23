@@ -13,7 +13,7 @@ namespace sda::pcode
 
         static std::list<Instruction> Parse(const std::string& text, const RegisterRepository* regRepo);
 
-        std::list<Instruction> parse();
+        std::list<Instruction> parse(char endSymbol = utils::lexer::EndSymbol);
 
     private:
         Instruction parseInstruction(InstructionOffset offset);

@@ -4,6 +4,8 @@
 
 namespace utils::lexer
 {
+    const char EndSymbol = '\0';
+
     struct Token {
         enum Type {
             Ident,
@@ -19,8 +21,6 @@ namespace utils::lexer
         virtual bool isKeyword(const std::string& keyword) const;
 
         virtual bool isSymbol(char symbol) const;
-
-        bool isEnd() const;
         
         virtual std::string toString() const = 0;
     };

@@ -153,7 +153,7 @@ void IRcodeBlockGenerator::executePcode(const pcode::Instruction* instr) {
                 auto memSpace = m_totalMemSpace->getMemSpace(memAddr.baseAddrHash);
 
                 // check if it is an array
-                if (!memAddr.isDynamic()) {
+                if (!memAddr.value->getLinearExpr().isArrayType()) {
                     // see non-array case
                     auto readMask = BitMask(loadSize, 0);
                     varReadInfos = genReadMemory(memSpace, memAddr.offset, loadSize, readMask);

@@ -12,6 +12,8 @@ namespace sda
         
         StandartSymbolTable(Context* context, Object::Id* id = nullptr, const std::string& name = "");
 
+        size_t getUsedSize() const override;
+
         void addSymbol(Offset offset, Symbol* symbol) override;
 
         void removeSymbol(Offset offset) override;

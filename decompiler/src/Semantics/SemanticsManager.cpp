@@ -11,13 +11,6 @@ Context* SemanticsManager::getContext() const {
     return m_context;
 }
 
-void SemanticsManager::removeObject(SemanticsObject* object, SemanticsContextOperations& operations) {
-    auto semanitcs = object->findSemantics(Semantics::FilterAll());
-    for (auto semToRemove : semanitcs)
-        removeSemantics(semToRemove, operations);
-    m_objects.erase(object->getId());
-}
-
 SemanticsObject* SemanticsManager::getObject(SemanticsObject::Id id) const {
     auto it = m_objects.find(id);
     if (it != m_objects.end())
@@ -25,24 +18,12 @@ SemanticsObject* SemanticsManager::getObject(SemanticsObject::Id id) const {
     return nullptr;
 }
 
-void SemanticsManager::removeSemantics(Semantics* semantics, SemanticsContextOperations& operations) {
-    std::list<Semantics*> semanticsToRemove = {semantics};
-    std::list<SemanticsObject*> sourceHolders;
-    while (!semanticsToRemove.empty()) {
-        auto semToRemove = semanticsToRemove.front();
-        semanticsToRemove.pop_front();
-        
-        if (semToRemove->getPredecessors().size() >= 2 || semToRemove == semantics)
-            sourceHolders.push_back(semToRemove->getHolder());
-
-        for (auto& nextSem : semToRemove->getSuccessors())
-            semanticsToRemove.push_back(nextSem);
-
-        delete semToRemove;
-    }
-
-    for (auto holder : sourceHolders)
-        holder->getAllRelatedOperations(operations);
+void SemanticsManager::removeObject(SemanticsObject* object, SemanticsContextOperations& operations) {
+    auto semanitcs = object->findSemantics(Semantics::FilterAll());
+    for (auto sem : semanitcs)
+        object->removeSemantics(sem, operations);
+    object->disconnect();
+    m_objects.erase(object->getId());
 }
 
 bool SemanticsManager::isSimiliarityConsidered() const {
@@ -66,5 +47,22 @@ void SemanticsManager::propagate(SemanticsContextOperations& operations) {
 void SemanticsManager::propagateThroughly(SemanticsContextOperations& operations) {
     while (!operations.empty()) {
         propagate(operations);
+    }
+}
+
+void SemanticsManager::print(std::ostream& out) {
+    std::list<SemanticsObject*> objects;
+    for (auto& pair : m_objects)
+        objects.push_back(pair.second.get());
+    
+    objects.sort([](const SemanticsObject* a, const SemanticsObject* b) {
+        return a->getName() < b->getName();
+    });
+
+    for (auto obj : objects) {
+        if (obj->findSemantics(Semantics::FilterAll()).empty())
+            continue;
+        obj->print(out);
+        out << std::endl;
     }
 }

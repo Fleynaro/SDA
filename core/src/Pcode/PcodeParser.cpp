@@ -19,10 +19,10 @@ std::list<Instruction> Parser::Parse(const std::string& text, const RegisterRepo
     return parser.parse();
 }
 
-std::list<Instruction> Parser::parse() {
+std::list<Instruction> Parser::parse(char endSymbol) {
     std::list<Instruction> instructions;
     InstructionOffset offset = 0;
-    while (!getToken()->isEnd()) {
+    while (!getToken()->isSymbol(endSymbol)) {
         auto instr = parseInstruction(offset);
         instructions.push_back(instr);
         offset = offset + 1;

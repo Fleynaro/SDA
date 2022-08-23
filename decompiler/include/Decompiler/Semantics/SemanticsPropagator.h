@@ -56,7 +56,7 @@ namespace sda::decompiler
         SymbolTableSemObj* getSymbolTableObject(const SymbolTable* symbolTable) const;
 
         FuncReturnSemObj* getFuncReturnObject(const SignatureDataType* signatureDt) const;
-
+        
         DataType* findDataType(const std::string& name) const;
 
         ScalarDataType* getScalarDataType(ScalarType scalarType, size_t size) const;

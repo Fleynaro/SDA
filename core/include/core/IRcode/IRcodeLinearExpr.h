@@ -26,6 +26,10 @@ namespace sda::ircode
 
         size_t getConstTermValue() const;
 
+        bool isDivisibleBy(size_t factor, bool exceptConstTerm = false) const;
+
+        bool isArrayType() const;
+
         LinearExpression operator+(const LinearExpression& other) const;
 
         LinearExpression operator*(const LinearExpression& other) const;

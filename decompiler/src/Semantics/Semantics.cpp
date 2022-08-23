@@ -18,10 +18,7 @@ Semantics::Semantics(
         m_sourceInfo->sourceSemantics = this;
 }
 
-Semantics::~Semantics() {
-    m_holder->m_semantics.remove_if([this](const std::unique_ptr<Semantics>& sem) {
-        return sem.get() == this;
-    });
+void Semantics::disconnect() {
     for (auto successor : m_successors)
         successor->m_predecessors.remove(this);
     for (auto predecessor : m_predecessors)
@@ -60,6 +57,13 @@ const std::list<Semantics*>& Semantics::getPredecessors() const {
 
 bool Semantics::isSimiliarTo(const Semantics* other) const {
     return false;
+}
+
+void Semantics::print(std::ostream& out) const {
+    if (m_sourceInfo->sourceSemantics == this)
+        out << "$";
+    if (m_metaInfo.uncertaintyDegree > 0)
+        out << "~";
 }
 
 Semantics::FilterFunction Semantics::FilterAll() {
@@ -101,6 +105,14 @@ std::string DataTypeSemantics::getName() const {
     return "DataTypeSemantics";
 }
 
+bool DataTypeSemantics::isSimiliarTo(const Semantics* other) const {
+    return Filter(m_dataType)(other);
+}
+
+Semantics* DataTypeSemantics::clone(SemanticsObject* holder, const MetaInfo& metaInfo) const {
+    return new DataTypeSemantics(holder, getSourceInfo(), m_dataType, m_sliceInfo, metaInfo);
+}
+
 DataType* DataTypeSemantics::getDataType() const {
     return m_dataType;
 }
@@ -109,12 +121,14 @@ const DataTypeSemantics::SliceInfo& DataTypeSemantics::getSliceInfo() const {
     return m_sliceInfo;
 }
 
-bool DataTypeSemantics::isSimiliarTo(const Semantics* other) const {
-    return Filter(m_dataType)(other);
-}
-
-Semantics* DataTypeSemantics::clone(SemanticsObject* holder, const MetaInfo& metaInfo) const {
-    return new DataTypeSemantics(holder, getSourceInfo(), m_dataType, m_sliceInfo, metaInfo);
+void DataTypeSemantics::print(std::ostream& out) const {
+    out << m_dataType->getName();
+    if (m_sliceInfo.type == SliceInfo::Load) {
+        if (m_sliceInfo.offset != 0)
+            out << m_sliceInfo.offset << ":";
+        out << m_sliceInfo.size;
+    }
+    Semantics::print(out);
 }
 
 DataTypeSemantics::FilterFunction DataTypeSemantics::Filter(const DataType* dataType) {
@@ -170,6 +184,11 @@ Semantics* SymbolTableSemantics::clone(SemanticsObject* holder, const MetaInfo& 
 
 SymbolTable* SymbolTableSemantics::getSymbolTable() const {
     return m_symbolTable;
+}
+
+void SymbolTableSemantics::print(std::ostream& out) const {
+    out << m_symbolTable->getName();
+    Semantics::print(out);
 }
 
 Semantics::FilterFunction SymbolTableSemantics::Filter(const SymbolTableFilterFunction& filter) {

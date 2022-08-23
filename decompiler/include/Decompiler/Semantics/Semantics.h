@@ -36,7 +36,7 @@ namespace sda::decompiler
             const std::shared_ptr<SourceInfo>& sourceInfo,
             const MetaInfo& metaInfo = {});
 
-        virtual ~Semantics();
+        void disconnect();
 
         SemanticsObject* getHolder() const;
 
@@ -57,6 +57,8 @@ namespace sda::decompiler
         virtual bool isSimiliarTo(const Semantics* other) const;
 
         virtual Semantics* clone(SemanticsObject* holder, const MetaInfo& metaInfo) const = 0;
+
+        virtual void print(std::ostream& out) const;
 
         using FilterFunction = std::function<bool(const Semantics*)>;
 
@@ -107,6 +109,8 @@ namespace sda::decompiler
 
         const SliceInfo& getSliceInfo() const;
 
+        void print(std::ostream& out) const override;
+
         using DataTypeFilterFunction = std::function<bool(const DataTypeSemantics*)>;
 
         static FilterFunction Filter(const DataType* dataType);
@@ -131,6 +135,8 @@ namespace sda::decompiler
         Semantics* clone(SemanticsObject* holder, const MetaInfo& metaInfo) const override;
 
         SymbolTable* getSymbolTable() const;
+
+        void print(std::ostream& out) const override;
 
         using SymbolTableFilterFunction = std::function<bool(const SymbolTableSemantics*)>;
 

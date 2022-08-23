@@ -46,6 +46,14 @@ void OptimizedSymbolTable::setFragmentsCount(size_t count) {
     notifyModified(Object::ModState::After);
 }
 
+size_t OptimizedSymbolTable::getUsedSize() const {
+    for (auto it = m_symbolTables.rbegin(); it != m_symbolTables.rend(); it++) {
+        if (auto usedSize = (*it)->getUsedSize())
+            return usedSize;
+    }
+    return 0;
+}
+
 void OptimizedSymbolTable::addSymbol(Offset offset, Symbol* symbol) {
     auto symbolTable = getSymbolTable(offset);
     symbolTable->addSymbol(offset, symbol);

@@ -73,9 +73,6 @@ namespace sda::ircode
         std::shared_ptr<Value> value = nullptr;
         Hash baseAddrHash = 0; // this hash can be different from the hash of the value!
         Offset offset = 0;
-
-        // check if it is non-constant address that describes an array
-        bool isDynamic() const;
     };
 
     class Variable : public Value
@@ -86,9 +83,9 @@ namespace sda::ircode
     public:
         Variable(size_t id, const MemoryAddress& memAddress, Hash hash, size_t size);
 
-        Type getType() const override;
+        std::string getName() const;
 
-        size_t getId() const;
+        Type getType() const override;
 
         const MemoryAddress& getMemAddress() const;
 

@@ -76,8 +76,7 @@ void Render::renderValue(const Value* value, bool extended) const {
         m_pcodeRender->renderVarnode(regValue->getRegVarnode(), false);
     }
     else if (auto varValue = dynamic_cast<const Variable*>(value)) {
-        auto varName = std::string("var") + std::to_string(varValue->getId());
-        renderToken(varName, Token::Variable);
+        renderToken(varValue->getName(), Token::Variable);
         if (extended) {
             renderToken("[", Token::Other);
             renderLinearExpr(&varValue->getMemAddress().value->getLinearExpr());

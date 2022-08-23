@@ -134,6 +134,15 @@ void initDefaultDataTypes(Context* ctx) {
     DataTypeParser::Parse(dataTypesStr, ctx);
 }
 
+decompiler::SymbolSemObj* symbolToSemObj(decompiler::SemanticsManager* semManager, Symbol* symbol) {
+    using namespace decompiler;
+    auto symObj = new SymbolSemObj(semManager, symbol);
+    auto sourceInfo = std::make_shared<Semantics::SourceInfo>();
+    sourceInfo->creatorType = Semantics::User;
+    new DataTypeSemantics(symObj, sourceInfo, symbol->getDataType());
+    return symObj;
+}
+
 void testDecompiler() {
     auto ctx = new Context(std::make_unique<PlatformX86>(true));
     initDefaultDataTypes(ctx);
@@ -157,10 +166,13 @@ void testDecompiler() {
 
     using namespace decompiler;
 
-    auto symbolTableStr = "{}";
-    auto globalSymbolTable = SymbolTableParser::Parse(symbolTableStr, ctx);
+    std::string code;
+    code = "GlobalSymbolTable = {}";
+    auto globalSymbolTable = SymbolTableParser::Parse(code, ctx);
+    code = "StackSymbolTable = {}";
+    auto stackSymbolTable = SymbolTableParser::Parse(code, ctx);
     
-    auto dataTypesStr = "\
+    code = "\
         EntityType = enum { \
             VEHICLE, \
             PED \
@@ -169,29 +181,21 @@ void testDecompiler() {
         ['entity can be vehicle or player'] \
         Entity = struct { \
             EntityType type, \
-            float x = 0x10, \
-            float y \
+            float[3] pos = 0x10 \
         } \
         \
         SetEntityVelAxisSig = signature fastcall void(Entity* entity, uint64_t idx) \
     ";
-    auto parsedDt = DataTypeParser::Parse(dataTypesStr, ctx);
+    auto parsedDt = DataTypeParser::Parse(code, ctx);
     auto functionSignature = dynamic_cast<SignatureDataType*>(parsedDt["SetEntityVelAxisSig"]);
-    auto functionSymbol = new FunctionSymbol(ctx, nullptr, "main", functionSignature);
+    auto functionSymbol = new FunctionSymbol(ctx, nullptr, "main", functionSignature, stackSymbolTable);
 
     SemanticsManager semManager(ctx);
     {
-        auto sourceInfo = std::make_shared<Semantics::SourceInfo>();
-        sourceInfo->creatorType = Semantics::System;
-        auto symObj = new SymbolSemObj(&semManager, functionSignature->getParameters()[0]);
-        {
-            new DataTypeSemantics(symObj, sourceInfo, ctx->getDataTypes()->getByName("Entity*"));
-        }
-        new SymbolSemObj(&semManager, functionSignature->getParameters()[1]);
+        symbolToSemObj(&semManager, functionSignature->getParameters()[0]);
+        symbolToSemObj(&semManager, functionSignature->getParameters()[1]);
         if (auto entityStruct = dynamic_cast<StructureDataType*>(ctx->getDataTypes()->getByName("Entity"))) {
-            auto symObj = new SymbolSemObj(&semManager, entityStruct->getSymbolTable()->getSymbolAt(0x10).symbol);
-            // todo: symbol to semantic
-            new DataTypeSemantics(symObj, sourceInfo, ctx->getDataTypes()->getByName("float"));
+            symbolToSemObj(&semManager, entityStruct->getSymbolTable()->getSymbolAt(0x10).symbol);
         }
         new BaseSemanticsPropagator(&semManager);
     }
@@ -231,6 +235,8 @@ void testDecompiler() {
     }
 
     std::cout << std::endl;
+
+    semManager.print(std::cout);
 }
 
 void testGeneral() {

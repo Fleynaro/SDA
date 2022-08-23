@@ -8,6 +8,13 @@ StandartSymbolTable::StandartSymbolTable(Context* context, Object::Id* id, const
     : SymbolTable(context, id, name)
 {}
 
+size_t StandartSymbolTable::getUsedSize() const {
+    if (m_symbols.empty())
+        return 0;
+    const auto& [symbolOffset, symbol] = *m_symbols.rbegin();
+    return symbolOffset + symbol->getDataType()->getSize();
+}
+
 void StandartSymbolTable::addSymbol(Offset offset, Symbol* symbol) {
     assert(!getSymbolAt(offset).symbol);
     notifyModified(Object::ModState::Before);

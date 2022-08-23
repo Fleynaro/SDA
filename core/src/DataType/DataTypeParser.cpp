@@ -25,9 +25,9 @@ std::map<std::string, DataType*> DataTypeParser::Parse(const std::string& text, 
     return parser.parse();
 }
 
-std::map<std::string, DataType*> DataTypeParser::parse() {
+std::map<std::string, DataType*> DataTypeParser::parse(char endSymbol) {
     std::map<std::string, DataType*> dataTypes;
-    while (!getToken()->isEnd()) {
+    while (!getToken()->isSymbol(endSymbol)) {
         auto dataType = parseDataTypeDef();
         dataTypes[dataType->getName()] = dataType;
     }
@@ -36,21 +36,11 @@ std::map<std::string, DataType*> DataTypeParser::parse() {
 
 DataType* DataTypeParser::parseDataTypeDef() {
     // comment
-    std::string comment;
-    if (getToken()->isSymbol('[')) {
-        nextToken();
-        if (auto constToken = dynamic_cast<const ConstToken*>(getToken().get())) {
-            if (constToken->valueType == ConstToken::ValueType::String) {
-                comment = constToken->value.string;
-                nextToken();
-            }
-        }
-        accept(']');
-    }
+    auto comment = parseCommentIfExists();
 
     // name
-    std::string dataTypeName;
-    if (!getToken()->isIdent(dataTypeName))
+    std::string name;
+    if (!getToken()->isIdent(name))
         throw error(100, "Expected data type name");
     nextToken();
 
@@ -68,7 +58,7 @@ DataType* DataTypeParser::parseDataTypeDef() {
         throw error(101, "Data type definition not recognized");
     
     if (dataType) {
-        dataType->setName(dataTypeName);
+        dataType->setName(name);
         dataType->setComment(comment);
     }
     return dataType;
@@ -141,6 +131,7 @@ StructureDataType* DataTypeParser::parseStructureDataTypeDef() {
         m_context,
         nullptr,
         "",
+        symbolTable->getUsedSize(),
         symbolTable);
 }
 
@@ -213,6 +204,7 @@ DataType* DataTypeParser::parseDataType() {
     // array
     std::list<size_t> dimensions;
     while (getToken()->isSymbol('[')) {
+        nextToken();
         size_t arraySize = -1;
         if (auto constToken = dynamic_cast<const ConstToken*>(getToken().get())) {
             if (constToken->valueType != ConstToken::Integer)
@@ -221,6 +213,7 @@ DataType* DataTypeParser::parseDataType() {
             if (value == 0)
                 throw error(203, "Array size cannot be zero");
             arraySize = value;
+            nextToken();
         } else {
             throw error(202, "Expected constant array size");
         }

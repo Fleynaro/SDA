@@ -8,13 +8,15 @@ FunctionSymbol::FunctionSymbol(
     Object::Id* id,
     const std::string& name,
     SignatureDataType* dataType,
-    bool stackSymbolTable,
-    bool instructionSymbolTable)
+    SymbolTable* stackSymbolTable,
+    SymbolTable* instructionSymbolTable)
     : Symbol(context, id, name, dataType)
+    , m_stackSymbolTable(stackSymbolTable)
+    , m_instructionSymbolTable(instructionSymbolTable)
 {
-    if (stackSymbolTable)
+    if (!m_stackSymbolTable)
         m_stackSymbolTable = new StandartSymbolTable(context, nullptr, "stack");
-    if (instructionSymbolTable)
+    if (!m_instructionSymbolTable)
         m_instructionSymbolTable = new StandartSymbolTable(context, nullptr, "instruction");
     m_context->getSymbols()->add(std::unique_ptr<FunctionSymbol>(this));
 }
