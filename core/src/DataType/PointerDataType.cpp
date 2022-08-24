@@ -1,4 +1,5 @@
 #include "Core/DataType/PointerDataType.h"
+#include "Core/DataType/ArrayDataType.h"
 
 using namespace sda;
 
@@ -9,6 +10,7 @@ PointerDataType::PointerDataType(
     : DataType(context, id),
     m_pointedType(pointedType)
 {
+    assert(!dynamic_cast<ArrayDataType*>(pointedType));
     if (pointedType) {
         setName(GetTypeName(pointedType));
     }
@@ -17,6 +19,10 @@ PointerDataType::PointerDataType(
 
 DataType* PointerDataType::getPointedType() const {
     return m_pointedType;
+}
+
+DataType* PointerDataType::getBaseType() {
+    return m_pointedType->getBaseType();
 }
 
 bool PointerDataType::isPointer() const {

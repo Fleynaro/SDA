@@ -30,6 +30,8 @@ namespace sda
 
         void removeSymbol(Offset offset) override;
 
+        std::list<SymbolInfo> getAllSymbols() override;
+
         SymbolInfo getSymbolAt(Offset offset) override;
 
         void serialize(boost::json::object& data) const override;

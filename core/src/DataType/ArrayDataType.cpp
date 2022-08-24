@@ -27,6 +27,10 @@ const std::list<size_t>& ArrayDataType::getDimensions() const {
     return m_dimensions;
 }
 
+DataType* ArrayDataType::getBaseType() {
+    return m_elementType->getBaseType();
+}
+
 size_t ArrayDataType::getSize() const {
     size_t size = m_elementType->getSize();
     for (auto dimension : m_dimensions)

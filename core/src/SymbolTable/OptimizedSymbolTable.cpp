@@ -25,7 +25,7 @@ void OptimizedSymbolTable::setFragmentsCount(size_t count) {
     // remove old symbol tables and save all symbols temporarily
     std::list<std::map<Offset, Symbol*>> allSymbols;
     for (auto symbolTable : m_symbolTables) {
-        allSymbols.push_back(symbolTable->getSymbols());
+        allSymbols.push_back(symbolTable->getSymbolsMap());
         symbolTable->destroy();
     }
     m_symbolTables.clear();
@@ -62,6 +62,15 @@ void OptimizedSymbolTable::addSymbol(Offset offset, Symbol* symbol) {
 void OptimizedSymbolTable::removeSymbol(Offset offset) {
     auto symbolTable = getSymbolTable(offset);
     symbolTable->removeSymbol(offset);
+}
+
+std::list<SymbolTable::SymbolInfo> OptimizedSymbolTable::getAllSymbols() {
+    std::list<SymbolInfo> result;
+    for (auto symbolTable : m_symbolTables) {
+        auto symbols = symbolTable->getAllSymbols();
+        result.insert(result.end(), symbols.begin(), symbols.end());
+    }
+    return result;
 }
 
 SymbolTable::SymbolInfo OptimizedSymbolTable::getSymbolAt(Offset offset) {

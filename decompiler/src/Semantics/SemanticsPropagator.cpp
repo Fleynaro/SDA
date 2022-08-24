@@ -54,12 +54,20 @@ bool SemanticsPropagator::checkSemantics(
     return obj->checkSemantics(filter);
 }
 
+SemanticsPropagator::PropCloneFunction SemanticsPropagator::PropClone(size_t uncertaintyDegree) {
+    return [=](SemanticsObject* obj, Semantics* sem) {
+        auto newMetaInfo = sem->getMetaInfo();
+        newMetaInfo.uncertaintyDegree = newMetaInfo.uncertaintyDegree + uncertaintyDegree;
+        return sem->clone(obj, newMetaInfo);
+    };
+}
+
 void SemanticsPropagator::propagateTo(
     SemanticsObject* fromObj,
     SemanticsObject* toObj,
     Semantics::FilterFunction filter,
     SemanticsContextOperations& nextOps,
-    size_t uncertaintyDegree) const
+    PropCloneFunction cloneFunc) const
 {
     if (getManager()->isSimiliarityConsidered()) {
         auto toSemantics = toObj->findSemantics(filter);
@@ -80,9 +88,7 @@ void SemanticsPropagator::propagateTo(
 
     auto fromSemantics = fromObj->findSemantics(filter);
     for (auto fromSem : fromSemantics) {
-        auto newMetaInfo = fromSem->getMetaInfo();
-        newMetaInfo.uncertaintyDegree = newMetaInfo.uncertaintyDegree + uncertaintyDegree;
-        auto toSem = fromSem->clone(toObj, newMetaInfo);
+        auto toSem = cloneFunc(toObj, fromSem);
         fromSem->addSuccessor(toSem);
     }
     
@@ -114,7 +120,7 @@ void BaseSemanticsPropagator::propagate(
                     if (auto paramSymbolObj = getSymbolObject(paramSymbol)) {
                         auto outputVarObj = getOrCreateVarObject(ctx, output);
                         bindEachOther(paramSymbolObj, outputVarObj);
-                        propagateTo(paramSymbolObj, outputVarObj, DataTypeSemantics::Filter(), nextOps);
+                        propagateTo(paramSymbolObj, outputVarObj, DataTypeSemantics::Filter(), nextOps, PropCloneWithArray(true));
                         propagateTo(outputVarObj, paramSymbolObj, DataTypeSemantics::Filter(), nextOps);
                     }
                 } else {
@@ -249,7 +255,7 @@ void BaseSemanticsPropagator::propagate(
                     auto signedScalarDt = getScalarDataType(ScalarType::SignedInt, output->getSize());
                     auto filter = DataTypeSemantics::Filter(signedScalarDt);
                     propagateTo(inputVarObj, outputVarObj, filter, nextOps);
-                    propagateTo(outputVarObj, inputVarObj, filter, nextOps, 1);
+                    propagateTo(outputVarObj, inputVarObj, filter, nextOps, PropClone(1));
                 }
             }
 
@@ -400,7 +406,7 @@ void BaseSemanticsPropagator::propagate(
                     continue;
                 if (auto symbolObj = getSymbolObject(symbol)) {
                     bindEachOther(symbolObj, outputVarObj);
-                    propagateTo(symbolObj, outputVarObj, DataTypeSemantics::Filter(), nextOps);
+                    propagateTo(symbolObj, outputVarObj, DataTypeSemantics::Filter(), nextOps, PropCloneWithArray(false));
                     propagateTo(outputVarObj, symbolObj, DataTypeSemantics::Filter(), nextOps);
                 }
             }
@@ -525,4 +531,24 @@ std::list<std::pair<Offset, Symbol*>> BaseSemanticsPropagator::getAllSymbolsAt(
             symbols.emplace_back(symbolOffset, symbol);
     }
     return symbols;
+}
+
+SemanticsPropagator::PropCloneFunction BaseSemanticsPropagator::PropCloneWithArray(bool makePointer, size_t uncertaintyDegree) {
+    return [=](SemanticsObject* obj, Semantics* sem) -> Semantics* {
+        if (auto dataTypeSem = dynamic_cast<DataTypeSemantics*>(sem)) {
+            auto symbolDt = dataTypeSem->getDataType();
+            if (auto arrayDt = dynamic_cast<ArrayDataType*>(symbolDt)) {
+                symbolDt = arrayDt->getElementType();
+                if (makePointer)
+                    symbolDt = symbolDt->getPointerTo();
+            }
+            return new DataTypeSemantics(
+                obj,
+                dataTypeSem->getSourceInfo(),
+                symbolDt,
+                dataTypeSem->getSliceInfo(),
+                dataTypeSem->getMetaInfo());
+        }
+        return PropClone()(obj, sem);
+    };
 }

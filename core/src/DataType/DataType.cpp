@@ -29,6 +29,10 @@ ArrayDataType* DataType::getArrayOf(const std::list<size_t>& dimensions) {
     return new ArrayDataType(m_context, nullptr, this, dimensions);
 }
 
+DataType* DataType::getBaseType() {
+    return this;
+}
+
 bool DataType::isVoid() const {
     return false;
 }

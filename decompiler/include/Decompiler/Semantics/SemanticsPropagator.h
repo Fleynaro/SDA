@@ -32,12 +32,16 @@ namespace sda::decompiler
             Semantics::FilterFunction filter,
             Semantics* fromSem = nullptr) const;
 
+        using PropCloneFunction = std::function<Semantics*(SemanticsObject*, Semantics*)>;
+
+        static PropCloneFunction PropClone(size_t uncertaintyDegree = 0);
+
         void propagateTo(
             SemanticsObject* fromObj,
             SemanticsObject* toObj,
             Semantics::FilterFunction filter,
             SemanticsContextOperations& nextOps,
-            size_t uncertaintyDegree = 0) const;
+            PropCloneFunction cloneFunc = PropClone()) const;
     };
 
     class BaseSemanticsPropagator : public SemanticsPropagator
@@ -72,6 +76,7 @@ namespace sda::decompiler
             SymbolTable* symbolTable = nullptr;
             DataType* dataType = nullptr;
         };
+
         std::list<PointerInfo> getAllPointers(
             const std::shared_ptr<SemanticsContext>& ctx,
             const ircode::LinearExpression& linearExpr) const;
@@ -81,5 +86,7 @@ namespace sda::decompiler
             SymbolTable* symbolTable,
             Offset offset,
             bool write = false) const;
+
+        static PropCloneFunction PropCloneWithArray(bool makePointer, size_t uncertaintyDegree = 0);
     };
 };

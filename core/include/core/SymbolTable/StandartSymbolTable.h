@@ -18,9 +18,11 @@ namespace sda
 
         void removeSymbol(Offset offset) override;
 
+        std::list<SymbolInfo> getAllSymbols() override;
+
         SymbolInfo getSymbolAt(Offset offset) override;
 
-        const std::map<Offset, Symbol*>& getSymbols() const;
+        const std::map<Offset, Symbol*>& getSymbolsMap() const;
 
         void setSymbols(const std::map<Offset, Symbol*>& symbols);
 

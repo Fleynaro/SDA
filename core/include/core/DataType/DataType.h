@@ -27,6 +27,8 @@ namespace sda
 
         ArrayDataType* getArrayOf(const std::list<size_t>& dimensions);
 
+        virtual DataType* getBaseType();
+
         virtual bool isVoid() const;
 
         virtual bool isPointer() const;

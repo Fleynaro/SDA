@@ -31,6 +31,14 @@ void StandartSymbolTable::removeSymbol(Offset offset) {
     notifyModified(Object::ModState::After);
 }
 
+std::list<SymbolTable::SymbolInfo> StandartSymbolTable::getAllSymbols() {
+    std::list<SymbolInfo> result;
+    for (const auto& [symbolOffset, symbol] : m_symbols) {
+        result.push_back({ this, symbolOffset, symbol });
+    }
+    return result;
+}
+
 SymbolTable::SymbolInfo StandartSymbolTable::getSymbolAt(Offset offset) {
     if (!m_symbols.empty()) {
         const auto it = std::prev(m_symbols.upper_bound(offset));
@@ -52,7 +60,7 @@ SymbolTable::SymbolInfo StandartSymbolTable::getSymbolAt(Offset offset) {
     };
 }
 
-const std::map<Offset, Symbol*>& StandartSymbolTable::getSymbols() const {
+const std::map<Offset, Symbol*>& StandartSymbolTable::getSymbolsMap() const {
     return m_symbols;
 }
 

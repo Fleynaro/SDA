@@ -16,6 +16,8 @@ namespace sda
 
         DataType* getPointedType() const;
 
+        DataType* getBaseType() override;
+
         bool isPointer() const override;
 
         size_t getSize() const override;

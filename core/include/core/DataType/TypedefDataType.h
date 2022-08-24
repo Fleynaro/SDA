@@ -19,6 +19,8 @@ namespace sda
 
         DataType* getReferenceType() const;
 
+        DataType* getBaseType() override;
+
         size_t getSize() const override;
 
         void serialize(boost::json::object& data) const override;

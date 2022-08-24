@@ -20,6 +20,8 @@ namespace sda
 
         const std::list<size_t>& getDimensions() const;
 
+        DataType* getBaseType() override;
+
         size_t getSize() const override;
 
         void serialize(boost::json::object& data) const override;

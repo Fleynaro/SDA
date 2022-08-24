@@ -25,6 +25,8 @@ namespace sda
             Symbol* symbol;
         };
 
+        virtual std::list<SymbolInfo> getAllSymbols() = 0;
+
         virtual SymbolInfo getSymbolAt(Offset offset) = 0;
 
         std::list<SymbolInfo> getAllSymbolsRecursivelyAt(Offset offset);

@@ -23,6 +23,10 @@ DataType* TypedefDataType::getReferenceType() const {
     return m_refType;
 }
 
+DataType* TypedefDataType::getBaseType() {
+    return m_refType->getBaseType();
+}
+
 size_t TypedefDataType::getSize() const {
     return m_refType->getSize();
 }

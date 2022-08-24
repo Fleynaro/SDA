@@ -29,6 +29,7 @@
 #include "Decompiler/IRcode/Generator/IRcodeBlockGenerator.h"
 #include "Decompiler/Semantics/SemanticsManager.h"
 #include "Decompiler/Semantics/SemanticsProvider.h"
+#include "Decompiler/Semantics/SemanticsInitializer.h"
 #include <boost/functional/hash.hpp>
 
 using namespace sda;
@@ -134,15 +135,6 @@ void initDefaultDataTypes(Context* ctx) {
     DataTypeParser::Parse(dataTypesStr, ctx);
 }
 
-decompiler::SymbolSemObj* symbolToSemObj(decompiler::SemanticsManager* semManager, Symbol* symbol) {
-    using namespace decompiler;
-    auto symObj = new SymbolSemObj(semManager, symbol);
-    auto sourceInfo = std::make_shared<Semantics::SourceInfo>();
-    sourceInfo->creatorType = Semantics::User;
-    new DataTypeSemantics(symObj, sourceInfo, symbol->getDataType());
-    return symObj;
-}
-
 void testDecompiler() {
     auto ctx = new Context(std::make_unique<PlatformX86>(true));
     initDefaultDataTypes(ctx);
@@ -188,17 +180,13 @@ void testDecompiler() {
     ";
     auto parsedDt = DataTypeParser::Parse(code, ctx);
     auto functionSignature = dynamic_cast<SignatureDataType*>(parsedDt["SetEntityVelAxisSig"]);
-    auto functionSymbol = new FunctionSymbol(ctx, nullptr, "main", functionSignature, stackSymbolTable);
+    auto functionSymbol = new FunctionSymbol(ctx, nullptr, "mainFunction", functionSignature, stackSymbolTable);
 
     SemanticsManager semManager(ctx);
-    {
-        symbolToSemObj(&semManager, functionSignature->getParameters()[0]);
-        symbolToSemObj(&semManager, functionSignature->getParameters()[1]);
-        if (auto entityStruct = dynamic_cast<StructureDataType*>(ctx->getDataTypes()->getByName("Entity"))) {
-            symbolToSemObj(&semManager, entityStruct->getSymbolTable()->getSymbolAt(0x10).symbol);
-        }
-        new BaseSemanticsPropagator(&semManager);
-    }
+    new BaseSemanticsPropagator(&semManager);
+    BaseSemanticsInitializer semInit(&semManager);
+    semInit.addSymbolTable(globalSymbolTable);
+    semInit.addSymbol(functionSymbol);
     auto semCtx = std::make_shared<SemanticsContext>();
     semCtx->globalSymbolTable = globalSymbolTable;
     semCtx->functionSymbol = functionSymbol;
