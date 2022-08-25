@@ -103,5 +103,7 @@
 
     "search.exclude": {
         "**/third-party/**": true
-    }
+    },
+
+    "todo-tree.filtering.useBuiltInExcludes": "search excludes"
 }

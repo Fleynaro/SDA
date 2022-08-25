@@ -3,7 +3,7 @@
 using namespace sda;
 
 size_t GetBitMask64BySizeInBits(size_t sizeInBits) {
-	if (sizeInBits >= MaxMaskSizeInBits) // todo: increase from 8 to 16 bytes (it requires 128-bit arithmetic implementation)
+	if (sizeInBits >= MaxMaskSizeInBits) // TODO: increase from 8 to 16 bytes (it requires 128-bit arithmetic implementation)
 		return -1;
 	return (static_cast<size_t>(1) << sizeInBits) - 1;
 }

@@ -75,7 +75,7 @@ std::shared_ptr<PcodeGraphBuilder::Callbacks> PcodeGraphBuilder::getCallbacks() 
 void PcodeGraphBuilder::createFunctionGraph(pcode::InstructionOffset offset) {
     if (auto entryBlock = m_graph->getBlockAt(offset)) {
         if (!entryBlock->getFunctionGraph()) {
-            // todo: check references to entry block (JMP -> CALL)
+            // TODO: check references to entry block (JMP -> CALL)
             m_graph->createFunctionGraph(entryBlock);
         }
     }

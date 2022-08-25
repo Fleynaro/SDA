@@ -318,8 +318,8 @@ std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadR
 
     auto varReadInfos = genReadMemory(memSpace, memAddr.offset, readSize, readMask);
 
-    if (readMask != 0) { // todo: readMask can be 0xFF00FF00, which is not a valid mask
-        // todo: see case when request eax, then rax
+    if (readMask != 0) { // TODO: readMask can be 0xFF00FF00, which is not a valid mask
+        // TODO: see case when request eax, then rax
         memAddr.value = createRegister(regVarnode, memAddr);
         auto outVariable = genLoadOperation(memAddr, readSize);
         memSpace->variables.push_back(outVariable);

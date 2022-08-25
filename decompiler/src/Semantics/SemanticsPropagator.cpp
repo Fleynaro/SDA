@@ -286,7 +286,7 @@ void BaseSemanticsPropagator::propagate(
 
                                         auto pointerDt = dataType->getPointerTo();
                                         if (!checkSemantics(outputVarObj, DataTypeSemantics::Filter(pointerDt), sem)) {
-                                            // todo: join semantics into one group
+                                            // TODO: join semantics into one group
                                             auto newSem = new DataTypeSemantics(outputVarObj, sem->getSourceInfo(), pointerDt, {}, sem->getMetaInfo());
                                             sem->addSuccessor(newSem);
                                             markAsEffected(outputVarObj, nextOps);

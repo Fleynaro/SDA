@@ -27,7 +27,7 @@ namespace sda
 
         const CallingConvention::Map& getStorages();
 
-        // todo: to change the parameters, use setParameters() only (like in react js)
+        // TODO: to change the parameters, use setParameters() only (like in react js)
         void setParameters(const std::vector<FunctionParameterSymbol*>& parameters);
 
         const std::vector<FunctionParameterSymbol*>& getParameters() const;

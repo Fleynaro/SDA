@@ -18,7 +18,7 @@ namespace sda
             const std::string& name = "",
             const std::map<Key, std::string>& fields = {});
 
-        // todo: to change the fields, use setFields() only (like in react js)
+        // TODO: to change the fields, use setFields() only (like in react js)
         void setFields(const std::map<Key, std::string>& fields);
 
         const std::map<Key, std::string>& getFields() const;

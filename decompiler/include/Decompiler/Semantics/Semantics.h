@@ -22,7 +22,7 @@ namespace sda::decompiler
         };
 
         struct MetaInfo {
-            size_t uncertaintyDegree = 0; // todo: float? probability?
+            size_t uncertaintyDegree = 0; // TODO: float? probability?
         };
     private:
         SemanticsObject* m_holder;
@@ -148,6 +148,6 @@ namespace sda::decompiler
     //     std::shared_ptr<std::string> m_name;
     //     size_t m_pointerLevel;
     // public:
-    //     // todo: check existence of the same name in symbol table / local var
+    //     // TODO: check existence of the same name in symbol table / local var
     // };
 };

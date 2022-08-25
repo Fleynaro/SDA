@@ -34,7 +34,7 @@ namespace sda::pcode
 
         void removeFunctionGraph(FunctionGraph* functionGraph);
 
-         // Callbacks for the graph (todo: remove?)
+         // Callbacks for the graph (TODO: remove?)
         class Callbacks
         {
         public:
