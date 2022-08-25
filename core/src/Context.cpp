@@ -18,6 +18,10 @@ Context::Context(std::unique_ptr<Platform> platform)
     m_callbacks = std::make_unique<Callbacks>();
 }
 
+void Context::initDefault() {
+    m_dataTypes->initDefault();
+}
+
 Platform* Context::getPlatform() const {
     return m_platform.get();
 }

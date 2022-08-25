@@ -1,7 +1,9 @@
 #include "Core/DataType/DataType.h"
+#include "Core/DataType/VoidDataType.h"
 #include "Core/DataType/PointerDataType.h"
 #include "Core/DataType/ArrayDataType.h"
 #include "Core/DataType/ScalarDataType.h"
+#include "Core/DataType/DataTypeParser.h"
 #include <boost/functional/hash.hpp>
 
 using namespace sda;
@@ -52,6 +54,27 @@ void DataType::serialize(boost::json::object& data) const {
 
 void DataType::destroy() {
     m_context->getDataTypes()->remove(this);
+}
+
+void DataTypeList::initDefault() {
+    auto ctx = getContext();
+    new VoidDataType(ctx, nullptr);
+    new ScalarDataType(ctx, nullptr, "uint8_t", ScalarType::UnsignedInt, 1);
+    new ScalarDataType(ctx, nullptr, "int8_t", ScalarType::SignedInt, 1);
+    new ScalarDataType(ctx, nullptr, "uint16_t", ScalarType::UnsignedInt, 2);
+    new ScalarDataType(ctx, nullptr, "int16_t", ScalarType::SignedInt, 2);
+    new ScalarDataType(ctx, nullptr, "uint32_t", ScalarType::UnsignedInt, 4);
+    new ScalarDataType(ctx, nullptr, "int32_t", ScalarType::SignedInt, 4);
+    new ScalarDataType(ctx, nullptr, "uint64_t", ScalarType::UnsignedInt, 8);
+    new ScalarDataType(ctx, nullptr, "int64_t", ScalarType::SignedInt, 8);
+    new ScalarDataType(ctx, nullptr, "float", ScalarType::FloatingPoint, 4);
+    new ScalarDataType(ctx, nullptr, "double", ScalarType::FloatingPoint, 8);
+
+    // derived data types
+    auto dataTypesStr = "\
+        bool = typedef uint8_t \
+    ";
+    DataTypeParser::Parse(dataTypesStr, ctx);
 }
 
 DataType* DataTypeList::getByName(const std::string& name) const {

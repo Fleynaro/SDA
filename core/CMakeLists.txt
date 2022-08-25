@@ -27,3 +27,7 @@ target_link_libraries(
     Boost::system
     Boost::filesystem
     Boost::json)
+
+if(BUILD_TESTING)
+	add_subdirectory(test)
+endif()

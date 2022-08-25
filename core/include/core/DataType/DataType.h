@@ -53,6 +53,8 @@ namespace sda
     public:
         using ObjectList<DataType>::ObjectList;
 
+        void initDefault();
+
         DataType* getByName(const std::string& name) const;
 
         ScalarDataType* getScalar(ScalarType type, size_t size);

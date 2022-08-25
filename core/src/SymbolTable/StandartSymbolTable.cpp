@@ -79,6 +79,7 @@ void StandartSymbolTable::serialize(boost::json::object& data) const {
         boost::json::object symbolData;
         symbolData["offset"] = offset;
         symbolData["symbol"] = symbol->serializeId();
+        symbols.push_back(symbolData);
     }
     data["symbols"] = symbols;
 }
@@ -88,7 +89,7 @@ void StandartSymbolTable::deserialize(boost::json::object& data) {
 
     // deserialize all symbols
     m_symbols.clear();
-    const auto& symbols = data["symbol"].get_array();
+    const auto& symbols = data["symbols"].get_array();
     for (auto symbolData : symbols) {
         auto offset = symbolData.get_object()["offset"].get_uint64();
         auto symbol = m_context->getSymbols()->get(symbolData.get_object()["symbol"]);

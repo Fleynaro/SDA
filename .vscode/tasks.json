@@ -1,0 +1,32 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build the active target",
+            "type": "cmake",
+            "command": "build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+
+        {
+            "label": "Run tests",
+            "group": "test",
+            "type": "shell",
+            "command": "ctest -VV -j10 -C Debug -T test",
+            "dependsOn": [
+                "Build the active target"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build",
+                "env": {
+                    "GTEST_COLOR": "1"
+                }
+            }
+        }
+    ]
+}

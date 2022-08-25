@@ -22,6 +22,9 @@ namespace sda
     public:
         Context(std::unique_ptr<Platform> platform);
 
+        // Init context with default objects
+        void initDefault();
+
         // Get the platform (e.g. x86, arm, etc.)
         Platform* getPlatform() const;
 

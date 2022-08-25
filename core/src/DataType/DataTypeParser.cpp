@@ -25,26 +25,37 @@ std::map<std::string, DataType*> DataTypeParser::Parse(const std::string& text, 
     return parser.parse();
 }
 
+DataType* DataTypeParser::ParseSingle(const std::string& text, Context* context) {
+    std::stringstream ss(text);
+    IO io(ss, std::cout);
+    Lexer lexer(&io);
+    DataTypeParser parser(&lexer, context);
+    parser.init();
+    return parser.parseDataTypeDef();
+}
+
 std::map<std::string, DataType*> DataTypeParser::parse(char endSymbol) {
     std::map<std::string, DataType*> dataTypes;
     while (!getToken()->isSymbol(endSymbol)) {
-        auto dataType = parseDataTypeDef();
+        auto dataType = parseDataTypeDef(true);
         dataTypes[dataType->getName()] = dataType;
     }
     return dataTypes;
 }
 
-DataType* DataTypeParser::parseDataTypeDef() {
+DataType* DataTypeParser::parseDataTypeDef(bool withName) {
     // comment
     auto comment = parseCommentIfExists();
 
     // name
     std::string name;
-    if (!getToken()->isIdent(name))
-        throw error(100, "Expected data type name");
-    nextToken();
+    if (withName) {
+        if (!getToken()->isIdent(name))
+            throw error(100, "Expected data type name");
+        nextToken();
 
-    accept('=');
+        accept('=');
+    }
 
     // definition
     DataType* dataType = parseTypedefDataTypeDef();
@@ -58,7 +69,8 @@ DataType* DataTypeParser::parseDataTypeDef() {
         throw error(101, "Data type definition not recognized");
     
     if (dataType) {
-        dataType->setName(name);
+        if (withName)
+            dataType->setName(name);
         dataType->setComment(comment);
     }
     return dataType;
@@ -97,6 +109,7 @@ EnumDataType* DataTypeParser::parseEnumDataTypeDef() {
                 if (constToken->valueType != ConstToken::Integer)
                     throw error(301, "Expected integer value");
                 fieldIdx = constToken->value.integer;
+                nextToken();
             } else {
                 throw error(302, "Expected field index");
             }

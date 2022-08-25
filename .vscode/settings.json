@@ -94,12 +94,17 @@
         "*.inc": "cpp",
         "register.h": "c",
         "*.rh": "cpp",
-        "*.def": "cpp"
+        "*.def": "cpp",
+        "any": "cpp"
     },
 
     "cmake.debugConfig": {
         "console": "integratedTerminal"
     },
+
+    "cmake.configureArgs": [
+        "-DBUILD_TESTING=ON"
+    ],
 
     "search.exclude": {
         "**/third-party/**": true

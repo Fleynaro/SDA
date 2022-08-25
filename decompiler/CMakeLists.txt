@@ -11,3 +11,7 @@ target_include_directories(
 target_link_libraries(
     decompiler PUBLIC
     core)
+
+if(BUILD_TESTING)
+	add_subdirectory(test)
+endif()

@@ -112,32 +112,9 @@ void testPcodeDecoder() {
     image->getPcodeGraph()->setCallbacks(graphCallbacks->m_otherCallbacks);
 }
 
-void initDefaultDataTypes(Context* ctx) {
-    // base data types
-    ScalarDataType* scalars[] = {
-        new ScalarDataType(ctx, nullptr, "uint8_t", ScalarType::UnsignedInt, 1),
-        new ScalarDataType(ctx, nullptr, "int8_t", ScalarType::SignedInt, 1),
-        new ScalarDataType(ctx, nullptr, "uint16_t", ScalarType::UnsignedInt, 2),
-        new ScalarDataType(ctx, nullptr, "int16_t", ScalarType::SignedInt, 2),
-        new ScalarDataType(ctx, nullptr, "uint32_t", ScalarType::UnsignedInt, 4),
-        new ScalarDataType(ctx, nullptr, "int32_t", ScalarType::SignedInt, 4),
-        new ScalarDataType(ctx, nullptr, "uint64_t", ScalarType::UnsignedInt, 8),
-        new ScalarDataType(ctx, nullptr, "int64_t", ScalarType::SignedInt, 8),
-        new ScalarDataType(ctx, nullptr, "float", ScalarType::FloatingPoint, 4),
-        new ScalarDataType(ctx, nullptr, "double", ScalarType::FloatingPoint, 8)
-    };
-    new VoidDataType(ctx, nullptr);
-
-    // derived data types
-    auto dataTypesStr = "\
-        bool = typedef uint8_t \
-    ";
-    DataTypeParser::Parse(dataTypesStr, ctx);
-}
-
 void testDecompiler() {
     auto ctx = new Context(std::make_unique<PlatformX86>(true));
-    initDefaultDataTypes(ctx);
+    ctx->initDefault();
 
     auto pcodeStr = "\
         rcx:8 = COPY rcx:8 \

@@ -97,6 +97,10 @@ namespace sda
         }
 
     protected:
+        Context* getContext() {
+            return m_context;
+        }
+
         virtual void onObjectAdded(T* object) {}
         
         virtual void onObjectRemoved(T* object) {}

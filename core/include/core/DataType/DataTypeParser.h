@@ -13,7 +13,6 @@ namespace sda
     class TypedefDataType;
     class SignatureDataType;
     class StructureDataType;
-        
 
     class DataTypeParser : public utils::AbstractParser
     {
@@ -24,11 +23,13 @@ namespace sda
 
         static std::map<std::string, DataType*> Parse(const std::string& text, Context* context);
 
+        static DataType* ParseSingle(const std::string& text, Context* context);
+
         std::map<std::string, DataType*> parse(char endSymbol = utils::lexer::EndSymbol);
 
-    private:
-        DataType* parseDataTypeDef();
+        DataType* parseDataTypeDef(bool withName = false);
 
+    private:
         TypedefDataType* parseTypedefDataTypeDef();
 
         EnumDataType* parseEnumDataTypeDef();
