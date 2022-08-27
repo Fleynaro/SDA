@@ -11,20 +11,25 @@ SymbolTableParser::SymbolTableParser(utils::lexer::Lexer* lexer, Context* contex
     : AbstractParser(lexer, 2), m_context(context), m_isStruct(isStruct)
 {}
 
-SymbolTable* SymbolTableParser::Parse(const std::string& text, Context* context, bool isStruct) {
+SymbolTable* SymbolTableParser::Parse(
+    const std::string& text,
+    Context* context,
+    bool isStruct,
+    bool withName)
+{
     std::stringstream ss(text);
     IO io(ss, std::cout);
     Lexer lexer(&io);
     SymbolTableParser parser(&lexer, context, isStruct);
     parser.init();
-    return parser.parse();
+    return parser.parse(withName);
 }
 
-SymbolTable* SymbolTableParser::parse() {
+SymbolTable* SymbolTableParser::parse(bool withName) {
     SymbolTable* symbolTable = new StandartSymbolTable(m_context);
     Offset offset = 0;
 
-    if (!m_isStruct) {
+    if (withName && !m_isStruct) {
         auto comment = parseCommentIfExists();
         
         std::string name;

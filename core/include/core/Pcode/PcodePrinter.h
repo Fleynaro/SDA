@@ -1,43 +1,21 @@
 #pragma once
 #include "PcodeInstruction.h"
+#include "Core/Utils/AbstractPrinter.h"
 
 namespace sda::pcode
 {
-    class Printer
+    class Printer : public utils::AbstractPrinter
     {
         const RegisterRepository* m_regRepo;
-        size_t m_commentingCounter = 0;
     public:
+        static inline const Token MNEMONIC = KEYWORD;
+        static inline const Token REGISTER = IDENTIFIER;
+        static inline const Token VIRT_REGISTER = IDENTIFIER;
+
         Printer(const RegisterRepository* regRepo);
 
         virtual void printInstruction(const Instruction* instruction) const;
 
         virtual void printVarnode(const Varnode* varnode, bool printSizeAndOffset = true) const;
-        
-        void commenting(bool toggle);
-
-    protected:
-        enum class Token {
-            Mnemonic,
-            Register,
-            VirtRegister,
-            Number,
-            Comment,
-            Other
-        };
-
-        void printToken(const std::string& text, Token token) const;
-
-        virtual void printTokenImpl(const std::string& text, Token token) const = 0;
-    };
-
-    class StreamPrinter : public Printer
-    {
-        std::ostream& m_output;
-    public:
-        StreamPrinter(std::ostream& output, const RegisterRepository* regRepo);
-
-    protected:
-        void printTokenImpl(const std::string& text, Token token) const override;
     };
 };

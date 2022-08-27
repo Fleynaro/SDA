@@ -11,9 +11,13 @@ namespace sda
     public:
         SymbolTableParser(utils::lexer::Lexer* lexer, Context* context, bool isStruct = false);
 
-        static SymbolTable* Parse(const std::string& text, Context* context, bool isStruct = false);
+        static SymbolTable* Parse(
+            const std::string& text,
+            Context* context,
+            bool isStruct = false,
+            bool withName = false);
 
-        SymbolTable* parse();
+        SymbolTable* parse(bool withName = false);
 
     private:
         Symbol* parseSymbolDef();

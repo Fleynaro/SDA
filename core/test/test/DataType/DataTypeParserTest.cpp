@@ -1,4 +1,5 @@
 #include "Core/DataType/DataTypeParser.h"
+#include "Core/DataType/DataTypePrinter.h"
 #include "Core/Test/ContextFixture.h"
 #include "Core/Test/Plaftorm/CallingConventionMock.h"
 #include "Core/Test/Utils.h"
@@ -23,6 +24,8 @@ TEST_F(DataTypeParserTest, TypedefSample1) {
     auto typedefDt = parseSingle("\
         typedef uint32_t \
     ");
+
+    auto str = DataTypePrinter::Print(typedefDt, context);
 }
 
 TEST_F(DataTypeParserTest, EnumSample1) {

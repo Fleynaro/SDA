@@ -2,6 +2,7 @@
 #include <list>
 #include <string>
 #include <ostream>
+#include "Core/Utils/AbstractPrinter.h"
 
 namespace sda
 {
@@ -22,12 +23,9 @@ namespace sda
         std::list<Token> m_tokens;
         int m_length;
 
-        class Printer {
+        class Printer : public utils::AbstractPrinter {
         public:
             virtual void print(const Instruction* instruction) const;
-
-        protected:
-			virtual void printToken(const std::string& text, Token::Type token) const = 0;
         };
 
         class StreamPrinter : public Printer {
@@ -36,7 +34,7 @@ namespace sda
             StreamPrinter(std::ostream& output);
 
         protected:
-            void printToken(const std::string& text, Token::Type token) const override;
+            void printTokenImpl(const std::string& text, Token token) const override;
         };
     };
 };

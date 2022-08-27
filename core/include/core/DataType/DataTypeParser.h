@@ -1,7 +1,6 @@
 #pragma once
 #include "Core/DataType/DataType.h"
 #include "Core/Utils/AbstractParser.h"
-#include "Core/Platform/CallingConvention.h"
 
 namespace sda
 {
@@ -23,20 +22,20 @@ namespace sda
 
         static std::map<std::string, DataType*> Parse(const std::string& text, Context* context);
 
-        static DataType* ParseSingle(const std::string& text, Context* context);
+        static DataType* ParseSingle(const std::string& text, Context* context, bool withName = false);
 
         std::map<std::string, DataType*> parse(char endSymbol = utils::lexer::EndSymbol);
 
-        DataType* parseDataTypeDef(bool withName = false);
+        DataType* parseDef(bool withName = false);
 
     private:
-        TypedefDataType* parseTypedefDataTypeDef();
+        TypedefDataType* parseTypeDef();
 
-        EnumDataType* parseEnumDataTypeDef();
+        EnumDataType* parseEnumDef();
 
-        StructureDataType* parseStructureDataTypeDef();
+        StructureDataType* parseStructureDef();
 
-        SignatureDataType* parseSignatureDataTypeDef();
+        SignatureDataType* parseSignatureDef();
 
         DataType* parseDataType();
     };

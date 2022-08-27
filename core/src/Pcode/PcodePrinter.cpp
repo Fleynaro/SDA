@@ -12,17 +12,17 @@ Printer::Printer(const RegisterRepository* regRepo)
 void Printer::printInstruction(const Instruction* instruction) const {
     if (instruction->getOutput()) {
         printVarnode(instruction->getOutput().get());
-        printToken(" = ", Token::Other);
+        printToken(" = ", SYMBOL);
     }
 
-    printToken(magic_enum::enum_name(instruction->getId()).data(), Token::Mnemonic);
+    printToken(magic_enum::enum_name(instruction->getId()).data(), MNEMONIC);
 
     if (instruction->getInput0()) {
-        printToken(" ", Token::Other);
+        printToken(" ", SYMBOL);
         printVarnode(instruction->getInput0().get());
     }
     if (instruction->getInput1()) {
-        printToken(", ", Token::Other);
+        printToken(", ", SYMBOL);
         printVarnode(instruction->getInput1().get());
     }
 }
@@ -32,9 +32,9 @@ void Printer::printVarnode(const Varnode* varnode, bool printSizeAndOffset) cons
         const auto& reg = regVarnode->getRegister();
         auto regStr = reg.toString(m_regRepo, printSizeAndOffset);
         if (reg.getRegType() == Register::Virtual) {
-            printToken(regStr, Token::VirtRegister);
+            printToken(regStr, VIRT_REGISTER);
         } else {
-            printToken(regStr, Token::Register);
+            printToken(regStr, REGISTER);
         }
     }
     else if (auto constVarnode = dynamic_cast<const ConstantVarnode*>(varnode)) {
@@ -42,40 +42,6 @@ void Printer::printVarnode(const Varnode* varnode, bool printSizeAndOffset) cons
         ss << "0x" << utils::to_hex() << constVarnode->getValue();
         if (printSizeAndOffset) 
             ss << ":" << constVarnode->getSize();
-        printToken(ss.str(), Token::Number);
+        printToken(ss.str(), NUMBER);
     }
-}
-
-void Printer::commenting(bool toggle) {
-    m_commentingCounter += toggle ? 1 : -1;
-}
-
-void Printer::printToken(const std::string& text, Token token) const {
-    if (m_commentingCounter)
-        token = Token::Comment;
-    printTokenImpl(text, token);
-}
-
-StreamPrinter::StreamPrinter(std::ostream& output, const RegisterRepository* regRepo)
-    : Printer(regRepo), m_output(output)
-{}
-
-void StreamPrinter::printTokenImpl(const std::string& text, Token token) const {
-    using namespace rang;
-    switch (token) {
-    case Token::Mnemonic:
-        m_output << fg::yellow;
-        break;
-    case Token::Register:
-    case Token::VirtRegister:
-        m_output << fg::cyan;
-        break;
-    case Token::Number:
-        m_output << fg::blue;
-        break;
-    case Token::Comment:
-        m_output << fg::green;
-        break;
-    }
-    m_output << text << fg::reset;
 }

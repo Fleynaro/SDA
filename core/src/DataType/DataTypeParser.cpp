@@ -25,25 +25,25 @@ std::map<std::string, DataType*> DataTypeParser::Parse(const std::string& text, 
     return parser.parse();
 }
 
-DataType* DataTypeParser::ParseSingle(const std::string& text, Context* context) {
+DataType* DataTypeParser::ParseSingle(const std::string& text, Context* context, bool withName) {
     std::stringstream ss(text);
     IO io(ss, std::cout);
     Lexer lexer(&io);
     DataTypeParser parser(&lexer, context);
     parser.init();
-    return parser.parseDataTypeDef();
+    return parser.parseDef(withName);
 }
 
 std::map<std::string, DataType*> DataTypeParser::parse(char endSymbol) {
     std::map<std::string, DataType*> dataTypes;
     while (!getToken()->isSymbol(endSymbol)) {
-        auto dataType = parseDataTypeDef(true);
+        auto dataType = parseDef(true);
         dataTypes[dataType->getName()] = dataType;
     }
     return dataTypes;
 }
 
-DataType* DataTypeParser::parseDataTypeDef(bool withName) {
+DataType* DataTypeParser::parseDef(bool withName) {
     // comment
     auto comment = parseCommentIfExists();
 
@@ -58,13 +58,13 @@ DataType* DataTypeParser::parseDataTypeDef(bool withName) {
     }
 
     // definition
-    DataType* dataType = parseTypedefDataTypeDef();
+    DataType* dataType = parseTypeDef();
     if (!dataType)
-        dataType = parseEnumDataTypeDef();
+        dataType = parseEnumDef();
     if (!dataType)
-        dataType = parseStructureDataTypeDef();
+        dataType = parseStructureDef();
     if (!dataType)
-        dataType = parseSignatureDataTypeDef();
+        dataType = parseSignatureDef();
     if (!dataType)
         throw error(101, "Data type definition not recognized");
     
@@ -76,7 +76,7 @@ DataType* DataTypeParser::parseDataTypeDef(bool withName) {
     return dataType;
 }
 
-TypedefDataType* DataTypeParser::parseTypedefDataTypeDef() {
+TypedefDataType* DataTypeParser::parseTypeDef() {
     if (!getToken()->isKeyword("typedef"))
         return nullptr;
     nextToken();
@@ -89,7 +89,7 @@ TypedefDataType* DataTypeParser::parseTypedefDataTypeDef() {
         refDt);
 }
 
-EnumDataType* DataTypeParser::parseEnumDataTypeDef() {
+EnumDataType* DataTypeParser::parseEnumDef() {
     if (!getToken()->isKeyword("enum"))
         return nullptr;
     nextToken();
@@ -130,7 +130,7 @@ EnumDataType* DataTypeParser::parseEnumDataTypeDef() {
         fields);
 }
 
-StructureDataType* DataTypeParser::parseStructureDataTypeDef() {
+StructureDataType* DataTypeParser::parseStructureDef() {
     if (!getToken()->isKeyword("struct"))
         return nullptr;
     nextToken();
@@ -148,7 +148,7 @@ StructureDataType* DataTypeParser::parseStructureDataTypeDef() {
         symbolTable);
 }
 
-SignatureDataType* DataTypeParser::parseSignatureDataTypeDef() {
+SignatureDataType* DataTypeParser::parseSignatureDef() {
     if (!getToken()->isKeyword("signature"))
         return nullptr;
     nextToken();

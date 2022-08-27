@@ -12,76 +12,82 @@ void Printer::setDataTypeProvider(DataTypeProvider* dataTypeProvider) {
     m_dataTypeProvider = dataTypeProvider;
 }
 
+void Printer::setExtendInfo(bool toggle) {
+    m_extendInfo = toggle;
+}
+
 void Printer::printOperation(Operation* operation) {
     auto output = operation->getOutput();
     printValue(output.get(), true);
-    printToken(" = ", Token::Other);
-    printToken(magic_enum::enum_name(operation->getId()).data(), Token::Operation);
-    printToken(" ", Token::Other);
+    printToken(" = ", SYMBOL);
+    printToken(magic_enum::enum_name(operation->getId()).data(), OPERATION);
+    printToken(" ", SYMBOL);
 
     if (auto unaryOp = dynamic_cast<const UnaryOperation*>(operation)) {
         printValue(unaryOp->getInput().get());
         if (auto extractOp = dynamic_cast<const ExtractOperation*>(operation)) {
-            printToken(", ", Token::Other);
-            printToken(std::to_string(extractOp->getOffset()), Token::Other);
+            printToken(", ", SYMBOL);
+            printToken(std::to_string(extractOp->getOffset()), SYMBOL);
         }
     }
     else if (auto binaryOp = dynamic_cast<const BinaryOperation*>(operation)) {
         printValue(binaryOp->getInput1().get());
-        printToken(", ", Token::Other);
+        printToken(", ", SYMBOL);
         printValue(binaryOp->getInput2().get());
         if (auto concatOp = dynamic_cast<const ConcatOperation*>(operation)) {
-            printToken(", ", Token::Other);
-            printToken(std::to_string(concatOp->getOffset()), Token::Other);
+            printToken(", ", SYMBOL);
+            printToken(std::to_string(concatOp->getOffset()), SYMBOL);
         }
     }
 
     if (m_extendInfo) {
         if (m_dataTypeProvider) {
             if (auto dataType = m_dataTypeProvider->getDataType(output)) {
-                commenting(true);
-                printToken(" // ", Token::Comment);
-                printToken(dataType->getName(), Token::Comment);
-                commenting(false);
+                startCommenting();
+                printToken(" // ", COMMENT);
+                printToken(dataType->getName(), COMMENT);
+                endCommenting();
             }
         }
 
         const auto& terms = output->getLinearExpr().getTerms();
         if (!(terms.size() == 1 && terms.front().factor == 1)) {
-            commenting(true);
-            printToken(" // ", Token::Comment);
+            startCommenting();
+            printToken(" // ", COMMENT);
             printLinearExpr(&output->getLinearExpr());
-            commenting(false);
+            endCommenting();
         }
 
         const auto& vars = operation->getOverwrittenVariables();
         if (!vars.empty()) {
-            commenting(true);
-            printToken(" // overwrites ", Token::Comment);
+            startCommenting();
+            printToken(" // overwrites ", COMMENT);
             for (const auto& var : vars) {
                 printValue(var.get());
                 if (var != *vars.rbegin())
-                    printToken(", ", Token::Comment);
+                    printToken(", ", COMMENT);
             }
-            commenting(false);
+            endCommenting();
         }
     }
 }
 
 void Printer::printValue(const Value* value, bool extended) const {
     if (auto constValue = dynamic_cast<const Constant*>(value)) {
+        m_pcodePrinter->setParentPrinter(this);
         m_pcodePrinter->printVarnode(constValue->getConstVarnode());
     }
     else if (auto regValue = dynamic_cast<const Register*>(value)) {
+        m_pcodePrinter->setParentPrinter(this);
         m_pcodePrinter->printVarnode(regValue->getRegVarnode(), false);
     }
     else if (auto varValue = dynamic_cast<const Variable*>(value)) {
-        printToken(varValue->getName(), Token::Variable);
+        printToken(varValue->getName(), VARIABLE);
         if (extended) {
-            printToken("[", Token::Other);
+            printToken("[", SYMBOL);
             printLinearExpr(&varValue->getMemAddress().value->getLinearExpr());
-            printToken("]:", Token::Other);
-            printToken(std::to_string(varValue->getSize()), Token::Other);
+            printToken("]:", SYMBOL);
+            printToken(std::to_string(varValue->getSize()), SYMBOL);
         }
     }
 }
@@ -90,52 +96,17 @@ void Printer::printLinearExpr(const LinearExpression* linearExpr) const {
     const auto& terms = linearExpr->getTerms();
     for (auto it = terms.begin(); it != terms.end(); ++it) {
         if (it != terms.begin()) {
-            printToken(" + ", Token::Operation);
+            printToken(" + ", OPERATION);
         }
         printValue(it->value.get());
         if (it->factor != 1) {
-            printToken(" * ", Token::Other);
-            printToken(std::to_string(it->factor), Token::Other);
+            printToken(" * ", SYMBOL);
+            printToken(std::to_string(it->factor), SYMBOL);
         }
     }
     auto constValue = linearExpr->getConstTermValue();
     if (constValue != 0) {
-        printToken(" + ", Token::Operation);
-        printToken(std::to_string(constValue), Token::Other);
+        printToken(" + ", OPERATION);
+        printToken(std::to_string(constValue), SYMBOL);
     }
-}
-
-void Printer::commenting(bool toggle) {
-    m_commentingCounter += toggle ? 1 : -1;
-    m_pcodePrinter->commenting(toggle);
-}
-
-void Printer::setExtendInfo(bool toggle) {
-    m_extendInfo = toggle;
-}
-
-void Printer::printToken(const std::string& text, Token token) const {
-    if (m_commentingCounter)
-        token = Token::Comment;
-    printTokenImpl(text, token);
-}
-
-StreamPrinter::StreamPrinter(std::ostream& output, pcode::Printer* pcodePrinter)
-    : Printer(pcodePrinter), m_output(output)
-{}
-
-void StreamPrinter::printTokenImpl(const std::string& text, Token token) const {
-    using namespace rang;
-    switch (token) {
-    case Token::Operation:
-        m_output << fg::yellow;
-        break;
-    case Token::Variable:
-        m_output << fg::gray;
-        break;
-    case Token::Comment:
-        m_output << fg::green;
-        break;
-    }
-    m_output << text << fg::reset;
 }
