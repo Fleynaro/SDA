@@ -1,66 +1,66 @@
-#include "Core/Pcode/PcodeRender.h"
+#include "Core/Pcode/PcodePrinter.h"
 #include <sstream>
 #include "rang.hpp"
 #include "Core/Utils/IOManip.h"
 
 using namespace sda::pcode;
 
-Render::Render(const RegisterRepository* regRepo)
+Printer::Printer(const RegisterRepository* regRepo)
     : m_regRepo(regRepo)
 {}
 
-void Render::renderInstruction(const Instruction* instruction) const {
+void Printer::printInstruction(const Instruction* instruction) const {
     if (instruction->getOutput()) {
-        renderVarnode(instruction->getOutput().get());
-        renderToken(" = ", Token::Other);
+        printVarnode(instruction->getOutput().get());
+        printToken(" = ", Token::Other);
     }
 
-    renderToken(magic_enum::enum_name(instruction->getId()).data(), Token::Mnemonic);
+    printToken(magic_enum::enum_name(instruction->getId()).data(), Token::Mnemonic);
 
     if (instruction->getInput0()) {
-        renderToken(" ", Token::Other);
-        renderVarnode(instruction->getInput0().get());
+        printToken(" ", Token::Other);
+        printVarnode(instruction->getInput0().get());
     }
     if (instruction->getInput1()) {
-        renderToken(", ", Token::Other);
-        renderVarnode(instruction->getInput1().get());
+        printToken(", ", Token::Other);
+        printVarnode(instruction->getInput1().get());
     }
 }
 
-void Render::renderVarnode(const Varnode* varnode, bool renderSizeAndOffset) const {
+void Printer::printVarnode(const Varnode* varnode, bool printSizeAndOffset) const {
     if (auto regVarnode = dynamic_cast<const RegisterVarnode*>(varnode)) {
         const auto& reg = regVarnode->getRegister();
-        auto regStr = reg.toString(m_regRepo, renderSizeAndOffset);
+        auto regStr = reg.toString(m_regRepo, printSizeAndOffset);
         if (reg.getRegType() == Register::Virtual) {
-            renderToken(regStr, Token::VirtRegister);
+            printToken(regStr, Token::VirtRegister);
         } else {
-            renderToken(regStr, Token::Register);
+            printToken(regStr, Token::Register);
         }
     }
     else if (auto constVarnode = dynamic_cast<const ConstantVarnode*>(varnode)) {
         std::stringstream ss;
         ss << "0x" << utils::to_hex() << constVarnode->getValue();
-        if (renderSizeAndOffset) 
+        if (printSizeAndOffset) 
             ss << ":" << constVarnode->getSize();
-        renderToken(ss.str(), Token::Number);
+        printToken(ss.str(), Token::Number);
     }
 }
 
-void Render::commenting(bool toggle) {
+void Printer::commenting(bool toggle) {
     m_commentingCounter += toggle ? 1 : -1;
 }
 
-void Render::renderToken(const std::string& text, Token token) const {
+void Printer::printToken(const std::string& text, Token token) const {
     if (m_commentingCounter)
         token = Token::Comment;
-    renderTokenImpl(text, token);
+    printTokenImpl(text, token);
 }
 
-StreamRender::StreamRender(std::ostream& output, const RegisterRepository* regRepo)
-    : Render(regRepo), m_output(output)
+StreamPrinter::StreamPrinter(std::ostream& output, const RegisterRepository* regRepo)
+    : Printer(regRepo), m_output(output)
 {}
 
-void StreamRender::renderTokenImpl(const std::string& text, Token token) const {
+void StreamPrinter::printTokenImpl(const std::string& text, Token token) const {
     using namespace rang;
     switch (token) {
     case Token::Mnemonic:

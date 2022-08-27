@@ -45,6 +45,6 @@ namespace sda
 
         size_t getBitOffset() const;
 
-        std::string toString(const RegisterRepository* regRepo, bool renderSizeAndOffset = true) const;
+        std::string toString(const RegisterRepository* regRepo, bool printSizeAndOffset = true) const;
     };
 };

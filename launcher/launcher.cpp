@@ -15,8 +15,8 @@
 #include "Core/SymbolTable/StandartSymbolTable.h"
 #include "Core/SymbolTable/SymbolTableParser.h"
 #include "Core/Pcode/PcodeParser.h"
-#include "Core/Pcode/PcodeRender.h"
-#include "Core/IRcode/IRcodeRender.h"
+#include "Core/Pcode/PcodePrinter.h"
+#include "Core/IRcode/IRcodePrinter.h"
 #include "Database/Database.h"
 #include "Database/Schema.h"
 #include "Database/Loader.h"
@@ -56,20 +56,20 @@ void testPcodeDecoder() {
     auto instrDecoder = ctx->getPlatform()->getInstructionDecoder();
     auto offset = image->getEntryPointOffset();
 
-    pcode::StreamRender pcodeRender(std::cout, ctx->getPlatform()->getRegisterRepository());
-    Instruction::StreamRender srcInstrRender(std::cout);
+    pcode::StreamPrinter pcodePrinter(std::cout, ctx->getPlatform()->getRegisterRepository());
+    Instruction::StreamPrinter srcInstrPrinter(std::cout);
     while (offset < image->getSize()) {
         std::vector<uint8_t> data(0x100);
         image->getRW()->readBytesAtOffset(offset, data);
         pcodeDecoder->decode(offset, data);
         
         instrDecoder->decode(data);
-        srcInstrRender.render(instrDecoder->getDecodedInstruction());
+        srcInstrPrinter.print(instrDecoder->getDecodedInstruction());
         std::cout << std::endl;
         auto decodedInstructions = pcodeDecoder->getDecodedInstructions();
         for (auto& decodedInstruction : decodedInstructions) {
             std::cout << "    ";
-            pcodeRender.renderInstruction(&decodedInstruction);
+            pcodePrinter.printInstruction(&decodedInstruction);
             std::cout << std::endl;
         }
 
@@ -124,12 +124,12 @@ void testDecompiler() {
         STORE rbx:8, 1.0:8 \
     ";
 
-    pcode::StreamRender pcodeRender(std::cout, ctx->getPlatform()->getRegisterRepository());
+    pcode::StreamPrinter pcodePrinter(std::cout, ctx->getPlatform()->getRegisterRepository());
 
     auto pcodeInstructions = pcode::Parser::Parse(pcodeStr, ctx->getPlatform()->getRegisterRepository());
     for (auto& instr : pcodeInstructions) {
         std::cout << "    ";
-        pcodeRender.renderInstruction(&instr);
+        pcodePrinter.printInstruction(&instr);
         std::cout << std::endl;
     }
 
@@ -174,13 +174,13 @@ void testDecompiler() {
     IRcodeSemanticsDataTypeProvider dataTypeProvider(&semManager);
     IRcodeBlockGenerator ircodeGen(&ircodeBlock, &memorySpace, &dataTypeProvider);
 
-    ircode::StreamRender ircodeRender(std::cout, &pcodeRender);
+    ircode::StreamPrinter ircodePrinter(std::cout, &pcodePrinter);
 
     for (const auto& pcodeInstruction : pcodeInstructions) {
         ircodeGen.executePcode(&pcodeInstruction);
         for (auto ircodeOp : ircodeGen.getGeneratedOperations()) {
             std::cout << "    ";
-            ircodeRender.renderOperation(ircodeOp);
+            ircodePrinter.printOperation(ircodeOp);
             std::cout << std::endl;
 
             SemanticsContextOperations ctxOps;
@@ -191,11 +191,11 @@ void testDecompiler() {
 
     std::cout << std::endl << std::endl;
 
-    ircodeRender.setExtendInfo(true);
-    ircodeRender.setDataTypeProvider(&dataTypeProvider);
+    ircodePrinter.setExtendInfo(true);
+    ircodePrinter.setDataTypeProvider(&dataTypeProvider);
     for (const auto& ircodeOp : ircodeBlock.getOperations()) {
         std::cout << "    ";
-        ircodeRender.renderOperation(ircodeOp.get());
+        ircodePrinter.printOperation(ircodeOp.get());
         std::cout << std::endl;
     }
 

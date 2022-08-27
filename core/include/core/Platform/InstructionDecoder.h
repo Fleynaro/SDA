@@ -4,7 +4,7 @@
 
 namespace sda
 {
-    // This decoder is used to decode instructions for rendering
+    // This decoder is used to decode instructions for printing
     class InstructionDecoder
     {
     public:

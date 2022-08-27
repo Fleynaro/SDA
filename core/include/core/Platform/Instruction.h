@@ -5,7 +5,7 @@
 
 namespace sda
 {
-    // This instruction is used for rendering
+    // This instruction is used for printing
     struct Instruction {
         struct Token {
             enum Type
@@ -22,21 +22,21 @@ namespace sda
         std::list<Token> m_tokens;
         int m_length;
 
-        class Render {
+        class Printer {
         public:
-            virtual void render(const Instruction* instruction) const;
+            virtual void print(const Instruction* instruction) const;
 
         protected:
-			virtual void renderToken(const std::string& text, Token::Type token) const = 0;
+			virtual void printToken(const std::string& text, Token::Type token) const = 0;
         };
 
-        class StreamRender : public Render {
+        class StreamPrinter : public Printer {
             std::ostream& m_output;
         public:
-            StreamRender(std::ostream& output);
+            StreamPrinter(std::ostream& output);
 
         protected:
-            void renderToken(const std::string& text, Token::Type token) const override;
+            void printToken(const std::string& text, Token::Type token) const override;
         };
     };
 };
