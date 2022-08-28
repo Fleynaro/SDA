@@ -1,10 +1,10 @@
 #pragma once
 #include "Database.h"
+#include "Core/Utils/Serialization.h"
 
 namespace sda
 {
     class IFactory;
-    class utils::ISerializable;
 
     // Loader allows to load all collections from a database
     class Loader

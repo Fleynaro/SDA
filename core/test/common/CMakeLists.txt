@@ -11,5 +11,6 @@ target_include_directories(
 
 target_link_libraries(
     core-test-common PUBLIC
+    GTest::gmock_main
     core
-    GTest::gmock_main)
+    platform-x86) # some tests based on x86 code
