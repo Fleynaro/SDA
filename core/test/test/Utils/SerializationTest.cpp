@@ -21,6 +21,7 @@
 #include "Core/Test/Plaftorm/CallingConventionMock.h"
 #include "Core/Test/ContextFixture.h"
 #include "Core/Test/Utils/TestAssertion.h"
+#include "Platform/X86/CallingConvention.h"
 
 using namespace sda;
 using namespace sda::test;
@@ -169,21 +170,20 @@ TEST_F(SerializationTest, StructureDataType) {
 }
 
 TEST_F(SerializationTest, SignatureDataType) {
-    auto testCallConv = std::make_shared<CallingConventionMock>();
-    EXPECT_CALL(*testCallConv, getName()).WillRepeatedly(Return("testcall"));
+    auto callConv = std::make_shared<platform::FastcallCallingConvention>();
     auto returnDt = findDataType("uint32_t");
-    auto dataType1 = new SignatureDataType(context, testCallConv, nullptr, "dataType", returnDt, {
+    auto dataType1 = new SignatureDataType(context, callConv, nullptr, "dataType", returnDt, {
         new FunctionParameterSymbol(context, nullptr, "param1", findDataType("uint32_t")),
         new FunctionParameterSymbol(context, nullptr, "param2", findDataType("uint32_t")),
     });
     boost::json::object data;
     dataType1->serialize(data);
 
-    auto dataType2 = new SignatureDataType(context, testCallConv);
+    auto dataType2 = new SignatureDataType(context, callConv);
     dataType2->deserialize(data);
 
     ASSERT_TRUE(cmp(dataType1, dataType2));
-    ASSERT_TRUE(cmp(dataType2, "dataType = signature testcall uint32_t(uint32_t param1, uint32_t param2)"));
+    ASSERT_TRUE(cmp(dataType2, "dataType = signature fastcall uint32_t(uint32_t param1, uint32_t param2)"));
 }
 
 TEST_F(SerializationTest, VariableSymbol) {

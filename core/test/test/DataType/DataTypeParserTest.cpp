@@ -64,17 +64,11 @@ TEST_F(DataTypeParserTest, StructureSample1) {
 TEST_F(DataTypeParserTest, SignatureSample1) {
     auto expectedCode = "\
         ['test data type'] \
-        dataType = signature testcall void( \
+        dataType = signature fastcall void( \
             uint32_t param1, \
             float param2 \
         ) \
     ";
-    auto testCallConv = std::make_shared<CallingConventionMock>();
-    EXPECT_CALL(*testCallConv, getName())
-        .WillRepeatedly(Return("testcall"));
-    std::list<std::shared_ptr<CallingConvention>> callingConventions = {testCallConv};
-    EXPECT_CALL(*getPlatform(), getCallingConventions())
-        .WillOnce(ReturnRef(callingConventions));
     auto signatureDt = parseSingle(expectedCode);
     ASSERT_TRUE(cmp(signatureDt, expectedCode));
 }

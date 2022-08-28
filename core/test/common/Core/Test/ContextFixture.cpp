@@ -6,24 +6,20 @@
 #include "Core/DataType/DataTypePrinter.h"
 #include "Core/Symbol/Symbol.h"
 #include "Core/SymbolTable/SymbolTable.h"
+#include "Platform/x86/Platform.h"
 
 using namespace sda;
 using namespace sda::test;
 using namespace ::testing;
 
 void ContextFixture::SetUp() {
-    auto platform = std::make_unique<PlatformMock>();
-    Mock::AllowLeak(platform.get());
+    auto platform = std::make_unique<PlatformX86>(true);
     context = new Context(std::move(platform));
     context->initDefault();
 }
 
 void ContextFixture::TearDown() {
     delete context;
-}
-
-PlatformMock* ContextFixture::getPlatform() const {
-    return dynamic_cast<PlatformMock*>(context->getPlatform());
 }
 
 DataType* ContextFixture::findDataType(const std::string& name) const {

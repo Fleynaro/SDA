@@ -1,5 +1,6 @@
 #pragma once
 #include "Core/Platform/Platform.h"
+#include "Core/Platform/RegisterRepository.h"
 #include <Zydis/Zydis.h>
 
 namespace sda
