@@ -1,12 +1,15 @@
 #pragma once
+#include <string>
+#include <list>
 #include <memory>
-#include "RegisterRepository.h"
-#include "PcodeDecoder.h"
-#include "InstructionDecoder.h"
-#include "CallingConvention.h"
 
 namespace sda
 {
+    class RegisterRepository;
+    class CallingConvention;
+    class PcodeDecoder;
+    class InstructionDecoder;
+
     class Platform
     {
     public:
