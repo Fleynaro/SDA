@@ -1,7 +1,7 @@
 #include "Core/SymbolTable/SymbolTableParser.h"
 #include "Core/SymbolTable/SymbolTablePrinter.h"
 #include "Core/Test/ContextFixture.h"
-#include "Core/Test/Utils.h"
+#include "Core/Test/Utils/TestAssertion.h"
 
 using namespace sda;
 using namespace sda::test;

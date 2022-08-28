@@ -2,7 +2,7 @@
 #include "Core/DataType/DataTypePrinter.h"
 #include "Core/Test/ContextFixture.h"
 #include "Core/Test/Plaftorm/CallingConventionMock.h"
-#include "Core/Test/Utils.h"
+#include "Core/Test/Utils/TestAssertion.h"
 
 using namespace sda;
 using namespace sda::test;
