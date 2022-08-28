@@ -21,11 +21,6 @@ protected:
         symbolTable = new OptimizedSymbolTable(context, nullptr, "", MinOffset, MaxOffset, FragmentSize);
         fragmentTables = symbolTable->getSymbolTables();
     }
-    
-    void TearDown() override {
-        delete symbolTable;
-        ContextFixture::TearDown();
-    }
 };
 
 TEST_F(OptimizedSymbolTableTest, GetSymbolAt) {

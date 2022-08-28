@@ -15,11 +15,6 @@ protected:
         ContextFixture::SetUp();
         symbolTable = new StandartSymbolTable(context);
     }
-    
-    void TearDown() override {
-        delete symbolTable;
-        ContextFixture::TearDown();
-    }
 };
 
 TEST_F(StandartSymbolTableTest, GetSymbolAt) {

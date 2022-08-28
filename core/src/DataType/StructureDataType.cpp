@@ -14,8 +14,6 @@ StructureDataType::StructureDataType(
     , m_size(size)
     , m_symbolTable(symbolTable)
 {
-    if (!m_symbolTable)
-        m_symbolTable = new StandartSymbolTable(context);
     m_context->getDataTypes()->add(std::unique_ptr<StructureDataType>(this));
 }
 
