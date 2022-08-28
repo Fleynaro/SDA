@@ -17,18 +17,10 @@ protected:
     }
     
     void TearDown() override {
+        delete symbolTable;
         ContextFixture::TearDown();
     }
 };
-
-TEST_F(StandartSymbolTableTest, RemoveSymbol) {
-    ASSERT_EQ(symbolTable->getAllSymbols().size(), 0);
-    symbolTable->addSymbol(0x100,
-        new VariableSymbol(context, nullptr, "var1", findDataType("uint32_t")));
-    ASSERT_EQ(symbolTable->getAllSymbols().size(), 1);
-    symbolTable->removeSymbol(0x100);
-    ASSERT_EQ(symbolTable->getAllSymbols().size(), 0);
-}
 
 TEST_F(StandartSymbolTableTest, GetSymbolAt) {
     auto var1 = new VariableSymbol(context, nullptr, "var1", findDataType("uint32_t"));
@@ -86,17 +78,11 @@ TEST_F(StandartSymbolTableTest, GetSymbolAt) {
     }
 }
 
-TEST_F(StandartSymbolTableTest, Serialization) {
+TEST_F(StandartSymbolTableTest, RemoveSymbol) {
+    ASSERT_EQ(symbolTable->getAllSymbols().size(), 0);
     symbolTable->addSymbol(0x100,
         new VariableSymbol(context, nullptr, "var1", findDataType("uint32_t")));
-    symbolTable->addSymbol(0x104,
-        new VariableSymbol(context, nullptr, "var2", findDataType("uint64_t")));
-
-    boost::json::object data;
-    symbolTable->serialize(data);
-
-    auto symbolTable2 = new StandartSymbolTable(context);
-    symbolTable2->deserialize(data);
-
-    ASSERT_TRUE(CompareDeeply(symbolTable, symbolTable2, ContextObjectExcludeFields));
+    ASSERT_EQ(symbolTable->getAllSymbols().size(), 1);
+    symbolTable->removeSymbol(0x100);
+    ASSERT_EQ(symbolTable->getAllSymbols().size(), 0);
 }

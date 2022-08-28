@@ -24,6 +24,8 @@ namespace sda
 
         void setFragmentsCount(size_t count);
 
+        const std::vector<StandartSymbolTable*>& getSymbolTables() const;
+
         size_t getUsedSize() const override;
 
         void addSymbol(Offset offset, Symbol* symbol) override;
@@ -41,6 +43,6 @@ namespace sda
         void destroy() override;
 
     private:
-        StandartSymbolTable* getSymbolTable(Offset offset) const;
+        StandartSymbolTable* selectSymbolTable(Offset offset) const;
     };
 };

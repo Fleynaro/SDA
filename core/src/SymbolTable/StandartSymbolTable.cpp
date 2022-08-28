@@ -16,7 +16,8 @@ size_t StandartSymbolTable::getUsedSize() const {
 }
 
 void StandartSymbolTable::addSymbol(Offset offset, Symbol* symbol) {
-    assert(!getSymbolAt(offset).symbol);
+    if (getSymbolAt(offset).symbol)
+        throw std::runtime_error("Symbol already exists at offset " + std::to_string(offset));
     notifyModified(Object::ModState::Before);
     m_symbols[offset] = symbol;
     notifyModified(Object::ModState::After);
@@ -53,11 +54,7 @@ SymbolTable::SymbolInfo StandartSymbolTable::getSymbolAt(Offset offset) {
             }
         }
     }
-    return {
-        this,
-        0,
-        nullptr
-    };
+    return SymbolInfo();
 }
 
 const std::map<Offset, Symbol*>& StandartSymbolTable::getSymbolsMap() const {

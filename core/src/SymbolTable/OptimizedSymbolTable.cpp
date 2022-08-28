@@ -1,5 +1,6 @@
 #include "Core/SymbolTable/OptimizedSymbolTable.h"
 #include "Core/SymbolTable/StandartSymbolTable.h"
+#include "Core/Utils/IOManip.h"
 
 using namespace sda;
 
@@ -46,6 +47,10 @@ void OptimizedSymbolTable::setFragmentsCount(size_t count) {
     notifyModified(Object::ModState::After);
 }
 
+const std::vector<StandartSymbolTable*>& OptimizedSymbolTable::getSymbolTables() const {
+    return m_symbolTables;
+}
+
 size_t OptimizedSymbolTable::getUsedSize() const {
     for (auto it = m_symbolTables.rbegin(); it != m_symbolTables.rend(); it++) {
         if (auto usedSize = (*it)->getUsedSize())
@@ -55,13 +60,20 @@ size_t OptimizedSymbolTable::getUsedSize() const {
 }
 
 void OptimizedSymbolTable::addSymbol(Offset offset, Symbol* symbol) {
-    auto symbolTable = getSymbolTable(offset);
+    auto symbolInfo = getSymbolAt(offset);
+    if (symbolInfo.symbol) {
+        auto message = (
+            std::stringstream() << "Symbol already exists at offset 0x" << utils::to_hex() << symbolInfo.symbolOffset).str();
+        throw std::runtime_error(message);
+    }
+    auto symbolTable = selectSymbolTable(offset);
     symbolTable->addSymbol(offset, symbol);
 }
 
 void OptimizedSymbolTable::removeSymbol(Offset offset) {
-    auto symbolTable = getSymbolTable(offset);
-    symbolTable->removeSymbol(offset);
+    auto symbolInfo = getSymbolAt(offset);
+    if (symbolInfo.symbol)
+        symbolInfo.symbolTable->removeSymbol(offset);
 }
 
 std::list<SymbolTable::SymbolInfo> OptimizedSymbolTable::getAllSymbols() {
@@ -74,8 +86,12 @@ std::list<SymbolTable::SymbolInfo> OptimizedSymbolTable::getAllSymbols() {
 }
 
 SymbolTable::SymbolInfo OptimizedSymbolTable::getSymbolAt(Offset offset) {
-    auto symbolTable = getSymbolTable(offset);
-    return symbolTable->getSymbolAt(offset);
+    for (auto symbolTable : m_symbolTables) {
+        auto symbolInfo = symbolTable->getSymbolAt(offset);
+        if (symbolInfo.symbol)
+            return symbolInfo;
+    }
+    return SymbolInfo();
 }
 
 void OptimizedSymbolTable::serialize(boost::json::object& data) const {
@@ -115,7 +131,7 @@ void OptimizedSymbolTable::destroy() {
     SymbolTable::destroy();
 }
 
-StandartSymbolTable* OptimizedSymbolTable::getSymbolTable(Offset offset) const {
+StandartSymbolTable* OptimizedSymbolTable::selectSymbolTable(Offset offset) const {
     auto fragmentSize = (m_maxOffset - m_minOffset) / m_symbolTables.size();
     auto tableSymbolIdx = (offset - m_minOffset) / fragmentSize;
     if (tableSymbolIdx < 0 || tableSymbolIdx >= m_symbolTables.size())

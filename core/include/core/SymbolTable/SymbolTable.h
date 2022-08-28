@@ -20,9 +20,9 @@ namespace sda
         virtual void removeSymbol(Offset offset) = 0;
 
         struct SymbolInfo {
-            SymbolTable* symbolTable;
-            Offset symbolOffset;
-            Symbol* symbol;
+            SymbolTable* symbolTable = nullptr;
+            Offset symbolOffset = 0;
+            Symbol* symbol = nullptr;
         };
 
         virtual std::list<SymbolInfo> getAllSymbols() = 0;
