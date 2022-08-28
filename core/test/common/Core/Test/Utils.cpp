@@ -4,6 +4,22 @@ using namespace sda;
 using namespace sda::test;
 
 ::testing::AssertionResult sda::test::Compare(
+    const std::string& str1,
+    const std::string& str2,
+    const CleanFunc& cleanFunc)
+{
+    auto cleanStr1 = str1;
+    auto cleanStr2 = str2;
+    for (auto cleanStr : { &cleanStr1, &cleanStr2 }) {
+        auto it = std::remove_if(cleanStr->begin(), cleanStr->end(), cleanFunc);
+        cleanStr->erase(it, cleanStr->end());
+    }
+    if (cleanStr1 != cleanStr2)
+        return ::testing::AssertionFailure() << "\"" << cleanStr1 << "\" != \"" << cleanStr2 << "\"";
+    return ::testing::AssertionSuccess();
+}
+
+::testing::AssertionResult sda::test::Compare(
     ISerializable* object1,
     ISerializable* object2)
 {
@@ -53,39 +69,3 @@ using namespace sda::test;
         << "object1 = " << object1 << std::endl
         << "object2 = " << object2;
 }
-
-// bool sda::test::CompareDeeply(
-//     const boost::json::value& value1,
-//     const boost::json::value& value2,
-//     const std::list<std::string>& excludedFields)
-// {
-//     if (value1.kind() != value2.kind())
-//         return false;
-//     if (value1.if_object()) {
-//         auto& object1 = value1.as_object();
-//         auto& object2 = value2.as_object();
-//         if (object1.size() != object2.size())
-//             return false;
-//         for (auto it1 = object1.begin(); it1 != object1.end(); ++it1) {
-//             if (std::find(excludedFields.begin(), excludedFields.end(), it1->key()) != excludedFields.end())
-//                 continue;
-//             auto it2 = object2.find(it1->key());
-//             if (it2 == object2.end())
-//                 return false;
-//             if (!Compare(it1->value(), it2->value(), excludedFields))
-//                 return false;
-//         }
-//     } else if (value1.if_array()) {
-//         auto& array1 = value1.as_array();
-//         auto& array2 = value2.as_array();
-//         if (array1.size() != array2.size())
-//             return false;
-//         for (size_t i = 0; i < array1.size(); ++i) {
-//             if (!Compare(array1[i], array2[i], excludedFields))
-//                 return false;
-//         }
-//     } else {
-//         return value1 == value2;
-//     }
-//     return true;
-// }

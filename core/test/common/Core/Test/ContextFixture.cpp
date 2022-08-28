@@ -3,6 +3,7 @@
 #include "Core/Image/Image.h"
 #include "Core/DataType/DataType.h"
 #include "Core/DataType/DataTypeParser.h"
+#include "Core/DataType/DataTypePrinter.h"
 #include "Core/Symbol/Symbol.h"
 #include "Core/SymbolTable/SymbolTable.h"
 

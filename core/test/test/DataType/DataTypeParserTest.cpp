@@ -16,51 +16,68 @@ protected:
     }
 
     DataType* parseSingle(const std::string& text) {
-        return DataTypeParser::ParseSingle(text, context);
+        return DataTypeParser::ParseSingle(text, context, true);
+    }
+
+    std::string print(DataType* dataType) const {
+        return DataTypePrinter::Print(dataType, context, true);
     }
 };
 
 TEST_F(DataTypeParserTest, TypedefSample1) {
-    auto typedefDt = parseSingle("\
-        typedef uint32_t \
-    ");
-
-    auto str = DataTypePrinter::Print(typedefDt, context);
+    auto expectedCode = "\
+        ['test data type'] \
+        dataType = typedef uint32_t \
+    ";
+    auto typedefDt = parseSingle(expectedCode);
+    auto actualCode = print(typedefDt);
+    ASSERT_TRUE(Compare(actualCode, expectedCode));
 }
 
 TEST_F(DataTypeParserTest, EnumSample1) {
-    auto enumDt = parseSingle("\
-        enum { \
+    auto expectedCode = "\
+        ['test data type'] \
+        dataType = enum { \
             A, \
             B = 10, \
             C \
         } \
-    ");
+    ";
+    auto enumDt = parseSingle(expectedCode);
+    auto actualCode = print(enumDt);
+    ASSERT_TRUE(Compare(actualCode, expectedCode));
 }
 
 TEST_F(DataTypeParserTest, StructureSample1) {
-    auto structDt = parseSingle("\
-        struct { \
+    auto expectedCode = "\
+        ['test data type'] \
+        dataType = struct { \
             uint32_t a, \
             float b, \
             uint64_t c = 0x100, \
-            int64_t d = 20000 \
+            int64_t d \
         } \
-    ");
+    ";
+    auto structDt = parseSingle(expectedCode);
+    auto actualCode = print(structDt);
+    ASSERT_TRUE(Compare(actualCode, expectedCode));
 }
 
 TEST_F(DataTypeParserTest, SignatureSample1) {
-    auto callingConvention = std::make_shared<CallingConventionMock>();
-    EXPECT_CALL(*callingConvention, getName())
-        .WillOnce(Return("fastcall"));
-    std::list<std::shared_ptr<CallingConvention>> callingConventions = {callingConvention};
-    EXPECT_CALL(*getPlatform(), getCallingConventions())
-        .WillOnce(ReturnRef(callingConventions));
-
-    auto signatureDt = parseSingle("\
-        signature fastcall void( \
+    auto expectedCode = "\
+        ['test data type'] \
+        dataType = signature fastcall void( \
             uint32_t param1, \
             float param2 \
         ) \
-    ");
+    ";
+    auto callingConvention = std::make_shared<CallingConventionMock>();
+    EXPECT_CALL(*callingConvention, getName())
+        .WillRepeatedly(Return("fastcall"));
+    std::list<std::shared_ptr<CallingConvention>> callingConventions = {callingConvention};
+    EXPECT_CALL(*getPlatform(), getCallingConventions())
+        .WillOnce(ReturnRef(callingConventions));
+    auto signatureDt = parseSingle(expectedCode);
+    auto actualCode = print(signatureDt);
+    ASSERT_TRUE(Compare(actualCode, expectedCode));
 }

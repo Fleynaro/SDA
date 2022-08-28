@@ -4,8 +4,15 @@
 
 namespace sda::test
 {
+    using CleanFunc = std::function<bool(char)>;
+    const CleanFunc DefaultCleanFunc = [](char c) { return std::isspace(c); };
     const std::list<std::string> ContextObjectExcludeFields = { "uuid", "name", "comment" };
     const std::list<std::string> ObjectExcludeFields = { "uuid" };
+
+    ::testing::AssertionResult Compare(
+        const std::string& str1,
+        const std::string& str2,
+        const CleanFunc& cleanFunc = DefaultCleanFunc);
 
     ::testing::AssertionResult Compare(
         ISerializable* object1,
@@ -20,9 +27,4 @@ namespace sda::test
         boost::json::object object1,
         boost::json::object object2,
         const std::list<std::string>& excludedFields = {});
-
-    // static bool CompareDeeply(
-    //     const boost::json::value& value1,
-    //     const boost::json::value& value2,
-    //     const std::list<std::string>& excludedFields = CompareExcludedFields);
 };
