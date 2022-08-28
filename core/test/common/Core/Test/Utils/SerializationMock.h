@@ -1,10 +1,10 @@
 #pragma once
 #include <gmock/gmock.h>
-#include "Core/Serialization.h"
+#include "Core/Utils/Serialization.h"
 
 namespace sda::test
 {
-    class SerializationMock : public ISerializable
+    class SerializationMock : public utils::ISerializable
     {
     public:
         MOCK_METHOD(void, serialize, (boost::json::object& data), (const, override));

@@ -44,7 +44,7 @@ namespace sda::decompiler
             Offset offset;
         };
 
-        std::list<VariableReadInfo> genReadMemory(MemorySpace* memSpace, Offset readOffset, size_t readSize, BitMask& readMask);
+        std::list<VariableReadInfo> genReadMemory(MemorySpace* memSpace, Offset readOffset, size_t readSize, utils::BitMask& readMask);
 
         ircode::MemoryAddress getRegisterMemoryAddress(const Register& reg) const;
 

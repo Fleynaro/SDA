@@ -1,11 +1,11 @@
 #pragma once
 #include <boost/uuid/uuid.hpp>
-#include "Core/Serialization.h"
+#include "Core/Utils/Serialization.h"
 
 namespace sda
 {
     // Base class for all domain objects
-    class Object : public ISerializable
+    class Object : public utils::ISerializable
     {
     public:
         using Id = boost::uuids::uuid;

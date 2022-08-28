@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include "Core/BitMask.h"
+#include "Core/Utils/BitMask.h"
 
 namespace sda
 {
@@ -27,11 +27,11 @@ namespace sda
         Type m_type;
         size_t m_id;
         size_t m_index;
-        BitMask m_mask;
+        utils::BitMask m_mask;
         size_t m_size;
 
     public:
-        Register(Type type, size_t id, size_t index, BitMask mask);
+        Register(Type type, size_t id, size_t index, utils::BitMask mask);
 
         Type getRegType() const;
 
@@ -39,7 +39,7 @@ namespace sda
 
         size_t getRegIndex() const;
 
-        BitMask getMask() const;
+        utils::BitMask getMask() const;
 
         size_t getSize() const;
 

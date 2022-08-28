@@ -20,8 +20,8 @@ using namespace sda::test;
 }
 
 ::testing::AssertionResult sda::test::Compare(
-    ISerializable* object1,
-    ISerializable* object2)
+    utils::ISerializable* object1,
+    utils::ISerializable* object2)
 {
     if (object1 == object2)
         return ::testing::AssertionSuccess();
@@ -38,8 +38,8 @@ using namespace sda::test;
 }
 
 ::testing::AssertionResult sda::test::CompareDeeply(
-    ISerializable* object1,
-    ISerializable* object2,
+    utils::ISerializable* object1,
+    utils::ISerializable* object2,
     const std::list<std::string>& excludedFields)
 {
     if (object1 == nullptr && object2 == nullptr)

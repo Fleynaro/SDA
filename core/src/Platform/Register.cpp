@@ -4,7 +4,7 @@
 
 using namespace sda;
 
-Register::Register(Type type, size_t id, size_t index, BitMask mask)
+Register::Register(Type type, size_t id, size_t index, utils::BitMask mask)
     : m_type(type), m_id(id), m_index(index), m_mask(mask), m_size(mask.getSize())
 {
     if (type == Type::StackPointer) {
@@ -28,7 +28,7 @@ size_t Register::getRegIndex() const {
     return m_index;
 }
 
-BitMask Register::getMask() const {
+utils::BitMask Register::getMask() const {
     return m_mask;
 }
 
@@ -62,7 +62,7 @@ std::string Register::toString(const RegisterRepository* regRepo, bool printSize
             if (m_type == Register::Vector) {
                 if (m_size == 4 || m_size == 8) {
                     ss << (m_size == 4 ? "D" : "Q");
-                    ss << static_cast<char>('a' + static_cast<char>(getBitOffset() / (m_size * BitsInBytes)));
+                    ss << static_cast<char>('a' + static_cast<char>(getBitOffset() / (m_size * utils::BitsInBytes)));
                 }
             } else {
                 ss << ":" << m_size;

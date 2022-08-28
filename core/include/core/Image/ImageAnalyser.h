@@ -1,6 +1,6 @@
 #pragma once
 #include "ImageSection.h"
-#include "Core/Serialization.h"
+#include "Core/Utils/Serialization.h"
 #include "Core/Image/WinImageHeaders.h"
 
 namespace sda
@@ -23,7 +23,7 @@ namespace sda
         void analyse(IImageRW* rw) override;
     };
 
-    class PEImageAnalyser : public ImageAnalyser, public ISerializable
+    class PEImageAnalyser : public ImageAnalyser, public utils::ISerializable
     {
         IImageRW* m_rw = nullptr;
         std::unique_ptr<windows::__IMAGE_DOS_HEADER> m_imgDosHeader;

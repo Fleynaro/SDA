@@ -155,7 +155,7 @@ void IRcodeBlockGenerator::executePcode(const pcode::Instruction* instr) {
                 // check if it is an array
                 if (!memAddr.value->getLinearExpr().isArrayType()) {
                     // see non-array case
-                    auto readMask = BitMask(loadSize, 0);
+                    auto readMask = utils::BitMask(loadSize, 0);
                     varReadInfos = genReadMemory(memSpace, memAddr.offset, loadSize, readMask);
                     if (readMask != 0) {
                         // this logic is similar to genReadRegisterVarnode()
@@ -216,7 +216,7 @@ void IRcodeBlockGenerator::genWriteMemory(MemorySpace* memSpace, std::shared_ptr
     memSpace->variables.push_front(newVariable);
 }
 
-std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadMemory(MemorySpace* memSpace, Offset readOffset, size_t readSize, BitMask& readMask) {
+std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadMemory(MemorySpace* memSpace, Offset readOffset, size_t readSize, utils::BitMask& readMask) {
     std::list<VariableReadInfo> varReadInfos;
 
     for (auto variable : memSpace->variables) {
@@ -230,7 +230,7 @@ std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadM
         auto startDelta = (int64_t)varOffset - (int64_t)readOffset;
         auto endDelta = (int64_t)(varOffset + varSize) - (int64_t)(readOffset + readSize);
         
-        BitMask varMask = 0;
+        utils::BitMask varMask = 0;
         Offset extractOffset = 0;
         size_t extractSize = 0;
 
@@ -238,24 +238,24 @@ std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadM
         if (startDelta >= 0) {
             if (endDelta <= 0) {
                 // ----|--====--|----
-                varMask = BitMask(varSize, startDelta * 0x8);
+                varMask = utils::BitMask(varSize, startDelta * 0x8);
             } else {
                 // --==|==------|----
                 extractOffset = 0;
                 extractSize = varSize - endDelta;
-                varMask = BitMask(extractSize, startDelta * 0x8);
+                varMask = utils::BitMask(extractSize, startDelta * 0x8);
             }
         } else {
             if (endDelta <= 0) {
                 // ----|------==|==--
                 extractOffset = -startDelta;
                 extractSize = varSize + startDelta;
-                varMask = BitMask(extractSize, 0);
+                varMask = utils::BitMask(extractSize, 0);
             } else {
                 // --==|========|==--
                 extractOffset = -startDelta;
                 extractSize = readSize;
-                varMask = BitMask(extractSize, 0);
+                varMask = utils::BitMask(extractSize, 0);
             }
         }
 
@@ -293,7 +293,7 @@ ircode::MemoryAddress IRcodeBlockGenerator::getRegisterMemoryAddress(const Regis
     if (reg.getRegType() == Register::Virtual) {
         boost::hash_combine(baseAddrHash, reg.getRegIndex());
     } else {
-        offset = reg.getBitOffset() / BitsInBytes;
+        offset = reg.getBitOffset() / utils::BitsInBytes;
     }
     return { nullptr, baseAddrHash, offset };
 }
@@ -314,7 +314,7 @@ std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadR
     auto memAddr = getRegisterMemoryAddress(regVarnode->getRegister());
     auto memSpace = m_totalMemSpace->getMemSpace(memAddr.baseAddrHash);
     auto readSize = regVarnode->getSize();
-    auto readMask = BitMask(readSize, 0);
+    auto readMask = utils::BitMask(readSize, 0);
 
     auto varReadInfos = genReadMemory(memSpace, memAddr.offset, readSize, readMask);
 

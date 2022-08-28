@@ -1,7 +1,7 @@
 #pragma once
 #include "Core/DataType/DataType.h"
 #include "Core/SymbolTable/SymbolTable.h"
-#include "Core/BitMask.h"
+#include "Core/Utils/BitMask.h"
 
 namespace sda::decompiler
 {
@@ -86,7 +86,7 @@ namespace sda::decompiler
             } type = None;
             size_t offset = 0;
             size_t size = 0;
-            BitMask sliceMask = 0;
+            utils::BitMask sliceMask = 0;
         };
     private:
         DataType* m_dataType;

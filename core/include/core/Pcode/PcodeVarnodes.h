@@ -11,7 +11,7 @@ namespace sda::pcode
 
         virtual bool isRegister() const = 0;
 
-        virtual BitMask getMask() const = 0;
+        virtual utils::BitMask getMask() const = 0;
 
         size_t getSize() const;
     };
@@ -24,7 +24,7 @@ namespace sda::pcode
 
         bool isRegister() const override;
 
-        BitMask getMask() const override;
+        utils::BitMask getMask() const override;
 
         const Register& getRegister() const;
     };
@@ -38,7 +38,7 @@ namespace sda::pcode
 
         bool isRegister() const override;
 
-        BitMask getMask() const override;
+        utils::BitMask getMask() const override;
 
         size_t getValue() const;
 

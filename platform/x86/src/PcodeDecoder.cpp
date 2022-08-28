@@ -1411,7 +1411,7 @@ std::shared_ptr<Varnode> PcodeDecoderX86::getOperandVarnode(
 	}
 
 	if (operand.type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
-		return getConstantVarnode(operand.imm.value.u & BitMask(size, 0), size);
+		return getConstantVarnode(operand.imm.value.u & utils::BitMask(size, 0), size);
 	}
 
 	if (operand.type == ZYDIS_OPERAND_TYPE_MEMORY) {
@@ -1578,8 +1578,8 @@ std::shared_ptr<RegisterVarnode> PcodeDecoderX86::getRegisterVarnode(ZydisRegist
 	RegisterRepositoryX86 regRepo;
     auto id = regRepo.transformZydisRegId(regId);
 	auto type = regRepo.getRegisterType(id);
-    size_t index = static_cast<size_t>(offset) / MaxMaskSizeInBytes;
-    auto mask = BitMask(size, offset);
+    size_t index = static_cast<size_t>(offset) / utils::MaxMaskSizeInBytes;
+    auto mask = utils::BitMask(size, offset);
     return std::make_shared<RegisterVarnode>(Register(type, id, index, mask));
 }
 
@@ -1588,7 +1588,7 @@ std::shared_ptr<RegisterVarnode> PcodeDecoderX86::getRegisterVarnode(ZydisAccess
         Register::Flag,
         Register::FlagId,
         0, // index
-        BitMask(flagMask)
+        utils::BitMask(flagMask)
     );
 	return std::make_shared<RegisterVarnode>(reg);
 }
@@ -1598,7 +1598,7 @@ std::shared_ptr<pcode::RegisterVarnode> PcodeDecoderX86::getVirtRegisterVarnode(
         Register::Virtual,
         Register::VirtualId,
         m_curVirtRegIndex++,
-        BitMask(size, 0)
+        utils::BitMask(size, 0)
     );
 	return std::make_shared<RegisterVarnode>(reg);
 }

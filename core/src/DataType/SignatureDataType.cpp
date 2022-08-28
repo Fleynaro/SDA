@@ -62,7 +62,7 @@ void SignatureDataType::serialize(boost::json::object& data) const {
     DataType::serialize(data);
     data["type"] = Type;
 
-    if(auto serCallingConvention = std::dynamic_pointer_cast<ISerializable>(m_callingConvention)) {
+    if(auto serCallingConvention = std::dynamic_pointer_cast<utils::ISerializable>(m_callingConvention)) {
         boost::json::object callingConventionData;
         serCallingConvention->serialize(callingConventionData);
         data["calling_convention"] = callingConventionData;
@@ -80,7 +80,7 @@ void SignatureDataType::serialize(boost::json::object& data) const {
 void SignatureDataType::deserialize(boost::json::object& data) {
     DataType::deserialize(data);
 
-    if(auto serCallingConvention = std::dynamic_pointer_cast<ISerializable>(m_callingConvention)) {
+    if(auto serCallingConvention = std::dynamic_pointer_cast<utils::ISerializable>(m_callingConvention)) {
         serCallingConvention->deserialize(data["calling_convention"].get_object());
     }
 

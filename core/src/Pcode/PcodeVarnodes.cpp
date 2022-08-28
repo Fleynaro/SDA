@@ -19,7 +19,7 @@ bool RegisterVarnode::isRegister() const {
     return true;
 }
 
-BitMask RegisterVarnode::getMask() const {
+utils::BitMask RegisterVarnode::getMask() const {
     return m_register.getMask();
 }
 
@@ -35,8 +35,8 @@ bool ConstantVarnode::isRegister() const {
     return false;
 }
 
-BitMask ConstantVarnode::getMask() const {
-    return BitMask(getSize(), 0);
+utils::BitMask ConstantVarnode::getMask() const {
+    return utils::BitMask(getSize(), 0);
 }
 
 size_t ConstantVarnode::getValue() const {

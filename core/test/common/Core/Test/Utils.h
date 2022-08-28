@@ -1,6 +1,6 @@
 #pragma once
 #include <gtest/gtest.h>
-#include "Core/Serialization.h"
+#include "Core/Utils/Serialization.h"
 
 namespace sda::test
 {
@@ -15,12 +15,12 @@ namespace sda::test
         const CleanFunc& cleanFunc = DefaultCleanFunc);
 
     ::testing::AssertionResult Compare(
-        ISerializable* object1,
-        ISerializable* object2);
+        utils::ISerializable* object1,
+        utils::ISerializable* object2);
 
     ::testing::AssertionResult CompareDeeply(
-        ISerializable* object1,
-        ISerializable* object2,
+        utils::ISerializable* object1,
+        utils::ISerializable* object2,
         const std::list<std::string>& excludedFields = {});
 
     ::testing::AssertionResult CompareDeeply(

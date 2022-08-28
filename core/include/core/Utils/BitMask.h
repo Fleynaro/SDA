@@ -1,6 +1,6 @@
 #pragma once
 
-namespace sda
+namespace utils
 {
     const size_t BitsInBytes = 8;
     const size_t MaxMaskSizeInBytes = 8;

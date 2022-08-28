@@ -19,7 +19,7 @@
 
 using namespace sda;
 
-ISerializable* IFactory::create(boost::json::object& data) {
+utils::ISerializable* IFactory::create(boost::json::object& data) {
     // uuid
     if (data.find("uuid") == data.end())
         throw std::runtime_error("Object without uuid");
@@ -36,7 +36,7 @@ Factory::Factory(Context* context)
     : m_context(context)
 {}
 
-ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collection, boost::json::object& data) {
+utils::ISerializable* Factory::create(boost::uuids::uuid* id, const std::string& collection, boost::json::object& data) {
     if (collection == AddressSpace::Collection) {
         return new AddressSpace(m_context, id);
     } else if (collection == Image::Collection) {

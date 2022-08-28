@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 #include <filesystem>
-#include <Core/Serialization.h>
+#include "Core/Utils/Serialization.h"
 #include "Core/Offset.h"
 
 namespace sda
@@ -50,7 +50,7 @@ namespace sda
 		const std::vector<uint8_t>& getData() const;
 	};
 
-	class FileImageRW : public IImageRW, public ISerializable
+	class FileImageRW : public IImageRW, public utils::ISerializable
 	{
 		std::filesystem::path m_pathToImgFile;
 		std::unique_ptr<VectorImageRW> m_rw;

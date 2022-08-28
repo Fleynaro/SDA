@@ -1,6 +1,6 @@
-#include "Core/BitMask.h"
+#include "Core/Utils/BitMask.h"
 
-using namespace sda;
+using namespace utils;
 
 size_t GetBitMask64BySizeInBits(size_t sizeInBits) {
 	if (sizeInBits >= MaxMaskSizeInBits) // TODO: increase from 8 to 16 bytes (it requires 128-bit arithmetic implementation)

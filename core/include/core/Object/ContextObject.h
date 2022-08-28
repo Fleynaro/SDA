@@ -1,13 +1,13 @@
 #pragma once
 #include "Object.h"
-#include "Core/Destroy.h"
+#include "Core/Utils/Destroy.h"
 
 namespace sda
 {
     class Context;
 
     // Base class for all domain objects of context
-    class ContextObject : public Object, public IDestroyable
+    class ContextObject : public Object, public utils::IDestroyable
     {
         std::string m_name = "";
         std::string m_comment = "";

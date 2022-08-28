@@ -1,7 +1,7 @@
 #pragma once
 #include <set>
-#include "Core/Serialization.h"
-#include "Core/Destroy.h"
+#include "Core/Utils/Serialization.h"
+#include "Core/Utils/Destroy.h"
 
 namespace sda
 {
@@ -71,13 +71,13 @@ namespace sda
                 Modified,
                 Removed
             } type;
-            ISerializable* object; 
+            utils::ISerializable* object; 
             boost::json::object initState;
         };
 
         IFactory* m_factory;
         std::list<ObjectChangeData> m_changes;
-        std::set<ISerializable*> m_affectedObjects;
+        std::set<utils::ISerializable*> m_affectedObjects;
     public:
         ObjectChange(IFactory* factory);
 
@@ -85,12 +85,12 @@ namespace sda
         void undo() override;
         
         // Mark an object as new
-        void markAsNew(ISerializable* obj);
+        void markAsNew(utils::ISerializable* obj);
 
         // Mark an object as modified
-        void markAsModified(ISerializable* obj);
+        void markAsModified(utils::ISerializable* obj);
 
         // Mark an object as removed
-        void markAsRemoved(ISerializable* obj);
+        void markAsRemoved(utils::ISerializable* obj);
     };
 };

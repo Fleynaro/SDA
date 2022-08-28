@@ -1,7 +1,7 @@
 #pragma once
 #include <map>
 #include <string>
-#include "Core/Serialization.h"
+#include "Core/Utils/Serialization.h"
 #include "Core/Offset.h"
 
 namespace sda
@@ -43,7 +43,7 @@ namespace sda
         virtual bool getStorageInfo(const Storage& storage, StorageInfo& storageInfo) const = 0;
     };
 
-    class CustomCallingConvention : public CallingConvention, public ISerializable
+    class CustomCallingConvention : public CallingConvention, public utils::ISerializable
     {
         Map m_storages;
     public:

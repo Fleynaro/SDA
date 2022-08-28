@@ -1,7 +1,7 @@
 #pragma once
 #include <boost/json.hpp>
 
-namespace sda
+namespace utils
 {
     // Interface for objects that can be serialized
     class ISerializable

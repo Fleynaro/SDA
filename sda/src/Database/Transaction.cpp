@@ -7,15 +7,15 @@ Transaction::Transaction(Database* database)
     : m_database(database)
 {}
 
-void Transaction::markAsNew(ISerializable* obj) {
+void Transaction::markAsNew(utils::ISerializable* obj) {
     m_items.push_back({ Item::New, obj });
 }
 
-void Transaction::markAsModified(ISerializable* obj) {
+void Transaction::markAsModified(utils::ISerializable* obj) {
     m_items.push_back({ Item::Modified, obj });
 }
 
-void Transaction::markAsRemoved(ISerializable* obj) {
+void Transaction::markAsRemoved(utils::ISerializable* obj) {
     m_items.push_back({ Item::Removed, obj });
 }
 

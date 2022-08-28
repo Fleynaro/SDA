@@ -3,7 +3,7 @@
 
 namespace sda::platform
 {
-    class FastcallCallingConvention : public CallingConvention, public ISerializable
+    class FastcallCallingConvention : public CallingConvention, public utils::ISerializable
     {
     public:
         static inline const std::string Name = "fastcall";

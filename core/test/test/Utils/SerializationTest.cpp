@@ -29,7 +29,7 @@ using namespace ::testing;
 class SerializationTest : public ContextFixture
 {
 protected:
-    ::testing::AssertionResult cmp(ISerializable* object1, ISerializable* object2) {
+    ::testing::AssertionResult cmp(utils::ISerializable* object1, utils::ISerializable* object2) {
         return CompareDeeply(object1, object2, ContextObjectExcludeFields);
     }
 

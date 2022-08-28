@@ -84,7 +84,7 @@ std::shared_ptr<RegisterVarnode> Parser::parseRegisterVarnode() {
                 Register::Virtual,
                 Register::VirtualId,
                 regIdx,
-                BitMask(size, 0)
+                utils::BitMask(size, 0)
             );
             return std::make_shared<RegisterVarnode>(reg);
         }
@@ -121,8 +121,8 @@ std::shared_ptr<RegisterVarnode> Parser::parseRegisterVarnode() {
             auto reg = Register(
                 type,
                 regId,
-                offset / MaxMaskSizeInBytes,
-                BitMask(size, offset)
+                offset / utils::MaxMaskSizeInBytes,
+                utils::BitMask(size, offset)
             );
             return std::make_shared<RegisterVarnode>(reg);
         } catch (const std::out_of_range&) {
@@ -149,7 +149,7 @@ std::shared_ptr<ConstantVarnode> Parser::parseConstantVarnode() {
         }
         nextToken();
         auto size = parseVarnodeSize();
-        value &= BitMask(size, 0);
+        value &= utils::BitMask(size, 0);
         auto constVarnode = std::make_shared<ConstantVarnode>(value, size, false);
         return constVarnode;
     }

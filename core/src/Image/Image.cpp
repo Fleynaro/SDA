@@ -130,13 +130,13 @@ void Image::serialize(boost::json::object& data) const {
     ContextObject::serialize(data);
     data["collection"] = Collection;
 
-    if(auto serRW = dynamic_cast<ISerializable*>(m_rw.get())) {
+    if(auto serRW = dynamic_cast<utils::ISerializable*>(m_rw.get())) {
         boost::json::object rwData;
         serRW->serialize(rwData);
         data["rw"] = rwData;
     }
 
-    if(auto serAnalyser = dynamic_cast<ISerializable*>(m_analyser.get())) {
+    if(auto serAnalyser = dynamic_cast<utils::ISerializable*>(m_analyser.get())) {
         boost::json::object analyserData;
         serAnalyser->serialize(analyserData);
         data["analyser"] = analyserData;
@@ -148,11 +148,11 @@ void Image::serialize(boost::json::object& data) const {
 void Image::deserialize(boost::json::object& data) {
     ContextObject::deserialize(data);
 
-    if(auto serRW = dynamic_cast<ISerializable*>(m_rw.get())) {
+    if(auto serRW = dynamic_cast<utils::ISerializable*>(m_rw.get())) {
         serRW->deserialize(data["rw"].get_object());
     }
 
-    if(auto serAnalyser = dynamic_cast<ISerializable*>(m_analyser.get())) {
+    if(auto serAnalyser = dynamic_cast<utils::ISerializable*>(m_analyser.get())) {
         serAnalyser->deserialize(data["analyser"].get_object());
         analyse();
     }

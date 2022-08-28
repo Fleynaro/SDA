@@ -69,14 +69,14 @@ ObjectChange::ObjectChange(IFactory* factory)
 {}
 
 void ObjectChange::undo() {
-    std::list<std::pair<ISerializable*, boost::json::object*>> objectsToDeserialize;
-    std::list<IDestroyable*> objectsToDestroy;
+    std::list<std::pair<utils::ISerializable*, boost::json::object*>> objectsToDeserialize;
+    std::list<utils::IDestroyable*> objectsToDestroy;
 
     for (auto it = m_changes.rbegin(); it != m_changes.rend(); ++it) {
         switch (it->type)
         {
         case ObjectChangeData::New:
-            if (auto object = dynamic_cast<IDestroyable*>(it->object)) {
+            if (auto object = dynamic_cast<utils::IDestroyable*>(it->object)) {
                 objectsToDestroy.push_back(object);
             } else {
                 throw std::runtime_error("Object is not destroyable");
@@ -103,12 +103,12 @@ void ObjectChange::undo() {
         object->destroy();
 }
 
-void ObjectChange::markAsNew(ISerializable* obj) {
+void ObjectChange::markAsNew(utils::ISerializable* obj) {
     m_changes.push_back({ObjectChangeData::New, obj});
     m_affectedObjects.insert(obj);
 }
 
-void ObjectChange::markAsModified(ISerializable* obj) {
+void ObjectChange::markAsModified(utils::ISerializable* obj) {
     if(m_affectedObjects.find(obj) != m_affectedObjects.end())
         return;
     // if object is not affected yet
@@ -118,7 +118,7 @@ void ObjectChange::markAsModified(ISerializable* obj) {
     m_affectedObjects.insert(obj);
 }
 
-void ObjectChange::markAsRemoved(ISerializable* obj) {
+void ObjectChange::markAsRemoved(utils::ISerializable* obj) {
     boost::json::object initState;
     obj->serialize(initState);
     m_changes.push_back({ObjectChangeData::Removed, nullptr, initState});

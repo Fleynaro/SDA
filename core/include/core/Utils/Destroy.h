@@ -1,6 +1,6 @@
 #pragma once
 
-namespace sda
+namespace utils
 {
     // Interface for objects that can be destroyed
     class IDestroyable
