@@ -36,10 +36,10 @@ namespace utils
 
         virtual void endCommenting();
 
+        void newLine();
+        
     protected:
         std::ostream& out() const;
-
-        void newLine();
 
         void printComment(const std::string& text) const;
 

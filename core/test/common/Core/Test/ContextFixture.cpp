@@ -6,6 +6,7 @@
 #include "Core/DataType/DataTypePrinter.h"
 #include "Core/Symbol/Symbol.h"
 #include "Core/SymbolTable/SymbolTable.h"
+#include "Core/SymbolTable/SymbolTableParser.h"
 #include "Platform/x86/Platform.h"
 
 using namespace sda;
@@ -26,8 +27,8 @@ DataType* ContextFixture::findDataType(const std::string& name) const {
     return context->getDataTypes()->getByName(name);
 }
 
-DataType* ContextFixture::parseDataType(const std::string& text) const {
-    return DataTypeParser::ParseSingle(text, context);
+DataType* ContextFixture::parseDataType(const std::string& text, bool withName) const {
+    return DataTypeParser::Parse(text, context, withName);
 }
 
 DataType* ContextFixture::newTestStruct() const {
@@ -39,4 +40,8 @@ DataType* ContextFixture::newTestStruct() const {
             int64_t d \
         } \
     ");
+}
+
+SymbolTable* ContextFixture::parseSymbolTable(const std::string& text, bool withName) const {
+    return SymbolTableParser::Parse(text, context, false, withName);
 }

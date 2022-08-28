@@ -16,31 +16,13 @@ DataTypeParser::DataTypeParser(utils::lexer::Lexer* lexer, Context* context)
     : AbstractParser(lexer, 1), m_context(context)
 {}
 
-std::map<std::string, DataType*> DataTypeParser::Parse(const std::string& text, Context* context) {
-    std::stringstream ss(text);
-    IO io(ss, std::cout);
-    Lexer lexer(&io);
-    DataTypeParser parser(&lexer, context);
-    parser.init();
-    return parser.parse();
-}
-
-DataType* DataTypeParser::ParseSingle(const std::string& text, Context* context, bool withName) {
+DataType* DataTypeParser::Parse(const std::string& text, Context* context, bool withName) {
     std::stringstream ss(text);
     IO io(ss, std::cout);
     Lexer lexer(&io);
     DataTypeParser parser(&lexer, context);
     parser.init();
     return parser.parseDef(withName);
-}
-
-std::map<std::string, DataType*> DataTypeParser::parse(char endSymbol) {
-    std::map<std::string, DataType*> dataTypes;
-    while (!getToken()->isSymbol(endSymbol)) {
-        auto dataType = parseDef(true);
-        dataTypes[dataType->getName()] = dataType;
-    }
-    return dataTypes;
 }
 
 DataType* DataTypeParser::parseDef(bool withName) {

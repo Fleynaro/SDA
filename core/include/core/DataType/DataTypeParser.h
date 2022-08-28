@@ -20,13 +20,9 @@ namespace sda
     public:
         DataTypeParser(utils::lexer::Lexer* lexer, Context* context);
 
-        static std::map<std::string, DataType*> Parse(const std::string& text, Context* context);
+        static DataType* Parse(const std::string& text, Context* context, bool withName = true);
 
-        static DataType* ParseSingle(const std::string& text, Context* context, bool withName = false);
-
-        std::map<std::string, DataType*> parse(char endSymbol = utils::lexer::EndSymbol);
-
-        DataType* parseDef(bool withName = false);
+        DataType* parseDef(bool withName = true);
 
     private:
         TypedefDataType* parseTypeDef();

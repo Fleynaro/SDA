@@ -11,14 +11,6 @@ using namespace ::testing;
 class DataTypeParserTest : public ContextFixture
 {
 protected:
-    std::map<std::string, DataType*> parse(const std::string& text) {
-        return DataTypeParser::Parse(text, context);
-    }
-
-    DataType* parseSingle(const std::string& text) {
-        return DataTypeParser::ParseSingle(text, context, true);
-    }
-
     ::testing::AssertionResult cmp(DataType* dataType, const std::string& expectedCode) const {
         auto actualCode = DataTypePrinter::Print(dataType, context, true);
         return Compare(actualCode, expectedCode);
@@ -30,7 +22,7 @@ TEST_F(DataTypeParserTest, TypedefSample1) {
         ['test data type'] \
         dataType = typedef uint32_t \
     ";
-    auto typedefDt = parseSingle(expectedCode);
+    auto typedefDt = parseDataType(expectedCode);
     ASSERT_TRUE(cmp(typedefDt, expectedCode));
 }
 
@@ -43,7 +35,7 @@ TEST_F(DataTypeParserTest, EnumSample1) {
             C \
         } \
     ";
-    auto enumDt = parseSingle(expectedCode);
+    auto enumDt = parseDataType(expectedCode);
     ASSERT_TRUE(cmp(enumDt, expectedCode));
 }
 
@@ -57,7 +49,7 @@ TEST_F(DataTypeParserTest, StructureSample1) {
             int64_t d \
         } \
     ";
-    auto structDt = parseSingle(expectedCode);
+    auto structDt = parseDataType(expectedCode);
     ASSERT_TRUE(cmp(structDt, expectedCode));
 }
 
@@ -69,6 +61,6 @@ TEST_F(DataTypeParserTest, SignatureSample1) {
             float param2 \
         ) \
     ";
-    auto signatureDt = parseSingle(expectedCode);
+    auto signatureDt = parseDataType(expectedCode);
     ASSERT_TRUE(cmp(signatureDt, expectedCode));
 }

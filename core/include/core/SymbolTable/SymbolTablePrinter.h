@@ -13,9 +13,9 @@ namespace sda
 
         SymbolTablePrinter(Context* context);
 
-        static std::string Print(SymbolTable* symbolTable, Context* context, bool withName = false);
+        static std::string Print(SymbolTable* symbolTable, Context* context, bool withName = true);
 
-        void printDef(SymbolTable* symbolTable, bool withName = false);
+        void printDef(SymbolTable* symbolTable, bool withName = true);
 
     protected:
         virtual void printDataType(DataType* dataType);
