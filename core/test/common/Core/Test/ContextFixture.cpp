@@ -33,7 +33,7 @@ DataType* ContextFixture::parseDataType(const std::string& text, bool withName) 
 
 DataType* ContextFixture::newTestStruct() const {
     return parseDataType("\
-        struct { \
+        TestStruct = struct { \
             uint32_t a, \
             float b, \
             uint64_t c, \

@@ -78,7 +78,7 @@ void DataTypePrinter::printEnumDef(EnumDataType* enumDt) {
 void DataTypePrinter::printStructureDef(StructureDataType* structDt) {
     printToken("struct " , KEYWORD);
     m_symbolTablePrinter->setParentPrinter(this);
-    m_symbolTablePrinter->printDef(structDt->getSymbolTable());
+    m_symbolTablePrinter->printDef(structDt->getSymbolTable(), false);
 }
 
 void DataTypePrinter::printSignatureDef(SignatureDataType* signatureDt) {
