@@ -1,5 +1,7 @@
 #folders
-build/
+build*/
+node_modules/
+dist/
 
 # Precompiled Headers
 *.gch

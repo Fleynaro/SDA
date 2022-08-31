@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="context.cpp" />
+    <ClCompile Include="json.cpp" />
+    <ClCompile Include="class.cpp" />
+    <ClCompile Include="throw_ex.cpp" />
+    <ClCompile Include="convert.cpp" />
+    <ClCompile Include="version.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="context.hpp" />
+    <ClInclude Include="config.hpp" />
+    <ClInclude Include="module.hpp" />
+    <ClInclude Include="throw_ex.hpp" />
+    <ClInclude Include="class.hpp" />
+    <ClInclude Include="call_from_v8.hpp" />
+    <ClInclude Include="call_v8.hpp" />
+    <ClInclude Include="utility.hpp" />
+    <ClInclude Include="convert.hpp" />
+    <ClInclude Include="property.hpp" />
+    <ClInclude Include="function.hpp" />
+    <ClInclude Include="object.hpp" />
+    <ClInclude Include="json.hpp" />
+    <ClInclude Include="ptr_traits.hpp" />
+    <ClInclude Include="version.hpp" />
+    <ClInclude Include="class.ipp" />
+    <ClInclude Include="json.ipp" />
+    <ClInclude Include="throw_ex.ipp" />
+    <ClInclude Include="version.ipp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+</Project>

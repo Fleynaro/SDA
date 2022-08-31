@@ -1,0 +1,46 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "attach",
+            "name": "electron (js)",
+            "sourceMaps": true,
+            "continueOnAttach": true
+        },
+
+        {
+            "type": "cppvsdbg",
+            "request": "attach",
+            "name": "electron (cpp)",
+            "processId": "${input:readElectronPID}",
+        }
+    ],
+    "compounds": [
+        {
+            "name": "electron (js+cpp)",
+            "configurations": [
+                "electron (js)",
+                "electron (cpp)"
+            ],
+            "stopAll": true,
+            "preLaunchTask": "Run electron"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "readElectronPID",
+            "type": "command",
+            // "Tasks Shell Input" extension required
+            "command": "shellCommand.execute",
+            "args": {
+                "command": "powershell -Command \"(Get-CimInstance Win32_Process -Filter \\\"commandLine like 'node%localhost:9229%'\\\").ProcessId\"",
+                //"command": "wmic process where \"commandLine like '%javascript%packages%electron%index.js'\" get processid",
+                "useFirstResult": true,
+            }
+        }
+    ]
+}

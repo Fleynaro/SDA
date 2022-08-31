@@ -1,0 +1,16 @@
+{
+  "references": [
+    {
+      "path": "./packages/sda-bindings"
+    },
+    {
+      "path": "./packages/sda-core"
+    },
+    {
+      "path": "./packages/sda-electron"
+    },
+  ],
+  "files": [],
+  "include": [],
+  "exclude": ["**/node_modules"]
+}

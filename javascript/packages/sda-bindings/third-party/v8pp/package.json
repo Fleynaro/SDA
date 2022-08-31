@@ -1,0 +1,16 @@
+{
+  "name": "v8pp",
+  "version": "2.0.0",
+  "description": "C++ bindings for V8",
+  "keywords": [ "V8", "native", "addon", "module", "bindings" ],
+  "engines": { "node": ">=8.0.0" },
+  "main": "include_dirs.js",
+  "repository": { "type": "git", "url": "git://github.com/pmed/v8pp.git" },
+  "author": "Pavel Medvedev <pmedvedev@gmail.com>",
+  "license": "BSL-1.0",
+  "bugs": { "url": "https://github.com/pmed/v8pp/issues"  },
+  "homepage": "https://github.com/pmed/v8pp#readme",
+  "files": ["docs", "examples", "v8pp/*.hpp", "v8pp/*.ipp", "v8pp/*.cpp", "include_dirs.js",
+    "COPYING", "LICENSE_1_0.txt", "README.md"
+  ]
+}

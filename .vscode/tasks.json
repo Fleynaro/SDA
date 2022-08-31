@@ -27,6 +27,34 @@
                     "GTEST_COLOR": "1"
                 }
             }
-        }
+        },
+
+        {
+            "label": "Run electron",
+            "type": "shell",
+            "isBackground": true,
+            "command": "npm run debug",
+            "options": {
+                "cwd": "${workspaceFolder}/javascript/packages/sda-electron"
+            },
+
+            "problemMatcher": [
+                {
+                  "pattern": [
+                    {
+                      "regexp": ".",
+                      "file": 1,
+                      "location": 2,
+                      "message": 3
+                    }
+                  ],
+                  "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".",
+                    "endsPattern": ".",
+                  }
+                }
+            ]
+        },
     ]
 }
