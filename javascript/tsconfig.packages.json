@@ -3,7 +3,6 @@
   "extends": "@tsconfig/node16/tsconfig.json",
   "compilerOptions": {
     "importHelpers": true,
-    "composite": true,
     "noImplicitAny": false,
     "strictNullChecks": true
   }

@@ -1,3 +1,5 @@
-declare module 'core-js' {
-    export class Context {}
+declare module sda_core {
+    class Context {
+        constructor();
+    }
 }
