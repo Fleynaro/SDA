@@ -1,10 +1,14 @@
 declare module sda_core {
-    class ContextCallbacks {
-        onObjectAdded: (obj: number) => void;
+    abstract class ContextCallbacks {
+        onObjectAdded: (object: Object) => void;
+    }
+
+    class ContextCallbacksImpl extends ContextCallbacks {
+        static create(): ContextCallbacksImpl;
     }
 
     class Context {
-        constructor();
+        static create(): Context;
 
         callbacks: ContextCallbacks;
     }

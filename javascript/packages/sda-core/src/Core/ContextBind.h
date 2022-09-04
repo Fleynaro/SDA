@@ -1,77 +1,58 @@
 #pragma once
 #include "Binding.h"
-#include "Call.h"
 #include "Core/Context.h"
+#include "Core/Image/AddressSpace.h"
+#include "Core/Image/Image.h"
+#include "Core/DataType/DataType.h"
+#include "Core/Symbol/Symbol.h"
+#include "Core/SymbolTable/SymbolTable.h"
 
 namespace sda::bind
 {
 
-    class ContextCallbacksBind : public Binding
+    class ContextCallbacksBind
     {
         using Callbacks = Context::Callbacks;
 
-        class CallbacksJs : public Callbacks {
+        class CallbacksJs : public Callbacks
+        {
+            using Call = Call<CallbacksJs, v8pp::shared_ptr_traits>;
         public:
-            ContextCallbacksBind* m_bindObject;
-
             void onObjectAdded(Object* obj) override {
-                Call(m_bindObject, "onObjectAdded")(100);
+                Call(this, "onObjectAdded")(obj);
             }
         };
-    public:
-        std::shared_ptr<Callbacks> m_instance;
 
-        ContextCallbacksBind(std::shared_ptr<Callbacks> instance)
-            : m_instance(instance)
-        {
-            init(m_instance.get());
-        }
-
-        ContextCallbacksBind() {
+        static auto Create() {
             auto isolate = v8::Isolate::GetCurrent();
-            auto thisObject = v8pp::to_v8(isolate, this);
-
-            auto callbacksJs = std::make_shared<CallbacksJs>();
-            callbacksJs->m_bindObject = this;
-            m_instance = callbacksJs;
-            init(m_instance.get());
+            auto callbacks = std::make_shared<CallbacksJs>();
+            return v8pp::class_<CallbacksJs, v8pp::shared_ptr_traits>::import_external(isolate, callbacks);
         }
 
+    public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<ContextCallbacksBind> cl(module.isolate());
-            cl.ctor<>();
-            module.class_("ContextCallbacks", cl);
+            v8pp::class_<Callbacks, v8pp::shared_ptr_traits> cl_base(module.isolate());
+            module.class_("ContextCallbacks", cl_base);
+            v8pp::class_<CallbacksJs, v8pp::shared_ptr_traits> cl(module.isolate());
+            cl.inherit<Callbacks>();
+            cl.function("create", &Create);
+            module.class_("ContextCallbacksImpl", cl);
         }
     };
 
-    class ContextBind : public Binding
+    class ContextBind
     {
+        static auto Create() {
+            auto isolate = v8::Isolate::GetCurrent();
+            auto context = new Context(nullptr);
+            return v8pp::class_<Context>::import_external(isolate, context);
+        }
+
     public:
-        Context* m_instance;
-
-        ContextBind(Context* instance)
-            : m_instance(instance)
-        {
-            init(m_instance);
-        }
-
-        ContextBind() {
-            m_instance = new Context(nullptr);
-            init(m_instance);
-        }
-
-        void setCallbacks(ContextCallbacksBind* callbacks) {
-            m_instance->setCallbacks(callbacks->m_instance);
-        }
-
-        ContextCallbacksBind* getCallbacks() {
-            return Get<ContextCallbacksBind>(m_instance->getCallbacks().get());
-        }
-
         static void Init(v8pp::module& module) {
-            v8pp::class_<ContextBind> cl(module.isolate());
-            cl.ctor<>();
-            cl.property("callbacks", &getCallbacks, &setCallbacks);
+            v8pp::class_<Context> cl(module.isolate());
+            cl.function("create", &Create);
+            cl.property("callbacks", &Context::getCallbacks, &Context::setCallbacks);
             module.class_("Context", cl);
         }
     };

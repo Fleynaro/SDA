@@ -1,7 +1,6 @@
 #include "node.h"
 #include "Core/ContextBind.h"
 #include "Core/DataType/DataTypeBind.h"
-#include "Core/DataType/VoidDataTypeBind.h"
 
 using namespace sda::bind;
 
@@ -9,6 +8,8 @@ void InitAllClasses(v8pp::module& m) {
     std::list<std::function<void(v8pp::module&)>> initList = {
         ContextCallbacksBind::Init,
         ContextBind::Init,
+        ObjectBind::Init,
+        ContextObjectBind::Init,
         DataTypeBind::Init,
         VoidDataTypeBind::Init
     };
@@ -22,6 +23,10 @@ void InitModule(v8::Local<v8::Object> exports) {
     v8pp::module m(isolate);
     InitAllClasses(m);
     exports->SetPrototype(isolate->GetCurrentContext(), m.new_instance());
+
+    // node::AtExit(nullptr, [](void* param) {
+    //     v8pp::cleanup(static_cast<v8::Isolate*>(param));
+    // }, isolate);
 }
 
 NODE_MODULE(core, InitModule)
