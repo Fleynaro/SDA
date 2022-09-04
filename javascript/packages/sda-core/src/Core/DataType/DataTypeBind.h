@@ -1,11 +1,10 @@
 #pragma once
+#include "Binding.h"
 #include "Core/DataType/DataType.h"
-#include <v8pp/class.hpp>
-#include <v8pp/module.hpp>
 
 namespace sda::bind
 {
-    class DataTypeBind
+    class DataTypeBind : public Binding
     {
     public:
         DataType* m_instance;
@@ -14,7 +13,9 @@ namespace sda::bind
 
         DataTypeBind(DataType* instance)
             : m_instance(instance)
-        {}
+        {
+            
+        }
 
         bool isVoid() const {
             return m_instance->isVoid();

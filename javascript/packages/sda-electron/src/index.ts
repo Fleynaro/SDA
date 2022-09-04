@@ -17,11 +17,13 @@ class VoidDataTypeExt extends core.VoidDataType {
 var dataType = new VoidDataTypeExt(ctx);
 
 function test(dataType: VoidDataType) {
-    if (dataType.isVoid) {
-        dataType.virtMethod = (x: number) => {
-            console.log("Virtual method called with " + x);
-        };
+    const callbacks = new core.ContextCallbacks();
+    callbacks.onObjectAdded = (obj: number) => {
+        console.log("Object added: " + obj);
+    };
+    ctx.callbacks = callbacks;
 
+    if (dataType.isVoid) {
         console.log("Void data type!!!");
         const obj = dataType.test((x: number) => {
             return f(x);

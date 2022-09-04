@@ -7,6 +7,7 @@ using namespace sda::bind;
 
 void InitAllClasses(v8pp::module& m) {
     std::list<std::function<void(v8pp::module&)>> initList = {
+        ContextCallbacksBind::Init,
         ContextBind::Init,
         DataTypeBind::Init,
         VoidDataTypeBind::Init
