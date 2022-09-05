@@ -11,9 +11,6 @@ namespace sda::bind
             cl.inherit<ContextObject>();
             cl.property("isVoid", &DataType::isVoid);
             cl.property("size", &DataType::getSize);
-            cl.property("getType", [](const DataType& self) {
-                return new VoidDataType(new Context(nullptr));
-            });
             module.class_("DataType", cl);
         }
     };
@@ -21,10 +18,7 @@ namespace sda::bind
     class VoidDataTypeBind : public DataTypeBind
     {
         static auto Create(Context* ctx) {
-            return CreateContextObject(ctx, [ctx]() {
-                auto dataType = new VoidDataType(ctx);
-                return ExportObjectRef(dataType);
-            });
+            return new VoidDataType(ctx);
         }
     public:
         static void Init(v8pp::module& module) {

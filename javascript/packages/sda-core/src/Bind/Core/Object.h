@@ -25,30 +25,4 @@ namespace sda::bind
             module.class_("ContextObject", cl);
         }
     };
-
-    v8::Local<v8::Object> CreateContextObject(Context* ctx, std::function<v8::Local<v8::Object>()> creator) {
-        class DeferredCallbacks : public Context::Callbacks
-        {
-            std::list<Object*> m_objectsAdded;
-
-            void onObjectAdded(Object* obj) override {
-                m_objectsAdded.push_back(obj);
-            }
-        public:
-            void complete(Context::Callbacks* callbacks) {
-                for (auto obj : m_objectsAdded)
-                    callbacks->onObjectAdded(obj);
-            }
-        };
-
-        auto oldCallbacks = ctx->getCallbacks();
-        auto deferredCallbacks = std::make_shared<DeferredCallbacks>();
-        ctx->setCallbacks(deferredCallbacks);
-
-        auto object = creator();
-
-        ctx->setCallbacks(oldCallbacks);
-        deferredCallbacks->complete(oldCallbacks.get());
-        return object;
-    }
 };

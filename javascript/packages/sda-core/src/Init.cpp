@@ -1,5 +1,6 @@
 #include "node.h"
 #include <v8pp/module.hpp>
+#include "Bind/Class.h"
 #include "Bind/ObjectExport.h"
 #include "Bind/Call.h"
 #include "Bind/Core/Context.h"
@@ -7,6 +8,16 @@
 #include "Bind/Core/DataType.h"
 
 using namespace sda::bind;
+
+void ContextBind::BindCallbacks::onObjectAdded(Object* obj) {
+    if (auto voidDt = dynamic_cast<VoidDataType*>(obj))
+        ExportObjectRef(voidDt);
+}
+
+void ContextBind::BindCallbacks::onObjectRemoved(Object* obj) {
+    if (auto voidDt = dynamic_cast<VoidDataType*>(obj))
+        RemoveObjectRef(voidDt);
+}
 
 void InitAllClasses(v8pp::module& m) {
     std::list<std::function<void(v8pp::module&)>> initList = {
