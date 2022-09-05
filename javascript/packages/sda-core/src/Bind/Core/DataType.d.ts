@@ -1,16 +1,9 @@
 declare module sda_core {
-    abstract class Object {
-        id: string;
-    }
-
-    abstract class ContextObject extends Object {
-        name: string;
-        comment: string;
-    }
-
     class DataType extends ContextObject {
         size: number;
         isVoid: boolean;
+
+        getType: DataType;
     }
 
     class VoidDataType extends DataType {

@@ -1,6 +1,10 @@
 #include "node.h"
-#include "Core/ContextBind.h"
-#include "Core/DataType/DataTypeBind.h"
+#include <v8pp/module.hpp>
+#include "Bind/ObjectExport.h"
+#include "Bind/Call.h"
+#include "Bind/Core/Context.h"
+#include "Bind/Core/Object.h"
+#include "Bind/Core/DataType.h"
 
 using namespace sda::bind;
 

@@ -1,4 +1,5 @@
-/// <reference path="Core/Context.d.ts" />
-/// <reference path="Core/DataType/DataType.d.ts" />
+/// <reference path="Bind/Core/Context.d.ts" />
+/// <reference path="Bind/Core/Object.d.ts" />
+/// <reference path="Bind/Core/DataType.d.ts" />
 
 export = sda_core;

@@ -1,6 +1,4 @@
 #pragma once
-#include <v8pp/class.hpp>
-#include <v8pp/module.hpp>
 #include <v8pp/call_v8.hpp>
 
 namespace sda::bind

@@ -1,5 +1,4 @@
 #pragma once
-#include "Binding.h"
 #include "Core/Context.h"
 #include "Core/Image/AddressSpace.h"
 #include "Core/Image/Image.h"
@@ -24,9 +23,8 @@ namespace sda::bind
         };
 
         static auto Create() {
-            auto isolate = v8::Isolate::GetCurrent();
             auto callbacks = std::make_shared<CallbacksJs>();
-            return v8pp::class_<CallbacksJs, v8pp::shared_ptr_traits>::import_external(isolate, callbacks);
+            return ExportObject(callbacks);
         }
 
     public:
@@ -43,9 +41,8 @@ namespace sda::bind
     class ContextBind
     {
         static auto Create() {
-            auto isolate = v8::Isolate::GetCurrent();
             auto context = new Context(nullptr);
-            return v8pp::class_<Context>::import_external(isolate, context);
+            return ExportObject(context);
         }
 
     public:

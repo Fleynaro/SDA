@@ -5,6 +5,10 @@ file(GLOB_RECURSE CORE_JS
 add_library(
     core-js SHARED ${CORE_JS})
 
+target_include_directories(
+    core-js PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
 set_target_properties(
     core-js PROPERTIES PREFIX "" SUFFIX ".node")
 
