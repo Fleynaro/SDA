@@ -3,6 +3,9 @@ build*/
 node_modules/
 dist/
 
+# typescript
+*.tsbuildinfo
+
 # Precompiled Headers
 *.gch
 *.pch

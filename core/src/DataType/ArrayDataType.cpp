@@ -7,15 +7,12 @@ ArrayDataType::ArrayDataType(
     Object::Id* id,
     DataType* elementType,
     const std::list<size_t>& dimensions)
-    : DataType(context, id),
+    : DataType(context, id, GetTypeName(elementType, dimensions)),
     m_elementType(elementType),
     m_dimensions(dimensions)
 {
     if (dynamic_cast<ArrayDataType*>(elementType))
         throw std::runtime_error("ArrayDataType cannot be an element of another ArrayDataType");
-    if (elementType) {
-        setName(GetTypeName(elementType, dimensions));
-    }
     m_context->getDataTypes()->add(std::unique_ptr<ArrayDataType>(this));
 }
 
@@ -63,6 +60,8 @@ void ArrayDataType::deserialize(boost::json::object& data) {
 }
 
 std::string ArrayDataType::GetTypeName(DataType* elementType, const std::list<size_t>& dimensions) {
+    if (!elementType)
+        return "";
     auto name = elementType->getName();
     for (auto dimension : dimensions)
         name += "[" + std::to_string(dimension) + "]";

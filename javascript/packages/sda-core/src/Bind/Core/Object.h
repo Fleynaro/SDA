@@ -8,20 +8,23 @@ namespace sda::bind
     public:
         static void Init(v8pp::module& module) {
             v8pp::class_<Object> cl(module.isolate());
-            cl.property("id", [](const Object& self) { return std::string(self.serializeId()); });
-            cl.function("setTemporary", &Object::setTemporary);
+            cl
+                .inherit<utils::ISerializable>()
+                .property("id", [](const Object& self) { return std::string(self.serializeId()); })
+                .method("setTemporary", &Object::setTemporary);
             module.class_("Object", cl);
         }
     };
 
-    class ContextObjectBind
+    class ContextObjectBind : public ObjectBind
     {
     public:
         static void Init(v8pp::module& module) {
             v8pp::class_<ContextObject> cl(module.isolate());
-            cl.inherit<Object>();
-            cl.property("name", &ContextObject::getName, &ContextObject::setName);
-            cl.property("comment", &ContextObject::getComment, &ContextObject::setComment);
+            cl
+                .inherit<Object>()
+                .property("name", &ContextObject::getName, &ContextObject::setName)
+                .property("comment", &ContextObject::getComment, &ContextObject::setComment);
             module.class_("ContextObject", cl);
         }
     };

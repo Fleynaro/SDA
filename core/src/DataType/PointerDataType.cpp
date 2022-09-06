@@ -7,13 +7,10 @@ PointerDataType::PointerDataType(
     Context* context,
     Object::Id* id,
     DataType* pointedType)
-    : DataType(context, id),
+    : DataType(context, id, GetTypeName(pointedType)),
     m_pointedType(pointedType)
 {
     assert(!dynamic_cast<ArrayDataType*>(pointedType));
-    if (pointedType) {
-        setName(GetTypeName(pointedType));
-    }
     m_context->getDataTypes()->add(std::unique_ptr<PointerDataType>(this));
 }
 
@@ -46,5 +43,7 @@ void PointerDataType::deserialize(boost::json::object& data) {
 }
 
 std::string PointerDataType::GetTypeName(DataType* pointedType) {
+    if (!pointedType)
+        return "";
     return pointedType->getName() + "*";
 }

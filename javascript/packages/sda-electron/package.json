@@ -2,10 +2,11 @@
   "name": "sda-electron",
   "version": "1.0.0",
   "description": "",
-  "main": "index",
+  "type": "module",
+  "main": "dist/index",
   "scripts": {
     "start": "node dist/index.js",
-    "debug": "node --inspect-brk=\"localhost:9229\" -r ts-node/register src/index.ts"
+    "debug": "node --inspect-brk=\"localhost:9229\" --experimental-modules --loader ts-node/esm src/index.ts"
   },
   "author": "fleynaro",
   "license": "ISC",

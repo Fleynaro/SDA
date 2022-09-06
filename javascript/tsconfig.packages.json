@@ -2,6 +2,8 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "@tsconfig/node16/tsconfig.json",
   "compilerOptions": {
+    "module": "ES2022",
+    "esModuleInterop": true,
     "importHelpers": true,
     "noImplicitAny": false,
     "strictNullChecks": true

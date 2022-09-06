@@ -321,6 +321,12 @@ public:
 		);
     }
 
+	/// Set pointer to function as class method function
+    template<typename R,  typename... Args>
+    class_& method(std::string_view name, R(*func)(T*, Args...), v8::PropertyAttribute attr = v8::None) {
+        return method(name, std::function(func), attr);
+    }
+
 	/// Set pointer to class method function
     template<typename R,  typename... Args>
     class_& method(std::string_view name, R(T::*func)(Args...), v8::PropertyAttribute attr = v8::None) {

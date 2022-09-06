@@ -2,7 +2,6 @@
   "name": "sda",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "compile": "tsc --build --force tsconfig.json",
     "start": "npm run start -w=sda-electron"
