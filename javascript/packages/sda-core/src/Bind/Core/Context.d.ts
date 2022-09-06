@@ -12,6 +12,8 @@ declare module sda_core {
     class Context {
         static create(): Context;
 
-        setCallbacks(callbacks: ContextCallbacksImpl): void;
+        get callbacks(): ContextCallbacks;
+
+        set callbacks(callbacks: ContextCallbacksImpl);
     }
 }
