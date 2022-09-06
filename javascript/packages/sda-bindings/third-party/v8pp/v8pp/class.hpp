@@ -254,6 +254,7 @@ public:
 		return *this;
 	}
 
+private:
 	/// Set class member function, or static function, or lambda
 	template<typename Function>
 	class_& function(std::string_view name, Function&& func, v8::PropertyAttribute attr = v8::None)
@@ -281,6 +282,65 @@ public:
 
 		class_info_.class_function_template()->PrototypeTemplate()->Set(v8_name, wrapped_fun, attr);
 		return *this;
+	}
+
+	template<typename R, typename... Args, std::size_t... Is>
+    static auto CreateMethod(const std::function<R(T*, Args...)>& func, std::index_sequence<Is...>) {
+        return [func](const v8::FunctionCallbackInfo<v8::Value>& args) {
+            auto isolate = args.GetIsolate();
+            if (args.Length() != sizeof...(Args)) {
+                throw_ex(isolate, "Wrong number of arguments");
+                return;
+            }
+            T* thisObject = nullptr;
+            if constexpr (std::is_same_v<Traits, v8pp::raw_ptr_traits>) {
+                thisObject = unwrap_object(isolate, args.This());
+            } else if constexpr (std::is_same_v<Traits, v8pp::shared_ptr_traits>) {
+                thisObject = unwrap_object(isolate, args.This()).get();
+            } else if constexpr (!std::is_same_v<Traits, void>) {
+                static_assert(false, "Unsupported traits");
+            }
+            auto argTuple = std::make_tuple(thisObject, from_v8<Args>(isolate, args[Is])...);
+            if constexpr (std::is_same_v<R, void>) {
+                std::apply(func, argTuple);
+            } else {
+                auto result = std::apply(func, argTuple);
+                args.GetReturnValue().Set(to_v8(isolate, result));
+            }
+        };
+    }
+
+public:
+	/// Set lambda as class method function
+    template<typename R,  typename... Args>
+    class_& method(std::string_view name, const std::function<R(T*, Args...)>& func, v8::PropertyAttribute attr = v8::None) {
+        return function(
+			name,
+			CreateMethod(func, std::make_index_sequence<sizeof...(Args)>()),
+			attr
+		);
+    }
+
+	/// Set pointer to class method function
+    template<typename R,  typename... Args>
+    class_& method(std::string_view name, R(T::*func)(Args...), v8::PropertyAttribute attr = v8::None) {
+        return method(name, std::function([func](T* thisObject, Args... args) {
+            return (thisObject->*func)(args...);
+        }), attr);
+    }
+
+	/// Set lambda as class static function
+    template<typename R, typename... Args>
+    class_& static_method(std::string_view name, const std::function<R(Args...)>& func, v8::PropertyAttribute attr = v8::None) {
+        return method(name, std::function([func](T* thisObject, Args... args) {
+            return func(args...);
+        }), attr);
+    }
+
+	/// Set pointer to class static function
+	template<typename R, typename... Args>
+	class_& static_method(std::string_view name, R(*func)(Args...), v8::PropertyAttribute attr = v8::None) {
+		return static_method(name, std::function(func), attr);
 	}
 
 	/// Set class member variable
