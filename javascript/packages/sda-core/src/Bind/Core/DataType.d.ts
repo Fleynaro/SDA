@@ -30,11 +30,10 @@ declare module sda {
         static New(context: Context, elementType: DataType, dimensions: number[]): ArrayDataType;
     }
 
-    enum ScalarType {
-        UnsignedInt,
-        SignedInt,
-        FloatingPoint
-    }
+    type ScalarType =
+        "UnsignedInt"   |
+        "SignedInt"     |
+        "FloatingPoint";
 
     class ScalarDataType extends DataType {
         readonly scalarType: ScalarType;

@@ -312,7 +312,7 @@ private:
 
 public:
 	/// Set lambda as class method function
-    template<typename R,  typename... Args>
+    template<typename R, typename... Args>
     class_& method(std::string_view name, const std::function<R(T*, Args...)>& func, v8::PropertyAttribute attr = v8::None) {
         return function(
 			name,
@@ -322,20 +322,28 @@ public:
     }
 
 	/// Set pointer to function as class method function
-    template<typename R,  typename... Args>
+    template<typename R, typename... Args>
     class_& method(std::string_view name, R(*func)(T*, Args...), v8::PropertyAttribute attr = v8::None) {
         return method(name, std::function(func), attr);
     }
 
 	/// Set pointer to class method function
-    template<typename R,  typename... Args>
+    template<typename R, typename... Args>
     class_& method(std::string_view name, R(T::*func)(Args...), v8::PropertyAttribute attr = v8::None) {
         return method(name, std::function([func](T* thisObject, Args... args) {
             return (thisObject->*func)(args...);
         }), attr);
     }
 
-	/// Set lambda as class static function
+	/// Set pointer to CONST class method function
+    template<typename R, typename... Args>
+    class_& method(std::string_view name, R(T::*func)(Args...) const, v8::PropertyAttribute attr = v8::None) {
+        return method(name, std::function([func](T* thisObject, Args... args) {
+            return (thisObject->*func)(args...);
+        }), attr);
+    }
+	
+	/// Set lambda as class STATIC function
     template<typename R, typename... Args>
     class_& static_method(std::string_view name, const std::function<R(Args...)>& func, v8::PropertyAttribute attr = v8::None) {
         return method(name, std::function([func](T* thisObject, Args... args) {
@@ -343,7 +351,7 @@ public:
         }), attr);
     }
 
-	/// Set pointer to class static function
+	/// Set pointer to class STATIC function
 	template<typename R, typename... Args>
 	class_& static_method(std::string_view name, R(*func)(Args...), v8::PropertyAttribute attr = v8::None) {
 		return static_method(name, std::function(func), attr);

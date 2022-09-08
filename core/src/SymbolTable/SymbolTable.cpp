@@ -5,9 +5,7 @@ using namespace sda;
 
 SymbolTable::SymbolTable(Context* context, Object::Id* id, const std::string& name)
     : ContextObject(context, id, name)
-{
-    m_context->getSymbolTables()->add(std::unique_ptr<SymbolTable>(this));
-}
+{}
 
 std::list<SymbolTable::SymbolInfo> SymbolTable::getAllSymbolsRecursivelyAt(Offset offset) {
     std::list<SymbolInfo> result;

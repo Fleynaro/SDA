@@ -36,11 +36,11 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             v8pp::class_<RegisterRepository> cl(module.isolate());
             cl
-                .method<std::string, size_t>("getRegisterName", &RegisterRepository::getRegisterName)
-                .method<size_t, const std::string&>("getRegisterId", &RegisterRepository::getRegisterId)
-                .method<Register::Type, size_t>("getRegisterType", &RegisterRepository::getRegisterType)
-                .method<std::string, size_t>("getRegisterFlagName", &RegisterRepository::getRegisterFlagName)
-                .method<size_t, const std::string&>("getRegisterFlagIndex", &RegisterRepository::getRegisterFlagIndex);
+                .method("getRegisterName", &RegisterRepository::getRegisterName)
+                .method("getRegisterId", &RegisterRepository::getRegisterId)
+                .method("getRegisterType", &RegisterRepository::getRegisterType)
+                .method("getRegisterFlagName", &RegisterRepository::getRegisterFlagName)
+                .method("getRegisterFlagIndex", &RegisterRepository::getRegisterFlagIndex);
             module.class_("RegisterRepository", cl);
         }
     };
@@ -50,6 +50,9 @@ namespace sda::bind
     public:
         static void Init(v8pp::module& module) {
             v8pp::class_<PcodeDecoder, v8pp::shared_ptr_traits> cl(module.isolate());
+            cl
+                .property("instructionLength", &PcodeDecoder::getInstructionLength)
+                .method("decode", &PcodeDecoder::decode);
             module.class_("PcodeDecoder", cl);
         }
     };
@@ -59,6 +62,8 @@ namespace sda::bind
     public:
         static void Init(v8pp::module& module) {
             v8pp::class_<InstructionDecoder, v8pp::shared_ptr_traits> cl(module.isolate());
+            cl
+                .method("decode", &InstructionDecoder::decode);
             module.class_("InstructionDecoder", cl);
         }
     };
@@ -71,6 +76,21 @@ namespace sda::bind
             cl
                 .property("name", &CallingConvention::getName);
             module.class_("CallingConvention", cl);
+        }
+    };
+
+    class CustomCallingConventionBind
+    {
+        static auto New() {
+            return std::make_shared<CustomCallingConvention>();
+        }
+    public:
+        static void Init(v8pp::module& module) {
+            v8pp::class_<CustomCallingConvention, v8pp::shared_ptr_traits> cl(module.isolate());
+            cl
+                .inherit<CallingConvention>()
+                .static_method("new", &New);
+            module.class_("CustomCallingConvention", cl);
         }
     };
 };

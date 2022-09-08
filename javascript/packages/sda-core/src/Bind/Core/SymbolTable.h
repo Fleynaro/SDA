@@ -8,13 +8,27 @@ namespace sda::bind
     {
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<SymbolTable> cl(module.isolate());
-            cl
-                .inherit<ContextObject>()
-                .property("usedSize", &SymbolTable::getUsedSize)
-                .method("addSymbol", &SymbolTable::addSymbol)
-                .method("removeSymbol", &SymbolTable::removeSymbol);
-            module.class_("SymbolTable", cl);
+            {
+                v8pp::class_<SymbolTable::SymbolInfo> cl(module.isolate());
+                cl
+                    .auto_wrap_objects(true)
+                    .var("symbolTable", &SymbolTable::SymbolInfo::symbolTable)
+                    .var("symbolOffset", &SymbolTable::SymbolInfo::symbolOffset)
+                    .var("symbol", &SymbolTable::SymbolInfo::symbol);
+            }
+
+            {
+                v8pp::class_<SymbolTable> cl(module.isolate());
+                cl
+                    .inherit<ContextObject>()
+                    .property("usedSize", &SymbolTable::getUsedSize)
+                    .method("addSymbol", &SymbolTable::addSymbol)
+                    .method("removeSymbol", &SymbolTable::removeSymbol)
+                    .method("getAllSymbols", &SymbolTable::getAllSymbols)
+                    .method("getSymbolAt", &SymbolTable::getSymbolAt)
+                    .method("getAllSymbolsRecursivelyAt", &SymbolTable::getAllSymbolsRecursivelyAt);
+                module.class_("SymbolTable", cl);
+            }
         }
     };
 

@@ -1,9 +1,4 @@
-#include "node.h"
-#include <v8pp/json.hpp>
-#include <v8pp/module.hpp>
-#include <v8pp/object.hpp>
-#include "Bind/ObjectExport.h"
-#include "Bind/Call.h"
+#include "Bind/Init.h"
 #include "Bind/Core/Utils.h"
 #include "Bind/Core/Platform.h"
 #include "Bind/Core/Context.h"
@@ -45,6 +40,13 @@ void ContextBind::BindCallbacks::onObjectAdded(Object* obj) {
         else if (auto structFieldSym = dynamic_cast<StructureFieldSymbol*>(obj))
             ExportObjectRef(structFieldSym);
     }
+    else if (dynamic_cast<SymbolTable*>(obj))
+    {
+        if (auto symTab = dynamic_cast<StandartSymbolTable*>(obj))
+            ExportObjectRef(symTab);
+        else if (auto symTab = dynamic_cast<OptimizedSymbolTable*>(obj))
+            ExportObjectRef(symTab);
+    }
 }
 
 void ContextBind::BindCallbacks::onObjectRemoved(Object* obj) {
@@ -78,10 +80,19 @@ void ContextBind::BindCallbacks::onObjectRemoved(Object* obj) {
         else if (auto structFieldSym = dynamic_cast<StructureFieldSymbol*>(obj))
             RemoveObjectRef(structFieldSym);
     }
+    else if (dynamic_cast<SymbolTable*>(obj))
+    {
+        if (auto symTab = dynamic_cast<StandartSymbolTable*>(obj))
+            RemoveObjectRef(symTab);
+        else if (auto symTab = dynamic_cast<OptimizedSymbolTable*>(obj))
+            RemoveObjectRef(symTab);
+    }
+
+    // TODO: remove ref of platform when context is removed
 }
 
-void InitAllClasses(v8pp::module& m) {
-    std::list<std::function<void(v8pp::module&)>> initList = {
+void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
+    InitModule(module, {
         // utils
         SerializationBind::Init,
         // platform
@@ -90,6 +101,7 @@ void InitAllClasses(v8pp::module& m) {
         PcodeDecoderBind::Init,
         InstructionDecoderBind::Init,
         CallingConventionBind::Init,
+        CustomCallingConventionBind::Init,
         // context
         ContextCallbacksBind::Init,
         ContextBind::Init,
@@ -104,21 +116,17 @@ void InitAllClasses(v8pp::module& m) {
         ScalarDataTypeBind::Init,
         TypedefDataTypeBind::Init,
         EnumDataTypeBind::Init,
-    };
-    
-    for (auto& init : initList)
-        init(m);
+        // symbols
+        SymbolBind::Init,
+        VariableSymbolBind::Init,
+        FunctionSymbolBind::Init,
+        FunctionParameterSymbolBind::Init,
+        StructureFieldSymbolBind::Init,
+        // symbol tables
+        SymbolTableBind::Init,
+        StandartSymbolTableBind::Init,
+        OptimizedSymbolTableBind::Init,
+    });
 }
 
-void InitModule(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
-    auto isolate = v8::Isolate::GetCurrent();
-    v8pp::module m(isolate);
-    InitAllClasses(m);
-    v8pp::set_option(isolate, module, "exports", m.new_instance());
-
-    // node::AtExit(nullptr, [](void* param) {
-    //     v8pp::cleanup(static_cast<v8::Isolate*>(param));
-    // }, isolate);
-}
-
-NODE_MODULE(core, InitModule)
+NODE_MODULE(core, Init)

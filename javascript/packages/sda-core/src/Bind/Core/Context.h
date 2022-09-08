@@ -40,19 +40,23 @@ namespace sda::bind
 
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<Callbacks, v8pp::shared_ptr_traits> cl_base(module.isolate());
-            cl_base
-                .method("onObjectAdded", &Callbacks::onObjectAdded)
-                .method("onObjectModified", &Callbacks::onObjectModified)
-                .method("onObjectRemoved", &Callbacks::onObjectRemoved);
-            module.class_("ContextCallbacks", cl_base);
+            {
+                v8pp::class_<Callbacks, v8pp::shared_ptr_traits> cl(module.isolate());
+                cl
+                    .method("onObjectAdded", &Callbacks::onObjectAdded)
+                    .method("onObjectModified", &Callbacks::onObjectModified)
+                    .method("onObjectRemoved", &Callbacks::onObjectRemoved);
+                module.class_("ContextCallbacks", cl);
+            }
             
-            v8pp::class_<CallbacksJsImpl, v8pp::shared_ptr_traits> cl(module.isolate());
-            cl
-                .inherit<Callbacks>()
-                .var("oldCallbacks", &CallbacksJsImpl::m_oldCallbacks)
-                .static_method("New", &New);
-            module.class_("ContextCallbacksImpl", cl);
+            {
+                v8pp::class_<CallbacksJsImpl, v8pp::shared_ptr_traits> cl(module.isolate());
+                cl
+                    .inherit<Callbacks>()
+                    .var("oldCallbacks", &CallbacksJsImpl::m_oldCallbacks)
+                    .static_method("New", &New);
+                module.class_("ContextCallbacksImpl", cl);
+            }
         }
     };
 

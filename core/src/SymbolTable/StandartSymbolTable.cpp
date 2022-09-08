@@ -6,7 +6,9 @@ using namespace sda;
 
 StandartSymbolTable::StandartSymbolTable(Context* context, Object::Id* id, const std::string& name)
     : SymbolTable(context, id, name)
-{}
+{
+    m_context->getSymbolTables()->add(std::unique_ptr<StandartSymbolTable>(this));
+}
 
 size_t StandartSymbolTable::getUsedSize() const {
     if (m_symbols.empty())

@@ -15,6 +15,7 @@ OptimizedSymbolTable::OptimizedSymbolTable(
     m_minOffset(minOffset),
     m_maxOffset(maxOffset)
 {
+    m_context->getSymbolTables()->add(std::unique_ptr<OptimizedSymbolTable>(this));
     if (fragmentsCount > 0) {
         setFragmentsCount(fragmentsCount);
     }

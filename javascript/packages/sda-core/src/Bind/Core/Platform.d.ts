@@ -10,8 +10,24 @@ declare module sda {
         getInstructionDecoder(): InstructionDecoder;
     }
 
-    abstract class RegisterRepository {
+    type RegisterType =
+        "Virtual"               |
+        "Generic"               |
+        "StackPointer"          |
+        "InstructionPointer"    |
+        "Flag"                  |
+        "Vector";
 
+    abstract class RegisterRepository {
+        getRegisterName(regId: number): string;
+
+        getRegisterId(regName: string): number;
+
+        getRegisterType(regId: number): RegisterType;
+
+        getRegisterFlagName(flagMask: number): string;
+
+        getRegisterFlagIndex(flagName: string): number;
     }
 
     abstract class PcodeDecoder {
@@ -24,5 +40,9 @@ declare module sda {
 
     abstract class CallingConvention {
         readonly name: string;
+    }
+
+    class CustomCallingConvention extends CallingConvention {
+        static New(): CustomCallingConvention;
     }
 }

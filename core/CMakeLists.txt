@@ -26,7 +26,8 @@ target_link_libraries(
     Boost::boost
     Boost::system
     Boost::filesystem
-    Boost::json)
+    Boost::json
+    magic_enum::magic_enum)
 
 if(BUILD_TESTING)
 	add_subdirectory(test)

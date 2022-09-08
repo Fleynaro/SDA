@@ -80,15 +80,16 @@ namespace sda::bind
 
     class ScalarDataTypeBind : public DataTypeBind
     {
-        static auto New(Context* ctx, const std::string& name, ScalarType type, size_t size) {
-            return new ScalarDataType(ctx, nullptr, name, type, size);
+        static auto New(Context* ctx, const std::string& name, ScalarType scalarType, size_t size) {
+            return new ScalarDataType(ctx, nullptr, name, scalarType, size);
         }
     public:
         static void Init(v8pp::module& module) {
             v8pp::class_<ScalarDataType> cl(module.isolate());
             cl
                 .inherit<DataType>()
-                .property("scalarType", &ScalarDataType::getScalarType);
+                .property("scalarType", &ScalarDataType::getScalarType)
+                .static_method("New", &New);
             module.class_("ScalarDataType", cl);
         }
     };

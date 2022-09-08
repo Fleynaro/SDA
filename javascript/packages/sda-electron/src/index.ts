@@ -4,7 +4,10 @@ import platform from "sda-platform-x86";
 const platformX86 = platform.PlatformX86.New(true);
 const context = core.Context.New(platformX86);
 console.log("Platform: " + platformX86.name);
-console.log("CC: " + platformX86.callingConventions[0].name);
+const fastcallCC = platformX86.callingConventions[0];
+console.log("CC: " + fastcallCC.name);
+console.log("CC: " + fastcallCC.name);
+console.log("reg = " + platformX86.registerRepository.getRegisterName(90));
 
 function test1() {
     const callbacks = core.ContextCallbacksImpl.New();
@@ -45,4 +48,17 @@ function test2() {
     }
 }
 
-test2();
+function test3() {
+    const dataType = core.ScalarDataType.New(context, "MyScalar", "FloatingPoint", 4);
+    const symbolTable = core.StandartSymbolTable.New(context, "MySymbolTable");
+    symbolTable.addSymbol(0x1000, core.VariableSymbol.New(context, "var1", dataType));
+    symbolTable.addSymbol(0x1004, core.VariableSymbol.New(context, "var2", dataType));
+
+    const symbolInfo = symbolTable.getSymbolAt(0x1000);
+    console.log("Symbol info:");
+    console.log("--- name: " + symbolInfo.symbol.name);
+    console.log("--- offset: " + symbolInfo.symbolOffset);
+    console.log("--- table: " + symbolInfo.symbolTable.name);
+}
+
+test3();

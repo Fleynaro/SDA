@@ -1,20 +1,32 @@
 declare module sda {
+    type SymbolInfo = {
+        symbolTable: SymbolTable;
+        symbolOffset: number;
+        symbol: Symbol;
+    }
+
     abstract class SymbolTable extends ContextObject {
         readonly usedSize: number;
 
         addSymbol(offset: number, symbol: Symbol): void;
 
         removeSymbol(offset: number): void;
+
+        getAllSymbols(): SymbolInfo[];
+
+        getSymbolAt(offset: number): SymbolInfo;
+
+        getAllSymbolsRecursivelyAt(offset: number): SymbolInfo[];
     }
 
-    class StandardSymbolTable extends SymbolTable {
+    class StandartSymbolTable extends SymbolTable {
         symbols: { [offset: number]: Symbol };
 
-        static New(context: Context, name: string): StandardSymbolTable;
+        static New(context: Context, name: string): StandartSymbolTable;
     }
 
     class OptimizedSymbolTable extends SymbolTable {
-        symbolTables: StandardSymbolTable[];
+        symbolTables: StandartSymbolTable[];
 
         setFragmentsCount(count: number): void;
 
