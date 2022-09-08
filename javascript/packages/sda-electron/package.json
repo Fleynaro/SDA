@@ -11,6 +11,7 @@
   "author": "fleynaro",
   "license": "ISC",
   "dependencies": {
-    "sda-core": "file:../sda-core"
+    "sda-core": "file:../sda-core",
+    "sda-platform-x86": "file:../sda-platform-x86"
   }
 }

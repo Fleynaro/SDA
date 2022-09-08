@@ -1,4 +1,4 @@
-declare module sda_core {
+declare module sda {
     abstract class SymbolTable extends ContextObject {
         readonly usedSize: number;
 

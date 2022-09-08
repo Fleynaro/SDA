@@ -1,4 +1,4 @@
-declare module sda_core {
+declare module sda {
     abstract class ContextCallbacks {
         onObjectAdded(object: Object): void;
 
@@ -22,6 +22,6 @@ declare module sda_core {
     class Context {
         callbacks: ContextCallbacks;
 
-        static New(): Context;
+        static New(platform: Platform);
     }
 }

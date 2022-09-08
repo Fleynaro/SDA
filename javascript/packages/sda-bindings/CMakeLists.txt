@@ -1,9 +1,9 @@
-file(GLOB_RECURSE BINDINGS_JS
+file(GLOB_RECURSE BINDINGS_JS_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
 add_library(
-    bindings-js SHARED ${CMAKE_JS_SRC} ${BINDINGS_JS})
+    bindings-js SHARED ${CMAKE_JS_SRC} ${BINDINGS_JS_SRC})
 
 target_include_directories(
     bindings-js PUBLIC

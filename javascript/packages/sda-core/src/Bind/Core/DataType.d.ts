@@ -1,4 +1,4 @@
-declare module sda_core {
+declare module sda {
     abstract class DataType extends ContextObject {
         readonly baseType: DataType;
         readonly isVoid: boolean;

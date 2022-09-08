@@ -1,4 +1,4 @@
-declare module sda_core {
+declare module sda {
     abstract class Symbol extends ContextObject {
         dataType: DataType;
     }

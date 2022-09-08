@@ -1,4 +1,4 @@
-declare module sda_core {
+declare module sda {
     interface ISerializable {
         serialize(): object;
 

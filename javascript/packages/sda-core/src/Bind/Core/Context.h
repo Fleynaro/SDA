@@ -5,7 +5,6 @@
 #include "Core/DataType/DataType.h"
 #include "Core/Symbol/Symbol.h"
 #include "Core/SymbolTable/SymbolTable.h"
-#include <iostream>
 
 namespace sda::bind
 {
@@ -51,8 +50,8 @@ namespace sda::bind
             v8pp::class_<CallbacksJsImpl, v8pp::shared_ptr_traits> cl(module.isolate());
             cl
                 .inherit<Callbacks>()
-                .static_method("New", &New)
-                .var("oldCallbacks", &CallbacksJsImpl::m_oldCallbacks);
+                .var("oldCallbacks", &CallbacksJsImpl::m_oldCallbacks)
+                .static_method("New", &New);
             module.class_("ContextCallbacksImpl", cl);
         }
     };
@@ -65,8 +64,8 @@ namespace sda::bind
             void onObjectRemoved(Object* obj) override;
         };
 
-        static auto New() {
-            auto context = new Context(nullptr);
+        static auto New(Platform* platform) {
+            auto context = new Context(std::unique_ptr<Platform>(platform));
             auto callbacks = std::make_shared<BindCallbacks>();
             ExportObject(std::static_pointer_cast<Context::Callbacks>(callbacks));
             context->setCallbacks(callbacks);
@@ -77,8 +76,8 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             v8pp::class_<Context> cl(module.isolate());
             cl
-                .static_method("New", &New)
-                .property("callbacks", &Context::getCallbacks, &Context::setCallbacks);
+                .property("callbacks", &Context::getCallbacks, &Context::setCallbacks)
+                .static_method("New", &New);
             module.class_("Context", cl);
         }
     };

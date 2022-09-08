@@ -1,18 +1,18 @@
-file(GLOB_RECURSE CORE_JS_SRC
+file(GLOB_RECURSE PLATFORM_JS_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
 add_library(
-    core-js SHARED ${CORE_JS_SRC})
+    platform-x86-js SHARED ${PLATFORM_JS_SRC})
 
 target_include_directories(
-    core-js PUBLIC
+    platform-x86-js PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set_target_properties(
-    core-js PROPERTIES PREFIX "" SUFFIX ".node")
+    platform-x86-js PROPERTIES PREFIX "" SUFFIX ".node")
 
 target_link_libraries(
-    core-js PUBLIC
+    platform-x86-js PUBLIC
     bindings-js
-    core)
+    platform-x86)

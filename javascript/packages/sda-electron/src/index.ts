@@ -1,6 +1,10 @@
 import core from "sda-core";
+import platform from "sda-platform-x86";
 
-const context = core.Context.New();
+const platformX86 = platform.PlatformX86.New(true);
+const context = core.Context.New(platformX86);
+console.log("Platform: " + platformX86.name);
+console.log("CC: " + platformX86.callingConventions[0].name);
 
 function test1() {
     const callbacks = core.ContextCallbacksImpl.New();

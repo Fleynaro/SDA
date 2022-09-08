@@ -5,6 +5,7 @@
 #include "Bind/ObjectExport.h"
 #include "Bind/Call.h"
 #include "Bind/Core/Utils.h"
+#include "Bind/Core/Platform.h"
 #include "Bind/Core/Context.h"
 #include "Bind/Core/Object.h"
 #include "Bind/Core/DataType.h"
@@ -83,6 +84,12 @@ void InitAllClasses(v8pp::module& m) {
     std::list<std::function<void(v8pp::module&)>> initList = {
         // utils
         SerializationBind::Init,
+        // platform
+        PlatformBind::Init,
+        RegisterRepositoryBind::Init,
+        PcodeDecoderBind::Init,
+        InstructionDecoderBind::Init,
+        CallingConventionBind::Init,
         // context
         ContextCallbacksBind::Init,
         ContextBind::Init,
