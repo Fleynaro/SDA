@@ -9,6 +9,14 @@ Printer::Printer(const RegisterRepository* regRepo)
     : m_regRepo(regRepo)
 {}
 
+std::string Printer::Print(const Instruction* instruction, const RegisterRepository* regRepo) {
+    Printer printer(regRepo);
+    std::stringstream ss;
+    printer.setOutput(ss);
+    printer.printInstruction(instruction);
+    return ss.str();
+}
+
 void Printer::printInstruction(const Instruction* instruction) const {
     if (instruction->getOutput()) {
         printVarnode(instruction->getOutput().get());

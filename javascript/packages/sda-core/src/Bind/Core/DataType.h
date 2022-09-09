@@ -144,20 +144,26 @@ namespace sda::bind
         }
     };
 
-    // class SignatureDataTypeBind : public DataTypeBind
-    // {
-    //     static auto New(Context* ctx, const std::string& name, DataType* returnType, const std::vector<FunctionParameterSymbol*>& parameters) {
-    //         return new SignatureDataType(ctx, nullptr, returnType, argumentTypes);
-    //     }
-    // public:
-    //     static void Init(v8pp::module& module) {
-    //         v8pp::class_<SignatureDataType> cl(module.isolate());
-    //         cl
-    //             .inherit<DataType>()
-    //             .property("returnType", &SignatureDataType::getReturnType)
-    //             .property("argumentTypes", &SignatureDataType::getArgumentTypes)
-    //             .static_method("New", &New);
-    //         module.class_("SignatureDataType", cl);
-    //     }
-    // };
+    class SignatureDataTypeBind : public DataTypeBind
+    {
+        static auto New(
+            Context* ctx,
+            std::shared_ptr<CallingConvention> callingConvention,
+            const std::string& name, DataType* returnType,
+            const std::vector<FunctionParameterSymbol*>& parameters)
+        {
+            return new SignatureDataType(ctx, callingConvention, nullptr, name, returnType, parameters);
+        }
+    public:
+        static void Init(v8pp::module& module) {
+            v8pp::class_<SignatureDataType> cl(module.isolate());
+            cl
+                .inherit<DataType>()
+                .property("callingConvention", &SignatureDataType::getCallingConvention)
+                .property("returnType", &SignatureDataType::getReturnType, &SignatureDataType::setReturnType)
+                .property("parameters", &SignatureDataType::getParameters, &SignatureDataType::setParameters)
+                .static_method("New", &New);
+            module.class_("SignatureDataType", cl);
+        }
+    };
 };

@@ -14,6 +14,8 @@ namespace sda::pcode
 
         Printer(const RegisterRepository* regRepo);
 
+        static std::string Print(const Instruction* instruction, const RegisterRepository* regRepo);
+
         virtual void printInstruction(const Instruction* instruction) const;
 
         virtual void printVarnode(const Varnode* varnode, bool printSizeAndOffset = true) const;

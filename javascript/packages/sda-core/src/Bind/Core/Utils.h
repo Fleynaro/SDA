@@ -1,5 +1,7 @@
 #pragma once
 #include "Core/Utils/Serialization.h"
+#include "Core/Utils/AbstractParser.h"
+#include "Core/Utils/AbstractPrinter.h"
 
 namespace sda::bind
 {
@@ -29,6 +31,47 @@ namespace sda::bind
                 .method("serialize", &Serialize)
                 .method("deserialize", &Deserialize);
             module.class_("Serialization", cl);
+        }
+    };
+
+    class AbstractPrinterBind
+    {
+    protected:
+        template<typename T, typename... Args>
+        class PrinterJs : public T {
+            std::stringstream ss;
+
+            using T::T;
+            
+            static auto New(Args&... args) {
+                auto printer = new PrinterJs(args...);
+                printer->setOutput(printer->ss);
+                return ExportObject(printer);
+            }
+
+        public:
+            static auto Create(v8pp::module& module) {
+                v8pp::class_<PrinterJs> cl(module.isolate());
+                cl
+                    .inherit<utils::AbstractPrinter>()
+                    .property("output", [](PrinterJs& self) { return self.ss.str(); })
+                    .method("flush", std::function([](PrinterJs* self) { self->ss.str(""); }))
+                    .static_method("New", &New);
+                return cl;
+            }
+        };
+    public:
+        static void Init(v8pp::module& module) {
+            v8pp::class_<utils::AbstractPrinter> cl(module.isolate());
+            cl
+                .method("setTabSize", &utils::AbstractPrinter::setTabSize)
+                .method("setParentPrinter", &utils::AbstractPrinter::setParentPrinter)
+                .method("startBlock", &utils::AbstractPrinter::startBlock)
+                .method("endBlock", &utils::AbstractPrinter::endBlock)
+                .method("startCommenting", &utils::AbstractPrinter::startCommenting)
+                .method("endCommenting", &utils::AbstractPrinter::endCommenting)
+                .method("newLine", &utils::AbstractPrinter::newLine);
+            module.class_("AbstractPrinter", cl);
         }
     };
 };

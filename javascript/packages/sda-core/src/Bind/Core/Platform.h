@@ -72,17 +72,41 @@ namespace sda::bind
     {
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<CallingConvention, v8pp::shared_ptr_traits> cl(module.isolate());
-            cl
-                .property("name", &CallingConvention::getName);
-            module.class_("CallingConvention", cl);
+            {
+                // TODO: will see https://github.com/pmed/v8pp/issues/31
+                v8pp::class_<CallingConvention::Storage> cl(module.isolate());
+                cl
+                    .auto_wrap_objects(true)
+                    .var("useType", &CallingConvention::Storage::useType)
+                    .var("registerId", &CallingConvention::Storage::registerId)
+                    .var("offset", &CallingConvention::Storage::offset);
+                module.class_("CallingConvention_Storage", cl);
+            }
+
+            {
+                v8pp::class_<CallingConvention::StorageInfo> cl(module.isolate());
+                cl
+                    .auto_wrap_objects(true)
+                    .var("type", &CallingConvention::StorageInfo::type)
+                    .var("paramIdx", &CallingConvention::StorageInfo::paramIdx)
+                    .var("isStoringFloat", &CallingConvention::StorageInfo::isStoringFloat);
+                module.class_("CallingConvention_StorageInfo", cl);
+            }
+
+            {
+                v8pp::class_<CallingConvention, v8pp::shared_ptr_traits> cl(module.isolate());
+                cl
+                    .property("name", &CallingConvention::getName)
+                    .method("getStorages", &CallingConvention::getStorages);
+                module.class_("CallingConvention", cl);
+            }
         }
     };
 
     class CustomCallingConventionBind
     {
-        static auto New() {
-            return std::make_shared<CustomCallingConvention>();
+        static auto New(const CallingConvention::Map& storages) {
+            return std::make_shared<CustomCallingConvention>(storages);
         }
     public:
         static void Init(v8pp::module& module) {

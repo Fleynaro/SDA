@@ -1,4 +1,5 @@
 /// <reference path="Bind/Core/Utils.d.ts" />
+/// <reference path="Bind/Core/Pcode.d.ts" />
 /// <reference path="Bind/Core/Platform.d.ts" />
 /// <reference path="Bind/Core/Context.d.ts" />
 /// <reference path="Bind/Core/Object.d.ts" />

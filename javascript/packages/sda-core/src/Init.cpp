@@ -1,5 +1,6 @@
 #include "Bind/Init.h"
 #include "Bind/Core/Utils.h"
+#include "Bind/Core/Pcode.h"
 #include "Bind/Core/Platform.h"
 #include "Bind/Core/Context.h"
 #include "Bind/Core/Object.h"
@@ -95,6 +96,12 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
     InitModule(module, {
         // utils
         SerializationBind::Init,
+        AbstractPrinterBind::Init,
+        // p-code
+        PcodeVarnodeBind::Init,
+        PcodeInstructionBind::Init,
+        PcodeParserBind::Init,
+        PcodePrinterBind::Init,
         // platform
         PlatformBind::Init,
         RegisterRepositoryBind::Init,
@@ -116,6 +123,8 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
         ScalarDataTypeBind::Init,
         TypedefDataTypeBind::Init,
         EnumDataTypeBind::Init,
+        StructureDataTypeBind::Init,
+        SignatureDataTypeBind::Init,
         // symbols
         SymbolBind::Init,
         VariableSymbolBind::Init,

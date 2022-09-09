@@ -15,6 +15,7 @@ namespace sda::bind
                     .var("symbolTable", &SymbolTable::SymbolInfo::symbolTable)
                     .var("symbolOffset", &SymbolTable::SymbolInfo::symbolOffset)
                     .var("symbol", &SymbolTable::SymbolInfo::symbol);
+                module.class_("SymbolTable_SymbolInfo", cl);
             }
 
             {

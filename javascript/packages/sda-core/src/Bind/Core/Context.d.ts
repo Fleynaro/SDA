@@ -22,6 +22,6 @@ declare module sda {
     class Context {
         callbacks: ContextCallbacks;
 
-        static New(platform: Platform);
+        static New(platform: Platform): Context;
     }
 }

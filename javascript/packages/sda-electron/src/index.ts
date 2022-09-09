@@ -59,6 +59,34 @@ function test3() {
     console.log("--- name: " + symbolInfo.symbol.name);
     console.log("--- offset: " + symbolInfo.symbolOffset);
     console.log("--- table: " + symbolInfo.symbolTable.name);
+
+    console.log("symbols:");
+    for (const { symbol: { name } } of symbolTable.getAllSymbols()) {
+        console.log("--- symbol: " + name);
+    }
 }
 
-test3();
+function test4() {
+    const pcodeStr = "\
+        rcx:8 = COPY rcx:8 \
+        rbx:8 = INT_MULT rdx:8, 4:8 \
+        rbx:8 = INT_ADD rcx:8, rbx:8 \
+        rbx:8 = INT_ADD rbx:8, 0x10:8 \
+        STORE rbx:8, 1.0:8 \
+    ";
+    const instrs = core.PcodeParser.Parse(pcodeStr, platformX86.registerRepository);
+    const instr = instrs[0];
+    console.log("Pcode instruction = " + instr.id);
+    console.log("input0 = " + instr.input0.size + ", " + instr.input0.isRegister);
+
+    const printer = core.PcodePrinter.New(platformX86.registerRepository);
+    for (const instr of instrs) {
+        printer.flush();
+        printer.printInstruction(instr);
+        console.log(printer.output);
+    }
+}
+
+test4();
+
+console.log('end');

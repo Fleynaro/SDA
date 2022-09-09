@@ -59,4 +59,16 @@ declare module sda {
 
         static New(context: Context, name: string, size: number): StructureDataType;
     }
+
+    class SignatureDataType extends DataType {
+        readonly callingConvention: CallingConvention;
+        returnType: DataType;
+        parameters: FunctionParameterSymbol[];
+
+        static New(
+            context: Context,
+            callingConvention: CallingConvention,
+            name: string, returnType: DataType,
+            parameters: FunctionParameterSymbol[]): SignatureDataType;
+    }
 }
