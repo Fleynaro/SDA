@@ -3,7 +3,7 @@ file(GLOB_RECURSE CORE_JS_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
 add_library(
-    core-js SHARED ${CORE_JS_SRC})
+    core-js SHARED ${CMAKE_JS_SRC} ${CORE_JS_SRC})
 
 target_include_directories(
     core-js PUBLIC

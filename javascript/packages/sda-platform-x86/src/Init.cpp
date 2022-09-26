@@ -1,5 +1,6 @@
 #include "Bind/Init.h"
 #include "Bind/Platform/PlatformX86.h"
+#include <iostream>
 
 using namespace sda::bind;
 

@@ -2,16 +2,18 @@
   "name": "sda-electron",
   "version": "1.0.0",
   "description": "",
-  "type": "module",
-  "main": "dist/index",
+  "main": "dist/index.js",
   "scripts": {
-    "start": "node dist/index.js",
-    "debug": "node --inspect-brk=\"localhost:9229\" --experimental-modules --loader ts-node/esm src/index.ts"
+    "start": "electron .",
+    "dev": "electron --inspect-brk=\"localhost:9229\" ."
   },
   "author": "fleynaro",
   "license": "ISC",
   "dependencies": {
     "sda-core": "file:../sda-core",
     "sda-platform-x86": "file:../sda-platform-x86"
+  },
+  "devDependencies": {
+    "electron": "^20.2.0"
   }
 }

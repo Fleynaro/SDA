@@ -30,10 +30,23 @@
         },
 
         {
-            "label": "Run electron",
+            "label": "Compile app",
             "type": "shell",
             "isBackground": true,
-            "command": "npm run debug",
+            "command": "npm run compile",
+            "options": {
+                "cwd": "${workspaceFolder}/javascript"
+            },
+        },
+
+        {
+            "label": "Run app",
+            "type": "shell",
+            "isBackground": true,
+            // "dependsOn": [
+            //     "Compile app"
+            // ],
+            "command": "npm run dev",
             "options": {
                 "cwd": "${workspaceFolder}/javascript/packages/sda-electron"
             },

@@ -3,7 +3,7 @@ file(GLOB_RECURSE PLATFORM_JS_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
 add_library(
-    platform-x86-js SHARED ${PLATFORM_JS_SRC})
+    platform-x86-js SHARED ${CMAKE_JS_SRC} ${PLATFORM_JS_SRC})
 
 target_include_directories(
     platform-x86-js PUBLIC

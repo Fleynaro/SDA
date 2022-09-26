@@ -2,8 +2,7 @@
   "name": "sda-bindings",
   "version": "1.0.0",
   "description": "",
-  "type": "module",
-  "main": "./dist/index",
+  "main": "dist/index.js",
   "author": "fleynaro",
   "license": "ISC",
   "dependencies": {
