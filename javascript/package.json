@@ -6,7 +6,8 @@
     "compile": "tsc --build --force tsconfig.json",
     "watch": "tsc -b -w",
     "start": "npm run start -w=sda-electron",
-    "dev": "npm run dev -w=sda-electron"
+    "dev": "npm run dev -w=sda-electron",
+    "dev:gui": "npm run start -w=sda-gui"
   },
   "keywords": [],
   "author": "fleynaro",

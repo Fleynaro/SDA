@@ -1,10 +1,13 @@
 import { app, BrowserWindow, ipcMain } from "electron";
+import isElectronDev from 'electron-is-dev';
 import * as path from "path";
 
 // ------------------------------
 //import core from "sda-core";
 import { Context } from "sda-core/context";
 import { PcodeParser, PcodePrinter } from "sda-core/p-code";
+import { VoidDataType } from "sda-core/data-type";
+import api from '../types/api';
 import platform from "sda-platform-x86";
 const platformX86 = platform.New(true);
 const context = Context.New(platformX86);
@@ -45,8 +48,13 @@ const createWindow = () => {
         }
     })
 
-    win.loadFile('index.html');
-    win.webContents.openDevTools();
+    win.loadURL(
+        isElectronDev
+            ? 'http://localhost:3000'
+            : `file://${path.join(__dirname, '../build/index.html')}`
+    );
+    if (isElectronDev)
+        win.webContents.openDevTools({ mode: 'detach' });
 }
 
 app.whenReady().then(() => {
@@ -54,9 +62,29 @@ app.whenReady().then(() => {
     
     //test4();
 
-    ipcMain.on('exec-message', (event, arg) => {
-        event.returnValue = eval(arg);
-    });
+    function registerFunction<T extends Function>(name: string, method: T) {
+        ipcMain.on(name, (event, ...args) => {
+            event.returnValue = method(...args);
+        });
+    };
+
+    function apiMethod(controllerName: string) {
+        return <T extends Function>(methodName: string, method: T) => {
+            registerFunction(controllerName + '.' + methodName, method);
+        };
+    }
+
+    const register = apiMethod('dataTypeApi');
+    register<api.DataTypeController['getDataTypeByName']>(
+        'getDataTypeByName',
+        (name) => {
+            const dataType = VoidDataType.New(context);
+            return {
+                name: dataType.name + name,
+                isVoid: dataType.isVoid
+            };
+        }
+    );
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0)

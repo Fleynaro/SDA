@@ -11,20 +11,28 @@
             "sourceMaps": true,
             "continueOnAttach": true
         },
-
         {
             "type": "cppvsdbg",
             "request": "attach",
             "name": "electron (cpp)",
             "processId": "${input:readElectronPID}",
-        }
+        },
+        {
+            "type": "chrome",
+            "request": "attach",
+            "name": "electron (render)",
+            "port": 9222,
+            "webRoot": "${workspaceFolder}",
+            "timeout": 15000
+        },
     ],
     "compounds": [
         {
-            "name": "electron (js+cpp)",
+            "name": "electron (all)",
             "configurations": [
                 "electron (js)",
-                "electron (cpp)"
+                "electron (cpp)",
+                "electron (render)"
             ],
             "stopAll": true,
             "preLaunchTask": "Run app"
