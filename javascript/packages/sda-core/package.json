@@ -3,7 +3,14 @@
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
-  "types": "src/index.d.ts",
+  "exports": {
+    "./*": "./dist/*.js"
+  },
+  "typesVersions": {
+    "*": {
+      "*": ["./types/*.d.ts"]
+    }
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

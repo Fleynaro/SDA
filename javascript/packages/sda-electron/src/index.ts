@@ -2,10 +2,12 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import * as path from "path";
 
 // ------------------------------
-import core from "sda-core";
+//import core from "sda-core";
+import { Context } from "sda-core/context";
+import { PcodeParser, PcodePrinter } from "sda-core/p-code";
 import platform from "sda-platform-x86";
-const platformX86 = platform.PlatformX86.New(true);
-const context = core.Context.New(platformX86);
+const platformX86 = platform.New(true);
+const context = Context.New(platformX86);
 console.log("Platform: " + platformX86.name);
 const fastcallCC = platformX86.callingConventions[0];
 console.log("CC: " + fastcallCC.name);
@@ -19,12 +21,12 @@ function test4() {
         rbx:8 = INT_ADD rbx:8, 0x10:8 \
         STORE rbx:8, 1.0:8 \
     ";
-    const instrs = core.PcodeParser.Parse(pcodeStr, platformX86.registerRepository);
+    const instrs = PcodeParser.Parse(pcodeStr, platformX86.registerRepository);
     const instr = instrs[0];
     console.log("Pcode instruction = " + instr.id);
     console.log("input0 = " + instr.input0.size + ", " + instr.input0.isRegister);
 
-    const printer = core.PcodePrinter.New(platformX86.registerRepository);
+    const printer = PcodePrinter.New(platformX86.registerRepository);
     for (const instr of instrs) {
         printer.flush();
         printer.printInstruction(instr);
@@ -50,7 +52,7 @@ const createWindow = () => {
 app.whenReady().then(() => {
     createWindow();
     
-    test4();
+    //test4();
 
     ipcMain.on('exec-message', (event, arg) => {
         event.returnValue = eval(arg);

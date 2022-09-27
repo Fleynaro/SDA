@@ -1,4 +1,7 @@
-import import_module from 'sda-bindings';
+import m from './import';
 
-import_module('core-js');
-export default import_module('platform-x86-js');
+const {
+    PlatformX86
+} = m;
+
+export default PlatformX86;
