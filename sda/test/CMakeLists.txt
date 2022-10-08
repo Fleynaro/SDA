@@ -1,2 +1,12 @@
-add_subdirectory(common)
-add_subdirectory(test)
+file(GLOB_RECURSE SDA_TEST
+    ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
+
+add_executable(
+    sda-test ${SDA_TEST})
+
+target_link_libraries(
+    sda-test PUBLIC
+    core-test-common
+    sda)
+
+gtest_discover_tests(sda-test)

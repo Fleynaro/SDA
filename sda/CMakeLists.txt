@@ -17,3 +17,7 @@ target_link_libraries(
     platform-x86
     decompiler
     unofficial::sqlite3::sqlite3)
+
+if(BUILD_TESTING)
+	add_subdirectory(test)
+endif()

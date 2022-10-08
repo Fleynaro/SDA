@@ -8,12 +8,15 @@ namespace sda::test
 {
     class ContextFixture : public ::testing::Test
     {
+        std::list<Context*> createdContexts;
     protected:
         Context* context;
 
         void SetUp() override;
         
         void TearDown() override;
+
+        Context* newContext();
 
         DataType* findDataType(const std::string& name) const;
 

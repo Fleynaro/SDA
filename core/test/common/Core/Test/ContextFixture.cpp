@@ -14,13 +14,20 @@ using namespace sda::test;
 using namespace ::testing;
 
 void ContextFixture::SetUp() {
-    auto platform = std::make_unique<PlatformX86>(true);
-    context = new Context(std::move(platform));
+    context = newContext();
     context->initDefault();
 }
 
 void ContextFixture::TearDown() {
-    delete context;
+    for (auto ctx : createdContexts)
+        delete ctx;
+}
+
+Context* ContextFixture::newContext() {
+    auto platform = std::make_unique<PlatformX86>(true);
+    auto context = new Context(std::move(platform));
+    createdContexts.push_back(context);
+    return context;
 }
 
 DataType* ContextFixture::findDataType(const std::string& name) const {
