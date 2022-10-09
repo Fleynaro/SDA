@@ -1,4 +1,5 @@
 #pragma once
+#include <set>
 #include "Core/Utils/Serialization.h"
 
 namespace sda
@@ -7,17 +8,14 @@ namespace sda
 
     class Transaction
     {
-        struct Item {
-            enum {
-                New,
-                Modified,
-                Removed
-            } type;
-            utils::ISerializable* object;
+        enum ChangeType {
+            New,
+            Modified,
+            Removed
         };
 
         Database* m_database;
-        std::list<Item> m_items;
+        std::map<utils::ISerializable*, ChangeType> m_objects;
     public:
         Transaction(Database* database);
 
