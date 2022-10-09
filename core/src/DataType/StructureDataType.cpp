@@ -40,7 +40,7 @@ void StructureDataType::serialize(boost::json::object& data) const {
 
 void StructureDataType::deserialize(boost::json::object& data) {
     DataType::deserialize(data);
-    m_size = data["size"].get_uint64();
+    m_size = utils::get_number<size_t>(data["size"]);
     m_symbolTable = dynamic_cast<StandartSymbolTable*>(m_context->getSymbolTables()->get(data["symbol_table"]));
     if (!m_symbolTable)
         throw std::runtime_error("StructureDataType::deserialize: symbol table is null");

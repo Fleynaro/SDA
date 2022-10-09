@@ -55,7 +55,7 @@ void ArrayDataType::deserialize(boost::json::object& data) {
     m_dimensions.clear();
     const auto& dimensions = data["dimensions"].get_array();
     for (auto dimension : dimensions)
-        m_dimensions.push_back(dimension.get_uint64());
+        m_dimensions.push_back(utils::get_number<size_t>(dimension));
     notifyModified(Object::ModState::After);
 }
 

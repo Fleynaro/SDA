@@ -90,7 +90,7 @@ void StandartSymbolTable::deserialize(boost::json::object& data) {
     m_symbols.clear();
     const auto& symbols = data["symbols"].get_array();
     for (auto symbolData : symbols) {
-        auto offset = symbolData.get_object()["offset"].get_uint64();
+        auto offset = utils::get_number<Offset>(symbolData.get_object()["offset"]);
         auto symbol = m_context->getSymbols()->get(symbolData.get_object()["symbol"]);
         m_symbols[offset] = symbol;
     }

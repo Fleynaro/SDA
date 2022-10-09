@@ -111,8 +111,8 @@ void OptimizedSymbolTable::serialize(boost::json::object& data) const {
 
 void OptimizedSymbolTable::deserialize(boost::json::object& data) {
     SymbolTable::deserialize(data);
-    m_minOffset = data["min_offset"].get_uint64();
-    m_maxOffset = data["max_offset"].get_uint64();
+    m_minOffset = utils::get_number<Offset>(data["min_offset"]);
+    m_maxOffset = utils::get_number<Offset>(data["max_offset"]);
 
     // deserialize all symbol tables
     m_symbolTables.clear();

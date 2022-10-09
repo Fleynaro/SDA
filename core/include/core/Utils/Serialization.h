@@ -1,5 +1,6 @@
 #pragma once
 #include <boost/json.hpp>
+#include "Core/Utils/BoostJsonNumber.h"
 
 namespace utils
 {

@@ -49,7 +49,7 @@ void EnumDataType::deserialize(boost::json::object& data) {
     const auto& fields = data["fields"].get_array();
     for (const auto& fieldVal : fields) {
         auto field = fieldVal.get_object();
-        const auto key = static_cast<Key>(field["key"].get_uint64());
+        const auto key = utils::get_number<Key>(field["key"]);
         const auto name = field["name"].get_string().c_str();
         m_fields[key] = name;
     }

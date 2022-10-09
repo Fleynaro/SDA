@@ -55,13 +55,13 @@ void CustomCallingConvention::deserialize(boost::json::object& data) {
         auto obj = value.get_object();
 
         Storage storage;
-        storage.useType = static_cast<Storage::UseType>(obj["s_use_type"].get_uint64());
-        storage.registerId = obj["s_register_id"].get_uint64();
-        storage.offset = obj["s_offset"].get_uint64();
+        storage.useType = utils::get_number<Storage::UseType>(obj["s_use_type"]);
+        storage.registerId = utils::get_number<size_t>(obj["s_register_id"]);
+        storage.offset = utils::get_number<size_t>(obj["s_offset"]);
 
         StorageInfo storageInfo;
-        storageInfo.type = static_cast<StorageInfo::Type>(obj["si_type"].get_uint64());
-        storageInfo.paramIdx = obj["si_param_idx"].get_uint64();
+        storageInfo.type = utils::get_number<StorageInfo::Type>(obj["si_type"]);
+        storageInfo.paramIdx = utils::get_number<size_t>(obj["si_param_idx"]);
         storageInfo.isStoringFloat = obj["si_is_storing_float"].get_bool();
 
         m_storages[storage] = storageInfo;
