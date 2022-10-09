@@ -9,7 +9,7 @@ namespace sda::bind
     {
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<pcode::Varnode, v8pp::shared_ptr_traits> cl(module.isolate());
+            auto cl = NewClass<pcode::Varnode, v8pp::shared_ptr_traits>(module);
             cl
                 .property("size", &pcode::Varnode::getSize)
                 .property("isRegister", &pcode::Varnode::isRegister);
@@ -21,7 +21,7 @@ namespace sda::bind
     {
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<pcode::Instruction> cl(module.isolate());
+            auto cl = NewClass<pcode::Instruction>(module);
             cl
                 .auto_wrap_objects(true)
                 .property("id", &pcode::Instruction::getId)
@@ -49,7 +49,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<pcode::Parser> cl(module.isolate());
+            auto cl = NewClass<pcode::Parser>(module);
             cl
                 .static_method("Parse", &Parse);
             module.class_("PcodeParser", cl);

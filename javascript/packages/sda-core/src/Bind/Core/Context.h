@@ -41,7 +41,7 @@ namespace sda::bind
     public:
         static void Init(v8pp::module& module) {
             {
-                v8pp::class_<Callbacks, v8pp::shared_ptr_traits> cl(module.isolate());
+                auto cl = NewClass<Callbacks, v8pp::shared_ptr_traits>(module);
                 cl
                     .method("onObjectAdded", &Callbacks::onObjectAdded)
                     .method("onObjectModified", &Callbacks::onObjectModified)
@@ -50,7 +50,7 @@ namespace sda::bind
             }
             
             {
-                v8pp::class_<CallbacksJsImpl, v8pp::shared_ptr_traits> cl(module.isolate());
+                auto cl = NewClass<CallbacksJsImpl, v8pp::shared_ptr_traits>(module);
                 cl
                     .inherit<Callbacks>()
                     .var("oldCallbacks", &CallbacksJsImpl::m_oldCallbacks)
@@ -78,7 +78,7 @@ namespace sda::bind
 
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<Context> cl(module.isolate());
+            auto cl = NewClass<Context>(module);
             cl
                 .property("callbacks", &Context::getCallbacks, &Context::setCallbacks)
                 .static_method("New", &New);

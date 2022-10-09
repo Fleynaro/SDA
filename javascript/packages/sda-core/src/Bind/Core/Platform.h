@@ -18,7 +18,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<Platform> cl(module.isolate());
+            auto cl = NewClass<Platform>(module);
             cl
                 .property("name", &Platform::getName)
                 .property("pointerSize", &Platform::getPointerSize)
@@ -34,7 +34,7 @@ namespace sda::bind
     {
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<RegisterRepository> cl(module.isolate());
+            auto cl = NewClass<RegisterRepository>(module);
             cl
                 .method("getRegisterName", &RegisterRepository::getRegisterName)
                 .method("getRegisterId", &RegisterRepository::getRegisterId)
@@ -49,7 +49,7 @@ namespace sda::bind
     {
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<PcodeDecoder, v8pp::shared_ptr_traits> cl(module.isolate());
+            auto cl = NewClass<PcodeDecoder, v8pp::shared_ptr_traits>(module);
             cl
                 .property("instructionLength", &PcodeDecoder::getInstructionLength)
                 .method("decode", &PcodeDecoder::decode);
@@ -61,7 +61,7 @@ namespace sda::bind
     {
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<InstructionDecoder, v8pp::shared_ptr_traits> cl(module.isolate());
+            auto cl = NewClass<InstructionDecoder, v8pp::shared_ptr_traits>(module);
             cl
                 .method("decode", &InstructionDecoder::decode);
             module.class_("InstructionDecoder", cl);
@@ -74,7 +74,7 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             {
                 // TODO: will see https://github.com/pmed/v8pp/issues/31
-                v8pp::class_<CallingConvention::Storage> cl(module.isolate());
+                auto cl = NewClass<CallingConvention::Storage>(module);
                 cl
                     .auto_wrap_objects(true)
                     .var("useType", &CallingConvention::Storage::useType)
@@ -84,7 +84,7 @@ namespace sda::bind
             }
 
             {
-                v8pp::class_<CallingConvention::StorageInfo> cl(module.isolate());
+                auto cl = NewClass<CallingConvention::StorageInfo>(module);
                 cl
                     .auto_wrap_objects(true)
                     .var("type", &CallingConvention::StorageInfo::type)
@@ -94,7 +94,7 @@ namespace sda::bind
             }
 
             {
-                v8pp::class_<CallingConvention, v8pp::shared_ptr_traits> cl(module.isolate());
+                auto cl = NewClass<CallingConvention, v8pp::shared_ptr_traits>(module);
                 cl
                     .property("name", &CallingConvention::getName)
                     .method("getStorages", &CallingConvention::getStorages);
@@ -110,7 +110,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<CustomCallingConvention, v8pp::shared_ptr_traits> cl(module.isolate());
+            auto cl = NewClass<CustomCallingConvention, v8pp::shared_ptr_traits>(module);
             cl
                 .inherit<CallingConvention>()
                 .static_method("new", &New);

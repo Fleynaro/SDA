@@ -9,7 +9,7 @@ namespace sda::bind
     public:
         static void Init(v8pp::module& module) {
             {
-                v8pp::class_<SymbolTable::SymbolInfo> cl(module.isolate());
+                auto cl = NewClass<SymbolTable::SymbolInfo>(module);
                 cl
                     .auto_wrap_objects(true)
                     .var("symbolTable", &SymbolTable::SymbolInfo::symbolTable)
@@ -19,7 +19,7 @@ namespace sda::bind
             }
 
             {
-                v8pp::class_<SymbolTable> cl(module.isolate());
+                auto cl = NewClass<SymbolTable>(module);
                 cl
                     .inherit<ContextObject>()
                     .property("usedSize", &SymbolTable::getUsedSize)
@@ -40,7 +40,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<StandartSymbolTable> cl(module.isolate());
+            auto cl = NewClass<StandartSymbolTable>(module);
             cl
                 .inherit<SymbolTable>()
                 .property("symbols", &StandartSymbolTable::getSymbolsMap, &StandartSymbolTable::setSymbols)
@@ -68,7 +68,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<OptimizedSymbolTable> cl(module.isolate());
+            auto cl = NewClass<OptimizedSymbolTable>(module);
             cl
                 .inherit<SymbolTable>()
                 .property("symbolTables", &OptimizedSymbolTable::getSymbolTables)

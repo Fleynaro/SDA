@@ -26,7 +26,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<utils::ISerializable> cl(module.isolate());
+            auto cl = NewClass<utils::ISerializable>(module);
             cl
                 .method("serialize", &Serialize)
                 .method("deserialize", &Deserialize);
@@ -51,7 +51,7 @@ namespace sda::bind
 
         public:
             static auto Create(v8pp::module& module) {
-                v8pp::class_<PrinterJs> cl(module.isolate());
+                auto cl = NewClass<PrinterJs>(module);
                 cl
                     .inherit<utils::AbstractPrinter>()
                     .property("output", [](PrinterJs& self) { return self.ss.str(); })
@@ -62,7 +62,7 @@ namespace sda::bind
         };
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<utils::AbstractPrinter> cl(module.isolate());
+            auto cl = NewClass<utils::AbstractPrinter>(module);
             cl
                 .method("setTabSize", &utils::AbstractPrinter::setTabSize)
                 .method("setParentPrinter", &utils::AbstractPrinter::setParentPrinter)

@@ -14,7 +14,7 @@ namespace sda::bind
     {
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<DataType> cl(module.isolate());
+            auto cl = NewClass<DataType>(module);
             cl
                 .inherit<ContextObject>()
                 .property("baseType", &DataType::getBaseType)
@@ -37,7 +37,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<VoidDataType> cl(module.isolate());
+            auto cl = NewClass<VoidDataType>(module);
             cl
                 .inherit<DataType>()
                 .static_method("New", &New);
@@ -52,7 +52,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<PointerDataType> cl(module.isolate());
+            auto cl = NewClass<PointerDataType>(module);
             cl
                 .inherit<DataType>()
                 .property("pointedType", &PointerDataType::getPointedType)
@@ -68,7 +68,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<ArrayDataType> cl(module.isolate());
+            auto cl = NewClass<ArrayDataType>(module);
             cl
                 .inherit<DataType>()
                 .property("elementType", &ArrayDataType::getElementType)
@@ -85,7 +85,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<ScalarDataType> cl(module.isolate());
+            auto cl = NewClass<ScalarDataType>(module);
             cl
                 .inherit<DataType>()
                 .property("scalarType", &ScalarDataType::getScalarType)
@@ -101,7 +101,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<TypedefDataType> cl(module.isolate());
+            auto cl = NewClass<TypedefDataType>(module);
             cl
                 .inherit<DataType>()
                 .property("refType", &TypedefDataType::getReferenceType)
@@ -117,7 +117,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<EnumDataType> cl(module.isolate());
+            auto cl = NewClass<EnumDataType>(module);
             cl
                 .inherit<DataType>()
                 .property("fields", &EnumDataType::getFields, &EnumDataType::setFields)
@@ -134,7 +134,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<StructureDataType> cl(module.isolate());
+            auto cl = NewClass<StructureDataType>(module);
             cl
                 .inherit<DataType>()
                 .property("size", &StructureDataType::getSize, &StructureDataType::setSize)
@@ -156,7 +156,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<SignatureDataType> cl(module.isolate());
+            auto cl = NewClass<SignatureDataType>(module);
             cl
                 .inherit<DataType>()
                 .property("callingConvention", &SignatureDataType::getCallingConvention)

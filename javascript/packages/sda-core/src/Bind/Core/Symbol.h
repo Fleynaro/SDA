@@ -10,7 +10,7 @@ namespace sda::bind
     {
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<Symbol> cl(module.isolate());
+            auto cl = NewClass<Symbol>(module);
             cl
                 .inherit<ContextObject>()
                 .property("dataType", &Symbol::getDataType, &Symbol::setDataType);
@@ -25,7 +25,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<VariableSymbol> cl(module.isolate());
+            auto cl = NewClass<VariableSymbol>(module);
             cl
                 .inherit<Symbol>()
                 .static_method("New", &New);
@@ -42,7 +42,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<FunctionSymbol> cl(module.isolate());
+            auto cl = NewClass<FunctionSymbol>(module);
             cl
                 .inherit<Symbol>()
                 .property("signature", &FunctionSymbol::getSignature)
@@ -60,7 +60,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<FunctionParameterSymbol> cl(module.isolate());
+            auto cl = NewClass<FunctionParameterSymbol>(module);
             cl
                 .inherit<Symbol>()
                 .static_method("New", &New);
@@ -75,7 +75,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<StructureFieldSymbol> cl(module.isolate());
+            auto cl = NewClass<StructureFieldSymbol>(module);
             cl
                 .inherit<Symbol>()
                 .static_method("New", &New);

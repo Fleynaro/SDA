@@ -7,7 +7,7 @@ namespace sda::bind
     {
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<Object> cl(module.isolate());
+            auto cl = NewClass<Object>(module);
             cl
                 .inherit<utils::ISerializable>()
                 .property("id", [](const Object& self) { return std::string(self.serializeId()); })
@@ -20,7 +20,7 @@ namespace sda::bind
     {
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<ContextObject> cl(module.isolate());
+            auto cl = NewClass<ContextObject>(module);
             cl
                 .inherit<Object>()
                 .property("name", &ContextObject::getName, &ContextObject::setName)

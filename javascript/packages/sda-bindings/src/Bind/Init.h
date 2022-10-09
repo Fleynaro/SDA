@@ -27,10 +27,19 @@
 #include <v8pp/object.hpp>
 
 #include "Convert.h"
+#include "ObjectLookupTable.h"
 #include "ObjectExport.h"
 #include "Call.h"
 
 namespace sda::bind
 {
     void InitModule(v8::Local<v8::Object> module, std::list<std::function<void(v8pp::module&)>> inits);
+
+    template<typename T, typename Traits = v8pp::raw_ptr_traits>
+    v8pp::class_<T, Traits> NewClass(v8pp::module& module, bool registerObjectLookupTable = true) {
+        v8pp::class_<T, Traits> cl(module.isolate());
+        if (registerObjectLookupTable)
+            ObjectLookupTable<T>::Register(cl);
+        return cl;
+    }
 };

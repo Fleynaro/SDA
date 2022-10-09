@@ -22,7 +22,7 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            v8pp::class_<PlatformX86> cl(module.isolate());
+            auto cl = NewClass<PlatformX86>(module);
             cl
                 .inherit<Platform>()
                 .method("take", &Take)

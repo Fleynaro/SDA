@@ -20,4 +20,4 @@ target_link_libraries(
     magic_enum::magic_enum)
 
 target_compile_options(
-    bindings-js PUBLIC /w44275 /w44251)
+    bindings-js PUBLIC /bigobj /w44275 /w44251)
