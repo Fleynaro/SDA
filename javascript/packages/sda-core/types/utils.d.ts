@@ -1,3 +1,5 @@
+export type Hash = number;
+
 export interface ISerializable {
     serialize(): object;
 

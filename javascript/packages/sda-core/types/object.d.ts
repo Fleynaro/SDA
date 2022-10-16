@@ -1,7 +1,8 @@
-import { ISerializable } from "./utils";
+import { ISerializable, Hash } from "./utils";
 
 export abstract class Object implements ISerializable {
-    id: string;
+    readonly hashId: Hash;
+    readonly id: string;
     
     setTemporary(temporary: boolean): void;
 
