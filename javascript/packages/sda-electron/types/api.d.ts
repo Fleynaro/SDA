@@ -1,21 +1,9 @@
-namespace api {
-    interface ContextObject {
-        name: string;
-    }
-    
-    interface DataType extends ContextObject {
-        isVoid: boolean;
-    }
-    
-    interface DataTypeController {
-        getDataTypeByName(name: string): DataType;
-    }
-}
+import { ProjectController } from './project';
+import { DataTypeController } from './data-type';
 
 declare global {
     interface Window {
-        dataTypeApi: api.DataTypeController;
+        projectApi: ProjectController;
+        dataTypeApi: DataTypeController;
     }
 }
-
-export default api;
