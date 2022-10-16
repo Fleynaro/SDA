@@ -1,5 +1,5 @@
-#include "Platform/X86/PcodeDecoder.h"
-#include "Platform/X86/RegisterRepository.h"
+#include "SDA/Platform/X86/PcodeDecoder.h"
+#include "SDA/Platform/X86/RegisterRepository.h"
 #include <sstream>
 #include <iomanip>
 

@@ -1,5 +1,5 @@
-#include "Core/Platform/Register.h"
-#include <Core/Platform/RegisterRepository.h>
+#include "SDA/Core/Platform/Register.h"
+#include "SDA/Core/Platform/RegisterRepository.h"
 #include <sstream>
 
 using namespace sda;

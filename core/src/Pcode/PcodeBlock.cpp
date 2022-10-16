@@ -1,5 +1,5 @@
-#include "Core/Pcode/PcodeBlock.h"
-#include "Core/Pcode/PcodeGraph.h"
+#include "SDA/Core/Pcode/PcodeBlock.h"
+#include "SDA/Core/Pcode/PcodeGraph.h"
 
 using namespace sda::pcode;
 

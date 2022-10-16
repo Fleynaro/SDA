@@ -1,6 +1,6 @@
-#include "Decompiler/Semantics/Semantics.h"
-#include "Decompiler/Semantics/SemanticsManager.h"
-#include "Core/DataType/StructureDataType.h"
+#include "SDA/Decompiler/Semantics/Semantics.h"
+#include "SDA/Decompiler/Semantics/SemanticsManager.h"
+#include "SDA/Core/DataType/StructureDataType.h"
 
 using namespace sda;
 using namespace sda::decompiler;

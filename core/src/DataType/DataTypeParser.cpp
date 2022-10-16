@@ -1,13 +1,13 @@
-#include "Core/DataType/DataTypeParser.h"
-#include "Core/DataType/VoidDataType.h"
-#include "Core/DataType/PointerDataType.h"
-#include "Core/DataType/ArrayDataType.h"
-#include "Core/DataType/ScalarDataType.h"
-#include "Core/DataType/TypedefDataType.h"
-#include "Core/DataType/EnumDataType.h"
-#include "Core/DataType/StructureDataType.h"
-#include "Core/DataType/SignatureDataType.h"
-#include "Core/SymbolTable/SymbolTableParser.h"
+#include "SDA/Core/DataType/DataTypeParser.h"
+#include "SDA/Core/DataType/VoidDataType.h"
+#include "SDA/Core/DataType/PointerDataType.h"
+#include "SDA/Core/DataType/ArrayDataType.h"
+#include "SDA/Core/DataType/ScalarDataType.h"
+#include "SDA/Core/DataType/TypedefDataType.h"
+#include "SDA/Core/DataType/EnumDataType.h"
+#include "SDA/Core/DataType/StructureDataType.h"
+#include "SDA/Core/DataType/SignatureDataType.h"
+#include "SDA/Core/SymbolTable/SymbolTableParser.h"
 
 using namespace sda;
 using namespace utils::lexer;

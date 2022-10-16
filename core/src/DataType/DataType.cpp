@@ -1,9 +1,9 @@
-#include "Core/DataType/DataType.h"
-#include "Core/DataType/VoidDataType.h"
-#include "Core/DataType/PointerDataType.h"
-#include "Core/DataType/ArrayDataType.h"
-#include "Core/DataType/ScalarDataType.h"
-#include "Core/DataType/DataTypeParser.h"
+#include "SDA/Core/DataType/DataType.h"
+#include "SDA/Core/DataType/VoidDataType.h"
+#include "SDA/Core/DataType/PointerDataType.h"
+#include "SDA/Core/DataType/ArrayDataType.h"
+#include "SDA/Core/DataType/ScalarDataType.h"
+#include "SDA/Core/DataType/DataTypeParser.h"
 #include <boost/functional/hash.hpp>
 
 using namespace sda;

@@ -1,6 +1,6 @@
-#include "Core/SymbolTable/OptimizedSymbolTable.h"
-#include "Core/SymbolTable/StandartSymbolTable.h"
-#include "Core/Utils/IOManip.h"
+#include "SDA/Core/SymbolTable/OptimizedSymbolTable.h"
+#include "SDA/Core/SymbolTable/StandartSymbolTable.h"
+#include "SDA/Core/Utils/IOManip.h"
 
 using namespace sda;
 

@@ -1,6 +1,6 @@
-#include "Core/IRcode/IRcodeLinearExpr.h"
-#include "Core/IRcode/IRcodeValue.h"
-#include "Core/DataType/PointerDataType.h"
+#include "SDA/Core/IRcode/IRcodeLinearExpr.h"
+#include "SDA/Core/IRcode/IRcodeValue.h"
+#include "SDA/Core/DataType/PointerDataType.h"
 #include <stdexcept>
 
 using namespace sda;

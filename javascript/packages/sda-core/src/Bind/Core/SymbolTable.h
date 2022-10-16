@@ -1,6 +1,6 @@
 #pragma once
-#include "Core/SymbolTable/StandartSymbolTable.h"
-#include "Core/SymbolTable/OptimizedSymbolTable.h"
+#include "SDA/Core/SymbolTable/StandartSymbolTable.h"
+#include "SDA/Core/SymbolTable/OptimizedSymbolTable.h"
 
 namespace sda::bind
 {

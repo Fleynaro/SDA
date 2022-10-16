@@ -1,4 +1,4 @@
-#include "Core/Symbol/StructureFieldSymbol.h"
+#include "SDA/Core/Symbol/StructureFieldSymbol.h"
 
 using namespace sda;
 

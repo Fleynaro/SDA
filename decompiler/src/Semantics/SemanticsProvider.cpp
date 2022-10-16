@@ -1,4 +1,4 @@
-#include "Decompiler/Semantics/SemanticsProvider.h"
+#include "SDA/Decompiler/Semantics/SemanticsProvider.h"
 
 using namespace sda;
 using namespace sda::decompiler;

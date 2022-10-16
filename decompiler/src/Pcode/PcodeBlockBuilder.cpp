@@ -1,5 +1,5 @@
-#include "Decompiler/Pcode/PcodeGraphBuilder.h"
-#include "Core/Utils/IOManip.h"
+#include "SDA/Decompiler/Pcode/PcodeGraphBuilder.h"
+#include "SDA/Core/Utils/IOManip.h"
 
 using namespace sda;
 using namespace sda::decompiler;

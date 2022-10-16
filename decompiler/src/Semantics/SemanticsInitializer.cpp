@@ -1,6 +1,6 @@
-#include "Decompiler/Semantics/SemanticsInitializer.h"
-#include "Core/DataType/StructureDataType.h"
-#include "Core/Symbol/FunctionSymbol.h"
+#include "SDA/Decompiler/Semantics/SemanticsInitializer.h"
+#include "SDA/Core/DataType/StructureDataType.h"
+#include "SDA/Core/Symbol/FunctionSymbol.h"
 
 using namespace sda;
 using namespace sda::decompiler;

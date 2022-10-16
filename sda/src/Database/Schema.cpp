@@ -1,9 +1,9 @@
-#include "Database/Schema.h"
-#include "Core/Image/AddressSpace.h"
-#include "Core/Image/Image.h"
-#include "Core/DataType/DataType.h"
-#include "Core/Symbol/Symbol.h"
-#include "Core/SymbolTable/SymbolTable.h"
+#include "SDA/Database/Schema.h"
+#include "SDA/Core/Image/AddressSpace.h"
+#include "SDA/Core/Image/Image.h"
+#include "SDA/Core/DataType/DataType.h"
+#include "SDA/Core/Symbol/Symbol.h"
+#include "SDA/Core/SymbolTable/SymbolTable.h"
 
 using namespace sda;
 

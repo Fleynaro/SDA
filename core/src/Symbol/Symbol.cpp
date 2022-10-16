@@ -1,5 +1,5 @@
-#include "Core/Symbol/Symbol.h"
-#include "Core/DataType/DataType.h"
+#include "SDA/Core/Symbol/Symbol.h"
+#include "SDA/Core/DataType/DataType.h"
 
 using namespace sda;
 

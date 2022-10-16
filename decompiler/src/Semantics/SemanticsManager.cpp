@@ -1,4 +1,4 @@
-#include "Decompiler/Semantics/SemanticsManager.h"
+#include "SDA/Decompiler/Semantics/SemanticsManager.h"
 
 using namespace sda;
 using namespace sda::decompiler;

@@ -1,9 +1,9 @@
-#include "Decompiler/Semantics/SemanticsPropagator.h"
-#include "Decompiler/Semantics/SemanticsManager.h"
-#include "Core/DataType/ScalarDataType.h"
-#include "Core/DataType/PointerDataType.h"
-#include "Core/DataType/ArrayDataType.h"
-#include "Core/DataType/StructureDataType.h"
+#include "SDA/Decompiler/Semantics/SemanticsPropagator.h"
+#include "SDA/Decompiler/Semantics/SemanticsManager.h"
+#include "SDA/Core/DataType/ScalarDataType.h"
+#include "SDA/Core/DataType/PointerDataType.h"
+#include "SDA/Core/DataType/ArrayDataType.h"
+#include "SDA/Core/DataType/StructureDataType.h"
 
 using namespace sda;
 using namespace sda::decompiler;

@@ -1,10 +1,10 @@
 #pragma once
-#include "Core/Context.h"
-#include "Core/Image/AddressSpace.h"
-#include "Core/Image/Image.h"
-#include "Core/DataType/DataType.h"
-#include "Core/Symbol/Symbol.h"
-#include "Core/SymbolTable/SymbolTable.h"
+#include "SDA/Core/Context.h"
+#include "SDA/Core/Image/AddressSpace.h"
+#include "SDA/Core/Image/Image.h"
+#include "SDA/Core/DataType/DataType.h"
+#include "SDA/Core/Symbol/Symbol.h"
+#include "SDA/Core/SymbolTable/SymbolTable.h"
 
 namespace sda::bind
 {

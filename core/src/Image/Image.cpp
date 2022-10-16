@@ -1,6 +1,6 @@
-#include "Core/Image/Image.h"
-#include "Core/SymbolTable/OptimizedSymbolTable.h"
-#include "Core/Context.h"
+#include "SDA/Core/Image/Image.h"
+#include "SDA/Core/SymbolTable/OptimizedSymbolTable.h"
+#include "SDA/Core/Context.h"
 
 using namespace sda;
 

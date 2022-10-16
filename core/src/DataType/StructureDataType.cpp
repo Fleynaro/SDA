@@ -1,6 +1,6 @@
-#include "Core/DataType/StructureDataType.h"
-#include "Core/SymbolTable/StandartSymbolTable.h"
-#include "Core/Context.h"
+#include "SDA/Core/DataType/StructureDataType.h"
+#include "SDA/Core/SymbolTable/StandartSymbolTable.h"
+#include "SDA/Core/Context.h"
 
 using namespace sda;
 

@@ -1,8 +1,8 @@
-#include "Core/IRcode/IRcodeDataTypeProvider.h"
-#include "Core/IRcode/IRcodePrinter.h"
-#include "Core/Test/Utils/TestAssertion.h"
-#include "Decompiler/IRcode/Generator/IRcodeBlockGenerator.h"
-#include "Decompiler/Test/PcodeFixture.h"
+#include "SDA/Core/IRcode/IRcodeDataTypeProvider.h"
+#include "SDA/Core/IRcode/IRcodePrinter.h"
+#include "Test/Core/Utils/TestAssertion.h"
+#include "SDA/Decompiler/IRcode/Generator/IRcodeBlockGenerator.h"
+#include "Test/Decompiler/PcodeFixture.h"
 
 using namespace sda;
 using namespace sda::test;

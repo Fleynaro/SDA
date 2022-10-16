@@ -1,9 +1,9 @@
-#include "Callbacks/ContextCallbacks.h"
-#include "Program.h"
-#include "Project.h"
-#include "Factory.h"
-#include "Change.h"
-#include "Database/Transaction.h"
+#include "SDA/Callbacks/ContextCallbacks.h"
+#include "SDA/Program.h"
+#include "SDA/Project.h"
+#include "SDA/Factory.h"
+#include "SDA/Change.h"
+#include "SDA/Database/Transaction.h"
 
 using namespace sda;
 

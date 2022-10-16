@@ -1,7 +1,7 @@
-#include "Core/SymbolTable/StandartSymbolTable.h"
-#include "Core/Symbol/VariableSymbol.h"
-#include "Core/Test/ContextFixture.h"
-#include "Core/Test/Utils/TestAssertion.h"
+#include "SDA/Core/SymbolTable/StandartSymbolTable.h"
+#include "SDA/Core/Symbol/VariableSymbol.h"
+#include "Test/Core/ContextFixture.h"
+#include "Test/Core/Utils/TestAssertion.h"
 
 using namespace sda;
 using namespace sda::test;

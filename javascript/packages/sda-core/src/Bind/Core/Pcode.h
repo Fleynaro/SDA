@@ -1,7 +1,7 @@
 #pragma once
-#include "Core/Pcode/PcodeInstruction.h"
-#include "Core/Pcode/PcodeParser.h"
-#include "Core/Pcode/PcodePrinter.h"
+#include "SDA/Core/Pcode/PcodeInstruction.h"
+#include "SDA/Core/Pcode/PcodeParser.h"
+#include "SDA/Core/Pcode/PcodePrinter.h"
 
 namespace sda::bind
 {

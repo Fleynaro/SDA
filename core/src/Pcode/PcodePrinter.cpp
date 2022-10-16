@@ -1,7 +1,7 @@
-#include "Core/Pcode/PcodePrinter.h"
+#include "SDA/Core/Pcode/PcodePrinter.h"
 #include <sstream>
 #include "rang.hpp"
-#include "Core/Utils/IOManip.h"
+#include "SDA/Core/Utils/IOManip.h"
 
 using namespace sda::pcode;
 

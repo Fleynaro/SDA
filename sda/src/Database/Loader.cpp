@@ -1,6 +1,6 @@
-#include "Database/Loader.h"
+#include "SDA/Database/Loader.h"
+#include "SDA/Factory.h"
 #include <boost/uuid/uuid_generators.hpp>
-#include "Factory.h"
 
 using namespace sda;
 

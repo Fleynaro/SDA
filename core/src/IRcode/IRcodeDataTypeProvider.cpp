@@ -1,5 +1,5 @@
-#include "Core/IRcode/IRcodeDataTypeProvider.h"
-#include "Core/DataType/ScalarDataType.h"
+#include "SDA/Core/IRcode/IRcodeDataTypeProvider.h"
+#include "SDA/Core/DataType/ScalarDataType.h"
 
 using namespace sda;
 using namespace sda::ircode;

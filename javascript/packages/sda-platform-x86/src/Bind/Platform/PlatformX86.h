@@ -1,8 +1,8 @@
 #pragma once
-#include "Platform/X86/Platform.h"
-#include "Core/Platform/PcodeDecoder.h"
-#include "Core/Platform/InstructionDecoder.h"
-#include "Core/Platform/CallingConvention.h"
+#include "SDA/Platform/X86/Platform.h"
+#include "SDA/Core/Platform/PcodeDecoder.h"
+#include "SDA/Core/Platform/InstructionDecoder.h"
+#include "SDA/Core/Platform/CallingConvention.h"
 
 namespace sda::bind
 {

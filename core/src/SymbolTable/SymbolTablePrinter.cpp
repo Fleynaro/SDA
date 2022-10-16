@@ -1,6 +1,6 @@
-#include "Core/SymbolTable/SymbolTablePrinter.h"
-#include "Core/Symbol/Symbol.h"
-#include "Core/Utils/IOManip.h"
+#include "SDA/Core/SymbolTable/SymbolTablePrinter.h"
+#include "SDA/Core/Symbol/Symbol.h"
+#include "SDA/Core/Utils/IOManip.h"
 #include "rang.hpp"
 
 using namespace sda;

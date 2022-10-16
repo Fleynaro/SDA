@@ -1,5 +1,5 @@
-#include "Decompiler/Semantics/SemanticsObject.h"
-#include "Decompiler/Semantics/SemanticsManager.h"
+#include "SDA/Decompiler/Semantics/SemanticsObject.h"
+#include "SDA/Decompiler/Semantics/SemanticsManager.h"
 #include "rang.hpp"
 
 using namespace sda;

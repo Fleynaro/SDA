@@ -1,8 +1,8 @@
-#include "Core/SymbolTable/SymbolTableParser.h"
-#include "Core/SymbolTable/StandartSymbolTable.h"
-#include "Core/Symbol/VariableSymbol.h"
-#include "Core/Symbol/StructureFieldSymbol.h"
-#include "Core/DataType/DataTypeParser.h"
+#include "SDA/Core/SymbolTable/SymbolTableParser.h"
+#include "SDA/Core/SymbolTable/StandartSymbolTable.h"
+#include "SDA/Core/Symbol/VariableSymbol.h"
+#include "SDA/Core/Symbol/StructureFieldSymbol.h"
+#include "SDA/Core/DataType/DataTypeParser.h"
 
 using namespace sda;
 using namespace utils::lexer;

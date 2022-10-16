@@ -1,8 +1,8 @@
 #pragma once
-#include "Core/Symbol/VariableSymbol.h"
-#include "Core/Symbol/FunctionSymbol.h"
-#include "Core/Symbol/FunctionParameterSymbol.h"
-#include "Core/Symbol/StructureFieldSymbol.h"
+#include "SDA/Core/Symbol/VariableSymbol.h"
+#include "SDA/Core/Symbol/FunctionSymbol.h"
+#include "SDA/Core/Symbol/FunctionParameterSymbol.h"
+#include "SDA/Core/Symbol/StructureFieldSymbol.h"
 
 namespace sda::bind
 {

@@ -1,5 +1,5 @@
-#include "Core/SymbolTable/SymbolTable.h"
-#include "Core/DataType/StructureDataType.h"
+#include "SDA/Core/SymbolTable/SymbolTable.h"
+#include "SDA/Core/DataType/StructureDataType.h"
 
 using namespace sda;
 

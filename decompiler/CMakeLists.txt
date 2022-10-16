@@ -9,8 +9,7 @@ target_include_directories(
     decompiler PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_link_libraries(
-    decompiler PUBLIC
-    core)
+    decompiler PUBLIC core)
 
 if(BUILD_TESTING)
 	add_subdirectory(test)

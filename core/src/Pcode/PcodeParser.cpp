@@ -1,5 +1,5 @@
-#include "Core/Pcode/PcodeParser.h"
-#include "Core/Platform/RegisterRepository.h"
+#include "SDA/Core/Pcode/PcodeParser.h"
+#include "SDA/Core/Platform/RegisterRepository.h"
 #include <sstream>
 #include <boost/algorithm/string.hpp>
 

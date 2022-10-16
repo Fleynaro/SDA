@@ -1,4 +1,4 @@
-#include "Core/Symbol/VariableSymbol.h"
+#include "SDA/Core/Symbol/VariableSymbol.h"
 
 using namespace sda;
 

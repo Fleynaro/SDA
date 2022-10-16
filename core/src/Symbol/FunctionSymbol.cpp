@@ -1,5 +1,5 @@
-#include "Core/Symbol/FunctionSymbol.h"
-#include "Core/SymbolTable/StandartSymbolTable.h"
+#include "SDA/Core/Symbol/FunctionSymbol.h"
+#include "SDA/Core/SymbolTable/StandartSymbolTable.h"
 
 using namespace sda;
 

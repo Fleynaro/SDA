@@ -1,7 +1,7 @@
-#include "Change.h"
-#include "Factory.h"
-#include "Core/DataType/DataTypeParser.h"
-#include "Core/Test/ContextFixture.h"
+#include "SDA/Change.h"
+#include "SDA/Factory.h"
+#include "SDA/Core/DataType/DataTypeParser.h"
+#include "Test/Core/ContextFixture.h"
 
 using namespace sda;
 using namespace sda::test;

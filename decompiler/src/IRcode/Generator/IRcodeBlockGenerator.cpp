@@ -1,4 +1,4 @@
-#include "Decompiler/IRcode/Generator/IRcodeBlockGenerator.h"
+#include "SDA/Decompiler/IRcode/Generator/IRcodeBlockGenerator.h"
 #include <boost/functional/hash.hpp>
 
 using namespace sda;

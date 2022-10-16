@@ -1,8 +1,8 @@
-#include "Core/DataType/DataTypeParser.h"
-#include "Core/DataType/DataTypePrinter.h"
-#include "Core/Test/ContextFixture.h"
-#include "Core/Test/Plaftorm/CallingConventionMock.h"
-#include "Core/Test/Utils/TestAssertion.h"
+#include "SDA/Core/DataType/DataTypeParser.h"
+#include "SDA/Core/DataType/DataTypePrinter.h"
+#include "Test/Core/ContextFixture.h"
+#include "Test/Core/Plaftorm/CallingConventionMock.h"
+#include "Test/Core/Utils/TestAssertion.h"
 
 using namespace sda;
 using namespace sda::test;

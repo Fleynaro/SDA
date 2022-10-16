@@ -1,6 +1,6 @@
-#include "Core/Image/AddressSpace.h"
-#include "Core/Image/Image.h"
-#include "Core/Context.h"
+#include "SDA/Core/Image/AddressSpace.h"
+#include "SDA/Core/Image/Image.h"
+#include "SDA/Core/Context.h"
 
 using namespace sda;
 

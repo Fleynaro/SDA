@@ -1,5 +1,5 @@
-#include "Core/Image/ImageAnalyser.h"
-#include "Core/Image/Image.h"
+#include "SDA/Core/Image/ImageAnalyser.h"
+#include "SDA/Core/Image/Image.h"
 
 using namespace sda;
 using namespace sda::windows;

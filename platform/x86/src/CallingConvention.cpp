@@ -1,6 +1,6 @@
-#include "Platform/X86/CallingConvention.h"
-#include "Platform/X86/RegisterRepository.h"
-#include "Core/DataType/SignatureDataType.h"
+#include "SDA/Platform/X86/CallingConvention.h"
+#include "SDA/Platform/X86/RegisterRepository.h"
+#include "SDA/Core/DataType/SignatureDataType.h"
 #include <Zydis/Zydis.h>
 #include <algorithm>
 

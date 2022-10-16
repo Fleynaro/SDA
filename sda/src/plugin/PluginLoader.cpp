@@ -1,4 +1,4 @@
-#include "plugin/PluginLoader.h"
+#include "SDA/plugin/PluginLoader.h"
 #include <boost/function.hpp>
 #include <boost/dll/import.hpp>
 

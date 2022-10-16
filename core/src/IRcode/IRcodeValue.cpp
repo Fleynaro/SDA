@@ -1,6 +1,6 @@
-#include "Core/IRcode/IRcodeValue.h"
-#include "Core/DataType/PointerDataType.h"
-#include "Core/DataType/StructureDataType.h"
+#include "SDA/Core/IRcode/IRcodeValue.h"
+#include "SDA/Core/DataType/PointerDataType.h"
+#include "SDA/Core/DataType/StructureDataType.h"
 
 using namespace sda;
 using namespace sda::ircode;
