@@ -4,6 +4,7 @@ import * as path from "path";
 
 // ------------------------------
 //import core from "sda-core";
+import { Program } from "sda";
 import { Context } from "sda-core/context";
 import { PcodeParser, PcodePrinter } from "sda-core/p-code";
 import { VoidDataType } from "sda-core/data-type";
@@ -78,7 +79,9 @@ app.whenReady().then(() => {
     register<api.DataTypeController['getDataTypeByName']>(
         'getDataTypeByName',
         (name) => {
-            const dataType = VoidDataType.New(context);
+            const dataType_ = VoidDataType.New(context);
+            const dataType = VoidDataType.Get(dataType_.hashId);
+            console.log("hash id = " + (dataType as any).hashId);
             return {
                 name: dataType.name + name,
                 isVoid: dataType.isVoid
