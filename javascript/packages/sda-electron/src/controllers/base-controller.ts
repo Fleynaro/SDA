@@ -9,7 +9,7 @@ abstract class BaseController {
 
     protected register(methodName: string, handler: (...args: any[]) => any) {
         ipcMain.handle(this.controllerName + '.' + methodName, async (event, ...args) => {
-            return await handler(...args);
+            return await handler.call(this, ...args);
         });
     }
 }

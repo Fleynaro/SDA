@@ -1,4 +1,5 @@
 import { Platform } from "./platform";
+import { Hash } from './utils';
 
 export abstract class ContextCallbacks {
     onObjectAdded(object: Object): void;
@@ -21,7 +22,11 @@ export class ContextCallbacksImpl extends ContextCallbacks {
 }
 
 export class Context {
+    readonly hashId: Hash;
+
     callbacks: ContextCallbacks;
 
     static New(platform: Platform): Context;
+
+    static Get(hashId: Hash): Context;
 }

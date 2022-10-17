@@ -1,5 +1,6 @@
 #include <magic_enum.hpp>
 #include <v8pp/convert.hpp>
+#include <filesystem>
 
 namespace v8pp
 {
@@ -21,6 +22,29 @@ namespace v8pp
 
         static to_type to_v8(v8::Isolate* isolate, T value) {
             return convert<underlying_type>::to_v8(isolate, magic_enum::enum_name(value).data());
+        }
+    };
+
+    //for filesysyem::path
+    template<>
+    struct convert<std::filesystem::path>
+    {
+        using underlying_type = std::string;
+
+        using from_type = std::filesystem::path;
+        using to_type = typename convert<underlying_type>::to_type;
+
+        static bool is_valid(v8::Isolate* isolate, v8::Local<v8::Value> value) {
+            return convert<underlying_type>::is_valid(isolate, value);
+        }
+
+        static from_type from_v8(v8::Isolate* isolate, v8::Local<v8::Value> value) {
+            underlying_type path = convert<underlying_type>::from_v8(isolate, value);
+            return path;
+        }
+
+        static to_type to_v8(v8::Isolate* isolate, const from_type& value) {
+            return convert<underlying_type>::to_v8(isolate, value.string());
         }
     };
 };

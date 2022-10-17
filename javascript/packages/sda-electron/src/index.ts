@@ -1,6 +1,7 @@
 import { app } from "electron";
-import initServerControllers from "./controllers/server";
 import { createWindow } from "./utils/window";
+import initControllers from "./controllers";
+import { Program } from 'sda';
 
 app.whenReady().then(() => {
     createWindow("project", {
@@ -8,7 +9,8 @@ app.whenReady().then(() => {
         height: 600,
     });
 
-    initServerControllers();
+    const program = Program.New();
+    initControllers(program);
 
     // app.on('activate', () => {
     //     if (BrowserWindow.getAllWindows().length === 0)
