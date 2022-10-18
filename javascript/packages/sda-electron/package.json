@@ -3,12 +3,8 @@
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
-  "typesVersions": {
-    "*": {
-      "*": [
-        "./types/*.d.ts"
-      ]
-    }
+  "exports": {
+    "./*": "./dist/api/*.js"
   },
   "scripts": {
     "start": "electron .",

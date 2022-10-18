@@ -5,10 +5,6 @@
     "outDir": "dist",
     "sourceMap": true,
     "composite": true,
-    "baseUrl": ".",
-    "paths": {
-      "@api/*": ["types/*"],
-    }
   },
   "include": ["src"],
   "exclude": ["dist"],

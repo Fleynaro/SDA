@@ -3,6 +3,18 @@ import { createWindow } from "./utils/window";
 import initControllers from "./controllers";
 import { Program } from 'sda';
 
+/*
+TODO: use aliases for imports (required: npm install tsc-alias)
+"baseUrl": "./src",
+"paths": {
+    "@api/*": ["api/*"],
+    "@dto/*": ["dto/*"],
+    "@utils/*": ["utils/*"],
+}
+
+https://stackoverflow.com/questions/59179787/tsc-doesnt-compile-alias-paths
+*/
+
 app.whenReady().then(() => {
     createWindow("project", {
         width: 800,

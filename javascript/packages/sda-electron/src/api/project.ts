@@ -1,9 +1,8 @@
-import { Context } from './context';
-import { Lookupable } from './utils';
+import { Identifiable, ObjectId } from './common';
 
-export interface Project extends Lookupable {
+export interface Project extends Identifiable {
     path: string;
-    context: Context;
+    context: ObjectId;
 }
 
 export interface ProjectController {

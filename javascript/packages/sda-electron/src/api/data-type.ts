@@ -1,6 +1,6 @@
-import { Lookupable } from './utils';
+import { Identifiable } from './common';
 
-export interface ContextObject extends Lookupable {
+export interface ContextObject extends Identifiable {
     name: string;
 }
 

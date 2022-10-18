@@ -9,6 +9,8 @@ const DefaultWindowOptions: BrowserWindowConstructorOptions = {
     }
 }
 
+let Windows: BrowserWindow[] = [];
+
 export const createWindow = (route: string, options: BrowserWindowConstructorOptions) => {
     const window = new BrowserWindow({
         ...DefaultWindowOptions,
@@ -21,5 +23,10 @@ export const createWindow = (route: string, options: BrowserWindowConstructorOpt
     );
     if (isElectronDev)
         window.webContents.openDevTools({ mode: 'detach' });
+    Windows.push(window);
     return window;
+}
+
+export const notifyWindows = (event: string, ...args: any[]) => {
+    Windows.forEach(window => window.webContents.send(event, ...args));
 }

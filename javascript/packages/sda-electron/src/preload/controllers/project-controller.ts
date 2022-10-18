@@ -1,9 +1,9 @@
 import { invokerFactory } from '../utils';
-import * as api from '@api/project';
+import { ProjectController } from '../../api/project';
 
 const invoke = invokerFactory("Project");
 
-const ProjectController: api.ProjectController = {
+const ProjectControllerImpl: ProjectController = {
     getProjects: () =>
         invoke("getProjects"),
 
@@ -11,4 +11,4 @@ const ProjectController: api.ProjectController = {
         invoke("createProject", path, platformName)
 };
 
-export default ProjectController;
+export default ProjectControllerImpl;
