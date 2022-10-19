@@ -4,7 +4,12 @@
   "description": "",
   "main": "dist/index.js",
   "exports": {
-    "./*": "./dist/api/*.js"
+    "./api/*": "./dist/api/*.js"
+  },
+  "typesVersions": {
+    "*": {
+      "api/*": ["./dist/api/*.d.ts"]
+    }
   },
   "scripts": {
     "start": "electron .",

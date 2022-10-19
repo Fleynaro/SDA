@@ -1,5 +1,6 @@
 import BaseController from './base-controller';
-import { notifyAboutObjectChange, ObjectChangeType } from '../notifier';
+import { notifierController } from '../controllers';
+import { ObjectChangeType } from '../api/notifier';
 import { toProjectDTO } from '../dto/project';
 import { ProjectController, Project as ProjectDTO } from '../api/project';
 import { Program, Project } from 'sda';
@@ -32,7 +33,7 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
         const context = Context.New(platform);
         const project = Project.New(this.program, path, context);
         const projectDTO = toProjectDTO(project);
-        notifyAboutObjectChange(projectDTO.id, ObjectChangeType.Create);
+        notifierController.notifyAboutObjectChange(projectDTO.id, ObjectChangeType.Create);
         return projectDTO;
     }
 }

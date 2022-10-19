@@ -11,3 +11,7 @@ export interface DataType extends ContextObject {
 export interface DataTypeController {
     getDataTypeByName(name: string): DataType;
 }
+
+export const getDataTypeApi = (window: any) => {
+    return window.dataTypeApi as DataTypeController;
+}

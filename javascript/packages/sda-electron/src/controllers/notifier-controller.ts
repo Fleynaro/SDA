@@ -1,5 +1,5 @@
 import BaseController from './base-controller';
-import { notifyAboutObjectChange } from '../notifier';
+import { notifyWindows } from "../utils/window";
 import { NotifierController } from '../api/notifier';
 import { ObjectId } from '../api/common';
 import { ObjectChangeType } from '../api/notifier';
@@ -11,7 +11,11 @@ class NotifierControllerImpl extends BaseController implements NotifierControlle
     }
 
     public async notifyAboutObjectChange(id: ObjectId, changeType: ObjectChangeType): Promise<void> {
-        notifyAboutObjectChange(id, changeType);
+        notifyWindows(`Notifier.ObjectChange`, id, changeType);
+    }
+
+    public subscribeToObjectChanges(callback: (id: ObjectId, changeType: ObjectChangeType) => void): () => void {
+        throw new Error("Method not implemented.");
     }
 }
 

@@ -1,15 +1,11 @@
-import BaseController from './base-controller';
 import ProjectController from './project-controller';
 import NotifierController from './notifier-controller';
 import { Program } from 'sda';
 
-let controllers: BaseController[] = [];
+export let projectController: ProjectController;
+export let notifierController: NotifierController;
 
-const initControllers = (program: Program) => {
-    controllers = [
-        new ProjectController(program),
-        new NotifierController(),
-    ];
+export const initControllers = (program: Program) => {
+    projectController = new ProjectController(program);
+    notifierController = new NotifierController();
 };
-
-export default initControllers;

@@ -10,3 +10,7 @@ export interface ProjectController {
 
     createProject(path: string, platformName: string): Promise<Project>;
 }
+
+export const getProjectApi = (window: any) => {
+    return window.projectApi as ProjectController;
+}

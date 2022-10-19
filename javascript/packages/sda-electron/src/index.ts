@@ -1,6 +1,6 @@
 import { app } from "electron";
 import { createWindow } from "./utils/window";
-import initControllers from "./controllers";
+import { initControllers } from "./controllers";
 import { Program } from 'sda';
 
 /*
