@@ -1,40 +1,38 @@
-import React, { useEffect } from 'react';
-import Button from '@mui/material/Button';
-import { getProjectApi, Project } from 'sda-electron/api/project';
-import { getNotifierApi, ObjectId, ObjectChangeType } from 'sda-electron/api/notifier';
- 
+import React, { useEffect, useState } from 'react';
+import { getEventApi } from 'sda-electron/api/event';
+import { WindowName } from 'sda-electron/api/window';
+import ProjectManagerWindow from './windows/ProjectManagerWindow';
+import ProjectWindow from './windows/ProjectWindow';
+
+interface WindowInfo {
+  name: WindowName;
+  payload: any;
+}
+
 export default function App() {
-  const [projects, setProjects] = React.useState<Project[]>([]);
+  const [windowInfo, setWindowInfo] = useState<WindowInfo>();
 
   useEffect(() => {
-    getProjectApi(window).getProjects().then(setProjects);
-
-    const unsubscribe1 = getNotifierApi(window).subscribeToObjectChanges((id: ObjectId, changeType: ObjectChangeType) => {
-      console.log('Object changed', id, changeType);
-    });
-
-    const unsubscribe2 = getNotifierApi(window).subscribeToObjectChanges((id: ObjectId, changeType: ObjectChangeType) => {
-      if (id.className !== 'Project')
-        return;
-      getProjectApi(window).getProjects().then(setProjects);
+    const unsubscribe = getEventApi(window).subscribeToWindowOpenEvent((name: WindowName, payload: any) => {
+      setWindowInfo({
+        name,
+        payload
+      });
     });
 
     return () => {
-      unsubscribe1();
-      unsubscribe2();
+      unsubscribe();
     }
-  }, []);
-
-  const handleCreateProject = () => {
-    getProjectApi(window).createProject("D:/SDA_new/build/Debug/test/1", "x86-64");
-  };
+  });
 
   return (
     <div>
-      <Button variant="outlined" onClick={handleCreateProject}>Create</Button>
-      {projects.map((project) => (
-        <div key={project.id.key}>{project.path}</div>
-      ))}
+      {windowInfo ? (
+        (windowInfo.name === WindowName.ProjectManager && <ProjectManagerWindow {...windowInfo.payload}/>) ||
+        (windowInfo.name === WindowName.Project && <ProjectWindow {...windowInfo.payload}/>)
+      ) : (
+        <div>Loading...</div>
+      )}
     </div>
   );
 }

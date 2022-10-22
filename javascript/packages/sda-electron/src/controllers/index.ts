@@ -1,11 +1,11 @@
+import WindowController from './window-controller';
 import ProjectController from './project-controller';
-import NotifierController from './notifier-controller';
 import { Program } from 'sda';
 
+export let windowController: WindowController;
 export let projectController: ProjectController;
-export let notifierController: NotifierController;
 
 export const initControllers = (program: Program) => {
+    windowController = new WindowController();
     projectController = new ProjectController(program);
-    notifierController = new NotifierController();
 };

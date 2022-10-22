@@ -1,6 +1,5 @@
 import { app } from "electron";
-import { createWindow } from "./utils/window";
-import { initControllers } from "./controllers";
+import { initControllers, windowController } from "./controllers";
 import { Program } from 'sda';
 
 /*
@@ -16,13 +15,9 @@ https://stackoverflow.com/questions/59179787/tsc-doesnt-compile-alias-paths
 */
 
 app.whenReady().then(() => {
-    createWindow("project", {
-        width: 800,
-        height: 600,
-    });
-
     const program = Program.New();
     initControllers(program);
+    windowController.openProjectManagerWindow();
 
     // app.on('activate', () => {
     //     if (BrowserWindow.getAllWindows().length === 0)

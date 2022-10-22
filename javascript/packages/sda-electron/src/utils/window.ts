@@ -11,15 +11,17 @@ const DefaultWindowOptions: BrowserWindowConstructorOptions = {
 
 let Windows: BrowserWindow[] = [];
 
-export const createWindow = (route: string, options: BrowserWindowConstructorOptions) => {
+export { BrowserWindow, BrowserWindowConstructorOptions }
+
+export const createWindow = (options: BrowserWindowConstructorOptions) => {
     const window = new BrowserWindow({
         ...DefaultWindowOptions,
         ...options
     });
     window.loadURL(
         isElectronDev
-            ? `http://localhost:3000?route=${route}`
-            : `file://${path.join(__dirname, '../build/index.html?route=${route}')}`
+            ? `http://localhost:3000`
+            : `file://${path.join(__dirname, '../build/index.html')}`
     );
     if (isElectronDev)
         window.webContents.openDevTools({ mode: 'detach' });
@@ -27,6 +29,8 @@ export const createWindow = (route: string, options: BrowserWindowConstructorOpt
     return window;
 }
 
-export const notifyWindows = (event: string, ...args: any[]) => {
-    Windows.forEach(window => window.webContents.send(event, ...args));
-}
+export const sendMessageToWindow = (window: BrowserWindow, event: string, ...args: any[]) =>
+    window.webContents.send(event, ...args);
+
+export const sendMessageToAllWindows = (event: string, ...args: any[]) =>
+    Windows.forEach(window => sendMessageToWindow(window, event, ...args));
