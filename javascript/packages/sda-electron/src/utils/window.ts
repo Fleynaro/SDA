@@ -25,6 +25,9 @@ export const createWindow = (options: BrowserWindowConstructorOptions) => {
     );
     if (isElectronDev)
         window.webContents.openDevTools({ mode: 'detach' });
+    window.on('closed', () => {
+        Windows = Windows.filter(w => w !== window);
+    });
     Windows.push(window);
     return window;
 }

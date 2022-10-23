@@ -1,6 +1,6 @@
 import { app } from "electron";
-import { initControllers, windowController } from "./controllers";
-import { Program } from 'sda';
+import { windowController } from "./controllers";
+import { initApp } from './app';
 
 /*
 TODO: use aliases for imports (required: npm install tsc-alias)
@@ -14,9 +14,8 @@ TODO: use aliases for imports (required: npm install tsc-alias)
 https://stackoverflow.com/questions/59179787/tsc-doesnt-compile-alias-paths
 */
 
-app.whenReady().then(() => {
-    const program = Program.New();
-    initControllers(program);
+app.whenReady().then(async () => {
+    initApp();
     windowController.openProjectManagerWindow();
 
     // app.on('activate', () => {

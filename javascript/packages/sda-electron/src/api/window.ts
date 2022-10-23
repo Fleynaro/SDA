@@ -15,6 +15,14 @@ export interface WindowController {
     openProjectWindow(payload: ProjectWindowPayload): Promise<void>;
 }
 
+export interface WindowInfo {
+    name: WindowName;
+    payload: any;
+}
+export interface WindowClientController extends WindowController {
+    getWindowInfo(): Promise<WindowInfo>;
+}
+
 export const getWindowApi = (window: any) => {
-    return window.windowApi as WindowController;
+    return window.windowApi as WindowClientController;
 }

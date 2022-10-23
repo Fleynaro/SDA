@@ -4,8 +4,14 @@ import { ProjectController } from '../../api/project';
 const invoke = invokerFactory("Project");
 
 const ProjectControllerImpl: ProjectController = {
-    getProjects: () =>
-        invoke("getProjects"),
+    getRecentProjects: () =>
+        invoke("getRecentProjects"),
+    
+    getActiveProjects: () =>
+        invoke("getActiveProjects"),
+
+    openProject: (path: string) =>
+        invoke("openProject", path),
 
     createProject: (path: string, platformName: string) =>
         invoke("createProject", path, platformName)

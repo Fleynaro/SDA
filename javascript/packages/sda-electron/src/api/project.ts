@@ -1,14 +1,27 @@
 import { Identifiable, ObjectId } from './common';
 
+export const ProjectClassName = 'Project';
+
 export interface Project extends Identifiable {
     path: string;
     context: ObjectId;
 }
 
-export interface ProjectController {
-    getProjects(): Promise<Project[]>;
+export const RecentProjectClassName = 'RecentProject';
 
-    createProject(path: string, platformName: string): Promise<Project>;
+export interface RecentProject extends Identifiable {
+    name: string,
+    path: string;
+}
+
+export interface ProjectController {
+    getRecentProjects(): Promise<RecentProject[]>;
+
+    getActiveProjects(): Promise<Project[]>;
+
+    openProject(path: string): Promise<Project>;
+    
+    createProject(path: string, platformName: string): Promise<void>;
 }
 
 export const getProjectApi = (window: any) => {

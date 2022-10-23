@@ -1,35 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { getEventApi } from 'sda-electron/api/event';
-import { WindowName } from 'sda-electron/api/window';
+import React, { useState, useEffect } from 'react';
+import { getWindowApi, WindowName, WindowInfo } from 'sda-electron/api/window';
 import ProjectManagerWindow from './windows/ProjectManagerWindow';
 import ProjectWindow from './windows/ProjectWindow';
 
-interface WindowInfo {
-  name: WindowName;
-  payload: any;
-}
-
 export default function App() {
-  const [windowInfo, setWindowInfo] = useState<WindowInfo>();
+  const [windowToShow, setWindowToShow] = useState<WindowInfo>();
 
   useEffect(() => {
-    const unsubscribe = getEventApi(window).subscribeToWindowOpenEvent((name: WindowName, payload: any) => {
-      setWindowInfo({
-        name,
-        payload
-      });
-    });
-
-    return () => {
-      unsubscribe();
-    }
-  });
+    getWindowApi(window).getWindowInfo().then(setWindowToShow);
+  }, []);
 
   return (
     <div>
-      {windowInfo ? (
-        (windowInfo.name === WindowName.ProjectManager && <ProjectManagerWindow {...windowInfo.payload}/>) ||
-        (windowInfo.name === WindowName.Project && <ProjectWindow {...windowInfo.payload}/>)
+      {windowToShow ? (
+        (windowToShow.name === WindowName.ProjectManager && <ProjectManagerWindow {...windowToShow.payload}/>) ||
+        (windowToShow.name === WindowName.Project && <ProjectWindow {...windowToShow.payload}/>)
       ) : (
         <div>Loading...</div>
       )}

@@ -1,14 +1,17 @@
 import { invokerFactory } from '../utils';
-import { WindowController, ProjectWindowPayload } from '../../api/window';
+import { WindowClientController, ProjectWindowPayload } from '../../api/window';
 
 const invoke = invokerFactory("Window");
 
-const WindowControllerImpl: WindowController = {
+const WindowControllerImpl: WindowClientController = {
     openProjectManagerWindow: () =>
         invoke("openProjectManagerWindow"),
 
     openProjectWindow: (payload: ProjectWindowPayload) =>
-        invoke("openProjectWindow", payload)
+        invoke("openProjectWindow", payload),
+
+    getWindowInfo: () =>
+        invoke("getWindowInfo")
 };
 
 export default WindowControllerImpl;

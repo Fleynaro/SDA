@@ -12,6 +12,12 @@ abstract class BaseController {
             return await handler.call(this, ...args);
         });
     }
+
+    protected registerWithEvent(methodName: string, handler: (...args: any[]) => any) {
+        ipcMain.handle(this.controllerName + '.' + methodName, async (...args) => {
+            return await handler.call(this, ...args);
+        });
+    }
 }
 
 export default BaseController;
