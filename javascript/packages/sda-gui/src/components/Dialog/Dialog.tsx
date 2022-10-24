@@ -15,6 +15,7 @@ export interface DialogProps {
 
 export interface DialogRef {
   open: (body: ReactNode, actions?: ReactNode) => void;
+  close: () => void;
 }
 
 export const Dialog = forwardRef((props: DialogProps, ref: React.Ref<DialogRef>) => {
@@ -27,6 +28,10 @@ export const Dialog = forwardRef((props: DialogProps, ref: React.Ref<DialogRef>)
       setOpened(true);
       setBody(body);
       setActions(actions);
+    },
+
+    close: () => {
+      setOpened(false);
     },
   }));
 

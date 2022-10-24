@@ -1,5 +1,7 @@
 import { useState, useImperativeHandle, forwardRef } from 'react';
-import { FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Stack, FormControl, FormHelperText, Select, MenuItem } from '@mui/material';
+import { FilePicker } from '../FilePicker';
+import { getProjectApi } from 'sda-electron/api/project';
 
 export interface CreateProjectFormRef {
   create: () => void;
@@ -11,22 +13,31 @@ export const CreateProjectForm = forwardRef((props, ref: React.Ref<CreateProject
 
   useImperativeHandle(ref, () => ({
     create: () => {
-      console.log(projectPath, platformName);
+      getProjectApi().createProject(projectPath, platformName);
     },
   }));
 
   return (
     <>
-      <FormControl fullWidth>
-        <InputLabel variant="standard">Platform</InputLabel>
-        <Select
-          label="Platform"
-          value={platformName}
-          onChange={(event) => setPlatformName(event.target.value)}
-        >
-          <MenuItem value="x86">x86</MenuItem>
-        </Select>
-      </FormControl>
+      <Stack spacing={5}>
+        <FormControl fullWidth>
+          <FormHelperText>Select platform</FormHelperText>
+          <Select
+            value={platformName}
+            onChange={(event) => setPlatformName(event.target.value)}
+            displayEmpty
+          >
+            <MenuItem disabled value="">
+              <em>None</em>
+            </MenuItem>
+            <MenuItem value="x86">x86</MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl fullWidth>
+          <FormHelperText>Select project directory</FormHelperText>
+          <FilePicker onFileSelected={(path) => setProjectPath(path)} directory />
+        </FormControl>
+      </Stack>
     </>
   );
 });

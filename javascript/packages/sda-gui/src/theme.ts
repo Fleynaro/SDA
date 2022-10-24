@@ -11,21 +11,13 @@ export default createTheme({
     fontSize: 11,
   },
 
-  // components: {
-  //     MuiFormControl: {
-  //         styleOverrides: {
-  //             root: {
-  //                 height: '30px',
-  //             },
-  //         },
-  //     },
-
-  //     MuiInputBase: {
-  //         styleOverrides: {
-  //             root: {
-  //                 height: '30px',
-  //             },
-  //         }
-  //     }
-  // },
+  components: {
+    MuiInputBase: {
+      styleOverrides: {
+        root: {
+          height: '40px',
+        },
+      },
+    },
+  },
 });

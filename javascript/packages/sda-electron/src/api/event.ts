@@ -1,4 +1,4 @@
-import { ObjectId, ObjectChangeType } from './common';
+import { ObjectId, ObjectChangeType, window_ } from './common';
 
 export enum EventName {
     ObjectChange = "Event.ObjectChange"
@@ -10,6 +10,6 @@ export interface EventController {
     subscribeToObjectChangeEvent(callback: ObjectChangeEventCallback): () => void;
 }
 
-export const getEventApi = (window: any) => {
-    return window.eventApi as EventController;
+export const getEventApi = () => {
+    return window_.eventApi as EventController;
 }

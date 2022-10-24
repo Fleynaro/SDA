@@ -1,4 +1,4 @@
-import { Identifiable } from './common';
+import { Identifiable, window_ } from './common';
 
 export interface ContextObject extends Identifiable {
     name: string;
@@ -12,6 +12,6 @@ export interface DataTypeController {
     getDataTypeByName(name: string): DataType;
 }
 
-export const getDataTypeApi = (window: any) => {
-    return window.dataTypeApi as DataTypeController;
+export const getDataTypeApi = () => {
+    return window_.dataTypeApi as DataTypeController;
 }

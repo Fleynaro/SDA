@@ -1,4 +1,4 @@
-import { IpcMainInvokeEvent } from 'electron';
+import { dialog, IpcMainInvokeEvent } from 'electron';
 import BaseController from './base-controller';
 import { createWindow, BrowserWindowConstructorOptions } from "../utils/window";
 import { WindowName, WindowInfo, WindowController, ProjectWindowPayload } from './../api/window';
@@ -10,6 +10,7 @@ class WindowControllerImpl extends BaseController implements WindowController {
         super("Window");
         this.register("openProjectManagerWindow", this.openProjectManagerWindow);
         this.register("openProjectWindow", this.openProjectWindow);
+        this.register("openFilePickerDialog", this.openFilePickerDialog);
         this.registerWithEvent("getWindowInfo", this.getWindowInfo);
     }
 
@@ -31,6 +32,17 @@ class WindowControllerImpl extends BaseController implements WindowController {
             width: 800,
             height: 600,
         }, payload as any);
+    }
+
+    public async openFilePickerDialog(directory: boolean, multiple: boolean): Promise<string[]> {
+        let options: Electron.OpenDialogOptions = {
+            properties: [directory ? 'openDirectory' : 'openFile'],
+        };
+        if (multiple) {
+            options.properties?.push('multiSelections');
+        }
+        const result = await dialog.showOpenDialog(options);
+        return result.filePaths;
     }
 
     public async getWindowInfo(event: IpcMainInvokeEvent): Promise<WindowInfo> {

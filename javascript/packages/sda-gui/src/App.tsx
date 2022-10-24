@@ -7,7 +7,7 @@ export default function App() {
   const [windowToShow, setWindowToShow] = useState<WindowInfo>();
 
   useEffect(() => {
-    getWindowApi(window).getWindowInfo().then(setWindowToShow);
+    getWindowApi().getWindowInfo().then(setWindowToShow);
   }, []);
 
   return (

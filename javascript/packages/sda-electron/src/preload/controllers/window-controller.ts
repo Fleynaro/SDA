@@ -10,6 +10,9 @@ const WindowControllerImpl: WindowClientController = {
     openProjectWindow: (payload: ProjectWindowPayload) =>
         invoke("openProjectWindow", payload),
 
+    openFilePickerDialog: (directory: boolean, multiple: boolean) =>
+        invoke("openFilePickerDialog", directory, multiple),
+
     getWindowInfo: () =>
         invoke("getWindowInfo")
 };

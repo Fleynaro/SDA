@@ -15,3 +15,9 @@ export enum ObjectChangeType {
     Update,
     Delete
 }
+
+export let window_: any = null;
+
+export const setWindow = (win: any) => {
+    window_ = win;
+}

@@ -1,4 +1,4 @@
-import { Identifiable, ObjectId } from './common';
+import { Identifiable, ObjectId, window_ } from './common';
 
 export const ProjectClassName = 'Project';
 
@@ -24,6 +24,6 @@ export interface ProjectController {
     createProject(path: string, platformName: string): Promise<void>;
 }
 
-export const getProjectApi = (window: any) => {
-    return window.projectApi as ProjectController;
+export const getProjectApi = () => {
+    return window_.projectApi as ProjectController;
 }

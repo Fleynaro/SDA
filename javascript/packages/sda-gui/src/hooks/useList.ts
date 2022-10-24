@@ -16,7 +16,7 @@ export default function useList<T extends Identifiable>(
   useEffect(() => {
     updateItems();
 
-    const unsubscribe = getEventApi(window).subscribeToObjectChangeEvent(
+    const unsubscribe = getEventApi().subscribeToObjectChangeEvent(
       (changedItemId: ObjectId, changeType: ObjectChangeType) => {
         if (changeType === ObjectChangeType.Create) {
           if (changedItemId.className !== className) return;
