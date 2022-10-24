@@ -15,8 +15,8 @@ class WindowControllerImpl extends BaseController implements WindowController {
 
     public async openProjectManagerWindow(): Promise<void> {
         this.openWindow(WindowName.ProjectManager, {
-            width: 450,
-            height: 300,
+            width: 700,
+            height: 500,
             autoHideMenuBar: true,
             resizable: false
         }, {});
