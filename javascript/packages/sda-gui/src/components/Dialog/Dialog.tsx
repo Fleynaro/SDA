@@ -14,7 +14,7 @@ export interface DialogProps {
 }
 
 export interface DialogRef {
-  open: (body: ReactNode, actions?: ReactNode) => void
+  open: (body: ReactNode, actions?: ReactNode) => void;
 }
 
 export const Dialog = forwardRef((props: DialogProps, ref: React.Ref<DialogRef>) => {
@@ -27,7 +27,7 @@ export const Dialog = forwardRef((props: DialogProps, ref: React.Ref<DialogRef>)
       setOpened(true);
       setBody(body);
       setActions(actions);
-    }
+    },
   }));
 
   const onClose = useCallback(() => {

@@ -13,8 +13,10 @@ export default function App() {
   return (
     <div>
       {windowToShow ? (
-        (windowToShow.name === WindowName.ProjectManager && <ProjectManagerWindow {...windowToShow.payload}/>) ||
-        (windowToShow.name === WindowName.Project && <ProjectWindow {...windowToShow.payload}/>)
+        (windowToShow.name === WindowName.ProjectManager && (
+          <ProjectManagerWindow {...windowToShow.payload} />
+        )) ||
+        (windowToShow.name === WindowName.Project && <ProjectWindow {...windowToShow.payload} />)
       ) : (
         <div>Loading...</div>
       )}

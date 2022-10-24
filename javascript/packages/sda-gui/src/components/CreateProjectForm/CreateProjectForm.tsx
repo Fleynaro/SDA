@@ -1,13 +1,8 @@
 import { useState, useImperativeHandle, forwardRef } from 'react';
-import {
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem
-} from '@mui/material';
+import { FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 
 export interface CreateProjectFormRef {
-  create: () => void
+  create: () => void;
 }
 
 export const CreateProjectForm = forwardRef((props, ref: React.Ref<CreateProjectFormRef>) => {
@@ -17,21 +12,21 @@ export const CreateProjectForm = forwardRef((props, ref: React.Ref<CreateProject
   useImperativeHandle(ref, () => ({
     create: () => {
       console.log(projectPath, platformName);
-    }
+    },
   }));
 
   return (
-    <FormControl fullWidth>
-      <InputLabel variant="standard">
-          Platform
-      </InputLabel>
-      <Select
-        label="Platform"
-        value={platformName}
-        onChange={(event) => setPlatformName(event.target.value)}
-      >
-        <MenuItem value='x86'>x86</MenuItem>
-      </Select>
-    </FormControl>
+    <>
+      <FormControl fullWidth>
+        <InputLabel variant="standard">Platform</InputLabel>
+        <Select
+          label="Platform"
+          value={platformName}
+          onChange={(event) => setPlatformName(event.target.value)}
+        >
+          <MenuItem value="x86">x86</MenuItem>
+        </Select>
+      </FormControl>
+    </>
   );
 });

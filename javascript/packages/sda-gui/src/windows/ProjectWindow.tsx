@@ -4,9 +4,5 @@ import useWindowTitle from '../hooks/useWindowTitile';
 
 export default function ProjectWindow({ projectId }: ProjectWindowPayload) {
   useWindowTitle('Project');
-  return (
-    <div>
-      Your project
-    </div>
-  );
+  return <div>Your project</div>;
 }
