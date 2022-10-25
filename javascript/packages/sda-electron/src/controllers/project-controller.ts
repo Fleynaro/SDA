@@ -7,27 +7,33 @@ import {
     Project as ProjectDTO
 } from '../api/project';
 import { program, getUserPath } from '../app';
-import { loadJSON, saveJSON, doesFileExist } from '../utils/file';
+import { loadJSON, saveJSON, doesFileExist, deleteFile } from '../utils/file';
 import { Project } from 'sda';
 import { Context } from 'sda-core/context';
-import PlatformX86 from 'sda-platform-x86';
+import { findPlatform } from '../sda/platform';
 import { join as pathJoin } from "path";
 
 interface ProjectConfig {
     platformName: string;
 }
 
+const projectListFilePath = () => getUserPath('projects.json');
+const projectConfigFilePath = (path: string) => pathJoin(path, 'project.json');
+
 class ProjectControllerImpl extends BaseController implements ProjectController {
 
     constructor() {
         super("Project");
         this.register("getRecentProjects", this.getRecentProjects);
+        this.register("updateRecentProjectsWithPath", this.updateRecentProjectsWithPath);
         this.register("getActiveProjects", this.getActiveProjects);
         this.register("createProject", this.createProject);
+        this.register("openProject", this.openProject);
+        this.register("deleteProject", this.deleteProject);
     }
 
     public async getRecentProjects(): Promise<RecentProjectDTO[]> {
-        const file = getUserPath('projects.json');
+        const file = projectListFilePath();
         if (!(await doesFileExist(file)))
             return [];
         const projects = await loadJSON<string[]>(file);
@@ -35,8 +41,22 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
     }
 
     private async saveRecentProjects(projects: RecentProjectDTO[]): Promise<void> {
-        const file = getUserPath('projects.json');
+        const file = projectListFilePath();
         await saveJSON(file, projects.map(p => p.path));
+    }
+
+    public async updateRecentProjectsWithPath(path: string, changeType: ObjectChangeType): Promise<void> {
+        let recentProjects = await this.getRecentProjects();
+        if (changeType == ObjectChangeType.Create && recentProjects.some(p => p.path === path))
+            return;
+        const recentProject = toRecentProjectDTO(path);
+        if (changeType == ObjectChangeType.Create) {
+            recentProjects.push(recentProject);
+        } else if (changeType == ObjectChangeType.Delete) {
+            recentProjects = recentProjects.filter(p => p.path !== path);
+        }
+        await this.saveRecentProjects(recentProjects);
+        objectChangeEmitter()(recentProject.id, changeType);
     }
 
     public async getActiveProjects(): Promise<ProjectDTO[]> {
@@ -44,20 +64,13 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
     }
 
     public async openProject(path: string): Promise<ProjectDTO> {
-        const config = await loadJSON<ProjectConfig>(pathJoin(path, 'project.json'));
-        let platform;
-        if (config.platformName === "x86") {
-            platform = PlatformX86.New(false);
-        } else if (config.platformName === "x86-64") {
-            platform = PlatformX86.New(true);
-        } else {
-            throw new Error("Unknown platform");
-        }
+        const config = await loadJSON<ProjectConfig>(projectConfigFilePath(path));
+        const platform = findPlatform(config.platformName);
         const context = Context.New(platform);
         const project = Project.New(program, path, context);
         const projectDTO = toProjectDTO(project);
         objectChangeEmitter()(projectDTO.id, ObjectChangeType.Create);
-        await this.updateRecentProjectsWithPath(path);
+        await this.updateRecentProjectsWithPath(path, ObjectChangeType.Create);
         return projectDTO;
     }
 
@@ -65,18 +78,16 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
         const config: ProjectConfig = {
             platformName
         };
-        await saveJSON(pathJoin(path, 'project.json'), config);
-        await this.updateRecentProjectsWithPath(path);
+        await saveJSON(projectConfigFilePath(path), config);
+        await this.updateRecentProjectsWithPath(path, ObjectChangeType.Create);
     }
 
-    private async updateRecentProjectsWithPath(path: string): Promise<void> {
-        const recentProjects = await this.getRecentProjects();
-        if (!recentProjects.some(p => p.path === path)) {
-            const recentProject = toRecentProjectDTO(path);
-            recentProjects.push(recentProject);
-            await this.saveRecentProjects(recentProjects);
-            objectChangeEmitter()(recentProject.id, ObjectChangeType.Create);
+    public async deleteProject(path: string): Promise<void> {
+        if (!await doesFileExist(projectConfigFilePath(path))) {
+            throw new Error(`Project ${path} does not exist`);
         }
+        await deleteFile(path);
+        await this.updateRecentProjectsWithPath(path, ObjectChangeType.Delete);
     }
 }
 

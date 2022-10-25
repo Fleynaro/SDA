@@ -3,6 +3,7 @@ import path from "path";
 import { existsSync, mkdirSync } from "fs";
 import { initControllers } from "./controllers";
 import { Program } from 'sda';
+import { initDefaultPlatforms } from './sda/platform';
 
 export let program: Program;
 
@@ -16,6 +17,7 @@ export const getUserPath = (file: string) => {
 
 export const initApp = () => {
     program = Program.New();
+    initDefaultPlatforms();
     initControllers();
 
     // create user directory if not exists

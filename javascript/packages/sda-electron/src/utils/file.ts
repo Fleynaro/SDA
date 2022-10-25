@@ -1,4 +1,5 @@
 import { readFile, writeFile, access, constants } from "fs";
+import rimraf from 'rimraf';
 
 export function loadJSON<T>(file: string): Promise<T> {
     return new Promise((resolve, reject) => {
@@ -28,6 +29,19 @@ export function doesFileExist(file: string): Promise<boolean> {
     return new Promise((resolve, reject) => {
         access(file, constants.F_OK, err => {
             resolve(!err);
+        });
+    });
+}
+
+// Delete a file or directory recursively
+export function deleteFile(path: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        rimraf(path, err => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve();
+            }
         });
     });
 }

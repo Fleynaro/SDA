@@ -1,7 +1,8 @@
-import { useState, useImperativeHandle, forwardRef } from 'react';
+import { useState, useMemo, useImperativeHandle, forwardRef, useEffect } from 'react';
 import { Stack, FormControl, FormHelperText, Select, MenuItem } from '@mui/material';
 import { FilePicker } from '../FilePicker';
 import { getProjectApi } from 'sda-electron/api/project';
+import { getPlatformApi } from 'sda-electron/api/platform';
 
 export interface CreateProjectFormRef {
   create: () => void;
@@ -10,6 +11,15 @@ export interface CreateProjectFormRef {
 export const CreateProjectForm = forwardRef((props, ref: React.Ref<CreateProjectFormRef>) => {
   const [projectPath, setProjectPath] = useState('');
   const [platformName, setPlatformName] = useState('');
+  const [availablePlatforms, setAvailablePlatforms] = useState<string[]>([]);
+
+  useEffect(() => {
+    getPlatformApi()
+      .getPlatforms()
+      .then((platforms) => {
+        setAvailablePlatforms(platforms.map((p) => p.name));
+      });
+  }, []);
 
   useImperativeHandle(ref, () => ({
     create: () => {
@@ -30,7 +40,11 @@ export const CreateProjectForm = forwardRef((props, ref: React.Ref<CreateProject
             <MenuItem disabled value="">
               <em>None</em>
             </MenuItem>
-            <MenuItem value="x86">x86</MenuItem>
+            {availablePlatforms.map((platform) => (
+              <MenuItem key={platform} value={platform}>
+                {platform}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
         <FormControl fullWidth>

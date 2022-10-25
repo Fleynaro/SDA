@@ -4,7 +4,7 @@ import { Identifiable, ObjectId, CmpObjectIds, ObjectChangeType } from 'sda-elec
 
 export default function useList<T extends Identifiable>(
   dataSource: () => Promise<T[]>,
-  className: string,
+  className?: string,
 ) {
   const [items, setItems] = useState<T[]>([]);
 
@@ -13,26 +13,23 @@ export default function useList<T extends Identifiable>(
     setItems(newItems);
   }, [dataSource]);
 
+  const update = useCallback(
+    () => (changedItemId: ObjectId, changeType: ObjectChangeType) => {
+      if (className && changedItemId.className !== className) return;
+      if (changeType === ObjectChangeType.Update || changeType === ObjectChangeType.Delete) {
+        if (!items.some((item) => CmpObjectIds(changedItemId, item.id))) return;
+      }
+      updateItems();
+    },
+    [className, items, updateItems],
+  );
+
   useEffect(() => {
     updateItems();
-
-    const unsubscribe = getEventApi().subscribeToObjectChangeEvent(
-      (changedItemId: ObjectId, changeType: ObjectChangeType) => {
-        if (changeType === ObjectChangeType.Create) {
-          if (changedItemId.className !== className) return;
-        } else if (
-          changeType === ObjectChangeType.Update ||
-          changeType === ObjectChangeType.Delete
-        ) {
-          if (!items.some((item) => CmpObjectIds(changedItemId, item.id))) return;
-        }
-        updateItems();
-      },
-    );
-
+    const unsubscribe = getEventApi().subscribeToObjectChangeEvent(update);
     return () => {
       unsubscribe();
     };
-  }, [updateItems]); // eslint-disable-line
+  }, [update, updateItems]);
   return items;
 }

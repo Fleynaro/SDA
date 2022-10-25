@@ -1,6 +1,7 @@
 import { SignatureDataType } from "./data-type";
 
 export abstract class Platform {
+    readonly hashId: Hash;
     readonly name: string;
     readonly pointerSize: number;
     readonly registerRepository: RegisterRepository;

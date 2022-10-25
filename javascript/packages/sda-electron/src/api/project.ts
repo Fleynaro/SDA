@@ -1,4 +1,4 @@
-import { Identifiable, ObjectId, window_ } from './common';
+import { Identifiable, ObjectChangeType, ObjectId, window_ } from './common';
 
 export const ProjectClassName = 'Project';
 
@@ -17,11 +17,15 @@ export interface RecentProject extends Identifiable {
 export interface ProjectController {
     getRecentProjects(): Promise<RecentProject[]>;
 
+    updateRecentProjectsWithPath(path: string, changeType: ObjectChangeType): Promise<void>;
+
     getActiveProjects(): Promise<Project[]>;
 
     openProject(path: string): Promise<Project>;
     
     createProject(path: string, platformName: string): Promise<void>;
+
+    deleteProject(path: string): Promise<void>;
 }
 
 export const getProjectApi = () => {

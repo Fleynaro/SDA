@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Stack, IconButton, TextField } from '@mui/material';
-import FolderIcon from '@mui/icons-material/Folder';
+import FileOpenIcon from '@mui/icons-material/FileOpen';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import { getWindowApi } from 'sda-electron/api/window';
 
 export interface FilePickerProps {
@@ -35,7 +36,7 @@ export function FilePicker({ directory, onFileSelected }: FilePickerProps) {
           fullWidth
         />
         <IconButton component="label" onClick={onOpenFilePickerDialog}>
-          <FolderIcon />
+          {directory ? <FolderOpenIcon /> : <FileOpenIcon />}
         </IconButton>
       </Stack>
     </>

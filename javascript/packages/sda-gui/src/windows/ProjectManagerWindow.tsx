@@ -22,6 +22,7 @@ import {
   RecentProjectClassName,
 } from 'sda-electron/api/project';
 import { getWindowApi } from 'sda-electron/api/window';
+import { ObjectChangeType } from 'sda-electron/api/common';
 
 export default function ProjectManagerWindow() {
   useWindowTitle('Project Manager');
@@ -53,6 +54,7 @@ export default function ProjectManagerWindow() {
     if (paths.length > 0) {
       const projectPath = paths[0];
       const project = await getProjectApi().openProject(projectPath);
+      await getWindowApi().openProjectWindow({ projectId: project.id });
     }
   }, []);
 
@@ -64,17 +66,43 @@ export default function ProjectManagerWindow() {
   const onDeleteProject = useCallback((recentProject: RecentProject) => {
     deleteProjectDialogRef.current?.open(
       <Box>
-        <p>Are you sure you want to delete this project?</p>
-        <p>{recentProject.path}</p>
+        <p>
+          Are you sure you want to remove or delete this project?
+          <ul>
+            <li>
+              <b>Remove</b> - removes the project from the list of recent projects.
+            </li>
+            <li>
+              <b>Delete</b> - like remove, but also deletes the project files.
+            </li>
+          </ul>
+        </p>
+        <p>
+          <b>Path:</b> {recentProject.path}
+        </p>
       </Box>,
-      <Button
-        onClick={() => {
-          //getProjectApi().deleteProject(project.path);
-          deleteProjectDialogRef.current?.close();
-        }}
-      >
-        Delete
-      </Button>,
+      <>
+        <Button
+          onClick={() => {
+            getProjectApi().updateRecentProjectsWithPath(
+              recentProject.path,
+              ObjectChangeType.Delete,
+            );
+            deleteProjectDialogRef.current?.close();
+          }}
+        >
+          Remove
+        </Button>
+        <Button
+          color="error"
+          onClick={() => {
+            getProjectApi().deleteProject(recentProject.path);
+            deleteProjectDialogRef.current?.close();
+          }}
+        >
+          Delete
+        </Button>
+      </>,
     );
   }, []);
 
@@ -100,14 +128,14 @@ export default function ProjectManagerWindow() {
                     edge="end"
                     aria-label="delete"
                     onClick={() => onDeleteProject(project)}
-                    disabled={!isOpened}
+                    disabled={isOpened}
                   >
                     <DeleteIcon />
                   </IconButton>
                 }
                 disablePadding
               >
-                <ListItemButton onClick={() => onOpenProject(project)} disabled={!isOpened}>
+                <ListItemButton onClick={() => onOpenProject(project)} disabled={isOpened}>
                   <ListItemText primary={project.name} secondary={project.path} />
                 </ListItemButton>
               </ListItem>
