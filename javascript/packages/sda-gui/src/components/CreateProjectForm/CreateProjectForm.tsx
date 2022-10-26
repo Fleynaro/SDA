@@ -1,4 +1,5 @@
-import { useState, useMemo, useImperativeHandle, forwardRef, useEffect } from 'react';
+import { useState, forwardRef } from 'react';
+import { useEffect, useImperativeHandle } from '../../hooks/reactWrappers';
 import { Stack, FormControl, FormHelperText, Select, MenuItem } from '@mui/material';
 import { FilePicker } from '../FilePicker';
 import { getProjectApi } from 'sda-electron/api/project';
@@ -13,17 +14,14 @@ export const CreateProjectForm = forwardRef((props, ref: React.Ref<CreateProject
   const [platformName, setPlatformName] = useState('');
   const [availablePlatforms, setAvailablePlatforms] = useState<string[]>([]);
 
-  useEffect(() => {
-    getPlatformApi()
-      .getPlatforms()
-      .then((platforms) => {
-        setAvailablePlatforms(platforms.map((p) => p.name));
-      });
+  useEffect(async () => {
+    const platforms = await getPlatformApi().getPlatforms();
+    setAvailablePlatforms(platforms.map((p) => p.name));
   }, []);
 
   useImperativeHandle(ref, () => ({
-    create: () => {
-      getProjectApi().createProject(projectPath, platformName);
+    create: async () => {
+      await getProjectApi().createProject(projectPath, platformName);
     },
   }));
 

@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
+import { useEffect, useCallback } from '../../hooks/reactWrappers';
 import { Stack, IconButton, TextField } from '@mui/material';
 import FileOpenIcon from '@mui/icons-material/FileOpen';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
@@ -12,9 +13,9 @@ export interface FilePickerProps {
 export function FilePicker({ directory, onFileSelected }: FilePickerProps) {
   const [filePath, setFilePath] = useState('');
 
-  useEffect(() => {
+  useEffect(async () => {
     if (onFileSelected) {
-      onFileSelected(filePath);
+      await onFileSelected(filePath);
     }
   }, [filePath]);
 

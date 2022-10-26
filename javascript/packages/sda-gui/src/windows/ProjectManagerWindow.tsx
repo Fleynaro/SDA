@@ -1,4 +1,5 @@
-import { useCallback, useRef } from 'react';
+import { useRef } from 'react';
+import { useCallback } from '../hooks/reactWrappers';
 import {
   Box,
   Button,
@@ -63,31 +64,32 @@ export default function ProjectManagerWindow() {
     await getWindowApi().openProjectWindow({ projectId: project.id });
   }, []);
 
-  const onDeleteProject = useCallback((recentProject: RecentProject) => {
+  const onRemoveProject = useCallback(async (path: string) => {
+    await getProjectApi().updateRecentProjectsWithPath(path, ObjectChangeType.Delete);
+  }, []);
+
+  const onDeleteProject = useCallback(async (path: string) => {
+    await getProjectApi().deleteProject(path);
+  }, []);
+
+  const onOpenDeleteProjectDialog = useCallback((recentProject: RecentProject) => {
     deleteProjectDialogRef.current?.open(
-      <Box>
-        <p>
-          Are you sure you want to remove or delete this project?
-          <ul>
-            <li>
-              <b>Remove</b> - removes the project from the list of recent projects.
-            </li>
-            <li>
-              <b>Delete</b> - like remove, but also deletes the project files.
-            </li>
-          </ul>
-        </p>
-        <p>
-          <b>Path:</b> {recentProject.path}
-        </p>
-      </Box>,
+      <>
+        <p>Are you sure you want to remove or delete this project?</p>
+        <ul>
+          <li>
+            <strong>Remove</strong> - removes the project from the list of recent projects.
+          </li>
+          <li>
+            <strong>Delete</strong> - like remove, but also deletes the project files.
+          </li>
+        </ul>
+        <strong>Path:</strong> {recentProject.path}
+      </>,
       <>
         <Button
           onClick={() => {
-            getProjectApi().updateRecentProjectsWithPath(
-              recentProject.path,
-              ObjectChangeType.Delete,
-            );
+            onRemoveProject(recentProject.path);
             deleteProjectDialogRef.current?.close();
           }}
         >
@@ -96,7 +98,7 @@ export default function ProjectManagerWindow() {
         <Button
           color="error"
           onClick={() => {
-            getProjectApi().deleteProject(recentProject.path);
+            onDeleteProject(recentProject.path);
             deleteProjectDialogRef.current?.close();
           }}
         >
@@ -127,7 +129,7 @@ export default function ProjectManagerWindow() {
                   <IconButton
                     edge="end"
                     aria-label="delete"
-                    onClick={() => onDeleteProject(project)}
+                    onClick={() => onOpenDeleteProjectDialog(project)}
                     disabled={isOpened}
                   >
                     <DeleteIcon />
