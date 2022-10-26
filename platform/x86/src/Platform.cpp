@@ -10,7 +10,7 @@ using namespace sda::platform;
 PlatformX86::PlatformX86(bool is64Version)
     : m_is64Version(is64Version)
 {
-    m_regRepo = std::make_unique<RegisterRepositoryX86>();
+    m_regRepo = std::make_shared<RegisterRepositoryX86>();
     m_callingConventions = {
         std::make_shared<FastcallCallingConvention>()
     };
@@ -24,8 +24,8 @@ size_t PlatformX86::getPointerSize() const {
     return m_is64Version ? 8 : 4;
 }
 
-RegisterRepository* PlatformX86::getRegisterRepository() const {
-    return m_regRepo.get();
+std::shared_ptr<RegisterRepository> PlatformX86::getRegisterRepository() const {
+    return m_regRepo;
 }
 
 const std::list<std::shared_ptr<CallingConvention>>& PlatformX86::getCallingConventions() const {

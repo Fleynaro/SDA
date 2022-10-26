@@ -11,7 +11,7 @@ namespace sda::test
 
         MOCK_METHOD(size_t, getPointerSize, (), (const, override));
 
-        MOCK_METHOD(RegisterRepository*, getRegisterRepository, (), (const, override));
+        MOCK_METHOD(std::shared_ptr<RegisterRepository>, getRegisterRepository, (), (const, override));
 
         MOCK_METHOD(const std::list<std::shared_ptr<CallingConvention>>&, getCallingConventions, (), (const, override));
 

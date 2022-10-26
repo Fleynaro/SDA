@@ -71,7 +71,7 @@ TEST_F(SemanticsTest, Sample1) {
     IRcodeSemanticsDataTypeProvider dataTypeProvider(&semManager);
     IRcodeBlockGenerator ircodeGen(&ircodeBlock, &memorySpace, &dataTypeProvider);
 
-    pcode::Printer pcodePrinter(context->getPlatform()->getRegisterRepository());
+    pcode::Printer pcodePrinter(context->getPlatform()->getRegisterRepository().get());
     ircode::Printer ircodePrinter(&pcodePrinter);
     ircodePrinter.setOutput(std::cout);
 

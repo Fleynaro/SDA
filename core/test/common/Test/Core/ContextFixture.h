@@ -8,6 +8,7 @@ namespace sda::test
 {
     class ContextFixture : public ::testing::Test
     {
+        Platform* platform = nullptr;
         std::list<Context*> createdContexts;
     protected:
         Context* context;

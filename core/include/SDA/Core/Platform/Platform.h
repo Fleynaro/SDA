@@ -17,7 +17,7 @@ namespace sda
 
         virtual size_t getPointerSize() const = 0;
 
-        virtual RegisterRepository* getRegisterRepository() const = 0;
+        virtual std::shared_ptr<RegisterRepository> getRegisterRepository() const = 0;
 
         virtual const std::list<std::shared_ptr<CallingConvention>>& getCallingConventions() const = 0;
 

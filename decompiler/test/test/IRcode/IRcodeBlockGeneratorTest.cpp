@@ -13,7 +13,7 @@ class IRcodeBlockGeneratorTest : public PcodeFixture
 {
 protected:
     void print(const std::list<std::unique_ptr<ircode::Operation>>& operations, std::ostream& out) const {
-        pcode::Printer pcodePrinter(context->getPlatform()->getRegisterRepository());
+        pcode::Printer pcodePrinter(context->getPlatform()->getRegisterRepository().get());
         ircode::Printer ircodePrinter(&pcodePrinter);
         ircodePrinter.setOutput(out);
         for (const auto& op : operations) {

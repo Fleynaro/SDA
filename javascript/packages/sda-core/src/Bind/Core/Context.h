@@ -69,7 +69,7 @@ namespace sda::bind
         };
 
         static auto New(Platform* platform) {
-            auto context = new Context(std::unique_ptr<Platform>(platform));
+            auto context = new Context(platform);
             auto callbacks = std::make_shared<BindCallbacks>();
             ExportObject(std::static_pointer_cast<Context::Callbacks>(callbacks));
             context->setCallbacks(callbacks);

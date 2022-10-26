@@ -7,8 +7,8 @@
 
 using namespace sda;
 
-Context::Context(std::unique_ptr<Platform> platform)
-    : m_platform(std::move(platform))
+Context::Context(Platform* platform)
+    : m_platform(platform)
 {
     m_addressSpaces = std::make_unique<AddressSpaceList>(this);
     m_images = std::make_unique<ImageList>(this);
@@ -23,7 +23,7 @@ void Context::initDefault() {
 }
 
 Platform* Context::getPlatform() const {
-    return m_platform.get();
+    return m_platform;
 }
 
 AddressSpaceList* Context::getAddressSpaces() const {

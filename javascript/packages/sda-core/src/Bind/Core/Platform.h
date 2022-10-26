@@ -34,7 +34,7 @@ namespace sda::bind
     {
     public:
         static void Init(v8pp::module& module) {
-            auto cl = NewClass<RegisterRepository>(module);
+            auto cl = NewClass<RegisterRepository, v8pp::shared_ptr_traits>(module);
             cl
                 .method("getRegisterName", &RegisterRepository::getRegisterName)
                 .method("getRegisterId", &RegisterRepository::getRegisterId)

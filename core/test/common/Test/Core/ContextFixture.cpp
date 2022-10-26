@@ -14,6 +14,7 @@ using namespace sda::test;
 using namespace ::testing;
 
 void ContextFixture::SetUp() {
+    platform = new PlatformX86(true);
     context = newContext();
     context->initDefault();
 }
@@ -21,11 +22,11 @@ void ContextFixture::SetUp() {
 void ContextFixture::TearDown() {
     for (auto ctx : createdContexts)
         delete ctx;
+    delete platform;
 }
 
 Context* ContextFixture::newContext() {
-    auto platform = std::make_unique<PlatformX86>(true);
-    auto context = new Context(std::move(platform));
+    auto context = new Context(platform);
     createdContexts.push_back(context);
     return context;
 }
