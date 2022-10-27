@@ -34,9 +34,30 @@
 namespace sda::bind
 {
     template<typename T, typename Traits = v8pp::raw_ptr_traits>
-    v8pp::class_<T, Traits> NewClass(v8pp::module& module, bool registerObjectLookupTable = true) {
-        v8pp::class_<T, Traits> cl(module.isolate());
-        if (registerObjectLookupTable)
+    v8pp::class_<T, Traits> NewClass(
+        v8pp::module& module,
+        bool registerInLookupTable = true,
+        std::function<void(T* obj)> deleter = nullptr)
+    {
+        using ClassType = v8pp::class_<T, Traits>;
+        // Create destructor that called when object is garbage collected (removed from JS)
+        auto dtor = ClassType::dtor_function(
+            [registerInLookupTable, deleter](v8::Isolate* isolate, ClassType::object_pointer_type const& obj) {
+                if constexpr (std::is_same_v<Traits, v8pp::raw_ptr_traits>) {
+                    if (registerInLookupTable)
+                        ObjectLookupTable<T>::RemoveObject(obj);
+                    if (deleter)
+                        deleter(obj);
+                } else if constexpr (std::is_same_v<Traits, v8pp::shared_ptr_traits>) {
+                    if (registerInLookupTable)
+                        ObjectLookupTable<T>::RemoveObject(obj.get());
+                    if (deleter)
+                        deleter(obj.get());
+                }
+                ClassType::object_destroy(isolate, obj);
+            });
+        ClassType cl(module.isolate(), dtor);
+        if (registerInLookupTable)
             ObjectLookupTable<T>::Register(cl);
         return cl;
     }

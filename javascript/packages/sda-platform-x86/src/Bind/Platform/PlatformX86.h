@@ -10,9 +10,7 @@ namespace sda::bind
     {
         static auto New(bool is64Version) {
             auto platform = new PlatformX86(is64Version);
-            ExportObject(platform->getRegisterRepository());
-            for (auto cc : platform->getCallingConventions())
-                ExportObject(cc);
+            ExportSharedObject(platform->getRegisterRepository());
             return ExportObject(platform);
         }
     public:

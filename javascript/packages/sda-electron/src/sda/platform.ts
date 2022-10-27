@@ -21,4 +21,18 @@ export const addPlatform = (platform: Platform) => {
 export const initDefaultPlatforms = () => {
     addPlatform(PlatformX86.New(false));
     addPlatform(PlatformX86.New(true));
+
+    const pl = findPlatform('x86');
+    const repo = pl.registerRepository;
+    setTimeout(() => {
+        console.log('1) reg id = ', repo.getRegisterId('rax'));
+    }, 1000);
+    setTimeout(() => {
+        const repo = pl.registerRepository;
+        console.log('2) reg id = ', repo.getRegisterId('rax'));
+    }, 5000);
+    setTimeout(() => {
+        const repo = pl.registerRepository;
+        console.log('3) reg id = ', repo.getRegisterId('rax'));
+    }, 12000);
 }

@@ -39,11 +39,11 @@ namespace sda::bind
             auto instructions = pcode::Parser::Parse(text, regRepo);
             for (auto& instr : instructions) {
                 if (instr.getInput0() != nullptr)
-                    ExportObject(instr.getInput0());
+                    ExportSharedObject(instr.getInput0());
                 if (instr.getInput1() != nullptr)
-                    ExportObject(instr.getInput1());
+                    ExportSharedObject(instr.getInput1());
                 if (instr.getOutput() != nullptr)
-                    ExportObject(instr.getOutput());
+                    ExportSharedObject(instr.getOutput());
             }
             return instructions;
         }

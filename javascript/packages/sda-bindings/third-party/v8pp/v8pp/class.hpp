@@ -183,6 +183,7 @@ private:
 		}
 	};
 
+public:
 	static void object_destroy(v8::Isolate* isolate, pointer_type const& ptr)
 	{
 		object_pointer_type object = Traits::template static_pointer_cast<T>(ptr);
@@ -191,6 +192,7 @@ private:
 			-static_cast<int64_t>(Traits::object_size(object)));
 	}
 
+private:
 	explicit class_(v8::Isolate* isolate, detail::type_info const& existing)
 		: class_info_(detail::classes::find<Traits>(isolate, existing))
 	{

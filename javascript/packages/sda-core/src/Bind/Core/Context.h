@@ -35,7 +35,7 @@ namespace sda::bind
         
         static auto New() {
             auto callbacks = std::make_shared<CallbacksJsImpl>();
-            return ExportObject(callbacks);
+            return ExportSharedObject(callbacks);
         }
 
     public:
@@ -71,7 +71,6 @@ namespace sda::bind
         static auto New(Platform* platform) {
             auto context = new Context(platform);
             auto callbacks = std::make_shared<BindCallbacks>();
-            ExportObject(std::static_pointer_cast<Context::Callbacks>(callbacks));
             context->setCallbacks(callbacks);
             return ExportObject(context);
         }

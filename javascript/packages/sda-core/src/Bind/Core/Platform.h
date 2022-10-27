@@ -10,11 +10,11 @@ namespace sda::bind
     class PlatformBind
     {
         static auto GetPcodeDecoder(Platform* platform) {
-            return ExportObject(platform->getPcodeDecoder());
+            return ExportSharedObject(platform->getPcodeDecoder());
         }
 
         static auto GetInstructionDecoder(Platform* platform) {
-            return ExportObject(platform->getInstructionDecoder());
+            return ExportSharedObject(platform->getInstructionDecoder());
         }
     public:
         static void Init(v8pp::module& module) {
@@ -23,7 +23,7 @@ namespace sda::bind
                 .property("name", &Platform::getName)
                 .property("pointerSize", &Platform::getPointerSize)
                 .property("registerRepository", &Platform::getRegisterRepository)
-                .property("callingConventions", &Platform::getCallingConventions)
+                //.property("callingConventions", &GetCallingConventions)
                 .method("getPcodeDecoder", &GetPcodeDecoder)
                 .method("getInstructionDecoder", &GetInstructionDecoder);
             module.class_("Platform", cl);

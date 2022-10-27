@@ -52,9 +52,12 @@ namespace v8pp
 namespace sda::bind
 {
     template<typename T>
-    std::list<T*> to_v8(const std::list<std::unique_ptr<T>>& list) {
-        std::list<T*> result;
-        std::transform(list.begin(), list.end(), std::back_inserter(result), [](auto& p) { return p.get(); });
+    auto to_v8(const std::list<std::unique_ptr<T>>& list) {
+        std::list<v8::Local<v8::Object>> result;
+        auto isolate = v8::Isolate::GetCurrent();
+        std::transform(list.begin(), list.end(), std::back_inserter(result), [&](auto& p) {
+            return v8pp::to_v8(isolate, p.get());
+        });
         return result;
     }
 };
