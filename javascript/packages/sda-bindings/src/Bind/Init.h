@@ -57,6 +57,7 @@ namespace sda::bind
                 ClassType::object_destroy(isolate, obj);
             });
         ClassType cl(module.isolate(), dtor);
+        cl.auto_wrap_object_ptrs(true);
         if (registerInLookupTable)
             ObjectLookupTable<T>::Register(cl);
         return cl;

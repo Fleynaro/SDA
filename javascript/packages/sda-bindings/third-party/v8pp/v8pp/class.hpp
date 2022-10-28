@@ -39,6 +39,7 @@ public:
 	using ctor_function = std::function<pointer_type (v8::FunctionCallbackInfo<v8::Value> const& args)>;
 	using dtor_function = std::function<void (v8::Isolate*, pointer_type const&)>;
 	using cast_function = pointer_type (*)(pointer_type const&);
+	using down_cast_check_function = bool (*)(pointer_type const&);
 
 	object_registry(v8::Isolate* isolate, type_info const& type, dtor_function&& dtor);
 
@@ -65,12 +66,15 @@ public:
 	void set_auto_wrap_objects(bool auto_wrap) { auto_wrap_objects_ = auto_wrap; }
 	bool auto_wrap_objects() const { return auto_wrap_objects_; }
 
+	void set_auto_wrap_object_ptrs(bool auto_wrap) { auto_wrap_object_ptrs_ = auto_wrap; }
+	bool auto_wrap_object_ptrs() const { return auto_wrap_object_ptrs_; }
+
 	void set_ctor(ctor_function&& ctor) { ctor_ = std::move(ctor); }
 
-	void add_base(object_registry& info, cast_function cast);
+	void add_base(object_registry& info, cast_function cast, down_cast_check_function down_cast_check);
 	bool cast(pointer_type& ptr, type_info const& actual_type) const;
 
-	void remove_object(object_id const& obj);
+	bool remove_object(object_id const& obj);
 	void remove_objects();
 
 	pointer_type find_object(object_id id, type_info const& actual_type) const;
@@ -78,6 +82,7 @@ public:
 
 	v8::Local<v8::Object> wrap_object(pointer_type const& object, bool call_dtor);
 	v8::Local<v8::Object> wrap_object(v8::FunctionCallbackInfo<v8::Value> const& args);
+	v8::Local<v8::Object> wrap_derivative_object(pointer_type const& object, bool call_dtor);
 	pointer_type unwrap_object(v8::Local<v8::Value> value);
 
 private:
@@ -101,8 +106,20 @@ private:
 		}
 	};
 
+	struct der_class_info
+	{
+		object_registry& info;
+		down_cast_check_function down_cast_check;
+
+		der_class_info(object_registry& info, down_cast_check_function down_cast_check)
+			: info(info)
+			, down_cast_check(down_cast_check)
+		{
+		}
+	};
+
 	std::vector<base_class_info> bases_;
-	std::vector<object_registry*> derivatives_;
+	std::vector<der_class_info> derivatives_;
 	std::unordered_map<pointer_type, wrapped_object> objects_;
 
 	v8::Isolate* isolate_;
@@ -112,6 +129,7 @@ private:
 	ctor_function ctor_;
 	dtor_function dtor_;
 	bool auto_wrap_objects_;
+	bool auto_wrap_object_ptrs_;
 };
 
 class classes
@@ -240,11 +258,26 @@ public:
 			"Class U should be base for class T");
 		//TODO: std::is_convertible<T*, U*> and check for duplicates in hierarchy?
 		object_registry& base = classes::find<Traits>(isolate(), type_id<U>());
-		class_info_.add_base(base, [](pointer_type const& ptr) -> pointer_type
-		{
-			return pointer_type(Traits::template static_pointer_cast<U>(
-				Traits::template static_pointer_cast<T>(ptr)));
-		});
+		class_info_.add_base(
+			base,
+			[](pointer_type const& ptr) -> pointer_type
+			{
+				return pointer_type(Traits::template static_pointer_cast<U>(
+					Traits::template static_pointer_cast<T>(ptr)));
+			},
+			[](pointer_type const& ptr) -> bool
+			{
+				if constexpr (std::is_polymorphic<T>::value)
+				{
+					return Traits::template down_cast_check<T>(
+						Traits::template static_pointer_cast<U>(ptr));
+				}
+				else
+				{
+					return false;
+				}
+			}
+		);
 		class_info_.js_function_template()->Inherit(base.class_function_template());
 		return *this;
 	}
@@ -253,6 +286,21 @@ public:
 	class_& auto_wrap_objects(bool auto_wrap = true)
 	{
 		class_info_.set_auto_wrap_objects(auto_wrap);
+		return *this;
+	}
+
+	/// Enable new C++ object pointers auto-wrapping
+	class_& auto_wrap_object_ptrs(bool auto_wrap = true)
+	{
+		if (auto_wrap)
+		{
+			if constexpr (!std::is_polymorphic<T>::value)
+			{
+				throw std::runtime_error(class_info_.class_name()
+					+ " must be polymorphic to auto-wrap object pointers");
+			}
+		}
+		class_info_.set_auto_wrap_object_ptrs(auto_wrap);
 		return *this;
 	}
 
@@ -295,9 +343,9 @@ private:
                 return;
             }
             T* thisObject = nullptr;
-            if constexpr (std::is_same_v<Traits, v8pp::raw_ptr_traits>) {
+            if constexpr (std::is_same_v<object_pointer_type, T*>) {
                 thisObject = unwrap_object(isolate, args.This());
-            } else if constexpr (std::is_same_v<Traits, v8pp::shared_ptr_traits>) {
+            } else if constexpr (std::is_same_v<object_pointer_type, std::shared_ptr<T>>) {
                 thisObject = unwrap_object(isolate, args.This()).get();
             } else if constexpr (!std::is_same_v<Traits, void>) {
                 static_assert(false, "Unsupported traits");
@@ -465,7 +513,7 @@ public:
 	}
 
 	/// Remove external reference from JavaScript
-	static void unreference_external(v8::Isolate* isolate, object_pointer_type const& ext)
+	static bool unreference_external(v8::Isolate* isolate, object_pointer_type const& ext)
 	{
 		using namespace detail;
 		return classes::find<Traits>(isolate, type_id<T>()).remove_object(Traits::pointer_id(ext));
@@ -500,8 +548,13 @@ public:
 		object_const_pointer_type const& obj)
 	{
 		using namespace detail;
-		return classes::find<Traits>(isolate, type_id<T>())
-			.find_v8_object(Traits::const_pointer_cast(obj));
+		detail::object_registry<Traits>& class_info = classes::find<Traits>(isolate, type_id<T>());
+		v8::Local<v8::Object> wrapped_object = class_info.find_v8_object(Traits::const_pointer_cast(obj));
+		if (wrapped_object.IsEmpty() && class_info.auto_wrap_object_ptrs())
+		{
+			wrapped_object = class_info.wrap_derivative_object(Traits::const_pointer_cast(obj), false);
+		}
+		return wrapped_object;
 	}
 
 	/// Find V8 object handle for a wrapped C++ object, may return empty handle on fail
@@ -523,10 +576,10 @@ public:
 	}
 
 	/// Destroy wrapped C++ object
-	static void destroy_object(v8::Isolate* isolate, object_pointer_type const& obj)
+	static bool destroy_object(v8::Isolate* isolate, object_pointer_type const& obj)
 	{
 		using namespace detail;
-		classes::find<Traits>(isolate, type_id<T>()).remove_object(Traits::pointer_id(obj));
+		return classes::find<Traits>(isolate, type_id<T>()).remove_object(Traits::pointer_id(obj));
 	}
 
 	/// Destroy all wrapped C++ objects of this class

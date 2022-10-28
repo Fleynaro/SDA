@@ -45,6 +45,7 @@ V8PP_IMPL object_registry<Traits>::object_registry(v8::Isolate* isolate, type_in
 	, ctor_() // no wrapped class constructor available by default
 	, dtor_(std::move(dtor))
 	, auto_wrap_objects_(false)
+	, auto_wrap_object_ptrs_(false)
 {
 	v8::HandleScope scope(isolate_);
 
@@ -81,7 +82,7 @@ V8PP_IMPL object_registry<Traits>::~object_registry()
 }
 
 template<typename Traits>
-V8PP_IMPL void object_registry<Traits>::add_base(object_registry& info, cast_function cast)
+V8PP_IMPL void object_registry<Traits>::add_base(object_registry& info, cast_function cast, down_cast_check_function down_cast_check)
 {
 	auto it = std::find_if(bases_.begin(), bases_.end(),
 		[&info](base_class_info const& base) { return &base.info == &info; });
@@ -92,7 +93,7 @@ V8PP_IMPL void object_registry<Traits>::add_base(object_registry& info, cast_fun
 			+ " is already inherited from " + info.class_name());
 	}
 	bases_.emplace_back(info, cast);
-	info.derivatives_.emplace_back(this);
+	info.derivatives_.emplace_back(*this, down_cast_check);
 }
 
 template<typename Traits>
@@ -127,16 +128,25 @@ V8PP_IMPL bool object_registry<Traits>::cast(pointer_type& ptr, type_info const&
 }
 
 template<typename Traits>
-V8PP_IMPL void object_registry<Traits>::remove_object(object_id const& obj)
+V8PP_IMPL bool object_registry<Traits>::remove_object(object_id const& obj)
 {
 	auto it = objects_.find(Traits::key(obj));
-	assert(it != objects_.end() && "no object");
 	if (it != objects_.end())
 	{
 		v8::HandleScope scope(isolate_);
 		reset_object(it->first, it->second);
 		objects_.erase(it);
+		return true;
 	}
+
+	for (der_class_info const& der : derivatives_)
+	{
+		if (der.info.remove_object(obj))
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 template<typename Traits>
@@ -176,9 +186,9 @@ V8PP_IMPL v8::Local<v8::Object> object_registry<Traits>::find_v8_object(pointer_
 	}
 
 	v8::Local<v8::Object> result;
-	for (auto const info : derivatives_)
+	for (der_class_info const& der : derivatives_)
 	{
-		result = info->find_v8_object(ptr);
+		result = der.info.find_v8_object(ptr);
 		if (!result.IsEmpty()) break;
 	}
 	return result;
@@ -211,7 +221,7 @@ V8PP_IMPL v8::Local<v8::Object> object_registry<Traits>::wrap_object(pointer_typ
 			{
 				object_id object = data.GetInternalField(0);
 				object_registry* this_ = static_cast<object_registry*>(data.GetInternalField(1));
-				this_->remove_object(object);
+				assert(this_->remove_object(object) && "no object");
 			}, v8::WeakCallbackType::kInternalFields);
 		objects_.emplace(object, wrapped_object{ std::move(pobj), call_dtor });
 	}
@@ -228,6 +238,19 @@ V8PP_IMPL v8::Local<v8::Object> object_registry<Traits>::wrap_object(v8::Functio
 		throw std::runtime_error(class_name() + " has no constructor");
 	}
 	return wrap_object(ctor_(args), true);
+}
+
+template<typename Traits>
+V8PP_IMPL v8::Local<v8::Object> object_registry<Traits>::wrap_derivative_object(pointer_type const& object, bool call_dtor)
+{
+	for (der_class_info const& der : derivatives_)
+	{
+		if (der.down_cast_check(object))
+		{
+			return der.info.wrap_derivative_object(object, call_dtor);
+		}
+	}
+	return wrap_object(object, call_dtor);
 }
 
 template<typename Traits>
