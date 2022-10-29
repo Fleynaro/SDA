@@ -27,7 +27,7 @@ namespace sda::bind
                 .property("name", &Platform::getName)
                 .property("pointerSize", &Platform::getPointerSize)
                 .property("registerRepository", &Platform::getRegisterRepository)
-                //.property("callingConventions", &GetCallingConventions)
+                .property("callingConventions", &Platform::getCallingConventions)
                 .method("getPcodeDecoder", &GetPcodeDecoder)
                 .method("getInstructionDecoder", &GetInstructionDecoder);
             module.class_("Platform", cl);
@@ -40,6 +40,7 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<RegisterRepository, v8pp::shared_ptr_traits>(module);
             cl
+                .auto_wrap_object_ptrs(true)
                 .method("getRegisterName", &RegisterRepository::getRegisterName)
                 .method("getRegisterId", &RegisterRepository::getRegisterId)
                 .method("getRegisterType", &RegisterRepository::getRegisterType)
@@ -56,6 +57,7 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<PcodeDecoder, v8pp::shared_ptr_traits>(module);
             cl
+                .auto_wrap_object_ptrs(true)
                 .property("instructionLength", &PcodeDecoder::getInstructionLength)
                 .method("decode", &PcodeDecoder::decode);
             module.class_("PcodeDecoder", cl);
@@ -68,6 +70,7 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<InstructionDecoder, v8pp::shared_ptr_traits>(module);
             cl
+                .auto_wrap_object_ptrs(true)
                 .method("decode", &InstructionDecoder::decode);
             module.class_("InstructionDecoder", cl);
         }
@@ -101,6 +104,7 @@ namespace sda::bind
             {
                 auto cl = NewClass<CallingConvention, v8pp::shared_ptr_traits>(module);
                 cl
+                    .auto_wrap_object_ptrs(true)
                     .property("name", &CallingConvention::getName)
                     .method("getStorages", &CallingConvention::getStorages);
                 ObjectLookupTableShared<CallingConvention>::Register(cl);

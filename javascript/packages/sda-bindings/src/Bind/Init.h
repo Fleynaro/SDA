@@ -54,7 +54,6 @@ namespace sda::bind
                 ClassType::object_destroy(isolate, obj);
             });
         ClassType cl(module.isolate(), dtor);
-        cl.auto_wrap_object_ptrs(true);
         return cl;
     }
     

@@ -83,7 +83,7 @@ public:
 	v8::Local<v8::Object> wrap_object(pointer_type const& object, bool call_dtor);
 	v8::Local<v8::Object> wrap_object(v8::FunctionCallbackInfo<v8::Value> const& args);
 	v8::Local<v8::Object> wrap_derivative_object(pointer_type const& object, bool call_dtor);
-	pointer_type unwrap_object(v8::Local<v8::Value> value);
+	pointer_type unwrap_object(v8::Local<v8::Value> value, bool disable_dtor);
 
 private:
 	struct wrapped_object
@@ -267,7 +267,7 @@ public:
 			},
 			[](pointer_type const& ptr) -> bool
 			{
-				if constexpr (std::is_polymorphic<T>::value)
+				if constexpr (std::is_polymorphic<U>::value)
 				{
 					return Traits::template down_cast_check<T>(
 						Traits::template static_pointer_cast<U>(ptr));
@@ -278,6 +278,16 @@ public:
 				}
 			}
 		);
+		if (base.auto_wrap_object_ptrs())
+		{
+			if constexpr (!std::is_polymorphic<U>::value)
+			{
+				throw std::runtime_error(base.class_name()
+					+ " must be polymorphic to auto-wrap object pointers");
+			}
+		}
+		class_info_.set_auto_wrap_object_ptrs(
+			base.auto_wrap_object_ptrs());
 		class_info_.js_function_template()->Inherit(base.class_function_template());
 		return *this;
 	}
@@ -292,14 +302,6 @@ public:
 	/// Enable new C++ object pointers auto-wrapping
 	class_& auto_wrap_object_ptrs(bool auto_wrap = true)
 	{
-		if (auto_wrap)
-		{
-			if constexpr (!std::is_polymorphic<T>::value)
-			{
-				throw std::runtime_error(class_info_.class_name()
-					+ " must be polymorphic to auto-wrap object pointers");
-			}
-		}
 		class_info_.set_auto_wrap_object_ptrs(auto_wrap);
 		return *this;
 	}
@@ -352,10 +354,10 @@ private:
             }
             auto argTuple = std::make_tuple(thisObject, from_v8<Args>(isolate, args[Is])...);
             if constexpr (std::is_same_v<R, void>) {
-                std::apply(func, argTuple);
+                std::apply(func, std::move(argTuple));
             } else {
-                auto result = std::apply(func, argTuple);
-                args.GetReturnValue().Set(to_v8(isolate, result));
+                auto result = std::apply(func, std::move(argTuple));
+                args.GetReturnValue().Set(to_v8(isolate, std::move(result)));
             }
         };
     }
@@ -397,7 +399,7 @@ public:
     template<typename R, typename... Args>
     class_& static_method(std::string_view name, const std::function<R(Args...)>& func, v8::PropertyAttribute attr = v8::None) {
         return method(name, std::function([func](T* thisObject, Args... args) {
-            return func(args...);
+            return func(std::move(args)...);
         }), attr);
     }
 
@@ -529,11 +531,22 @@ public:
 	}
 
 	/// Get wrapped object from V8 value, may return nullptr on fail.
-	static object_pointer_type unwrap_object(v8::Isolate* isolate, v8::Local<v8::Value> value)
+	static object_pointer_type unwrap_object(v8::Isolate* isolate, v8::Local<v8::Value> value, bool disable_dtor = false)
 	{
 		using namespace detail;
 		return Traits::template static_pointer_cast<T>(
-			classes::find<Traits>(isolate, type_id<T>()).unwrap_object(value));
+			classes::find<Traits>(isolate, type_id<T>()).unwrap_object(value, disable_dtor));
+	}
+
+	static v8::Local<v8::Object> wrap_derivative_object(v8::Isolate* isolate, object_const_pointer_type const& obj, bool own = false)
+	{
+		using namespace detail;
+		detail::object_registry<Traits>& class_info = classes::find<Traits>(isolate, type_id<T>());
+		if (!class_info.auto_wrap_object_ptrs())
+		{
+			throw std::runtime_error(class_info.class_name() + " does not support auto wrapping of object pointers");
+		}
+		return class_info.wrap_derivative_object(Traits::const_pointer_cast(obj), own);
 	}
 
 	/// Create a wrapped C++ object and import it into JavaScript

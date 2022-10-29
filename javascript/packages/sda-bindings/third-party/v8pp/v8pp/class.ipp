@@ -245,6 +245,11 @@ V8PP_IMPL v8::Local<v8::Object> object_registry<Traits>::wrap_derivative_object(
 {
 	for (der_class_info const& der : derivatives_)
 	{
+		if (!der.info.auto_wrap_object_ptrs())
+		{
+			throw std::runtime_error(der.info.class_name()
+				+ " has no auto_wrap_object_ptrs");
+		}
 		if (der.down_cast_check(object))
 		{
 			return der.info.wrap_derivative_object(object, call_dtor);
@@ -255,7 +260,7 @@ V8PP_IMPL v8::Local<v8::Object> object_registry<Traits>::wrap_derivative_object(
 
 template<typename Traits>
 V8PP_IMPL typename object_registry<Traits>::pointer_type
-object_registry<Traits>::unwrap_object(v8::Local<v8::Value> value)
+object_registry<Traits>::unwrap_object(v8::Local<v8::Value> value, bool disable_dtor)
 {
 	v8::HandleScope scope(isolate_);
 
@@ -274,6 +279,15 @@ object_registry<Traits>::unwrap_object(v8::Local<v8::Value> value)
 					pointer_type ptr = registry->find_object(id, type);
 					if (ptr)
 					{
+						if (disable_dtor)
+						{
+							// made for std::unique_ptr
+							auto it = objects_.find(Traits::key(id));
+							if (it != objects_.end())
+							{
+								it->second.call_dtor = false;
+							}
+						}
 						return ptr;
 					}
 				}

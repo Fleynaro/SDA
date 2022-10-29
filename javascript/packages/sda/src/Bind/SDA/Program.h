@@ -12,6 +12,7 @@ namespace sda::bind
 
             void onProjectRemoved(Project* project) override {
                 RemoveObjectRef(project);
+                RemoveObjectRef(project->getContext());
             }
         };
         static auto New() {

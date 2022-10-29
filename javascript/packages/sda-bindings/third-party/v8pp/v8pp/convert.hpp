@@ -612,7 +612,8 @@ struct is_wrapped_class : std::conjunction<
 	std::negation<detail::is_sequence<T>>,
 	std::negation<detail::is_array<T>>,
 	std::negation<detail::is_tuple<T>>,
-	std::negation<detail::is_shared_ptr<T>>>
+	std::negation<detail::is_shared_ptr<T>>,
+	std::negation<detail::is_unique_ptr<T>>>
 {
 };
 
@@ -653,6 +654,7 @@ struct convert<T*, typename std::enable_if<is_wrapped_class<T>::value>::type>
 		T* object = class_<class_type, raw_ptr_traits>::unwrap_object(isolate, value);
 		if (!object)
 		{
+			// when shared_ptr object passed to raw pointer argument using .get()
 			object = class_<class_type, shared_ptr_traits>::unwrap_object(isolate, value).get();
 		}
 		return object;
@@ -743,12 +745,12 @@ struct convert<std::unique_ptr<T>, typename std::enable_if<is_wrapped_class<T>::
 		{
 			return nullptr;
 		}
-		return from_type(class_<class_type, raw_ptr_traits>::unwrap_object(isolate, value));
+		return from_type(class_<class_type, raw_ptr_traits>::unwrap_object(isolate, value, true));
 	}
 
 	static to_type to_v8(v8::Isolate* isolate, std::unique_ptr<T> const& value)
 	{
-		return class_<class_type, raw_ptr_traits>::find_object(isolate, value.release());
+		return class_<class_type, raw_ptr_traits>::wrap_derivative_object(isolate, value.get(), true);
 	}
 };
 

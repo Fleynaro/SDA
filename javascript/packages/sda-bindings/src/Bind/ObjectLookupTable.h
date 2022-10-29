@@ -68,6 +68,8 @@ namespace sda::bind
                 .static_method("Get", &GetObject);
             IsRegistered = true;
         }
+
+        // TODO: clean up table (empty weak_ptr) by timer
         
     private:
         static Hash GetHash(T* obj) {

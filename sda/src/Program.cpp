@@ -3,7 +3,9 @@
 
 using namespace sda;
 
-Program::Program() {
+Program::Program()
+{
+    m_callbacks = std::make_unique<Callbacks>();
 }
 
 const std::list<std::unique_ptr<Project>>& Program::getProjects() {
@@ -11,6 +13,7 @@ const std::list<std::unique_ptr<Project>>& Program::getProjects() {
 }
 
 void Program::removeProject(Project* project) {
+    m_callbacks->onProjectRemoved(project);
     m_projects.remove_if([project](const std::unique_ptr<Project>& p) {
         return p.get() == project;
     });

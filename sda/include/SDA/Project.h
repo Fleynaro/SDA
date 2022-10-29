@@ -1,6 +1,13 @@
 #pragma once
 #include <filesystem>
+// include context (TODO: rewrite, problem in unique_ptr)
 #include "SDA/Core/Context.h"
+#include "SDA/Core/Image/AddressSpace.h"
+#include "SDA/Core/Image/Image.h"
+#include "SDA/Core/DataType/DataType.h"
+#include "SDA/Core/Symbol/Symbol.h"
+#include "SDA/Core/SymbolTable/SymbolTable.h"
+// include context END
 #include "SDA/Factory.h"
 #include "SDA/Callbacks/ContextCallbacks.h"
 #include "SDA/Database/Database.h"
@@ -15,13 +22,13 @@ namespace sda
     {
         Program* m_program;
         std::filesystem::path m_path;
-        std::shared_ptr<Context> m_context;
+        std::unique_ptr<Context> m_context;
         std::unique_ptr<Factory> m_factory;
         std::unique_ptr<Database> m_database;
         std::unique_ptr<Transaction> m_transaction;
         std::unique_ptr<ChangeChain> m_changeChain;
     public:
-        Project(Program* program, const std::filesystem::path& path, std::shared_ptr<Context> context);
+        Project(Program* program, const std::filesystem::path& path, std::unique_ptr<Context> context);
 
         // Get the program
         Program* getProgram() const;
@@ -30,7 +37,7 @@ namespace sda
         const std::filesystem::path& getPath() const;
 
         // Get context of the project
-        std::shared_ptr<Context> getContext() const;
+        Context* getContext() const;
 
         // Get factory
         Factory* getFactory();

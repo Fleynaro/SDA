@@ -3,14 +3,15 @@
 
 using namespace sda;
 
-Project::Project(Program* program, const std::filesystem::path& path, std::shared_ptr<Context> context)
-    : m_program(program), m_path(path), m_context(context)
+Project::Project(Program* program, const std::filesystem::path& path, std::unique_ptr<Context> context)
+    : m_program(program), m_path(path), m_context(std::move(context))
 {
     // create project directory if it doesn't exist
     if (!std::filesystem::exists(path))
         std::filesystem::create_directory(path);
 
     program->m_projects.push_back(std::unique_ptr<Project>(this));
+    program->getCallbacks()->onProjectAdded(this);
     m_factory = std::make_unique<Factory>(context.get());
     m_database = std::make_unique<Database>(m_path / "storage.db", GetSchema());
     m_transaction = std::make_unique<Transaction>(m_database.get());
@@ -25,8 +26,8 @@ const std::filesystem::path& Project::getPath() const {
     return m_path;
 }
 
-std::shared_ptr<Context> Project::getContext() const {
-    return m_context;
+Context* Project::getContext() const {
+    return m_context.get();
 }
 
 Factory* Project::getFactory() {

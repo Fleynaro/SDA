@@ -72,19 +72,18 @@ namespace sda::bind
         };
 
         static auto New(Platform* platform) {
-            auto context = std::make_shared<Context>(platform);
+            auto context = new Context(platform);
             context->setCallbacks(std::make_shared<RefCallbacks>());
-            ExportSharedObjectRef(context);
-            return context;
+            return ExportObject(context);
         }
 
     public:
         static void Init(v8pp::module& module) {
-            auto cl = NewClass<Context, v8pp::shared_ptr_traits>(module);
+            auto cl = NewClass<Context>(module);
             cl
                 .property("callbacks", &Context::getCallbacks, &Context::setCallbacks)
                 .static_method("New", &New);
-            ObjectLookupTableShared<Context>::Register(cl);
+            ObjectLookupTableRaw<Context>::Register(cl);
             module.class_("Context", cl);
         }
     };

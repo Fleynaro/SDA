@@ -8,7 +8,7 @@ namespace sda
     class Program
     {
         // for access to Program::m_projects
-        friend Project::Project(Program* program, const std::filesystem::path& path, std::shared_ptr<Context> context);
+        friend Project::Project(Program* program, const std::filesystem::path& path, std::unique_ptr<Context> context);
 
         std::list<std::unique_ptr<Project>> m_projects;
         std::map<std::string, std::unique_ptr<IPlugin>> m_plugins;
@@ -28,9 +28,9 @@ namespace sda
 
         class Callbacks {
         public:
-            virtual void onProjectAdded(Project* project) = 0;
+            virtual void onProjectAdded(Project* project) {}
 
-            virtual void onProjectRemoved(Project* project) = 0;
+            virtual void onProjectRemoved(Project* project) {}
         };
 
         void setCallbacks(std::shared_ptr<Callbacks> callbacks);

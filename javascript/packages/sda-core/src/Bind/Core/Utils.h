@@ -43,8 +43,8 @@ namespace sda::bind
 
             using T::T;
             
-            static auto New(Args&... args) {
-                auto printer = new PrinterJs(args...);
+            static auto New(Args... args) {
+                auto printer = new PrinterJs(std::move(args)...);
                 printer->setOutput(printer->ss);
                 return ExportObject(printer);
             }
