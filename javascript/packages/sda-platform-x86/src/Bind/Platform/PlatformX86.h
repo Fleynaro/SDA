@@ -10,7 +10,7 @@ namespace sda::bind
     {
         static auto New(bool is64Version) {
             auto platform = new PlatformX86(is64Version);
-            ExportSharedObject(platform->getRegisterRepository());
+            ExportSharedObjectRef(platform->getRegisterRepository());
             return ExportObject(platform);
         }
     public:
@@ -19,6 +19,7 @@ namespace sda::bind
             cl
                 .inherit<Platform>()
                 .static_method("New", &New);
+            ObjectLookupTableRaw<PlatformX86>::Register(cl);
             module.class_("PlatformX86", cl);
         }
     };

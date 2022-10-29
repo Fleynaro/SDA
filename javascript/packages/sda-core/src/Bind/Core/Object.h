@@ -12,6 +12,7 @@ namespace sda::bind
                 .inherit<utils::ISerializable>()
                 .property("id", [](const Object& self) { return std::string(self.serializeId()); })
                 .method("setTemporary", &Object::setTemporary);
+            ObjectLookupTableRaw<Object>::Register(cl);
             module.class_("Object", cl);
         }
     };

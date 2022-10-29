@@ -650,7 +650,12 @@ struct convert<T*, typename std::enable_if<is_wrapped_class<T>::value>::type>
 		{
 			return nullptr;
 		}
-		return class_<class_type, raw_ptr_traits>::unwrap_object(isolate, value);
+		T* object = class_<class_type, raw_ptr_traits>::unwrap_object(isolate, value);
+		if (!object)
+		{
+			object = class_<class_type, shared_ptr_traits>::unwrap_object(isolate, value).get();
+		}
+		return object;
 	}
 
 	static to_type to_v8(v8::Isolate* isolate, T const* value)
@@ -717,6 +722,33 @@ struct convert<std::shared_ptr<T>, typename std::enable_if<is_wrapped_class<T>::
 	static to_type to_v8(v8::Isolate* isolate, std::shared_ptr<T> const& value)
 	{
 		return class_<class_type, shared_ptr_traits>::find_object(isolate, value);
+	}
+};
+
+template<typename T>
+struct convert<std::unique_ptr<T>, typename std::enable_if<is_wrapped_class<T>::value>::type>
+{
+	using from_type = std::unique_ptr<T>;
+	using to_type = v8::Local<v8::Object>;
+	using class_type = typename std::remove_cv<T>::type;
+
+	static bool is_valid(v8::Isolate*, v8::Local<v8::Value> value)
+	{
+		return !value.IsEmpty() && value->IsObject();
+	}
+
+	static from_type from_v8(v8::Isolate* isolate, v8::Local<v8::Value> value)
+	{
+		if (!is_valid(isolate, value))
+		{
+			return nullptr;
+		}
+		return from_type(class_<class_type, raw_ptr_traits>::unwrap_object(isolate, value));
+	}
+
+	static to_type to_v8(v8::Isolate* isolate, std::unique_ptr<T> const& value)
+	{
+		return class_<class_type, raw_ptr_traits>::find_object(isolate, value.release());
 	}
 };
 

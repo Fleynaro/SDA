@@ -34,8 +34,7 @@ namespace sda::bind
         };
         
         static auto New() {
-            auto callbacks = std::make_shared<CallbacksJsImpl>();
-            return ExportSharedObject(callbacks);
+            return std::make_shared<CallbacksJsImpl>();
         }
 
     public:
@@ -62,25 +61,30 @@ namespace sda::bind
 
     class ContextBind
     {
-        class BindCallbacks : public Context::Callbacks {
-            void onObjectAdded(Object* obj) override;
+        class RefCallbacks : public Context::Callbacks {
+            void onObjectAdded(Object* obj) override {
+                ExportObjectRef(obj);
+            }
 
-            void onObjectRemoved(Object* obj) override;
+            void onObjectRemoved(Object* obj) override {
+                RemoveObjectRef(obj);
+            }
         };
 
         static auto New(Platform* platform) {
-            auto context = new Context(platform);
-            auto callbacks = std::make_shared<BindCallbacks>();
-            context->setCallbacks(callbacks);
-            return ExportObject(context);
+            auto context = std::make_shared<Context>(platform);
+            context->setCallbacks(std::make_shared<RefCallbacks>());
+            ExportSharedObjectRef(context);
+            return context;
         }
 
     public:
         static void Init(v8pp::module& module) {
-            auto cl = NewClass<Context>(module);
+            auto cl = NewClass<Context, v8pp::shared_ptr_traits>(module);
             cl
                 .property("callbacks", &Context::getCallbacks, &Context::setCallbacks)
                 .static_method("New", &New);
+            ObjectLookupTableShared<Context>::Register(cl);
             module.class_("Context", cl);
         }
     };

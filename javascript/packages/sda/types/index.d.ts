@@ -16,6 +16,8 @@ export class Program {
     readonly hashId: Hash;
     readonly projects: Project[];
 
+    removeProject(project: Project): void;
+
     static New(): Program;
 
     static Get(hashId: Hash): Program;

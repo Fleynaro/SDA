@@ -5,9 +5,8 @@ namespace sda::bind
 {
     class ProjectBind
     {
-        static auto New(Program* program, const std::filesystem::path& path, Context* context) {
-            auto project = new Project(program, path, context);
-            return ExportObject(project);
+        static auto New(Program* program, const std::filesystem::path& path, std::shared_ptr<Context> context) {
+            return new Project(program, path, context);
         }
     public:
         static void Init(v8pp::module& module) {

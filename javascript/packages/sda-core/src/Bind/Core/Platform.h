@@ -10,11 +10,15 @@ namespace sda::bind
     class PlatformBind
     {
         static auto GetPcodeDecoder(Platform* platform) {
-            return ExportSharedObject(platform->getPcodeDecoder());
+            auto decoder = platform->getPcodeDecoder();
+            ExportSharedObjectRef(decoder);
+            return decoder;
         }
 
         static auto GetInstructionDecoder(Platform* platform) {
-            return ExportSharedObject(platform->getInstructionDecoder());
+            auto decoder = platform->getInstructionDecoder();
+            ExportSharedObjectRef(decoder);
+            return decoder;
         }
     public:
         static void Init(v8pp::module& module) {
@@ -41,6 +45,7 @@ namespace sda::bind
                 .method("getRegisterType", &RegisterRepository::getRegisterType)
                 .method("getRegisterFlagName", &RegisterRepository::getRegisterFlagName)
                 .method("getRegisterFlagIndex", &RegisterRepository::getRegisterFlagIndex);
+            ObjectLookupTableShared<RegisterRepository>::Register(cl);
             module.class_("RegisterRepository", cl);
         }
     };
@@ -98,6 +103,7 @@ namespace sda::bind
                 cl
                     .property("name", &CallingConvention::getName)
                     .method("getStorages", &CallingConvention::getStorages);
+                ObjectLookupTableShared<CallingConvention>::Register(cl);
                 module.class_("CallingConvention", cl);
             }
         }
@@ -106,7 +112,9 @@ namespace sda::bind
     class CustomCallingConventionBind
     {
         static auto New(const CallingConvention::Map& storages) {
-            return std::make_shared<CustomCallingConvention>(storages);
+            auto cc = std::make_shared<CustomCallingConvention>(storages);
+            ExportSharedObjectRef<CallingConvention>(cc);
+            return cc;
         }
     public:
         static void Init(v8pp::module& module) {
