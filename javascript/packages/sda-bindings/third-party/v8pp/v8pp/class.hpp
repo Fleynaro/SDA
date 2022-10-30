@@ -151,7 +151,7 @@ private:
 	using classes_info = std::vector<std::unique_ptr<class_info>>;
 	classes_info classes_;
 
-	classes_info::iterator find(type_info const& type);
+	classes_info::iterator find(type_info const& type, type_info const& traits);
 
 	enum class operation { get, add, remove };
 	static classes* instance(operation op, v8::Isolate* isolate);

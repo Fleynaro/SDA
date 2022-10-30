@@ -317,7 +317,7 @@ V8PP_IMPL object_registry<Traits>& classes::add(v8::Isolate* isolate, type_info 
 	typename object_registry<Traits>::dtor_function&& dtor)
 {
 	classes* info = instance(operation::add, isolate);
-	auto it = info->find(type);
+	auto it = info->find(type, type_id<Traits>());
 	if (it != info->classes_.end())
 	{
 		//assert(false && "class already registred");
@@ -334,17 +334,9 @@ V8PP_IMPL void classes::remove(v8::Isolate* isolate, type_info const& type)
 	classes* info = instance(operation::get, isolate);
 	if (info)
 	{
-		auto it = info->find(type);
+		auto it = info->find(type, type_id<Traits>());
 		if (it != info->classes_.end())
 		{
-			type_info const& traits = type_id<Traits>();
-			if ((*it)->traits != traits)
-			{
-				throw std::runtime_error((*it)->class_name()
-					+ " is already registered in isolate "
-					+ pointer_str(isolate) + " before of "
-					+ class_info(type, traits).class_name());
-			}
 			info->classes_.erase(it);
 			if (info->classes_.empty())
 			{
@@ -361,16 +353,9 @@ V8PP_IMPL object_registry<Traits>& classes::find(v8::Isolate* isolate, type_info
 	type_info const& traits = type_id<Traits>();
 	if (info)
 	{
-		auto it = info->find(type);
+		auto it = info->find(type, traits);
 		if (it != info->classes_.end())
 		{
-			if ((*it)->traits != traits)
-			{
-				throw std::runtime_error((*it)->class_name()
-					+ " is already registered in isolate "
-					+ pointer_str(isolate) + " before of "
-					+ class_info(type, traits).class_name());
-			}
 			return *static_cast<object_registry<Traits>*>(it->get());
 		}
 	}
@@ -384,12 +369,12 @@ V8PP_IMPL void classes::remove_all(v8::Isolate* isolate)
 	instance(operation::remove, isolate);
 }
 
-V8PP_IMPL classes::classes_info::iterator classes::find(type_info const& type)
+V8PP_IMPL classes::classes_info::iterator classes::find(type_info const& type, type_info const& traits)
 {
 	return std::find_if(classes_.begin(), classes_.end(),
-		[&type](classes_info::value_type const& info)
+		[&type, &traits](classes_info::value_type const& info)
 		{
-			return info->type == type;
+			return info->type == type && info->traits == traits;
 		});
 }
 
