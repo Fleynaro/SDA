@@ -1,6 +1,6 @@
 import { invokerFactory } from '../utils';
 import { ProjectController } from '../../api/project';
-import { ObjectChangeType } from '../../api/common';
+import { ObjectId, ObjectChangeType } from '../../api/common';
 
 const invoke = invokerFactory("Project");
 
@@ -13,6 +13,9 @@ const ProjectControllerImpl: ProjectController = {
     
     getActiveProjects: () =>
         invoke("getActiveProjects"),
+
+    getActiveProject: (id: ObjectId) =>
+        invoke("getActiveProject", id),
 
     openProject: (path: string) =>
         invoke("openProject", path),

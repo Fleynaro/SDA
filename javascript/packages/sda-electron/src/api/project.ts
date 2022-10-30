@@ -21,6 +21,8 @@ export interface ProjectController {
 
     getActiveProjects(): Promise<Project[]>;
 
+    getActiveProject(id: ObjectId): Promise<Project>;
+
     openProject(path: string): Promise<Project>;
     
     createProject(path: string, platformName: string): Promise<void>;

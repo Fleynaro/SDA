@@ -6,6 +6,7 @@ import {
     RecentProject as RecentProjectDTO,
     Project as ProjectDTO
 } from '../api/project';
+import { ObjectId } from '../api/common';
 import { program, getUserPath } from '../app';
 import { loadJSON, saveJSON, doesFileExist, deleteFile } from '../utils/file';
 import { Project } from 'sda';
@@ -27,6 +28,7 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
         this.register("getRecentProjects", this.getRecentProjects);
         this.register("updateRecentProjectsWithPath", this.updateRecentProjectsWithPath);
         this.register("getActiveProjects", this.getActiveProjects);
+        this.register("getActiveProject", this.getActiveProject);
         this.register("createProject", this.createProject);
         this.register("openProject", this.openProject);
         this.register("deleteProject", this.deleteProject);
@@ -61,6 +63,10 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
 
     public async getActiveProjects(): Promise<ProjectDTO[]> {
         return program.projects.map(toProjectDTO);
+    }
+
+    public async getActiveProject(id: ObjectId): Promise<ProjectDTO> {
+        return toProjectDTO(Project.Get(Number(id.key)));
     }
 
     public async openProject(path: string): Promise<ProjectDTO> {

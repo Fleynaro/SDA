@@ -31,6 +31,6 @@ export default function useList<T extends Identifiable>(
     return () => {
       unsubscribe();
     };
-  }, [updateItems, loadItems]);
+  }, [loadItems, updateItems]);
   return items;
 }
