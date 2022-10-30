@@ -1,6 +1,7 @@
 import { SignatureDataType } from "./data-type";
+import { Hash, IWrappable } from "./utils";
 
-export abstract class Platform {
+export abstract class Platform implements IWrappable {
     readonly hashId: Hash;
     readonly name: string;
     readonly pointerSize: number;
@@ -10,6 +11,8 @@ export abstract class Platform {
     getPcodeDecoder(): PcodeDecoder;
 
     getInstructionDecoder(): InstructionDecoder;
+
+    static Get(hashId: Hash): Platform;
 }
 
 export namespace Register {
@@ -22,7 +25,9 @@ export namespace Register {
         "Vector";
 }
 
-export abstract class RegisterRepository {
+export abstract class RegisterRepository implements IWrappable {
+    readonly hashId: Hash;
+
     getRegisterName(regId: number): string;
 
     getRegisterId(regName: string): number;
@@ -32,16 +37,25 @@ export abstract class RegisterRepository {
     getRegisterFlagName(flagMask: number): string;
 
     getRegisterFlagIndex(flagName: string): number;
+    
+    static Get(hashId: Hash): RegisterRepository;
 }
 
-export abstract class PcodeDecoder {
+export abstract class PcodeDecoder implements IWrappable {
+    readonly hashId: Hash;
     readonly instructionLength: number;
 
     decode(offset: number, bytes: number[]): void;
+
+    static Get(hashId: Hash): PcodeDecoder;
 }
 
-export abstract class InstructionDecoder {
+export abstract class InstructionDecoder implements IWrappable {
+    readonly hashId: Hash;
+
     decode(bytes: number[]): void;
+
+    static Get(hashId: Hash): InstructionDecoder;
 }
 
 export namespace CallingConvention {
@@ -62,10 +76,13 @@ export namespace CallingConvention {
     }
 }
 
-export abstract class CallingConvention {
+export abstract class CallingConvention implements IWrappable {
+    readonly hashId: Hash;
     readonly name: string;
 
     getStorages(signatureDt: SignatureDataType): CallingConvention.Map;
+
+    static Get(hashId: Hash): CallingConvention;
 }
 
 export class CustomCallingConvention extends CallingConvention {

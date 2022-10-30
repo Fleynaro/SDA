@@ -1,10 +1,24 @@
 #pragma once
+#include "SDA/Core/Utils/Wrapping.h"
 #include "SDA/Core/Utils/Serialization.h"
 #include "SDA/Core/Utils/AbstractParser.h"
 #include "SDA/Core/Utils/AbstractPrinter.h"
 
 namespace sda::bind
 {
+    class WrappingBind
+    {
+    public:
+        static void Init(v8pp::module& module) {
+            auto cl1 = NewClass<utils::IWrappable, v8pp::raw_ptr_traits>(module);
+            cl1.auto_wrap_object_ptrs(true);
+            ObjectLookupTableRaw::Register(cl1);
+            auto cl2 = NewClass<utils::IWrappable, v8pp::shared_ptr_traits>(module);
+            cl2.auto_wrap_object_ptrs(true);
+            ObjectLookupTableShared::Register(cl2);
+        }
+    };
+
     class SerializationBind
     {
         static auto Serialize(utils::ISerializable* obj) {

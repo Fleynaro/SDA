@@ -12,7 +12,7 @@ namespace sda
     // see also Core/ContextInclude.h
 
     // Core context that contains all important entities
-    class Context
+    class Context : public utils::IWrappable
     {
         Platform* m_platform;
         std::unique_ptr<AddressSpaceList> m_addressSpaces;

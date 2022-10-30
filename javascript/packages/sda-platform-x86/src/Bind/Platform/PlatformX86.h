@@ -21,7 +21,6 @@ namespace sda::bind
             cl
                 .inherit<Platform>()
                 .static_method("New", &New);
-            ObjectLookupTableRaw::Register(cl);
             module.class_("PlatformX86", cl);
         }
     };

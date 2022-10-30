@@ -1,10 +1,11 @@
 #pragma once
 #include "Register.h"
+#include "SDA/Core/Utils/Wrapping.h"
 
 namespace sda
 {
     // Here are some functions depending on the platform to get info about registers.
-    class RegisterRepository
+    class RegisterRepository : public utils::IWrappable
     {
     public:
         virtual std::string getRegisterName(size_t regId) const = 0;

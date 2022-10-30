@@ -1,7 +1,7 @@
 import { Context } from 'sda-core/context';
-import { Hash } from 'sda-core/utils';
+import { Hash, IWrappable } from 'sda-core/utils';
 
-export class Project {
+export class Project implements IWrappable {
     readonly hashId: Hash;
     readonly program: Program;
     readonly path: string;
@@ -12,7 +12,7 @@ export class Project {
     static Get(hashId: Hash): Project;
 }
 
-export class Program {
+export class Program implements IWrappable {
     readonly hashId: Hash;
     readonly projects: Project[];
 

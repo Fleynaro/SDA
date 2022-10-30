@@ -24,6 +24,7 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<Platform>(module);
             cl
+                .inherit<utils::IWrappable>()
                 .property("name", &Platform::getName)
                 .property("pointerSize", &Platform::getPointerSize)
                 .property("registerRepository", &Platform::getRegisterRepository)
@@ -40,7 +41,7 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<RegisterRepository, v8pp::shared_ptr_traits>(module);
             cl
-                .auto_wrap_object_ptrs(true)
+                .inherit<utils::IWrappable>()
                 .method("getRegisterName", &RegisterRepository::getRegisterName)
                 .method("getRegisterId", &RegisterRepository::getRegisterId)
                 .method("getRegisterType", &RegisterRepository::getRegisterType)
@@ -57,7 +58,7 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<PcodeDecoder, v8pp::shared_ptr_traits>(module);
             cl
-                .auto_wrap_object_ptrs(true)
+                .inherit<utils::IWrappable>()
                 .property("instructionLength", &PcodeDecoder::getInstructionLength)
                 .method("decode", &PcodeDecoder::decode);
             module.class_("PcodeDecoder", cl);
@@ -70,7 +71,7 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<InstructionDecoder, v8pp::shared_ptr_traits>(module);
             cl
-                .auto_wrap_object_ptrs(true)
+                .inherit<utils::IWrappable>()
                 .method("decode", &InstructionDecoder::decode);
             module.class_("InstructionDecoder", cl);
         }
@@ -104,10 +105,9 @@ namespace sda::bind
             {
                 auto cl = NewClass<CallingConvention, v8pp::shared_ptr_traits>(module);
                 cl
-                    .auto_wrap_object_ptrs(true)
+                    .inherit<utils::IWrappable>()
                     .property("name", &CallingConvention::getName)
                     .method("getStorages", &CallingConvention::getStorages);
-                ObjectLookupTableShared::Register(cl);
                 module.class_("CallingConvention", cl);
             }
         }

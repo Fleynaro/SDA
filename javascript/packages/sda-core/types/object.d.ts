@@ -1,6 +1,6 @@
-import { ISerializable, Hash } from "./utils";
+import { IWrappable, ISerializable, Hash } from "./utils";
 
-export abstract class Object implements ISerializable {
+export abstract class Object implements IWrappable, ISerializable {
     readonly hashId: Hash;
     readonly id: string;
     

@@ -3,10 +3,11 @@
 #include <vector>
 #include <list>
 #include "SDA/Core/Pcode/PcodeInstruction.h"
+#include "SDA/Core/Utils/Wrapping.h"
 
 namespace sda
 {
-    class PcodeDecoder
+    class PcodeDecoder : public utils::IWrappable
     {
     public:
         virtual void decode(Offset offset, const std::vector<uint8_t>& data) = 0;

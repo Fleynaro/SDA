@@ -13,12 +13,11 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<Project>(module);
             cl
-                .auto_wrap_object_ptrs(true)
+                .inherit<utils::IWrappable>()
                 .property("program", &Project::getProgram)
                 .property("path", &Project::getPath)
                 .property("context", &Project::getContext)
                 .static_method("New", &New);
-            ObjectLookupTableRaw::Register(cl);
             module.class_("Project", cl);
         }
     };

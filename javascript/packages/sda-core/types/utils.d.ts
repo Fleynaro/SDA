@@ -1,5 +1,9 @@
 export type Hash = number;
 
+export interface IWrappable {
+    readonly hashId: Hash;
+}
+
 export interface ISerializable {
     serialize(): object;
 
