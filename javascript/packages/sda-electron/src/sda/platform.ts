@@ -28,11 +28,8 @@ export const initDefaultPlatforms = () => {
         console.log('1) reg id = ', repo.getRegisterId('rax'));
     }, 1000);
     setTimeout(() => {
+        const pl = findPlatform('x86');
         const repo = pl.registerRepository;
         console.log('2) reg id = ', repo.getRegisterId('rax'));
-    }, 5000);
-    setTimeout(() => {
-        const repo = pl.registerRepository;
-        console.log('3) reg id = ', repo.getRegisterId('rax'));
-    }, 12000);
+    }, 6000);
 }

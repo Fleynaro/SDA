@@ -22,3 +22,5 @@ export class Program {
 
     static Get(hashId: Hash): Program;
 }
+
+export function CleanUpSharedObjectLookupTable(): void;

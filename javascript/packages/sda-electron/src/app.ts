@@ -2,7 +2,7 @@ import { app } from "electron";
 import path from "path";
 import { existsSync, mkdirSync } from "fs";
 import { initControllers } from "./controllers";
-import { Program } from 'sda';
+import { Program, CleanUpSharedObjectLookupTable } from 'sda';
 import { initDefaultPlatforms } from './sda/platform';
 
 export let program: Program;
@@ -25,4 +25,8 @@ export const initApp = () => {
     if (!existsSync(userDir)) {
         mkdirSync(userDir);
     }
+
+    setInterval(() => { // TODO: remove when app exit
+        CleanUpSharedObjectLookupTable();
+    }, 10000);
 }

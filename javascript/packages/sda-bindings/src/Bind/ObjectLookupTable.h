@@ -43,6 +43,25 @@ namespace sda::bind
         }
     };
 
+    class ObjectLookupTableSharedCleaner
+    {
+        static inline std::list<std::function<void()>> Cleaners;
+    public:
+        static void AddCleaner(std::function<void()> cleaner) {
+            Cleaners.push_back(cleaner);
+        }
+
+        static void CleanUp() {
+            for (auto& cleaner : Cleaners) {
+                cleaner();
+            }
+        }
+
+        static void Init(v8pp::module& module) {
+            module.function("CleanUpSharedObjectLookupTable", &CleanUp);
+        }
+    };
+
     template<typename T>
     class ObjectLookupTableShared
     {
@@ -67,9 +86,8 @@ namespace sda::bind
                 .property("hashId", [](T& self) { return GetHash(&self); })
                 .static_method("Get", &GetObject);
             IsRegistered = true;
+            ObjectLookupTableSharedCleaner::AddCleaner(&CleanUp);
         }
-
-        // TODO: clean up table (empty weak_ptr) by timer
         
     private:
         static Hash GetHash(T* obj) {
@@ -82,6 +100,14 @@ namespace sda::bind
                 return it->second.lock();
             }
             return nullptr;
+        }
+
+        static void CleanUp() {
+            for (auto& [hash, obj] : Table) {
+                if (obj.expired()) {
+                    Table.erase(hash);
+                }
+            }
         }
     };
 };
