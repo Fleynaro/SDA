@@ -1,3 +1,4 @@
+#pragma once
 #include <node_version.h>
 
 // https://github.com/electron/electron/blob/9-x-y/patches/node/enable_31_bit_smis_on_64bit_arch_and_ptr_compression.patch
@@ -43,11 +44,11 @@ namespace sda::bind
         auto dtor = ClassType::dtor_function(
             [deleter](v8::Isolate* isolate, ClassType::object_pointer_type const& obj) {
                 if constexpr (std::is_same_v<ClassType::object_pointer_type, T*>) {
-                    ObjectLookupTableRaw<T>::RemoveObject(obj);
+                    ObjectLookupTableRaw::RemoveObject(obj);
                     if (deleter)
                         deleter(obj);
                 } else if constexpr (std::is_same_v<ClassType::object_pointer_type, std::shared_ptr<T>>) {
-                    ObjectLookupTableShared<T>::RemoveObject(obj);
+                    ObjectLookupTableShared::RemoveObject(obj);
                     if (deleter)
                         deleter(obj.get());
                 }

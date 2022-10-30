@@ -11,7 +11,7 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
     InitModule(module, {
         ProgramBind::Init,
         ProjectBind::Init,
-        ObjectLookupTableSharedCleaner::Init
+        ObjectLookupTableShared::Init
     });
 }
 

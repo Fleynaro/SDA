@@ -9,6 +9,8 @@ export abstract class Object implements ISerializable {
     serialize(): object;
 
     deserialize(data: object): void;
+
+    static Get(hashId: Hash): Object;
 }
 
 export abstract class ContextObject extends Object {

@@ -1,111 +1,127 @@
 #pragma once
 #include <v8pp/class.hpp>
+#include "Shared/SharedData.h"
 
 namespace sda::bind
 {
-    template<typename T>
     class ObjectLookupTableRaw
     {
         using Hash = size_t;
-        static inline std::unordered_map<Hash, T*> Table;
-        static inline bool IsRegistered = false;
+        struct Fields {
+            std::unordered_map<Hash, void*> table;
+            bool isRegistered = false;
+        };
     public:
-        static void AddObject(T* obj) {
-            if (!IsRegistered)
+        static void AddObject(void* obj) {
+            auto fields = getFields();
+            if (!fields->isRegistered)
                 return;
-            Table[GetHash(obj)] = obj;
+            fields->table[GetHash(obj)] = obj;
+        }
+        
+        static void RemoveObject(void* obj) {
+            auto fields = getFields();
+            if (!fields->isRegistered)
+                return;
+            fields->table.erase(GetHash(obj));
         }
 
-        static void RemoveObject(T* obj) {
-            if (!IsRegistered)
-                return;
-            Table.erase(GetHash(obj));
-        }
-
+        template<typename T>
         static void Register(v8pp::class_<T, v8pp::raw_ptr_traits>& cl) {
             cl
                 .property("hashId", [](T& self) { return GetHash(&self); })
-                .static_method("Get", &GetObject);
-            IsRegistered = true;
+                .static_method("Get", &GetObject<T>);
+            getFields()->isRegistered = true;
         }
         
     private:
-        static Hash GetHash(T* obj) {
+        static Fields* getFields() {
+            void* fields = SharedData::Get<ObjectLookupTableRaw>();
+            if (fields == nullptr) {
+                fields = new Fields();
+                SharedData::Set<ObjectLookupTableRaw>(fields);
+            }
+            return static_cast<Fields*>(fields);
+        }
+
+        static Hash GetHash(void* obj) {
             return Hash(obj);
         }
 
+        template<typename T>
         static T* GetObject(Hash hash) {
-            auto it = Table.find(hash);
-            if (it != Table.end()) {
-                return it->second;
+            auto fields = getFields();
+            auto it = fields->table.find(hash);
+            if (it != fields->table.end()) {
+                return static_cast<T*>(it->second);
             }
             return nullptr;
         }
     };
 
-    class ObjectLookupTableSharedCleaner
+    class ObjectLookupTableShared
     {
-        static inline std::list<std::function<void()>> Cleaners;
+        using Hash = size_t;
+        struct Fields {
+            std::unordered_map<Hash, std::weak_ptr<void>> table;
+            bool isRegistered = false;
+        };
     public:
-        static void AddCleaner(std::function<void()> cleaner) {
-            Cleaners.push_back(cleaner);
+        static void AddObject(std::shared_ptr<void> obj) {
+            auto fields = getFields();
+            if (!fields->isRegistered)
+                return;
+            fields->table[GetHash(obj.get())] = obj;
         }
 
-        static void CleanUp() {
-            for (auto& cleaner : Cleaners) {
-                cleaner();
-            }
+        static void RemoveObject(std::shared_ptr<void> obj) {
+            auto fields = getFields();
+            if (!fields->isRegistered)
+                return;
+            fields->table.erase(GetHash(obj.get()));
+        }
+
+        template<typename T>
+        static void Register(v8pp::class_<T, v8pp::shared_ptr_traits>& cl) {
+            cl
+                .property("hashId", [](T& self) { return GetHash(&self); })
+                .static_method("Get", &GetObject<T>);
+            getFields()->isRegistered = true;
         }
 
         static void Init(v8pp::module& module) {
             module.function("CleanUpSharedObjectLookupTable", &CleanUp);
         }
-    };
-
-    template<typename T>
-    class ObjectLookupTableShared
-    {
-        using Hash = size_t;
-        static inline std::unordered_map<Hash, std::weak_ptr<T>> Table;
-        static inline bool IsRegistered = false;
-    public:
-        static void AddObject(std::shared_ptr<T> obj) {
-            if (!IsRegistered)
-                return;
-            Table[GetHash(obj.get())] = obj;
-        }
-
-        static void RemoveObject(std::shared_ptr<T> obj) {
-            if (!IsRegistered)
-                return;
-            Table.erase(GetHash(obj.get()));
-        }
-
-        static void Register(v8pp::class_<T, v8pp::shared_ptr_traits>& cl) {
-            cl
-                .property("hashId", [](T& self) { return GetHash(&self); })
-                .static_method("Get", &GetObject);
-            IsRegistered = true;
-            ObjectLookupTableSharedCleaner::AddCleaner(&CleanUp);
-        }
         
     private:
-        static Hash GetHash(T* obj) {
+        static Fields* getFields() {
+            void* fields = SharedData::Get<ObjectLookupTableShared>();
+            if (fields == nullptr) {
+                fields = new Fields();
+                SharedData::Set<ObjectLookupTableShared>(fields);
+            }
+            return static_cast<Fields*>(fields);
+        }
+
+        static Hash GetHash(void* obj) {
             return Hash(obj);
         }
 
+        template<typename T>
         static std::shared_ptr<T> GetObject(Hash hash) {
-            auto it = Table.find(hash);
-            if (it != Table.end()) {
-                return it->second.lock();
+            auto fields = getFields();
+            auto it = fields->table.find(hash);
+            if (it != fields->table.end()) {
+                return std::static_pointer_cast<T>(it->second.lock());
             }
             return nullptr;
         }
 
         static void CleanUp() {
-            for (auto& [hash, obj] : Table) {
+            auto fields = getFields();
+            for (auto& [hash, obj] : fields->table) {
                 if (obj.expired()) {
-                    Table.erase(hash);
+                    fields->table.erase(hash);
                 }
             }
         }

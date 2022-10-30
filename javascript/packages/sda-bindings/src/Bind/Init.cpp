@@ -1,5 +1,4 @@
 #include "Init.h"
-#include <iostream>
 
 void sda::bind::InitModule(v8::Local<v8::Object> module, std::list<std::function<void(v8pp::module&)>> inits) {
     auto isolate = v8::Isolate::GetCurrent();

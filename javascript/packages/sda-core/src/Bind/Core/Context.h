@@ -83,7 +83,7 @@ namespace sda::bind
             cl
                 .property("callbacks", &Context::getCallbacks, &Context::setCallbacks)
                 .static_method("New", &New);
-            ObjectLookupTableRaw<Context>::Register(cl);
+            ObjectLookupTableRaw::Register(cl);
             module.class_("Context", cl);
         }
     };

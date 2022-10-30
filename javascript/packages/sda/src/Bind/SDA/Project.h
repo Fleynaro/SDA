@@ -18,7 +18,7 @@ namespace sda::bind
                 .property("path", &Project::getPath)
                 .property("context", &Project::getContext)
                 .static_method("New", &New);
-            ObjectLookupTableRaw<Project>::Register(cl);
+            ObjectLookupTableRaw::Register(cl);
             module.class_("Project", cl);
         }
     };

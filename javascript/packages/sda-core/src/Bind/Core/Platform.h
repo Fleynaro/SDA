@@ -46,7 +46,7 @@ namespace sda::bind
                 .method("getRegisterType", &RegisterRepository::getRegisterType)
                 .method("getRegisterFlagName", &RegisterRepository::getRegisterFlagName)
                 .method("getRegisterFlagIndex", &RegisterRepository::getRegisterFlagIndex);
-            ObjectLookupTableShared<RegisterRepository>::Register(cl);
+            ObjectLookupTableShared::Register(cl);
             module.class_("RegisterRepository", cl);
         }
     };
@@ -107,7 +107,7 @@ namespace sda::bind
                     .auto_wrap_object_ptrs(true)
                     .property("name", &CallingConvention::getName)
                     .method("getStorages", &CallingConvention::getStorages);
-                ObjectLookupTableShared<CallingConvention>::Register(cl);
+                ObjectLookupTableShared::Register(cl);
                 module.class_("CallingConvention", cl);
             }
         }
