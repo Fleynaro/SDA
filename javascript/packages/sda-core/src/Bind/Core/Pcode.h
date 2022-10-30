@@ -11,9 +11,10 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<pcode::Varnode, v8pp::shared_ptr_traits>(module);
             cl
-                .inherit<utils::IWrappable>()
+                .auto_wrap_object_ptrs(true)
                 .property("size", &pcode::Varnode::getSize)
                 .property("isRegister", &pcode::Varnode::isRegister);
+            ObjectLookupTableShared::Register(cl);
             module.class_("PcodeVarnode", cl);
         }
     };

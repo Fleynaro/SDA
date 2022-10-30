@@ -1,6 +1,6 @@
 export type Hash = number;
 
-export interface IWrappable {
+export interface IIdentifiable {
     readonly hashId: Hash;
 }
 

@@ -9,7 +9,7 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<Object>(module);
             cl
-                .inherit<utils::IWrappable>()
+                .auto_wrap_object_ptrs(true)
                 .inherit<utils::ISerializable>()
                 .property("id", [](const Object& self) { return std::string(self.serializeId()); })
                 .method("setTemporary", &Object::setTemporary);

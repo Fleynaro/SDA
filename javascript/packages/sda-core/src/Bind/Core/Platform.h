@@ -24,13 +24,14 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<Platform>(module);
             cl
-                .inherit<utils::IWrappable>()
+                .auto_wrap_object_ptrs(true)
                 .property("name", &Platform::getName)
                 .property("pointerSize", &Platform::getPointerSize)
                 .property("registerRepository", &Platform::getRegisterRepository)
                 .property("callingConventions", &Platform::getCallingConventions)
                 .method("getPcodeDecoder", &GetPcodeDecoder)
                 .method("getInstructionDecoder", &GetInstructionDecoder);
+            ObjectLookupTableRaw::Register(cl);
             module.class_("Platform", cl);
         }
     };
@@ -41,7 +42,7 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<RegisterRepository, v8pp::shared_ptr_traits>(module);
             cl
-                .inherit<utils::IWrappable>()
+                .auto_wrap_object_ptrs(true)
                 .method("getRegisterName", &RegisterRepository::getRegisterName)
                 .method("getRegisterId", &RegisterRepository::getRegisterId)
                 .method("getRegisterType", &RegisterRepository::getRegisterType)
@@ -58,9 +59,10 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<PcodeDecoder, v8pp::shared_ptr_traits>(module);
             cl
-                .inherit<utils::IWrappable>()
+                .auto_wrap_object_ptrs(true)
                 .property("instructionLength", &PcodeDecoder::getInstructionLength)
                 .method("decode", &PcodeDecoder::decode);
+            ObjectLookupTableShared::Register(cl);
             module.class_("PcodeDecoder", cl);
         }
     };
@@ -71,8 +73,9 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<InstructionDecoder, v8pp::shared_ptr_traits>(module);
             cl
-                .inherit<utils::IWrappable>()
+                .auto_wrap_object_ptrs(true)
                 .method("decode", &InstructionDecoder::decode);
+            ObjectLookupTableShared::Register(cl);
             module.class_("InstructionDecoder", cl);
         }
     };
@@ -105,9 +108,10 @@ namespace sda::bind
             {
                 auto cl = NewClass<CallingConvention, v8pp::shared_ptr_traits>(module);
                 cl
-                    .inherit<utils::IWrappable>()
+                    .auto_wrap_object_ptrs(true)
                     .property("name", &CallingConvention::getName)
                     .method("getStorages", &CallingConvention::getStorages);
+                ObjectLookupTableShared::Register(cl);
                 module.class_("CallingConvention", cl);
             }
         }

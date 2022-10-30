@@ -11,7 +11,7 @@ namespace sda
 {
     class Program;
 
-    class Project : public utils::IWrappable
+    class Project
     {
         Program* m_program;
         std::filesystem::path m_path;

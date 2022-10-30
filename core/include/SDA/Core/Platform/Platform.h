@@ -2,7 +2,6 @@
 #include <string>
 #include <list>
 #include <memory>
-#include "SDA/Core/Utils/Wrapping.h"
 
 namespace sda
 {
@@ -11,7 +10,7 @@ namespace sda
     class PcodeDecoder;
     class InstructionDecoder;
 
-    class Platform : public utils::IWrappable
+    class Platform
     {
     public:
         virtual std::string getName() const = 0;

@@ -1,10 +1,9 @@
 #pragma once
 #include "SDA/Core/Platform/Register.h"
-#include "SDA/Core/Utils/Wrapping.h"
 
 namespace sda::pcode
 {
-    class Varnode : public utils::IWrappable
+    class Varnode
     {
         size_t m_size;
     public:

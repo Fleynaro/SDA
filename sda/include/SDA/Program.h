@@ -5,7 +5,7 @@
 
 namespace sda
 {
-    class Program : public utils::IWrappable
+    class Program
     {
         // for access to Program::m_projects
         friend Project::Project(Program* program, const std::filesystem::path& path, std::unique_ptr<Context> context);

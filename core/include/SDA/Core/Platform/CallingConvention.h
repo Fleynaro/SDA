@@ -2,14 +2,13 @@
 #include <map>
 #include <string>
 #include "SDA/Core/Utils/Serialization.h"
-#include "SDA/Core/Utils/Wrapping.h"
 #include "SDA/Core/Offset.h"
 
 namespace sda
 {
     class SignatureDataType;
 
-    class CallingConvention : public utils::IWrappable
+    class CallingConvention
     {
     public:
         struct Storage {

@@ -81,9 +81,10 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<Context>(module);
             cl
-                .inherit<utils::IWrappable>()
+                .auto_wrap_object_ptrs(true)
                 .property("callbacks", &Context::getCallbacks, &Context::setCallbacks)
                 .static_method("New", &New);
+            ObjectLookupTableRaw::Register(cl);
             module.class_("Context", cl);
         }
     };

@@ -1,7 +1,7 @@
 import { SignatureDataType } from "./data-type";
-import { Hash, IWrappable } from "./utils";
+import { Hash, IIdentifiable } from "./utils";
 
-export abstract class Platform implements IWrappable {
+export abstract class Platform implements IIdentifiable {
     readonly hashId: Hash;
     readonly name: string;
     readonly pointerSize: number;
@@ -25,7 +25,7 @@ export namespace Register {
         "Vector";
 }
 
-export abstract class RegisterRepository implements IWrappable {
+export abstract class RegisterRepository implements IIdentifiable {
     readonly hashId: Hash;
 
     getRegisterName(regId: number): string;
@@ -41,7 +41,7 @@ export abstract class RegisterRepository implements IWrappable {
     static Get(hashId: Hash): RegisterRepository;
 }
 
-export abstract class PcodeDecoder implements IWrappable {
+export abstract class PcodeDecoder implements IIdentifiable {
     readonly hashId: Hash;
     readonly instructionLength: number;
 
@@ -50,7 +50,7 @@ export abstract class PcodeDecoder implements IWrappable {
     static Get(hashId: Hash): PcodeDecoder;
 }
 
-export abstract class InstructionDecoder implements IWrappable {
+export abstract class InstructionDecoder implements IIdentifiable {
     readonly hashId: Hash;
 
     decode(bytes: number[]): void;
@@ -76,7 +76,7 @@ export namespace CallingConvention {
     }
 }
 
-export abstract class CallingConvention implements IWrappable {
+export abstract class CallingConvention implements IIdentifiable {
     readonly hashId: Hash;
     readonly name: string;
 
