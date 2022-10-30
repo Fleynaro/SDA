@@ -1,12 +1,6 @@
 #include "ContextFixture.h"
-// include context deps (TODO: rewrite, problem in unique_ptr)
-#include "SDA/Core/Image/AddressSpace.h"
-#include "SDA/Core/Image/Image.h"
-#include "SDA/Core/DataType/DataType.h"
 #include "SDA/Core/DataType/DataTypeParser.h"
 #include "SDA/Core/DataType/DataTypePrinter.h"
-#include "SDA/Core/Symbol/Symbol.h"
-#include "SDA/Core/SymbolTable/SymbolTable.h"
 #include "SDA/Core/SymbolTable/SymbolTableParser.h"
 #include "SDA/Platform/x86/Platform.h"
 

@@ -9,6 +9,7 @@ namespace sda
     class DataTypeList;
     class SymbolList;
     class SymbolTableList;
+    // see also Core/ContextInclude.h
 
     // Core context that contains all important entities
     class Context

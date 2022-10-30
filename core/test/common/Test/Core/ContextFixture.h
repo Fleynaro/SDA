@@ -1,6 +1,6 @@
 #pragma once
 #include <gtest/gtest.h>
-#include "SDA/Core/Context.h"
+#include "SDA/Core/ContextInclude.h"
 #include "SDA/Core/DataType/DataType.h"
 #include "SDA/Core/SymbolTable/SymbolTable.h"
 
