@@ -19,5 +19,22 @@ export default createTheme({
         },
       },
     },
+    MuiTabs: {
+      styleOverrides: {
+        root: {
+          height: '30px',
+          minHeight: '30px',
+        },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          // https://github.com/mui/material-ui/issues/5391#issuecomment-493754603
+          minHeight: 'auto',
+          padding: 10,
+        },
+      },
+    },
   },
 });
