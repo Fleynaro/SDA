@@ -12,16 +12,11 @@ import {
   useTheme,
   Theme,
   emphasize,
-  Tabs,
-  Tab,
-  IconButton,
 } from '@mui/material';
 import { makeStyles } from '@mui/styles';
 import InboxIcon from '@mui/icons-material/MoveToInbox';
-import CloseIcon from '@mui/icons-material/Close';
 import { Resizable } from 're-resizable';
-import { DragDropContext, Draggable, DragStart, DropResult } from 'react-beautiful-dnd';
-import Droppable from '../components/Droppable';
+import { Tabs, TabPanel } from '../components/Tabs';
 
 const useStyles = makeStyles((theme: Theme) => ({
   resizable: {
@@ -43,27 +38,13 @@ export default function ProjectWindow({ projectId }: ProjectWindowPayload) {
   useWindowTitle(`Project: ${project?.path}`);
   const theme = useTheme();
   const classes = useStyles();
-
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTabId, setActiveTabId] = useState(1);
   const [tabs, setTabs] = useState([
     { id: 1, label: 'Core' },
     { id: 2, label: 'SomeLibrary' },
     { id: 3, label: 'Three' },
     { id: 4, label: 'Four' },
   ]);
-  const onDragStart = (initial: DragStart) => {
-    setActiveTab(initial.source.index);
-  };
-  const onDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
-    if (result.destination.index === result.source.index) return;
-
-    const newTabs = [...tabs];
-    const [removed] = newTabs.splice(result.source.index, 1);
-    newTabs.splice(result.destination.index, 0, removed);
-    setTabs(newTabs);
-    setActiveTab(result.destination.index);
-  };
 
   return (
     <>
@@ -118,50 +99,24 @@ export default function ProjectWindow({ projectId }: ProjectWindowPayload) {
         </Box>
         <Box sx={{ display: 'flex', flexGrow: 1 }}>
           <Box sx={{ flexGrow: 1 }}>
-            <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-              <Droppable droppableId="tabs" direction="horizontal">
-                {(props) => (
-                  <Tabs ref={props.innerRef} {...props.droppableProps} value={activeTab}>
-                    {tabs.map(({ id, label }, index) => (
-                      <Draggable
-                        key={id}
-                        draggableId={`id-${id}`}
-                        index={index}
-                        disableInteractiveElementBlocking={true}
-                      >
-                        {(props) => (
-                          <Tab
-                            ref={props.innerRef}
-                            {...props.draggableProps}
-                            {...props.dragHandleProps}
-                            label={
-                              <span>
-                                {label}
-                                <IconButton
-                                  sx={{
-                                    ml: 2,
-                                    mb: 1,
-                                    width: 0,
-                                    height: 0,
-                                    transform: 'scale(0.8)',
-                                  }}
-                                  onClick={() => console.log('close')}
-                                >
-                                  <CloseIcon />
-                                </IconButton>
-                              </span>
-                            }
-                            onClick={() => setActiveTab(index)}
-                          />
-                        )}
-                      </Draggable>
-                    ))}
-                    <div style={{ display: 'none' }}>{props.placeholder}</div>
-                  </Tabs>
-                )}
-              </Droppable>
-            </DragDropContext>
-            Content
+            <Tabs
+              tabs={tabs}
+              onChange={(tabs) => setTabs(tabs)}
+              activeTabId={activeTabId}
+              onSelect={(tab) => setActiveTabId(tab.id)}
+            />
+            <TabPanel value={activeTabId} id={1}>
+              Item One
+            </TabPanel>
+            <TabPanel value={activeTabId} id={2}>
+              Item Two
+            </TabPanel>
+            <TabPanel value={activeTabId} id={3}>
+              Item Three
+            </TabPanel>
+            <TabPanel value={activeTabId} id={4}>
+              Item Four
+            </TabPanel>
           </Box>
           <Resizable
             defaultSize={{

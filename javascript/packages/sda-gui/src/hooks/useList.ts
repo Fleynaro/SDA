@@ -27,10 +27,13 @@ export default function useList<T extends Identifiable>(
 
   useEffect(() => {
     loadItems();
+  }, []);
+
+  useEffect(() => {
     const unsubscribe = getEventApi().subscribeToObjectChangeEvent(updateItems);
     return () => {
       unsubscribe();
     };
-  }, [loadItems, updateItems]);
+  }, [updateItems]);
   return items;
 }

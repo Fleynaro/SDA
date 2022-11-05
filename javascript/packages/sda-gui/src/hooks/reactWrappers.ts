@@ -27,7 +27,7 @@ export function useCallback<T extends Function>(callback: T, deps: React.Depende
       }
     },
     [callback, ...deps],
-  );
+  ) as unknown as T;
 }
 
 export function useMemo<T>(factory: () => T, deps: React.DependencyList) {

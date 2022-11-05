@@ -33,10 +33,13 @@ export default function useObject<T extends Identifiable, U extends unknown[]>(
 
   useEffect(() => {
     loadObject(objId, ...args);
+  }, []);
+
+  useEffect(() => {
     const unsubscribe = getEventApi().subscribeToObjectChangeEvent(updateObject);
     return () => {
       unsubscribe();
     };
-  }, [loadObject, updateObject]);
+  }, [updateObject]);
   return object;
 }
