@@ -1,32 +1,32 @@
 import { useCallback, useMemo } from 'react';
-import { Tabs as MuiTabs, Tab, IconButton, Box } from '@mui/material';
+import { Tabs as MuiTabs, Tab, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { DragDropContext, Draggable, DragStart, DropResult } from 'react-beautiful-dnd';
 import Droppable from '../Droppable';
 
 type TabInfo = {
-  id: number;
+  key: string;
   label: string;
 };
 
 interface TabsProps {
   tabs: TabInfo[];
   onChange: (tabs: TabInfo[]) => void;
-  activeTabId: number;
+  selected: string;
   onSelect: (tab: TabInfo) => void;
 }
 
-export const Tabs = ({ tabs, onChange, activeTabId, onSelect }: TabsProps) => {
-  const activeTabIdx = useMemo(
-    () => tabs.findIndex((tab) => tab.id === activeTabId),
-    [tabs, activeTabId],
+export default function Tabs({ tabs, onChange, selected, onSelect }: TabsProps) {
+  const selectedTabIdx = useMemo(
+    () => tabs.findIndex((tab) => tab.key === selected),
+    [tabs, selected],
   );
 
   const onDragStart = useCallback(
     (initial: DragStart) => {
       onSelect(tabs[initial.source.index]);
     },
-    [tabs, onSelect], // TODO: записать ВИДЕО про слежение за значением
+    [tabs, onSelect],
   );
 
   const onDragEnd = useCallback(
@@ -48,22 +48,22 @@ export const Tabs = ({ tabs, onChange, activeTabId, onSelect }: TabsProps) => {
       const newTabList = [...tabs];
       newTabList.splice(index, 1);
       onChange(newTabList);
-      if (index > 0 && activeTabIdx === index) {
+      if (index > 0 && selectedTabIdx === index) {
         onSelect(tabs[index - 1]);
       }
     },
-    [tabs, activeTabIdx, onChange],
+    [tabs, selectedTabIdx, onChange],
   );
 
   return (
     <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
       <Droppable droppableId="tabs" direction="horizontal">
         {(provider) => (
-          <MuiTabs ref={provider.innerRef} {...provider.droppableProps} value={activeTabIdx}>
-            {tabs.map(({ id, label }, index) => (
+          <MuiTabs ref={provider.innerRef} {...provider.droppableProps} value={selectedTabIdx}>
+            {tabs.map(({ key, label }, index) => (
               <Draggable
-                key={id}
-                draggableId={`id-${id}`}
+                key={key}
+                draggableId={`id-${key}`}
                 index={index}
                 disableInteractiveElementBlocking={true}
               >
@@ -103,18 +103,4 @@ export const Tabs = ({ tabs, onChange, activeTabId, onSelect }: TabsProps) => {
       </Droppable>
     </DragDropContext>
   );
-};
-
-interface TabPanelProps {
-  value: number;
-  id: number;
-  children?: React.ReactNode;
 }
-
-export const TabPanel = ({ value, id, children, ...other }: TabPanelProps) => {
-  return (
-    <Box hidden={value !== id} {...other}>
-      {value === id && children}
-    </Box>
-  );
-};

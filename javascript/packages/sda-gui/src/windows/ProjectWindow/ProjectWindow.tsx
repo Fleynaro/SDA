@@ -1,22 +1,15 @@
 import React, { useState } from 'react';
 import { ProjectWindowPayload } from 'sda-electron/api/window';
 import { getProjectApi } from 'sda-electron/api/project';
-import useWindowTitle from '../hooks/useWindowTitile';
-import useObject from '../hooks/useObject';
-import {
-  Box,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  useTheme,
-  Theme,
-  emphasize,
-} from '@mui/material';
+import useWindowTitle from 'hooks/useWindowTitile';
+import useObject from 'hooks/useObject';
+import { Box, useTheme, Theme, emphasize } from '@mui/material';
 import { makeStyles } from '@mui/styles';
-import InboxIcon from '@mui/icons-material/MoveToInbox';
+import SegmentIcon from '@mui/icons-material/Segment';
+import SearchIcon from '@mui/icons-material/Search';
 import { Resizable } from 're-resizable';
-import { Tabs, TabPanel } from '../components/Tabs';
+import Tabs from 'components/Tabs';
+import { LeftNavBar, Images } from './LeftNav';
 
 const useStyles = makeStyles((theme: Theme) => ({
   resizable: {
@@ -31,19 +24,18 @@ const useStyles = makeStyles((theme: Theme) => ({
   },
 }));
 
-// https://codesandbox.io/s/mmrp44okvj
-
 export default function ProjectWindow({ projectId }: ProjectWindowPayload) {
   const project = useObject(getProjectApi().getActiveProject, projectId);
   useWindowTitle(`Project: ${project?.path}`);
   const theme = useTheme();
   const classes = useStyles();
-  const [activeTabId, setActiveTabId] = useState(1);
+  const [leftNavItem, setLeftNavItem] = useState('images');
+  const [activeTab, setActiveTab] = useState('1');
   const [tabs, setTabs] = useState([
-    { id: 1, label: 'Core' },
-    { id: 2, label: 'SomeLibrary' },
-    { id: 3, label: 'Three' },
-    { id: 4, label: 'Four' },
+    { key: '1', label: 'Core' },
+    { key: '2', label: 'Some Library' },
+    { key: '3', label: 'Three' },
+    { key: '4', label: 'Four' },
   ]);
 
   return (
@@ -53,29 +45,14 @@ export default function ProjectWindow({ projectId }: ProjectWindowPayload) {
           <Box
             sx={{ width: 40, backgroundColor: emphasize(theme.palette.background.default, 0.1) }}
           >
-            <List disablePadding>
-              {['Inbox', 'Starred'].map((text) => (
-                <ListItem key={text} disablePadding>
-                  <ListItemButton
-                    sx={{
-                      minHeight: 40,
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <ListItemIcon
-                      sx={{
-                        minWidth: 0,
-                        '& svg': {
-                          fontSize: 25,
-                        },
-                      }}
-                    >
-                      <InboxIcon />
-                    </ListItemIcon>
-                  </ListItemButton>
-                </ListItem>
-              ))}
-            </List>
+            <LeftNavBar
+              items={[
+                { key: 'images', icon: <SegmentIcon /> },
+                { key: 'search', icon: <SearchIcon /> },
+              ]}
+              selected={leftNavItem}
+              onSelect={(key) => setLeftNavItem(key)}
+            />
           </Box>
           <Resizable
             defaultSize={{
@@ -93,7 +70,8 @@ export default function ProjectWindow({ projectId }: ProjectWindowPayload) {
                 height: '100%',
               }}
             >
-              Left panel
+              {leftNavItem === 'images' && <Images onSelect={() => console.log('hi!')} />}
+              {leftNavItem === 'search' && <div>Search</div>}
             </Box>
           </Resizable>
         </Box>
@@ -102,21 +80,11 @@ export default function ProjectWindow({ projectId }: ProjectWindowPayload) {
             <Tabs
               tabs={tabs}
               onChange={(tabs) => setTabs(tabs)}
-              activeTabId={activeTabId}
-              onSelect={(tab) => setActiveTabId(tab.id)}
+              selected={activeTab}
+              onSelect={(tab) => setActiveTab(tab.key)}
             />
-            <TabPanel value={activeTabId} id={1}>
-              Item One
-            </TabPanel>
-            <TabPanel value={activeTabId} id={2}>
-              Item Two
-            </TabPanel>
-            <TabPanel value={activeTabId} id={3}>
-              Item Three
-            </TabPanel>
-            <TabPanel value={activeTabId} id={4}>
-              Item Four
-            </TabPanel>
+            {activeTab === '1' && <div>Core</div>}
+            {activeTab === '2' && <div>SomeLibrary</div>}
           </Box>
           <Resizable
             defaultSize={{

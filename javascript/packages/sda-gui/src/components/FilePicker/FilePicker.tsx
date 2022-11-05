@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useEffect, useCallback } from '../../hooks/reactWrappers';
+import { useEffect, useCallback } from 'hooks/reactWrappers';
 import { Stack, IconButton, TextField } from '@mui/material';
 import FileOpenIcon from '@mui/icons-material/FileOpen';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
