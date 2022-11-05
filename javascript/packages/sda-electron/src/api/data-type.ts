@@ -1,8 +1,5 @@
-import { Identifiable, window_ } from './common';
-
-export interface ContextObject extends Identifiable {
-    name: string;
-}
+import { window_ } from './common';
+import { ContextObject } from './context';
 
 export interface DataType extends ContextObject {
     isVoid: boolean;

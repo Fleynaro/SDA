@@ -4,7 +4,7 @@ export const ProjectClassName = 'Project';
 
 export interface Project extends Identifiable {
     path: string;
-    context: ObjectId;
+    contextId: ObjectId;
 }
 
 export const RecentProjectClassName = 'RecentProject';

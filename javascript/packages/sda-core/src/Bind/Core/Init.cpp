@@ -4,6 +4,7 @@
 #include "Bind/Core/Platform.h"
 #include "Bind/Core/Context.h"
 #include "Bind/Core/Object.h"
+#include "Bind/Core/Image.h"
 #include "Bind/Core/DataType.h"
 #include "Bind/Core/Symbol.h"
 #include "Bind/Core/SymbolTable.h"
@@ -33,6 +34,12 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
         // object
         ObjectBind::Init,
         ContextObjectBind::Init,
+        // image
+        AddressSpaceBind::Init,
+        ImageRWBind::Init,
+        ImageAnalyserBind::Init,
+        ImageSectionBind::Init,
+        ImageBind::Init,
         // data types
         DataTypeBind::Init,
         VoidDataTypeBind::Init,

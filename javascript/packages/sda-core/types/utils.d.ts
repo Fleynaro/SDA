@@ -1,5 +1,7 @@
 export type Hash = number;
 
+export type Offset = number;
+
 export interface IIdentifiable {
     readonly hashId: Hash;
 }

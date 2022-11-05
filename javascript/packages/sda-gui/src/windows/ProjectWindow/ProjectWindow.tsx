@@ -10,6 +10,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import { Resizable } from 're-resizable';
 import Tabs from 'components/Tabs';
 import { LeftNavBar, Images } from './LeftNav';
+import { SdaContextProvider } from 'providers/SdaContextProvider';
 
 const useStyles = makeStyles((theme: Theme) => ({
   resizable: {
@@ -38,8 +39,12 @@ export default function ProjectWindow({ projectId }: ProjectWindowPayload) {
     { key: '4', label: 'Four' },
   ]);
 
+  if (!project) {
+    return null;
+  }
+
   return (
-    <>
+    <SdaContextProvider contextId={project.contextId}>
       <Box sx={{ display: 'flex', height: '100vh' }}>
         <Box sx={{ display: 'flex' }}>
           <Box
@@ -107,6 +112,6 @@ export default function ProjectWindow({ projectId }: ProjectWindowPayload) {
           </Resizable>
         </Box>
       </Box>
-    </>
+    </SdaContextProvider>
   );
 }

@@ -20,7 +20,7 @@ export const toProjectDTO = (project: Project): ProjectDTO => {
     return {
         id: toProjectId(project),
         path: project.path,
-        context: toContextId(project.context),
+        contextId: toContextId(project.context),
     };
 };
 
