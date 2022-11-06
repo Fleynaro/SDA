@@ -1,11 +1,11 @@
-import { AddressSpace } from 'sda-core/';
+import { AddressSpace } from 'sda-core/address-space';
 import {
     AddressSpace as AddressSpaceDTO,
     AddressSpaceClassName
 } from '../api/address-space';
 import { ObjectId } from '../api/common';
-import { toContextId } from './context';
-import { basename as pathBasename } from 'path';
+import { toImageId } from './image';
+import { toContextObjectDTO } from './context';
 
 export const toAddressSpaceId = (addressSpace: AddressSpace): ObjectId => {
     return {
@@ -17,6 +17,7 @@ export const toAddressSpaceId = (addressSpace: AddressSpace): ObjectId => {
 export const toAddressSpaceDTO = (addressSpace: AddressSpace): AddressSpaceDTO => {
     return {
         id: toAddressSpaceId(addressSpace),
-        contextId: toContextId(addressSpace.context),
+        ...toContextObjectDTO(addressSpace),
+        imageIds: addressSpace.images.map(toImageId),
     };
 };

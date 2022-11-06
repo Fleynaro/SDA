@@ -1,28 +1,29 @@
 import { Context } from "./context";
 import { ContextObject } from "./object";
+import { Offset } from "./utils";
 
 export type SymbolInfo = {
     symbolTable: SymbolTable;
-    symbolOffset: number;
+    symbolOffset: Offset;
     symbol: Symbol;
 }
 
 export abstract class SymbolTable extends ContextObject {
     readonly usedSize: number;
 
-    addSymbol(offset: number, symbol: Symbol): void;
+    addSymbol(offset: Offset, symbol: Symbol): void;
 
-    removeSymbol(offset: number): void;
+    removeSymbol(offset: Offset): void;
 
     getAllSymbols(): SymbolInfo[];
 
-    getSymbolAt(offset: number): SymbolInfo;
+    getSymbolAt(offset: Offset): SymbolInfo;
 
-    getAllSymbolsRecursivelyAt(offset: number): SymbolInfo[];
+    getAllSymbolsRecursivelyAt(offset: Offset): SymbolInfo[];
 }
 
 export class StandartSymbolTable extends SymbolTable {
-    symbols: { [offset: number]: Symbol };
+    symbols: { [offset: Offset]: Symbol };
 
     static New(context: Context, name: string): StandartSymbolTable;
 }
@@ -35,7 +36,7 @@ export class OptimizedSymbolTable extends SymbolTable {
     static New(
         context: Context,
         name: string,
-        minOffset: number,
-        maxOffset: number,
+        minOffset: Offset,
+        maxOffset: Offset,
         fragmentsCount: number): OptimizedSymbolTable;
 }

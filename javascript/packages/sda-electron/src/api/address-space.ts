@@ -4,7 +4,7 @@ import { ContextObject } from './context';
 export const AddressSpaceClassName = 'AddressSpace';
 
 export interface AddressSpace extends ContextObject {
-    images: ObjectId[];
+    imageIds: ObjectId[];
 }
 
 export interface AddressSpaceController {
@@ -14,7 +14,7 @@ export interface AddressSpaceController {
     
     createAddressSpace(contextId: ObjectId, name: string): Promise<AddressSpace>;
     
-    changeAddressSpace(addressSpace: AddressSpace): Promise<void>;
+    changeAddressSpace(dto: AddressSpace): Promise<void>;
 }
 
 export const getAddressSpaceApi = () => {

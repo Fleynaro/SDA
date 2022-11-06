@@ -3,12 +3,6 @@ import { ContextObject } from "./object";
 import { SymbolTable } from "./symbol-table";
 import { Offset, ISerializable } from "./utils";
 
-export abstract class AddressSpace extends ContextObject {
-    readonly images: Image[];
-
-    static New(context: Context, name: string): AddressSpace;
-}
-
 export abstract class ImageRW {
     read(offset: Offset, size: number): Uint8Array;
 

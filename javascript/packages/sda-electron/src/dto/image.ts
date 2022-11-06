@@ -2,20 +2,24 @@ import { Image } from 'sda-core/image';
 import {
     Image as ImageDTO,
     ImageClassName
-} from '../api/address-space';
+} from '../api/image';
 import { ObjectId } from '../api/common';
-import { toContextId } from './context';
+import { toContextObjectDTO } from './context';
 
-export const toImageId = (Image: Image): ObjectId => {
+export const toImageId = (image: Image): ObjectId => {
     return {
-        key: Image.hashId.toString(),
+        key: image.hashId.toString(),
         className: ImageClassName,
     };
 };
 
-export const toImageDTO = (Image: Image): ImageDTO => {
+export const toImageDTO = (image: Image): ImageDTO => {
     return {
-        id: toImageId(Image),
-        images: Image.images.map(image => image.hashId.toString()),
+        id: toImageId(image),
+        ...toContextObjectDTO(image),
+        baseAddress: image.baseAddress,
+        entryPointOffset: image.entryPointOffset,
+        size: image.size,
+        globalSymbolTableId: toImageId(image),
     };
 };

@@ -1,7 +1,6 @@
 import m from './import';
 
 export const {
-    AddressSpace,
     ImageRW,
     VectorImageRW,
     FileImageRW,

@@ -16,6 +16,8 @@ export enum ObjectChangeType {
     Delete
 }
 
+export type Offset = number;
+
 export let window_: any = null;
 
 export const setWindow = (win: any) => {

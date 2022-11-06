@@ -1,4 +1,5 @@
 import { Platform } from "./platform";
+import { AddressSpace } from "./image";
 import { Hash } from './utils';
 
 export abstract class ContextCallbacks {
@@ -23,8 +24,8 @@ export class ContextCallbacksImpl extends ContextCallbacks {
 
 export class Context {
     readonly hashId: Hash;
-
     callbacks: ContextCallbacks;
+    addressSpaces: AddressSpace[];
 
     static New(platform: Platform): Context;
 

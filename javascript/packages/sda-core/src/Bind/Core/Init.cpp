@@ -4,6 +4,7 @@
 #include "Bind/Core/Platform.h"
 #include "Bind/Core/Context.h"
 #include "Bind/Core/Object.h"
+#include "Bind/Core/AddressSpace.h"
 #include "Bind/Core/Image.h"
 #include "Bind/Core/DataType.h"
 #include "Bind/Core/Symbol.h"

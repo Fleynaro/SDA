@@ -14,8 +14,8 @@ const AddressSpaceControllerImpl: AddressSpaceController = {
     createAddressSpace: (contextId: ObjectId, name: string) =>
         invoke("createAddressSpace", contextId, name),
 
-    changeAddressSpace: (addressSpace: AddressSpace) =>
-        invoke("changeAddressSpace", addressSpace),
+    changeAddressSpace: (dto: AddressSpace) =>
+        invoke("changeAddressSpace", dto),
 };
 
 export default AddressSpaceControllerImpl;

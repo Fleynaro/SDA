@@ -9,6 +9,7 @@ import {
 import { ObjectId } from '../api/common';
 import { program, getUserPath } from '../app';
 import { loadJSON, saveJSON, doesFileExist, deleteFile } from '../utils/file';
+import { toHash } from '../utils/common';
 import { Project } from 'sda';
 import { Context } from 'sda-core/context';
 import { findPlatform } from '../sda/platform';
@@ -66,7 +67,11 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
     }
 
     public async getActiveProject(id: ObjectId): Promise<ProjectDTO> {
-        return toProjectDTO(Project.Get(Number(id.key)));
+        const project = Project.Get(toHash(id));
+        if (!project) {
+            throw new Error(`Project ${id.key} does not exist`);
+        }
+        return toProjectDTO(project);
     }
 
     public async openProject(path: string): Promise<ProjectDTO> {

@@ -1,10 +1,5 @@
 #pragma once
-#include "SDA/Core/Context.h"
-#include "SDA/Core/Image/AddressSpace.h"
-#include "SDA/Core/Image/Image.h"
-#include "SDA/Core/DataType/DataType.h"
-#include "SDA/Core/Symbol/Symbol.h"
-#include "SDA/Core/SymbolTable/SymbolTable.h"
+#include "SDA/Core/ContextInclude.h"
 
 namespace sda::bind
 {
@@ -83,6 +78,12 @@ namespace sda::bind
             cl
                 .auto_wrap_object_ptrs(true)
                 .property("callbacks", &Context::getCallbacks, &Context::setCallbacks)
+                .property("addressSpaces", [](Context* self) {
+                    std::list<AddressSpace*> list;
+                    for (auto addressSpace : *self->getAddressSpaces())
+                        list.push_back(addressSpace);
+                    return list;
+                })
                 .static_method("New", &New);
             ObjectLookupTableRaw::Register(cl);
             module.class_("Context", cl);
