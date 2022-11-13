@@ -26,11 +26,21 @@ namespace sda::bind
         }
     public:
         static void Init(v8pp::module& module) {
-            auto cl = NewClass<utils::ISerializable>(module);
-            cl
-                .method("serialize", &Serialize)
-                .method("deserialize", &Deserialize);
-            module.class_("Serialization", cl);
+            {
+                auto cl = NewClass<utils::ISerializable>(module);
+                cl
+                    .method("serialize", &Serialize)
+                    .method("deserialize", &Deserialize);
+                module.class_("Serialization", cl);
+            }
+
+            {
+                auto cl = NewClass<utils::ISerializable, v8pp::shared_ptr_traits>(module);
+                cl
+                    .method("serialize", &Serialize)
+                    .method("deserialize", &Deserialize);
+                module.class_("SerializationShared", cl);
+            }
         }
     };
 

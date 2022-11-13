@@ -2,9 +2,10 @@ import { Image } from 'sda-core/image';
 import {
     Image as ImageDTO,
     ImageClassName
-} from '../api/image';
-import { ObjectId } from '../api/common';
-import { toContextObjectDTO } from './context';
+} from '../../api/image';
+import { ObjectId } from '../../api/common';
+import { toContextObjectDTO, changeContextObject } from './context-object';
+import { toHash } from '../../utils/common';
 
 export const toImageId = (image: Image): ObjectId => {
     return {
@@ -23,3 +24,16 @@ export const toImageDTO = (image: Image): ImageDTO => {
         globalSymbolTableId: toImageId(image),
     };
 };
+
+export const toImage = (id: ObjectId): Image => {
+    const image = Image.Get(toHash(id)) as Image;
+    if (!image) {
+        throw new Error(`Image ${id.key} does not exist`);
+    }
+    return image;
+}
+
+export const changeImage = (dto: ImageDTO): void => {
+    const image = toImage(dto.id);
+    changeContextObject(image, dto);
+}

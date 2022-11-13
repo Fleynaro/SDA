@@ -31,7 +31,7 @@ export const Dialog = forwardRef((props: DialogProps, ref: React.Ref<DialogRef>)
     },
 
     close: () => {
-      setOpened(false);
+      onClose();
     },
   }));
 

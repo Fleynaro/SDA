@@ -78,9 +78,9 @@ namespace sda::bind
             cl
                 .auto_wrap_object_ptrs(true)
                 .property("callbacks", &Context::getCallbacks, &Context::setCallbacks)
-                .property("addressSpaces", [](Context* self) {
+                .property("addressSpaces", [](Context& self) {
                     std::list<AddressSpace*> list;
-                    for (auto addressSpace : *self->getAddressSpaces())
+                    for (auto addressSpace : *self.getAddressSpaces())
                         list.push_back(addressSpace);
                     return list;
                 })

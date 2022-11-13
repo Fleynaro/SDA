@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { ProjectWindowPayload } from 'sda-electron/api/window';
 import { getProjectApi } from 'sda-electron/api/project';
-import useWindowTitle from 'hooks/useWindowTitile';
-import useObject from 'hooks/useObject';
+import { useWindowTitle, useObject } from 'hooks';
 import { Box, useTheme, Theme, emphasize } from '@mui/material';
 import { makeStyles } from '@mui/styles';
 import SegmentIcon from '@mui/icons-material/Segment';
@@ -26,7 +25,7 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 export default function ProjectWindow({ projectId }: ProjectWindowPayload) {
-  const project = useObject(getProjectApi().getActiveProject, projectId);
+  const project = useObject(() => getProjectApi().getActiveProject(projectId), projectId);
   useWindowTitle(`Project: ${project?.path}`);
   const theme = useTheme();
   const classes = useStyles();

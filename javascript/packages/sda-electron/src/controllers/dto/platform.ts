@@ -2,8 +2,8 @@ import { Platform } from 'sda-core/platform';
 import {
     Platform as PlatformDTO,
     PlatformClassName
-} from '../api/platform';
-import { ObjectId } from '../api/common';
+} from '../../api/platform';
+import { ObjectId } from '../../api/common';
 
 export const toPlatformId = (platform: Platform): ObjectId => {
     return {

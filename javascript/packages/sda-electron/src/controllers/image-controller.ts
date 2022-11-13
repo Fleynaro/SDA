@@ -1,15 +1,13 @@
-import ContextObjectController from './context-object-controller';
+import BaseController from './base-controller';
 import {
     ImageController,
     Image as ImageDTO,
     ImageAnalyser
 } from '../api/image';
 import { ObjectId } from '../api/common';
-import { toImageDTO } from '../dto/image';
-import { toHash } from '../utils/common';
-import { Image } from 'sda-core/image';
+import { toImageDTO, toImage, changeImage } from './dto/image';
 
-class ImageControllerImpl extends ContextObjectController implements ImageController {
+class ImageControllerImpl extends BaseController implements ImageController {
 
     constructor() {
         super("Image");
@@ -17,10 +15,10 @@ class ImageControllerImpl extends ContextObjectController implements ImageContro
         this.register("createImage", this.createImage);
         this.register("changeImage", this.changeImage);
     }
-    // TODO: public to private
+
     public async getImage(id: ObjectId): Promise<ImageDTO> {
-        const image = this.toImage(id);
-        return toImageDTO(image); // TODO: move toImageDTO here (remove dto directory)
+        const image = toImage(id);
+        return toImageDTO(image);
     }
 
     public async createImage(contextId: ObjectId, name: string, analyser: ImageAnalyser): Promise<ImageDTO> {
@@ -28,16 +26,7 @@ class ImageControllerImpl extends ContextObjectController implements ImageContro
     }
 
     public async changeImage(dto: ImageDTO): Promise<void> {
-        const image = this.toImage(dto.id);
-        this.changeContextObject(image, dto);
-    }
-
-    public toImage(id: ObjectId): Image { // TODO: move toImage out of controller
-        const image = Image.Get(toHash(id)) as Image;
-        if (!image) {
-            throw new Error(`Image ${id.key} does not exist`);
-        }
-        return image;
+        changeImage(dto);
     }
 }
 

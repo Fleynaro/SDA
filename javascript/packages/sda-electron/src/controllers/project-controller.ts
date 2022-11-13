@@ -1,5 +1,5 @@
 import BaseController from './base-controller';
-import { toProjectDTO, toRecentProjectDTO } from '../dto/project';
+import { toProject, toProjectDTO, toRecentProjectDTO } from './dto/project';
 import { objectChangeEmitter, ObjectChangeType } from '../eventEmitter';
 import {
     ProjectController,
@@ -9,7 +9,6 @@ import {
 import { ObjectId } from '../api/common';
 import { program, getUserPath } from '../app';
 import { loadJSON, saveJSON, doesFileExist, deleteFile } from '../utils/file';
-import { toHash } from '../utils/common';
 import { Project } from 'sda';
 import { Context } from 'sda-core/context';
 import { findPlatform } from '../sda/platform';
@@ -67,10 +66,7 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
     }
 
     public async getActiveProject(id: ObjectId): Promise<ProjectDTO> {
-        const project = Project.Get(toHash(id));
-        if (!project) {
-            throw new Error(`Project ${id.key} does not exist`);
-        }
+        const project = toProject(id);
         return toProjectDTO(project);
     }
 

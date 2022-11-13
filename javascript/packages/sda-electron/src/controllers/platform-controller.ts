@@ -1,5 +1,5 @@
 import BaseController from './base-controller';
-import { toPlatformDTO } from '../dto/platform';
+import { toPlatformDTO } from './dto/platform';
 import {
     PlatformController,
     Platform as PlatformDTO

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useEffect } from './hooks/reactWrappers';
+import { useEffect } from './hooks/reactWrappedHooks';
 import { Box, LinearProgress } from '@mui/material';
 import DialogErrorBoundary from './components/DialogErrorBoundary';
 import { getWindowApi, WindowName, WindowInfo } from 'sda-electron/api/window';

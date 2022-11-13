@@ -285,9 +285,9 @@ public:
 				throw std::runtime_error(base.class_name()
 					+ " must be polymorphic to auto-wrap object pointers");
 			}
+			class_info_.set_auto_wrap_object_ptrs(
+				base.auto_wrap_object_ptrs());
 		}
-		class_info_.set_auto_wrap_object_ptrs(
-			base.auto_wrap_object_ptrs());
 		class_info_.js_function_template()->Inherit(base.class_function_template());
 		return *this;
 	}

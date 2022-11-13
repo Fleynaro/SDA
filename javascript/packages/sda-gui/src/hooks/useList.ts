@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useCallback } from './reactWrappers';
+import { useCallback } from './reactWrappedHooks';
 import { getEventApi } from 'sda-electron/api/event';
 import { Identifiable, ObjectId, CmpObjectIds, ObjectChangeType } from 'sda-electron/api/common';
 
