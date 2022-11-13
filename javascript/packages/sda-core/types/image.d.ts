@@ -31,6 +31,7 @@ export class FileImageRW extends ImageRW implements ISerializable {
 }
 
 export abstract class ImageAnalyser implements ISerializable {
+    readonly name: string;
     baseAddress: Offset;
     entryPointOffset: Offset;
     imageSections: ImageSection[];

@@ -145,8 +145,8 @@ export default function ProjectManagerWindow() {
       ) : (
         <Box textAlign="center">No recent projects</Box>
       )}
-      <Dialog title="New project" showCancelButton={true} ref={createProjectDialogRef} />
-      <Dialog title="Delete project" showCancelButton={true} ref={deleteProjectDialogRef} />
+      <Dialog title="New Project" showCancelButton={true} ref={createProjectDialogRef} />
+      <Dialog title="Delete Project" showCancelButton={true} ref={deleteProjectDialogRef} />
     </>
   );
 }

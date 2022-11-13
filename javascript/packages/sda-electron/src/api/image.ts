@@ -10,14 +10,10 @@ export interface Image extends ContextObject {
     globalSymbolTableId: ObjectId;
 }
 
-export enum ImageAnalyser {
-    PE = 'PE'
-}
-
 export interface ImageController {
     getImage(id: ObjectId): Promise<Image>;
     
-    createImage(contextId: ObjectId, name: string, analyser: ImageAnalyser): Promise<Image>;
+    createImage(contextId: ObjectId, name: string, analyserName: string, pathToImage: string): Promise<Image>;
     
     changeImage(dto: Image): Promise<void>;
 }

@@ -4,6 +4,7 @@ import { existsSync, mkdirSync } from "fs";
 import { initControllers } from "./controllers";
 import { Program, CleanUpSharedObjectLookupTable } from 'sda';
 import { initDefaultPlatforms } from './sda/platform';
+import { initDefaultImageAnalysers } from './sda/image-analyser';
 
 export let program: Program;
 
@@ -18,6 +19,7 @@ export const getUserPath = (file: string) => {
 export const initApp = () => {
     program = Program.New();
     initDefaultPlatforms();
+    initDefaultImageAnalysers();
     initControllers();
 
     // create user directory if not exists

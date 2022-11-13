@@ -14,12 +14,16 @@ namespace sda
         Offset m_entryPointOffset = 0;
         std::list<ImageSection> m_imageSections;
 
+        virtual std::string getName() const = 0;
+
         virtual void analyse(IImageRW* rw) = 0;
     };
 
     class TestAnalyser : public ImageAnalyser
     {
     public:
+        std::string getName() const override { return "TestAnalyser"; }
+
         void analyse(IImageRW* rw) override;
     };
 
@@ -30,6 +34,8 @@ namespace sda
         std::unique_ptr<windows::__IMAGE_NT_HEADERS> m_imgNtHeaders;
     public:
         static inline const std::string Name = "PEImageAnalyser";
+
+        std::string getName() const override { return Name; }
 
         void analyse(IImageRW* rw) override;
 

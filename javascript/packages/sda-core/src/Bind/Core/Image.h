@@ -62,6 +62,7 @@ namespace sda::bind
                 auto cl = NewClass<ImageAnalyser, v8pp::shared_ptr_traits>(module);
                 cl
                     .auto_wrap_object_ptrs()
+                    .property("name", &ImageAnalyser::getName)
                     .var("baseAddress", &ImageAnalyser::m_baseAddress)
                     .var("entryPointOffset", &ImageAnalyser::m_entryPointOffset)
                     .var("imageSections", &ImageAnalyser::m_imageSections)

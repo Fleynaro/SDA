@@ -1,4 +1,4 @@
-import { useState, useCallback, useImperativeHandle, forwardRef, ReactNode } from 'react';
+import { useState, useCallback, ReactNode } from 'react';
 import {
   Popover,
   MenuList,
@@ -8,46 +8,63 @@ import {
   PopoverPosition,
 } from '@mui/material';
 
-export interface ContextMenuRef {
-  open: (event: React.MouseEvent<HTMLElement>, body: ReactNode) => void;
-  close: () => void;
+export interface ContextMenuProps {
+  opened: boolean;
+  anchorPosition: PopoverPosition | undefined;
+  onClose: () => void;
+  children?: ReactNode;
 }
 
-export const ContextMenu = forwardRef((_props: unknown, ref: React.Ref<ContextMenuRef>) => {
+export interface ContextMenuHook {
+  open: (event: React.MouseEvent<HTMLElement>) => void;
+  close: () => void;
+  props: ContextMenuProps;
+}
+
+export const useContextMenu = (): ContextMenuHook => {
   const [opened, setOpened] = useState(false);
   const [body, setBody] = useState<ReactNode>();
   const [anchorPosition, setAnchorPosition] = useState<PopoverPosition>();
 
-  useImperativeHandle(ref, () => ({
-    open: (event: React.MouseEvent<HTMLElement>, body: ReactNode) => {
-      setOpened(true);
-      setBody(body);
-      setAnchorPosition({
-        top: event.clientY,
-        left: event.clientX,
-      });
-    },
+  const open = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    setOpened(true);
+    setBody(body);
+    setAnchorPosition({
+      top: event.clientY,
+      left: event.clientX,
+    });
+  }, []);
 
-    close: () => {
-      onClose();
-    },
-  }));
-
-  const onClose = useCallback(() => {
+  const close = useCallback(() => {
     setOpened(false);
   }, []);
 
+  const props: ContextMenuProps = {
+    opened,
+    anchorPosition,
+    onClose: close,
+  };
+
+  return {
+    open,
+    close,
+    props,
+  };
+};
+
+export const ContextMenu = (props: ContextMenuProps) => {
   return (
     <Popover
-      open={opened}
+      open={props.opened}
       anchorReference="anchorPosition"
-      anchorPosition={anchorPosition}
-      onClose={onClose}
+      anchorPosition={props.anchorPosition}
+      onClose={props.onClose}
+      onClick={props.onClose}
     >
-      {body}
+      {props.children}
     </Popover>
   );
-});
+};
 
 export const ContextMenuList = ({ children, ...props }: MenuListProps) => {
   return <MenuList {...props}>{children}</MenuList>;

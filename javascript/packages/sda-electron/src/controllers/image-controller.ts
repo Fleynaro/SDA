@@ -2,10 +2,13 @@ import BaseController from './base-controller';
 import {
     ImageController,
     Image as ImageDTO,
-    ImageAnalyser
 } from '../api/image';
+import { Image, FileImageRW } from 'sda-core/image';
+import { StandartSymbolTable } from 'sda-core/symbol-table';
 import { ObjectId } from '../api/common';
 import { toImageDTO, toImage, changeImage } from './dto/image';
+import { toContext } from './dto/context';
+import { findImageAnalyser } from '../sda/image-analyser';
 
 class ImageControllerImpl extends BaseController implements ImageController {
 
@@ -21,8 +24,19 @@ class ImageControllerImpl extends BaseController implements ImageController {
         return toImageDTO(image);
     }
 
-    public async createImage(contextId: ObjectId, name: string, analyser: ImageAnalyser): Promise<ImageDTO> {
-        throw new Error("Method not implemented.");
+    public async createImage(contextId: ObjectId, name: string, analyserName: string, pathToImage: string): Promise<ImageDTO> {
+        const context = toContext(contextId);
+        const analyser = findImageAnalyser(analyserName);
+        const globalSymbolTable = StandartSymbolTable.New(context, '');
+        const imageRW = FileImageRW.New(pathToImage);
+        const image = Image.New(
+            context,
+            imageRW,
+            analyser,
+            name,
+            globalSymbolTable
+        );
+        return toImageDTO(image);
     }
 
     public async changeImage(dto: ImageDTO): Promise<void> {
