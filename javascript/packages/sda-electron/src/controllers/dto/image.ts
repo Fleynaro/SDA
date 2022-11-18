@@ -1,4 +1,5 @@
 import { Image } from 'sda-core/image';
+import { Object } from 'sda-core/object';
 import {
     Image as ImageDTO,
     ImageClassName
@@ -21,12 +22,12 @@ export const toImageDTO = (image: Image): ImageDTO => {
         baseAddress: image.baseAddress,
         entryPointOffset: image.entryPointOffset,
         size: image.size,
-        globalSymbolTableId: toImageId(image),
+        globalSymbolTableId: toImageId(image), // TODO: change!!!
     };
 };
 
 export const toImage = (id: ObjectId): Image => {
-    const image = Image.Get(toHash(id)) as Image;
+    const image = Object.Get(toHash(id)) as Image;
     if (!image) {
         throw new Error(`Image ${id.key} does not exist`);
     }

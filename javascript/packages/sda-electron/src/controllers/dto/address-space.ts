@@ -1,4 +1,5 @@
 import { AddressSpace } from 'sda-core/address-space';
+import { Object } from 'sda-core/object';
 import {
     AddressSpace as AddressSpaceDTO,
     AddressSpaceClassName
@@ -24,7 +25,7 @@ export const toAddressSpaceDTO = (addressSpace: AddressSpace): AddressSpaceDTO =
 };
 
 export const toAddressSpace = (id: ObjectId): AddressSpace => {
-    const addressSpace = AddressSpace.Get(toHash(id)) as AddressSpace; // TODO: remove cast (create Get static method for each class)
+    const addressSpace = Object.Get(toHash(id)) as AddressSpace; // TODO: remove cast (create Get static method for each class)
     if (!addressSpace) {
         throw new Error(`Address space ${id.key} does not exist`);
     }

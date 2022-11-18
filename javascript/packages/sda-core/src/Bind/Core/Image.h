@@ -41,7 +41,7 @@ namespace sda::bind
                 auto cl = NewClass<FileImageRW>(module);
                 cl
                     .inherit<IImageRW>()
-                    .inherit<utils::ISerializable>()
+                    //.inherit<utils::ISerializable>() TODO: implement multiple inheritance
                     .property("size", &FileImageRW::getImageSize)
                     .method("readFile", &FileImageRW::readFile)
                     .method("saveFile", &FileImageRW::saveFile)
@@ -74,7 +74,7 @@ namespace sda::bind
                 auto cl = NewClass<PEImageAnalyser, v8pp::shared_ptr_traits>(module);
                 cl
                     .inherit<ImageAnalyser>()
-                    .inherit<utils::ISerializable>()
+                    //.inherit<utils::ISerializable>() TODO: implement multiple inheritance
                     .static_method("New", &NewPEImageAnalyser);
                 module.class_("PEImageAnalyser", cl);
             }

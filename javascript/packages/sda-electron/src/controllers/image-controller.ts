@@ -25,10 +25,11 @@ class ImageControllerImpl extends BaseController implements ImageController {
     }
 
     public async createImage(contextId: ObjectId, name: string, analyserName: string, pathToImage: string): Promise<ImageDTO> {
+        const imageRW = FileImageRW.New(pathToImage);
+        imageRW.readFile();
         const context = toContext(contextId);
         const analyser = findImageAnalyser(analyserName);
         const globalSymbolTable = StandartSymbolTable.New(context, '');
-        const imageRW = FileImageRW.New(pathToImage);
         const image = Image.New(
             context,
             imageRW,

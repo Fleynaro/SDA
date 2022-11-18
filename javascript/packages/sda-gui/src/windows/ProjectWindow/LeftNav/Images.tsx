@@ -4,7 +4,7 @@ import { TreeView, TreeItem } from '@mui/lab';
 import AddIcon from '@mui/icons-material/Add';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { useList, useObject } from 'hooks';
+import { useEffect, useList, useObject, useToggleList } from 'hooks';
 import { useSdaContextId } from 'providers/SdaContextProvider';
 import {
   useContextMenu,
@@ -21,6 +21,8 @@ import {
   AddressSpace,
 } from 'sda-electron/api/address-space';
 import { getImageApi, Image } from 'sda-electron/api/image';
+import { ObjectId } from 'sda-electron/api/common';
+import { strContains } from 'utils';
 
 const AddressSpaceContextMenu = ({
   addressSpace,
@@ -58,25 +60,62 @@ const AddressSpaceContextMenu = ({
   );
 };
 
+interface ImageTreeItemProps {
+  imageId: ObjectId;
+  onSelect: (image: Image) => void;
+}
+
+const ImageTreeItem = ({ imageId, onSelect }: ImageTreeItemProps) => {
+  const image = useObject(() => getImageApi().getImage(imageId), imageId);
+  if (!image) return <></>;
+  return <TreeItem nodeId={image.id.key} label={image.name} onClick={() => onSelect(image)} />;
+};
 interface ImagesProps {
   onSelect: (image: Image) => void;
 }
 
 export default function Images({ onSelect }: ImagesProps) {
   const contextId = useSdaContextId();
+  const [filterName, setFilterName] = useState('');
   const addressSpaces = useList(
     () => getAddressSpaceApi().getAddressSpaces(contextId),
     AddressSpaceClassName,
   );
+  const [addressSpacesWithImages, setAddressSpacesWithImages] = useState<
+    {
+      addressSpace: AddressSpace;
+      images: Image[];
+    }[]
+  >([]);
+  const [expandedAddressSpaces, setExpandedAddressSpaces, toggleExpandedAddressSpaces] =
+    useToggleList<string>([]);
+  useEffect(async () => {
+    let result = await Promise.all(
+      addressSpaces.map(async (addressSpace) => {
+        let images = await Promise.all(addressSpace.imageIds.map(getImageApi().getImage));
+        if (filterName && !strContains(addressSpace.name, filterName)) {
+          images = images.filter((image) => strContains(image.name, filterName));
+        }
+        return { addressSpace, images };
+      }),
+    );
+    if (filterName) {
+      result = result.filter(
+        ({ addressSpace, images }) =>
+          strContains(addressSpace.name, filterName) || images.length > 0,
+      );
+    }
+    setAddressSpacesWithImages(result);
+    setExpandedAddressSpaces(filterName ? result.map((r) => r.addressSpace.id.key) : []);
+  }, [addressSpaces, filterName]);
   const [addressSpace, setAddressSpace] = useState<AddressSpace>();
   const addressSpaceContextMenu = useContextMenu();
-  const [filterName, setFilterName] = useState('');
   return (
     <>
       <Box sx={{ display: 'flex', flexDirection: 'row', height: '25px' }}>
         <IconButton
           onClick={() => {
-            getAddressSpaceApi().createAddressSpace(contextId, 'test');
+            getAddressSpaceApi().createAddressSpace(contextId, 'rdr');
           }}
           sx={{ width: '25px' }}
         >
@@ -89,39 +128,28 @@ export default function Images({ onSelect }: ImagesProps) {
           sx={{ width: '100%', height: '25px' }}
         />
       </Box>
-      <TreeView defaultCollapseIcon={<ExpandMoreIcon />} defaultExpandIcon={<ChevronRightIcon />}>
-        {addressSpaces
-          .map((addressSpace) => {
-            const images = addressSpace.imageIds
-              .map((imageId) => useObject(() => getImageApi().getImage(imageId), imageId))
-              .filter((image) => image !== null) as Image[];
-            return { addressSpace, images };
-          })
-          .filter(({ addressSpace, images }) => {
-            const names = addressSpace.name + images.map((image) => image.name).join('');
-            return names.includes(filterName);
-          })
-          .map(({ addressSpace, images }) => (
-            <TreeItem
-              key={addressSpace.id.key}
-              nodeId={addressSpace.id.key}
-              label={addressSpace.name}
-              onContextMenu={(event) => {
-                event.preventDefault();
-                addressSpaceContextMenu.open(event);
-                setAddressSpace(addressSpace);
-              }}
-            >
-              {images.map((image) => (
-                <TreeItem
-                  key={image.id.key}
-                  nodeId={image.id.key}
-                  label={image.name}
-                  onClick={() => onSelect(image)}
-                />
-              ))}
-            </TreeItem>
-          ))}
+      <TreeView
+        defaultCollapseIcon={<ExpandMoreIcon />}
+        defaultExpandIcon={<ChevronRightIcon />}
+        expanded={expandedAddressSpaces}
+      >
+        {addressSpacesWithImages.map(({ addressSpace, images }) => (
+          <TreeItem
+            key={addressSpace.id.key}
+            nodeId={addressSpace.id.key}
+            label={addressSpace.name}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              addressSpaceContextMenu.open(event);
+              setAddressSpace(addressSpace);
+            }}
+            onClick={() => toggleExpandedAddressSpaces(addressSpace.id.key)}
+          >
+            {images.map((image) => (
+              <ImageTreeItem key={image.id.key} imageId={image.id} onSelect={onSelect} />
+            ))}
+          </TreeItem>
+        ))}
       </TreeView>
       {addressSpace && (
         <AddressSpaceContextMenu {...addressSpaceContextMenu.props} addressSpace={addressSpace} />
