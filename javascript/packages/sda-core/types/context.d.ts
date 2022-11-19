@@ -1,3 +1,4 @@
+import { Object } from './object';
 import { Platform } from "./platform";
 import { AddressSpace } from "./image";
 import { Hash } from './utils';

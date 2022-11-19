@@ -10,7 +10,8 @@ import { ObjectId } from '../api/common';
 import { program, getUserPath } from '../app';
 import { loadJSON, saveJSON, doesFileExist, deleteFile } from '../utils/file';
 import { Project } from 'sda';
-import { Context } from 'sda-core/context';
+import { Context, ContextCallbacksImpl } from 'sda-core/context';
+import { ContextObject } from 'sda-core/object';
 import { findPlatform } from '../sda/platform';
 import { join as pathJoin } from "path";
 
@@ -74,6 +75,22 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
         const config = await loadJSON<ProjectConfig>(projectConfigFilePath(path));
         const platform = findPlatform(config.platformName);
         const context = Context.New(platform);
+        {
+            const callbacks = ContextCallbacksImpl.New();
+            callbacks.oldCallbacks = context.callbacks;
+            callbacks.onObjectAdded = (obj) => {
+                console.log("Object added (id = " + obj.id + ")");
+                const data = obj.serialize();
+                console.log("Serialized data:");
+                console.log(data);
+
+                if (obj instanceof ContextObject) {
+                    const ctxObj = obj as ContextObject;
+                    console.log("--- name: " + ctxObj.name);
+                }
+            };
+            context.callbacks = callbacks;
+        }
         const project = Project.New(program, path, context);
         const projectDTO = toProjectDTO(project);
         objectChangeEmitter()(projectDTO.id, ObjectChangeType.Create);

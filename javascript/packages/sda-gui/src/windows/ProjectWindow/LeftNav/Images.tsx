@@ -96,6 +96,7 @@ export default function Images({ onSelect }: ImagesProps) {
         if (filterName && !strContains(addressSpace.name, filterName)) {
           images = images.filter((image) => strContains(image.name, filterName));
         }
+        images = images.sort((a, b) => a.name.localeCompare(b.name));
         return { addressSpace, images };
       }),
     );
@@ -105,9 +106,11 @@ export default function Images({ onSelect }: ImagesProps) {
           strContains(addressSpace.name, filterName) || images.length > 0,
       );
     }
+    result = result.sort((a, b) => a.addressSpace.name.localeCompare(b.addressSpace.name));
     setAddressSpacesWithImages(result);
     setExpandedAddressSpaces(filterName ? result.map((r) => r.addressSpace.id.key) : []);
   }, [addressSpaces, filterName]);
+  const [newAddressSpaceName, setNewAddressSpaceName] = useState<string | null>(null);
   const [addressSpace, setAddressSpace] = useState<AddressSpace>();
   const addressSpaceContextMenu = useContextMenu();
   return (
@@ -115,7 +118,7 @@ export default function Images({ onSelect }: ImagesProps) {
       <Box sx={{ display: 'flex', flexDirection: 'row', height: '25px' }}>
         <IconButton
           onClick={() => {
-            getAddressSpaceApi().createAddressSpace(contextId, 'rdr');
+            setNewAddressSpaceName('');
           }}
           sx={{ width: '25px' }}
         >
@@ -132,7 +135,29 @@ export default function Images({ onSelect }: ImagesProps) {
         defaultCollapseIcon={<ExpandMoreIcon />}
         defaultExpandIcon={<ChevronRightIcon />}
         expanded={expandedAddressSpaces}
+        defaultSelected={['new']}
       >
+        {newAddressSpaceName !== null && (
+          <TreeItem
+            nodeId="new"
+            label={
+              <Input
+                autoFocus
+                placeholder="Enter name"
+                value={newAddressSpaceName}
+                sx={{ width: '100%', height: '20px' }}
+                onChange={(e) => setNewAddressSpaceName(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    getAddressSpaceApi().createAddressSpace(contextId, newAddressSpaceName);
+                    setNewAddressSpaceName(null);
+                  }
+                }}
+                onBlur={() => setNewAddressSpaceName(null)}
+              />
+            }
+          />
+        )}
         {addressSpacesWithImages.map(({ addressSpace, images }) => (
           <TreeItem
             key={addressSpace.id.key}

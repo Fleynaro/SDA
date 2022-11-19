@@ -8,23 +8,31 @@ namespace sda::bind
         using Callbacks = Context::Callbacks;
         class CallbacksJsImpl : public Callbacks
         {
-            using Call = Call<CallbacksJsImpl, v8pp::shared_ptr_traits>;
         public:
             std::shared_ptr<Callbacks> m_oldCallbacks;
-
+            Callback m_onObjectAdded;
+            Callback m_onObjectModified;
+            Callback m_onObjectRemoved;
+            
             void onObjectAdded(Object* obj) override {
                 m_oldCallbacks->onObjectAdded(obj);
-                Call(this, "onObjectAdded")(obj);
+                if (m_onObjectAdded.isDefined()) {
+                    m_onObjectAdded.call(obj);
+                }
             }
 
             void onObjectModified(Object* obj) override {
                 m_oldCallbacks->onObjectModified(obj);
-                Call(this, "onObjectModified")(obj);
+                if (m_onObjectModified.isDefined()) {
+                    m_onObjectModified.call(obj);
+                }
             }
 
             void onObjectRemoved(Object* obj) override {
                 m_oldCallbacks->onObjectRemoved(obj);
-                Call(this, "onObjectRemoved")(obj);
+                if (m_onObjectRemoved.isDefined()) {
+                    m_onObjectRemoved.call(obj);
+                }
             }
         };
         
@@ -37,6 +45,7 @@ namespace sda::bind
             {
                 auto cl = NewClass<Callbacks, v8pp::shared_ptr_traits>(module);
                 cl
+                    .auto_wrap_object_ptrs(true)
                     .method("onObjectAdded", &Callbacks::onObjectAdded)
                     .method("onObjectModified", &Callbacks::onObjectModified)
                     .method("onObjectRemoved", &Callbacks::onObjectRemoved);
@@ -49,6 +58,9 @@ namespace sda::bind
                     .inherit<Callbacks>()
                     .var("oldCallbacks", &CallbacksJsImpl::m_oldCallbacks)
                     .static_method("New", &New);
+                Callback::Register(cl, "onObjectAdded", &CallbacksJsImpl::m_onObjectAdded);
+                Callback::Register(cl, "onObjectModified", &CallbacksJsImpl::m_onObjectModified);
+                Callback::Register(cl, "onObjectRemoved", &CallbacksJsImpl::m_onObjectRemoved);
                 module.class_("ContextCallbacksImpl", cl);
             }
         }
