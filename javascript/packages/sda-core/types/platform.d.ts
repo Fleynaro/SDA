@@ -3,6 +3,7 @@ import { Hash, IIdentifiable } from "./utils";
 
 export abstract class Platform implements IIdentifiable {
     readonly hashId: Hash;
+    readonly className: string;
     readonly name: string;
     readonly pointerSize: number;
     readonly registerRepository: RegisterRepository;

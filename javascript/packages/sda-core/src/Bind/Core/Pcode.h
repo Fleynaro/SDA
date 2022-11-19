@@ -15,6 +15,7 @@ namespace sda::bind
                 .property("size", &pcode::Varnode::getSize)
                 .property("isRegister", &pcode::Varnode::isRegister);
             ObjectLookupTableShared::Register(cl);
+            RegisterClassName(cl, "DataType");
             module.class_("PcodeVarnode", cl);
         }
     };

@@ -28,6 +28,7 @@ namespace sda::bind
                     .method("getAllSymbols", &SymbolTable::getAllSymbols)
                     .method("getSymbolAt", &SymbolTable::getSymbolAt)
                     .method("getAllSymbolsRecursivelyAt", &SymbolTable::getAllSymbolsRecursivelyAt);
+                RegisterClassName(cl, "SymbolTable");
                 module.class_("SymbolTable", cl);
             }
         }

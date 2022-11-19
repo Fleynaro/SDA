@@ -4,6 +4,7 @@ export type Offset = number;
 
 export interface IIdentifiable {
     readonly hashId: Hash;
+    readonly className: string;
 }
 
 export interface ISerializable {

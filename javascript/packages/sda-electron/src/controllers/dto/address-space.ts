@@ -2,25 +2,16 @@ import { AddressSpace } from 'sda-core/address-space';
 import { Object } from 'sda-core/object';
 import {
     AddressSpace as AddressSpaceDTO,
-    AddressSpaceClassName
 } from '../../api/address-space';
 import { ObjectId } from '../../api/common';
 import { changeContextObject, toContextObjectDTO } from './context-object';
-import { toHash } from '../../utils/common';
-import { toImage, toImageId } from './image';
-
-export const toAddressSpaceId = (addressSpace: AddressSpace): ObjectId => {
-    return {
-        key: addressSpace.hashId.toString(),
-        className: AddressSpaceClassName,
-    };
-};
+import { toHash, toId } from '../../utils/common';
+import { toImage } from './image';
 
 export const toAddressSpaceDTO = (addressSpace: AddressSpace): AddressSpaceDTO => {
     return {
-        id: toAddressSpaceId(addressSpace),
         ...toContextObjectDTO(addressSpace),
-        imageIds: addressSpace.images.map(toImageId),
+        imageIds: addressSpace.images.map(toId),
     };
 };
 

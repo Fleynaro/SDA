@@ -3,23 +3,15 @@ import {
     Project as ProjectDTO,
     RecentProject as RecentProjectDTO,
     RecentProjectClassName,
-    ProjectClassName
 } from '../../api/project';
 import { ObjectId } from '../../api/common';
 import { toContextId } from './context';
 import { basename as pathBasename } from 'path';
-import { toHash } from '../../utils/common';
-
-export const toProjectId = (project: Project): ObjectId => {
-    return {
-        key: project.hashId.toString(),
-        className: ProjectClassName,
-    };
-};
+import { toHash, toId } from '../../utils/common';
 
 export const toProjectDTO = (project: Project): ProjectDTO => {
     return {
-        id: toProjectId(project),
+        id: toId(project),
         path: project.path,
         contextId: toContextId(project.context),
     };

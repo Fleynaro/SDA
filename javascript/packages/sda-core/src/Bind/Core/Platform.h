@@ -32,6 +32,7 @@ namespace sda::bind
                 .method("getPcodeDecoder", &GetPcodeDecoder)
                 .method("getInstructionDecoder", &GetInstructionDecoder);
             ObjectLookupTableRaw::Register(cl);
+            RegisterClassName(cl, "Platform");
             module.class_("Platform", cl);
         }
     };
@@ -49,6 +50,7 @@ namespace sda::bind
                 .method("getRegisterFlagName", &RegisterRepository::getRegisterFlagName)
                 .method("getRegisterFlagIndex", &RegisterRepository::getRegisterFlagIndex);
             ObjectLookupTableShared::Register(cl);
+            RegisterClassName(cl, "RegisterRepository");
             module.class_("RegisterRepository", cl);
         }
     };
@@ -63,6 +65,7 @@ namespace sda::bind
                 .property("instructionLength", &PcodeDecoder::getInstructionLength)
                 .method("decode", &PcodeDecoder::decode);
             ObjectLookupTableShared::Register(cl);
+            RegisterClassName(cl, "PcodeDecoder");
             module.class_("PcodeDecoder", cl);
         }
     };
@@ -76,6 +79,7 @@ namespace sda::bind
                 .auto_wrap_object_ptrs(true)
                 .method("decode", &InstructionDecoder::decode);
             ObjectLookupTableShared::Register(cl);
+            RegisterClassName(cl, "InstructionDecoder");
             module.class_("InstructionDecoder", cl);
         }
     };
@@ -112,6 +116,7 @@ namespace sda::bind
                     .property("name", &CallingConvention::getName)
                     .method("getStorages", &CallingConvention::getStorages);
                 ObjectLookupTableShared::Register(cl);
+                RegisterClassName(cl, "CallingConvention");
                 module.class_("CallingConvention", cl);
             }
         }

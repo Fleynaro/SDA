@@ -26,6 +26,7 @@ namespace sda::bind
                 .property("size", &DataType::getSize)
                 .method("getPointerTo", &DataType::getPointerTo)
                 .method("getArrayOf", &DataType::getArrayOf);
+            RegisterClassName(cl, "DataType");
             module.class_("DataType", cl);
         }
     };

@@ -2,6 +2,7 @@ import { IIdentifiable, ISerializable, Hash } from "./utils";
 
 export abstract class Object implements IIdentifiable, ISerializable {
     readonly hashId: Hash;
+    readonly className: string;
     readonly id: string;
     
     setTemporary(temporary: boolean): void;

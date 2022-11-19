@@ -2,9 +2,11 @@ import { app } from "electron";
 import path from "path";
 import { existsSync, mkdirSync } from "fs";
 import { initControllers } from "./controllers";
-import { Program, CleanUpSharedObjectLookupTable } from 'sda';
+import { Program, ProgramCallbacksImpl, CleanUpSharedObjectLookupTable } from 'sda';
 import { initDefaultPlatforms } from './sda/platform';
 import { initDefaultImageAnalysers } from './sda/image-analyser';
+import { objectChangeEmitter, ObjectChangeType } from './eventEmitter';
+import { toId } from './utils/common';
 
 export let program: Program;
 
@@ -18,6 +20,15 @@ export const getUserPath = (file: string) => {
 
 export const initApp = () => {
     program = Program.New();
+    {
+        const callbacks = ProgramCallbacksImpl.New();
+        callbacks.oldCallbacks = program.callbacks;
+        callbacks.onProjectAdded = (project) =>
+            objectChangeEmitter()(toId(project), ObjectChangeType.Create);
+        callbacks.onProjectRemoved = (project) =>
+            objectChangeEmitter()(toId(project), ObjectChangeType.Delete);
+        program.callbacks = callbacks;
+    }
     initDefaultPlatforms();
     initDefaultImageAnalysers();
     initControllers();

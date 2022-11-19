@@ -14,6 +14,7 @@ namespace sda::bind
                 .inherit<ContextObject>()
                 .property("images", &AddressSpace::getImages, &AddressSpace::setImages)
                 .static_method("New", &New);
+            RegisterClassName(cl, "AddressSpace");
             module.class_("AddressSpace", cl);
         }
     };

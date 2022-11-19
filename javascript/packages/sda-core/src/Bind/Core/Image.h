@@ -136,6 +136,7 @@ namespace sda::bind
                 .method("getImageSectionAt", &Image::getImageSectionAt)
                 .method("analyse", &Image::analyse)
                 .static_method("New", &New);
+            RegisterClassName(cl, "Image");
             module.class_("Image", cl);
         }
     };

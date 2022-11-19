@@ -19,6 +19,7 @@ namespace sda::bind
                 .property("context", &Project::getContext)
                 .static_method("New", &New);
             ObjectLookupTableRaw::Register(cl);
+            RegisterClassName(cl, "Project");
             module.class_("Project", cl);
         }
     };

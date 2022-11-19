@@ -3,6 +3,59 @@
 
 namespace sda::bind
 {
+    class ProgramCallbacksBind
+    {
+        using Callbacks = Program::Callbacks;
+        class CallbacksJsImpl : public Callbacks
+        {
+        public:
+            std::shared_ptr<Callbacks> m_oldCallbacks;
+            Callback m_onProjectAdded;
+            Callback m_onProjectRemoved;
+            
+            void onProjectAdded(Project* project) override {
+                m_oldCallbacks->onProjectAdded(project);
+                if (m_onProjectAdded.isDefined()) {
+                    m_onProjectAdded.call(project);
+                }
+            }
+
+            void onProjectRemoved(Project* project) override {
+                m_oldCallbacks->onProjectRemoved(project);
+                if (m_onProjectRemoved.isDefined()) {
+                    m_onProjectRemoved.call(project);
+                }
+            }
+        };
+        
+        static auto New() {
+            return std::make_shared<CallbacksJsImpl>();
+        }
+
+    public:
+        static void Init(v8pp::module& module) {
+            {
+                auto cl = NewClass<Callbacks, v8pp::shared_ptr_traits>(module);
+                cl
+                    .auto_wrap_object_ptrs(true)
+                    .method("onProjectAdded", &Callbacks::onProjectAdded)
+                    .method("onProjectRemoved", &Callbacks::onProjectRemoved);
+                module.class_("ProgramCallbacks", cl);
+            }
+            
+            {
+                auto cl = NewClass<CallbacksJsImpl, v8pp::shared_ptr_traits>(module);
+                cl
+                    .inherit<Callbacks>()
+                    .var("oldCallbacks", &CallbacksJsImpl::m_oldCallbacks)
+                    .static_method("New", &New);
+                Callback::Register(cl, "onProjectAdded", &CallbacksJsImpl::m_onProjectAdded);
+                Callback::Register(cl, "onProjectRemoved", &CallbacksJsImpl::m_onProjectRemoved);
+                module.class_("ProgramCallbacksImpl", cl);
+            }
+        }
+    };
+
     class ProgramBind
     {
         class RefCallbacks : public Program::Callbacks {
@@ -24,6 +77,7 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<Program>(module);
             cl
+                .property("callbacks", &Program::getCallbacks, &Program::setCallbacks)
                 .property("projects", [](Program& self) { return to_v8(self.getProjects()); })
                 .method("removeProject", &Program::removeProject)
                 .static_method("New", &New);

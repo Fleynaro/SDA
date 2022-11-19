@@ -98,6 +98,7 @@ namespace sda::bind
                 })
                 .static_method("New", &New);
             ObjectLookupTableRaw::Register(cl);
+            RegisterClassName(cl, "Context");
             module.class_("Context", cl);
         }
     };

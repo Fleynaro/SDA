@@ -57,6 +57,13 @@ namespace sda::bind
         ClassType cl(module.isolate(), dtor);
         return cl;
     }
+
+    template<typename T, typename Traits>
+    static void RegisterClassName(v8pp::class_<T, Traits>& cl, const std::string& name) {
+        cl
+            .property("className", [name](T& self) { return name; })
+            .static_method("GetClassName", std::function([name]() { return name; }));
+    }
     
     void InitModule(v8::Local<v8::Object> module, std::list<std::function<void(v8pp::module&)>> inits);
 };

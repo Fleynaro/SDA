@@ -10,6 +10,7 @@ using namespace sda::bind;
 void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
     InitModule(module, {
         ProgramBind::Init,
+        ProgramCallbacksBind::Init,
         ProjectBind::Init,
         ObjectLookupTableShared::Init
     });
