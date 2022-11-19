@@ -66,7 +66,7 @@ interface ImageTreeItemProps {
 }
 
 const ImageTreeItem = ({ imageId, onSelect }: ImageTreeItemProps) => {
-  const image = useObject(() => getImageApi().getImage(imageId), imageId);
+  const image = useObject(() => getImageApi().getImage(imageId));
   if (!image) return <></>;
   return <TreeItem nodeId={image.id.key} label={image.name} onClick={() => onSelect(image)} />;
 };

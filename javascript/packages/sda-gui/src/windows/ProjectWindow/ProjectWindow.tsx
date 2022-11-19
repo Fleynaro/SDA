@@ -25,7 +25,7 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 export default function ProjectWindow({ projectId }: ProjectWindowPayload) {
-  const project = useObject(() => getProjectApi().getActiveProject(projectId), projectId);
+  const project = useObject(() => getProjectApi().getActiveProject(projectId));
   useWindowTitle(`Project: ${project?.path}`);
   const theme = useTheme();
   const classes = useStyles();

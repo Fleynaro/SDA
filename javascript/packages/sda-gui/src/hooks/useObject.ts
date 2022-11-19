@@ -3,10 +3,7 @@ import { useCallback } from './reactWrappedHooks';
 import { getEventApi } from 'sda-electron/api/event';
 import { Identifiable, ObjectId, CmpObjectIds, ObjectChangeType } from 'sda-electron/api/common';
 
-export default function useObject<T extends Identifiable>(
-  dataSource: () => Promise<T>,
-  objId: ObjectId,
-) {
+export default function useObject<T extends Identifiable>(dataSource: () => Promise<T>) {
   const [object, setObject] = useState<T | null>(null);
 
   const loadObject = useCallback(async () => {
@@ -16,7 +13,8 @@ export default function useObject<T extends Identifiable>(
 
   const updateObject = useCallback(
     async (changedObjId: ObjectId, changeType: ObjectChangeType) => {
-      if (CmpObjectIds(changedObjId, objId)) {
+      if (!object) return;
+      if (CmpObjectIds(changedObjId, object.id)) {
         if (changeType === ObjectChangeType.Update) {
           await loadObject();
         } else if (changeType === ObjectChangeType.Delete) {
@@ -24,7 +22,7 @@ export default function useObject<T extends Identifiable>(
         }
       }
     },
-    [objId, loadObject],
+    [object, loadObject],
   );
 
   useEffect(() => {
