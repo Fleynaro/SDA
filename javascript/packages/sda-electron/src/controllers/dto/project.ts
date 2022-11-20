@@ -3,11 +3,11 @@ import {
   Project as ProjectDTO,
   RecentProject as RecentProjectDTO,
   RecentProjectClassName,
-} from '../../api/project';
-import { ObjectId } from '../../api/common';
+} from 'api/project';
+import { ObjectId } from 'api/common';
 import { toContextId } from './context';
 import { basename as pathBasename } from 'path';
-import { toHash, toId } from '../../utils/common';
+import { toHash, toId } from 'utils/common';
 
 export const toProjectDTO = (project: Project): ProjectDTO => {
   return {

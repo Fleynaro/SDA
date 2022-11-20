@@ -1,7 +1,7 @@
-import { EventName, ObjectChangeEventCallback } from './api/event';
-import { sendMessageToAllWindows } from './utils/window';
+import { EventName, ObjectChangeEventCallback } from 'api/event';
+import { sendMessageToAllWindows } from 'utils/window';
 
-export { ObjectChangeType } from './api/common';
+export { ObjectChangeType } from 'api/common';
 
 export const objectChangeEmitter = () =>
   function (id, changeType) {

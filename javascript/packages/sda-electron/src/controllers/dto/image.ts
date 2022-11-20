@@ -1,9 +1,9 @@
 import { Image } from 'sda-core/image';
 import { SdaObject } from 'sda-core/object';
-import { Image as ImageDTO } from '../../api/image';
-import { ObjectId } from '../../api/common';
+import { Image as ImageDTO } from 'api/image';
+import { ObjectId } from 'api/common';
 import { toContextObjectDTO, changeContextObject } from './context-object';
-import { toHash, toId } from '../../utils/common';
+import { toHash, toId } from 'utils/common';
 
 export const toImageDTO = (image: Image): ImageDTO => {
   return {

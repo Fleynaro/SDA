@@ -1,6 +1,6 @@
 import { Context } from 'sda-core/context';
-import { ObjectId } from '../../api/common';
-import { toHash } from '../../utils/common';
+import { ObjectId } from 'api/common';
+import { toHash } from 'utils/common';
 
 export const toContextId = (project: Context): ObjectId => {
   return {

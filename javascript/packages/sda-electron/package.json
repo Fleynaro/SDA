@@ -14,6 +14,8 @@
     }
   },
   "scripts": {
+    "tsc-alias": "tsc-alias",
+    "tsc-alias:watch": "tsc-alias -w",
     "start": "electron .",
     "dev": "electron --inspect-brk=\"localhost:9229\" --remote-debugging-port=9222 ."
   },

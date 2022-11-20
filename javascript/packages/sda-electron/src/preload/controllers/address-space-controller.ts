@@ -1,6 +1,6 @@
 import { invokerFactory } from '../utils';
-import { AddressSpaceController, AddressSpace } from '../../api/address-space';
-import { ObjectId } from '../../api/common';
+import { AddressSpaceController, AddressSpace } from 'api/address-space';
+import { ObjectId } from 'api/common';
 
 const invoke = invokerFactory('AddressSpace');
 

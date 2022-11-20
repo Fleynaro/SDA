@@ -5,15 +5,15 @@ import {
   ProjectController,
   RecentProject as RecentProjectDTO,
   Project as ProjectDTO,
-} from '../api/project';
-import { ObjectId } from '../api/common';
+} from 'api/project';
+import { ObjectId } from 'api/common';
 import { program, getUserPath } from '../app';
-import { loadJSON, saveJSON, doesFileExist, deleteFile } from '../utils/file';
+import { loadJSON, saveJSON, doesFileExist, deleteFile } from 'utils/file';
 import { Project } from 'sda';
 import { Context, ContextCallbacksImpl } from 'sda-core/context';
-import { findPlatform } from '../sda/platform';
+import { findPlatform } from 'repo/platform';
 import { join as pathJoin } from 'path';
-import { toId } from '../utils/common';
+import { toId } from 'utils/common';
 
 interface ProjectConfig {
   platformName: string;

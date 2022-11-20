@@ -3,10 +3,10 @@ import path from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { initControllers } from './controllers';
 import { Program, ProgramCallbacksImpl, CleanUpSharedObjectLookupTable } from 'sda';
-import { initDefaultPlatforms } from './sda/platform';
-import { initDefaultImageAnalysers } from './sda/image-analyser';
+import { initDefaultPlatforms } from 'repo/platform';
+import { initDefaultImageAnalysers } from 'repo/image-analyser';
 import { objectChangeEmitter, ObjectChangeType } from './eventEmitter';
-import { toId } from './utils/common';
+import { toId } from 'utils/common';
 
 export let program: Program;
 

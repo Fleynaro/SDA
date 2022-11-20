@@ -1,5 +1,5 @@
 import { invokerFactory } from '../utils';
-import { PlatformController } from '../../api/platform';
+import { PlatformController } from 'api/platform';
 
 const invoke = invokerFactory('Platform');
 

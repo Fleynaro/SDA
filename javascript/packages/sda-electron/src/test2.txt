@@ -8,7 +8,7 @@ import { Program } from "sda";
 import { Context } from "sda-core/context";
 import { PcodeParser, PcodePrinter } from "sda-core/p-code";
 import { VoidDataType } from "sda-core/data-type";
-import api from '../types/api';
+import api from '../typapi';
 import platform from "sda-platform-x86";
 const platformX86 = platform.New(true);
 const context = Context.New(platformX86);

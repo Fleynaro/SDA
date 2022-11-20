@@ -1,9 +1,9 @@
 import { AddressSpace } from 'sda-core/address-space';
 import { SdaObject } from 'sda-core/object';
-import { AddressSpace as AddressSpaceDTO } from '../../api/address-space';
-import { ObjectId } from '../../api/common';
+import { AddressSpace as AddressSpaceDTO } from 'api/address-space';
+import { ObjectId } from 'api/common';
 import { changeContextObject, toContextObjectDTO } from './context-object';
-import { toHash, toId } from '../../utils/common';
+import { toHash, toId } from 'utils/common';
 import { toImage } from './image';
 
 export const toAddressSpaceDTO = (addressSpace: AddressSpace): AddressSpaceDTO => {

@@ -1,6 +1,6 @@
 import { invokerFactory } from '../utils';
-import { ProjectController } from '../../api/project';
-import { ObjectId, ObjectChangeType } from '../../api/common';
+import { ProjectController } from 'api/project';
+import { ObjectId, ObjectChangeType } from 'api/common';
 
 const invoke = invokerFactory('Project');
 

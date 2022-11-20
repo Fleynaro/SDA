@@ -1,11 +1,11 @@
 import BaseController from './base-controller';
-import { ImageController, Image as ImageDTO } from '../api/image';
+import { ImageController, Image as ImageDTO } from 'api/image';
 import { Image, FileImageRW } from 'sda-core/image';
 import { StandartSymbolTable } from 'sda-core/symbol-table';
-import { ObjectId } from '../api/common';
+import { ObjectId } from 'api/common';
 import { toImageDTO, toImage, changeImage } from './dto/image';
 import { toContext } from './dto/context';
-import { findImageAnalyser } from '../sda/image-analyser';
+import { findImageAnalyser } from 'repo/image-analyser';
 
 class ImageControllerImpl extends BaseController implements ImageController {
   constructor() {

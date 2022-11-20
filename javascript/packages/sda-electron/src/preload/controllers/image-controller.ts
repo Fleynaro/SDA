@@ -1,6 +1,6 @@
 import { invokerFactory } from '../utils';
-import { ImageController, Image } from '../../api/image';
-import { ObjectId } from '../../api/common';
+import { ImageController, Image } from 'api/image';
+import { ObjectId } from 'api/common';
 
 const invoke = invokerFactory('Image');
 

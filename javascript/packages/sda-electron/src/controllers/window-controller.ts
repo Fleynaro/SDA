@@ -1,7 +1,7 @@
 import { dialog, IpcMainInvokeEvent } from 'electron';
 import BaseController from './base-controller';
-import { createWindow, BrowserWindowConstructorOptions } from '../utils/window';
-import { WindowName, WindowInfo, WindowController, ProjectWindowPayload } from './../api/window';
+import { createWindow, BrowserWindowConstructorOptions } from 'utils/window';
+import { WindowName, WindowInfo, WindowController, ProjectWindowPayload } from 'api/window';
 
 class WindowControllerImpl extends BaseController implements WindowController {
   private windowInfos: Map<number, WindowInfo> = new Map();

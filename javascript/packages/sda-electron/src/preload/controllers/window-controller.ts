@@ -1,5 +1,5 @@
 import { invokerFactory } from '../utils';
-import { WindowClientController, ProjectWindowPayload } from '../../api/window';
+import { WindowClientController, ProjectWindowPayload } from 'api/window';
 
 const invoke = invokerFactory('Window');
 
