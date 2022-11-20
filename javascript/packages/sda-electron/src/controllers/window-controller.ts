@@ -37,6 +37,7 @@ class WindowControllerImpl extends BaseController implements WindowController {
       {
         width: 800,
         height: 600,
+        autoHideMenuBar: true,
       },
       payload as any,
     );

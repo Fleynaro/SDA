@@ -9,6 +9,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import { Resizable } from 're-resizable';
 import Tabs from 'components/Tabs';
 import { LeftNavBar, Images } from './LeftNav';
+import { ProjectMenuBar } from './ProjectMenuBar';
+import { ProjectProvider } from 'providers/ProjectProvider';
 import { SdaContextProvider } from 'providers/SdaContextProvider';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -43,74 +45,82 @@ export default function ProjectWindow({ projectId }: ProjectWindowPayload) {
   }
 
   return (
-    <SdaContextProvider contextId={project.contextId}>
-      <Box sx={{ display: 'flex', height: '100vh' }}>
-        <Box sx={{ display: 'flex' }}>
-          <Box
-            sx={{ width: 40, backgroundColor: emphasize(theme.palette.background.default, 0.1) }}
-          >
-            <LeftNavBar
-              items={[
-                { key: 'images', icon: <SegmentIcon /> },
-                { key: 'search', icon: <SearchIcon /> },
-              ]}
-              selected={leftNavItem}
-              onSelect={(key) => setLeftNavItem(key)}
-            />
-          </Box>
-          <Resizable
-            defaultSize={{
-              width: 150,
-              height: 'auto',
-            }}
-            enable={{ right: true }}
-            handleClasses={{
-              right: classes.resizable,
-            }}
-          >
-            <Box
-              sx={{
-                backgroundColor: emphasize(theme.palette.background.default, 0.05),
-                height: '100%',
-              }}
-            >
-              {leftNavItem === 'images' && <Images onSelect={() => console.log('hi!')} />}
-              {leftNavItem === 'search' && <div>Search</div>}
+    <ProjectProvider projectId={project.id}>
+      <SdaContextProvider contextId={project.contextId}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+          <ProjectMenuBar />
+          <Box sx={{ display: 'flex', flexGrow: 1 }}>
+            <Box sx={{ display: 'flex' }}>
+              <Box
+                sx={{
+                  width: 40,
+                  backgroundColor: emphasize(theme.palette.background.default, 0.1),
+                }}
+              >
+                <LeftNavBar
+                  items={[
+                    { key: 'images', icon: <SegmentIcon /> },
+                    { key: 'search', icon: <SearchIcon /> },
+                  ]}
+                  selected={leftNavItem}
+                  onSelect={(key) => setLeftNavItem(key)}
+                />
+              </Box>
+              <Resizable
+                defaultSize={{
+                  width: 150,
+                  height: 'auto',
+                }}
+                enable={{ right: true }}
+                handleClasses={{
+                  right: classes.resizable,
+                }}
+              >
+                <Box
+                  sx={{
+                    backgroundColor: emphasize(theme.palette.background.default, 0.05),
+                    height: '100%',
+                  }}
+                >
+                  {leftNavItem === 'images' && <Images onSelect={() => console.log('hi!')} />}
+                  {leftNavItem === 'search' && <div>Search</div>}
+                </Box>
+              </Resizable>
             </Box>
-          </Resizable>
-        </Box>
-        <Box sx={{ display: 'flex', flexGrow: 1 }}>
-          <Box sx={{ flexGrow: 1 }}>
-            <Tabs
-              tabs={tabs}
-              onChange={(tabs) => setTabs(tabs)}
-              selected={activeTab}
-              onSelect={(tab) => setActiveTab(tab.key)}
-            />
-            {activeTab === '1' && <div>Core</div>}
-            {activeTab === '2' && <div>SomeLibrary</div>}
-          </Box>
-          <Resizable
-            defaultSize={{
-              width: 200,
-              height: 'auto',
-            }}
-            enable={{ left: true }}
-            handleClasses={{
-              left: classes.resizable,
-            }}
-          >
-            <Box
-              sx={{
-                backgroundColor: emphasize(theme.palette.background.default, 0.05),
-                height: '100%',
-              }}
-            >
-              Right panel
+            <Box sx={{ display: 'flex', flexGrow: 1 }}>
+              <Box sx={{ flexGrow: 1 }}>
+                <Tabs
+                  tabs={tabs}
+                  onChange={(tabs) => setTabs(tabs)}
+                  selected={activeTab}
+                  onSelect={(tab) => setActiveTab(tab.key)}
+                />
+                {activeTab === '1' && <div>Core</div>}
+                {activeTab === '2' && <div>SomeLibrary</div>}
+              </Box>
+              <Resizable
+                defaultSize={{
+                  width: 200,
+                  height: 'auto',
+                }}
+                enable={{ left: true }}
+                handleClasses={{
+                  left: classes.resizable,
+                }}
+              >
+                <Box
+                  sx={{
+                    backgroundColor: emphasize(theme.palette.background.default, 0.05),
+                    height: '100%',
+                  }}
+                >
+                  Right panel
+                </Box>
+              </Resizable>
             </Box>
-          </Resizable>
+          </Box>
         </Box>
-      </Box>
-    </SdaContextProvider>
+      </SdaContextProvider>
+    </ProjectProvider>
   );
 }
