@@ -1,7 +1,8 @@
-import m from './import';
+import m from './module';
+import { Platform } from 'sda-core/platform';
 
-const {
-    PlatformX86
-} = m;
+export declare class PlatformX86 extends Platform {
+    static New(is64Version: boolean): PlatformX86;
+}
 
-export default PlatformX86;
+module.exports = m;

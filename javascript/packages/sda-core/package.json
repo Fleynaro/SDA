@@ -8,7 +8,7 @@
   },
   "typesVersions": {
     "*": {
-      "*": ["./types/*.d.ts"]
+      "*": ["./dist/*.d.ts"]
     }
   },
   "scripts": {

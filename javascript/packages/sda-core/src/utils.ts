@@ -13,7 +13,7 @@ export interface ISerializable {
     deserialize(data: object): void;
 }
 
-export abstract class AbstractPrinter {
+export declare abstract class AbstractPrinter {
     readonly output: string;
 
     flush(): void;

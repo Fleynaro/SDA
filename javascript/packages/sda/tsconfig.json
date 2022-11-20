@@ -2,8 +2,7 @@
   "extends": "../../tsconfig.packages.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "dist",
-    "sourceMap": true,
+    "outDir": "dist"
   },
   "include": ["src", "build"],
   "exclude": ["dist"],

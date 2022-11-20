@@ -24,8 +24,7 @@ target_include_directories(
 target_link_libraries(
     bindings-js PUBLIC
     bindings-js-shared
-    ${CMAKE_JS_LIB}
-    magic_enum::magic_enum)
+    ${CMAKE_JS_LIB})
 
 target_compile_options(
     bindings-js PUBLIC /bigobj /w44275 /w44251)

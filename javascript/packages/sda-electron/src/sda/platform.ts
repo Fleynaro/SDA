@@ -1,5 +1,5 @@
-import { Platform } from 'sda-core/platform';
-import PlatformX86 from 'sda-platform-x86';
+import { Platform, Register } from 'sda-core/platform';
+import { PlatformX86 } from 'sda-platform-x86';
 
 let platforms: { [name: string]: Platform } = {};
 
@@ -24,12 +24,10 @@ export const initDefaultPlatforms = () => {
 
     const pl = findPlatform('x86');
     const repo = pl.registerRepository;
-    setTimeout(() => {
-        console.log('1) reg id = ', repo.getRegisterId('rax'));
-    }, 1000);
-    setTimeout(() => {
-        const pl = findPlatform('x86');
-        const repo = pl.registerRepository;
-        console.log('2) reg id = ', repo.getRegisterId('rax'));
-    }, 6000);
+    const regId = repo.getRegisterId('rax');
+    const type = repo.getRegisterType(regId);
+    if (type === Register.Type.Generic) {
+        console.log('rax is a generic register');
+    }
+    console.log('1) reg id = ', regId, ' type = ', Register.Type[type]);
 }
