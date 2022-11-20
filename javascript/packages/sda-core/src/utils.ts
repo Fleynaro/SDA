@@ -3,32 +3,32 @@ export type Hash = number;
 export type Offset = number;
 
 export interface IIdentifiable {
-    readonly hashId: Hash;
-    readonly className: string;
+  readonly hashId: Hash;
+  readonly className: string;
 }
 
 export interface ISerializable {
-    serialize(): object;
+  serialize(): object;
 
-    deserialize(data: object): void;
+  deserialize(data: object): void;
 }
 
 export declare abstract class AbstractPrinter {
-    readonly output: string;
+  readonly output: string;
 
-    flush(): void;
+  flush(): void;
 
-    setTabSize(tabSize: number): void;
+  setTabSize(tabSize: number): void;
 
-    setParentPrinter(parent: AbstractPrinter): void;
+  setParentPrinter(parent: AbstractPrinter): void;
 
-    startBlock(): void;
+  startBlock(): void;
 
-    endBlock(): void;
+  endBlock(): void;
 
-    startCommenting(): void;
+  startCommenting(): void;
 
-    endCommenting(): void;
+  endCommenting(): void;
 
-    newLine(): void;
+  newLine(): void;
 }

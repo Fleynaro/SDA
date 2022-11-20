@@ -1,11 +1,10 @@
 import { invokerFactory } from '../utils';
 import { PlatformController } from '../../api/platform';
 
-const invoke = invokerFactory("Platform");
+const invoke = invokerFactory('Platform');
 
 const PlatformControllerImpl: PlatformController = {
-    getPlatforms: () =>
-        invoke("getPlatforms"),
+  getPlatforms: () => invoke('getPlatforms'),
 };
 
 export default PlatformControllerImpl;

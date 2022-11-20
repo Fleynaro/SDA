@@ -1,101 +1,102 @@
 import m from './module';
-import { Context } from "./context";
-import { ContextObject } from "./object";
-import { SymbolTable } from "./symbol-table";
-import { Offset, ISerializable } from "./utils";
+import { Context } from './context';
+import { ContextObject } from './object';
+import { SymbolTable } from './symbol-table';
+import { Offset, ISerializable } from './utils';
 
 export declare abstract class ImageRW {
-    read(offset: Offset, size: number): Uint8Array;
+  read(offset: Offset, size: number): Uint8Array;
 
-    write(offset: Offset, data: Uint8Array): void;
+  write(offset: Offset, data: Uint8Array): void;
 }
 
 export declare class VectorImageRW extends ImageRW {
-    readonly size: number;
-    readonly data: Uint8Array;
+  readonly size: number;
+  readonly data: Uint8Array;
 
-    static New(): VectorImageRW;
+  static New(): VectorImageRW;
 }
 
 export declare class FileImageRW extends ImageRW implements ISerializable {
-    readonly size: number;
+  readonly size: number;
 
-    readFile(): void;
+  readFile(): void;
 
-    saveFile(): void;
+  saveFile(): void;
 
-    serialize(): object;
+  serialize(): object;
 
-    deserialize(data: object): void;
+  deserialize(data: object): void;
 
-    static New(pathToImgFile: string): FileImageRW;
+  static New(pathToImgFile: string): FileImageRW;
 }
 
 export declare abstract class ImageAnalyser implements ISerializable {
-    readonly name: string;
-    baseAddress: Offset;
-    entryPointOffset: Offset;
-    imageSections: ImageSection[];
+  readonly name: string;
+  baseAddress: Offset;
+  entryPointOffset: Offset;
+  imageSections: ImageSection[];
 
-    analyse(): void;
+  analyse(): void;
 
-    serialize(): object;
+  serialize(): object;
 
-    deserialize(data: object): void;
+  deserialize(data: object): void;
 }
 
 export declare class PEImageAnalyser extends ImageAnalyser {
-    static New(): PEImageAnalyser;
+  static New(): PEImageAnalyser;
 }
 
 export declare class ImageSection {
-    readonly name: string;
-    readonly type: string;
-    readonly relVirtualAddress: number;
-    readonly virtualSize: number;
-    readonly pointerToRawData: number;
-    readonly minOffset: Offset;
-    readonly maxOffset: Offset;
+  readonly name: string;
+  readonly type: string;
+  readonly relVirtualAddress: number;
+  readonly virtualSize: number;
+  readonly pointerToRawData: number;
+  readonly minOffset: Offset;
+  readonly maxOffset: Offset;
 
-    contains(offset: Offset): boolean;
+  contains(offset: Offset): boolean;
 
-    toOffset(imageFileOffset: Offset): Offset;
+  toOffset(imageFileOffset: Offset): Offset;
 
-    toImageFileOffset(offset: Offset): Offset;
+  toImageFileOffset(offset: Offset): Offset;
 }
 
 export declare class Image extends ContextObject {
-    readonly rw: ImageRW;
-    readonly baseAddress: Offset;
-    readonly entryPointOffset: Offset;
-    readonly imageSections: ImageSection[];
-    readonly size: number;
-    readonly globalSymbolTable: SymbolTable;
-    //readonly pcodeGraph: PcodeGraph;
+  readonly rw: ImageRW;
+  readonly baseAddress: Offset;
+  readonly entryPointOffset: Offset;
+  readonly imageSections: ImageSection[];
+  readonly size: number;
+  readonly globalSymbolTable: SymbolTable;
+  //readonly pcodeGraph: PcodeGraph;
 
-    contains(offset: Offset): boolean;
+  contains(offset: Offset): boolean;
 
-    toOffset(imageFileOffset: Offset): Offset;
+  toOffset(imageFileOffset: Offset): Offset;
 
-    getImageSectionAt(offset: Offset): ImageSection;
+  getImageSectionAt(offset: Offset): ImageSection;
 
-    analyse(): void;
+  analyse(): void;
 
-    static New(
-        context: Context,
-        rw: ImageRW,
-        analyser: ImageAnalyser,
-        name: string,
-        globalSymbolTable: SymbolTable): Image;
+  static New(
+    context: Context,
+    rw: ImageRW,
+    analyser: ImageAnalyser,
+    name: string,
+    globalSymbolTable: SymbolTable,
+  ): Image;
 }
 
 module.exports = {
-	...module.exports,
-    ImageRW: m.ImageRW,
-    VectorImageRW: m.VectorImageRW,
-    FileImageRW: m.FileImageRW,
-    ImageAnalyser: m.ImageAnalyser,
-    PEImageAnalyser: m.PEImageAnalyser,
-    ImageSection: m.ImageSection,
-    Image: m.Image
+  ...module.exports,
+  ImageRW: m.ImageRW,
+  VectorImageRW: m.VectorImageRW,
+  FileImageRW: m.FileImageRW,
+  ImageAnalyser: m.ImageAnalyser,
+  PEImageAnalyser: m.PEImageAnalyser,
+  ImageSection: m.ImageSection,
+  Image: m.Image,
 };

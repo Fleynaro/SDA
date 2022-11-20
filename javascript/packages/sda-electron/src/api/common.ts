@@ -1,19 +1,19 @@
 export type ObjectId = {
-    key: string;
-    className: string;
-}
+  key: string;
+  className: string;
+};
 
 export interface Identifiable {
-    id: ObjectId;
+  id: ObjectId;
 }
 
 export const CmpObjectIds = (a: ObjectId, b: ObjectId) =>
-    a.key === b.key && a.className === b.className;
+  a.key === b.key && a.className === b.className;
 
 export enum ObjectChangeType {
-    Create,
-    Update,
-    Delete
+  Create,
+  Update,
+  Delete,
 }
 
 export type Offset = number;
@@ -21,5 +21,5 @@ export type Offset = number;
 export let window_: any = null;
 
 export const setWindow = (win: any) => {
-    window_ = win;
-}
+  window_ = win;
+};

@@ -1,7 +1,0 @@
-import { getWindowApi } from 'sda-electron/api/window';
-import { getEventApi } from 'sda-electron/api/event';
-import { getProjectApi } from 'sda-electron/api/project';
-
-export const windowApi = getWindowApi(window);
-export const projectApi = getProjectApi(window);
-export const eventApi = getEventApi(window);

@@ -1,3 +1,3 @@
-import initControllers from "./controllers";
+import initControllers from './controllers';
 
 initControllers();

@@ -11,9 +11,9 @@ export let addressSpaceController: AddressSpaceController;
 export let imageController: ImageController;
 
 export const initControllers = () => {
-    windowController = new WindowController();
-    projectController = new ProjectController();
-    platformController = new PlatformController();
-    addressSpaceController = new AddressSpaceController();
-    imageController = new ImageController();
+  windowController = new WindowController();
+  projectController = new ProjectController();
+  platformController = new PlatformController();
+  addressSpaceController = new AddressSpaceController();
+  imageController = new ImageController();
 };

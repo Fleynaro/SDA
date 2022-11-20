@@ -7,12 +7,12 @@ import AddressSpaceController from './address-space-controller';
 import ImageController from './image-controller';
 
 const initControllers = () => {
-    contextBridge.exposeInMainWorld('eventApi', EventController);
-    contextBridge.exposeInMainWorld('windowApi', WindowController);
-    contextBridge.exposeInMainWorld('projectApi', ProjectController);
-    contextBridge.exposeInMainWorld('platformApi', PlatformController);
-    contextBridge.exposeInMainWorld('addressSpaceApi', AddressSpaceController);
-    contextBridge.exposeInMainWorld('imageApi', ImageController);
+  contextBridge.exposeInMainWorld('eventApi', EventController);
+  contextBridge.exposeInMainWorld('windowApi', WindowController);
+  contextBridge.exposeInMainWorld('projectApi', ProjectController);
+  contextBridge.exposeInMainWorld('platformApi', PlatformController);
+  contextBridge.exposeInMainWorld('addressSpaceApi', AddressSpaceController);
+  contextBridge.exposeInMainWorld('imageApi', ImageController);
 };
 
 export default initControllers;

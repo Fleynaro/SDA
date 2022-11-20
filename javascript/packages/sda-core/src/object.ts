@@ -1,27 +1,27 @@
 import m from './module';
-import { IIdentifiable, ISerializable, Hash } from "./utils";
+import { IIdentifiable, ISerializable, Hash } from './utils';
 
-export declare abstract class Object implements IIdentifiable, ISerializable {
-    readonly hashId: Hash;
-    readonly className: string;
-    readonly id: string;
-    
-    setTemporary(temporary: boolean): void;
+export declare abstract class SdaObject implements IIdentifiable, ISerializable {
+  readonly hashId: Hash;
+  readonly className: string;
+  readonly id: string;
 
-    serialize(): object;
+  setTemporary(temporary: boolean): void;
 
-    deserialize(data: object): void;
+  serialize(): object;
 
-    static Get(hashId: Hash): Object;
+  deserialize(data: object): void;
+
+  static Get(hashId: Hash): SdaObject;
 }
 
-export declare abstract class ContextObject extends Object {
-    name: string;
-    comment: string;
+export declare abstract class ContextObject extends SdaObject {
+  name: string;
+  comment: string;
 }
 
 module.exports = {
-	...module.exports,
-    Object: m.Object,
-    ContextObject: m.ContextObject
+  ...module.exports,
+  SdaObject: m.SdaObject,
+  ContextObject: m.ContextObject,
 };

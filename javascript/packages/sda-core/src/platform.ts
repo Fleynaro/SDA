@@ -1,112 +1,112 @@
 import m from './module';
-import { SignatureDataType } from "./data-type";
-import { Hash, IIdentifiable } from "./utils";
+import { SignatureDataType } from './data-type';
+import { Hash, IIdentifiable } from './utils';
 
 export declare abstract class Platform implements IIdentifiable {
-    readonly hashId: Hash;
-    readonly className: string;
-    readonly name: string;
-    readonly pointerSize: number;
-    readonly registerRepository: RegisterRepository;
-    readonly callingConventions: CallingConvention[];
+  readonly hashId: Hash;
+  readonly className: string;
+  readonly name: string;
+  readonly pointerSize: number;
+  readonly registerRepository: RegisterRepository;
+  readonly callingConventions: CallingConvention[];
 
-    getPcodeDecoder(): PcodeDecoder;
+  getPcodeDecoder(): PcodeDecoder;
 
-    getInstructionDecoder(): InstructionDecoder;
+  getInstructionDecoder(): InstructionDecoder;
 
-    static Get(hashId: Hash): Platform;
+  static Get(hashId: Hash): Platform;
 }
 
 export namespace Register {
-    export enum Type {
-        Virtual,
-        Generic,
-        StackPointer,
-        InstructionPointer,
-        Flag,
-        Vector
-    }
+  export enum Type {
+    Virtual,
+    Generic,
+    StackPointer,
+    InstructionPointer,
+    Flag,
+    Vector,
+  }
 }
 
 export declare abstract class RegisterRepository implements IIdentifiable {
-    readonly hashId: Hash;
-    readonly className: string;
+  readonly hashId: Hash;
+  readonly className: string;
 
-    getRegisterName(regId: number): string;
+  getRegisterName(regId: number): string;
 
-    getRegisterId(regName: string): number;
+  getRegisterId(regName: string): number;
 
-    getRegisterType(regId: number): Register.Type;
+  getRegisterType(regId: number): Register.Type;
 
-    getRegisterFlagName(flagMask: number): string;
+  getRegisterFlagName(flagMask: number): string;
 
-    getRegisterFlagIndex(flagName: string): number;
-    
-    static Get(hashId: Hash): RegisterRepository;
+  getRegisterFlagIndex(flagName: string): number;
+
+  static Get(hashId: Hash): RegisterRepository;
 }
 
 export declare abstract class PcodeDecoder implements IIdentifiable {
-    readonly hashId: Hash;
-    readonly className: string;
-    readonly instructionLength: number;
+  readonly hashId: Hash;
+  readonly className: string;
+  readonly instructionLength: number;
 
-    decode(offset: number, bytes: number[]): void;
+  decode(offset: number, bytes: number[]): void;
 
-    static Get(hashId: Hash): PcodeDecoder;
+  static Get(hashId: Hash): PcodeDecoder;
 }
 
 export declare abstract class InstructionDecoder implements IIdentifiable {
-    readonly hashId: Hash;
-    readonly className: string;
-    decode(bytes: number[]): void;
+  readonly hashId: Hash;
+  readonly className: string;
+  decode(bytes: number[]): void;
 
-    static Get(hashId: Hash): InstructionDecoder;
+  static Get(hashId: Hash): InstructionDecoder;
 }
 
 export namespace CallingConvention {
-    export enum UseType {
-        Read,
-        Write,
-    }
+  export enum UseType {
+    Read,
+    Write,
+  }
 
-    export type Storage = {
-        useType: UseType;
-        registerId: number;
-        offset: number;
-    }
+  export type Storage = {
+    useType: UseType;
+    registerId: number;
+    offset: number;
+  };
 
-    export enum StorageType {
-        None,
-        Return,
-        Parameter,
-    }
+  export enum StorageType {
+    None,
+    Return,
+    Parameter,
+  }
 
-    export type StorageInfo = {
-        type: StorageType;
-        paramIdx: number;
-        isStoringFloat: boolean;
-    }
+  export type StorageInfo = {
+    type: StorageType;
+    paramIdx: number;
+    isStoringFloat: boolean;
+  };
 
-    export type Map = {
-        //[storage: CallingConvention.Storage]: CallingConvention.StorageInfo
-    }
+  export type Map = {
+    //[storage: CallingConvention.Storage]: CallingConvention.StorageInfo
+  };
 }
 
 export declare abstract class CallingConvention implements IIdentifiable {
-    readonly hashId: Hash;
-    readonly className: string;
-    readonly name: string;
+  readonly hashId: Hash;
+  readonly className: string;
+  readonly name: string;
 
-    getStorages(signatureDt: SignatureDataType): CallingConvention.Map;
+  getStorages(signatureDt: SignatureDataType): CallingConvention.Map;
 
-    static Get(hashId: Hash): CallingConvention;
+  static Get(hashId: Hash): CallingConvention;
 }
 
 export declare class CustomCallingConvention extends CallingConvention {
-    static New(storages: CallingConvention.Map): CustomCallingConvention;
+  static New(storages: CallingConvention.Map): CustomCallingConvention;
 }
 
 module.exports = {
-    ...module.exports,
-    CustomCallingConvention: m.CustomCallingConvention
+  ...module.exports,
+  CustomCallingConvention: m.CustomCallingConvention,
 };
