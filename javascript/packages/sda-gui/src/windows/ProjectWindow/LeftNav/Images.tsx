@@ -6,13 +6,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useEffect, useList, useObject, useToggleList } from 'hooks';
 import { useSdaContextId } from 'providers/SdaContextProvider';
-import {
-  useContextMenu,
-  ContextMenuProps,
-  ContextMenu,
-  ContextMenuList,
-  ContextMenuItem,
-} from 'components/ContextMenu';
+import { useContextMenu, ContextMenuProps, ContextMenu, MenuNode } from 'components/Menu';
 import { DialogRef, Dialog } from 'components/Dialog';
 import { CreateImageForm, CreateImageFormRef } from 'components/CreateImageForm';
 import {
@@ -33,27 +27,24 @@ const AddressSpaceContextMenu = ({
   return (
     <>
       <ContextMenu {...props}>
-        <ContextMenuList>
-          <ContextMenuItem
-            onClick={() => {
-              createImageDialogRef.current?.open(
-                <Box component="form" noValidate>
-                  <CreateImageForm ref={createImageFormRef} addressSpace={addressSpace} />
-                </Box>,
-                <Button
-                  onClick={() => {
-                    createImageFormRef.current?.create();
-                    createImageDialogRef.current?.close();
-                  }}
-                >
-                  Create
-                </Button>,
-              );
-            }}
-          >
-            Create Image
-          </ContextMenuItem>
-        </ContextMenuList>
+        <MenuNode
+          label="Create Image"
+          onClick={() => {
+            createImageDialogRef.current?.open(
+              <Box component="form" noValidate>
+                <CreateImageForm ref={createImageFormRef} addressSpace={addressSpace} />
+              </Box>,
+              <Button
+                onClick={() => {
+                  createImageFormRef.current?.create();
+                  createImageDialogRef.current?.close();
+                }}
+              >
+                Create
+              </Button>,
+            );
+          }}
+        />
       </ContextMenu>
       <Dialog title="New Image" showCancelButton={true} ref={createImageDialogRef} />
     </>

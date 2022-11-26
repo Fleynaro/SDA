@@ -1,5 +1,4 @@
-import { ListItemIcon, ListItemText, Paper, Typography } from '@mui/material';
-import { MenuBarTopItem, MenuBar, MenuBarList, MenuBarItem } from 'components/MenuBar';
+import { MenuBar, MenuBarItem, MenuNode } from 'components/Menu';
 import { useProjectId } from 'providers/ProjectProvider';
 import FileOpenIcon from '@mui/icons-material/FileOpen';
 
@@ -11,24 +10,22 @@ export default function ProjectMenuBar(props: ProjectMenuBarProps) {
   const projectId = useProjectId();
   return (
     <MenuBar>
-      <MenuBarTopItem label="File">
-        <Paper sx={{ width: 200, maxWidth: '100%' }}>
-          <MenuBarList>
-            <MenuBarItem>
-              <ListItemIcon>
-                <FileOpenIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Open</ListItemText>
-              <Typography variant="body2" color="text.secondary">
-                Ctrl + O
-              </Typography>
-            </MenuBarItem>
-          </MenuBarList>
-        </Paper>
-      </MenuBarTopItem>
-      <MenuBarTopItem label="Edit">6</MenuBarTopItem>
-      <MenuBarTopItem label="View">7</MenuBarTopItem>
-      <MenuBarTopItem label="Help">8</MenuBarTopItem>
+      <MenuBarItem label="File">
+        <MenuNode label="Open" icon={<FileOpenIcon />} hotkey="Ctrl + O" />
+        <MenuNode label="List 1">
+          <MenuNode label="Open 1" icon={<FileOpenIcon />} hotkey="Ctrl + O" />
+          <MenuNode label="Open 2" icon={<FileOpenIcon />} hotkey="Ctrl + O" />
+        </MenuNode>
+        <MenuNode label="List 2">
+          <MenuNode label="List 2-1">
+            <MenuNode label="Open 10" icon={<FileOpenIcon />} />
+          </MenuNode>
+          <MenuNode label="Open 3" icon={<FileOpenIcon />} hotkey="Ctrl + O" />
+        </MenuNode>
+      </MenuBarItem>
+      <MenuBarItem label="Edit">6</MenuBarItem>
+      <MenuBarItem label="View">7</MenuBarItem>
+      <MenuBarItem label="Help">8</MenuBarItem>
     </MenuBar>
   );
 }
