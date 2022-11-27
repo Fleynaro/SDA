@@ -8,6 +8,11 @@ export declare class Project implements IIdentifiable {
   readonly program: Program;
   readonly path: string;
   readonly context: Context;
+  readonly canBeSaved: boolean;
+
+  load(): void;
+
+  save(): void;
 
   static New(program: Program, path: string, context: Context): Project;
 
@@ -21,7 +26,7 @@ export declare abstract class ProgramCallbacks {
 }
 
 export declare class ProgramCallbacksImpl extends ProgramCallbacks {
-  oldCallbacks: ProgramCallbacks;
+  prevCallbacks: ProgramCallbacks;
 
   onProjectAdded: (project: Project) => void;
 

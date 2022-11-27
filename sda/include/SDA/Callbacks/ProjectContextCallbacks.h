@@ -6,15 +6,12 @@ namespace sda
     class Project;
     class ObjectChange;
 
-    class ContextCallbacks : public Context::Callbacks
+    class ProjectContextCallbacks : public Context::Callbacks
     {
-        std::list<std::unique_ptr<Callbacks>> m_callbacks;
         Project* m_project;
+        std::shared_ptr<Callbacks> m_prevCallbacks;
     public:
-        ContextCallbacks(Context* context, Project* project);
-
-        // Add a callback to the list
-        void add(std::unique_ptr<Callbacks> callback);
+        ProjectContextCallbacks(Project* project, std::shared_ptr<Callbacks> prevCallbacks);
 
         // Called when an object is added to the context
         void onObjectAdded(Object* obj) override;

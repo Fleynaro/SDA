@@ -225,12 +225,12 @@ void testGeneral() {
     project->getChangeChain()->undo();
 
     auto ctx2 = new Context(std::make_unique<PlatformX86>(true));
-    auto oldCallbacks = ctx2->getCallbacks();
+    auto prevCallbacks = ctx2->getCallbacks();
     ctx2->setCallbacks(std::make_shared<Context::Callbacks>());
     Factory factory(ctx2);
     Loader loader(project->getDatabase(), &factory);
     loader.load();
-    ctx2->setCallbacks(oldCallbacks);
+    ctx2->setCallbacks(prevCallbacks);
 
     int a = 5;
 }

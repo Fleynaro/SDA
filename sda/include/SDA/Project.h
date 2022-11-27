@@ -2,7 +2,6 @@
 #include <filesystem>
 #include "SDA/Core/ContextInclude.h"
 #include "SDA/Factory.h"
-#include "SDA/Callbacks/ContextCallbacks.h"
 #include "SDA/Database/Database.h"
 #include "SDA/Database/Transaction.h"
 #include "SDA/Change.h"
@@ -35,9 +34,6 @@ namespace sda
         // Get factory
         Factory* getFactory();
 
-        // Get context callbacks
-        std::shared_ptr<ContextCallbacks> getContextCallbacks() const;
-
         // Get database of the project
         Database* getDatabase() const;
 
@@ -46,5 +42,11 @@ namespace sda
 
         // Get change chain of the project
         ChangeChain* getChangeChain() const;
+
+        void load();
+
+        void save();
+
+        bool canBeSaved() const;
     };
 };

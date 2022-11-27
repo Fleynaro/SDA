@@ -1,5 +1,7 @@
 #include "SDA/Program.h"
 #include "SDA/Database/Schema.h"
+#include "SDA/Database/Loader.h"
+#include "SDA/Callbacks/ProjectContextCallbacks.h"
 
 using namespace sda;
 
@@ -12,10 +14,14 @@ Project::Project(Program* program, const std::filesystem::path& path, std::uniqu
 
     program->m_projects.push_back(std::unique_ptr<Project>(this));
     program->getCallbacks()->onProjectAdded(this);
-    m_factory = std::make_unique<Factory>(context.get());
+    m_factory = std::make_unique<Factory>(getContext());
     m_database = std::make_unique<Database>(m_path / "storage.db", GetSchema());
-    m_transaction = std::make_unique<Transaction>(m_database.get());
+    m_transaction = std::make_unique<Transaction>(getDatabase());
     m_changeChain = std::make_unique<ChangeChain>();
+    
+    // set project callbacks
+    auto projectCallbacks = std::make_shared<ProjectContextCallbacks>(this, getContext()->getCallbacks());
+    getContext()->setCallbacks(projectCallbacks);
 }
 
 Program* Project::getProgram() const {
@@ -34,10 +40,6 @@ Factory* Project::getFactory() {
     return m_factory.get();
 }
 
-std::shared_ptr<ContextCallbacks> Project::getContextCallbacks() const {
-    return std::dynamic_pointer_cast<ContextCallbacks>(m_context->getCallbacks());
-}
-
 Database* Project::getDatabase() const {
     return m_database.get();
 }
@@ -48,4 +50,22 @@ Transaction* Project::getTransaction() const {
 
 ChangeChain* Project::getChangeChain() const {
     return m_changeChain.get();
+}
+
+void Project::load() {
+    getDatabase()->init();
+    auto ctx = getContext();
+    auto prevCallbacks = ctx->getCallbacks();
+    ctx->setCallbacks(std::make_shared<Context::Callbacks>());
+    Loader loader(getDatabase(), getFactory());
+    loader.load();
+    ctx->setCallbacks(prevCallbacks);
+}
+
+void Project::save() {
+    getTransaction()->commit();
+}
+
+bool Project::canBeSaved() const {
+    return !getTransaction()->isEmpty();
 }

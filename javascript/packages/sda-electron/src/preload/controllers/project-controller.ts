@@ -20,6 +20,10 @@ const ProjectControllerImpl: ProjectController = {
     invoke('createProject', path, platformName),
 
   deleteProject: (path: string) => invoke('deleteProject', path),
+
+  saveProject: (id: ObjectId) => invoke('saveProject', id),
+
+  canProjectBeSaved: (id: ObjectId) => invoke('canProjectBeSaved', id),
 };
 
 export default ProjectControllerImpl;

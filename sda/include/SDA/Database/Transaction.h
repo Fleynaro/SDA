@@ -30,5 +30,7 @@ namespace sda
 
         // Commit the transaction
         void commit();
+
+        bool isEmpty() const;
     };
 };

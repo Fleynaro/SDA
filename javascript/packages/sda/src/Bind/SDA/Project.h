@@ -17,6 +17,9 @@ namespace sda::bind
                 .property("program", &Project::getProgram)
                 .property("path", &Project::getPath)
                 .property("context", &Project::getContext)
+                .property("canBeSaved", &Project::canBeSaved)
+                .method("load", &Project::load)
+                .method("save", &Project::save)
                 .static_method("New", &New);
             ObjectLookupTableRaw::Register(cl);
             RegisterClassName(cl, "Project");

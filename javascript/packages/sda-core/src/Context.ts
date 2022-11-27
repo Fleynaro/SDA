@@ -13,7 +13,7 @@ export declare abstract class ContextCallbacks {
 }
 
 export declare class ContextCallbacksImpl extends ContextCallbacks {
-  oldCallbacks: ContextCallbacks;
+  prevCallbacks: ContextCallbacks;
 
   onObjectAdded: (object: SdaObject) => void;
 

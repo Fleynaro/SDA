@@ -1,6 +1,9 @@
+import { useState } from 'react';
+import { useCallback, useEffect } from 'hooks';
 import { MenuBar, MenuBarItem, MenuNode } from 'components/Menu';
 import { useProjectId } from 'providers/ProjectProvider';
-import FileOpenIcon from '@mui/icons-material/FileOpen';
+import SaveIcon from '@mui/icons-material/Save';
+import { getProjectApi } from 'sda-electron/api/project';
 
 interface ProjectMenuBarProps {
   f?: number;
@@ -8,24 +11,47 @@ interface ProjectMenuBarProps {
 
 export default function ProjectMenuBar(props: ProjectMenuBarProps) {
   const projectId = useProjectId();
+  const [canBeSaved, setCanBeSaved] = useState(false);
+
+  const onMenuOpen = useCallback(async () => {
+    setCanBeSaved(await getProjectApi().canProjectBeSaved(projectId));
+  }, [projectId]);
+
+  const fileSave = useCallback(() => {
+    getProjectApi().saveProject(projectId);
+  }, [projectId]);
+
   return (
-    <MenuBar>
+    <MenuBar onMenuOpen={onMenuOpen}>
       <MenuBarItem label="File">
-        <MenuNode label="Open" icon={<FileOpenIcon />} hotkey="Ctrl + O" />
-        <MenuNode label="List 1">
-          <MenuNode label="Open 1" icon={<FileOpenIcon />} hotkey="Ctrl + O" />
-          <MenuNode label="Open 2" icon={<FileOpenIcon />} hotkey="Ctrl + O" />
-        </MenuNode>
-        <MenuNode label="List 2">
-          <MenuNode label="List 2-1">
-            <MenuNode label="Open 10" icon={<FileOpenIcon />} />
-          </MenuNode>
-          <MenuNode label="Open 3" icon={<FileOpenIcon />} hotkey="Ctrl + O" />
-        </MenuNode>
+        <MenuNode
+          label="Save"
+          icon={<SaveIcon />}
+          hotkey="Ctrl + S"
+          onClick={fileSave}
+          disabled={!canBeSaved}
+        />
       </MenuBarItem>
-      <MenuBarItem label="Edit">6</MenuBarItem>
-      <MenuBarItem label="View">7</MenuBarItem>
-      <MenuBarItem label="Help">8</MenuBarItem>
     </MenuBar>
   );
 }
+
+/*
+  <MenuBarItem label="File 2">
+      <MenuNode label="Open" hotkey="Ctrl + O" />
+      <MenuNode label="List 1">
+        <MenuNode label="Open 1" hotkey="Ctrl + O" />
+        <MenuNode label="Open 2" hotkey="Ctrl + O" />
+      </MenuNode>
+      <MenuNode label="List 2">
+        <MenuNode label="List 2-1">
+          <MenuNode label="Open 10" />
+        </MenuNode>
+        <MenuNode label="Open 3" hotkey="Ctrl + O" />
+      </MenuNode>
+    </MenuBarItem>
+    <MenuBarItem label="Edit">6</MenuBarItem>
+    <MenuBarItem label="View">7</MenuBarItem>
+    <MenuBarItem label="Help">8</MenuBarItem>
+  </MenuBar>
+*/

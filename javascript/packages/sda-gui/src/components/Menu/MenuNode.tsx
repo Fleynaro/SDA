@@ -14,14 +14,14 @@ export interface MenuNodeProps {
   icon?: ReactNode;
   hotkey?: string;
   onClick?: () => void;
+  disabled?: boolean;
   children?: ReactNode;
 }
 
-export const MenuNode = ({ label, icon, hotkey, onClick, children }: MenuNodeProps) => {
+export const MenuNode = ({ label, icon, hotkey, onClick, disabled, children }: MenuNodeProps) => {
   const [opened, setOpened] = useState(false);
   const [requestClosed, setRequestClosed] = useState(false);
   const [requestOpened, setRequestOpened] = useState(false);
-  const [menu, setMenu] = useState<ReactNode>();
   const [anchorEl, setAnchorEl] = useState<HTMLElement>();
 
   useEffect(() => {
@@ -42,12 +42,12 @@ export const MenuNode = ({ label, icon, hotkey, onClick, children }: MenuNodePro
             if (children) {
               setOpened(true);
               setAnchorEl(e.currentTarget);
-              setMenu(children);
             }
           }}
           onMouseLeave={() => {
             setTimeout(() => setRequestClosed(true));
           }}
+          disabled={disabled}
         >
           {icon && <ListItemIcon>{icon}</ListItemIcon>}
           <ListItemText>{label}</ListItemText>
@@ -68,7 +68,7 @@ export const MenuNode = ({ label, icon, hotkey, onClick, children }: MenuNodePro
           <MenuList>{children}</MenuList>
         </Paper>
       )}
-      {menu && opened && (
+      {children && opened && (
         <Popper
           open={opened}
           anchorEl={anchorEl}
@@ -77,7 +77,7 @@ export const MenuNode = ({ label, icon, hotkey, onClick, children }: MenuNodePro
           onMouseLeave={() => setRequestOpened(false)}
         >
           <Paper sx={{ width: 200, maxWidth: '100%' }}>
-            <MenuList>{menu}</MenuList>
+            <MenuList>{children}</MenuList>
           </Paper>
         </Popper>
       )}

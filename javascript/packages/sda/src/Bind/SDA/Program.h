@@ -9,19 +9,19 @@ namespace sda::bind
         class CallbacksJsImpl : public Callbacks
         {
         public:
-            std::shared_ptr<Callbacks> m_oldCallbacks;
+            std::shared_ptr<Callbacks> m_prevCallbacks;
             Callback m_onProjectAdded;
             Callback m_onProjectRemoved;
             
             void onProjectAdded(Project* project) override {
-                m_oldCallbacks->onProjectAdded(project);
+                m_prevCallbacks->onProjectAdded(project);
                 if (m_onProjectAdded.isDefined()) {
                     m_onProjectAdded.call(project);
                 }
             }
 
             void onProjectRemoved(Project* project) override {
-                m_oldCallbacks->onProjectRemoved(project);
+                m_prevCallbacks->onProjectRemoved(project);
                 if (m_onProjectRemoved.isDefined()) {
                     m_onProjectRemoved.call(project);
                 }
@@ -47,7 +47,7 @@ namespace sda::bind
                 auto cl = NewClass<CallbacksJsImpl, v8pp::shared_ptr_traits>(module);
                 cl
                     .inherit<Callbacks>()
-                    .var("oldCallbacks", &CallbacksJsImpl::m_oldCallbacks)
+                    .var("prevCallbacks", &CallbacksJsImpl::m_prevCallbacks)
                     .static_method("New", &New);
                 Callback::Register(cl, "onProjectAdded", &CallbacksJsImpl::m_onProjectAdded);
                 Callback::Register(cl, "onProjectRemoved", &CallbacksJsImpl::m_onProjectRemoved);

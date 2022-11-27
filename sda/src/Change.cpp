@@ -56,6 +56,8 @@ void ChangeChain::newChangeList() {
 }
 
 ChangeList* ChangeChain::getChangeList() const {
+    if (m_changePointsIt == m_changePoints.end())
+        return nullptr;
     if (m_isUndoing) {
         if (m_changePointsIt->isVisited)
             return nullptr;

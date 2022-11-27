@@ -52,3 +52,7 @@ void Transaction::commit() {
 
     m_objects.clear();
 }
+
+bool Transaction::isEmpty() const {
+    return m_objects.empty();
+}

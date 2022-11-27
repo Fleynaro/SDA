@@ -9,27 +9,27 @@ namespace sda::bind
         class CallbacksJsImpl : public Callbacks
         {
         public:
-            std::shared_ptr<Callbacks> m_oldCallbacks;
+            std::shared_ptr<Callbacks> m_prevCallbacks;
             Callback m_onObjectAdded;
             Callback m_onObjectModified;
             Callback m_onObjectRemoved;
             
             void onObjectAdded(Object* obj) override {
-                m_oldCallbacks->onObjectAdded(obj);
+                m_prevCallbacks->onObjectAdded(obj);
                 if (m_onObjectAdded.isDefined()) {
                     m_onObjectAdded.call(obj);
                 }
             }
 
             void onObjectModified(Object* obj) override {
-                m_oldCallbacks->onObjectModified(obj);
+                m_prevCallbacks->onObjectModified(obj);
                 if (m_onObjectModified.isDefined()) {
                     m_onObjectModified.call(obj);
                 }
             }
 
             void onObjectRemoved(Object* obj) override {
-                m_oldCallbacks->onObjectRemoved(obj);
+                m_prevCallbacks->onObjectRemoved(obj);
                 if (m_onObjectRemoved.isDefined()) {
                     m_onObjectRemoved.call(obj);
                 }
@@ -56,7 +56,7 @@ namespace sda::bind
                 auto cl = NewClass<CallbacksJsImpl, v8pp::shared_ptr_traits>(module);
                 cl
                     .inherit<Callbacks>()
-                    .var("oldCallbacks", &CallbacksJsImpl::m_oldCallbacks)
+                    .var("prevCallbacks", &CallbacksJsImpl::m_prevCallbacks)
                     .static_method("New", &New);
                 Callback::Register(cl, "onObjectAdded", &CallbacksJsImpl::m_onObjectAdded);
                 Callback::Register(cl, "onObjectModified", &CallbacksJsImpl::m_onObjectModified);

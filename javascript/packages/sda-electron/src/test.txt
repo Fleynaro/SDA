@@ -11,7 +11,7 @@ console.log("reg = " + platformX86.registerRepository.getRegisterName(90));
 
 function test1() {
     const callbacks = core.ContextCallbacksImpl.New();
-    callbacks.oldCallbacks = context.callbacks;
+    callbacks.prevCallbacks = context.callbacks;
     callbacks.onObjectAdded = (obj) => {
         
         console.log("Object added (id = " + obj.id + ")");

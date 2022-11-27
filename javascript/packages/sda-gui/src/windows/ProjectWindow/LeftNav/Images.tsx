@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { Box, Button, IconButton, Input } from '@mui/material';
+import { useState, useRef, useCallback } from 'react';
+import { Box, Button, IconButton, Input, Link, Tooltip, Typography } from '@mui/material';
 import { TreeView, TreeItem } from '@mui/lab';
 import AddIcon from '@mui/icons-material/Add';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -46,7 +46,11 @@ const AddressSpaceContextMenu = ({
           }}
         />
       </ContextMenu>
-      <Dialog title="New Image" showCancelButton={true} ref={createImageDialogRef} />
+      <Dialog
+        title={`New Image for ${addressSpace.name}`}
+        showCancelButton={true}
+        ref={createImageDialogRef}
+      />
     </>
   );
 };
@@ -104,17 +108,17 @@ export default function Images({ onSelect }: ImagesProps) {
   const [newAddressSpaceName, setNewAddressSpaceName] = useState<string | null>(null);
   const [addressSpace, setAddressSpace] = useState<AddressSpace>();
   const addressSpaceContextMenu = useContextMenu();
+  const showCreateAddressSpace = useCallback(() => {
+    setNewAddressSpaceName('');
+  }, []);
   return (
     <>
       <Box sx={{ display: 'flex', flexDirection: 'row', height: '25px' }}>
-        <IconButton
-          onClick={() => {
-            setNewAddressSpaceName('');
-          }}
-          sx={{ width: '25px' }}
-        >
-          <AddIcon />
-        </IconButton>
+        <Tooltip title="Create a new address space" placement="bottom-end">
+          <IconButton onClick={showCreateAddressSpace} sx={{ width: '25px' }}>
+            <AddIcon />
+          </IconButton>
+        </Tooltip>
         <Input
           placeholder="Filter by name"
           value={filterName}
@@ -122,53 +126,76 @@ export default function Images({ onSelect }: ImagesProps) {
           sx={{ width: '100%', height: '25px' }}
         />
       </Box>
-      <TreeView
-        defaultCollapseIcon={<ExpandMoreIcon />}
-        defaultExpandIcon={<ChevronRightIcon />}
-        expanded={expandedAddressSpaces}
-        defaultSelected={['new']}
-      >
-        {newAddressSpaceName !== null && (
-          <TreeItem
-            nodeId="new"
-            label={
-              <Input
-                autoFocus
-                placeholder="Enter name"
-                value={newAddressSpaceName}
-                sx={{ width: '100%', height: '20px' }}
-                onChange={(e) => setNewAddressSpaceName(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    getAddressSpaceApi().createAddressSpace(contextId, newAddressSpaceName);
-                    setNewAddressSpaceName(null);
-                  }
-                }}
-                onBlur={() => setNewAddressSpaceName(null)}
-              />
-            }
-          />
-        )}
-        {addressSpacesWithImages.map(({ addressSpace, images }) => (
-          <TreeItem
-            key={addressSpace.id.key}
-            nodeId={addressSpace.id.key}
-            label={addressSpace.name}
-            onContextMenu={(event) => {
-              event.preventDefault();
-              addressSpaceContextMenu.open(event);
-              setAddressSpace(addressSpace);
-            }}
-            onClick={() => toggleExpandedAddressSpaces(addressSpace.id.key)}
+      {addressSpacesWithImages.length > 0 || newAddressSpaceName !== null ? (
+        <>
+          <TreeView
+            defaultCollapseIcon={<ExpandMoreIcon />}
+            defaultExpandIcon={<ChevronRightIcon />}
+            expanded={expandedAddressSpaces}
+            defaultSelected={['new']}
           >
-            {images.map((image) => (
-              <ImageTreeItem key={image.id.key} imageId={image.id} onSelect={onSelect} />
+            {newAddressSpaceName !== null && (
+              <TreeItem
+                nodeId="new"
+                label={
+                  <Input
+                    autoFocus
+                    placeholder="Enter name"
+                    value={newAddressSpaceName}
+                    sx={{ width: '100%', height: '20px' }}
+                    onChange={(e) => setNewAddressSpaceName(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        getAddressSpaceApi().createAddressSpace(contextId, newAddressSpaceName);
+                        setNewAddressSpaceName(null);
+                      }
+                    }}
+                    onBlur={() => setNewAddressSpaceName(null)}
+                  />
+                }
+              />
+            )}
+            {addressSpacesWithImages.map(({ addressSpace, images }) => (
+              <TreeItem
+                key={addressSpace.id.key}
+                nodeId={addressSpace.id.key}
+                label={addressSpace.name}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  addressSpaceContextMenu.open(event);
+                  setAddressSpace(addressSpace);
+                }}
+                onClick={() => toggleExpandedAddressSpaces(addressSpace.id.key)}
+              >
+                {images.length > 0 ? (
+                  images.map((image) => (
+                    <ImageTreeItem key={image.id.key} imageId={image.id} onSelect={onSelect} />
+                  ))
+                ) : (
+                  <Tooltip title="Right click to create an image">
+                    <Typography variant="body1" sx={{ textAlign: 'center' }}>
+                      No images here.
+                    </Typography>
+                  </Tooltip>
+                )}
+              </TreeItem>
             ))}
-          </TreeItem>
-        ))}
-      </TreeView>
-      {addressSpace && (
-        <AddressSpaceContextMenu {...addressSpaceContextMenu.props} addressSpace={addressSpace} />
+          </TreeView>
+          {addressSpace && (
+            <AddressSpaceContextMenu
+              {...addressSpaceContextMenu.props}
+              addressSpace={addressSpace}
+            />
+          )}
+        </>
+      ) : (
+        <Typography variant="body1" sx={{ textAlign: 'center' }}>
+          No address spaces.{' '}
+          <Link href="#" onClick={showCreateAddressSpace}>
+            Create
+          </Link>{' '}
+          one.
+        </Typography>
       )}
     </>
   );

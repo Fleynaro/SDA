@@ -22,7 +22,7 @@ export const initApp = () => {
   program = Program.New();
   {
     const callbacks = ProgramCallbacksImpl.New();
-    callbacks.oldCallbacks = program.callbacks;
+    callbacks.prevCallbacks = program.callbacks;
     callbacks.onProjectAdded = (project) =>
       objectChangeEmitter()(toId(project), ObjectChangeType.Create);
     callbacks.onProjectRemoved = (project) =>

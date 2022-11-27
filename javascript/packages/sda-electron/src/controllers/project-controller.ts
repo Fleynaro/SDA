@@ -32,6 +32,8 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
     this.register('createProject', this.createProject);
     this.register('openProject', this.openProject);
     this.register('deleteProject', this.deleteProject);
+    this.register('saveProject', this.saveProject);
+    this.register('canProjectBeSaved', this.canProjectBeSaved);
   }
 
   public async getRecentProjects(): Promise<RecentProjectDTO[]> {
@@ -81,7 +83,7 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
     const context = Context.New(platform);
     {
       const callbacks = ContextCallbacksImpl.New();
-      callbacks.oldCallbacks = context.callbacks;
+      callbacks.prevCallbacks = context.callbacks;
       callbacks.onObjectAdded = (obj) => objectChangeEmitter()(toId(obj), ObjectChangeType.Create);
       callbacks.onObjectModified = (obj) =>
         objectChangeEmitter()(toId(obj), ObjectChangeType.Update);
@@ -90,6 +92,7 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
       context.callbacks = callbacks;
     }
     const project = Project.New(program, path, context);
+    project.load();
     const projectDTO = toProjectDTO(project);
     await this.updateRecentProjectsWithPath(path, ObjectChangeType.Create);
     return projectDTO;
@@ -109,6 +112,16 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
     }
     await deleteFile(path);
     await this.updateRecentProjectsWithPath(path, ObjectChangeType.Delete);
+  }
+
+  public async saveProject(id: ObjectId): Promise<void> {
+    const project = toProject(id);
+    project.save();
+  }
+
+  public async canProjectBeSaved(id: ObjectId): Promise<boolean> {
+    const project = toProject(id);
+    return project.canBeSaved;
   }
 }
 

@@ -1,4 +1,4 @@
-import { ReactNode, useState, createContext, useCallback, useContext } from 'react';
+import { ReactNode, useState, createContext, useCallback, useContext, useEffect } from 'react';
 import { Button, Box, emphasize, Theme, Popper, ClickAwayListener } from '@mui/material';
 import { makeStyles } from '@mui/styles';
 import { MenuNode } from './MenuNode';
@@ -25,8 +25,8 @@ const useStyles = makeStyles((theme: Theme) => ({
 }));
 
 export interface MenuBarContextValue {
-  opened: boolean;
-  openMenu: (menu: ReactNode, anchorEl: HTMLElement) => void;
+  opened: string;
+  setOpened: (opened: string) => void;
 }
 
 const MenuBarContext = createContext<MenuBarContextValue | null>(null);
@@ -39,58 +39,63 @@ export interface MenuBarItemProps {
 export const MenuBarItem = ({ label, children }: MenuBarItemProps) => {
   const classes = useStyles();
   const menuBarCtx = useContext(MenuBarContext);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement>();
+  const isOpened = menuBarCtx?.opened === label;
+
+  const openMenu = useCallback((anchorEl: HTMLElement) => {
+    setAnchorEl(anchorEl);
+    menuBarCtx?.setOpened(label);
+  }, []);
+
+  const closeMenu = useCallback(() => {
+    menuBarCtx?.setOpened('');
+  }, []);
+
   return (
     <>
       <Button
         className={classes.menuTopBtn}
         variant="contained"
         onClick={(e) => {
-          menuBarCtx?.openMenu(children, e.currentTarget);
+          openMenu(e.currentTarget);
         }}
         onMouseEnter={(e) => {
           if (menuBarCtx?.opened) {
-            menuBarCtx?.openMenu(children, e.currentTarget);
+            openMenu(e.currentTarget);
           }
         }}
       >
         {label}
       </Button>
+      {isOpened && (
+        <ClickAwayListener onClickAway={closeMenu}>
+          <Popper open={isOpened} anchorEl={anchorEl} onClick={closeMenu} placement="bottom-start">
+            <MenuNode>{children}</MenuNode>
+          </Popper>
+        </ClickAwayListener>
+      )}
     </>
   );
 };
 
 export interface MenuBarProps {
+  onMenuOpen?: () => void;
   children?: ReactNode;
 }
 
-export const MenuBar = ({ children }: MenuBarProps) => {
+export const MenuBar = ({ onMenuOpen, children }: MenuBarProps) => {
   const classes = useStyles();
-  const [opened, setOpened] = useState(false);
-  const [menu, setMenu] = useState<ReactNode>();
-  const [anchorEl, setAnchorEl] = useState<HTMLElement>();
-
-  const openMenu = useCallback((menu: ReactNode, anchorEl: HTMLElement) => {
-    setOpened(true);
-    setAnchorEl(anchorEl);
-    setMenu(menu);
-  }, []);
-
-  const closeMenu = useCallback(() => {
-    setOpened(false);
-  }, []);
-
+  const [opened, setOpened] = useState('');
+  useEffect(() => {
+    if (opened) {
+      onMenuOpen?.();
+    }
+  }, [opened]);
   return (
     <>
       <Box className={classes.menu}>
-        <MenuBarContext.Provider value={{ opened, openMenu }}>{children}</MenuBarContext.Provider>
+        <MenuBarContext.Provider value={{ opened, setOpened }}>{children}</MenuBarContext.Provider>
       </Box>
-      {children && opened && (
-        <ClickAwayListener onClickAway={closeMenu}>
-          <Popper open={opened} anchorEl={anchorEl} placement="bottom-start">
-            <MenuNode>{menu}</MenuNode>
-          </Popper>
-        </ClickAwayListener>
-      )}
     </>
   );
 };

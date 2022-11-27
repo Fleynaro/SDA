@@ -28,6 +28,10 @@ export interface ProjectController {
   createProject(path: string, platformName: string): Promise<void>;
 
   deleteProject(path: string): Promise<void>;
+
+  saveProject(id: ObjectId): Promise<void>;
+
+  canProjectBeSaved(id: ObjectId): Promise<boolean>;
 }
 
 export const getProjectApi = () => {
