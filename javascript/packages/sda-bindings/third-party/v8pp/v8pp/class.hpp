@@ -563,7 +563,7 @@ public:
 		using namespace detail;
 		detail::object_registry<Traits>& class_info = classes::find<Traits>(isolate, type_id<T>());
 		v8::Local<v8::Object> wrapped_object = class_info.find_v8_object(Traits::const_pointer_cast(obj));
-		if (wrapped_object.IsEmpty() && class_info.auto_wrap_object_ptrs())
+		if (obj != nullptr && wrapped_object.IsEmpty() && class_info.auto_wrap_object_ptrs())
 		{
 			wrapped_object = class_info.wrap_derivative_object(Traits::const_pointer_cast(obj), false);
 		}

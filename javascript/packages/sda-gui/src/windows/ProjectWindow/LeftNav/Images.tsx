@@ -189,13 +189,15 @@ export default function Images({ onSelect }: ImagesProps) {
           )}
         </>
       ) : (
-        <Typography variant="body1" sx={{ textAlign: 'center' }}>
-          No address spaces.{' '}
-          <Link href="#" onClick={showCreateAddressSpace}>
-            Create
-          </Link>{' '}
-          one.
-        </Typography>
+        filterName.length === 0 && (
+          <Typography variant="body1" sx={{ textAlign: 'center' }}>
+            No address spaces.{' '}
+            <Link href="#" onClick={showCreateAddressSpace}>
+              Create
+            </Link>{' '}
+            one.
+          </Typography>
+        )
       )}
     </>
   );

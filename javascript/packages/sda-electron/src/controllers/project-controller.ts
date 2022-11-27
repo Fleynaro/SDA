@@ -81,6 +81,7 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
     const config = await loadJSON<ProjectConfig>(projectConfigFilePath(path));
     const platform = findPlatform(config.platformName);
     const context = Context.New(platform);
+    const loadCallbacks = context.callbacks;
     {
       const callbacks = ContextCallbacksImpl.New();
       callbacks.prevCallbacks = context.callbacks;
@@ -92,7 +93,13 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
       context.callbacks = callbacks;
     }
     const project = Project.New(program, path, context);
-    project.load();
+    {
+      // Not all callbacks can be used during load!
+      const prevCallbacks = project.context.callbacks;
+      project.context.callbacks = loadCallbacks;
+      project.load();
+      project.context.callbacks = prevCallbacks;
+    }
     const projectDTO = toProjectDTO(project);
     await this.updateRecentProjectsWithPath(path, ObjectChangeType.Create);
     return projectDTO;

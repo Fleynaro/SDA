@@ -15,7 +15,7 @@ namespace sda::bind
                 .method("setTemporary", &Object::setTemporary);
             ObjectLookupTableRaw::Register(cl);
             RegisterClassName(cl, "Object");
-            module.class_("Object", cl);
+            module.class_("SdaObject", cl);
         }
     };
 

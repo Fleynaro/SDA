@@ -54,12 +54,8 @@ ChangeChain* Project::getChangeChain() const {
 
 void Project::load() {
     getDatabase()->init();
-    auto ctx = getContext();
-    auto prevCallbacks = ctx->getCallbacks();
-    ctx->setCallbacks(std::make_shared<Context::Callbacks>());
     Loader loader(getDatabase(), getFactory());
     loader.load();
-    ctx->setCallbacks(prevCallbacks);
 }
 
 void Project::save() {
