@@ -26,7 +26,7 @@ export function useCallback<T extends Function>(callback: T, deps: React.Depende
         crash(e);
       }
     },
-    [callback, ...deps],
+    deps,
   ) as unknown as T;
 }
 
@@ -38,7 +38,7 @@ export function useMemo<T>(factory: () => T, deps: React.DependencyList) {
     } catch (e) {
       crash(e);
     }
-  }, [factory, ...deps]);
+  }, deps);
 }
 
 export function useImperativeHandle<T, R extends T>(

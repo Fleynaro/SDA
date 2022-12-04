@@ -3,13 +3,16 @@ import { useCallback } from './reactWrappedHooks';
 import { getEventApi } from 'sda-electron/api/event';
 import { Identifiable, ObjectId, CmpObjectIds, ObjectChangeType } from 'sda-electron/api/common';
 
-export default function useObject<T extends Identifiable>(dataSource: () => Promise<T>) {
+export default function useObject<T extends Identifiable>(
+  dataSource: () => Promise<T>,
+  deps: React.DependencyList = [],
+) {
   const [object, setObject] = useState<T | null>(null);
 
   const loadObject = useCallback(async () => {
     const data = await dataSource();
     setObject(data);
-  }, [dataSource]);
+  }, deps);
 
   const updateObject = useCallback(
     async (changedObjId: ObjectId, changeType: ObjectChangeType) => {
@@ -27,7 +30,7 @@ export default function useObject<T extends Identifiable>(dataSource: () => Prom
 
   useEffect(() => {
     loadObject();
-  }, []);
+  }, [loadObject]);
 
   useEffect(() => {
     const unsubscribe = getEventApi().subscribeToObjectChangeEvent(updateObject);

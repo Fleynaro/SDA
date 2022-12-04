@@ -1,22 +1,81 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Tabs as MuiTabs, Tab, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { DragDropContext, Draggable, DragStart, DropResult } from 'react-beautiful-dnd';
 import Droppable from '../Droppable';
 
-type TabInfo = {
+export interface TabInfo {
   key: string;
-  label: string;
-};
+  label: string | React.ReactNode;
+}
 
-interface TabsProps {
+export interface TabInfoWithValue<T> extends TabInfo {
+  value: T;
+}
+
+export interface TabsProps {
   tabs: TabInfo[];
   onChange: (tabs: TabInfo[]) => void;
   selected: string;
   onSelect: (tab: TabInfo) => void;
 }
 
-export default function Tabs({ tabs, onChange, selected, onSelect }: TabsProps) {
+export interface TabsPropsHook<T> {
+  open: (tab: TabInfoWithValue<T>) => void;
+  rename: (key: string, label: string) => void;
+  tabs: TabInfoWithValue<T>[];
+  activeTab?: TabInfoWithValue<T>;
+  props: TabsProps;
+}
+
+export const useTabs = <T,>(): TabsPropsHook<T> => {
+  const [activeTab, setActiveTab] = useState<TabInfoWithValue<T>>();
+  const [tabs, setTabs] = useState<TabInfoWithValue<T>[]>([]);
+
+  const open = useCallback((tab: TabInfoWithValue<T>) => {
+    setTabs((prevTabs) => {
+      if (prevTabs.find((t) => t.key === tab.key)) {
+        return prevTabs;
+      }
+      return [...prevTabs, tab];
+    });
+    setActiveTab(tab);
+  }, []);
+
+  const rename = useCallback((key: string, label: string) => {
+    setTabs((prevTabs) => {
+      return prevTabs.map((t) => (t.key === key ? { ...t, label } : t));
+    });
+  }, []);
+
+  const onChange = useCallback((tabs: TabInfo[]) => {
+    setTabs(tabs as TabInfoWithValue<T>[]);
+    if (tabs.length === 0) {
+      setActiveTab(undefined);
+    }
+  }, []);
+
+  const onSelect = useCallback((tab: TabInfo) => {
+    setActiveTab(tab as TabInfoWithValue<T>);
+  }, []);
+
+  const props: TabsProps = {
+    tabs,
+    onChange,
+    selected: activeTab?.key || '',
+    onSelect,
+  };
+
+  return {
+    open,
+    rename,
+    tabs,
+    activeTab,
+    props,
+  };
+};
+
+export const Tabs = ({ tabs, onChange, selected, onSelect }: TabsProps) => {
   const selectedTabIdx = useMemo(
     () => tabs.findIndex((tab) => tab.key === selected),
     [tabs, selected],
@@ -103,4 +162,4 @@ export default function Tabs({ tabs, onChange, selected, onSelect }: TabsProps) 
       </Droppable>
     </DragDropContext>
   );
-}
+};

@@ -6,13 +6,14 @@ import { Identifiable, ObjectId, CmpObjectIds, ObjectChangeType } from 'sda-elec
 export default function useList<T extends Identifiable>(
   dataSource: () => Promise<T[]>,
   className?: string,
+  deps: React.DependencyList = [],
 ) {
   const [items, setItems] = useState<T[]>([]);
 
   const loadItems = useCallback(async () => {
     const newItems = await dataSource();
     setItems(newItems);
-  }, [dataSource]);
+  }, deps);
 
   const updateItems = useCallback(
     async (changedItemId: ObjectId, changeType: ObjectChangeType) => {
@@ -27,7 +28,7 @@ export default function useList<T extends Identifiable>(
 
   useEffect(() => {
     loadItems();
-  }, []);
+  }, [loadItems]);
 
   useEffect(() => {
     const unsubscribe = getEventApi().subscribeToObjectChangeEvent(updateItems);

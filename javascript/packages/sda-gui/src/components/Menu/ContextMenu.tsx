@@ -1,11 +1,5 @@
 import { useState, useCallback, ReactNode } from 'react';
-import {
-  PopperPlacementType,
-  PopoverPosition,
-  Popper,
-  ClickAwayListener,
-  Box,
-} from '@mui/material';
+import { PopperPlacementType, PopoverPosition, Popper, ClickAwayListener } from '@mui/material';
 import { MenuNode } from './MenuNode';
 
 export interface ContextMenuProps {
