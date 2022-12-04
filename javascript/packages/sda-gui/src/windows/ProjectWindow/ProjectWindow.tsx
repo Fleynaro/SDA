@@ -107,9 +107,9 @@ export default function ProjectWindow({ projectId }: ProjectWindowPayload) {
               </Resizable>
             </Box>
             <Box sx={{ display: 'flex', flexGrow: 1 }}>
-              <Box sx={{ flexGrow: 1 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                 <Tabs {...tabs.props} />
-                <BoxSwitch value={tabs.activeTab?.key}>
+                <BoxSwitch value={tabs.activeTab?.key} sx={{ flexGrow: 1 }}>
                   {tabs.tabs.map((tab) => (
                     <BoxSwitchCase key={tab.key} value={tab.key}>
                       <ImageContent imageId={tab.value.imageId} />
