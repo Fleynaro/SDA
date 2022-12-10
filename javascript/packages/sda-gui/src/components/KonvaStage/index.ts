@@ -1,1 +1,0 @@
-export { KonvaStage } from './KonvaStage';

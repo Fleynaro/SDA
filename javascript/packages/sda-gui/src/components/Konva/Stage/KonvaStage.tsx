@@ -1,6 +1,25 @@
 import { Box, SxProps, Theme } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Stage } from 'react-konva';
+
+type StageSize = {
+  width: number;
+  height: number;
+};
+
+export interface KonvaStageContextValue {
+  size: StageSize;
+}
+
+const KonvaStageContext = createContext<KonvaStageContextValue | null>(null);
+
+export function useKonvaStage() {
+  const context = useContext(KonvaStageContext);
+  if (!context) {
+    throw new Error('useKonvaStage must be used within a KonvaStage');
+  }
+  return context;
+}
 
 export interface KonvaStageProps {
   children?: React.ReactNode;
@@ -9,7 +28,7 @@ export interface KonvaStageProps {
 
 export function KonvaStage({ children, sx }: KonvaStageProps) {
   const stageContainerRef = useRef<HTMLDivElement>(null);
-  const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
+  const [stageSize, setStageSize] = useState<StageSize>({ width: 0, height: 0 });
 
   useEffect(() => {
     const updater = setInterval(() => {
@@ -28,7 +47,9 @@ export function KonvaStage({ children, sx }: KonvaStageProps) {
   return (
     <Box sx={sx} ref={stageContainerRef}>
       <Stage width={stageSize.width} height={stageSize.height} style={{ position: 'absolute' }}>
-        {children}
+        <KonvaStageContext.Provider value={{ size: stageSize }}>
+          {children}
+        </KonvaStageContext.Provider>
       </Stage>
     </Box>
   );
