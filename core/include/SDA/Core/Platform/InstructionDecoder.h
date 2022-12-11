@@ -8,7 +8,7 @@ namespace sda
     class InstructionDecoder
     {
     public:
-        virtual void decode(const std::vector<uint8_t>& data) = 0;
+        virtual void decode(const std::vector<uint8_t>& data, bool tokenize = true) = 0;
 
         const Instruction* getDecodedInstruction() const;
         

@@ -4,6 +4,7 @@
 #include "Bind/SDA/Change.h"
 #include "Bind/SDA/Factory.h"
 #include "Bind/SDA/Database.h"
+#include "Bind/SDA/Utils.h"
 
 using namespace sda::bind;
 
@@ -12,7 +13,8 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
         ProgramBind::Init,
         ProgramCallbacksBind::Init,
         ProjectBind::Init,
-        ObjectLookupTableShared::Init
+        ObjectLookupTableShared::Init,
+        UtilsBind::Init,
     });
 }
 

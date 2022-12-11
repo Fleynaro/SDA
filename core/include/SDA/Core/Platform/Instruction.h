@@ -8,6 +8,13 @@ namespace sda
 {
     // This instruction is used for printing
     struct Instruction {
+        enum Type
+        {
+            None,
+            ConditionalBranch,
+            UnconditionalBranch,
+        };
+
         struct Token {
             enum Type
             {
@@ -20,8 +27,10 @@ namespace sda
             std::string text;
         };
         
-        std::list<Token> m_tokens;
-        int m_length;
+        Type type = None;
+        int length = 0;
+        size_t jmpOffsetDelta = 0;
+        std::list<Token> tokens;
 
         class Printer : public utils::AbstractPrinter {
         public:

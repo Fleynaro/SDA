@@ -32,6 +32,8 @@ namespace sda
         // Set the comment of the object
         void setComment(const std::string& comment);
 
+        Context* getContext() const;
+
         void serialize(boost::json::object& data) const override;
 
         void deserialize(boost::json::object& data) override;

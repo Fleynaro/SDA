@@ -3,7 +3,7 @@
 using namespace sda;
 
 void Instruction::Printer::print(const Instruction* instruction) const {
-    for (const auto& token : instruction->m_tokens) {
+    for (const auto& token : instruction->tokens) {
         printToken(token.text, PARENT + token.type);
     }
 }

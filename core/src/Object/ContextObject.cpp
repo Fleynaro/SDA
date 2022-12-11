@@ -36,6 +36,10 @@ void ContextObject::setComment(const std::string& comment) {
     notifyModified(Object::ModState::After);
 }
 
+Context* ContextObject::getContext() const {
+    return m_context;
+}
+
 void ContextObject::serialize(boost::json::object& data) const {
     Object::serialize(data);
     data["name"] = m_name;

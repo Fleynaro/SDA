@@ -11,6 +11,6 @@ namespace sda::platform
     public:
         InstructionDecoderX86(std::unique_ptr<ZydisDecoder> decoder, std::unique_ptr<ZydisFormatter> formatter);
 
-        void decode(const std::vector<uint8_t>& data) override;
+        void decode(const std::vector<uint8_t>& data, bool tokenize = true) override;
     };
 };
