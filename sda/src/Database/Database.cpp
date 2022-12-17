@@ -1,4 +1,5 @@
 #include "SDA/Database/Database.h"
+#include <sstream>
 
 using namespace sda;
 

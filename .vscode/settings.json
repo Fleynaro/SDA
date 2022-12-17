@@ -96,7 +96,9 @@
         "*.rh": "cpp",
         "*.def": "cpp",
         "any": "cpp",
-        "unordered_set": "cpp"
+        "unordered_set": "cpp",
+        "condition_variable": "cpp",
+        "source_location": "cpp"
     },
 
     "cmake.debugConfig": {

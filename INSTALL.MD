@@ -17,7 +17,7 @@ Change `YOUR_VCPKG_DIR` to the path of your vcpkg folder.
 git submodule update --init
 mkdir build
 cd build
-cmake -A x64 .. "-DCMAKE_TOOLCHAIN_FILE=YOUR_VCPKG_DIR\scripts\buildsystems\vcpkg.cmake"
+cmake -T host=x64 -A x64 .. "-DCMAKE_TOOLCHAIN_FILE=YOUR_VCPKG_DIR\scripts\buildsystems\vcpkg.cmake"
 cd ..
 cmake-js configure --runtime=electron --runtime-version=20.2.0
 cmake --build .

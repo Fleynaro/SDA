@@ -28,7 +28,7 @@ namespace sda::bind
                 .inherit<Object>()
                 .property("name", &ContextObject::getName, &ContextObject::setName)
                 .property("comment", &ContextObject::getComment, &ContextObject::setComment)
-                .property("context", &ContextObject::getContext)
+                .property("context", &ContextObject::getContext);
             module.class_("ContextObject", cl);
         }
     };
