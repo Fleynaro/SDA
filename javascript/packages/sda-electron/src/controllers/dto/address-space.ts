@@ -1,5 +1,5 @@
-import { AddressSpace } from 'sda-core/address-space';
-import { SdaObject } from 'sda-core/object';
+import { AddressSpace } from 'sda-core';
+import { SdaObject } from 'sda-core';
 import { AddressSpace as AddressSpaceDTO } from 'api/address-space';
 import { ObjectId } from 'api/common';
 import { changeContextObject, toContextObjectDTO } from './context-object';

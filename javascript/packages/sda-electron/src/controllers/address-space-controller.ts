@@ -2,7 +2,7 @@ import BaseController from './base-controller';
 import { toAddressSpaceDTO, toAddressSpace, changeAddressSpace } from './dto/address-space';
 import { AddressSpaceController, AddressSpace as AddressSpaceDTO } from 'api/address-space';
 import { ObjectId } from 'api/common';
-import { AddressSpace } from 'sda-core/address-space';
+import { AddressSpace } from 'sda-core';
 import { toContext } from './dto/context';
 
 class AddressSpaceControllerImpl extends BaseController implements AddressSpaceController {

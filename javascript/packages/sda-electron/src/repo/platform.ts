@@ -1,4 +1,4 @@
-import { Platform, Register } from 'sda-core/platform';
+import { Platform, Register } from 'sda-core';
 import { PlatformX86 } from 'sda-platform-x86';
 
 const platforms: { [name: string]: Platform } = {};

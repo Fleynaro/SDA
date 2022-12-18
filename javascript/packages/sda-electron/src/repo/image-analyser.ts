@@ -1,4 +1,4 @@
-import { ImageAnalyser, PEImageAnalyser } from 'sda-core/image';
+import { ImageAnalyser, PEImageAnalyser } from 'sda-core';
 
 const analyser: { [name: string]: ImageAnalyser } = {};
 

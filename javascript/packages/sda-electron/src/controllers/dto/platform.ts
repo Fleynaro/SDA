@@ -1,4 +1,4 @@
-import { Platform } from 'sda-core/platform';
+import { Platform } from 'sda-core';
 import { Platform as PlatformDTO } from 'api/platform';
 import { toId } from 'utils/common';
 

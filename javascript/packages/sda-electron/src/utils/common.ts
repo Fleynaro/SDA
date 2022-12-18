@@ -1,4 +1,4 @@
-import { Hash, IIdentifiable } from 'sda-core/utils';
+import { Hash, IIdentifiable } from 'sda-core';
 import { ObjectId } from 'api/common';
 
 export const toHash = (id: ObjectId): Hash => {

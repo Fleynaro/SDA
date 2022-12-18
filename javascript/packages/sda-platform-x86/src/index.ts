@@ -1,5 +1,5 @@
 import m from './module';
-import { Platform } from 'sda-core/platform';
+import { Platform } from 'sda-core';
 
 export declare class PlatformX86 extends Platform {
   static New(is64Version: boolean): PlatformX86;

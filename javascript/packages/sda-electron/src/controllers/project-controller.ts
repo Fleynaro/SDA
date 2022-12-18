@@ -10,7 +10,7 @@ import { ObjectId } from 'api/common';
 import { program, getUserPath } from '../app';
 import { loadJSON, saveJSON, doesFileExist, deleteFile } from 'utils/file';
 import { Project } from 'sda';
-import { Context, ContextCallbacksImpl } from 'sda-core/context';
+import { Context, ContextCallbacksImpl } from 'sda-core';
 import { findPlatform } from 'repo/platform';
 import { join as pathJoin } from 'path';
 import { toId } from 'utils/common';

@@ -1,4 +1,4 @@
-import { Context } from 'sda-core/context';
+import { Context } from 'sda-core';
 import { ObjectId } from 'api/common';
 import { toHash } from 'utils/common';
 

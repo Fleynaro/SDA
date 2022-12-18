@@ -1,5 +1,4 @@
-import { Image } from 'sda-core/image';
-import { SdaObject } from 'sda-core/object';
+import { SdaObject, Image } from 'sda-core';
 import { Image as ImageDTO } from 'api/image';
 import { ObjectId } from 'api/common';
 import { toContextObjectDTO, changeContextObject } from './context-object';
