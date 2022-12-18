@@ -48,9 +48,15 @@ export declare class PEImageAnalyser extends ImageAnalyser {
   static New(): PEImageAnalyser;
 }
 
+export enum SectionType {
+  None,
+  Code,
+  Data,
+}
+
 export declare class ImageSection {
   readonly name: string;
-  readonly type: string;
+  readonly type: SectionType;
   readonly relVirtualAddress: number;
   readonly virtualSize: number;
   readonly pointerToRawData: number;

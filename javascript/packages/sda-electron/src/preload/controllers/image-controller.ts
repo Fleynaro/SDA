@@ -11,6 +11,9 @@ const ImageControllerImpl: ImageController = {
     invoke('createImage', contextId, name, analyserName, pathToImage),
 
   changeImage: (dto: Image) => invoke('changeImage', dto),
+
+  getImageRowsAt: (id: ObjectId, offset: number, count: number) =>
+    invoke('getImageRowsAt', id, offset, count),
 };
 
 export default ImageControllerImpl;

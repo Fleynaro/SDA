@@ -4,11 +4,12 @@
   "description": "",
   "main": "dist/index.js",
   "exports": {
+    ".": "./dist/index.js",
     "./*": "./dist/*.js"
   },
   "typesVersions": {
     "*": {
-      "*": ["./dist/*.d.ts"]
+      "*": ["./dist/*.d.ts", "./dist/index.d.ts"]
     }
   },
   "scripts": {

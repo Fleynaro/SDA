@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { useEffect } from 'hooks';
 import { ObjectId } from 'sda-electron/api/common';
-import { getImageApi } from 'sda-electron/api/image';
+import { getImageApi, ImageContent as ImageContentDTO } from 'sda-electron/api/image';
 import { useObject } from 'hooks';
 import { Group, Layer, Rect, Text } from 'react-konva';
 import Konva from 'konva';
 import { KonvaStage } from 'components/Konva';
+import React from 'react';
 
 type RowData = {
   offset: number;
@@ -80,34 +82,18 @@ export interface ImageContentProps {
 }
 
 export function ImageContent({ imageId }: ImageContentProps) {
-  const image = useObject(() => getImageApi().getImage(imageId), [imageId]);
-  const [rows, setRows] = useState<RowData[]>([]);
+  const image = useObject(() => getImageApi().getImage(imageId), [imageId.key]);
   const [scrollY, setScrollY] = useState(0);
-  const textRef = useRef<any>(null);
-  //const text = new Konva.Text({ fontSize: 10, fontFamily: 'arial' });
-  //console.log(text.measureSize(' text!!! '));
+  const [content, setContent] = useState<ImageContentDTO>();
 
-  useEffect(() => {
-    setRows(
-      [...Array(100000)].map((_, i) => ({
-        offset: i * 4,
-        height: Math.floor(Math.random() * 3) + 1,
-        cmd: 'add rax, rbx',
-      })),
-    );
+  useEffect(async () => {
+    const content = await getImageApi().getImageContent(imageId);
+    setContent(content);
   }, []);
-
-  const dataNode = useMemo(() => {
-    console.time('build');
-    const rowsNode = buildRows(rows, 0, 0, 3, [0, 10000, 2000])[2];
-    console.timeEnd('build');
-    return rowsNode;
-  }, [rows]);
 
   return (
     <>
       <KonvaStage sx={{ width: '100%', height: '100%' }}>
-        <Layer y={-scrollY}>{dataNode}</Layer>
         <Layer>
           <Rect
             width={20}
@@ -125,7 +111,7 @@ export function ImageContent({ imageId }: ImageContentProps) {
               setScrollY(e.target.y() * 100);
             }}
           />
-          <Text text="hello, guys!" x={500} y={100} fill="white" ref={textRef} />
+          <Text text="hello, guys!" x={500} y={100} fill="white" />
 
           <Group
             x={500}

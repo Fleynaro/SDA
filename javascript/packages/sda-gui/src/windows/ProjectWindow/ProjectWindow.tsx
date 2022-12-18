@@ -36,7 +36,7 @@ const ImageLabel = ({ imageId }: { imageId: ObjectId }) => {
 };
 
 export default function ProjectWindow({ projectId }: ProjectWindowPayload) {
-  const project = useObject(() => getProjectApi().getActiveProject(projectId));
+  const project = useObject(() => getProjectApi().getActiveProject(projectId), [projectId.key]);
   useWindowTitle(`Project: ${project?.path}`);
   const theme = useTheme();
   const classes = useStyles();

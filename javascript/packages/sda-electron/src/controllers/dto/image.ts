@@ -12,6 +12,11 @@ export const toImageDTO = (image: Image): ImageDTO => {
     entryPointOffset: image.entryPointOffset,
     size: image.size,
     globalSymbolTableId: toId(image.globalSymbolTable),
+    sections: image.imageSections.map((s) => ({
+      name: s.name,
+      minOffset: s.minOffset,
+      maxOffset: s.maxOffset,
+    })),
   };
 };
 

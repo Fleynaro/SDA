@@ -1,6 +1,5 @@
 import m from './module';
-import { Context } from 'sda-core/context';
-import { Hash, IIdentifiable } from 'sda-core/utils';
+import { Context, Image, ImageSection, Hash, IIdentifiable, Offset } from 'sda-core';
 
 export declare class Project implements IIdentifiable {
   readonly hashId: Hash;
@@ -47,5 +46,10 @@ export declare class Program {
 }
 
 export declare function CleanUpSharedObjectLookupTable(): void;
+
+export declare function GetOriginalInstructions(
+  image: Image,
+  section: ImageSection,
+): { type: number; offset: Offset; length: number; targetOffset: Offset }[];
 
 module.exports = m;
