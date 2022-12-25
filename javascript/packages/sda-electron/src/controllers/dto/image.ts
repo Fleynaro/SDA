@@ -1,8 +1,17 @@
-import { SdaObject, Image } from 'sda-core';
-import { Image as ImageDTO } from 'api/image';
+import { SdaObject, Image, ImageSection } from 'sda-core';
+import { Image as ImageDTO, ImageSection as ImageSectionDTO } from 'api/image';
 import { ObjectId } from 'api/common';
 import { toContextObjectDTO, changeContextObject } from './context-object';
 import { toHash, toId } from 'utils/common';
+
+export const toImageSectionDTO = (section: ImageSection): ImageSectionDTO => {
+  return {
+    name: section.name,
+    minOffset: section.minOffset,
+    maxOffset: section.maxOffset,
+    size: section.maxOffset - section.minOffset,
+  };
+};
 
 export const toImageDTO = (image: Image): ImageDTO => {
   return {
@@ -11,11 +20,7 @@ export const toImageDTO = (image: Image): ImageDTO => {
     entryPointOffset: image.entryPointOffset,
     size: image.size,
     globalSymbolTableId: toId(image.globalSymbolTable),
-    sections: image.imageSections.map((s) => ({
-      name: s.name,
-      minOffset: s.minOffset,
-      maxOffset: s.maxOffset,
-    })),
+    sections: image.imageSections.map(toImageSectionDTO),
   };
 };
 

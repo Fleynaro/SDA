@@ -12,8 +12,12 @@ const ImageControllerImpl: ImageController = {
 
   changeImage: (dto: Image) => invoke('changeImage', dto),
 
-  getImageRowsAt: (id: ObjectId, offset: number, count: number) =>
-    invoke('getImageRowsAt', id, offset, count),
+  getImageRowsAt: (id: ObjectId, rowIdx: number, count: number) =>
+    invoke('getImageRowsAt', id, rowIdx, count),
+
+  getImageTotalRowsCount: (id: ObjectId) => invoke('getImageTotalRowsCount', id),
+
+  offsetToRowIdx: (id: ObjectId, offset: number) => invoke('offsetToRowIdx', id, offset),
 };
 
 export default ImageControllerImpl;

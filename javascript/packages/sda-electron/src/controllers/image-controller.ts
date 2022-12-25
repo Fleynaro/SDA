@@ -1,5 +1,11 @@
 import BaseController from './base-controller';
-import { ImageController, Image as ImageDTO, ImageRow } from 'api/image';
+import {
+  ImageController,
+  Image as ImageDTO,
+  ImageBaseRow,
+  ImageRowType,
+  ImageInstructionRow,
+} from 'api/image';
 import { Image, FileImageRW, SectionType, StandartSymbolTable } from 'sda-core';
 import { GetOriginalInstructions } from 'sda';
 import { ObjectId } from 'api/common';
@@ -9,7 +15,7 @@ import { findImageAnalyser } from 'repo/image-analyser';
 import { binSearch } from 'utils/common';
 
 interface ImageContent {
-  rows: ImageRow[];
+  baseRows: ImageBaseRow[];
 }
 
 class ImageControllerImpl extends BaseController implements ImageController {
@@ -21,6 +27,8 @@ class ImageControllerImpl extends BaseController implements ImageController {
     this.register('createImage', this.createImage);
     this.register('changeImage', this.changeImage);
     this.register('getImageRowsAt', this.getImageRowsAt);
+    this.register('getImageTotalRowsCount', this.getImageTotalRowsCount);
+    this.register('offsetToRowIdx', this.offsetToRowIdx);
     this.imageContents = new Map();
   }
 
@@ -48,32 +56,61 @@ class ImageControllerImpl extends BaseController implements ImageController {
     changeImage(dto);
   }
 
-  public async getImageRowsAt(id: ObjectId, offset: number, count: number): Promise<ImageRow[]> {
-    let imageContent = this.imageContents.get(id.key);
-    if (!imageContent) {
-      const image = toImage(id);
-      const imageSections = image.imageSections;
-      const codeSection = imageSections.find((s) => s.type === SectionType.Code);
-      if (!codeSection) {
-        throw new Error('Image does not have code section');
-      }
-      const instructions = GetOriginalInstructions(image, codeSection);
-      const rows: ImageRow[] = instructions.map((instr) => ({
-        offset: instr.offset,
-        length: instr.length,
-      }));
-      // TODO: const jumps =
-      imageContent = { rows };
-      this.imageContents.set(id.key, imageContent);
-    }
-    const rows = imageContent.rows;
+  public async getImageRowsAt(
+    id: ObjectId,
+    rowIdx: number,
+    count: number,
+  ): Promise<ImageBaseRow[]> {
+    const imageContent = this.getImageContent(id);
+    const slicedRows = imageContent.baseRows.slice(rowIdx, rowIdx + count);
+    return slicedRows.map(this.loadRow);
+  }
+
+  public async getImageTotalRowsCount(id: ObjectId): Promise<number> {
+    const imageContent = this.getImageContent(id);
+    return imageContent.baseRows.length;
+  }
+
+  public async offsetToRowIdx(id: ObjectId, offset: number): Promise<number> {
+    const imageContent = this.getImageContent(id);
+    const rows = imageContent.baseRows;
     const foundRowIndex = binSearch(rows, (mid) => {
       const midRow = rows[mid];
       if (midRow.offset <= offset && offset < midRow.offset + midRow.length) return 0;
       return midRow.offset - offset;
     });
-    if (foundRowIndex === -1) return [];
-    return rows.slice(foundRowIndex, foundRowIndex + count);
+    return foundRowIndex;
+  }
+
+  private getImageContent(id: ObjectId): ImageContent {
+    let imageContent = this.imageContents.get(id.key);
+    if (imageContent) return imageContent;
+    const image = toImage(id);
+    const imageSections = image.imageSections;
+    const codeSection = imageSections.find((s) => s.type === SectionType.Code);
+    if (!codeSection) {
+      throw new Error('Image does not have code section');
+    }
+    const instructions = GetOriginalInstructions(image, codeSection);
+    const baseRows: ImageBaseRow[] = instructions.map((instr) => ({
+      type: ImageRowType.Instruction,
+      offset: instr.offset,
+      length: instr.length,
+    }));
+    // TODO: const jumps =
+    imageContent = { baseRows };
+    this.imageContents.set(id.key, imageContent);
+    return imageContent;
+  }
+
+  private loadRow(baseRow: ImageBaseRow): ImageBaseRow {
+    if (baseRow.type === ImageRowType.Instruction) {
+      return {
+        ...baseRow,
+        tokens: ['mov', 'eax', 'ebx'],
+      } as ImageInstructionRow;
+    }
+    return baseRow;
   }
 }
 

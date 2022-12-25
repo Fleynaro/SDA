@@ -16,6 +16,7 @@ import { ObjectId } from 'sda-electron/api/common';
 import { getImageApi } from 'sda-electron/api/image';
 import { ImageContent } from 'components/ImageContent';
 import { BoxSwitch, BoxSwitchCase } from 'components/BoxSwitch';
+import { KonvaStage } from 'components/Konva';
 
 const useStyles = makeStyles((theme: Theme) => ({
   resizable: {
@@ -112,7 +113,9 @@ export default function ProjectWindow({ projectId }: ProjectWindowPayload) {
                 <BoxSwitch value={tabs.activeTab?.key} sx={{ flexGrow: 1 }}>
                   {tabs.tabs.map((tab) => (
                     <BoxSwitchCase key={tab.key} value={tab.key}>
-                      <ImageContent imageId={tab.value.imageId} />
+                      <KonvaStage sx={{ width: '100%', height: '100%' }}>
+                        <ImageContent imageId={tab.value.imageId} />
+                      </KonvaStage>
                     </BoxSwitchCase>
                   ))}
                 </BoxSwitch>

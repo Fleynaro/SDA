@@ -7,6 +7,7 @@ export interface ImageSection {
   name: string;
   minOffset: Offset;
   maxOffset: Offset;
+  size: number;
 }
 
 export interface Image extends ContextObject {
@@ -17,9 +18,19 @@ export interface Image extends ContextObject {
   sections: ImageSection[];
 }
 
-export interface ImageRow {
+export enum ImageRowType {
+  Data,
+  Instruction,
+}
+
+export interface ImageBaseRow {
+  type: ImageRowType;
   offset: Offset;
   length: number;
+}
+
+export interface ImageInstructionRow extends ImageBaseRow {
+  tokens: string[];
 }
 
 export interface ImageController {
@@ -34,7 +45,11 @@ export interface ImageController {
 
   changeImage(dto: Image): Promise<void>;
 
-  getImageRowsAt(id: ObjectId, offset: Offset, count: number): Promise<ImageRow[]>;
+  getImageRowsAt(id: ObjectId, rowIdx: number, count: number): Promise<ImageBaseRow[]>;
+
+  getImageTotalRowsCount(id: ObjectId): Promise<number>;
+
+  offsetToRowIdx(id: ObjectId, offset: Offset): Promise<number>;
 }
 
 export const getImageApi = () => {
