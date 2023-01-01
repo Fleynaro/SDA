@@ -6,16 +6,18 @@ import {
   ImageRowType,
   ImageInstructionRow,
 } from 'api/image';
-import { Image, FileImageRW, SectionType, StandartSymbolTable } from 'sda-core';
-import { GetOriginalInstructions } from 'sda';
+import { Image, FileImageRW, SectionType, StandartSymbolTable, Instruction } from 'sda-core';
+import { GetOriginalInstructionInDetail, GetOriginalInstructions } from 'sda';
 import { ObjectId } from 'api/common';
 import { toImageDTO, toImage, changeImage } from './dto/image';
 import { toContext } from './dto/context';
 import { findImageAnalyser } from 'repo/image-analyser';
-import { binSearch } from 'utils/common';
+import { binSearch, toId } from 'utils/common';
+import { JumpManager } from 'utils/instruction-jump';
 
 interface ImageContent {
   baseRows: ImageBaseRow[];
+  jumps: JumpManager;
 }
 
 class ImageControllerImpl extends BaseController implements ImageController {
@@ -61,18 +63,21 @@ class ImageControllerImpl extends BaseController implements ImageController {
     rowIdx: number,
     count: number,
   ): Promise<ImageBaseRow[]> {
-    const imageContent = this.getImageContent(id);
+    const image = toImage(id);
+    const imageContent = this.getImageContent(image);
     const slicedRows = imageContent.baseRows.slice(rowIdx, rowIdx + count);
-    return slicedRows.map(this.loadRow);
+    return slicedRows.map((r) => this.loadRow(image, r));
   }
 
   public async getImageTotalRowsCount(id: ObjectId): Promise<number> {
-    const imageContent = this.getImageContent(id);
+    const image = toImage(id);
+    const imageContent = this.getImageContent(image);
     return imageContent.baseRows.length;
   }
 
   public async offsetToRowIdx(id: ObjectId, offset: number): Promise<number> {
-    const imageContent = this.getImageContent(id);
+    const image = toImage(id);
+    const imageContent = this.getImageContent(image);
     const rows = imageContent.baseRows;
     const foundRowIndex = binSearch(rows, (mid) => {
       const midRow = rows[mid];
@@ -82,10 +87,10 @@ class ImageControllerImpl extends BaseController implements ImageController {
     return foundRowIndex;
   }
 
-  private getImageContent(id: ObjectId): ImageContent {
-    let imageContent = this.imageContents.get(id.key);
+  private getImageContent(image: Image): ImageContent {
+    const imageId = toId(image);
+    let imageContent = this.imageContents.get(imageId.key);
     if (imageContent) return imageContent;
-    const image = toImage(id);
     const imageSections = image.imageSections;
     const codeSection = imageSections.find((s) => s.type === SectionType.Code);
     if (!codeSection) {
@@ -97,17 +102,21 @@ class ImageControllerImpl extends BaseController implements ImageController {
       offset: instr.offset,
       length: instr.length,
     }));
-    // TODO: const jumps =
-    imageContent = { baseRows };
-    this.imageContents.set(id.key, imageContent);
+    const jumps = new JumpManager();
+    imageContent = { baseRows, jumps };
+    this.imageContents.set(imageId.key, imageContent);
     return imageContent;
   }
 
-  private loadRow(baseRow: ImageBaseRow): ImageBaseRow {
+  private loadRow(image: Image, baseRow: ImageBaseRow): ImageBaseRow {
     if (baseRow.type === ImageRowType.Instruction) {
+      const instruction = GetOriginalInstructionInDetail(image, baseRow.offset);
       return {
         ...baseRow,
-        tokens: ['mov', 'eax', 'ebx'],
+        tokens: instruction.tokens.map((t) => ({
+          type: Instruction.TokenType[t.type],
+          text: t.text,
+        })),
       } as ImageInstructionRow;
     }
     return baseRow;

@@ -67,6 +67,9 @@ void InstructionDecoderX86::decode(const std::vector<uint8_t>& data, bool tokeni
             else if (token_type == ZYDIS_TOKEN_REGISTER) {
                 m_decodedInstruction.tokens.push_back({ Instruction::Token::Register, token_value });
             }
+            else if (token_type == ZYDIS_TOKEN_DISPLACEMENT || token_type == ZYDIS_TOKEN_IMMEDIATE) {
+                m_decodedInstruction.tokens.push_back({ Instruction::Token::Number, token_value });
+            }
             else if (token_type == ZYDIS_TOKEN_ADDRESS_ABS) {
                 m_decodedInstruction.tokens.push_back({ Instruction::Token::AddressAbs, token_value });
             }

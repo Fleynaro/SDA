@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useRef, useState } from 'react';
 import { useEffect } from 'hooks';
 import { ObjectId } from 'sda-electron/api/common';
 import {
@@ -7,11 +7,9 @@ import {
   ImageBaseRow,
   ImageInstructionRow,
 } from 'sda-electron/api/image';
-import { useObject } from 'hooks';
 import { Group, Layer, Rect, Text } from 'react-konva';
 import Konva from 'konva';
-import { useKonvaStage } from 'components/Konva';
-import React from 'react';
+import { useKonvaStage, buildKonvaFormatText, useKonvaFormatTextSelection } from 'components/Konva';
 
 interface ImageRowElement {
   offset: number;
@@ -19,25 +17,23 @@ interface ImageRowElement {
   element: JSX.Element;
 }
 
-interface ImageRowElementStyle {
-  width: number;
+interface RowContextValue {
+  selection: {
+    selectedRows: number[];
+    setSelectedRows: (rows: number[]) => void;
+    firstSelectedRow?: number;
+    setFirstSelectedRow?: (row?: number) => void;
+    lastSelectedRow?: number;
+    setLastSelectedRow?: (row?: number) => void;
+  };
+  style: {
+    rowWidth: number;
+  };
 }
 
-interface RowSelectionContextValue {
-  selectedRows: number[];
-  setSelectedRows: (rows: number[]) => void;
-  firstSelectedRow?: number;
-  setFirstSelectedRow?: (row?: number) => void;
-  lastSelectedRow?: number;
-  setLastSelectedRow?: (row?: number) => void;
-}
+const RowContext = createContext<RowContextValue | null>(null);
 
-const RowSelectionContext = createContext<RowSelectionContextValue | null>(null);
-
-const buildInstructionRow = (
-  row: ImageInstructionRow,
-  style: ImageRowElementStyle,
-): ImageRowElement => {
+const buildInstructionRow = (row: ImageInstructionRow): ImageRowElement => {
   const viewConfig = {
     padding: 5,
     cols: {
@@ -48,43 +44,78 @@ const buildInstructionRow = (
         width: 50,
       },
       instruction: {
-        width: 300,
+        width: 200,
       },
     },
+    instructionTokenColors: {
+      ['Mneumonic']: '#eddaa4',
+      ['Register']: '#93c5db',
+      ['Number']: '#e8e8e8',
+      ['AddressAbs']: '#d2b2d6',
+      ['AddressRel']: '#bdbdbd',
+    } as { [type: string]: string },
   };
-  const textStyle = new Konva.Text({ fontSize: 10 });
-  const height = textStyle.height() + viewConfig.padding * 2;
+  const offsetText = buildKonvaFormatText({
+    selectionArea: 'offset',
+    textIdx: row.offset,
+    textParts: [
+      {
+        text: `0x${row.offset.toString(16)}`,
+        style: { fontSize: 12, fill: 'white' },
+      },
+    ],
+    maxWidth: viewConfig.cols.instruction.width,
+    newLineInEnd: true,
+  });
+  const instructionText = buildKonvaFormatText({
+    selectionArea: 'instruction',
+    textIdx: row.offset,
+    textParts: row.tokens.map((token) => {
+      return {
+        text: token.text,
+        style: {
+          fontSize: 12,
+          fill: viewConfig.instructionTokenColors[token.type] || 'white',
+        },
+      };
+    }),
+    maxWidth: viewConfig.cols.instruction.width,
+    newLineInEnd: true,
+  });
+  const height = instructionText.height + viewConfig.padding * 2;
   function Elem() {
-    const rowSelectionCtx = useContext(RowSelectionContext);
-    if (!rowSelectionCtx) return <></>;
-    const { selectedRows, firstSelectedRow, setFirstSelectedRow, setLastSelectedRow } =
-      rowSelectionCtx;
+    const rowCtx = useContext(RowContext);
+    if (!rowCtx) return <></>;
+    const {
+      selection: { selectedRows, firstSelectedRow, setFirstSelectedRow, setLastSelectedRow },
+      style: { rowWidth },
+    } = rowCtx;
     const isSelected = selectedRows.includes(row.offset);
 
-    const onStartMultiSelect = useCallback(() => {
+    const onMouseDown = useCallback(() => {
       setFirstSelectedRow?.(row.offset);
     }, [setFirstSelectedRow]);
 
-    const onMoveMultiSelect = useCallback(() => {
+    const onMouseMove = useCallback(() => {
       if (firstSelectedRow) {
         setLastSelectedRow?.(row.offset);
       }
     }, [firstSelectedRow, setFirstSelectedRow]);
 
-    const onEndMultiSelect = useCallback(() => {
+    const onMouseUp = useCallback(() => {
       setFirstSelectedRow?.(undefined);
       setLastSelectedRow?.(undefined);
     }, [setFirstSelectedRow, setLastSelectedRow]);
 
     return (
       <Group
-        width={style.width}
-        onMouseDown={onStartMultiSelect}
-        onMouseMove={onMoveMultiSelect}
-        onMouseUp={onEndMultiSelect}
+        width={rowWidth}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
       >
         <Rect
-          width={style.width}
+          width={rowWidth}
           height={height}
           fill={isSelected ? '#360b0b' : 'black'}
           shadowBlur={5}
@@ -95,13 +126,13 @@ const buildInstructionRow = (
             x={viewConfig.padding + viewConfig.cols.jump.width}
             width={viewConfig.cols.offset.width}
           >
-            <Text text={`0x${row.offset.toString(16)}`} fill="white" />
+            {offsetText.elem}
           </Group>
           <Group
             x={viewConfig.padding + viewConfig.cols.jump.width + viewConfig.cols.offset.width}
             width={viewConfig.cols.instruction.width}
           >
-            <Text text={row.tokens.join(' ')} fill="white" />
+            {instructionText.elem}
           </Group>
         </Group>
       </Group>
@@ -114,9 +145,9 @@ const buildInstructionRow = (
   };
 };
 
-const buildRow = (row: ImageBaseRow, style: ImageRowElementStyle): ImageRowElement => {
+const buildRow = (row: ImageBaseRow): ImageRowElement => {
   if (row.type === ImageRowType.Instruction) {
-    return buildInstructionRow(row as ImageInstructionRow, style);
+    return buildInstructionRow(row as ImageInstructionRow);
   }
   return {
     offset: row.offset,
@@ -146,6 +177,8 @@ export function ImageContent({ imageId }: ImageContentProps) {
   const [lastSelectedRow, setLastSelectedRow] = useState<number>();
   const cachedRows = useRef<{ [idx: number]: ImageRowElement }>({});
   const cachedRowsIdxs = useRef<number[]>([]);
+  const rowsLoading = useRef(false);
+  const textSelection = useKonvaFormatTextSelection();
   const stageWidth = stage.size.width - viewConfig.scenePaddingRight;
   const viewWidth = stageWidth - viewConfig.sliderWidth;
   const avgImageContentHeight = viewConfig.avgRowHeight * totalRowsCount;
@@ -167,7 +200,7 @@ export function ImageContent({ imageId }: ImageContentProps) {
     let row = cachedRows.current[rowIdx];
     if (!row) {
       const rows = await getImageApi().getImageRowsAt(imageId, rowIdx, 1);
-      row = buildRow(rows[0], { width: viewWidth });
+      row = buildRow(rows[0]);
       // cache for better performance
       if (cachedRowsIdxs.current.length > viewConfig.cacheSize) {
         const removedIdx = cachedRowsIdxs.current.shift();
@@ -244,22 +277,20 @@ export function ImageContent({ imageId }: ImageContentProps) {
     }
   }, [imageId, firstSelectedRow, lastSelectedRow]);
 
-  // clear cache on stage resize
-  useEffect(() => {
-    cachedRows.current = {};
-    cachedRowsIdxs.current = [];
-  }, [stage]);
-
   // render rows on scroll and stage resize
   useEffect(async () => {
+    if (rowsLoading.current) return;
+    rowsLoading.current = true;
+    const rows = await getForwardRows(stage.size.height);
+    rowsLoading.current = false;
     setRowsToRender(
-      (await getForwardRows(stage.size.height)).map(({ y, row }) => (
+      rows.map(({ y, row }) => (
         <Group key={row.offset} y={y}>
           {row.element}
         </Group>
       )),
     );
-  }, [scrollY, stage]);
+  }, [scrollY, stage.size.height]);
 
   const onWheel = useCallback(
     async (e: Konva.KonvaEventObject<WheelEvent>) => {
@@ -284,6 +315,10 @@ export function ImageContent({ imageId }: ImageContentProps) {
     [scrollY, sliderMaxPosY],
   );
 
+  const onMouseUp = useCallback(() => {
+    textSelection.stopSelecting();
+  }, [textSelection]);
+
   return (
     <>
       <Layer onWheel={onWheel}>
@@ -295,7 +330,7 @@ export function ImageContent({ imageId }: ImageContentProps) {
           height={sliderHeight}
           x={sliderPosX}
           y={scrollY}
-          fill="green"
+          fill="#545454"
           draggable
           dragBoundFunc={(pos) => {
             return {
@@ -308,19 +343,25 @@ export function ImageContent({ imageId }: ImageContentProps) {
           }}
         />
       </Layer>
-      <Layer onWheel={onWheel}>
-        <RowSelectionContext.Provider
+      <Layer onWheel={onWheel} onMouseUp={onMouseUp}>
+        <RowContext.Provider
           value={{
-            selectedRows,
-            setSelectedRows,
-            firstSelectedRow,
-            setFirstSelectedRow,
-            lastSelectedRow,
-            setLastSelectedRow,
+            selection: {
+              selectedRows,
+              setSelectedRows,
+              firstSelectedRow,
+              setFirstSelectedRow,
+              lastSelectedRow,
+              setLastSelectedRow,
+            },
+            style: {
+              rowWidth: viewWidth,
+            },
           }}
         >
           {rowsToRender}
-        </RowSelectionContext.Provider>
+        </RowContext.Provider>
+        <Text text={textSelection.selectedTextRef.current} x={10} y={10} fill="green" />
       </Layer>
     </>
   );

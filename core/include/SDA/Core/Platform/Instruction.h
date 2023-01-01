@@ -20,6 +20,7 @@ namespace sda
             {
                 Mneumonic,
                 Register,
+                Number,
                 AddressAbs,
                 AddressRel,
                 Other

@@ -16,7 +16,7 @@ import { ObjectId } from 'sda-electron/api/common';
 import { getImageApi } from 'sda-electron/api/image';
 import { ImageContent } from 'components/ImageContent';
 import { BoxSwitch, BoxSwitchCase } from 'components/BoxSwitch';
-import { KonvaStage } from 'components/Konva';
+import { KonvaFormatTextSelectionProvider, KonvaStage } from 'components/Konva';
 
 const useStyles = makeStyles((theme: Theme) => ({
   resizable: {
@@ -114,7 +114,9 @@ export default function ProjectWindow({ projectId }: ProjectWindowPayload) {
                   {tabs.tabs.map((tab) => (
                     <BoxSwitchCase key={tab.key} value={tab.key}>
                       <KonvaStage sx={{ width: '100%', height: '100%' }}>
-                        <ImageContent imageId={tab.value.imageId} />
+                        <KonvaFormatTextSelectionProvider>
+                          <ImageContent imageId={tab.value.imageId} />
+                        </KonvaFormatTextSelectionProvider>
                       </KonvaStage>
                     </BoxSwitchCase>
                   ))}

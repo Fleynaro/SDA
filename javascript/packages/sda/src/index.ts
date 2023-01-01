@@ -1,5 +1,5 @@
 import m from './module';
-import { Context, Image, ImageSection, Hash, IIdentifiable, Offset } from 'sda-core';
+import { Context, Image, ImageSection, Hash, IIdentifiable, Offset, Instruction } from 'sda-core';
 
 export declare class Project implements IIdentifiable {
   readonly hashId: Hash;
@@ -47,9 +47,22 @@ export declare class Program {
 
 export declare function CleanUpSharedObjectLookupTable(): void;
 
+export interface InstructionInfo {
+  type: number;
+  offset: Offset;
+  length: number;
+  targetOffset: Offset;
+  tokens: Instruction.Token[];
+}
+
 export declare function GetOriginalInstructions(
   image: Image,
   section: ImageSection,
-): { type: number; offset: Offset; length: number; targetOffset: Offset }[];
+): InstructionInfo[];
+
+export declare function GetOriginalInstructionInDetail(
+  image: Image,
+  offset: Offset,
+): InstructionInfo;
 
 module.exports = m;

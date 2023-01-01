@@ -55,6 +55,22 @@ export declare abstract class PcodeDecoder implements IIdentifiable {
   static Get(hashId: Hash): PcodeDecoder;
 }
 
+export namespace Instruction {
+  export enum TokenType {
+    Mneumonic,
+    Register,
+    Number,
+    AddressAbs,
+    AddressRel,
+    Other,
+  }
+
+  export type Token = {
+    type: TokenType;
+    text: string;
+  };
+}
+
 export declare abstract class InstructionDecoder implements IIdentifiable {
   readonly hashId: Hash;
   readonly className: string;

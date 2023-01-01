@@ -30,7 +30,10 @@ export interface ImageBaseRow {
 }
 
 export interface ImageInstructionRow extends ImageBaseRow {
-  tokens: string[];
+  tokens: {
+    type: string;
+    text: string;
+  }[];
 }
 
 export interface ImageController {
