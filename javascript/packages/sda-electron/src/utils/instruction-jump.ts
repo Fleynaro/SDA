@@ -52,7 +52,7 @@ export class JumpManager {
     while (layerLevel < 1000) {
       const jumpsOnLevel = this.jumps[layerLevel];
       const nearestRightJumpIdx = this.findNearestRightJumpIdx(jumpsOnLevel, jump.interval.start);
-      const foundIntersectedJumps = this.findJumpsInInterval_(
+      const [foundIntersectedJumps, foundIntersectedJumpsIdx] = this.findJumpsInInterval_(
         jumpsOnLevel,
         jump.interval,
         nearestRightJumpIdx,
@@ -69,6 +69,13 @@ export class JumpManager {
           jumpsOnLevel.push(jump);
         }
         break;
+      } else if (foundIntersectedJumps.length === 1) {
+        // larger jumps should be on the higher layers to minimize the number of intersections
+        const foundJump = foundIntersectedJumps[0];
+        const foundJumpIdx = foundIntersectedJumpsIdx[0];
+        if (foundJump.interval.length > jump.interval.length) {
+          [jumpsOnLevel[foundJumpIdx], jump] = [jump, foundJump];
+        }
       }
       layerLevel++;
       if (layerLevel === this.jumps.length) {
@@ -77,18 +84,18 @@ export class JumpManager {
     }
   }
 
-  public addJumps(jumps: Jump[]) {
-    const sortedJumps = jumps.sort((a, b) => a.interval.length - b.interval.length);
-    for (const jump of sortedJumps) {
-      this.addJump(jump);
-    }
-  }
+  // public addJumps(jumps: Jump[]) {
+  //   const sortedJumps = jumps.sort((a, b) => a.interval.length - b.interval.length);
+  //   for (const jump of sortedJumps) {
+  //     this.addJump(jump);
+  //   }
+  // }
 
   public findJumpsInInterval(interval: Interval): Jump[][] {
     const foundJumps: Jump[][] = [];
     for (const jumpsOnLevel of this.jumps) {
       const nearestRightJumpIdx = this.findNearestRightJumpIdx(jumpsOnLevel, interval.start);
-      const foundJumpsOnLevel = this.findJumpsInInterval_(
+      const [foundJumpsOnLevel, _] = this.findJumpsInInterval_(
         jumpsOnLevel,
         interval,
         nearestRightJumpIdx,
@@ -117,8 +124,9 @@ export class JumpManager {
     interval: Interval,
     nearestRightJumpIdx: number,
     strictIntersection: boolean,
-  ): Jump[] {
+  ): [Jump[], number[]] {
     const foundJumps: Jump[] = [];
+    const foundJumpsIdx: number[] = [];
     if (nearestRightJumpIdx !== -1) {
       for (let i = nearestRightJumpIdx; i < jumps.length; i++) {
         const jump = jumps[i];
@@ -128,29 +136,30 @@ export class JumpManager {
             : jump.interval.intersects(interval)
         ) {
           foundJumps.push(jump);
+          foundJumpsIdx.push(i);
         } else {
           break;
         }
       }
     }
-    return foundJumps;
+    return [foundJumps, foundJumpsIdx];
   }
 }
 
 function Test() {
   const jumps = new JumpManager();
-  // jumps.addJump(new Jump(0, 10));
-  // jumps.addJump(new Jump(15, 20));
-  // jumps.addJump(new Jump(10, 15));
-  // jumps.addJump(new Jump(16, 18));
-  // jumps.addJump(new Jump(16, 18));
-  jumps.addJumps([
-    new Jump(0, 10),
-    new Jump(15, 20),
-    new Jump(10, 15),
-    new Jump(16, 18),
-    new Jump(16, 18),
-  ]);
+  jumps.addJump(new Jump(0, 10));
+  jumps.addJump(new Jump(15, 20));
+  jumps.addJump(new Jump(10, 15));
+  jumps.addJump(new Jump(16, 18));
+  jumps.addJump(new Jump(16, 18));
+  // jumps.addJumps([
+  //   new Jump(0, 10),
+  //   new Jump(15, 20),
+  //   new Jump(10, 15),
+  //   new Jump(16, 18),
+  //   new Jump(16, 18),
+  // ]);
 
   const foundJumps = jumps.findJumpsInInterval(new Interval(14, 17));
   console.log(foundJumps);
