@@ -35,5 +35,6 @@ export default {
     distanceBetweenLayers: 5,
     color: 'white',
     hoverColor: '#94d8ff',
+    selectedColor: '#ed728a',
   },
 };

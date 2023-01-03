@@ -1,206 +1,15 @@
-import { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useEffect } from 'hooks';
 import { ObjectId } from 'sda-electron/api/common';
-import {
-  getImageApi,
-  ImageRowType,
-  ImageBaseRow,
-  ImageInstructionRow,
-  Jump,
-} from 'sda-electron/api/image';
-import { Arrow, Group, Layer, Rect, Text } from 'react-konva';
+import { getImageApi, Jump } from 'sda-electron/api/image';
+import { Group, Layer, Rect, Text } from 'react-konva';
 import Konva from 'konva';
-import {
-  useKonvaStage,
-  buildKonvaFormatText,
-  useKonvaFormatTextSelection,
-  setCursor,
-} from 'components/Konva';
-import style from './style';
-
-interface ImageRowElement {
-  offset: number;
-  height: number;
-  element: JSX.Element;
-}
-
-interface ImageContentContextValue {
-  goToOffset: (offset: number) => void;
-  rowSelection: {
-    selectedRows: number[];
-    setSelectedRows: (rows: number[]) => void;
-    firstSelectedRow?: number;
-    setFirstSelectedRow?: (row?: number) => void;
-    lastSelectedRow?: number;
-    setLastSelectedRow?: (row?: number) => void;
-  };
-  style: {
-    rowWidth: number;
-  };
-}
-
-const ImageContentContext = createContext<ImageContentContextValue | null>(null);
-
-const useImageContentContext = () => {
-  const ctx = useContext(ImageContentContext);
-  if (!ctx) throw new Error('ImageContentContext is not set');
-  return ctx;
-};
-
-const buildInstructionRow = (row: ImageInstructionRow): ImageRowElement => {
-  const offsetText = buildKonvaFormatText({
-    selectionArea: 'offset',
-    textIdx: row.offset,
-    textParts: [
-      {
-        text: `0x${row.offset.toString(16)}`,
-        style: { fontSize: 12, fill: 'white' },
-      },
-    ],
-    maxWidth: style.row.cols.instruction.width,
-    newLineInEnd: true,
-  });
-  const instructionText = buildKonvaFormatText({
-    selectionArea: 'instruction',
-    textIdx: row.offset,
-    textParts: row.tokens.map((token) => {
-      return {
-        text: token.text,
-        style: {
-          fontSize: 12,
-          fill: style.row.instructionTokenColors[token.type] || 'white',
-        },
-      };
-    }),
-    maxWidth: style.row.cols.instruction.width,
-    newLineInEnd: true,
-  });
-  const height = instructionText.height + style.row.padding * 2;
-  function Elem() {
-    const {
-      rowSelection: { selectedRows, firstSelectedRow, setFirstSelectedRow, setLastSelectedRow },
-      style: { rowWidth },
-    } = useImageContentContext();
-    const isSelected = selectedRows.includes(row.offset);
-
-    const onMouseDown = useCallback(() => {
-      setFirstSelectedRow?.(row.offset);
-    }, [setFirstSelectedRow]);
-
-    const onMouseMove = useCallback(() => {
-      if (firstSelectedRow) {
-        setLastSelectedRow?.(row.offset);
-      }
-    }, [firstSelectedRow, setFirstSelectedRow]);
-
-    const onMouseUp = useCallback(() => {
-      setFirstSelectedRow?.(undefined);
-      setLastSelectedRow?.(undefined);
-    }, [setFirstSelectedRow, setLastSelectedRow]);
-
-    return (
-      <Group
-        width={rowWidth}
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-      >
-        <Rect
-          width={rowWidth}
-          height={height}
-          fill={isSelected ? '#360b0b' : 'black'}
-          shadowBlur={5}
-        />
-        <Group x={style.row.padding} y={style.row.padding}>
-          <Group width={style.row.cols.jump.width}></Group>
-          <Group
-            x={style.row.padding + style.row.cols.jump.width}
-            width={style.row.cols.offset.width}
-          >
-            {offsetText.elem}
-          </Group>
-          <Group
-            x={style.row.padding + style.row.cols.jump.width + style.row.cols.offset.width}
-            width={style.row.cols.instruction.width}
-          >
-            {instructionText.elem}
-          </Group>
-        </Group>
-      </Group>
-    );
-  }
-  return {
-    offset: row.offset,
-    height,
-    element: <Elem />,
-  };
-};
-
-const buildRow = (row: ImageBaseRow): ImageRowElement => {
-  if (row.type === ImageRowType.Instruction) {
-    return buildInstructionRow(row as ImageInstructionRow);
-  }
-  return {
-    offset: row.offset,
-    height: 0,
-    element: <></>,
-  };
-};
-
-const buildJump = (jump: Jump, layerLevel: number, fromY?: number, toY?: number): JSX.Element => {
-  const direction = jump.from < jump.to ? 1 : -1;
-  const startY = fromY || -10000 * direction; // 10000 = endless
-  const endY = toY || 10000 * direction;
-  const isClickable = fromY === undefined || toY === undefined;
-  const startX = style.row.cols.jump.width;
-  const layerOffset = style.jump.pointerSize + layerLevel * style.jump.distanceBetweenLayers;
-  const p1 = [startX + style.jump.pointerSize, startY];
-  const p2 = [startX - layerOffset, p1[1]];
-  const p3 = [p2[0], endY];
-  const p4 = [p1[0], p3[1]];
-  function Elem() {
-    const { goToOffset } = useImageContentContext();
-
-    const onClickJump = useCallback(() => {
-      if (fromY === undefined) {
-        goToOffset(jump.from);
-      } else if (toY === undefined) {
-        goToOffset(jump.to);
-      }
-    }, []);
-
-    const onMouseEnter = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
-      if (!isClickable) return;
-      const target = e.target as Konva.Arrow;
-      target.fill(style.jump.hoverColor);
-      target.stroke(style.jump.hoverColor);
-      setCursor(e, 'pointer');
-    }, []);
-
-    const onMouseLeave = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
-      if (!isClickable) return;
-      const target = e.target as Konva.Arrow;
-      target.fill(style.jump.color);
-      target.stroke(style.jump.color);
-      setCursor(e, 'default');
-    }, []);
-
-    return (
-      <Arrow
-        points={[p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], p4[0], p4[1]]}
-        pointerLength={style.jump.pointerSize}
-        pointerWidth={style.jump.pointerSize}
-        fill={style.jump.color}
-        stroke={style.jump.color}
-        strokeWidth={style.jump.arrowWidth}
-        onClick={onClickJump}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-      />
-    );
-  }
-  return <Elem />;
-};
+import { useKonvaStage, useKonvaFormatTextSelection } from 'components/Konva';
+import style from './style'; // static style
+import { animate } from 'utils';
+import { buildRow, ImageRowElement } from './Row';
+import { buildJump } from './Jump';
+import { ImageContentContext } from './context';
 
 export interface ImageContentProps {
   imageId: ObjectId;
@@ -215,9 +24,11 @@ export function ImageContent({ imageId }: ImageContentProps) {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [firstSelectedRow, setFirstSelectedRow] = useState<number>();
   const [lastSelectedRow, setLastSelectedRow] = useState<number>();
+  const [selectedJump, setSelectedJump] = useState<Jump>();
+  const [forceUpdate, setForceUpdate] = useState(0);
   const cachedRows = useRef<{ [idx: number]: ImageRowElement }>({});
   const cachedRowsIdxs = useRef<number[]>([]);
-  const rowsLoading = useRef(false);
+  const sync = useRef({ isLoading: false, requestCount: 0 });
   const textSelection = useKonvaFormatTextSelection();
   const stageWidth = stage.size.width - style.viewport.scenePaddingRight;
   const viewWidth = stageWidth - style.viewport.sliderWidth;
@@ -317,11 +128,12 @@ export function ImageContent({ imageId }: ImageContentProps) {
     }
   }, [imageId, firstSelectedRow, lastSelectedRow]);
 
-  // render rows on scroll and stage resize
+  // render rows and jumps on scroll and stage resize
   useEffect(async () => {
     // rows
-    if (rowsLoading.current) return;
-    rowsLoading.current = true;
+    const savedRequestCount = ++sync.current.requestCount;
+    if (sync.current.isLoading) return;
+    sync.current.isLoading = true;
     const rows = await getForwardRows(stage.size.height);
     setRowsToRender(
       rows.map(({ y, row }) => (
@@ -349,8 +161,12 @@ export function ImageContent({ imageId }: ImageContentProps) {
       }
       setJumpsToRender(jumpsToRender);
     }
-    rowsLoading.current = false;
-  }, [scrollY, stage.size.height]);
+    sync.current.isLoading = false;
+    if (savedRequestCount < sync.current.requestCount) {
+      // force component updated to render actual rows
+      setForceUpdate(forceUpdate + 1);
+    }
+  }, [scrollY, stage.size.height, forceUpdate]);
 
   const onWheel = useCallback(
     async (e: Konva.KonvaEventObject<WheelEvent>) => {
@@ -382,10 +198,20 @@ export function ImageContent({ imageId }: ImageContentProps) {
   const goToOffset = useCallback(
     async (offset: number) => {
       const rowIdx = await getImageApi().offsetToRowIdx(imageId, offset);
-      setScrollY(rowIdxToScroll(rowIdx - rowsToRender.length / 2));
+      if (rowIdx === -1) return false;
+      const fromScrollY = scrollY;
+      const toScrollY = rowIdxToScroll(rowIdx - rowsToRender.length / 2);
+      animate((p) => {
+        setScrollY(fromScrollY + (toScrollY - fromScrollY) * p);
+      }, 1000);
+      return true;
     },
     [imageId, rowIdxToScroll],
   );
+
+  const onContextMenu = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
+    e.evt.preventDefault();
+  }, []);
 
   return (
     <>
@@ -411,10 +237,12 @@ export function ImageContent({ imageId }: ImageContentProps) {
           }}
         />
       </Layer>
-      <Layer onWheel={onWheel} onMouseUp={onMouseUp}>
+      <Layer onWheel={onWheel} onMouseUp={onMouseUp} onContextMenu={onContextMenu}>
         <ImageContentContext.Provider
           value={{
             goToOffset,
+            selectedJump,
+            setSelectedJump,
             rowSelection: {
               selectedRows,
               setSelectedRows,
