@@ -36,6 +36,11 @@ export interface ImageInstructionRow extends ImageBaseRow {
   }[];
 }
 
+export interface Jump {
+  from: Offset;
+  to: Offset;
+}
+
 export interface ImageController {
   getImage(id: ObjectId): Promise<Image>;
 
@@ -53,6 +58,8 @@ export interface ImageController {
   getImageTotalRowsCount(id: ObjectId): Promise<number>;
 
   offsetToRowIdx(id: ObjectId, offset: Offset): Promise<number>;
+
+  getJumpsAt(id: ObjectId, startOffset: Offset, endOffset: Offset): Promise<Jump[][]>;
 }
 
 export const getImageApi = () => {

@@ -10,6 +10,7 @@ import {
 import { TextConfig } from 'konva/lib/shapes/Text';
 import Konva from 'konva';
 import { Rect, Text } from 'react-konva';
+import { setCursor } from 'components/Konva';
 
 interface TokenPos {
   selectionArea: string;
@@ -150,17 +151,11 @@ const Token = ({ tokenPos, text, ...props }: TokenProps) => {
   }, [selecting, setLastSelectedTokenPos]);
 
   const onMouseEnter = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
-    const container = e.target.getStage()?.container();
-    if (container) {
-      container.style.cursor = 'text';
-    }
+    setCursor(e, 'text');
   }, []);
 
   const onMouseLeave = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
-    const container = e.target.getStage()?.container();
-    if (container) {
-      container.style.cursor = 'default';
-    }
+    setCursor(e, 'default');
   }, []);
 
   return (

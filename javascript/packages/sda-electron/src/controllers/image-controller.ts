@@ -5,15 +5,16 @@ import {
   ImageBaseRow,
   ImageRowType,
   ImageInstructionRow,
+  Jump as JumpDTO,
 } from 'api/image';
 import { Image, FileImageRW, SectionType, StandartSymbolTable, Instruction } from 'sda-core';
 import { GetOriginalInstructionInDetail, GetOriginalInstructions } from 'sda';
-import { ObjectId } from 'api/common';
+import { ObjectId, Offset } from 'api/common';
 import { toImageDTO, toImage, changeImage } from './dto/image';
 import { toContext } from './dto/context';
 import { findImageAnalyser } from 'repo/image-analyser';
 import { binSearch, toId } from 'utils/common';
-import { JumpManager } from 'utils/instruction-jump';
+import { Interval, Jump, JumpManager } from 'utils/instruction-jump';
 
 interface ImageContent {
   baseRows: ImageBaseRow[];
@@ -31,6 +32,7 @@ class ImageControllerImpl extends BaseController implements ImageController {
     this.register('getImageRowsAt', this.getImageRowsAt);
     this.register('getImageTotalRowsCount', this.getImageTotalRowsCount);
     this.register('offsetToRowIdx', this.offsetToRowIdx);
+    this.register('getJumpsAt', this.getJumpsAt);
     this.imageContents = new Map();
   }
 
@@ -87,6 +89,19 @@ class ImageControllerImpl extends BaseController implements ImageController {
     return foundRowIndex;
   }
 
+  public async getJumpsAt(
+    id: ObjectId,
+    startOffset: Offset,
+    endOffset: Offset,
+  ): Promise<JumpDTO[][]> {
+    const image = toImage(id);
+    const imageContent = this.getImageContent(image);
+    const foundJumps = imageContent.jumps.findJumpsInInterval(new Interval(startOffset, endOffset));
+    return foundJumps.map((jumpsOnLayer) =>
+      jumpsOnLayer.map((jump) => ({ from: jump.offset, to: jump.targetOffset })),
+    );
+  }
+
   private getImageContent(image: Image): ImageContent {
     const imageId = toId(image);
     let imageContent = this.imageContents.get(imageId.key);
@@ -103,6 +118,14 @@ class ImageControllerImpl extends BaseController implements ImageController {
       length: instr.length,
     }));
     const jumps = new JumpManager();
+    for (const instr of instructions) {
+      if (
+        instr.type === Instruction.Type.UnconditionalBranch ||
+        instr.type === Instruction.Type.ConditionalBranch
+      ) {
+        jumps.addJump(new Jump(instr.offset, instr.targetOffset));
+      }
+    }
     imageContent = { baseRows, jumps };
     this.imageContents.set(imageId.key, imageContent);
     return imageContent;

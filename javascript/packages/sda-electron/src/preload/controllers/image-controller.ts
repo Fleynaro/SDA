@@ -18,6 +18,9 @@ const ImageControllerImpl: ImageController = {
   getImageTotalRowsCount: (id: ObjectId) => invoke('getImageTotalRowsCount', id),
 
   offsetToRowIdx: (id: ObjectId, offset: number) => invoke('offsetToRowIdx', id, offset),
+
+  getJumpsAt: (id: ObjectId, startOffset: number, endOffset: number) =>
+    invoke('getJumpsAt', id, startOffset, endOffset),
 };
 
 export default ImageControllerImpl;

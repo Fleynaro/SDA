@@ -1,7 +1,7 @@
 import { Offset } from 'sda-core';
 import { binSearch } from './common';
 
-class Interval {
+export class Interval {
   public start: number;
   public end: number;
 
@@ -146,6 +146,7 @@ export class JumpManager {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function Test() {
   const jumps = new JumpManager();
   jumps.addJump(new Jump(0, 10));
@@ -165,4 +166,4 @@ function Test() {
   console.log(foundJumps);
 }
 
-Test();
+//Test();

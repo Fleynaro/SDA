@@ -56,6 +56,12 @@ export declare abstract class PcodeDecoder implements IIdentifiable {
 }
 
 export namespace Instruction {
+  export enum Type {
+    None,
+    ConditionalBranch,
+    UnconditionalBranch,
+  }
+
   export enum TokenType {
     Mneumonic,
     Register,

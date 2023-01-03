@@ -48,7 +48,7 @@ export declare class Program {
 export declare function CleanUpSharedObjectLookupTable(): void;
 
 export interface InstructionInfo {
-  type: number;
+  type: Instruction.Type;
   offset: Offset;
   length: number;
   targetOffset: Offset;

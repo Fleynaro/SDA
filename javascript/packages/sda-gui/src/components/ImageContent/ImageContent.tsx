@@ -6,10 +6,17 @@ import {
   ImageRowType,
   ImageBaseRow,
   ImageInstructionRow,
+  Jump,
 } from 'sda-electron/api/image';
-import { Group, Layer, Rect, Text } from 'react-konva';
+import { Arrow, Group, Layer, Rect, Text } from 'react-konva';
 import Konva from 'konva';
-import { useKonvaStage, buildKonvaFormatText, useKonvaFormatTextSelection } from 'components/Konva';
+import {
+  useKonvaStage,
+  buildKonvaFormatText,
+  useKonvaFormatTextSelection,
+  setCursor,
+} from 'components/Konva';
+import style from './style';
 
 interface ImageRowElement {
   offset: number;
@@ -17,8 +24,9 @@ interface ImageRowElement {
   element: JSX.Element;
 }
 
-interface RowContextValue {
-  selection: {
+interface ImageContentContextValue {
+  goToOffset: (offset: number) => void;
+  rowSelection: {
     selectedRows: number[];
     setSelectedRows: (rows: number[]) => void;
     firstSelectedRow?: number;
@@ -31,30 +39,15 @@ interface RowContextValue {
   };
 }
 
-const RowContext = createContext<RowContextValue | null>(null);
+const ImageContentContext = createContext<ImageContentContextValue | null>(null);
+
+const useImageContentContext = () => {
+  const ctx = useContext(ImageContentContext);
+  if (!ctx) throw new Error('ImageContentContext is not set');
+  return ctx;
+};
 
 const buildInstructionRow = (row: ImageInstructionRow): ImageRowElement => {
-  const viewConfig = {
-    padding: 5,
-    cols: {
-      jump: {
-        width: 70,
-      },
-      offset: {
-        width: 50,
-      },
-      instruction: {
-        width: 200,
-      },
-    },
-    instructionTokenColors: {
-      ['Mneumonic']: '#eddaa4',
-      ['Register']: '#93c5db',
-      ['Number']: '#e8e8e8',
-      ['AddressAbs']: '#d2b2d6',
-      ['AddressRel']: '#bdbdbd',
-    } as { [type: string]: string },
-  };
   const offsetText = buildKonvaFormatText({
     selectionArea: 'offset',
     textIdx: row.offset,
@@ -64,7 +57,7 @@ const buildInstructionRow = (row: ImageInstructionRow): ImageRowElement => {
         style: { fontSize: 12, fill: 'white' },
       },
     ],
-    maxWidth: viewConfig.cols.instruction.width,
+    maxWidth: style.row.cols.instruction.width,
     newLineInEnd: true,
   });
   const instructionText = buildKonvaFormatText({
@@ -75,21 +68,19 @@ const buildInstructionRow = (row: ImageInstructionRow): ImageRowElement => {
         text: token.text,
         style: {
           fontSize: 12,
-          fill: viewConfig.instructionTokenColors[token.type] || 'white',
+          fill: style.row.instructionTokenColors[token.type] || 'white',
         },
       };
     }),
-    maxWidth: viewConfig.cols.instruction.width,
+    maxWidth: style.row.cols.instruction.width,
     newLineInEnd: true,
   });
-  const height = instructionText.height + viewConfig.padding * 2;
+  const height = instructionText.height + style.row.padding * 2;
   function Elem() {
-    const rowCtx = useContext(RowContext);
-    if (!rowCtx) return <></>;
     const {
-      selection: { selectedRows, firstSelectedRow, setFirstSelectedRow, setLastSelectedRow },
+      rowSelection: { selectedRows, firstSelectedRow, setFirstSelectedRow, setLastSelectedRow },
       style: { rowWidth },
-    } = rowCtx;
+    } = useImageContentContext();
     const isSelected = selectedRows.includes(row.offset);
 
     const onMouseDown = useCallback(() => {
@@ -120,17 +111,17 @@ const buildInstructionRow = (row: ImageInstructionRow): ImageRowElement => {
           fill={isSelected ? '#360b0b' : 'black'}
           shadowBlur={5}
         />
-        <Group x={viewConfig.padding} y={viewConfig.padding}>
-          <Group width={viewConfig.cols.jump.width}></Group>
+        <Group x={style.row.padding} y={style.row.padding}>
+          <Group width={style.row.cols.jump.width}></Group>
           <Group
-            x={viewConfig.padding + viewConfig.cols.jump.width}
-            width={viewConfig.cols.offset.width}
+            x={style.row.padding + style.row.cols.jump.width}
+            width={style.row.cols.offset.width}
           >
             {offsetText.elem}
           </Group>
           <Group
-            x={viewConfig.padding + viewConfig.cols.jump.width + viewConfig.cols.offset.width}
-            width={viewConfig.cols.instruction.width}
+            x={style.row.padding + style.row.cols.jump.width + style.row.cols.offset.width}
+            width={style.row.cols.instruction.width}
           >
             {instructionText.elem}
           </Group>
@@ -156,22 +147,71 @@ const buildRow = (row: ImageBaseRow): ImageRowElement => {
   };
 };
 
+const buildJump = (jump: Jump, layerLevel: number, fromY?: number, toY?: number): JSX.Element => {
+  const direction = jump.from < jump.to ? 1 : -1;
+  const startY = fromY || -10000 * direction; // 10000 = endless
+  const endY = toY || 10000 * direction;
+  const isClickable = fromY === undefined || toY === undefined;
+  const startX = style.row.cols.jump.width;
+  const layerOffset = style.jump.pointerSize + layerLevel * style.jump.distanceBetweenLayers;
+  const p1 = [startX + style.jump.pointerSize, startY];
+  const p2 = [startX - layerOffset, p1[1]];
+  const p3 = [p2[0], endY];
+  const p4 = [p1[0], p3[1]];
+  function Elem() {
+    const { goToOffset } = useImageContentContext();
+
+    const onClickJump = useCallback(() => {
+      if (fromY === undefined) {
+        goToOffset(jump.from);
+      } else if (toY === undefined) {
+        goToOffset(jump.to);
+      }
+    }, []);
+
+    const onMouseEnter = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (!isClickable) return;
+      const target = e.target as Konva.Arrow;
+      target.fill(style.jump.hoverColor);
+      target.stroke(style.jump.hoverColor);
+      setCursor(e, 'pointer');
+    }, []);
+
+    const onMouseLeave = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (!isClickable) return;
+      const target = e.target as Konva.Arrow;
+      target.fill(style.jump.color);
+      target.stroke(style.jump.color);
+      setCursor(e, 'default');
+    }, []);
+
+    return (
+      <Arrow
+        points={[p1[0], p1[1], p2[0], p2[1], p3[0], p3[1], p4[0], p4[1]]}
+        pointerLength={style.jump.pointerSize}
+        pointerWidth={style.jump.pointerSize}
+        fill={style.jump.color}
+        stroke={style.jump.color}
+        strokeWidth={style.jump.arrowWidth}
+        onClick={onClickJump}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      />
+    );
+  }
+  return <Elem />;
+};
+
 export interface ImageContentProps {
   imageId: ObjectId;
 }
 
 export function ImageContent({ imageId }: ImageContentProps) {
-  const viewConfig = {
-    scenePaddingRight: 10,
-    sliderWidth: 15,
-    avgRowHeight: 30,
-    wheelDelta: 200,
-    cacheSize: 200,
-  };
   const stage = useKonvaStage();
   const [totalRowsCount, setTotalRowsCount] = useState(0);
   const [scrollY, setScrollY] = useState(0);
   const [rowsToRender, setRowsToRender] = useState<JSX.Element[]>([]);
+  const [jumpsToRender, setJumpsToRender] = useState<JSX.Element[]>([]);
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [firstSelectedRow, setFirstSelectedRow] = useState<number>();
   const [lastSelectedRow, setLastSelectedRow] = useState<number>();
@@ -179,13 +219,13 @@ export function ImageContent({ imageId }: ImageContentProps) {
   const cachedRowsIdxs = useRef<number[]>([]);
   const rowsLoading = useRef(false);
   const textSelection = useKonvaFormatTextSelection();
-  const stageWidth = stage.size.width - viewConfig.scenePaddingRight;
-  const viewWidth = stageWidth - viewConfig.sliderWidth;
-  const avgImageContentHeight = viewConfig.avgRowHeight * totalRowsCount;
+  const stageWidth = stage.size.width - style.viewport.scenePaddingRight;
+  const viewWidth = stageWidth - style.viewport.sliderWidth;
+  const avgImageContentHeight = style.viewport.avgRowHeight * totalRowsCount;
   const sliderHeight =
     avgImageContentHeight &&
     Math.max(stage.size.height * (stage.size.height / avgImageContentHeight), 20);
-  const sliderPosX = stageWidth - viewConfig.sliderWidth;
+  const sliderPosX = stageWidth - style.viewport.sliderWidth;
   const sliderMaxPosY = stage.size.height - sliderHeight;
   const lastRowIdx = totalRowsCount - 1;
   const scrollToRowIdx = (scrollY: number) => (scrollY / sliderMaxPosY) * lastRowIdx;
@@ -202,7 +242,7 @@ export function ImageContent({ imageId }: ImageContentProps) {
       const rows = await getImageApi().getImageRowsAt(imageId, rowIdx, 1);
       row = buildRow(rows[0]);
       // cache for better performance
-      if (cachedRowsIdxs.current.length > viewConfig.cacheSize) {
+      if (cachedRowsIdxs.current.length > style.viewport.cacheSize) {
         const removedIdx = cachedRowsIdxs.current.shift();
         if (removedIdx) {
           delete cachedRows.current[removedIdx];
@@ -279,10 +319,10 @@ export function ImageContent({ imageId }: ImageContentProps) {
 
   // render rows on scroll and stage resize
   useEffect(async () => {
+    // rows
     if (rowsLoading.current) return;
     rowsLoading.current = true;
     const rows = await getForwardRows(stage.size.height);
-    rowsLoading.current = false;
     setRowsToRender(
       rows.map(({ y, row }) => (
         <Group key={row.offset} y={y}>
@@ -290,24 +330,44 @@ export function ImageContent({ imageId }: ImageContentProps) {
         </Group>
       )),
     );
+    // jumps
+    if (rows.length > 0) {
+      const startOffset = rows[0].row.offset;
+      const endOffset = rows[rows.length - 1].row.offset;
+      const jumps = await getImageApi().getJumpsAt(imageId, startOffset, endOffset);
+      const jumpsToRender: JSX.Element[] = [];
+      for (let layerLevel = 0; layerLevel < jumps.length; layerLevel++) {
+        const jumpsOnLayer = jumps[layerLevel];
+        for (const jump of jumpsOnLayer) {
+          const fromRow = rows.find((r) => r.row.offset === jump.from);
+          const toRow = rows.find((r) => r.row.offset === jump.to);
+          const fromY = fromRow && fromRow.y + fromRow.row.height / 2;
+          const toY = toRow && toRow.y + toRow.row.height / 2;
+          const jumpElem = buildJump(jump, layerLevel, fromY, toY);
+          jumpsToRender.push(<Group key={`${jump.from}-${jump.to}`}>{jumpElem}</Group>);
+        }
+      }
+      setJumpsToRender(jumpsToRender);
+    }
+    rowsLoading.current = false;
   }, [scrollY, stage.size.height]);
 
   const onWheel = useCallback(
     async (e: Konva.KonvaEventObject<WheelEvent>) => {
       if (e.evt.deltaY > 0) {
-        const forwardRows = await getForwardRows(viewConfig.wheelDelta);
+        const forwardRows = await getForwardRows(style.viewport.wheelDelta);
         if (forwardRows.length > 0) {
           const lastRow = forwardRows[forwardRows.length - 1];
           const newScrollRowIdx =
-            lastRow.rowIdx - (lastRow.y - viewConfig.wheelDelta) / lastRow.row.height;
+            lastRow.rowIdx - (lastRow.y - style.viewport.wheelDelta) / lastRow.row.height;
           setScrollY(rowIdxToScroll(newScrollRowIdx));
         }
       } else {
-        const backwardRows = await getBackwardRows(viewConfig.wheelDelta);
+        const backwardRows = await getBackwardRows(style.viewport.wheelDelta);
         if (backwardRows.length > 0) {
           const lastRow = backwardRows[backwardRows.length - 1];
           const newScrollRowIdx =
-            lastRow.rowIdx + 1 + (lastRow.y - viewConfig.wheelDelta) / lastRow.row.height;
+            lastRow.rowIdx + 1 + (lastRow.y - style.viewport.wheelDelta) / lastRow.row.height;
           setScrollY(rowIdxToScroll(newScrollRowIdx));
         }
       }
@@ -319,6 +379,14 @@ export function ImageContent({ imageId }: ImageContentProps) {
     textSelection.stopSelecting();
   }, [textSelection]);
 
+  const goToOffset = useCallback(
+    async (offset: number) => {
+      const rowIdx = await getImageApi().offsetToRowIdx(imageId, offset);
+      setScrollY(rowIdxToScroll(rowIdx - rowsToRender.length / 2));
+    },
+    [imageId, rowIdxToScroll],
+  );
+
   return (
     <>
       <Layer onWheel={onWheel}>
@@ -326,7 +394,7 @@ export function ImageContent({ imageId }: ImageContentProps) {
       </Layer>
       <Layer onWheel={onWheel}>
         <Rect
-          width={viewConfig.sliderWidth}
+          width={style.viewport.sliderWidth}
           height={sliderHeight}
           x={sliderPosX}
           y={scrollY}
@@ -344,9 +412,10 @@ export function ImageContent({ imageId }: ImageContentProps) {
         />
       </Layer>
       <Layer onWheel={onWheel} onMouseUp={onMouseUp}>
-        <RowContext.Provider
+        <ImageContentContext.Provider
           value={{
-            selection: {
+            goToOffset,
+            rowSelection: {
               selectedRows,
               setSelectedRows,
               firstSelectedRow,
@@ -360,7 +429,8 @@ export function ImageContent({ imageId }: ImageContentProps) {
           }}
         >
           {rowsToRender}
-        </RowContext.Provider>
+          {jumpsToRender}
+        </ImageContentContext.Provider>
         <Text text={textSelection.selectedTextRef.current} x={10} y={10} fill="green" />
       </Layer>
     </>
