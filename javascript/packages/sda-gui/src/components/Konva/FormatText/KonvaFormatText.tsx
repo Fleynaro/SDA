@@ -203,7 +203,8 @@ export const buildKonvaFormatText = ({
   let x = 0;
   let y = 0;
   let i = 0;
-  let lastHeight = 0;
+  let maxRealWidth = 0;
+  let maxRealHeight = 0;
   if (newLineInEnd) {
     const lastStyle = textParts[textParts.length - 1].style;
     textParts = [...textParts, { text: '\n', style: lastStyle }];
@@ -236,11 +237,13 @@ export const buildKonvaFormatText = ({
       );
       x += textSize.width;
       i++;
-      lastHeight = Math.max(lastHeight, textSize.height);
+      maxRealWidth = Math.max(maxRealWidth, x);
+      maxRealHeight = Math.max(maxRealHeight, y + textSize.height);
     }
   }
   return {
-    height: y + lastHeight,
+    width: maxRealWidth,
+    height: maxRealHeight,
     elem: result,
   };
 };

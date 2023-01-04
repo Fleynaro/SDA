@@ -6,10 +6,10 @@ import Konva from 'konva';
 import { useKonvaStage, useKonvaFormatTextSelection } from 'components/Konva';
 import { ContextMenu, ContextMenuProps, MenuNode } from 'components/Menu';
 import { animate } from 'utils';
-import style from './style';
+import { useImageContentStyle } from './style';
 import { buildRow, ImageRowElement } from './Row';
 import { buildJump } from './Jump';
-import { useImageContent } from './Context';
+import { useImageContent } from './context';
 
 export const ImageContentContextMenu = (props: ContextMenuProps) => {
   return (
@@ -26,6 +26,7 @@ export const ImageContentContextMenu = (props: ContextMenuProps) => {
 
 export function ImageContent() {
   const stage = useKonvaStage();
+  const { styles: style } = useImageContentStyle();
   const {
     imageId,
     setFunctions,
@@ -44,7 +45,7 @@ export function ImageContent() {
   const sliderHeight =
     avgImageContentHeight &&
     Math.max(stage.size.height * (stage.size.height / avgImageContentHeight), 20);
-  const sliderPosX = style.row.width(stage.size.width);
+  const sliderPosX = style.row.width;
   const sliderMaxPosY = stage.size.height - sliderHeight;
   const lastRowIdx = totalRowsCount - 1;
   const scrollToRowIdx = useCallback(
@@ -64,7 +65,7 @@ export function ImageContent() {
     let row = cachedRows.current[rowIdx];
     if (!row) {
       const rows = await getImageApi().getImageRowsAt(imageId, rowIdx, 1);
-      row = buildRow(rows[0]);
+      row = buildRow(rows[0], style);
       // cache for better performance
       if (cachedRowsIdxs.current.length > style.viewport.cacheSize) {
         const removedIdx = cachedRowsIdxs.current.shift();
@@ -168,7 +169,7 @@ export function ImageContent() {
           const toRow = rows.find((r) => r.row.offset === jump.to);
           const fromY = fromRow && fromRow.y + fromRow.row.height / 2;
           const toY = toRow && toRow.y + toRow.row.height / 2;
-          const jumpElem = buildJump(jump, layerLevel, fromY, toY);
+          const jumpElem = buildJump(jump, layerLevel, style, fromY, toY);
           jumpsToRender.push(<Group key={`${jump.from}-${jump.to}`}>{jumpElem}</Group>);
         }
       }
@@ -179,7 +180,13 @@ export function ImageContent() {
       // force component updated to render actual rows
       setForceUpdate(forceUpdate + 1);
     }
-  }, [scrollY, stage.size.height, forceUpdate]);
+  }, [scrollY, style, forceUpdate]);
+
+  useEffect(() => {
+    // clear cache on style change
+    cachedRows.current = {};
+    cachedRowsIdxs.current = [];
+  }, [style]);
 
   const onWheel = useCallback(
     async (e: Konva.KonvaEventObject<WheelEvent>) => {
@@ -201,7 +208,7 @@ export function ImageContent() {
         }
       }
     },
-    [scrollY, sliderMaxPosY],
+    [scrollY, sliderMaxPosY, style],
   );
 
   const goToOffset = useCallback(

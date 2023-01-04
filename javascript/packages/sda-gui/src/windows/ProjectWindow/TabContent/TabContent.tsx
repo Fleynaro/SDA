@@ -5,6 +5,7 @@ import {
   ImageContent,
   ImageContentContextMenu,
   ImageContentProvider,
+  ImageContentStyleProvider,
   useImageContent,
 } from 'components/ImageContent';
 import { KonvaStage } from 'components/Konva';

@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
 import { ImageRowType, ImageBaseRow, ImageInstructionRow } from 'sda-electron/api/image';
 import { Group, Rect } from 'react-konva';
-import { buildKonvaFormatText, useKonvaStage } from 'components/Konva';
-import style from './style'; // static style
-import { useImageContent } from './Context';
+import { buildKonvaFormatText } from 'components/Konva';
+import { StylesType } from './style';
+import { useImageContent } from './context';
 
 export interface ImageRowElement {
   offset: number;
@@ -11,7 +11,7 @@ export interface ImageRowElement {
   element: JSX.Element;
 }
 
-const buildInstructionRow = (row: ImageInstructionRow): ImageRowElement => {
+const buildInstructionRow = (row: ImageInstructionRow, style: StylesType): ImageRowElement => {
   const offsetText = buildKonvaFormatText({
     selectionArea: 'offset',
     textIdx: row.offset,
@@ -44,8 +44,7 @@ const buildInstructionRow = (row: ImageInstructionRow): ImageRowElement => {
     const {
       rowSelection: { selectedRows, firstSelectedRow, setFirstSelectedRow, setLastSelectedRow },
     } = useImageContent();
-    const { size: stageSize } = useKonvaStage();
-    const rowWidth = style.row.width(stageSize.width);
+    const rowWidth = style.row.width;
     const isSelected = selectedRows.includes(row.offset);
 
     const onMouseDown = useCallback(() => {
@@ -65,7 +64,7 @@ const buildInstructionRow = (row: ImageInstructionRow): ImageRowElement => {
 
     return (
       <Group
-        width={rowWidth}
+        width={style.row.width}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
@@ -101,9 +100,9 @@ const buildInstructionRow = (row: ImageInstructionRow): ImageRowElement => {
   };
 };
 
-export const buildRow = (row: ImageBaseRow): ImageRowElement => {
+export const buildRow = (row: ImageBaseRow, styles: StylesType): ImageRowElement => {
   if (row.type === ImageRowType.Instruction) {
-    return buildInstructionRow(row as ImageInstructionRow);
+    return buildInstructionRow(row as ImageInstructionRow, styles);
   }
   return {
     offset: row.offset,

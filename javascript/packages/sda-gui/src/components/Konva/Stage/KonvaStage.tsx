@@ -1,8 +1,8 @@
 import { Box, SxProps, Theme } from '@mui/material';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { KonvaNodeEvents, Stage, StageProps } from 'react-konva';
+import { KonvaNodeEvents, Stage } from 'react-konva';
 
-type StageSize = {
+export type StageSize = {
   width: number;
   height: number;
 };

@@ -3,12 +3,13 @@ import { Jump } from 'sda-electron/api/image';
 import { Arrow } from 'react-konva';
 import Konva from 'konva';
 import { setCursor } from 'components/Konva';
-import style from './style'; // static style
-import { useImageContent } from './Context';
+import { StylesType } from './style';
+import { useImageContent } from './context';
 
 export const buildJump = (
   jump: Jump,
   layerLevel: number,
+  style: StylesType,
   fromY?: number,
   toY?: number,
 ): JSX.Element => {
