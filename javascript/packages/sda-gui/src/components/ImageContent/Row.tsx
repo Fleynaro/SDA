@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
 import { ImageRowType, ImageBaseRow, ImageInstructionRow } from 'sda-electron/api/image';
 import { Group, Rect } from 'react-konva';
-import { buildKonvaFormatText } from 'components/Konva';
+import { buildKonvaFormatText, useKonvaStage } from 'components/Konva';
 import style from './style'; // static style
-import { useImageContentContext } from './context';
+import { useImageContent } from './Context';
 
 export interface ImageRowElement {
   offset: number;
@@ -43,8 +43,9 @@ const buildInstructionRow = (row: ImageInstructionRow): ImageRowElement => {
   function Elem() {
     const {
       rowSelection: { selectedRows, firstSelectedRow, setFirstSelectedRow, setLastSelectedRow },
-      style: { rowWidth },
-    } = useImageContentContext();
+    } = useImageContent();
+    const { size: stageSize } = useKonvaStage();
+    const rowWidth = style.row.width(stageSize.width);
     const isSelected = selectedRows.includes(row.offset);
 
     const onMouseDown = useCallback(() => {

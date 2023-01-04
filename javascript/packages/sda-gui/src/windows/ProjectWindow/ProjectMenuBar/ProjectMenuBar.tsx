@@ -1,15 +1,11 @@
 import { useState } from 'react';
-import { useCallback, useEffect } from 'hooks';
+import { useCallback } from 'hooks';
 import { MenuBar, MenuBarItem, MenuNode } from 'components/Menu';
 import { useProjectId } from 'providers/ProjectProvider';
 import SaveIcon from '@mui/icons-material/Save';
 import { getProjectApi } from 'sda-electron/api/project';
 
-interface ProjectMenuBarProps {
-  f?: number;
-}
-
-export default function ProjectMenuBar(props: ProjectMenuBarProps) {
+export default function ProjectMenuBar() {
   const projectId = useProjectId();
   const [canBeSaved, setCanBeSaved] = useState(false);
 

@@ -13,3 +13,7 @@ export const animate = (updater: (progress: number) => void, duration: number) =
   };
   requestAnimationFrame(update);
 };
+
+export const nullFunction = () => {
+  throw new Error('Function is not set');
+};

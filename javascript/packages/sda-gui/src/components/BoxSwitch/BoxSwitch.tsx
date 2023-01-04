@@ -20,12 +20,13 @@ export function BoxSwitch({ value, children, sx }: BoxSwitchProps) {
 export interface BoxSwitchCaseProps {
   value: string;
   children?: React.ReactNode;
+  sx?: SxProps<Theme>;
 }
 
-export function BoxSwitchCase({ value, children }: BoxSwitchCaseProps) {
+export function BoxSwitchCase({ value, children, sx }: BoxSwitchCaseProps) {
   const context = useContext(BoxSwitchContext);
   return (
-    <Box hidden={context !== value} sx={{ height: '100%' }}>
+    <Box hidden={context !== value} sx={{ height: '100%', ...sx }}>
       {children}
     </Box>
   );

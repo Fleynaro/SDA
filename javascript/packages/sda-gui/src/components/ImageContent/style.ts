@@ -1,4 +1,4 @@
-export default {
+const styles = {
   viewport: {
     scenePaddingRight: 10,
     sliderWidth: 15,
@@ -11,13 +11,14 @@ export default {
     padding: 5,
     cols: {
       jump: {
+        // TODO: make this dynamic using useState, make this file contain default values
         width: 100,
       },
       offset: {
         width: 50,
       },
       instruction: {
-        width: 200,
+        width: 300,
       },
     },
     instructionTokenColors: {
@@ -36,5 +37,14 @@ export default {
     color: 'white',
     hoverColor: '#94d8ff',
     selectedColor: '#ed728a',
+  },
+};
+
+export default {
+  ...styles,
+  row: {
+    ...styles.row,
+    width: (stageWidth: number) =>
+      stageWidth - styles.viewport.scenePaddingRight - styles.viewport.sliderWidth,
   },
 };

@@ -1,47 +1,60 @@
 import { useCallback, useRef, useState } from 'react';
 import { useEffect } from 'hooks';
-import { ObjectId } from 'sda-electron/api/common';
-import { getImageApi, Jump } from 'sda-electron/api/image';
+import { getImageApi } from 'sda-electron/api/image';
 import { Group, Layer, Rect, Text } from 'react-konva';
 import Konva from 'konva';
 import { useKonvaStage, useKonvaFormatTextSelection } from 'components/Konva';
-import style from './style'; // static style
+import { ContextMenu, ContextMenuProps, MenuNode } from 'components/Menu';
 import { animate } from 'utils';
+import style from './style';
 import { buildRow, ImageRowElement } from './Row';
 import { buildJump } from './Jump';
-import { ImageContentContext } from './context';
+import { useImageContent } from './Context';
 
-export interface ImageContentProps {
-  imageId: ObjectId;
-}
+export const ImageContentContextMenu = (props: ContextMenuProps) => {
+  return (
+    <ContextMenu {...props}>
+      <MenuNode
+        label="Test"
+        onClick={() => {
+          console.log('Test');
+        }}
+      />
+    </ContextMenu>
+  );
+};
 
-export function ImageContent({ imageId }: ImageContentProps) {
+export function ImageContent() {
   const stage = useKonvaStage();
+  const {
+    imageId,
+    setFunctions,
+    rowSelection: { firstSelectedRow, lastSelectedRow, setSelectedRows },
+  } = useImageContent();
   const [totalRowsCount, setTotalRowsCount] = useState(0);
   const [scrollY, setScrollY] = useState(0);
   const [rowsToRender, setRowsToRender] = useState<JSX.Element[]>([]);
   const [jumpsToRender, setJumpsToRender] = useState<JSX.Element[]>([]);
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
-  const [firstSelectedRow, setFirstSelectedRow] = useState<number>();
-  const [lastSelectedRow, setLastSelectedRow] = useState<number>();
-  const [selectedJump, setSelectedJump] = useState<Jump>();
   const [forceUpdate, setForceUpdate] = useState(0);
   const cachedRows = useRef<{ [idx: number]: ImageRowElement }>({});
   const cachedRowsIdxs = useRef<number[]>([]);
   const sync = useRef({ isLoading: false, requestCount: 0 });
   const textSelection = useKonvaFormatTextSelection();
-  const stageWidth = stage.size.width - style.viewport.scenePaddingRight;
-  const viewWidth = stageWidth - style.viewport.sliderWidth;
   const avgImageContentHeight = style.viewport.avgRowHeight * totalRowsCount;
   const sliderHeight =
     avgImageContentHeight &&
     Math.max(stage.size.height * (stage.size.height / avgImageContentHeight), 20);
-  const sliderPosX = stageWidth - style.viewport.sliderWidth;
+  const sliderPosX = style.row.width(stage.size.width);
   const sliderMaxPosY = stage.size.height - sliderHeight;
   const lastRowIdx = totalRowsCount - 1;
-  const scrollToRowIdx = (scrollY: number) => (scrollY / sliderMaxPosY) * lastRowIdx;
-  const rowIdxToScroll = (rowIdx: number) =>
-    (Math.min(Math.max(rowIdx, 0), lastRowIdx) / lastRowIdx) * sliderMaxPosY;
+  const scrollToRowIdx = useCallback(
+    (scrollY: number) => (scrollY / sliderMaxPosY) * lastRowIdx,
+    [lastRowIdx, sliderMaxPosY],
+  );
+  const rowIdxToScroll = useCallback(
+    (rowIdx: number) => (Math.min(Math.max(rowIdx, 0), lastRowIdx) / lastRowIdx) * sliderMaxPosY,
+    [lastRowIdx, sliderMaxPosY],
+  );
   const scrollRowIdx = scrollToRowIdx(scrollY);
   const curRowIdx = Math.floor(scrollRowIdx);
   const curRowInvisiblePart = scrollRowIdx - curRowIdx;
@@ -191,10 +204,6 @@ export function ImageContent({ imageId }: ImageContentProps) {
     [scrollY, sliderMaxPosY],
   );
 
-  const onMouseUp = useCallback(() => {
-    textSelection.stopSelecting();
-  }, [textSelection]);
-
   const goToOffset = useCallback(
     async (offset: number) => {
       const rowIdx = await getImageApi().offsetToRowIdx(imageId, offset);
@@ -206,12 +215,14 @@ export function ImageContent({ imageId }: ImageContentProps) {
       }, 1000);
       return true;
     },
-    [imageId, rowIdxToScroll],
+    [imageId, scrollY, rowsToRender, rowIdxToScroll],
   );
 
-  const onContextMenu = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
-    e.evt.preventDefault();
-  }, []);
+  useEffect(() => {
+    setFunctions({
+      goToOffset,
+    });
+  }, [goToOffset]);
 
   return (
     <>
@@ -237,28 +248,9 @@ export function ImageContent({ imageId }: ImageContentProps) {
           }}
         />
       </Layer>
-      <Layer onWheel={onWheel} onMouseUp={onMouseUp} onContextMenu={onContextMenu}>
-        <ImageContentContext.Provider
-          value={{
-            goToOffset,
-            selectedJump,
-            setSelectedJump,
-            rowSelection: {
-              selectedRows,
-              setSelectedRows,
-              firstSelectedRow,
-              setFirstSelectedRow,
-              lastSelectedRow,
-              setLastSelectedRow,
-            },
-            style: {
-              rowWidth: viewWidth,
-            },
-          }}
-        >
-          {rowsToRender}
-          {jumpsToRender}
-        </ImageContentContext.Provider>
+      <Layer onWheel={onWheel}>
+        {rowsToRender}
+        {jumpsToRender}
         <Text text={textSelection.selectedTextRef.current} x={10} y={10} fill="green" />
       </Layer>
     </>

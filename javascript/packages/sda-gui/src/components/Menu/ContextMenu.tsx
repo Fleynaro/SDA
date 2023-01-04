@@ -13,6 +13,7 @@ export interface ContextMenuProps {
 
 export interface ContextMenuHook {
   open: (event: React.MouseEvent<HTMLElement>) => void;
+  openAtPos: (x: number, y: number) => void;
   close: () => void;
   props: ContextMenuProps;
 }
@@ -37,6 +38,17 @@ export const useContextMenu = (mousePos = true): ContextMenuHook => {
     [mousePos],
   );
 
+  const openAtPos = useCallback(
+    (x: number, y: number) => {
+      setOpened(true);
+      setAnchorPosition({
+        top: y,
+        left: x,
+      });
+    },
+    [mousePos],
+  );
+
   const close = useCallback(() => {
     setOpened(false);
   }, []);
@@ -50,6 +62,7 @@ export const useContextMenu = (mousePos = true): ContextMenuHook => {
 
   return {
     open,
+    openAtPos,
     close,
     props,
   };

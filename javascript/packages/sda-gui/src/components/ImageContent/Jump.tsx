@@ -4,7 +4,7 @@ import { Arrow } from 'react-konva';
 import Konva from 'konva';
 import { setCursor } from 'components/Konva';
 import style from './style'; // static style
-import { useImageContentContext } from './context';
+import { useImageContent } from './Context';
 
 export const buildJump = (
   jump: Jump,
@@ -23,7 +23,11 @@ export const buildJump = (
   const p3 = [p2[0], endY];
   const p4 = [p1[0], p3[1]];
   function Elem() {
-    const { selectedJump, setSelectedJump, goToOffset } = useImageContentContext();
+    const {
+      selectedJump,
+      setSelectedJump,
+      functions: { goToOffset },
+    } = useImageContent();
     const isSelected = jump.from === selectedJump?.from && jump.to === selectedJump?.to;
     const color = isSelected ? style.jump.selectedColor : style.jump.color;
 
