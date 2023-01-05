@@ -37,10 +37,14 @@ export class Jump {
       ? new Interval(this.offset, this.targetOffset)
       : new Interval(this.targetOffset, this.offset);
   }
+
+  public equals(jump: Jump): boolean {
+    return this.offset === jump.offset && this.targetOffset === jump.targetOffset;
+  }
 }
 
 export class JumpManager {
-  private jumps: Jump[][];
+  private jumps: Jump[][]; // [layer][jump]
 
   constructor() {
     this.jumps = [[]];
@@ -81,6 +85,47 @@ export class JumpManager {
       if (layerLevel === this.jumps.length) {
         this.jumps.push([]);
       }
+    }
+  }
+
+  public removeJump(jump: Jump) {
+    const jumpsToAddBack: Jump[] = [];
+    let startRemvoingAll = false;
+    for (const jumpsOnLevel of this.jumps) {
+      const nearestRightJumpIdx = this.findNearestRightJumpIdx(jumpsOnLevel, jump.interval.start);
+      const [foundJumpsOnLevel, foundJumpsOnLevelIdx] = this.findJumpsInInterval_(
+        jumpsOnLevel,
+        jump.interval,
+        nearestRightJumpIdx,
+        true,
+      );
+      if (!startRemvoingAll) {
+        const jumpToRemoveRelIdx = foundJumpsOnLevel.findIndex((j) => j.equals(jump));
+        if (jumpToRemoveRelIdx !== -1) {
+          const jumpToRemoveIdx = foundJumpsOnLevelIdx[jumpToRemoveRelIdx];
+          jumpsOnLevel.splice(jumpToRemoveIdx, 1);
+          // remove all intersected jumps on above layers and then add them back (to reach right arrangement of jumps)
+          startRemvoingAll = true;
+        }
+      } else {
+        const sortedFoundJumpsOnLevelIdx = foundJumpsOnLevelIdx.sort((a, b) => b - a);
+        for (const idx of sortedFoundJumpsOnLevelIdx) {
+          jumpsOnLevel.splice(idx, 1);
+        }
+        jumpsToAddBack.push(...foundJumpsOnLevel);
+      }
+    }
+    // add back jumps
+    for (const jumpToAddBack of jumpsToAddBack) {
+      this.addJump(jumpToAddBack);
+    }
+    // remove empty layers
+    let layerLevel = this.jumps.length - 1;
+    while (layerLevel >= 0) {
+      if (this.jumps[layerLevel].length === 0) {
+        this.jumps.splice(layerLevel, 1);
+      }
+      layerLevel--;
     }
   }
 
@@ -138,7 +183,9 @@ export class JumpManager {
           foundJumps.push(jump);
           foundJumpsIdx.push(i);
         } else {
-          break;
+          if (!strictIntersection || i > nearestRightJumpIdx) {
+            break;
+          }
         }
       }
     }
@@ -153,17 +200,36 @@ function Test() {
   jumps.addJump(new Jump(15, 20));
   jumps.addJump(new Jump(10, 15));
   jumps.addJump(new Jump(16, 18));
-  jumps.addJump(new Jump(16, 18));
-  // jumps.addJumps([
-  //   new Jump(0, 10),
-  //   new Jump(15, 20),
-  //   new Jump(10, 15),
-  //   new Jump(16, 18),
-  //   new Jump(16, 18),
-  // ]);
-
-  const foundJumps = jumps.findJumpsInInterval(new Interval(14, 17));
-  console.log(foundJumps);
+  jumps.addJump(new Jump(17, 18));
+  {
+    const foundJumps = jumps.findJumpsInInterval(new Interval(14, 17));
+    console.log(foundJumps);
+    /* !!!shown interval [14, 17]!!!
+    [
+      [
+        Jump { offset: 10, targetOffset: 15 },
+        Jump { offset: 17, targetOffset: 18 }
+      ],
+      [ Jump { offset: 16, targetOffset: 18 } ],
+      [ Jump { offset: 15, targetOffset: 20 } ]
+    ]
+    */
+  }
+  // remove jump
+  jumps.removeJump(new Jump(17, 18));
+  {
+    const foundJumps = jumps.findJumpsInInterval(new Interval(14, 17));
+    console.log(foundJumps);
+    /* !!!shown interval [14, 17]!!!
+    [
+      [
+        Jump { offset: 10, targetOffset: 15 },
+        Jump { offset: 16, targetOffset: 18 }
+      ],
+      [ Jump { offset: 15, targetOffset: 20 } ]
+    ]
+    */
+  }
 }
 
-//Test();
+Test();
