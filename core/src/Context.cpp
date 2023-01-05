@@ -53,3 +53,37 @@ void Context::setCallbacks(std::shared_ptr<Callbacks> callbacks) {
 std::shared_ptr<Context::Callbacks> Context::getCallbacks() const {
     return m_callbacks;
 }
+
+std::string Context::Callbacks::getName() const {
+    return "Empty";
+}
+
+void Context::Callbacks::onObjectAdded(Object* obj) {
+    if (m_prevCallbacks) {
+        m_prevCallbacks->onObjectAdded(obj);
+    }
+}
+
+void Context::Callbacks::onObjectModified(Object* obj) {
+    if (m_prevCallbacks) {
+        m_prevCallbacks->onObjectModified(obj);
+    }
+}
+
+void Context::Callbacks::onObjectRemoved(Object* obj) {
+    if (m_prevCallbacks) {
+        m_prevCallbacks->onObjectRemoved(obj);
+    }
+}
+
+void Context::Callbacks::setPrevCallbacks(std::shared_ptr<Context::Callbacks> callbacks) {
+    m_prevCallbacks = callbacks;
+}
+
+std::shared_ptr<Context::Callbacks> Context::Callbacks::Find(const std::string& name, std::shared_ptr<Context::Callbacks> callbacks) {
+    if (callbacks->getName() == name)
+        return callbacks;
+    if (callbacks->m_prevCallbacks)
+        return Find(name, callbacks->m_prevCallbacks);
+    return nullptr;
+}

@@ -11,8 +11,7 @@ namespace sda::bind
             cl
                 .auto_wrap_object_ptrs(true)
                 .inherit<utils::ISerializable>()
-                .property("id", [](const Object& self) { return std::string(self.serializeId()); })
-                .method("setTemporary", &Object::setTemporary);
+                .property("id", [](const Object& self) { return std::string(self.serializeId()); });
             ObjectLookupTableRaw::Register(cl);
             RegisterClassName(cl, "Object");
             module.class_("SdaObject", cl);

@@ -7,35 +7,51 @@
 
 using namespace sda;
 
-ProjectContextCallbacks::ProjectContextCallbacks(Project* project, std::shared_ptr<Callbacks> prevCallbacks)
-    : m_project(project), m_prevCallbacks(prevCallbacks)
+ProjectContextCallbacks::ProjectContextCallbacks(Project* project)
+    : m_project(project)
 {}
 
-void ProjectContextCallbacks::onObjectAdded(Object* obj) {
-    if (m_prevCallbacks)
-        m_prevCallbacks->onObjectAdded(obj);
+std::string ProjectContextCallbacks::getName() const {
+    return "Project";
+}
 
-    m_project->getTransaction()->markAsNew(obj);
-    if(auto objChange = getOrCreateObjectChange())
-        objChange->markAsNew(obj);
+void ProjectContextCallbacks::onObjectAdded(Object* obj) {
+    Context::Callbacks::onObjectAdded(obj);
+
+    if (m_transactionEnabled) {
+        m_project->getTransaction()->markAsNew(obj);
+    }
+    if (m_changeEnabled) {
+        if(auto objChange = getOrCreateObjectChange()) {
+            objChange->markAsNew(obj);
+        }
+    }
 }
 
 void ProjectContextCallbacks::onObjectModified(Object* obj) {
-    if (m_prevCallbacks)
-        m_prevCallbacks->onObjectModified(obj);
+    Context::Callbacks::onObjectModified(obj);
 
-    m_project->getTransaction()->markAsModified(obj);
-    if(auto objChange = getOrCreateObjectChange())
-        objChange->markAsModified(obj);
+    if (m_transactionEnabled) {
+        m_project->getTransaction()->markAsModified(obj);
+    }
+    if (m_changeEnabled) {
+        if(auto objChange = getOrCreateObjectChange()) {
+            objChange->markAsModified(obj);
+        }
+    }
 }
 
 void ProjectContextCallbacks::onObjectRemoved(Object* obj) {
-    if (m_prevCallbacks)
-        m_prevCallbacks->onObjectRemoved(obj);
+    Context::Callbacks::onObjectRemoved(obj);
 
-    m_project->getTransaction()->markAsRemoved(obj);
-    if(auto objChange = getOrCreateObjectChange())
-        objChange->markAsRemoved(obj);
+    if (m_transactionEnabled) {
+        m_project->getTransaction()->markAsRemoved(obj);
+    }
+    if (m_changeEnabled) {
+        if(auto objChange = getOrCreateObjectChange()) {
+            objChange->markAsRemoved(obj);
+        }
+    }
 }
 
 ObjectChange* ProjectContextCallbacks::getOrCreateObjectChange() const {

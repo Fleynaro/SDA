@@ -14,6 +14,8 @@ import { Context, ContextCallbacksImpl } from 'sda-core';
 import { findPlatform } from 'repo/platform';
 import { join as pathJoin } from 'path';
 import { toId } from 'utils/common';
+import isElectronDev from 'electron-is-dev';
+import { createTestObjects } from 'test';
 
 interface ProjectConfig {
   platformName: string;
@@ -84,7 +86,7 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
     const loadCallbacks = context.callbacks;
     {
       const callbacks = ContextCallbacksImpl.New();
-      callbacks.prevCallbacks = context.callbacks;
+      callbacks.setPrevCallbacks(context.callbacks);
       callbacks.onObjectAdded = (obj) => objectChangeEmitter()(toId(obj), ObjectChangeType.Create);
       callbacks.onObjectModified = (obj) =>
         objectChangeEmitter()(toId(obj), ObjectChangeType.Update);
@@ -99,6 +101,9 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
       project.context.callbacks = loadCallbacks;
       project.load();
       project.context.callbacks = prevCallbacks;
+    }
+    if (isElectronDev) {
+      createTestObjects(project.context);
     }
     const projectDTO = toProjectDTO(project);
     await this.updateRecentProjectsWithPath(path, ObjectChangeType.Create);

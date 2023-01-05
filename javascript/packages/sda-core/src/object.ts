@@ -7,8 +7,6 @@ export declare abstract class SdaObject implements IIdentifiable, ISerializable 
   readonly className: string;
   readonly id: string;
 
-  setTemporary(temporary: boolean): void;
-
   serialize(): object;
 
   deserialize(data: object): void;

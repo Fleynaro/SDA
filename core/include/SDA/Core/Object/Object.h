@@ -17,7 +17,6 @@ namespace sda
 
     private:
         Id m_id;
-        bool m_temporary = false;
 
     public:
         Object(Id* id);
@@ -26,9 +25,6 @@ namespace sda
 
         // Get the unique identifier of the object
         Id getId() const;
-
-        // Set the object as temporary
-        void setTemporary(bool temporary);
 
         // Serialize the object id to a json string
         boost::json::string serializeId() const;

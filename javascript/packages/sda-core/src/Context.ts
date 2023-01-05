@@ -5,16 +5,20 @@ import { AddressSpace } from './address-space';
 import { Hash, IIdentifiable } from './utils';
 
 export declare abstract class ContextCallbacks {
+  readonly name: string;
+
+  setPrevCallbacks(prevCallbacks: ContextCallbacks): void;
+
   onObjectAdded(object: SdaObject): void;
 
   onObjectModified(object: SdaObject): void;
 
   onObjectRemoved(object: SdaObject): void;
+
+  static Find(name: string, callbacks: ContextCallbacks): ContextCallbacks;
 }
 
 export declare class ContextCallbacksImpl extends ContextCallbacks {
-  prevCallbacks: ContextCallbacks;
-
   onObjectAdded: (object: SdaObject) => void;
 
   onObjectModified: (object: SdaObject) => void;
@@ -37,6 +41,7 @@ export declare class Context implements IIdentifiable {
 
 module.exports = {
   ...module.exports,
+  ContextCallbacks: m.ContextCallbacks,
   ContextCallbacksImpl: m.ContextCallbacksImpl,
   Context: m.Context,
 };

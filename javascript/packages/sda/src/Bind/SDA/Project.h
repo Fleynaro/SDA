@@ -1,5 +1,6 @@
 #pragma once
 #include "SDA/Project.h"
+#include "SDA/Callbacks/ProjectContextCallbacks.h"
 
 namespace sda::bind
 {
@@ -24,6 +25,18 @@ namespace sda::bind
             ObjectLookupTableRaw::Register(cl);
             RegisterClassName(cl, "Project");
             module.class_("Project", cl);
+        }
+    };
+
+    class ProjectContextCallbacksBind
+    {
+    public:
+        static void Init(v8pp::module& module) {
+            auto cl = NewClass<ProjectContextCallbacks, v8pp::shared_ptr_traits>(module);
+            cl
+                .inherit<Context::Callbacks>()
+                .method("setTransactionEnabled", &ProjectContextCallbacks::setTransactionEnabled)
+                .method("setChangeEnabled", &ProjectContextCallbacks::setChangeEnabled);
         }
     };
 };

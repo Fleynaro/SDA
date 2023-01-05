@@ -1,5 +1,14 @@
 import m from './module';
-import { Context, Image, ImageSection, Hash, IIdentifiable, Offset, Instruction } from 'sda-core';
+import {
+  Context,
+  Image,
+  ImageSection,
+  Hash,
+  IIdentifiable,
+  Offset,
+  Instruction,
+  ContextCallbacks,
+} from 'sda-core';
 
 export declare class Project implements IIdentifiable {
   readonly hashId: Hash;
@@ -16,6 +25,12 @@ export declare class Project implements IIdentifiable {
   static New(program: Program, path: string, context: Context): Project;
 
   static Get(hashId: Hash): Project;
+}
+
+export declare class ProjectContextCallbacks extends ContextCallbacks {
+  setTransactionEnabled(enabled: boolean): void;
+
+  setChangeEnabled(enabled: boolean): void;
 }
 
 export declare abstract class ProgramCallbacks {

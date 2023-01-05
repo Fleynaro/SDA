@@ -9,27 +9,30 @@ namespace sda::bind
         class CallbacksJsImpl : public Callbacks
         {
         public:
-            std::shared_ptr<Callbacks> m_prevCallbacks;
             Callback m_onObjectAdded;
             Callback m_onObjectModified;
             Callback m_onObjectRemoved;
+
+            std::string getName() const override {
+                return "CustomJs";
+            }
             
             void onObjectAdded(Object* obj) override {
-                m_prevCallbacks->onObjectAdded(obj);
+                Callbacks::onObjectAdded(obj);
                 if (m_onObjectAdded.isDefined()) {
                     m_onObjectAdded.call(obj);
                 }
             }
 
             void onObjectModified(Object* obj) override {
-                m_prevCallbacks->onObjectModified(obj);
+                Callbacks::onObjectModified(obj);
                 if (m_onObjectModified.isDefined()) {
                     m_onObjectModified.call(obj);
                 }
             }
 
             void onObjectRemoved(Object* obj) override {
-                m_prevCallbacks->onObjectRemoved(obj);
+                Callbacks::onObjectRemoved(obj);
                 if (m_onObjectRemoved.isDefined()) {
                     m_onObjectRemoved.call(obj);
                 }
@@ -46,9 +49,12 @@ namespace sda::bind
                 auto cl = NewClass<Callbacks, v8pp::shared_ptr_traits>(module);
                 cl
                     .auto_wrap_object_ptrs(true)
+                    .property("name", &Callbacks::getName)
+                    .method("setPrevCallbacks", &Callbacks::setPrevCallbacks)
                     .method("onObjectAdded", &Callbacks::onObjectAdded)
                     .method("onObjectModified", &Callbacks::onObjectModified)
-                    .method("onObjectRemoved", &Callbacks::onObjectRemoved);
+                    .method("onObjectRemoved", &Callbacks::onObjectRemoved)
+                    .static_method("Find", &Callbacks::Find);
                 module.class_("ContextCallbacks", cl);
             }
             
@@ -56,7 +62,6 @@ namespace sda::bind
                 auto cl = NewClass<CallbacksJsImpl, v8pp::shared_ptr_traits>(module);
                 cl
                     .inherit<Callbacks>()
-                    .var("prevCallbacks", &CallbacksJsImpl::m_prevCallbacks)
                     .static_method("New", &New);
                 Callback::Register(cl, "onObjectAdded", &CallbacksJsImpl::m_onObjectAdded);
                 Callback::Register(cl, "onObjectModified", &CallbacksJsImpl::m_onObjectModified);
@@ -69,11 +74,17 @@ namespace sda::bind
     class ContextBind
     {
         class RefCallbacks : public Context::Callbacks {
+            std::string getName() const override {
+                return "Ref";
+            }
+
             void onObjectAdded(Object* obj) override {
+                Context::Callbacks::onObjectAdded(obj);
                 ExportObjectRef(obj);
             }
 
             void onObjectRemoved(Object* obj) override {
+                Context::Callbacks::onObjectRemoved(obj);
                 RemoveObjectRef(obj);
             }
         };

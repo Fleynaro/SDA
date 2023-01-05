@@ -9,9 +9,12 @@ namespace sda
     class ProjectContextCallbacks : public Context::Callbacks
     {
         Project* m_project;
-        std::shared_ptr<Callbacks> m_prevCallbacks;
+        bool m_transactionEnabled = true;
+        bool m_changeEnabled = true;
     public:
-        ProjectContextCallbacks(Project* project, std::shared_ptr<Callbacks> prevCallbacks);
+        ProjectContextCallbacks(Project* project);
+
+        std::string getName() const override;
 
         // Called when an object is added to the context
         void onObjectAdded(Object* obj) override;
@@ -21,6 +24,12 @@ namespace sda
 
         // Called when an object is removed from the context
         void onObjectRemoved(Object* obj) override;
+
+        // Enable or disable transaction
+        void setTransactionEnabled(bool enabled) { m_transactionEnabled = enabled; }
+
+        // Enable or disable change
+        void setChangeEnabled(bool enabled) { m_changeEnabled = enabled; }
 
     private:
         // Get or create object change

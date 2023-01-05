@@ -20,7 +20,8 @@ Project::Project(Program* program, const std::filesystem::path& path, std::uniqu
     m_changeChain = std::make_unique<ChangeChain>();
     
     // set project callbacks
-    auto projectCallbacks = std::make_shared<ProjectContextCallbacks>(this, getContext()->getCallbacks());
+    auto projectCallbacks = std::make_shared<ProjectContextCallbacks>(this);
+    projectCallbacks->setPrevCallbacks(getContext()->getCallbacks());
     getContext()->setCallbacks(projectCallbacks);
 }
 

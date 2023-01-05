@@ -39,8 +39,6 @@ void Transaction::commit() {
     for(auto& [obj, changeType] : m_objects) {
         boost::json::object data;
         obj->serialize(data);
-        if (data["temporary"].get_bool())
-            continue;
         auto collectionName = std::string(data["collection"].get_string().c_str());
         auto collection = m_database->getCollection(collectionName);
         if (changeType == New || changeType == Modified) {
