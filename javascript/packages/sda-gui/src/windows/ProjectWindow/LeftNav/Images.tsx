@@ -1,10 +1,10 @@
-import { useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Box, Button, IconButton, Input, Link, Tooltip, Typography } from '@mui/material';
 import { TreeView, TreeItem } from '@mui/lab';
 import AddIcon from '@mui/icons-material/Add';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { useEffect, useList, useObject, useToggleList } from 'hooks';
+import { useList, useObject, useToggleList, withCrash, withCrash_ } from 'hooks';
 import { useSdaContextId } from 'providers/SdaContextProvider';
 import { useContextMenu, ContextMenuProps, ContextMenu, MenuNode } from 'components/Menu';
 import { DialogRef, Dialog } from 'components/Dialog';
@@ -84,27 +84,30 @@ export default function Images({ onSelect }: ImagesProps) {
   >([]);
   const [expandedAddressSpaces, setExpandedAddressSpaces, toggleExpandedAddressSpaces] =
     useToggleList<string>([]);
-  useEffect(async () => {
-    let result = await Promise.all(
-      addressSpaces.map(async (addressSpace) => {
-        let images = await Promise.all(addressSpace.imageIds.map(getImageApi().getImage));
-        if (filterName && !strContains(addressSpace.name, filterName)) {
-          images = images.filter((image) => strContains(image.name, filterName));
-        }
-        images = images.sort((a, b) => a.name.localeCompare(b.name));
-        return { addressSpace, images };
-      }),
-    );
-    if (filterName) {
-      result = result.filter(
-        ({ addressSpace, images }) =>
-          strContains(addressSpace.name, filterName) || images.length > 0,
+  useEffect(
+    withCrash_(async () => {
+      let result = await Promise.all(
+        addressSpaces.map(async (addressSpace) => {
+          let images = await Promise.all(addressSpace.imageIds.map(getImageApi().getImage));
+          if (filterName && !strContains(addressSpace.name, filterName)) {
+            images = images.filter((image) => strContains(image.name, filterName));
+          }
+          images = images.sort((a, b) => a.name.localeCompare(b.name));
+          return { addressSpace, images };
+        }),
       );
-    }
-    result = result.sort((a, b) => a.addressSpace.name.localeCompare(b.addressSpace.name));
-    setAddressSpacesWithImages(result);
-    setExpandedAddressSpaces(filterName ? result.map((r) => r.addressSpace.id.key) : []);
-  }, [addressSpaces, filterName]);
+      if (filterName) {
+        result = result.filter(
+          ({ addressSpace, images }) =>
+            strContains(addressSpace.name, filterName) || images.length > 0,
+        );
+      }
+      result = result.sort((a, b) => a.addressSpace.name.localeCompare(b.addressSpace.name));
+      setAddressSpacesWithImages(result);
+      setExpandedAddressSpaces(filterName ? result.map((r) => r.addressSpace.id.key) : []);
+    }),
+    [addressSpaces, filterName],
+  );
   const [newAddressSpaceName, setNewAddressSpaceName] = useState<string | null>(null);
   const [addressSpace, setAddressSpace] = useState<AddressSpace>();
   const addressSpaceContextMenu = useContextMenu();

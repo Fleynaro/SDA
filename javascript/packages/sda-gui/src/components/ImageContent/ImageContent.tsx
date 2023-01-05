@@ -1,5 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
-import { useEffect } from 'hooks';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { getImageApi } from 'sda-electron/api/image';
 import { Group, Layer, Rect, Text } from 'react-konva';
 import Konva from 'konva';
@@ -10,6 +9,7 @@ import { useImageContentStyle } from './style';
 import { buildRow, ImageRowElement } from './Row';
 import { buildJump } from './Jump';
 import { useImageContent } from './context';
+import { withCrash, withCrash_ } from 'hooks';
 
 export const ImageContentContextMenu = (props: ContextMenuProps) => {
   return (
@@ -111,76 +111,87 @@ export function ImageContent() {
     return result;
   };
 
-  useEffect(async () => {
-    setTotalRowsCount(await getImageApi().getImageTotalRowsCount(imageId));
-  }, [imageId]);
+  useEffect(
+    withCrash_(
+      withCrash(async () => {
+        setTotalRowsCount(await getImageApi().getImageTotalRowsCount(imageId));
+      }),
+    ),
+    [imageId],
+  );
 
   // select one or more rows with scrolling if needed
-  useEffect(async () => {
-    if (firstSelectedRow !== undefined) {
-      let firstRowIdx = await getImageApi().offsetToRowIdx(imageId, firstSelectedRow);
-      let lastRowIdx = await getImageApi().offsetToRowIdx(
-        imageId,
-        lastSelectedRow !== undefined ? lastSelectedRow : firstSelectedRow,
-      );
-      if (firstRowIdx > lastRowIdx) {
-        [firstRowIdx, lastRowIdx] = [lastRowIdx, firstRowIdx];
-        if (firstRowIdx <= scrollRowIdx + 2) {
-          setScrollY(rowIdxToScroll(scrollRowIdx - 1));
+  useEffect(
+    withCrash_(async () => {
+      if (firstSelectedRow !== undefined) {
+        let firstRowIdx = await getImageApi().offsetToRowIdx(imageId, firstSelectedRow);
+        let lastRowIdx = await getImageApi().offsetToRowIdx(
+          imageId,
+          lastSelectedRow !== undefined ? lastSelectedRow : firstSelectedRow,
+        );
+        if (firstRowIdx > lastRowIdx) {
+          [firstRowIdx, lastRowIdx] = [lastRowIdx, firstRowIdx];
+          if (firstRowIdx <= scrollRowIdx + 2) {
+            setScrollY(rowIdxToScroll(scrollRowIdx - 1));
+          }
+        } else {
+          if (lastRowIdx >= scrollRowIdx + rowsToRender.length - 1 - 2) {
+            setScrollY(rowIdxToScroll(scrollRowIdx + 1));
+          }
         }
-      } else {
-        if (lastRowIdx >= scrollRowIdx + rowsToRender.length - 1 - 2) {
-          setScrollY(rowIdxToScroll(scrollRowIdx + 1));
+        const newSelectedRows: number[] = [];
+        for (let i = firstRowIdx; i <= lastRowIdx; i++) {
+          const row = await getImageApi().getImageRowsAt(imageId, i, 1);
+          newSelectedRows.push(row[0].offset);
         }
+        setSelectedRows(newSelectedRows);
       }
-      const newSelectedRows: number[] = [];
-      for (let i = firstRowIdx; i <= lastRowIdx; i++) {
-        const row = await getImageApi().getImageRowsAt(imageId, i, 1);
-        newSelectedRows.push(row[0].offset);
-      }
-      setSelectedRows(newSelectedRows);
-    }
-  }, [imageId, firstSelectedRow, lastSelectedRow]);
+    }),
+    [imageId, firstSelectedRow, lastSelectedRow],
+  );
 
   // render rows and jumps on scroll and stage resize
-  useEffect(async () => {
-    // rows
-    const savedRequestCount = ++sync.current.requestCount;
-    if (sync.current.isLoading) return;
-    sync.current.isLoading = true;
-    const rows = await getForwardRows(stage.size.height);
-    setRowsToRender(
-      rows.map(({ y, row }) => (
-        <Group key={row.offset} y={y}>
-          {row.element}
-        </Group>
-      )),
-    );
-    // jumps
-    if (rows.length > 0) {
-      const startOffset = rows[0].row.offset;
-      const endOffset = rows[rows.length - 1].row.offset;
-      const jumps = await getImageApi().getJumpsAt(imageId, startOffset, endOffset);
-      const jumpsToRender: JSX.Element[] = [];
-      for (let layerLevel = 0; layerLevel < jumps.length; layerLevel++) {
-        const jumpsOnLayer = jumps[layerLevel];
-        for (const jump of jumpsOnLayer) {
-          const fromRow = rows.find((r) => r.row.offset === jump.from);
-          const toRow = rows.find((r) => r.row.offset === jump.to);
-          const fromY = fromRow && fromRow.y + fromRow.row.height / 2;
-          const toY = toRow && toRow.y + toRow.row.height / 2;
-          const jumpElem = buildJump(jump, layerLevel, style, fromY, toY);
-          jumpsToRender.push(<Group key={`${jump.from}-${jump.to}`}>{jumpElem}</Group>);
+  useEffect(
+    withCrash_(async () => {
+      // rows
+      const savedRequestCount = ++sync.current.requestCount;
+      if (sync.current.isLoading) return;
+      sync.current.isLoading = true;
+      const rows = await getForwardRows(stage.size.height);
+      setRowsToRender(
+        rows.map(({ y, row }) => (
+          <Group key={row.offset} y={y}>
+            {row.element}
+          </Group>
+        )),
+      );
+      // jumps
+      if (rows.length > 0) {
+        const startOffset = rows[0].row.offset;
+        const endOffset = rows[rows.length - 1].row.offset;
+        const jumps = await getImageApi().getJumpsAt(imageId, startOffset, endOffset);
+        const jumpsToRender: JSX.Element[] = [];
+        for (let layerLevel = 0; layerLevel < jumps.length; layerLevel++) {
+          const jumpsOnLayer = jumps[layerLevel];
+          for (const jump of jumpsOnLayer) {
+            const fromRow = rows.find((r) => r.row.offset === jump.from);
+            const toRow = rows.find((r) => r.row.offset === jump.to);
+            const fromY = fromRow && fromRow.y + fromRow.row.height / 2;
+            const toY = toRow && toRow.y + toRow.row.height / 2;
+            const jumpElem = buildJump(jump, layerLevel, style, fromY, toY);
+            jumpsToRender.push(<Group key={`${jump.from}-${jump.to}`}>{jumpElem}</Group>);
+          }
         }
+        setJumpsToRender(jumpsToRender);
       }
-      setJumpsToRender(jumpsToRender);
-    }
-    sync.current.isLoading = false;
-    if (savedRequestCount < sync.current.requestCount) {
-      // force component updated to render actual rows
-      setForceUpdate(forceUpdate + 1);
-    }
-  }, [scrollY, style, forceUpdate]);
+      sync.current.isLoading = false;
+      if (savedRequestCount < sync.current.requestCount) {
+        // force component updated to render actual rows
+        setForceUpdate(forceUpdate + 1);
+      }
+    }),
+    [scrollY, style, forceUpdate],
+  );
 
   useEffect(() => {
     // clear cache on style change

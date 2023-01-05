@@ -23,7 +23,7 @@ export const Dialog = forwardRef((props: DialogProps, ref: React.Ref<DialogRef>)
   const [body, setBody] = useState<ReactNode>();
   const [actions, setActions] = useState<ReactNode>();
 
-  useImperativeHandle(ref, () => ({
+  const methods = {
     open: (body: ReactNode, actions?: ReactNode) => {
       setOpened(true);
       setBody(body);
@@ -33,7 +33,8 @@ export const Dialog = forwardRef((props: DialogProps, ref: React.Ref<DialogRef>)
     close: () => {
       onClose();
     },
-  }));
+  };
+  useImperativeHandle(ref, () => methods);
 
   const onClose = useCallback(() => {
     setOpened(false);

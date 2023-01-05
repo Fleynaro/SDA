@@ -1,9 +1,9 @@
-import { useState, forwardRef } from 'react';
-import { useEffect, useImperativeHandle } from 'hooks';
+import { useState, forwardRef, useEffect, useImperativeHandle } from 'react';
 import { Stack, FormControl, FormHelperText, Select, MenuItem } from '@mui/material';
 import { FilePicker } from '../FilePicker';
 import { getProjectApi } from 'sda-electron/api/project';
 import { getPlatformApi } from 'sda-electron/api/platform';
+import { withCrash, withCrash_ } from 'hooks';
 
 export interface CreateProjectFormRef {
   create: () => void;
@@ -14,16 +14,20 @@ export const CreateProjectForm = forwardRef((props, ref: React.Ref<CreateProject
   const [platformName, setPlatformName] = useState('');
   const [availablePlatforms, setAvailablePlatforms] = useState<string[]>([]);
 
-  useEffect(async () => {
-    const platforms = await getPlatformApi().getPlatforms();
-    setAvailablePlatforms(platforms.map((p) => p.name));
-  }, []);
+  useEffect(
+    withCrash_(async () => {
+      const platforms = await getPlatformApi().getPlatforms();
+      setAvailablePlatforms(platforms.map((p) => p.name));
+    }),
+    [],
+  );
 
-  useImperativeHandle(ref, () => ({
-    create: async () => {
+  const methods = {
+    create: withCrash(async () => {
       await getProjectApi().createProject(projectPath, platformName);
-    },
-  }));
+    }),
+  };
+  useImperativeHandle(ref, () => methods);
 
   return (
     <>

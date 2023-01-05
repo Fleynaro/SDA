@@ -1,17 +1,20 @@
-import { useState } from 'react';
-import { useEffect } from './hooks/reactWrappedHooks';
+import { useState, useEffect } from 'react';
 import { Box, LinearProgress } from '@mui/material';
 import DialogErrorBoundary from './components/DialogErrorBoundary';
 import { getWindowApi, WindowName, WindowInfo } from 'sda-electron/api/window';
 import ProjectManagerWindow from './windows/ProjectManagerWindow';
 import ProjectWindow from './windows/ProjectWindow';
+import { withCrash_ } from 'hooks';
 
 export default function App() {
   const [windowToShow, setWindowToShow] = useState<WindowInfo>();
 
-  useEffect(async () => {
-    setWindowToShow(await getWindowApi().getWindowInfo());
-  }, []);
+  useEffect(
+    withCrash_(async () => {
+      setWindowToShow(await getWindowApi().getWindowInfo());
+    }),
+    [],
+  );
 
   return (
     <>

@@ -1,21 +1,27 @@
-import { useState } from 'react';
-import { useCallback } from 'hooks';
+import { useState, useCallback } from 'react';
 import { MenuBar, MenuBarItem, MenuNode } from 'components/Menu';
 import { useProjectId } from 'providers/ProjectProvider';
 import SaveIcon from '@mui/icons-material/Save';
 import { getProjectApi } from 'sda-electron/api/project';
+import { withCrash } from 'hooks';
 
 export default function ProjectMenuBar() {
   const projectId = useProjectId();
   const [canBeSaved, setCanBeSaved] = useState(false);
 
-  const onMenuOpen = useCallback(async () => {
-    setCanBeSaved(await getProjectApi().canProjectBeSaved(projectId));
-  }, [projectId]);
+  const onMenuOpen = useCallback(
+    withCrash(async () => {
+      setCanBeSaved(await getProjectApi().canProjectBeSaved(projectId));
+    }),
+    [projectId],
+  );
 
-  const fileSave = useCallback(() => {
-    getProjectApi().saveProject(projectId);
-  }, [projectId]);
+  const fileSave = useCallback(
+    withCrash(async () => {
+      await getProjectApi().saveProject(projectId);
+    }),
+    [projectId],
+  );
 
   return (
     <MenuBar onMenuOpen={onMenuOpen}>

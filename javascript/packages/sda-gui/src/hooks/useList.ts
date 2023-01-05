@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useCallback } from './reactWrappedHooks';
+import { useState, useEffect, useCallback } from 'react';
 import { getEventApi } from 'sda-electron/api/event';
 import { Identifiable, ObjectId, CmpObjectIds, ObjectChangeType } from 'sda-electron/api/common';
+import { withCrash } from './useCrash';
 
 export default function useList<T extends Identifiable>(
   dataSource: () => Promise<T[]>,
@@ -10,19 +10,22 @@ export default function useList<T extends Identifiable>(
 ) {
   const [items, setItems] = useState<T[]>([]);
 
-  const loadItems = useCallback(async () => {
-    const newItems = await dataSource();
-    setItems(newItems);
-  }, deps);
+  const loadItems = useCallback(
+    withCrash(async () => {
+      const newItems = await dataSource();
+      setItems(newItems);
+    }),
+    deps,
+  );
 
   const updateItems = useCallback(
-    async (changedItemId: ObjectId, changeType: ObjectChangeType) => {
+    withCrash(async (changedItemId: ObjectId, changeType: ObjectChangeType) => {
       if (className && changedItemId.className !== className) return;
       if (changeType === ObjectChangeType.Update || changeType === ObjectChangeType.Delete) {
         if (!items.some((item) => CmpObjectIds(changedItemId, item.id))) return;
       }
       await loadItems();
-    },
+    }),
     [className, items, loadItems],
   );
 

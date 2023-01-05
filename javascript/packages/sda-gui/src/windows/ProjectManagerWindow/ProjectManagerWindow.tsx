@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import { useCallback, useList, useWindowTitle } from 'hooks';
+import { useRef, useCallback } from 'react';
+import { useList, useWindowTitle, withCrash } from 'hooks';
 import {
   Box,
   Button,
@@ -48,27 +48,39 @@ export default function ProjectManagerWindow() {
     );
   }, []);
 
-  const onAddProject = useCallback(async () => {
-    const paths = await getWindowApi().openFilePickerDialog(true, false);
-    if (paths.length > 0) {
-      const projectPath = paths[0];
-      const project = await getProjectApi().openProject(projectPath);
+  const onAddProject = useCallback(
+    withCrash(async () => {
+      const paths = await getWindowApi().openFilePickerDialog(true, false);
+      if (paths.length > 0) {
+        const projectPath = paths[0];
+        const project = await getProjectApi().openProject(projectPath);
+        await getWindowApi().openProjectWindow({ projectId: project.id });
+      }
+    }),
+    [],
+  );
+
+  const onOpenProject = useCallback(
+    withCrash(async (recentProject: RecentProject) => {
+      const project = await getProjectApi().openProject(recentProject.path);
       await getWindowApi().openProjectWindow({ projectId: project.id });
-    }
-  }, []);
+    }),
+    [],
+  );
 
-  const onOpenProject = useCallback(async (recentProject: RecentProject) => {
-    const project = await getProjectApi().openProject(recentProject.path);
-    await getWindowApi().openProjectWindow({ projectId: project.id });
-  }, []);
+  const onRemoveProject = useCallback(
+    withCrash(async (path: string) => {
+      await getProjectApi().updateRecentProjectsWithPath(path, ObjectChangeType.Delete);
+    }),
+    [],
+  );
 
-  const onRemoveProject = useCallback(async (path: string) => {
-    await getProjectApi().updateRecentProjectsWithPath(path, ObjectChangeType.Delete);
-  }, []);
-
-  const onDeleteProject = useCallback(async (path: string) => {
-    await getProjectApi().deleteProject(path);
-  }, []);
+  const onDeleteProject = useCallback(
+    withCrash(async (path: string) => {
+      await getProjectApi().deleteProject(path);
+    }),
+    [],
+  );
 
   const onOpenDeleteProjectDialog = useCallback((recentProject: RecentProject) => {
     deleteProjectDialogRef.current?.open(

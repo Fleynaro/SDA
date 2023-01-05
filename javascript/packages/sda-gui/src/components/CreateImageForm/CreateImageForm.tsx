@@ -1,5 +1,5 @@
-import { useState, forwardRef } from 'react';
-import { useImperativeHandle } from 'hooks';
+import { useState, forwardRef, useImperativeHandle } from 'react';
+import { withCrash } from 'hooks';
 import { useSdaContextId } from 'providers/SdaContextProvider';
 import { Stack, FormControl, FormHelperText, TextField } from '@mui/material';
 import { FilePicker } from '../FilePicker';
@@ -20,14 +20,15 @@ export const CreateImageForm = forwardRef(
     const [name, setName] = useState('');
     const [path, setPath] = useState('');
 
-    useImperativeHandle(ref, () => ({
-      create: async () => {
+    const methods = {
+      create: withCrash(async () => {
         console.log('Create Image', path, name);
         const image = await getImageApi().createImage(contextId, name, 'PEImageAnalyser', path);
         addressSpace.imageIds.push(image.id);
         await getAddressSpaceApi().changeAddressSpace(addressSpace);
-      },
-    }));
+      }),
+    };
+    useImperativeHandle(ref, () => methods);
 
     return (
       <>
