@@ -9,7 +9,7 @@ import { useImageContentStyle } from './style';
 import { buildRow, ImageRowElement } from './Row';
 import { buildJump } from './Jump';
 import { useImageContent } from './context';
-import { withCrash, withCrash_ } from 'providers/CrashProvider';
+import { withCrash_ } from 'providers/CrashProvider';
 
 export const ImageContentContextMenu = (props: ContextMenuProps) => {
   return (
@@ -32,21 +32,26 @@ export function ImageContent() {
     setFunctions,
     rowSelection: { firstSelectedRow, lastSelectedRow, setSelectedRows },
   } = useImageContent();
+  const textSelection = useKonvaFormatTextSelection();
   const [totalRowsCount, setTotalRowsCount] = useState(0);
   const [scrollY, setScrollY] = useState(0);
   const [rowsToRender, setRowsToRender] = useState<JSX.Element[]>([]);
+  const [rowsHeight, setRowsHeight] = useState<number>(0);
   const [jumpsToRender, setJumpsToRender] = useState<JSX.Element[]>([]);
   const [forceUpdate, setForceUpdate] = useState(0);
   const cachedRows = useRef<{ [idx: number]: ImageRowElement }>({});
   const cachedRowsIdxs = useRef<number[]>([]);
   const sync = useRef({ isLoading: false, requestCount: 0 });
-  const textSelection = useKonvaFormatTextSelection();
   const avgImageContentHeight = style.viewport.avgRowHeight * totalRowsCount;
   const sliderHeight =
     avgImageContentHeight &&
-    Math.max(stage.size.height * (stage.size.height / avgImageContentHeight), 20);
+    Math.min(
+      Math.max(stage.size.height * (stage.size.height / avgImageContentHeight), 20),
+      stage.size.height * 0.9,
+    );
   const sliderPosX = style.row.width;
   const sliderMaxPosY = stage.size.height - sliderHeight;
+  const allRowsOnScreen = rowsHeight >= stage.size.height;
   const lastRowIdx = totalRowsCount - 1;
   const scrollToRowIdx = useCallback(
     (scrollY: number) => (scrollY / sliderMaxPosY) * lastRowIdx,
@@ -115,7 +120,7 @@ export function ImageContent() {
     withCrash_(async () => {
       setTotalRowsCount(await getImageApi().getImageTotalRowsCount(imageId));
     }),
-    [imageId],
+    [],
   );
 
   // select one or more rows with scrolling if needed
@@ -133,8 +138,10 @@ export function ImageContent() {
             setScrollY(rowIdxToScroll(scrollRowIdx - 1));
           }
         } else {
-          if (lastRowIdx >= scrollRowIdx + rowsToRender.length - 1 - 2) {
-            setScrollY(rowIdxToScroll(scrollRowIdx + 1));
+          if (allRowsOnScreen) {
+            if (lastRowIdx >= scrollRowIdx + rowsToRender.length - 1 - 2) {
+              setScrollY(rowIdxToScroll(scrollRowIdx + 1));
+            }
           }
         }
         const newSelectedRows: number[] = [];
@@ -156,17 +163,20 @@ export function ImageContent() {
       if (sync.current.isLoading) return;
       sync.current.isLoading = true;
       const rows = await getForwardRows(stage.size.height);
-      setRowsToRender(
-        rows.map(({ y, row }) => (
-          <Group key={row.offset} y={y}>
-            {row.element}
-          </Group>
-        )),
-      );
-      // jumps
       if (rows.length > 0) {
+        const lastRow = rows[rows.length - 1];
+        setRowsToRender(
+          rows.map(({ y, row }) => (
+            <Group key={row.offset} y={y}>
+              {row.element}
+            </Group>
+          )),
+        );
+        setRowsHeight(lastRow.y + lastRow.row.height);
+
+        // jumps
         const startOffset = rows[0].row.offset;
-        const endOffset = rows[rows.length - 1].row.offset;
+        const endOffset = lastRow.row.offset;
         const jumps = await getImageApi().getJumpsAt(imageId, startOffset, endOffset);
         const jumpsToRender: JSX.Element[] = [];
         for (let layerLevel = 0; layerLevel < jumps.length; layerLevel++) {
@@ -222,12 +232,16 @@ export function ImageContent() {
 
   const goToOffset = useCallback(
     async (offset: number) => {
-      const rowIdx = await getImageApi().offsetToRowIdx(imageId, offset);
-      if (rowIdx === -1) return false;
+      const targetRowIdx = await getImageApi().offsetToRowIdx(imageId, offset);
+      if (targetRowIdx === -1) return false;
+      const targetRow = (await getImageApi().getImageRowsAt(imageId, targetRowIdx, 1))[0];
       const fromScrollY = scrollY;
-      const toScrollY = rowIdxToScroll(rowIdx - rowsToRender.length / 2);
+      const toScrollY = rowIdxToScroll(targetRowIdx - rowsToRender.length / 2);
       animate((p) => {
         setScrollY(fromScrollY + (toScrollY - fromScrollY) * p);
+        if (p >= 1) {
+          setSelectedRows([targetRow.offset]);
+        }
       }, 1000);
       return true;
     },

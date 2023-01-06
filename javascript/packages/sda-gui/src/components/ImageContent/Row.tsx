@@ -52,7 +52,7 @@ const buildInstructionRow = (row: ImageInstructionRow, style: StylesType): Image
     }, [setFirstSelectedRow]);
 
     const onMouseMove = useCallback(() => {
-      if (firstSelectedRow) {
+      if (firstSelectedRow !== undefined) {
         setLastSelectedRow?.(row.offset);
       }
     }, [firstSelectedRow, setFirstSelectedRow]);
@@ -69,12 +69,7 @@ const buildInstructionRow = (row: ImageInstructionRow, style: StylesType): Image
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
       >
-        <Rect
-          width={rowWidth}
-          height={height}
-          fill={isSelected ? '#360b0b' : 'black'}
-          shadowBlur={5}
-        />
+        <Rect width={rowWidth} height={height} fill={isSelected ? '#360b0b' : '#00000000'} />
         <Group x={style.row.padding} y={style.row.padding}>
           <Group width={style.row.cols.jump.width}></Group>
           <Group

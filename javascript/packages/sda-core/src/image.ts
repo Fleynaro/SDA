@@ -12,9 +12,9 @@ export declare abstract class ImageRW {
 
 export declare class VectorImageRW extends ImageRW {
   readonly size: number;
-  readonly data: Uint8Array;
+  readonly data: number[];
 
-  static New(): VectorImageRW;
+  static New(data: number[]): VectorImageRW;
 }
 
 export declare class FileImageRW extends ImageRW implements ISerializable {
@@ -46,6 +46,10 @@ export declare abstract class ImageAnalyser implements ISerializable {
 
 export declare class PEImageAnalyser extends ImageAnalyser {
   static New(): PEImageAnalyser;
+}
+
+export declare class TestAnalyser extends ImageAnalyser {
+  static New(): TestAnalyser;
 }
 
 export enum SectionType {
@@ -103,6 +107,7 @@ module.exports = {
   FileImageRW: m.FileImageRW,
   ImageAnalyser: m.ImageAnalyser,
   PEImageAnalyser: m.PEImageAnalyser,
+  TestAnalyser: m.TestAnalyser,
   ImageSection: m.ImageSection,
   Image: m.Image,
 };

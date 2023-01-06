@@ -95,3 +95,6 @@ export const ImageContentStyleProvider = ({
     <ImageContentStyleContext.Provider value={hook}>{children}</ImageContentStyleContext.Provider>
   );
 };
+
+export const ImageContentStyleBridgeProvider = ImageContentStyleContext.Provider;
+export const ImageContentStyleBridgeConsumer = ImageContentStyleContext.Consumer;

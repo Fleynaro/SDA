@@ -101,6 +101,9 @@ export function useKonvaFormatTextSelection() {
   return context;
 }
 
+export const KonvaFormatTextSelectionBridgeProvider = KonvaFormatTextSelectionContext.Provider;
+export const KonvaFormatTextSelectionBridgeConsumer = KonvaFormatTextSelectionContext.Consumer;
+
 type TokenProps = {
   tokenPos: TokenPos;
   text: string;

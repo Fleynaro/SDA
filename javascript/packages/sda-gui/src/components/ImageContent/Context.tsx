@@ -67,3 +67,6 @@ export const ImageContentProvider = ({ imageId, children }: ImageContentProvider
     </ImageContentContext.Provider>
   );
 };
+
+export const ImageContentBridgeProvider = ImageContentContext.Provider;
+export const ImageContentBridgeConsumer = ImageContentContext.Consumer;

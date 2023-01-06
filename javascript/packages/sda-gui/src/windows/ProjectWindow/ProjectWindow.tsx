@@ -59,7 +59,7 @@ function ProjectPanel({ project }: { project: Project }) {
           </Box>
           <Resizable
             defaultSize={{
-              width: 150,
+              width: 170,
               height: 'auto',
             }}
             enable={{ right: true }}

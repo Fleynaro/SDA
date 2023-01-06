@@ -42,7 +42,7 @@ void PEImageAnalyser::analyseHeaders() {
 		throw std::runtime_error("Invalid NT header");
 
     m_baseAddress = m_imgNtHeaders->OptionalHeader.ImageBase;
-    m_entryPointOffset = m_imgNtHeaders->OptionalHeader.AddressOfEntryPoint;
+    m_entryPointOffset = m_imgNtHeaders->OptionalHeader.AddressOfEntryPoint - 0x4;
 }
 
 void PEImageAnalyser::analyseSections() {

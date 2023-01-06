@@ -36,6 +36,7 @@ export const withCrash = <T, U extends unknown[]>(callback: (...args: U) => Prom
       return await callback(...args);
     } catch (e) {
       setError(e as Error);
+      console.error(e);
     }
   };
 };
@@ -48,6 +49,7 @@ export const withCrash_ = (callback: () => Promise<void>) => {
         await callback();
       } catch (e) {
         setError(e as Error);
+        console.error(e);
       }
     })();
   };

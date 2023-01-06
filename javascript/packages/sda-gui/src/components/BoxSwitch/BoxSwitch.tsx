@@ -26,7 +26,7 @@ export interface BoxSwitchCaseProps {
 export function BoxSwitchCase({ value, children, sx }: BoxSwitchCaseProps) {
   const context = useContext(BoxSwitchContext);
   return (
-    <Box hidden={context !== value} sx={{ height: '100%', ...sx }}>
+    <Box sx={{ height: '100%', ...sx, ...(context !== value ? { display: 'none' } : {}) }}>
       {children}
     </Box>
   );

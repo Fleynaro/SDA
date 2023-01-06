@@ -1,28 +1,43 @@
 import { Box, emphasize, useTheme } from '@mui/material';
 import { Resizable } from 're-resizable';
 import { ObjectId } from 'sda-electron/api/common';
+import { getImageApi } from 'sda-electron/api/image';
 import {
   ImageContent,
   ImageContentContextMenu,
   ImageContentProvider,
-  ImageContentStyleProvider,
+  ImageContentStyleBridgeConsumer,
+  ImageContentStyleBridgeProvider,
   useImageContent,
 } from 'components/ImageContent';
-import { KonvaStage } from 'components/Konva';
+import {
+  KonvaFormatTextSelectionBridgeConsumer,
+  KonvaFormatTextSelectionBridgeProvider,
+  KonvaStage,
+} from 'components/Konva';
 import { useContextMenu } from 'components/Menu';
 import { useProjectWindowStyles } from '../style';
 import Konva from 'konva';
 import Button from '@mui/material/Button';
+import { useObject } from 'hooks';
+import {
+  ImageContentBridgeConsumer,
+  ImageContentBridgeProvider,
+} from 'components/ImageContent/context';
 
 const DecompilerComponent = () => {
   const {
+    imageId,
     rowSelection: { selectedRows },
     functions: { goToOffset },
   } = useImageContent();
+  const image = useObject(() => getImageApi().getImage(imageId), [imageId]);
+  if (!image) return null;
   return (
     <Box>
+      {imageId.key} <br />
       Decompiler ({selectedRows.length} rows selected) <br />
-      <Button variant="contained" onClick={() => goToOffset(0x1000)}>
+      <Button variant="contained" onClick={() => goToOffset(image.entryPointOffset)}>
         Go to begining
       </Button>
     </Box>
@@ -42,11 +57,33 @@ export const TabContent = ({ imageId }: TabContentProps) => {
     contextMenu.openAtPos(e.evt.clientX, e.evt.clientY);
   };
 
+  // There's a trouble with context exposing into konva. Solve: https://github.com/konvajs/react-konva/issues/188#issuecomment-478302062
   return (
     <ImageContentProvider imageId={imageId}>
-      <KonvaStage sx={{ width: '100%', height: '100%', flexGrow: 1 }} onContextMenu={onContextMenu}>
-        <ImageContent />
-      </KonvaStage>
+      <KonvaFormatTextSelectionBridgeConsumer>
+        {(value1) => (
+          <ImageContentStyleBridgeConsumer>
+            {(value2) => (
+              <ImageContentBridgeConsumer>
+                {(value3) => (
+                  <KonvaStage
+                    sx={{ width: '100%', height: '100%', flexGrow: 1 }}
+                    onContextMenu={onContextMenu}
+                  >
+                    <KonvaFormatTextSelectionBridgeProvider value={value1}>
+                      <ImageContentStyleBridgeProvider value={value2}>
+                        <ImageContentBridgeProvider value={value3}>
+                          <ImageContent />
+                        </ImageContentBridgeProvider>
+                      </ImageContentStyleBridgeProvider>
+                    </KonvaFormatTextSelectionBridgeProvider>
+                  </KonvaStage>
+                )}
+              </ImageContentBridgeConsumer>
+            )}
+          </ImageContentStyleBridgeConsumer>
+        )}
+      </KonvaFormatTextSelectionBridgeConsumer>
       <Resizable
         defaultSize={{
           width: 200,
