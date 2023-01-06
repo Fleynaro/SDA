@@ -87,10 +87,10 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
     {
       const callbacks = ContextCallbacksImpl.New();
       callbacks.setPrevCallbacks(context.callbacks);
-      callbacks.onObjectAdded = (obj) => objectChangeEmitter()(toId(obj), ObjectChangeType.Create);
-      callbacks.onObjectModified = (obj) =>
+      callbacks.onObjectAddedImpl = (obj) => objectChangeEmitter()(toId(obj), ObjectChangeType.Create);
+      callbacks.onObjectModifiedImpl = (obj) =>
         objectChangeEmitter()(toId(obj), ObjectChangeType.Update);
-      callbacks.onObjectRemoved = (obj) =>
+      callbacks.onObjectRemovedImpl = (obj) =>
         objectChangeEmitter()(toId(obj), ObjectChangeType.Delete);
       context.callbacks = callbacks;
     }

@@ -1,5 +1,6 @@
 #pragma once
 #include <set>
+#include "SDA/Core/Context.h"
 #include "SDA/Core/Utils/Serialization.h"
 #include "SDA/Core/Utils/Destroy.h"
 
@@ -92,5 +93,27 @@ namespace sda
 
         // Mark an object as removed
         void markAsRemoved(utils::ISerializable* obj);
+    };
+
+    class ChangeChainContextCallbacks : public Context::Callbacks
+    {
+        ChangeChain* m_changeChain;
+        IFactory* m_factory;
+    public:
+        ChangeChainContextCallbacks(ChangeChain* changeChain, IFactory* factory);
+
+        std::string getName() const override;
+
+        // Called when an object is added to the context
+        void onObjectAddedImpl(Object* obj) override;
+
+        // Called when an object is modified in the context
+        void onObjectModifiedImpl(Object* obj) override;
+
+        // Called when an object is removed from the context
+        void onObjectRemovedImpl(Object* obj) override;
+
+    private:
+        ObjectChange* getOrCreateObjectChange() const;
     };
 };

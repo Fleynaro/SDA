@@ -47,21 +47,31 @@ namespace sda
         // Callbacks for the context
         class Callbacks {
             std::shared_ptr<Callbacks> m_prevCallbacks;
+            bool m_enabled = true;
         public:
             virtual std::string getName() const;
 
             // Called when an object is added to the context
-            virtual void onObjectAdded(Object* obj);
+            void onObjectAdded(Object* obj);
 
             // Called when an object is modified in the context
-            virtual void onObjectModified(Object* obj);
+            void onObjectModified(Object* obj);
 
             // Called when an object is removed from the context
-            virtual void onObjectRemoved(Object* obj);
+            void onObjectRemoved(Object* obj);
 
             void setPrevCallbacks(std::shared_ptr<Callbacks> prevCallbacks);
 
+            void setEnabled(bool enabled);
+
             static std::shared_ptr<Callbacks> Find(const std::string& name, std::shared_ptr<Callbacks> callbacks);
+
+        protected:
+            virtual void onObjectAddedImpl(Object* obj) {};
+
+            virtual void onObjectModifiedImpl(Object* obj) {};
+
+            virtual void onObjectRemovedImpl(Object* obj) {};
         };
 
         // Set the callbacks for the context

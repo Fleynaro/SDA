@@ -14,27 +14,6 @@ using namespace ::testing;
 
 class ContextDatabaseTest : public ContextFixture
 {
-    class ContextCallbacks : public Context::Callbacks
-    {
-        ContextDatabaseTest* test;
-    public:
-        ContextCallbacks(ContextDatabaseTest* test)
-            : test(test)
-        {}
-
-        void onObjectAdded(Object* obj) override {
-            test->transaction->markAsNew(obj);
-        }
-
-        void onObjectModified(Object* obj) override {
-            test->transaction->markAsModified(obj);
-        }
-
-        void onObjectRemoved(Object* obj) override {
-            test->transaction->markAsRemoved(obj);
-        }
-    };
-
     Database* database;
     Transaction* transaction;
 protected:
@@ -45,7 +24,7 @@ protected:
         database = new Database("test.db", GetSchema());
         database->init();
         transaction = new Transaction(database);
-        context->setCallbacks(std::make_shared<ContextCallbacks>(this));
+        context->setCallbacks(std::make_shared<TransactionContextCallbacks>(transaction));
     }
         
     void TearDown() override {

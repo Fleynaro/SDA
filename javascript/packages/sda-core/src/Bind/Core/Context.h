@@ -9,32 +9,29 @@ namespace sda::bind
         class CallbacksJsImpl : public Callbacks
         {
         public:
-            Callback m_onObjectAdded;
-            Callback m_onObjectModified;
-            Callback m_onObjectRemoved;
+            Callback m_onObjectAddedImpl;
+            Callback m_onObjectModifiedImpl;
+            Callback m_onObjectRemovedImpl;
 
             std::string getName() const override {
                 return "CustomJs";
             }
             
-            void onObjectAdded(Object* obj) override {
-                Callbacks::onObjectAdded(obj);
-                if (m_onObjectAdded.isDefined()) {
-                    m_onObjectAdded.call(obj);
+            void onObjectAddedImpl(Object* obj) override {
+                if (m_onObjectAddedImpl.isDefined()) {
+                    m_onObjectAddedImpl.call(obj);
                 }
             }
 
-            void onObjectModified(Object* obj) override {
-                Callbacks::onObjectModified(obj);
-                if (m_onObjectModified.isDefined()) {
-                    m_onObjectModified.call(obj);
+            void onObjectModifiedImpl(Object* obj) override {
+                if (m_onObjectModifiedImpl.isDefined()) {
+                    m_onObjectModifiedImpl.call(obj);
                 }
             }
 
-            void onObjectRemoved(Object* obj) override {
-                Callbacks::onObjectRemoved(obj);
-                if (m_onObjectRemoved.isDefined()) {
-                    m_onObjectRemoved.call(obj);
+            void onObjectRemovedImpl(Object* obj) override {
+                if (m_onObjectRemovedImpl.isDefined()) {
+                    m_onObjectRemovedImpl.call(obj);
                 }
             }
         };
@@ -51,6 +48,7 @@ namespace sda::bind
                     .auto_wrap_object_ptrs(true)
                     .property("name", &Callbacks::getName)
                     .method("setPrevCallbacks", &Callbacks::setPrevCallbacks)
+                    .method("setEnabled", &Callbacks::setEnabled)
                     .method("onObjectAdded", &Callbacks::onObjectAdded)
                     .method("onObjectModified", &Callbacks::onObjectModified)
                     .method("onObjectRemoved", &Callbacks::onObjectRemoved)
@@ -63,9 +61,9 @@ namespace sda::bind
                 cl
                     .inherit<Callbacks>()
                     .static_method("New", &New);
-                Callback::Register(cl, "onObjectAdded", &CallbacksJsImpl::m_onObjectAdded);
-                Callback::Register(cl, "onObjectModified", &CallbacksJsImpl::m_onObjectModified);
-                Callback::Register(cl, "onObjectRemoved", &CallbacksJsImpl::m_onObjectRemoved);
+                Callback::Register(cl, "onObjectAddedImpl", &CallbacksJsImpl::m_onObjectAddedImpl);
+                Callback::Register(cl, "onObjectModifiedImpl", &CallbacksJsImpl::m_onObjectModifiedImpl);
+                Callback::Register(cl, "onObjectRemovedImpl", &CallbacksJsImpl::m_onObjectRemovedImpl);
                 module.class_("ContextCallbacksImpl", cl);
             }
         }
@@ -78,13 +76,11 @@ namespace sda::bind
                 return "Ref";
             }
 
-            void onObjectAdded(Object* obj) override {
-                Context::Callbacks::onObjectAdded(obj);
+            void onObjectAddedImpl(Object* obj) override {
                 ExportObjectRef(obj);
             }
 
-            void onObjectRemoved(Object* obj) override {
-                Context::Callbacks::onObjectRemoved(obj);
+            void onObjectRemovedImpl(Object* obj) override {
                 RemoveObjectRef(obj);
             }
         };

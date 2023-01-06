@@ -13,7 +13,6 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
         ProgramBind::Init,
         ProgramCallbacksBind::Init,
         ProjectBind::Init,
-        ProjectContextCallbacksBind::Init,
         ObjectLookupTableShared::Init,
         UtilsBind::Init,
     });

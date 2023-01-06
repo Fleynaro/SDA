@@ -54,3 +54,23 @@ void Transaction::commit() {
 bool Transaction::isEmpty() const {
     return m_objects.empty();
 }
+
+TransactionContextCallbacks::TransactionContextCallbacks(Transaction* transaction)
+    : m_transaction(transaction)
+{}
+
+std::string TransactionContextCallbacks::getName() const {
+    return "Transaction";
+}
+
+void TransactionContextCallbacks::onObjectAddedImpl(Object* obj) {
+    m_transaction->markAsNew(obj);
+}
+
+void TransactionContextCallbacks::onObjectModifiedImpl(Object* obj) {
+    m_transaction->markAsModified(obj);
+}
+
+void TransactionContextCallbacks::onObjectRemovedImpl(Object* obj) {
+    m_transaction->markAsRemoved(obj);
+}

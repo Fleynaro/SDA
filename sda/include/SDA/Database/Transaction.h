@@ -1,6 +1,7 @@
 #pragma once
 #include <set>
 #include <map>
+#include "SDA/Core/Context.h"
 #include "SDA/Core/Utils/Serialization.h"
 
 namespace sda
@@ -33,5 +34,23 @@ namespace sda
         void commit();
 
         bool isEmpty() const;
+    };
+
+    class TransactionContextCallbacks : public Context::Callbacks
+    {
+        Transaction* m_transaction;
+    public:
+        TransactionContextCallbacks(Transaction* transaction);
+
+        std::string getName() const override;
+
+        // Called when an object is added to the context
+        void onObjectAddedImpl(Object* obj) override;
+
+        // Called when an object is modified in the context
+        void onObjectModifiedImpl(Object* obj) override;
+
+        // Called when an object is removed from the context
+        void onObjectRemovedImpl(Object* obj) override;
     };
 };

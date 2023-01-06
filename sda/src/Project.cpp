@@ -1,7 +1,6 @@
 #include "SDA/Program.h"
 #include "SDA/Database/Schema.h"
 #include "SDA/Database/Loader.h"
-#include "SDA/Callbacks/ProjectContextCallbacks.h"
 
 using namespace sda;
 
@@ -20,9 +19,11 @@ Project::Project(Program* program, const std::filesystem::path& path, std::uniqu
     m_changeChain = std::make_unique<ChangeChain>();
     
     // set project callbacks
-    auto projectCallbacks = std::make_shared<ProjectContextCallbacks>(this);
-    projectCallbacks->setPrevCallbacks(getContext()->getCallbacks());
-    getContext()->setCallbacks(projectCallbacks);
+    auto transactionCallbacks = std::make_shared<TransactionContextCallbacks>(getTransaction());
+    transactionCallbacks->setPrevCallbacks(getContext()->getCallbacks());
+    auto changeChainCallbacks = std::make_shared<ChangeChainContextCallbacks>(getChangeChain(), getFactory());
+    changeChainCallbacks->setPrevCallbacks(transactionCallbacks);
+    getContext()->setCallbacks(changeChainCallbacks);
 }
 
 Program* Project::getProgram() const {

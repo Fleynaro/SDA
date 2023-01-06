@@ -56,7 +56,7 @@ void ChangeChain::newChangeList() {
 }
 
 ChangeList* ChangeChain::getChangeList() const {
-    if (m_changePointsIt == m_changePoints.end())
+    if (m_changePoints.empty())
         return nullptr;
     if (m_isUndoing) {
         if (m_changePointsIt->isVisited)
@@ -125,4 +125,37 @@ void ObjectChange::markAsRemoved(utils::ISerializable* obj) {
     obj->serialize(initState);
     m_changes.push_back({ObjectChangeData::Removed, nullptr, initState});
     m_affectedObjects.erase(obj);
+}
+
+ChangeChainContextCallbacks::ChangeChainContextCallbacks(ChangeChain* changeChain, IFactory* factory)
+    : m_changeChain(changeChain), m_factory(factory)
+{}
+
+std::string ChangeChainContextCallbacks::getName() const {
+    return "ChangeChain";
+}
+
+void ChangeChainContextCallbacks::onObjectAddedImpl(Object* obj) {
+    if(auto objChange = getOrCreateObjectChange()) {
+        objChange->markAsNew(obj);
+    }
+}
+
+void ChangeChainContextCallbacks::onObjectModifiedImpl(Object* obj) {
+    if(auto objChange = getOrCreateObjectChange()) {
+        objChange->markAsModified(obj);
+    }
+}
+
+void ChangeChainContextCallbacks::onObjectRemovedImpl(Object* obj) {
+    if(auto objChange = getOrCreateObjectChange()) {
+        objChange->markAsRemoved(obj);
+    }
+}
+
+ObjectChange* ChangeChainContextCallbacks::getOrCreateObjectChange() const {
+    auto changeList = m_changeChain->getChangeList();
+    if(!changeList)
+        return nullptr;
+    return changeList->getOrCreateObjectChange(m_factory);
 }

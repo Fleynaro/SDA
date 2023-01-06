@@ -9,21 +9,23 @@ export declare abstract class ContextCallbacks {
 
   setPrevCallbacks(prevCallbacks: ContextCallbacks): void;
 
+  setEnabled(enabled: boolean): void;
+
   onObjectAdded(object: SdaObject): void;
 
   onObjectModified(object: SdaObject): void;
 
   onObjectRemoved(object: SdaObject): void;
 
-  static Find(name: string, callbacks: ContextCallbacks): ContextCallbacks;
+  static Find(name: string, callbacks: ContextCallbacks): ContextCallbacks | null;
 }
 
 export declare class ContextCallbacksImpl extends ContextCallbacks {
-  onObjectAdded: (object: SdaObject) => void;
+  onObjectAddedImpl: (object: SdaObject) => void;
 
-  onObjectModified: (object: SdaObject) => void;
+  onObjectModifiedImpl: (object: SdaObject) => void;
 
-  onObjectRemoved: (object: SdaObject) => void;
+  onObjectRemovedImpl: (object: SdaObject) => void;
 
   static New(): ContextCallbacksImpl;
 }
