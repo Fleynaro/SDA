@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getEventApi } from 'sda-electron/api/event';
 import { Identifiable, ObjectId, CmpObjectIds, ObjectChangeType } from 'sda-electron/api/common';
-import { withCrash } from './useCrash';
+import { withCrash } from 'providers/CrashProvider';
 
 export default function useObject<T extends Identifiable>(
   dataSource: () => Promise<T>,

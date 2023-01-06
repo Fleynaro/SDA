@@ -3,7 +3,7 @@ import { Stack, IconButton, TextField } from '@mui/material';
 import FileOpenIcon from '@mui/icons-material/FileOpen';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import { getWindowApi } from 'sda-electron/api/window';
-import { withCrash, withCrash_ } from 'hooks';
+import { withCrash, withCrash_ } from 'providers/CrashProvider';
 
 export interface FilePickerProps {
   directory?: boolean;

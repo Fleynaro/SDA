@@ -3,7 +3,7 @@ import { Stack, FormControl, FormHelperText, Select, MenuItem } from '@mui/mater
 import { FilePicker } from '../FilePicker';
 import { getProjectApi } from 'sda-electron/api/project';
 import { getPlatformApi } from 'sda-electron/api/platform';
-import { withCrash, withCrash_ } from 'hooks';
+import { withCrash, withCrash_ } from 'providers/CrashProvider';
 
 export interface CreateProjectFormRef {
   create: () => void;

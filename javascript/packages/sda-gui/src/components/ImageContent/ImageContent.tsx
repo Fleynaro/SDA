@@ -9,7 +9,7 @@ import { useImageContentStyle } from './style';
 import { buildRow, ImageRowElement } from './Row';
 import { buildJump } from './Jump';
 import { useImageContent } from './context';
-import { withCrash, withCrash_ } from 'hooks';
+import { withCrash, withCrash_ } from 'providers/CrashProvider';
 
 export const ImageContentContextMenu = (props: ContextMenuProps) => {
   return (
@@ -112,11 +112,9 @@ export function ImageContent() {
   };
 
   useEffect(
-    withCrash_(
-      withCrash(async () => {
-        setTotalRowsCount(await getImageApi().getImageTotalRowsCount(imageId));
-      }),
-    ),
+    withCrash_(async () => {
+      setTotalRowsCount(await getImageApi().getImageTotalRowsCount(imageId));
+    }),
     [imageId],
   );
 

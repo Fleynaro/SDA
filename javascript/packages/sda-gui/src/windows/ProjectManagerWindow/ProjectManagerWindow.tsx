@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react';
-import { useList, useWindowTitle, withCrash } from 'hooks';
+import { useList, useWindowTitle } from 'hooks';
+import { withCrash } from 'providers/CrashProvider';
 import {
   Box,
   Button,

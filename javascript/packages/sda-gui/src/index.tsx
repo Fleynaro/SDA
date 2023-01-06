@@ -4,6 +4,7 @@ import { CssBaseline, ThemeProvider } from '@mui/material';
 import { setWindow } from 'sda-electron/api/common';
 import theme from './theme';
 import App from './App';
+import { CrashProvider } from 'providers/CrashProvider';
 
 setWindow(window);
 
@@ -13,8 +14,10 @@ const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
 root.render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <App />
+      <CrashProvider>
+        <CssBaseline />
+        <App />
+      </CrashProvider>
     </ThemeProvider>
   </React.StrictMode>,
 );

@@ -1,5 +1,5 @@
 import { useState, forwardRef, useImperativeHandle } from 'react';
-import { withCrash } from 'hooks';
+import { withCrash } from 'providers/CrashProvider';
 import { useSdaContextId } from 'providers/SdaContextProvider';
 import { Stack, FormControl, FormHelperText, TextField } from '@mui/material';
 import { FilePicker } from '../FilePicker';

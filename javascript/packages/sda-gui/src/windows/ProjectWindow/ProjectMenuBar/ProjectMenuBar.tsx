@@ -3,7 +3,7 @@ import { MenuBar, MenuBarItem, MenuNode } from 'components/Menu';
 import { useProjectId } from 'providers/ProjectProvider';
 import SaveIcon from '@mui/icons-material/Save';
 import { getProjectApi } from 'sda-electron/api/project';
-import { withCrash } from 'hooks';
+import { withCrash } from 'providers/CrashProvider';
 
 export default function ProjectMenuBar() {
   const projectId = useProjectId();
