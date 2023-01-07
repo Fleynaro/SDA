@@ -1354,9 +1354,10 @@ pcode::Instruction* PcodeDecoderX86::generateInstruction(
     bool zext)
 {
 	// that is the feature of x86: setting value to EAX cleans fully RAX
-	if (auto regOutput = std::dynamic_pointer_cast<RegisterVarnode>(output)) {
-		if (regOutput->getSize() == 0x4) {
-			output = getRegisterVarnode(static_cast<ZydisRegister>(regOutput->getRegister().getRegId()), 0x8, 0);
+	if (auto regOutVarnode = std::dynamic_pointer_cast<RegisterVarnode>(output)) {
+		auto reg = regOutVarnode->getRegister();
+		if (reg.getRegType() != Register::Virtual && reg.getSize() == 0x4) {
+			output = getRegisterVarnode(static_cast<ZydisRegister>(reg.getRegId()), 0x8, 0);
 			// or we could generate "RAX:8 = COPY 0:8" before
 		}
 	}

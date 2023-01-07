@@ -25,6 +25,7 @@
     "rimraf": "^3.0.2",
     "sda": "file:../sda",
     "sda-core": "file:../sda-core",
+    "sda-decompiler": "file:../sda-decompiler",
     "sda-platform-x86": "file:../sda-platform-x86"
   },
   "devDependencies": {

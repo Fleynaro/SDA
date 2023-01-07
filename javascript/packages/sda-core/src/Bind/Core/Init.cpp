@@ -1,4 +1,5 @@
 #include "Bind/Init.h"
+#include "Bind/Core/Shared/Converter.h"
 #include "Bind/Core/Utils.h"
 #include "Bind/Core/Pcode.h"
 #include "Bind/Core/Platform.h"

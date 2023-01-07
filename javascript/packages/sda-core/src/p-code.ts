@@ -1,6 +1,6 @@
 import m from './module';
 import { RegisterRepository } from './platform';
-import { AbstractPrinter } from './utils';
+import { Offset, AbstractPrinter } from './utils';
 
 export declare abstract class PcodeVarnode {
   readonly size: number;
@@ -8,6 +8,9 @@ export declare abstract class PcodeVarnode {
 }
 
 export type InstructionOffset = number;
+
+export const toInstructionOffset = (byteOffset: Offset, index = 0): InstructionOffset =>
+  (byteOffset << 8) | index;
 
 export declare class PcodeInstruction {
   readonly id: string;

@@ -21,6 +21,8 @@ const ImageControllerImpl: ImageController = {
 
   getJumpsAt: (id: ObjectId, startOffset: number, endOffset: number) =>
     invoke('getJumpsAt', id, startOffset, endOffset),
+
+  analyzePcode: (id: ObjectId, startOffsets: number[]) => invoke('analyzePcode', id, startOffsets),
 };
 
 export default ImageControllerImpl;

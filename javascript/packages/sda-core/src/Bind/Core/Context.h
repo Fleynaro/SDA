@@ -96,6 +96,7 @@ namespace sda::bind
             auto cl = NewClass<Context>(module);
             cl
                 .auto_wrap_object_ptrs(true)
+                .property("platform", &Context::getPlatform)
                 .property("callbacks", &Context::getCallbacks, &Context::setCallbacks)
                 .property("addressSpaces", [](Context& self) {
                     std::list<AddressSpace*> list;

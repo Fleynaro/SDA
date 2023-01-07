@@ -9,17 +9,26 @@ import { useImageContentStyle } from './style';
 import { buildRow, ImageRowElement } from './Row';
 import { buildJump } from './Jump';
 import { useImageContent } from './context';
-import { withCrash_ } from 'providers/CrashProvider';
+import { withCrash, withCrash_ } from 'providers/CrashProvider';
 
 export const ImageContentContextMenu = (props: ContextMenuProps) => {
+  const {
+    imageId,
+    rowSelection: { selectedRows },
+  } = useImageContent();
+
+  const onPCodeAnalysis = useCallback(
+    withCrash(async () => {
+      if (selectedRows.length === 0) return;
+      const startOffset = selectedRows[0];
+      await getImageApi().analyzePcode(imageId, [startOffset]);
+    }),
+    [imageId, selectedRows],
+  );
+
   return (
     <ContextMenu {...props}>
-      <MenuNode
-        label="Test"
-        onClick={() => {
-          console.log('Test');
-        }}
-      />
+      <MenuNode label="P-Code Analysis" onClick={onPCodeAnalysis} />
     </ContextMenu>
   );
 };

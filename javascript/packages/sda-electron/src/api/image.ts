@@ -60,6 +60,8 @@ export interface ImageController {
   offsetToRowIdx(id: ObjectId, offset: Offset): Promise<number>;
 
   getJumpsAt(id: ObjectId, startOffset: Offset, endOffset: Offset): Promise<Jump[][]>;
+
+  analyzePcode(id: ObjectId, startOffsets: Offset[]): Promise<void>;
 }
 
 export const getImageApi = () => {

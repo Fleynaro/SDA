@@ -1,0 +1,24 @@
+{
+  "name": "sda-decompiler",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./*": "./dist/*.js"
+  },
+  "typesVersions": {
+    "*": {
+      "*": ["./dist/*.d.ts", "./dist/index.d.ts"]
+    }
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "fleynaro",
+  "license": "ISC",
+  "dependencies": {
+    "sda-bindings": "file:../sda-bindings",
+    "sda-core": "file:../sda-core"
+  }
+}

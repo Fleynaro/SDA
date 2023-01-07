@@ -17,6 +17,9 @@ namespace v8pp
         }
 
         static from_type from_v8(v8::Isolate* isolate, v8::Local<v8::Value> value) {
+            if (!is_valid(isolate, value)) {
+                throw std::invalid_argument("expected string for filesystem::path");
+            }
             underlying_type path = convert<underlying_type>::from_v8(isolate, value);
             return path;
         }

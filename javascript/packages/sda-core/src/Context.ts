@@ -33,6 +33,7 @@ export declare class ContextCallbacksImpl extends ContextCallbacks {
 export declare class Context implements IIdentifiable {
   readonly hashId: Hash;
   readonly className: string;
+  readonly platform: Platform;
   callbacks: ContextCallbacks;
   addressSpaces: AddressSpace[];
 

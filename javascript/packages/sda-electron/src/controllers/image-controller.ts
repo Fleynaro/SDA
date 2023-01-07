@@ -7,8 +7,9 @@ import {
   ImageInstructionRow,
   Jump as JumpDTO,
 } from 'api/image';
-import { Image, FileImageRW, SectionType, StandartSymbolTable, Instruction } from 'sda-core';
+import { Image, FileImageRW, SectionType, StandartSymbolTable, Instruction, toInstructionOffset } from 'sda-core';
 import { GetOriginalInstructionInDetail, GetOriginalInstructions } from 'sda';
+import { PcodeGraphBuilder } from 'sda-decompiler';
 import { ObjectId, Offset } from 'api/common';
 import { toImageDTO, toImage, changeImage } from './dto/image';
 import { toContext } from './dto/context';
@@ -33,6 +34,7 @@ class ImageControllerImpl extends BaseController implements ImageController {
     this.register('getImageTotalRowsCount', this.getImageTotalRowsCount);
     this.register('offsetToRowIdx', this.offsetToRowIdx);
     this.register('getJumpsAt', this.getJumpsAt);
+    this.register('analyzePcode', this.analyzePcode);
     this.imageContents = new Map();
   }
 
@@ -100,6 +102,15 @@ class ImageControllerImpl extends BaseController implements ImageController {
     return foundJumps.map((jumpsOnLayer) =>
       jumpsOnLayer.map((jump) => ({ from: jump.offset, to: jump.targetOffset })),
     );
+  }
+
+  public async analyzePcode(id: ObjectId, startOffsets: Offset[]): Promise<void> {
+    const image = toImage(id);
+    const startInstructionOffsets = startOffsets.map(toInstructionOffset);
+    const platform = image.context.platform;
+    const decoder = platform.getPcodeDecoder();
+    const builder = PcodeGraphBuilder.New(image.pcodeGraph, image, decoder);
+    builder.start(startInstructionOffsets, true);
   }
 
   private getImageContent(image: Image): ImageContent {

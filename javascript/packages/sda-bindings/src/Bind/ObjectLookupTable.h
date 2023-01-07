@@ -97,9 +97,13 @@ namespace sda::bind
     private:
         static void CleanUp() {
             auto table = getTable();
-            for (auto& [hash, obj] : *table) {
-                if (obj.expired()) {
-                    table->erase(hash);
+            auto it = table->begin();
+            while (it != table->end()) {
+                if (it->second.expired()) {
+                    it = table->erase(it);
+                }
+                else {
+                    ++it;
                 }
             }
         }
