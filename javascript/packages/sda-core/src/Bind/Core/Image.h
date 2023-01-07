@@ -5,8 +5,8 @@ namespace sda::bind
 {
     class ImageRWBind
 	{
-        static auto NewVectorImageRW() {
-            return new VectorImageRW(std::vector<uint8_t>());
+        static auto NewVectorImageRW(const std::vector<uint8_t>& data) {
+            return new VectorImageRW(data);
         }
 
         static auto NewFileImageRW(const std::filesystem::path& pathToImgFile) {
@@ -56,6 +56,10 @@ namespace sda::bind
         static auto NewPEImageAnalyser() {
             return std::make_shared<PEImageAnalyser>();
         }
+
+        static auto NewTestAnalyser() {
+            return std::make_shared<TestAnalyser>();
+        }
     public:
         static void Init(v8pp::module& module) {
             {
@@ -77,6 +81,15 @@ namespace sda::bind
                     //.inherit<utils::ISerializable>() TODO: implement multiple inheritance
                     .static_method("New", &NewPEImageAnalyser);
                 module.class_("PEImageAnalyser", cl);
+            }
+
+            {
+                auto cl = NewClass<TestAnalyser, v8pp::shared_ptr_traits>(module);
+                cl
+                    .inherit<ImageAnalyser>()
+                    //.inherit<utils::ISerializable>() TODO: implement multiple inheritance
+                    .static_method("New", &NewTestAnalyser);
+                module.class_("TestAnalyser", cl);
             }
         }
     };
