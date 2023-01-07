@@ -143,7 +143,7 @@ namespace sda::bind
                 .property("imageSections", &Image::getImageSections)
                 .property("size", &Image::getSize)
                 .property("globalSymbolTable", &Image::getGlobalSymbolTable)
-                //.property("pcodeGraph", &Image::getPcodeGraph)
+                .property("pcodeGraph", &Image::getPcodeGraph)
                 .method("contains", &Image::contains)
                 .method("toOffset", &Image::toOffset)
                 .method("getImageSectionAt", &Image::getImageSectionAt)

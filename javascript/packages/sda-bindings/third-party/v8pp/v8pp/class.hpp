@@ -299,7 +299,7 @@ public:
 		return *this;
 	}
 
-	/// Enable new C++ object pointers auto-wrapping
+	/// Enable C++ object pointers auto-wrapping
 	class_& auto_wrap_object_ptrs(bool auto_wrap = true)
 	{
 		class_info_.set_auto_wrap_object_ptrs(auto_wrap);

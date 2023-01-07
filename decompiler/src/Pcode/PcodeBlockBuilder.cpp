@@ -1,4 +1,4 @@
-#include "SDA/Decompiler/Pcode/PcodeGraphBuilder.h"
+#include "SDA/Decompiler/Pcode/PcodeBlockBuilder.h"
 #include "SDA/Core/Utils/IOManip.h"
 
 using namespace sda;
@@ -172,6 +172,7 @@ pcode::InstructionOffset PcodeBlockBuilder::StdCallbacks::getTargetOffset(const 
         std::stringstream ss;
         ss << "Invalid target 0x" << utils::to_hex() << targetOffset << " at offset 0x" << utils::to_hex() << instr->getOffset();
         onWarningEmitted(ss.str());
+        targetOffset = InvalidOffset;
     }
 
     return targetOffset;

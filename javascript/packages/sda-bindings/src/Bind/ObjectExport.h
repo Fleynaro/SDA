@@ -3,7 +3,8 @@
 
 namespace sda::bind
 {
-    /// As ExportObjectRef but delete memory for C++ object
+    /// Create JavaScript object which references externally created C++ class.
+    /// It will take ownership of the C++ pointer and delete memory for it
     template<typename T>
     static auto ExportObject(T* obj) {
         ObjectLookupTableRaw::AddObject(obj);
@@ -19,8 +20,7 @@ namespace sda::bind
         return v8pp::class_<T, v8pp::shared_ptr_traits>::import_external(isolate, obj);
     }
 
-    /// Create JavaScript object which references externally created C++ class.
-	/// It will not take ownership of the C++ pointer.
+    /// Add object to lookup table
     template<typename T>
     static void ExportObjectRef(T* obj) {
         ObjectLookupTableRaw::AddObject(obj);

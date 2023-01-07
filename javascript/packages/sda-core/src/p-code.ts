@@ -7,12 +7,72 @@ export declare abstract class PcodeVarnode {
   readonly isRegister: boolean;
 }
 
+export type InstructionOffset = number;
+
 export declare class PcodeInstruction {
   readonly id: string;
   readonly input0: PcodeVarnode;
   readonly input1: PcodeVarnode;
   readonly output: PcodeVarnode;
-  readonly offset: number;
+  readonly offset: InstructionOffset;
+}
+
+export declare class PcodeBlock {
+  readonly level: number;
+  readonly minOffset: InstructionOffset;
+  readonly maxOffset: InstructionOffset;
+  readonly nearNextBlock: PcodeBlock;
+  readonly farNextBlock: PcodeBlock;
+  readonly referencedBlocks: PcodeBlock[];
+  readonly instructions: { [offset: InstructionOffset]: PcodeInstruction };
+
+  contains(offset: InstructionOffset, halfInterval: boolean): boolean;
+}
+
+export declare class PcodeFunctionGraph {
+  readonly entryBlock: PcodeBlock;
+  readonly referencedGraphsTo: PcodeFunctionGraph[];
+  readonly referencedGraphsFrom: PcodeFunctionGraph[];
+
+  addReferencedGraphFrom(fromOffset: InstructionOffset, referencedGraph: PcodeFunctionGraph): void;
+
+  removeReferencedGraphFrom(fromOffset: InstructionOffset): void;
+}
+
+export declare abstract class PcodeGraphCallbacks {
+  onFunctionGraphCreated(graph: PcodeFunctionGraph): void;
+
+  onFunctionGraphRemoved(graph: PcodeFunctionGraph): void;
+}
+
+export declare class PcodeGraphCallbacksImpl extends PcodeGraphCallbacks {
+  prevCallbacks: PcodeGraphCallbacks;
+
+  onFunctionGraphCreated: (graph: PcodeFunctionGraph) => void;
+
+  onFunctionGraphRemoved: (graph: PcodeFunctionGraph) => void;
+
+  static New(): PcodeGraphCallbacksImpl;
+}
+
+export declare class PcodeGraph {
+  callbacks: PcodeGraphCallbacks;
+
+  addInstruction(instruction: PcodeInstruction): void;
+
+  removeInstruction(instruction: PcodeInstruction): void;
+
+  getInstructionAt(offset: InstructionOffset): PcodeInstruction;
+
+  createBlock(offset: InstructionOffset): PcodeBlock;
+
+  removeBlock(block: PcodeBlock): void;
+
+  getBlockAt(offset: InstructionOffset, halfInterval: boolean): PcodeBlock;
+
+  createFunctionGraph(entryBlock: PcodeBlock): PcodeFunctionGraph;
+
+  removeFunctionGraph(graph: PcodeFunctionGraph): void;
 }
 
 export declare class PcodeParser {
@@ -31,7 +91,13 @@ export declare class PcodePrinter extends AbstractPrinter {
 
 module.exports = {
   ...module.exports,
+  PcodeVarnode: m.PcodeVarnode,
   PcodeInstruction: m.PcodeInstruction,
+  PcodeBlock: m.PcodeBlock,
+  PcodeFunctionGraph: m.PcodeFunctionGraph,
+  PcodeGraphCallbacks: m.PcodeGraphCallbacks,
+  PcodeGraphCallbacksImpl: m.PcodeGraphCallbacksImpl,
+  PcodeGraph: m.PcodeGraph,
   PcodeParser: m.PcodeParser,
   PcodePrinter: m.PcodePrinter,
 };
