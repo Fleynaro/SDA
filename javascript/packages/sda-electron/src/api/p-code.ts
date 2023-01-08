@@ -1,14 +1,15 @@
 import { Offset } from './common';
 
-export type PcodeToken =
+export type PcodeNode =
   | {
-      group: false;
+      type: 'token';
       text: string;
-      type: string;
+      tokenType: string;
+      idx: number;
     }
   | {
-      group: true;
-      tokens: PcodeToken[];
+      type: 'group';
+      childs: PcodeNode[];
       action?:
         | {
             name: 'instruction';

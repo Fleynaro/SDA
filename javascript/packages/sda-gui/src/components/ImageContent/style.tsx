@@ -31,6 +31,9 @@ const DefaultStyles = {
       ['AddressAbs']: '#d2b2d6',
       ['AddressRel']: '#bdbdbd',
     } as { [type: string]: string },
+    pcode: {
+      width: 100,
+    },
   },
 
   jump: {

@@ -137,6 +137,7 @@ namespace sda::bind
                 .method("addInstruction", &pcode::Graph::addInstruction)
                 .method("removeInstruction", &pcode::Graph::removeInstruction)
                 .method("getInstructionAt", &pcode::Graph::getInstructionAt)
+                .method("getInstructionsAt", &pcode::Graph::getInstructionsAt)
                 .method("createBlock", &pcode::Graph::createBlock)
                 .method("removeBlock", &pcode::Graph::removeBlock)
                 .method("getBlockAt", &pcode::Graph::getBlockAt)

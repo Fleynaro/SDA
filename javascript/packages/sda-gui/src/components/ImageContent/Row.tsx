@@ -1,9 +1,50 @@
 import { useCallback } from 'react';
 import { ImageRowType, ImageBaseRow, ImageInstructionRow } from 'sda-electron/api/image';
+import { PcodeNode } from 'sda-electron/api/p-code';
 import { Group, Rect } from 'react-konva';
 import { buildKonvaFormatText } from 'components/Konva';
 import { StylesType } from './style';
 import { useImageContent } from './context';
+
+export interface PcodeElement {
+  height: number;
+  element: JSX.Element;
+}
+
+// const buildPcode = (node: PcodeNode, style: StylesType): PcodeElement => {
+//   if (node.type === 'token') {
+//     const tokenText = buildKonvaFormatText({
+//       selectionArea: 'pcode',
+//       textIdx: node.idx,
+//       textParts: [
+//         {
+//           text: node.text,
+//           style: { fontSize: 12, fill: 'white' },
+//         },
+//       ],
+//       maxWidth: style.row.pcode.width,
+//     });
+//     return {
+//       height: tokenText.height,
+//       element: tokenText.elem,
+//     };
+//   } else if (node.type === 'group') {
+//     let height = 0;
+//     const childrens = node.childs.map((child) => {
+//       const childElem = buildPcode(child, style);
+//       height += childElem.height;
+//       return childElem.element;
+//     });
+//     return {
+//       height,
+//       element: <Group>{childrens}</Group>,
+//     };
+//   }
+//   return {
+//     height: 0,
+//     element: <></>,
+//   };
+// };
 
 export interface ImageRowElement {
   offset: number;
@@ -39,7 +80,11 @@ const buildInstructionRow = (row: ImageInstructionRow, style: StylesType): Image
     maxWidth: style.row.cols.instruction.width,
     newLineInEnd: true,
   });
-  const height = instructionText.height + style.row.padding * 2;
+  let pcode: PcodeElement | undefined;
+  if (row.pcode) {
+    //pcode = buildPcode(row.pcode, style);
+  }
+  const height = instructionText.height + (pcode?.height || 0) + style.row.padding * 2;
   function Elem() {
     const {
       rowSelection: { selectedRows, firstSelectedRow, setFirstSelectedRow, setLastSelectedRow },
@@ -84,6 +129,7 @@ const buildInstructionRow = (row: ImageInstructionRow, style: StylesType): Image
           >
             {instructionText.elem}
           </Group>
+          {pcode?.element && <Group y={instructionText.height}>{pcode.element}</Group>}
         </Group>
       </Group>
     );

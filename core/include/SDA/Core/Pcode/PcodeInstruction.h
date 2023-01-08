@@ -116,6 +116,8 @@ namespace sda::pcode
         InstructionOffset(Offset byteOffset, size_t index);
 
         operator size_t() const;
+
+		static size_t GetMaxIndex();
     };
     
     class Instruction

@@ -14,6 +14,8 @@ import { withCrash, withCrash_ } from 'providers/CrashProvider';
 export const ImageContentContextMenu = (props: ContextMenuProps) => {
   const {
     imageId,
+    view,
+    setView,
     rowSelection: { selectedRows },
   } = useImageContent();
 
@@ -26,9 +28,14 @@ export const ImageContentContextMenu = (props: ContextMenuProps) => {
     [imageId, selectedRows],
   );
 
+  const onShowPCode = useCallback(() => {
+    setView({ ...view, showPcode: !view.showPcode });
+  }, [view]);
+
   return (
     <ContextMenu {...props}>
       <MenuNode label="P-Code Analysis" onClick={onPCodeAnalysis} />
+      <MenuNode label={view.showPcode ? 'Hide P-Code' : 'Show P-Code'} onClick={onShowPCode} />
     </ContextMenu>
   );
 };
@@ -39,6 +46,7 @@ export function ImageContent() {
   const {
     imageId,
     setFunctions,
+    view,
     rowSelection: { firstSelectedRow, lastSelectedRow, setSelectedRows },
   } = useImageContent();
   const textSelection = useKonvaFormatTextSelection();
@@ -78,7 +86,10 @@ export function ImageContent() {
   const getRowByIdx = async (rowIdx: number) => {
     let row = cachedRows.current[rowIdx];
     if (!row) {
-      const rows = await getImageApi().getImageRowsAt(imageId, rowIdx, 1);
+      const rows = await getImageApi().getImageRowsAt(imageId, rowIdx, 1, {
+        tokens: true,
+        pcode: view.showPcode,
+      });
       row = buildRow(rows[0], style);
       // cache for better performance
       if (cachedRowsIdxs.current.length > style.viewport.cacheSize) {
@@ -207,14 +218,14 @@ export function ImageContent() {
         setForceUpdate(forceUpdate + 1);
       }
     }),
-    [scrollY, style, forceUpdate],
+    [scrollY, style, view, forceUpdate],
   );
 
   useEffect(() => {
     // clear cache on style change
     cachedRows.current = {};
     cachedRowsIdxs.current = [];
-  }, [style]);
+  }, [style, view]);
 
   const onWheel = useCallback(
     async (e: Konva.KonvaEventObject<WheelEvent>) => {

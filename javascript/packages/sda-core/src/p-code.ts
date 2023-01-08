@@ -67,6 +67,8 @@ export declare class PcodeGraph {
 
   getInstructionAt(offset: InstructionOffset): PcodeInstruction;
 
+  getInstructionsAt(byteOffset: Offset): PcodeInstruction[];
+
   createBlock(offset: InstructionOffset): PcodeBlock;
 
   removeBlock(block: PcodeBlock): void;

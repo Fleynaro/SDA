@@ -14,6 +14,10 @@ InstructionOffset::operator size_t() const {
     return fullOffset;
 }
 
+size_t InstructionOffset::GetMaxIndex() {
+    return 255;
+}
+
 Instruction::Instruction(
     InstructionId id,
     std::shared_ptr<Varnode> input0,

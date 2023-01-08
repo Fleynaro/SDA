@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 #include "PcodeFunctionGraph.h"
 
 namespace sda::pcode
@@ -16,6 +17,8 @@ namespace sda::pcode
         void removeInstruction(const Instruction* instruction);
 
         const Instruction* getInstructionAt(InstructionOffset offset) const;
+
+        std::vector<const Instruction*> getInstructionsAt(Offset byteOffset) const;
 
         Block* createBlock(InstructionOffset offset);
 

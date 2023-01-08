@@ -7,10 +7,16 @@ export interface ImageContentFunctions {
   goToOffset: (offset: number) => Promise<boolean>;
 }
 
+export interface ImageContentView {
+  showPcode: boolean;
+}
+
 export interface ImageContentContextValue {
   imageId: ObjectId;
   functions: ImageContentFunctions;
   setFunctions: (functions: ImageContentFunctions) => void;
+  view: ImageContentView;
+  setView: (view: ImageContentView) => void;
   selectedJump?: Jump;
   setSelectedJump?: (jump?: Jump) => void;
   rowSelection: {
@@ -40,6 +46,9 @@ export const ImageContentProvider = ({ imageId, children }: ImageContentProvider
   const [functions, setFunctions] = useState<ImageContentFunctions>({
     goToOffset: nullFunction,
   });
+  const [view, setView] = useState<ImageContentView>({
+    showPcode: false,
+  });
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [firstSelectedRow, setFirstSelectedRow] = useState<number>();
   const [lastSelectedRow, setLastSelectedRow] = useState<number>();
@@ -51,6 +60,8 @@ export const ImageContentProvider = ({ imageId, children }: ImageContentProvider
         imageId,
         functions,
         setFunctions,
+        view,
+        setView,
         selectedJump,
         setSelectedJump,
         rowSelection: {

@@ -1,5 +1,6 @@
 import { ObjectId, Offset, window_ } from './common';
 import { ContextObject } from './context';
+import { PcodeNode } from './p-code';
 
 export const ImageClassName = 'Image';
 
@@ -34,6 +35,12 @@ export interface ImageInstructionRow extends ImageBaseRow {
     type: string;
     text: string;
   }[];
+  pcode?: PcodeNode;
+}
+
+export interface ImageLoadRowOptions {
+  tokens?: boolean;
+  pcode?: boolean;
 }
 
 export interface Jump {
@@ -53,7 +60,12 @@ export interface ImageController {
 
   changeImage(dto: Image): Promise<void>;
 
-  getImageRowsAt(id: ObjectId, rowIdx: number, count: number): Promise<ImageBaseRow[]>;
+  getImageRowsAt(
+    id: ObjectId,
+    rowIdx: number,
+    count: number,
+    opts?: ImageLoadRowOptions,
+  ): Promise<ImageBaseRow[]>;
 
   getImageTotalRowsCount(id: ObjectId): Promise<number>;
 

@@ -78,9 +78,9 @@ size_t RegisterRepositoryX86::getRegisterId(const std::string& regName) const {
 }
 
 sda::Register::Type RegisterRepositoryX86::getRegisterType(size_t regId) const {
-    if (regId == ZYDIS_REGISTER_RIP)
+    if (regId == Register::InstructionPointerId)
         return Register::InstructionPointer;
-    if (regId == ZYDIS_REGISTER_RSP)
+    if (regId == Register::StackPointerId)
         return Register::StackPointer;
 	if (regId >= ZYDIS_REGISTER_MM0 && regId <= ZYDIS_REGISTER_MM7 ||
         regId >= ZYDIS_REGISTER_XMM0 && regId <= ZYDIS_REGISTER_XMM31)
@@ -89,19 +89,18 @@ sda::Register::Type RegisterRepositoryX86::getRegisterType(size_t regId) const {
 }
 
 std::string RegisterRepositoryX86::getRegisterFlagName(size_t flagMask) const {
-    std::string flagName;
     if ((flagMask & ZYDIS_CPUFLAG_CF) != 0)
-        flagName = "CF";
+        return "CF";
     else if ((flagMask & ZYDIS_CPUFLAG_OF) != 0)
-        flagName = "OF";
+        return "OF";
     else if ((flagMask & ZYDIS_CPUFLAG_SF) != 0)
-        flagName = "SF";
+        return "SF";
     else if ((flagMask & ZYDIS_CPUFLAG_ZF) != 0)
-        flagName = "ZF";
+       return "ZF";
     else if ((flagMask & ZYDIS_CPUFLAG_AF) != 0)
-        flagName = "AF";
+        return "AF";
     else if ((flagMask & ZYDIS_CPUFLAG_PF) != 0)
-        flagName = "PF";
+        return "PF";
     throw std::runtime_error("Unknown flag mask");
 }
 

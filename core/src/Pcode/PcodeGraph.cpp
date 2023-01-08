@@ -46,6 +46,19 @@ const Instruction* Graph::getInstructionAt(InstructionOffset offset) const {
     return &it->second;
 }
 
+std::vector<const Instruction*> Graph::getInstructionsAt(Offset byteOffset) const {
+    std::vector<const Instruction*> instructions;
+    auto instrOffset = InstructionOffset(byteOffset, 0);
+    while (instrOffset.index <= InstructionOffset::GetMaxIndex()) {
+        auto instr = getInstructionAt(instrOffset);
+        if (!instr)
+            break;
+        instructions.push_back(instr);
+        instrOffset.index++;
+    }
+    return instructions;
+}
+
 Block* Graph::createBlock(InstructionOffset offset) {
     if (m_blocks.find(offset) != m_blocks.end())
         throw std::runtime_error("Block already exists");

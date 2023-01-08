@@ -1,5 +1,5 @@
 import { invokerFactory } from '../utils';
-import { ImageController, Image } from 'api/image';
+import { ImageController, Image, ImageLoadRowOptions } from 'api/image';
 import { ObjectId } from 'api/common';
 
 const invoke = invokerFactory('Image');
@@ -12,8 +12,8 @@ const ImageControllerImpl: ImageController = {
 
   changeImage: (dto: Image) => invoke('changeImage', dto),
 
-  getImageRowsAt: (id: ObjectId, rowIdx: number, count: number) =>
-    invoke('getImageRowsAt', id, rowIdx, count),
+  getImageRowsAt: (id: ObjectId, rowIdx: number, count: number, opts?: ImageLoadRowOptions) =>
+    invoke('getImageRowsAt', id, rowIdx, count, opts),
 
   getImageTotalRowsCount: (id: ObjectId) => invoke('getImageTotalRowsCount', id),
 

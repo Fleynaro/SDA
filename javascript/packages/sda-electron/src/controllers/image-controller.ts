@@ -7,12 +7,21 @@ import {
   ImageInstructionRow,
   Jump as JumpDTO,
 } from 'api/image';
-import { Image, FileImageRW, SectionType, StandartSymbolTable, Instruction, toInstructionOffset } from 'sda-core';
+import {
+  Image,
+  FileImageRW,
+  SectionType,
+  StandartSymbolTable,
+  Instruction,
+  toInstructionOffset,
+} from 'sda-core';
 import { GetOriginalInstructionInDetail, GetOriginalInstructions } from 'sda';
 import { PcodeGraphBuilder } from 'sda-decompiler';
 import { ObjectId, Offset } from 'api/common';
+import { ImageLoadRowOptions } from 'api/image';
 import { toImageDTO, toImage, changeImage } from './dto/image';
 import { toContext } from './dto/context';
+import { toPcodeNode } from './dto/p-code';
 import { findImageAnalyser } from 'repo/image-analyser';
 import { binSearch, toId } from 'utils/common';
 import { Interval, Jump, JumpManager } from 'utils/instruction-jump';
@@ -66,11 +75,12 @@ class ImageControllerImpl extends BaseController implements ImageController {
     id: ObjectId,
     rowIdx: number,
     count: number,
+    opts?: ImageLoadRowOptions,
   ): Promise<ImageBaseRow[]> {
     const image = toImage(id);
     const imageContent = this.getImageContent(image);
     const slicedRows = imageContent.baseRows.slice(rowIdx, rowIdx + count);
-    return slicedRows.map((r) => this.loadRow(image, r));
+    return slicedRows.map((r) => this.loadRow(image, r, opts));
   }
 
   public async getImageTotalRowsCount(id: ObjectId): Promise<number> {
@@ -142,16 +152,29 @@ class ImageControllerImpl extends BaseController implements ImageController {
     return imageContent;
   }
 
-  private loadRow(image: Image, baseRow: ImageBaseRow): ImageBaseRow {
+  private loadRow(image: Image, baseRow: ImageBaseRow, opts?: ImageLoadRowOptions): ImageBaseRow {
     if (baseRow.type === ImageRowType.Instruction) {
-      const instruction = GetOriginalInstructionInDetail(image, baseRow.offset);
-      return {
+      const row: ImageInstructionRow = {
         ...baseRow,
-        tokens: instruction.tokens.map((t) => ({
+        tokens: [],
+      };
+      const offset = baseRow.offset;
+      if (opts?.tokens) {
+        const instruction = GetOriginalInstructionInDetail(image, offset);
+        row.tokens = instruction.tokens.map((t) => ({
           type: Instruction.TokenType[t.type],
           text: t.text,
-        })),
-      } as ImageInstructionRow;
+        }));
+      }
+      if (opts?.pcode) {
+        const regRepo = image.context.platform.registerRepository;
+        const pcodeGraph = image.pcodeGraph;
+        const pcodeInstructions = pcodeGraph.getInstructionsAt(offset);
+        if (pcodeInstructions.length > 0) {
+          row.pcode = toPcodeNode(regRepo, pcodeInstructions);
+        }
+      }
+      return row;
     }
     return baseRow;
   }
