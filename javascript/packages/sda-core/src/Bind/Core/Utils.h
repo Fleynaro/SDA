@@ -47,27 +47,32 @@ namespace sda::bind
     class AbstractPrinterBind
     {
     protected:
-        template<typename T, typename... Args>
-        class PrinterJs : public T {
+        template<typename T>
+        class AbstractPrinterJs : public T {
             std::stringstream ss;
+            Callback m_printTokenImpl;
 
             using T::T;
-            
-            static auto New(Args... args) {
-                auto printer = new PrinterJs(std::move(args)...);
-                printer->setOutput(printer->ss);
-                return ExportObject(printer);
+
+            void printTokenImpl(const std::string& text, utils::AbstractPrinter::Token token) const override {
+                T::printTokenImpl(text, token);
+                if (m_printTokenImpl.isDefined()) {
+                    m_printTokenImpl.call(text, token);
+                }
             }
 
         public:
-            static auto Create(v8pp::module& module) {
-                auto cl = NewClass<PrinterJs>(module);
+            static void ObjectInit(AbstractPrinterJs* printer) {
+                printer->setOutput(printer->ss);
+            }
+
+            template<typename R, typename Traits>
+            static void ClassInit(v8pp::class_<R, Traits>& cl) {
                 cl
                     .inherit<utils::AbstractPrinter>()
-                    .property("output", [](PrinterJs& self) { return self.ss.str(); })
-                    .method("flush", std::function([](PrinterJs* self) { self->ss.str(""); }))
-                    .static_method("New", &New);
-                return cl;
+                    .property("output", [](R& self) { return self.ss.str(); })
+                    .method("flush", std::function([](R* self) { self->ss.str(""); }));
+                Callback::Register<R, Traits>(cl, "printTokenImpl", &R::m_printTokenImpl);
             }
         };
     public:

@@ -1,6 +1,6 @@
 import m from './module';
 import { RegisterRepository } from './platform';
-import { Offset, AbstractPrinter } from './utils';
+import { Offset, AbstractPrinter, AbstractPrinterToken } from './utils';
 
 export declare abstract class PcodeVarnode {
   readonly size: number;
@@ -82,10 +82,22 @@ export declare class PcodeParser {
   static Parse(text: string, regRepo: RegisterRepository): PcodeInstruction[];
 }
 
+enum PcodePrinterToken_ {
+  Mnemonic = AbstractPrinterToken.Keyword,
+  Register = AbstractPrinterToken.Identifier,
+  VirtRegister = AbstractPrinterToken.Identifier,
+}
+
+export type PcodePrinterToken = AbstractPrinterToken | PcodePrinterToken_;
+
 export declare class PcodePrinter extends AbstractPrinter {
   printInstruction(pcode: PcodeInstruction): void;
 
-  printVarnode(varnode: PcodeVarnode): void;
+  printInstructionImpl: (pcode: PcodeInstruction) => void;
+
+  printVarnode(varnode: PcodeVarnode, printSizeAndOffset: boolean): void;
+
+  printVarnodeImpl: (varnode: PcodeVarnode, printSizeAndOffset: boolean) => void;
 
   static New(regRepo: RegisterRepository): PcodePrinter;
 

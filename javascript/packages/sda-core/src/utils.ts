@@ -13,6 +13,17 @@ export interface ISerializable {
   deserialize(data: object): void;
 }
 
+export enum AbstractPrinterToken {
+  Symbol = 1,
+  SpecSymbol = 2,
+  Keyword = 3,
+  Identifier = 4,
+  Number = 5,
+  String = 6,
+  Comment = 7,
+  Parent = 100,
+}
+
 export declare abstract class AbstractPrinter {
   readonly output: string;
 
@@ -31,4 +42,6 @@ export declare abstract class AbstractPrinter {
   endCommenting(): void;
 
   newLine(): void;
+
+  printTokenImpl: (text: string, token: AbstractPrinterToken) => void;
 }

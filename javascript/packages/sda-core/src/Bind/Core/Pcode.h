@@ -171,14 +171,44 @@ namespace sda::bind
 
     class PcodePrinterBind : public AbstractPrinterBind
     {
+        class PrinterJs : public AbstractPrinterJs<pcode::Printer> {
+        public:
+            Callback m_printInstructionImpl;
+            Callback m_printVarnodeImpl;
+
+            using AbstractPrinterJs::AbstractPrinterJs;
+
+            void printInstruction(const pcode::Instruction* instruction) const override {
+                AbstractPrinterJs::printInstruction(instruction);
+                if (m_printInstructionImpl.isDefined()) {
+                    m_printInstructionImpl.call(instruction);
+                }
+            }
+
+            void printVarnode(const pcode::Varnode* varnode, bool printSizeAndOffset) const override {
+                AbstractPrinterJs::printVarnode(varnode, printSizeAndOffset);
+                if (m_printVarnodeImpl.isDefined()) {
+                    m_printVarnodeImpl.call(varnode, printSizeAndOffset);
+                }
+            }
+        };
+
+        static auto New(const RegisterRepository* regRepo) {
+            auto printer = new PrinterJs(regRepo);
+            PrinterJs::ObjectInit(printer);
+            return ExportObject(printer);
+        }
     public:
         static void Init(v8pp::module& module) {
-            using PrinterJs = PrinterJs<pcode::Printer, const RegisterRepository*>;
-            auto cl = PrinterJs::Create(module);
+            auto cl = NewClass<PrinterJs>(module);
+            PrinterJs::ClassInit(cl);
             cl
                 .method("printInstruction", &PrinterJs::printInstruction)
                 .method("printVarnode", &PrinterJs::printVarnode)
-                .static_method("Print", &PrinterJs::Print);
+                .static_method("Print", &PrinterJs::Print)
+                .static_method("New", &New);
+            Callback::Register(cl, "printInstructionImpl", &PrinterJs::m_printInstructionImpl);
+            Callback::Register(cl, "printVarnodeImpl", &PrinterJs::m_printVarnodeImpl);
             module.class_("PcodePrinter", cl);
         }
     };
