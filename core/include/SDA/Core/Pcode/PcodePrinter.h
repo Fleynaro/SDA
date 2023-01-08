@@ -18,6 +18,6 @@ namespace sda::pcode
 
         virtual void printInstruction(const Instruction* instruction) const;
 
-        virtual void printVarnode(const Varnode* varnode, bool printSizeAndOffset = true) const;
+        virtual void printVarnode(std::shared_ptr<Varnode> varnode, bool printSizeAndOffset = true) const;
     };
 };

@@ -55,9 +55,10 @@ namespace sda::bind
             using T::T;
 
             void printTokenImpl(const std::string& text, utils::AbstractPrinter::Token token) const override {
-                T::printTokenImpl(text, token);
                 if (m_printTokenImpl.isDefined()) {
                     m_printTokenImpl.call(text, token);
+                } else {
+                    T::printTokenImpl(text, token);
                 }
             }
 

@@ -148,17 +148,8 @@ namespace sda::bind
 
     class PcodeParserBind
     {
-        static auto Parse(const std::string& text, const RegisterRepository* regRepo) {
-            auto instructions = pcode::Parser::Parse(text, regRepo);
-            for (auto& instr : instructions) {
-                if (instr.getInput0() != nullptr)
-                    ExportSharedObjectRef(instr.getInput0());
-                if (instr.getInput1() != nullptr)
-                    ExportSharedObjectRef(instr.getInput1());
-                if (instr.getOutput() != nullptr)
-                    ExportSharedObjectRef(instr.getOutput());
-            }
-            return instructions;
+        static auto Parse(const std::string& text, std::shared_ptr<RegisterRepository> regRepo) {
+            return pcode::Parser::Parse(text, regRepo.get());
         }
     public:
         static void Init(v8pp::module& module) {
@@ -179,22 +170,24 @@ namespace sda::bind
             using AbstractPrinterJs::AbstractPrinterJs;
 
             void printInstruction(const pcode::Instruction* instruction) const override {
-                AbstractPrinterJs::printInstruction(instruction);
                 if (m_printInstructionImpl.isDefined()) {
                     m_printInstructionImpl.call(instruction);
+                } else {
+                    AbstractPrinterJs::printInstruction(instruction);
                 }
             }
 
-            void printVarnode(const pcode::Varnode* varnode, bool printSizeAndOffset) const override {
-                AbstractPrinterJs::printVarnode(varnode, printSizeAndOffset);
+            void printVarnode(std::shared_ptr<pcode::Varnode> varnode, bool printSizeAndOffset) const override {
                 if (m_printVarnodeImpl.isDefined()) {
                     m_printVarnodeImpl.call(varnode, printSizeAndOffset);
+                } else {
+                    AbstractPrinterJs::printVarnode(varnode, printSizeAndOffset);
                 }
             }
         };
 
-        static auto New(const RegisterRepository* regRepo) {
-            auto printer = new PrinterJs(regRepo);
+        static auto New(std::shared_ptr<RegisterRepository> regRepo) {
+            auto printer = new PrinterJs(regRepo.get());
             PrinterJs::ObjectInit(printer);
             return ExportObject(printer);
         }
@@ -203,8 +196,12 @@ namespace sda::bind
             auto cl = NewClass<PrinterJs>(module);
             PrinterJs::ClassInit(cl);
             cl
-                .method("printInstruction", &PrinterJs::printInstruction)
-                .method("printVarnode", &PrinterJs::printVarnode)
+                .method("printInstruction", std::function([](PrinterJs* printer, const pcode::Instruction* instruction) {
+                    printer->pcode::Printer::printInstruction(instruction);
+                }))
+                .method("printVarnode", std::function([](PrinterJs* printer, std::shared_ptr<pcode::Varnode> varnode, bool printSizeAndOffset) {
+                    printer->pcode::Printer::printVarnode(varnode, printSizeAndOffset);
+                }))
                 .static_method("Print", &PrinterJs::Print)
                 .static_method("New", &New);
             Callback::Register(cl, "printInstructionImpl", &PrinterJs::m_printInstructionImpl);

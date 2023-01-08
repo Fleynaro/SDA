@@ -50,9 +50,9 @@ namespace sda::decompiler
 
         ircode::MemoryAddress getMemoryAddress(std::shared_ptr<ircode::Value> addrValue) const;
 
-        std::list<VariableReadInfo> genReadRegisterVarnode(const pcode::RegisterVarnode* regVarnode);
+        std::list<VariableReadInfo> genReadRegisterVarnode(std::shared_ptr<pcode::RegisterVarnode> regVarnode);
 
-        std::shared_ptr<ircode::Value> genReadVarnode(const pcode::Varnode* varnode);
+        std::shared_ptr<ircode::Value> genReadVarnode(std::shared_ptr<pcode::Varnode> varnode);
 
         void genOperation(std::unique_ptr<ircode::Operation> operation);
 
@@ -60,9 +60,9 @@ namespace sda::decompiler
 
         std::shared_ptr<ircode::Variable> genLoadOperation(const ircode::MemoryAddress& memAddr, size_t loadSize);
 
-        std::shared_ptr<ircode::Constant> createConstant(const pcode::ConstantVarnode* constVarnode) const;
+        std::shared_ptr<ircode::Constant> createConstant(std::shared_ptr<pcode::ConstantVarnode> constVarnode) const;
 
-        std::shared_ptr<ircode::Register> createRegister(const pcode::RegisterVarnode* regVarnode, const ircode::MemoryAddress& memAddr) const;
+        std::shared_ptr<ircode::Register> createRegister(std::shared_ptr<pcode::RegisterVarnode> regVarnode, const ircode::MemoryAddress& memAddr) const;
 
         std::shared_ptr<ircode::Variable> createVariable(const ircode::MemoryAddress& memAddress, ircode::Hash hash, size_t size);
     };

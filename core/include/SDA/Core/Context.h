@@ -23,6 +23,8 @@ namespace sda
     public:
         Context(Platform* platform);
 
+        ~Context();
+
         // Init context with default objects
         void initDefault();
 
@@ -60,6 +62,9 @@ namespace sda
             // Called when an object is removed from the context
             void onObjectRemoved(Object* obj);
 
+            // Called when context is destroyed
+            void onContextDestroyed(Context* context);
+
             void setPrevCallbacks(std::shared_ptr<Callbacks> prevCallbacks);
 
             void setEnabled(bool enabled);
@@ -72,6 +77,8 @@ namespace sda
             virtual void onObjectModifiedImpl(Object* obj) {};
 
             virtual void onObjectRemovedImpl(Object* obj) {};
+
+            virtual void onContextDestroyedImpl(Context* context) {};
         };
 
         // Set the callbacks for the context

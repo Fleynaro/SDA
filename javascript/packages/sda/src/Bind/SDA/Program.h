@@ -60,19 +60,22 @@ namespace sda::bind
     {
         class RefCallbacks : public Program::Callbacks {
             void onProjectAdded(Project* project) override {
-                ExportObjectRef(project);
+                ObjectLookupTableRaw::AddObject(project);
             }
 
             void onProjectRemoved(Project* project) override {
+                ObjectLookupTableRaw::RemoveObject(project);
                 RemoveObjectRef(project);
                 RemoveObjectRef(project->getContext());
             }
         };
+
         static auto New() {
             auto program = new Program();
             program->setCallbacks(std::make_shared<RefCallbacks>());
             return ExportObject(program);
         }
+
     public:
         static void Init(v8pp::module& module) {
             auto cl = NewClass<Program>(module);

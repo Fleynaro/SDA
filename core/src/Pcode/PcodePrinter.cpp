@@ -19,7 +19,7 @@ std::string Printer::Print(const Instruction* instruction, const RegisterReposit
 
 void Printer::printInstruction(const Instruction* instruction) const {
     if (instruction->getOutput()) {
-        printVarnode(instruction->getOutput().get());
+        printVarnode(instruction->getOutput());
         printToken(" = ", SYMBOL);
     }
 
@@ -27,16 +27,16 @@ void Printer::printInstruction(const Instruction* instruction) const {
 
     if (instruction->getInput0()) {
         printToken(" ", SYMBOL);
-        printVarnode(instruction->getInput0().get());
+        printVarnode(instruction->getInput0());
     }
     if (instruction->getInput1()) {
         printToken(", ", SYMBOL);
-        printVarnode(instruction->getInput1().get());
+        printVarnode(instruction->getInput1());
     }
 }
 
-void Printer::printVarnode(const Varnode* varnode, bool printSizeAndOffset) const {
-    if (auto regVarnode = dynamic_cast<const RegisterVarnode*>(varnode)) {
+void Printer::printVarnode(std::shared_ptr<Varnode> varnode, bool printSizeAndOffset) const {
+    if (auto regVarnode = std::dynamic_pointer_cast<RegisterVarnode>(varnode)) {
         const auto& reg = regVarnode->getRegister();
         auto regStr = reg.toString(m_regRepo, printSizeAndOffset);
         if (reg.getRegType() == Register::Virtual) {
@@ -45,7 +45,7 @@ void Printer::printVarnode(const Varnode* varnode, bool printSizeAndOffset) cons
             printToken(regStr, REGISTER);
         }
     }
-    else if (auto constVarnode = dynamic_cast<const ConstantVarnode*>(varnode)) {
+    else if (auto constVarnode = std::dynamic_pointer_cast<ConstantVarnode>(varnode)) {
         std::stringstream ss;
         ss << "0x" << utils::to_hex() << constVarnode->getValue();
         if (printSizeAndOffset) 

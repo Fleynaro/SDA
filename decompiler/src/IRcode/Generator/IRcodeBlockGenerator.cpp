@@ -89,7 +89,7 @@ void IRcodeBlockGenerator::executePcode(const pcode::Instruction* instr) {
     if (auto output = instr->getOutput()) {
         if (auto regVarnode = std::dynamic_pointer_cast<pcode::RegisterVarnode>(output)) {
             outputMemAddr = getRegisterMemoryAddress(regVarnode->getRegister());
-            outputMemAddr.value = createRegister(regVarnode.get(), outputMemAddr);
+            outputMemAddr.value = createRegister(regVarnode, outputMemAddr);
         } else {
             assert(false && "Output varnode is not a register");
         }
@@ -118,19 +118,19 @@ void IRcodeBlockGenerator::executePcode(const pcode::Instruction* instr) {
             if (isCopyInstr) {
                 // register value copying (RAX:4 = COPY RCX:4)
                 if (auto regVarnode = std::dynamic_pointer_cast<pcode::RegisterVarnode>(instr->getInput0())) {
-                    varReadInfos = genReadRegisterVarnode(regVarnode.get());
+                    varReadInfos = genReadRegisterVarnode(regVarnode);
                 }
             }
             else if (isStoreInstr) {
                 // register value storing (STORE [RAX:8], RCX:4)
                 if (auto regVarnode = std::dynamic_pointer_cast<pcode::RegisterVarnode>(instr->getInput1())) {
-                    varReadInfos = genReadRegisterVarnode(regVarnode.get());
+                    varReadInfos = genReadRegisterVarnode(regVarnode);
                 }
 
                 // get destination address value ([RCX:8 + 0x10:8])
                 std::shared_ptr<ircode::Value> addrValue;
                 if (auto input0 = instr->getInput0()) {
-                    addrValue = genReadVarnode(input0.get());
+                    addrValue = genReadVarnode(input0);
                 }
 
                 // parse destination address value into base and offset (RCX:8 and 0x10:8)
@@ -142,7 +142,7 @@ void IRcodeBlockGenerator::executePcode(const pcode::Instruction* instr) {
                 // get source address value ([RCX:8 + 0x10:8])
                 std::shared_ptr<ircode::Value> addrValue;
                 if (auto input0 = instr->getInput0()) {
-                    addrValue = genReadVarnode(input0.get());
+                    addrValue = genReadVarnode(input0);
                 }
 
                 // parse source address value into base and offset (RCX:8 and 0x10:8)
@@ -310,7 +310,7 @@ ircode::MemoryAddress IRcodeBlockGenerator::getMemoryAddress(std::shared_ptr<irc
     };
 }
 
-std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadRegisterVarnode(const pcode::RegisterVarnode* regVarnode) {
+std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadRegisterVarnode(std::shared_ptr<pcode::RegisterVarnode> regVarnode) {
     auto memAddr = getRegisterMemoryAddress(regVarnode->getRegister());
     auto memSpace = m_totalMemSpace->getMemSpace(memAddr.baseAddrHash);
     auto readSize = regVarnode->getSize();
@@ -330,8 +330,8 @@ std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadR
 }
 
 
-std::shared_ptr<ircode::Value> IRcodeBlockGenerator::genReadVarnode(const pcode::Varnode* varnode) {
-    if (auto regVarnode = dynamic_cast<const pcode::RegisterVarnode*>(varnode)) {
+std::shared_ptr<ircode::Value> IRcodeBlockGenerator::genReadVarnode(std::shared_ptr<pcode::Varnode> varnode) {
+    if (auto regVarnode = std::dynamic_pointer_cast<pcode::RegisterVarnode>(varnode)) {
         auto varReadInfos = genReadRegisterVarnode(regVarnode);
 
         auto concatVariable = varReadInfos.front().variable;
@@ -354,7 +354,7 @@ std::shared_ptr<ircode::Value> IRcodeBlockGenerator::genReadVarnode(const pcode:
 
         return concatVariable;
     }
-    else if (auto constVarnode = dynamic_cast<const pcode::ConstantVarnode*>(varnode)) {
+    else if (auto constVarnode = std::dynamic_pointer_cast<pcode::ConstantVarnode>(varnode)) {
         return createConstant(constVarnode);
     }
     
@@ -374,9 +374,9 @@ void IRcodeBlockGenerator::genGenericOperation(const pcode::Instruction* instr, 
     std::shared_ptr<ircode::Value> inputVal1;
     std::shared_ptr<ircode::Value> inputVal2;
     if (auto input0 = instr->getInput0())
-        inputVal1 = genReadVarnode(input0.get());
+        inputVal1 = genReadVarnode(input0);
     if (auto input1 = instr->getInput1())
-        inputVal2 = genReadVarnode(input1.get());
+        inputVal2 = genReadVarnode(input1);
     if (!inputVal1)
         throw std::runtime_error("Invalid instruction");
 
@@ -439,7 +439,7 @@ std::shared_ptr<ircode::Variable> IRcodeBlockGenerator::genLoadOperation(const i
     return regVariable;
 }
 
-std::shared_ptr<ircode::Constant> IRcodeBlockGenerator::createConstant(const pcode::ConstantVarnode* constVarnode) const {
+std::shared_ptr<ircode::Constant> IRcodeBlockGenerator::createConstant(std::shared_ptr<pcode::ConstantVarnode> constVarnode) const {
     auto hash = std::hash<size_t>()(constVarnode->getValue());
     boost::hash_combine(hash, ircode::Value::Constant);
     auto value = std::make_shared<ircode::Constant>(constVarnode, hash);
@@ -447,7 +447,7 @@ std::shared_ptr<ircode::Constant> IRcodeBlockGenerator::createConstant(const pco
     return value;
 }
 
-std::shared_ptr<ircode::Register> IRcodeBlockGenerator::createRegister(const pcode::RegisterVarnode* regVarnode, const ircode::MemoryAddress& memAddr) const {
+std::shared_ptr<ircode::Register> IRcodeBlockGenerator::createRegister(std::shared_ptr<pcode::RegisterVarnode> regVarnode, const ircode::MemoryAddress& memAddr) const {
     auto hash = memAddr.baseAddrHash;
     boost::hash_combine(hash, memAddr.offset);
     boost::hash_combine(hash, regVarnode->getSize());

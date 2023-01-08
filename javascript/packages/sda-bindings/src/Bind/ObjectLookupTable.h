@@ -4,6 +4,12 @@
 
 namespace sda::bind
 {
+    /*
+        It's important to note that objects are added to the table when they are CREATED and removed when they are DELETED.
+        In other words, the time life of an object in the table is the SAME as the time life of the object itself.
+        This is necessary to look up objects by hash at any time.
+    */
+
     template<typename T>
     struct ObjectLookupTableInfo {};
 
@@ -41,6 +47,8 @@ namespace sda::bind
         using Hash = size_t;
         using Table = std::unordered_map<Hash, stored_type>;
     public:
+        // TODO: export AddObject and RemoveObject to JavaScript because client JS code is responsible for that (remeber that js packages are independent libraries!)
+        // TODO: OR remove all those on C++ and implement simply them in JS electron package using weak references by WeakRef
         static void AddObject(pointer_type obj) {
             auto id = Traits::pointer_id(obj);
             auto table = getTable();

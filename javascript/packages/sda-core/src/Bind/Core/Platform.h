@@ -9,17 +9,6 @@ namespace sda::bind
 {
     class PlatformBind
     {
-        static auto GetPcodeDecoder(Platform* platform) {
-            auto decoder = platform->getPcodeDecoder();
-            ExportSharedObjectRef(decoder);
-            return decoder;
-        }
-
-        static auto GetInstructionDecoder(Platform* platform) {
-            auto decoder = platform->getInstructionDecoder();
-            ExportSharedObjectRef(decoder);
-            return decoder;
-        }
     public:
         static void Init(v8pp::module& module) {
             auto cl = NewClass<Platform>(module);
@@ -29,8 +18,8 @@ namespace sda::bind
                 .property("pointerSize", &Platform::getPointerSize)
                 .property("registerRepository", &Platform::getRegisterRepository)
                 .property("callingConventions", &Platform::getCallingConventions)
-                .method("getPcodeDecoder", &GetPcodeDecoder)
-                .method("getInstructionDecoder", &GetInstructionDecoder);
+                .method("getPcodeDecoder", &Platform::getPcodeDecoder)
+                .method("getInstructionDecoder", &Platform::getInstructionDecoder);
             ObjectLookupTableRaw::Register(cl);
             RegisterClassName(cl, "Platform");
             module.class_("Platform", cl);
@@ -125,9 +114,7 @@ namespace sda::bind
     class CustomCallingConventionBind
     {
         static auto New(const CallingConvention::Map& storages) {
-            auto cc = std::make_shared<CustomCallingConvention>(storages);
-            ExportSharedObjectRef<CallingConvention>(cc);
-            return cc;
+            return std::make_shared<CustomCallingConvention>(storages);
         }
     public:
         static void Init(v8pp::module& module) {

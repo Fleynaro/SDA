@@ -43,26 +43,26 @@ namespace sda::ircode
 
     class Constant : public Value
     {
-        const pcode::ConstantVarnode* m_constVarnode;
+        std::shared_ptr<pcode::ConstantVarnode> m_constVarnode;
     public:
-        Constant(const pcode::ConstantVarnode* constVarnode, Hash hash);
+        Constant(std::shared_ptr<pcode::ConstantVarnode> constVarnode, Hash hash);
 
         Type getType() const override;
 
-        const pcode::ConstantVarnode* getConstVarnode() const;
+        std::shared_ptr<pcode::ConstantVarnode> getConstVarnode() const;
 
         size_t getSize() const override;
     };
 
     class Register : public Value
     {
-        const pcode::RegisterVarnode* m_regVarnode;
+        std::shared_ptr<pcode::RegisterVarnode> m_regVarnode;
     public:
-        Register(const pcode::RegisterVarnode* regVarnode, Hash hash);
+        Register(std::shared_ptr<pcode::RegisterVarnode> regVarnode, Hash hash);
 
         Type getType() const override;
 
-        const pcode::RegisterVarnode* getRegVarnode() const;
+        std::shared_ptr<pcode::RegisterVarnode> getRegVarnode() const;
 
         const sda::Register& getRegister() const;
 

@@ -18,6 +18,10 @@ Context::Context(Platform* platform)
     m_callbacks = std::make_unique<Callbacks>();
 }
 
+Context::~Context() {
+    m_callbacks->onContextDestroyed(this);
+}
+
 void Context::initDefault() {
     m_dataTypes->initDefault();
 }
@@ -82,6 +86,15 @@ void Context::Callbacks::onObjectRemoved(Object* obj) {
     }
     if (m_enabled) {
         onObjectRemovedImpl(obj);
+    }
+}
+
+void Context::Callbacks::onContextDestroyed(Context* context) {
+    if (m_prevCallbacks) {
+        m_prevCallbacks->onContextDestroyed(context);
+    }
+    if (m_enabled) {
+        onContextDestroyedImpl(context);
     }
 }
 

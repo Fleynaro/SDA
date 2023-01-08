@@ -82,13 +82,11 @@ export declare class PcodeParser {
   static Parse(text: string, regRepo: RegisterRepository): PcodeInstruction[];
 }
 
-enum PcodePrinterToken_ {
+export enum PcodePrinterToken {
   Mnemonic = AbstractPrinterToken.Keyword,
   Register = AbstractPrinterToken.Identifier,
   VirtRegister = AbstractPrinterToken.Identifier,
 }
-
-export type PcodePrinterToken = AbstractPrinterToken | PcodePrinterToken_;
 
 export declare class PcodePrinter extends AbstractPrinter {
   printInstruction(pcode: PcodeInstruction): void;

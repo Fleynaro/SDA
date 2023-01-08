@@ -29,7 +29,7 @@ void Value::setLinearExpr(const LinearExpression& linearExpr) {
     m_linearExpr = linearExpr;
 }
 
-Constant::Constant(const pcode::ConstantVarnode* constVarnode, Hash hash)
+Constant::Constant(std::shared_ptr<pcode::ConstantVarnode> constVarnode, Hash hash)
     : Value(hash), m_constVarnode(constVarnode)
 {}
 
@@ -37,7 +37,7 @@ Value::Type Constant::getType() const {
     return Type::Constant;
 }
 
-const pcode::ConstantVarnode* Constant::getConstVarnode() const {
+std::shared_ptr<pcode::ConstantVarnode> Constant::getConstVarnode() const {
     return m_constVarnode;
 }
 
@@ -45,7 +45,7 @@ size_t Constant::getSize() const {
     return m_constVarnode->getSize();
 }
 
-ircode::Register::Register(const pcode::RegisterVarnode* regVarnode, Hash hash)
+ircode::Register::Register(std::shared_ptr<pcode::RegisterVarnode> regVarnode, Hash hash)
     : Value(hash), m_regVarnode(regVarnode)
 {}
 
@@ -53,7 +53,7 @@ Value::Type ircode::Register::getType() const {
     return Type::Register;
 }
 
-const pcode::RegisterVarnode* ircode::Register::getRegVarnode() const {
+std::shared_ptr<pcode::RegisterVarnode> ircode::Register::getRegVarnode() const {
     return m_regVarnode;
 }
 

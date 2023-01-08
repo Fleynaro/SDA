@@ -77,17 +77,23 @@ namespace sda::bind
             }
 
             void onObjectAddedImpl(Object* obj) override {
-                ExportObjectRef(obj);
+                ObjectLookupTableRaw::AddObject(obj);
             }
 
             void onObjectRemovedImpl(Object* obj) override {
+                ObjectLookupTableRaw::RemoveObject(obj);
                 RemoveObjectRef(obj);
+            }
+
+            void onContextDestroyedImpl(Context* context) override {
+                ObjectLookupTableRaw::RemoveObject(context);
             }
         };
 
         static auto New(Platform* platform) {
             auto context = new Context(platform);
             context->setCallbacks(std::make_shared<RefCallbacks>());
+            ObjectLookupTableRaw::AddObject(context);
             return ExportObject(context);
         }
 
