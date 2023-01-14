@@ -1,4 +1,4 @@
-import { StageSize, useKonvaStage } from 'components/Konva';
+import { StageSize, useStage } from 'components/Konva';
 import { createContext, useState, useCallback, useMemo, useContext } from 'react';
 
 const DefaultStyles = {
@@ -89,7 +89,7 @@ export const ImageContentStyleProvider = ({
   const [styles, setStyles] = useState<StylesType>({ ...DefaultStyles, ...initStyles });
 
   const hook = useCallback(() => {
-    const stage = useKonvaStage();
+    const stage = useStage();
     const resultStyles = useMemo(() => calcDynamicStyles(styles, stage.size), [styles, stage.size]);
     return { styles: resultStyles, setStyles };
   }, [styles]);

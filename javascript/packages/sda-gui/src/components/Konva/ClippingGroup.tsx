@@ -1,13 +1,13 @@
 import { Group } from 'react-konva';
-import { useKonvaStage } from '../Stage';
+import { useStage } from './Stage';
 
-export interface KonvaClippingGroupProps {
+export interface ClippingGroupProps {
   children?: React.ReactNode;
 }
 
 // TODO: for optimization purposes, we should only render the children if they are within the stage viewport
-export function KonvaClippingGroup({ children }: KonvaClippingGroupProps) {
-  const stage = useKonvaStage();
+export function ClippingGroup({ children }: ClippingGroupProps) {
+  const stage = useStage();
   return (
     <Group
       ref={(node) => {

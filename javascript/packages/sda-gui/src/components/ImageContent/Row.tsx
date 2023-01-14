@@ -11,6 +11,7 @@ export interface PcodeElement {
   element: JSX.Element;
 }
 
+// Сделать это как реакт компонент через контекст (концепция потока элементов)
 // const buildPcode = (node: PcodeNode, style: StylesType): PcodeElement => {
 //   if (node.type === 'token') {
 //     const tokenText = buildKonvaFormatText({

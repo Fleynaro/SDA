@@ -2,7 +2,7 @@ import { useEffect, useCallback, useRef, useState } from 'react';
 import { getImageApi } from 'sda-electron/api/image';
 import { Group, Layer, Rect, Text } from 'react-konva';
 import Konva from 'konva';
-import { useKonvaStage, useKonvaFormatTextSelection } from 'components/Konva';
+import { useStage, useKonvaFormatTextSelection } from 'components/Konva';
 import { ContextMenu, ContextMenuProps, MenuNode } from 'components/Menu';
 import { animate } from 'utils';
 import { useImageContentStyle } from './style';
@@ -41,7 +41,7 @@ export const ImageContentContextMenu = (props: ContextMenuProps) => {
 };
 
 export function ImageContent() {
-  const stage = useKonvaStage();
+  const stage = useStage();
   const { styles: style } = useImageContentStyle();
   const {
     imageId,
