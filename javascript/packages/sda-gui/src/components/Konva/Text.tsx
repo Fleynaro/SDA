@@ -8,5 +8,11 @@ export const Text = ({ idx, text, ...propsStyle }: TextProps) => {
   const tokens = useMemo(() => {
     return text.split(' ').map((token, i) => (i === text.length - 1 ? token : `${token} `));
   }, [text]);
-  return tokens.map((token, i) => <StaticText key={i} idx={i} text={token} {...style} />);
+  return (
+    <>
+      {tokens.map((token, i) => (
+        <StaticText key={i} text={token} {...style} />
+      ))}
+    </>
+  );
 };

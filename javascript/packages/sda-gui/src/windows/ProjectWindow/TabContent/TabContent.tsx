@@ -9,7 +9,7 @@ import {
   ImageContentStyleBridgeConsumer,
   ImageContentStyleBridgeProvider,
   useImageContent,
-} from 'components/ImageContent';
+} from 'components/NewImageContent';
 import {
   KonvaFormatTextSelectionBridgeConsumer,
   KonvaFormatTextSelectionBridgeProvider,
@@ -23,7 +23,7 @@ import { useObject } from 'hooks';
 import {
   ImageContentBridgeConsumer,
   ImageContentBridgeProvider,
-} from 'components/ImageContent/context';
+} from 'components/NewImageContent/context';
 import { Layer } from 'react-konva';
 import { Test } from 'components/Konva/Test';
 

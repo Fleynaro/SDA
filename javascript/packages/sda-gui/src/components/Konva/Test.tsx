@@ -7,7 +7,7 @@ export const Test = () => {
   useEffect(() => {
     setInterval(() => {
       setP((p) => p + 1);
-    }, 5000);
+    }, 500);
   }, []);
 
   return (

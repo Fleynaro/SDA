@@ -5,7 +5,7 @@ import { Block } from './Block';
 import { TextStyleType, useTextStyle } from './TextStyle';
 
 export type TextProps = TextStyleType & {
-  idx: number;
+  idx?: number;
   text: string;
 };
 

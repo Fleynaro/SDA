@@ -1,6 +1,7 @@
 import { Group, KonvaNodeEvents, Rect } from 'react-konva';
 import {
   createContext,
+  forwardRef,
   MutableRefObject,
   useCallback,
   useContext,
@@ -8,6 +9,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useImperativeHandle,
 } from 'react';
 import { TextStyle, TextStyleType, useTextStyle } from './TextStyle';
 
@@ -38,8 +40,8 @@ const mkEmptyBlockChildInfo = (): BlockChildInfo => ({
 interface BlockChildContextValue {
   childIdxCounter: MutableRefObject<number>;
   forceUpdateCounter: number;
-  parentWidth: number;
-  parentHeight: number;
+  hasChilds: boolean;
+  getParentSize: () => { width: number; height: number };
   getPos: (idx: number) => { x: number; y: number };
   getSize: (idx: number) => { width: number; height: number };
   updateChild: (idx: number, info: BlockChildInfo) => void;
@@ -49,7 +51,7 @@ interface BlockChildContextValue {
 const BlockChildContext = createContext<BlockChildContextValue | null>(null);
 
 type BlockProps = KonvaNodeEvents & {
-  idx: number;
+  idx?: number;
   x?: number;
   y?: number;
   width?: number | string;
@@ -70,7 +72,14 @@ type BlockProps = KonvaNodeEvents & {
   fill?: string;
   textStyle?: TextStyleType;
   children?: React.ReactNode;
+  onUpdate?: () => void;
 };
+
+export interface BlockRef {
+  getParentSize: () => { width: number; height: number };
+  getPos: (idx: number) => { x: number; y: number };
+  getSize: (idx: number) => { width: number; height: number };
+}
 
 const parseSize = (size?: number | string, parentSize?: number, freeSize?: number) => {
   if (typeof size === 'number') {
@@ -86,18 +95,22 @@ const parseSize = (size?: number | string, parentSize?: number, freeSize?: numbe
   return 0;
 };
 
-export const Block = (props: BlockProps) => {
+export const Block = forwardRef((props: BlockProps, ref: React.Ref<BlockRef>) => {
   const ctx = useContext(BlockChildContext);
   const ctxTextStyle = useTextStyle();
   const [childs, setChilds] = useState<BlockChildInfo[]>([]);
 
+  useEffect(() => {
+    props.onUpdate?.();
+  }, [childs]);
+
   const [forceUpdateCounter, setForceUpdateCounter] = useState(0);
   const childIdxCounter = useRef(0);
-  childIdxCounter.current = 0;
   const idx = useMemo(() => {
     if (!ctx) return 0;
+    if (props.idx !== undefined) return props.idx;
     return ctx.childIdxCounter.current++;
-  }, [ctx?.forceUpdateCounter]);
+  }, [props.idx, ctx?.forceUpdateCounter]);
 
   //const idx = props.idx;
   const flexDir = props.flexDir || 'row';
@@ -117,7 +130,14 @@ export const Block = (props: BlockProps) => {
   const marginBottom = props?.margin?.bottom || 0;
   const textStyle = { ...ctxTextStyle, ...props.textStyle };
 
-  //console.log('name', props.fill, 'idx', idx, 'childs', childs);
+  if (props.fill) {
+    if (props.idx === 0) {
+      console.log('name', props.fill, 'idx', idx, 'childs', childs, 'realX', realX, 'realY', realY);
+      if (childs.length === 0) {
+        console.log('no childs');
+      }
+    }
+  }
 
   const [freeWidth, freeHeight] = useMemo(() => {
     let freeWidth = width - paddingLeft - paddingRight;
@@ -181,6 +201,7 @@ export const Block = (props: BlockProps) => {
 
   useEffect(() => {
     if (!ctx) return;
+    if (props.idx !== undefined) return;
     ctx.calculateIndexes();
     return () => {
       ctx.calculateIndexes();
@@ -247,19 +268,34 @@ export const Block = (props: BlockProps) => {
   );
 
   const calculateIndexes = useCallback(() => {
+    childIdxCounter.current = 0;
     setForceUpdateCounter((prev) => prev + 1);
   }, [setForceUpdateCounter]);
 
   const finalWidth = width || realWidth;
   const finalHeight = height || realHeight;
 
+  const getParentSize = useCallback(() => {
+    return { width: finalWidth, height: finalHeight };
+  }, [finalWidth, finalHeight]);
+
+  useImperativeHandle(ref, () => ({
+    getParentSize,
+    getPos,
+    getSize,
+  }));
+
+  // if (ctx && !ctx.hasChilds) {
+  //   return <></>;
+  // }
+
   return (
     <BlockChildContext.Provider
       value={{
         childIdxCounter,
         forceUpdateCounter,
-        parentWidth: finalWidth,
-        parentHeight: finalHeight,
+        hasChilds: childs.length > 0,
+        getParentSize,
         getPos,
         getSize,
         updateChild,
@@ -275,4 +311,4 @@ export const Block = (props: BlockProps) => {
       </TextStyle>
     </BlockChildContext.Provider>
   );
-};
+});
