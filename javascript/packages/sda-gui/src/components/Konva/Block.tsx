@@ -1,5 +1,14 @@
 import { Group, KonvaNodeEvents, Rect } from 'react-konva';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  MutableRefObject,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { TextStyle, TextStyleType, useTextStyle } from './TextStyle';
 
 interface BlockChildInfo {
@@ -11,10 +20,10 @@ interface BlockChildInfo {
     top: number;
     bottom: number;
   };
-  removed?: boolean;
+  empty?: boolean;
 }
 
-const mkEmptyBlockChildInfo = (removed?: boolean): BlockChildInfo => ({
+const mkEmptyBlockChildInfo = (): BlockChildInfo => ({
   width: 0,
   height: 0,
   margin: {
@@ -23,16 +32,18 @@ const mkEmptyBlockChildInfo = (removed?: boolean): BlockChildInfo => ({
     top: 0,
     bottom: 0,
   },
-  removed,
+  empty: true,
 });
 
 interface BlockChildContextValue {
+  childIdxCounter: MutableRefObject<number>;
+  forceUpdateCounter: number;
   parentWidth: number;
   parentHeight: number;
   getPos: (idx: number) => { x: number; y: number };
   getSize: (idx: number) => { width: number; height: number };
-  registerChild: (idx: number, info: BlockChildInfo) => void;
-  unregisterChild: (idx: number) => void;
+  updateChild: (idx: number, info: BlockChildInfo) => void;
+  calculateIndexes: () => void;
 }
 
 const BlockChildContext = createContext<BlockChildContextValue | null>(null);
@@ -80,7 +91,15 @@ export const Block = (props: BlockProps) => {
   const ctxTextStyle = useTextStyle();
   const [childs, setChilds] = useState<BlockChildInfo[]>([]);
 
-  const idx = props.idx;
+  const [forceUpdateCounter, setForceUpdateCounter] = useState(0);
+  const childIdxCounter = useRef(0);
+  childIdxCounter.current = 0;
+  const idx = useMemo(() => {
+    if (!ctx) return 0;
+    return ctx.childIdxCounter.current++;
+  }, [ctx?.forceUpdateCounter]);
+
+  //const idx = props.idx;
   const flexDir = props.flexDir || 'row';
   const realX = props.x || ctx?.getPos(idx).x || 0;
   const realY = props.y || ctx?.getPos(idx).y || 0;
@@ -98,10 +117,7 @@ export const Block = (props: BlockProps) => {
   const marginBottom = props?.margin?.bottom || 0;
   const textStyle = { ...ctxTextStyle, ...props.textStyle };
 
-  // console.log('name', props.fill, 'idx', idx);
-  useEffect(() => {
-    console.log('name', props.fill, 'idx', idx);
-  }, []);
+  //console.log('name', props.fill, 'idx', idx, 'childs', childs);
 
   const [freeWidth, freeHeight] = useMemo(() => {
     let freeWidth = width - paddingLeft - paddingRight;
@@ -165,7 +181,22 @@ export const Block = (props: BlockProps) => {
 
   useEffect(() => {
     if (!ctx) return;
-    ctx.registerChild(idx, {
+    ctx.calculateIndexes();
+    return () => {
+      ctx.calculateIndexes();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!ctx) return;
+    return () => {
+      ctx.updateChild(idx, mkEmptyBlockChildInfo());
+    };
+  }, [idx]);
+
+  useEffect(() => {
+    if (!ctx) return;
+    ctx.updateChild(idx, {
       width: props.width || realWidth,
       height: props.height || realHeight,
       margin: {
@@ -175,10 +206,6 @@ export const Block = (props: BlockProps) => {
         bottom: marginBottom,
       },
     });
-
-    return () => {
-      ctx.unregisterChild(idx);
-    };
   }, [
     idx,
     props.width,
@@ -198,7 +225,7 @@ export const Block = (props: BlockProps) => {
     [childAggregation],
   );
 
-  const registerChild = useCallback(
+  const updateChild = useCallback(
     (idx: number, info: BlockChildInfo) => {
       setChilds((prev) => {
         const newChilds = [...prev];
@@ -206,24 +233,11 @@ export const Block = (props: BlockProps) => {
           newChilds.push(mkEmptyBlockChildInfo());
         }
         newChilds[idx] = info;
-        return newChilds;
-      });
-    },
-    [setChilds],
-  );
-
-  const unregisterChild = useCallback(
-    (idx: number) => {
-      setChilds((prev) => {
-        const newChilds = [...prev];
-        if (idx < prev.length) {
-          newChilds[idx] = mkEmptyBlockChildInfo(true);
-          for (let i = newChilds.length - 1; i >= 0; i--) {
-            if (newChilds[i].removed) {
-              newChilds.pop();
-            } else {
-              break;
-            }
+        for (let i = newChilds.length - 1; i >= 0; i--) {
+          if (newChilds[i].empty) {
+            newChilds.pop();
+          } else {
+            break;
           }
         }
         return newChilds;
@@ -232,18 +246,24 @@ export const Block = (props: BlockProps) => {
     [setChilds],
   );
 
+  const calculateIndexes = useCallback(() => {
+    setForceUpdateCounter((prev) => prev + 1);
+  }, [setForceUpdateCounter]);
+
   const finalWidth = width || realWidth;
   const finalHeight = height || realHeight;
 
   return (
     <BlockChildContext.Provider
       value={{
+        childIdxCounter,
+        forceUpdateCounter,
         parentWidth: finalWidth,
         parentHeight: finalHeight,
         getPos,
         getSize,
-        registerChild,
-        unregisterChild,
+        updateChild,
+        calculateIndexes,
       }}
     >
       <TextStyle {...textStyle}>

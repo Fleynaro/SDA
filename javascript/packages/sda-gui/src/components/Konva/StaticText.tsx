@@ -15,7 +15,7 @@ export const StaticText = ({ idx, text, ...propsStyle }: TextProps) => {
   const textSize = useMemo(() => {
     const konvaText = new Konva.Text(style);
     return konvaText.measureSize(text);
-  }, [text, style]);
+  }, [text, JSON.stringify(style)]);
   return (
     <Block idx={idx} width={textSize.width} height={textSize.height}>
       <KonvaText text={text} {...style} />
