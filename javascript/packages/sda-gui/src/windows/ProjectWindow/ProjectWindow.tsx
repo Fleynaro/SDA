@@ -17,7 +17,7 @@ import { BoxSwitch, BoxSwitchCase } from 'components/BoxSwitch';
 import { KonvaFormatTextSelectionProvider, useKonvaFormatTextSelection } from 'components/Konva';
 import { useProjectWindowStyles } from './style';
 import { TabContent } from './TabContent';
-import { ImageContentStyleProvider } from 'components/NewImageContent';
+import { ImageContentStyleProvider } from 'components/ImageContent';
 
 const ImageLabel = ({ imageId }: { imageId: ObjectId }) => {
   const image = useObject(() => getImageApi().getImage(imageId));

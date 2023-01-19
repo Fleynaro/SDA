@@ -9,8 +9,9 @@ import {
   ImageContentStyleBridgeConsumer,
   ImageContentStyleBridgeProvider,
   useImageContent,
-} from 'components/NewImageContent';
+} from 'components/ImageContent';
 import {
+  Block,
   KonvaFormatTextSelectionBridgeConsumer,
   KonvaFormatTextSelectionBridgeProvider,
   Stage,
@@ -23,9 +24,9 @@ import { useObject } from 'hooks';
 import {
   ImageContentBridgeConsumer,
   ImageContentBridgeProvider,
-} from 'components/NewImageContent/context';
+} from 'components/ImageContent/context';
 import { Layer } from 'react-konva';
-import { Test } from 'components/Konva/Test';
+import { Test2 } from 'components/Konva/Block/Test';
 
 const DecompilerComponent = () => {
   const {
@@ -44,6 +45,12 @@ const DecompilerComponent = () => {
       </Button>
     </Box>
   );
+};
+
+const TestComponent = () => {
+  const tree = Block({ children: <Test2 /> });
+  console.log(tree);
+  return tree;
 };
 
 export interface TabContentProps {
@@ -75,6 +82,9 @@ export const TabContent = ({ imageId }: TabContentProps) => {
                     <KonvaFormatTextSelectionBridgeProvider value={value1}>
                       <ImageContentStyleBridgeProvider value={value2}>
                         <ImageContentBridgeProvider value={value3}>
+                          {/* <Layer>
+                            <TestComponent />
+                          </Layer> */}
                           <ImageContent />
                           {/* <Layer>
                             <Test />

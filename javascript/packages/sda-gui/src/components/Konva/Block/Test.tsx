@@ -1,48 +1,62 @@
-import { Block, StaticText } from 'components/Konva';
-import { useEffect, useState } from 'react';
+import { Block, StaticTextBlock, TextBlock } from 'components/Konva';
 
-export const Test = () => {
-  const [p, setP] = useState(0);
+export const Test1 = () => {
+  // const [p, setP] = useState(0);
 
-  useEffect(() => {
-    setInterval(() => {
-      setP((p) => p + 1);
-    }, 500);
-  }, []);
+  // useEffect(() => {
+  //   setInterval(() => {
+  //     setP((p) => p + 1);
+  //   }, 500);
+  // }, []);
 
   return (
     <Block
-      idx={0}
       x={310}
       width={400}
       flexDir="col"
       fill="blue"
       //padding={{ left: 5, top: 5, right: 5, bottom: 5 }}
-      textStyle={{ fill: 'red' }}
+      //textStyle={{ fill: 'red' }}
     >
       {Array.from({ length: 30 }).map((_, idx) => (
         <Block
           key={idx}
-          idx={idx}
           width="100%"
           margin={{ top: idx === 0 ? 0 : 5 }}
           padding={{ left: 5, top: 5, right: 5, bottom: 5 }}
           fill="green"
           onClick={() => console.log('click', idx)}
         >
-          <Block idx={0} width={30} height={10} fill="red" />
-          <Block idx={1} width={30} height={10} fill="red" margin={{ left: 5 }} />
-          <Block idx={2} width={30 + p} height={20} fill="red" margin={{ left: 5 }} />
-          <Block idx={3} width="grow" fill="yellow" textStyle={{ fontSize: 14 }}>
-            <StaticText idx={0} text={`Hello ${idx}`} fontSize={15} />
-            <StaticText idx={1} text="guys!" />
+          <Block width={30} height={10} fill="red" />
+          <Block width={30} height={10} fill="red" margin={{ left: 5 }} />
+          <Block width={30} height={20} fill="red" margin={{ left: 5 }} />
+          <Block width="grow" fill="yellow">
+            <StaticTextBlock idx={0} text={`Hello ${idx}`} fontSize={15} />
+            <StaticTextBlock idx={1} text="guys!" />
           </Block>
-          <Block idx={4} fill="yellow" textStyle={{ fontSize: 15 }}>
-            <StaticText idx={0} text="Hello " />
-            <StaticText idx={1} text="guys!" />
+          <Block fill="yellow">
+            <StaticTextBlock idx={0} text="Hello " />
+            <StaticTextBlock idx={1} text="guys!" />
           </Block>
         </Block>
       ))}
+    </Block>
+  );
+};
+
+export const Test2 = () => {
+  return (
+    <Block
+      width={250}
+      height={200}
+      fill="blue"
+      padding={{ left: 10, right: 10, top: 10, bottom: 10 }}
+    >
+      <TextBlock text="ke 100 hi looool 555 1 keeeek" fill="red" fontSize={12} />
+      <Block width="grow" fill="green">
+        <TextBlock text="100 2" fill="blue" />
+      </Block>
+      <TextBlock text="100" fill="red" />
     </Block>
   );
 };

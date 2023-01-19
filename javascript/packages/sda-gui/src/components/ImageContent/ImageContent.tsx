@@ -1,15 +1,16 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
-import { getImageApi } from 'sda-electron/api/image';
+import { getImageApi, ImageBaseRow } from 'sda-electron/api/image';
 import { Group, Layer, Rect, Text } from 'react-konva';
 import Konva from 'konva';
-import { useStage, useKonvaFormatTextSelection } from 'components/Konva';
+import { useStage, useKonvaFormatTextSelection, Block } from 'components/Konva';
 import { ContextMenu, ContextMenuProps, MenuNode } from 'components/Menu';
 import { animate } from 'utils';
 import { useImageContentStyle } from './style';
-import { buildRow, ImageRowElement } from './Row';
+import { Row } from './Row';
 import { buildJump } from './Jump';
 import { useImageContent } from './context';
 import { withCrash, withCrash_ } from 'providers/CrashProvider';
+import { RenderBlockProps } from 'components/Konva/Block/RenderBlock';
 
 export const ImageContentContextMenu = (props: ContextMenuProps) => {
   const {
@@ -40,6 +41,13 @@ export const ImageContentContextMenu = (props: ContextMenuProps) => {
   );
 };
 
+type RowInfo = {
+  idx: number;
+  offset: number;
+  elem: JSX.Element;
+  props: RenderBlockProps;
+};
+
 export function ImageContent() {
   const stage = useStage();
   const { styles: style } = useImageContentStyle();
@@ -52,11 +60,10 @@ export function ImageContent() {
   const textSelection = useKonvaFormatTextSelection();
   const [totalRowsCount, setTotalRowsCount] = useState(0);
   const [scrollY, setScrollY] = useState(0);
-  const [rowsToRender, setRowsToRender] = useState<JSX.Element[]>([]);
-  const [rowsHeight, setRowsHeight] = useState<number>(0);
+  const [rowsToRender, setRowsToRender] = useState<JSX.Element>(<></>);
   const [jumpsToRender, setJumpsToRender] = useState<JSX.Element[]>([]);
   const [forceUpdate, setForceUpdate] = useState(0);
-  const cachedRows = useRef<{ [idx: number]: ImageRowElement }>({});
+  const cachedRows = useRef<{ [idx: number]: RowInfo }>({});
   const cachedRowsIdxs = useRef<number[]>([]);
   const sync = useRef({ isLoading: false, requestCount: 0 });
   const avgImageContentHeight = style.viewport.avgRowHeight * totalRowsCount;
@@ -68,7 +75,9 @@ export function ImageContent() {
     );
   const sliderPosX = style.row.width;
   const sliderMaxPosY = stage.size.height - sliderHeight;
-  const allRowsOnScreen = rowsHeight >= stage.size.height;
+  const rowsToRenderHeight = (rowsToRender.props?.height || 0) as number;
+  const rowsToRenderCount = (rowsToRender.props.children?.length || 0) as number;
+  const allRowsOnScreen = rowsToRenderHeight >= stage.size.height;
   const lastRowIdx = totalRowsCount - 1;
   const scrollToRowIdx = useCallback(
     (scrollY: number) => (scrollY / sliderMaxPosY) * lastRowIdx,
@@ -90,7 +99,16 @@ export function ImageContent() {
         tokens: true,
         pcode: view.showPcode,
       });
-      row = buildRow(rows[0], style);
+      const elem = Block({
+        children: <Row row={rows[0]} styles={style} />,
+        width: style.row.width,
+      });
+      row = {
+        idx: rowIdx,
+        offset: rows[0].offset,
+        elem,
+        props: elem.props,
+      };
       // cache for better performance
       if (cachedRowsIdxs.current.length > style.viewport.cacheSize) {
         const removedIdx = cachedRowsIdxs.current.shift();
@@ -105,32 +123,32 @@ export function ImageContent() {
   };
 
   const getForwardRows = async (totalHeight: number) => {
-    const result: { rowIdx: number; y: number; row: ImageRowElement }[] = [];
+    const result: RowInfo[] = [];
     let posY = 0;
     let rowIdx = curRowIdx;
     while (rowIdx < totalRowsCount && posY < totalHeight) {
       const row = await getRowByIdx(rowIdx);
       if (rowIdx === curRowIdx) {
-        posY -= curRowInvisiblePart * row.height;
+        posY -= curRowInvisiblePart * row.props.height;
       }
-      result.push({ rowIdx, y: posY, row });
-      posY += row.height;
+      result.push(row);
+      posY += row.props.height;
       rowIdx++;
     }
     return result;
   };
 
   const getBackwardRows = async (totalHeight: number) => {
-    const result: { rowIdx: number; y: number; row: ImageRowElement }[] = [];
+    const result: RowInfo[] = [];
     let posY = 0;
     let rowIdx = curRowIdx;
     while (rowIdx >= 0 && posY < totalHeight) {
       const row = await getRowByIdx(rowIdx);
       if (rowIdx === curRowIdx) {
-        posY -= curRowVisiblePart * row.height;
+        posY -= curRowVisiblePart * row.props.height;
       }
-      result.push({ rowIdx, y: posY, row });
-      posY += row.height;
+      result.push(row);
+      posY += row.props.height;
       rowIdx--;
     }
     return result;
@@ -159,7 +177,7 @@ export function ImageContent() {
           }
         } else {
           if (allRowsOnScreen) {
-            if (lastRowIdx >= scrollRowIdx + rowsToRender.length - 1 - 2) {
+            if (lastRowIdx >= scrollRowIdx + rowsToRenderCount - 1 - 2) {
               setScrollY(rowIdxToScroll(scrollRowIdx + 1));
             }
           }
@@ -185,32 +203,26 @@ export function ImageContent() {
       const rows = await getForwardRows(stage.size.height);
       if (rows.length > 0) {
         const lastRow = rows[rows.length - 1];
-        setRowsToRender(
-          rows.map(({ y, row }) => (
-            <Group key={row.offset} y={y}>
-              {row.element}
-            </Group>
-          )),
-        );
-        setRowsHeight(lastRow.y + lastRow.row.height);
+        const blockElem = Block({ children: rows.map((r) => r.elem), flexDir: 'col' });
+        setRowsToRender(blockElem);
 
         // jumps
-        const startOffset = rows[0].row.offset;
-        const endOffset = lastRow.row.offset;
-        const jumps = await getImageApi().getJumpsAt(imageId, startOffset, endOffset);
-        const jumpsToRender: JSX.Element[] = [];
-        for (let layerLevel = 0; layerLevel < jumps.length; layerLevel++) {
-          const jumpsOnLayer = jumps[layerLevel];
-          for (const jump of jumpsOnLayer) {
-            const fromRow = rows.find((r) => r.row.offset === jump.from);
-            const toRow = rows.find((r) => r.row.offset === jump.to);
-            const fromY = fromRow && fromRow.y + fromRow.row.height / 2;
-            const toY = toRow && toRow.y + toRow.row.height / 2;
-            const jumpElem = buildJump(jump, layerLevel, style, fromY, toY);
-            jumpsToRender.push(<Group key={`${jump.from}-${jump.to}`}>{jumpElem}</Group>);
-          }
-        }
-        setJumpsToRender(jumpsToRender);
+        // const startOffset = rows[0].row.offset;
+        // const endOffset = lastRow.row.offset;
+        // const jumps = await getImageApi().getJumpsAt(imageId, startOffset, endOffset);
+        // const jumpsToRender: JSX.Element[] = [];
+        // for (let layerLevel = 0; layerLevel < jumps.length; layerLevel++) {
+        //   const jumpsOnLayer = jumps[layerLevel];
+        //   for (const jump of jumpsOnLayer) {
+        //     const fromRow = rows.find((r) => r.row.offset === jump.from);
+        //     const toRow = rows.find((r) => r.row.offset === jump.to);
+        //     const fromY = fromRow && fromRow.y + fromRow.row.height / 2;
+        //     const toY = toRow && toRow.y + toRow.row.height / 2;
+        //     const jumpElem = buildJump(jump, layerLevel, style, fromY, toY);
+        //     jumpsToRender.push(<Group key={`${jump.from}-${jump.to}`}>{jumpElem}</Group>);
+        //   }
+        // }
+        // setJumpsToRender(jumpsToRender);
       }
       sync.current.isLoading = false;
       if (savedRequestCount < sync.current.requestCount) {
@@ -229,23 +241,23 @@ export function ImageContent() {
 
   const onWheel = useCallback(
     async (e: Konva.KonvaEventObject<WheelEvent>) => {
-      if (e.evt.deltaY > 0) {
-        const forwardRows = await getForwardRows(style.viewport.wheelDelta);
-        if (forwardRows.length > 0) {
-          const lastRow = forwardRows[forwardRows.length - 1];
-          const newScrollRowIdx =
-            lastRow.rowIdx - (lastRow.y - style.viewport.wheelDelta) / lastRow.row.height;
-          setScrollY(rowIdxToScroll(newScrollRowIdx));
-        }
-      } else {
-        const backwardRows = await getBackwardRows(style.viewport.wheelDelta);
-        if (backwardRows.length > 0) {
-          const lastRow = backwardRows[backwardRows.length - 1];
-          const newScrollRowIdx =
-            lastRow.rowIdx + 1 + (lastRow.y - style.viewport.wheelDelta) / lastRow.row.height;
-          setScrollY(rowIdxToScroll(newScrollRowIdx));
-        }
-      }
+      // if (e.evt.deltaY > 0) {
+      //   const forwardRows = await getForwardRows(style.viewport.wheelDelta);
+      //   if (forwardRows.length > 0) {
+      //     const lastRow = forwardRows[forwardRows.length - 1];
+      //     const newScrollRowIdx =
+      //       lastRow.rowIdx - (lastRow.y - style.viewport.wheelDelta) / lastRow.row.height;
+      //     setScrollY(rowIdxToScroll(newScrollRowIdx));
+      //   }
+      // } else {
+      //   const backwardRows = await getBackwardRows(style.viewport.wheelDelta);
+      //   if (backwardRows.length > 0) {
+      //     const lastRow = backwardRows[backwardRows.length - 1];
+      //     const newScrollRowIdx =
+      //       lastRow.rowIdx + 1 + (lastRow.y - style.viewport.wheelDelta) / lastRow.row.height;
+      //     setScrollY(rowIdxToScroll(newScrollRowIdx));
+      //   }
+      // }
     },
     [scrollY, sliderMaxPosY, style],
   );
@@ -256,7 +268,7 @@ export function ImageContent() {
       if (targetRowIdx === -1) return false;
       const targetRow = (await getImageApi().getImageRowsAt(imageId, targetRowIdx, 1))[0];
       const fromScrollY = scrollY;
-      const toScrollY = rowIdxToScroll(targetRowIdx - rowsToRender.length / 2);
+      const toScrollY = rowIdxToScroll(targetRowIdx - rowsToRenderCount / 2);
       animate((p) => {
         setScrollY(fromScrollY + (toScrollY - fromScrollY) * p);
         if (p >= 1) {
