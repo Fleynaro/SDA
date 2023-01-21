@@ -1,8 +1,8 @@
-import { KonvaNodeEvents, Rect } from 'react-konva';
+import { Rect } from 'react-konva';
 import React from 'react';
 import { RenderBlock, RenderBlockProps } from './RenderBlock';
 
-export type BlockProps = KonvaNodeEvents & {
+export type BlockProps = {
   x?: number;
   y?: number;
   width?: number | string;
@@ -177,6 +177,7 @@ export const Block = (props: BlockProps) => {
     const childRenderBlock = childRenderBlocks[i];
     childRenderBlocks[i] = React.cloneElement(childRenderBlock, {
       ...childRenderBlock.props,
+      key: i,
       x: childAggregation[i].x,
       y: childAggregation[i].y,
     });
@@ -193,8 +194,8 @@ export const Block = (props: BlockProps) => {
       height={finalHeight}
       margin={margin}
       inline={props.inline}
+      render={props.render}
     >
-      {props.render && props.render}
       {props.fill && <Rect width={finalWidth} height={finalHeight} fill={props.fill} />}
       {childRenderBlocks}
     </RenderBlock>

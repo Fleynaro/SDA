@@ -25,7 +25,6 @@ export const Test1 = () => {
           margin={{ top: idx === 0 ? 0 : 5 }}
           padding={{ left: 5, top: 5, right: 5, bottom: 5 }}
           fill="green"
-          onClick={() => console.log('click', idx)}
         >
           <Block width={30} height={10} fill="red" />
           <Block width={30} height={10} fill="red" margin={{ left: 5 }} />

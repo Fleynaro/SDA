@@ -48,21 +48,27 @@ export const buildJump = (
       }
     }, []);
 
-    const onMouseEnter = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
-      const target = e.target as Konva.Arrow;
-      target.fill(style.jump.hoverColor);
-      target.stroke(style.jump.hoverColor);
-      if (isClickable) setCursor(e, 'pointer');
-    }, []);
+    const onMouseEnter = useCallback(
+      (e: Konva.KonvaEventObject<MouseEvent>) => {
+        const target = e.target as Konva.Arrow;
+        target.fill(style.jump.hoverColor);
+        target.stroke(style.jump.hoverColor);
+        if (isClickable) setCursor(e, 'pointer');
+      },
+      [isClickable],
+    );
 
-    const onMouseLeave = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
-      const target = e.target as Konva.Arrow;
-      if (target.fill() === style.jump.hoverColor) {
-        target.fill(style.jump.color);
-        target.stroke(style.jump.color);
-      }
-      if (isClickable) setCursor(e, 'default');
-    }, []);
+    const onMouseLeave = useCallback(
+      (e: Konva.KonvaEventObject<MouseEvent>) => {
+        const target = e.target as Konva.Arrow;
+        if (target.fill() === style.jump.hoverColor) {
+          target.fill(style.jump.color);
+          target.stroke(style.jump.color);
+        }
+        if (isClickable) setCursor(e, 'default');
+      },
+      [isClickable],
+    );
 
     return (
       <Arrow

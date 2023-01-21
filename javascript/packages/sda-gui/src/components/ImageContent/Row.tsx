@@ -2,10 +2,11 @@ import { useCallback } from 'react';
 import { ImageRowType, ImageBaseRow, ImageInstructionRow } from 'sda-electron/api/image';
 import { PcodeNode } from 'sda-electron/api/p-code';
 import { Group, Rect } from 'react-konva';
-import { Block, buildKonvaFormatText, TextBlock } from 'components/Konva';
+import { Block, buildKonvaFormatText, setCursor, TextBlock } from 'components/Konva';
 import { StylesType, useImageContentStyle } from './style';
 import { useImageContent } from './context';
-import { useBlock } from 'components/Konva/Block/RenderBlock';
+import { RenderProps } from 'components/Konva';
+import Konva from 'konva';
 
 // export interface PcodeElement {
 //   height: number;
@@ -161,7 +162,7 @@ interface InstructionRowProps {
 
 const InstructionRow = ({ row, styles }: InstructionRowProps) => {
   return (
-    <Block width={300}>
+    <Block width={styles.row.cols.instruction.width}>
       {row.tokens.map((token, i) => (
         <TextBlock
           key={i}
@@ -179,8 +180,7 @@ interface RowProps {
 }
 
 export const Row = ({ row, styles }: RowProps) => {
-  const RowRender = () => {
-    const { width, height } = useBlock();
+  const RowRender = ({ x, y, width, height, children }: RenderProps) => {
     const {
       rowSelection: { selectedRows, firstSelectedRow, setFirstSelectedRow, setLastSelectedRow },
     } = useImageContent();
@@ -190,11 +190,16 @@ export const Row = ({ row, styles }: RowProps) => {
       setFirstSelectedRow?.(row.offset);
     }, [setFirstSelectedRow, row.offset]);
 
-    const onMouseMove = useCallback(() => {
-      if (firstSelectedRow !== undefined) {
-        setLastSelectedRow?.(row.offset);
-      }
-    }, [firstSelectedRow, setFirstSelectedRow, row.offset]);
+    const onMouseMove = useCallback(
+      (e: Konva.KonvaEventObject<MouseEvent>) => {
+        if (firstSelectedRow !== undefined) {
+          setLastSelectedRow?.(row.offset);
+        }
+        // for jump hover event
+        setCursor(e, 'default');
+      },
+      [firstSelectedRow, setFirstSelectedRow, row.offset],
+    );
 
     const onMouseUp = useCallback(() => {
       setFirstSelectedRow?.(undefined);
@@ -202,20 +207,24 @@ export const Row = ({ row, styles }: RowProps) => {
     }, [setFirstSelectedRow, setLastSelectedRow]);
 
     return (
-      <Rect
+      <Group
+        x={x}
+        y={y}
         width={width}
         height={height}
-        fill={isSelected ? '#360b0b' : '#00000000'}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
-      />
+      >
+        <Rect width={width} height={height} fill={isSelected ? '#360b0b' : '#00000000'} />
+        {children}
+      </Group>
     );
   };
 
   return (
     <Block width="100%" padding={{ left: 5, top: 5, right: 5, bottom: 5 }} render={<RowRender />}>
-      <Block width={100} margin={{ left: 100 }}>
+      <Block width={styles.row.cols.offset.width} margin={{ left: styles.row.cols.jump.width }}>
         <TextBlock text={`0x${row.offset.toString(16)} | ${row.offset}`} fill="white" />
       </Block>
       {row.type === ImageRowType.Instruction && (

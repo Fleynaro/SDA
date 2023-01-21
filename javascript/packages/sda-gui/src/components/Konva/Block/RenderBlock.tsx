@@ -1,20 +1,13 @@
 import { Group } from 'react-konva';
-import React, { createContext, useContext } from 'react';
+import React from 'react';
 import { BlockProps } from './Block';
 
-type BlockContextValue = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
-
-const BlockContext = createContext<BlockContextValue | null>(null);
-
-export const useBlock = () => {
-  const ctx = useContext(BlockContext);
-  if (!ctx) throw new Error('BlockContext is not set');
-  return ctx;
+export type RenderProps = {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  children?: React.ReactNode;
 };
 
 export type RenderBlockProps = {
@@ -28,29 +21,28 @@ export type RenderBlockProps = {
     top: number;
     bottom: number;
   };
-  none?: boolean;
   inline?: boolean;
+  render?: React.ReactNode;
   children?: React.ReactNode;
   build?: (newProps: BlockProps) => JSX.Element;
 };
 
 export const RenderBlock = (props: RenderBlockProps) => {
+  if (props.render) {
+    return React.cloneElement(
+      props.render as React.ReactElement,
+      {
+        x: props.x,
+        y: props.y,
+        width: props.width,
+        height: props.height,
+      },
+      props.children,
+    );
+  }
   return (
     <Group x={props.x} y={props.y} width={props.width} height={props.height}>
-      {props.none ? (
-        <>{props.children}</>
-      ) : (
-        <BlockContext.Provider
-          value={{
-            x: props.x,
-            y: props.y,
-            width: props.width,
-            height: props.height,
-          }}
-        >
-          {props.children}
-        </BlockContext.Provider>
-      )}
+      {props.children}
     </Group>
   );
 };

@@ -18,10 +18,10 @@ const DefaultStyles = {
         width: 100,
       },
       offset: {
-        width: 50,
+        width: 100,
       },
       instruction: {
-        width: 0,
+        width: 'grow',
       },
     },
     instructionTokenColors: {
@@ -56,12 +56,6 @@ const calcDynamicStyles = (styles: StylesType, stageSize: StageSize) => {
     row: {
       ...styles.row,
       width: rowWidth,
-      cols: {
-        ...styles.row.cols,
-        instruction: {
-          width: rowWidth - styles.row.cols.jump.width - styles.row.cols.offset.width,
-        },
-      },
     },
   };
 };
