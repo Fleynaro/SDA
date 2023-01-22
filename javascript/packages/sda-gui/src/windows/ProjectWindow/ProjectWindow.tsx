@@ -14,7 +14,7 @@ import { SdaContextProvider } from 'providers/SdaContextProvider';
 import { ObjectId } from 'sda-electron/api/common';
 import { getImageApi } from 'sda-electron/api/image';
 import { BoxSwitch, BoxSwitchCase } from 'components/BoxSwitch';
-import { KonvaFormatTextSelectionProvider, useKonvaFormatTextSelection } from 'components/Konva';
+import { TextSelectionProvider, useTextSelection } from 'components/Konva';
 import { useProjectWindowStyles } from './style';
 import { TabContent } from './TabContent';
 import { ImageContentStyleProvider } from 'components/ImageContent';
@@ -27,7 +27,7 @@ const ImageLabel = ({ imageId }: { imageId: ObjectId }) => {
 function ProjectPanel({ project }: { project: Project }) {
   const theme = useTheme();
   const classes = useProjectWindowStyles();
-  const textSelection = useKonvaFormatTextSelection();
+  const textSelection = useTextSelection();
   const [leftNavItem, setLeftNavItem] = useState('images');
   const tabs = useTabs<{
     imageId: ObjectId;
@@ -120,11 +120,11 @@ export default function ProjectWindow({ projectId }: ProjectWindowPayload) {
   return (
     <ProjectProvider projectId={project.id}>
       <SdaContextProvider contextId={project.contextId}>
-        <KonvaFormatTextSelectionProvider>
+        <TextSelectionProvider>
           <ImageContentStyleProvider>
             <ProjectPanel project={project} />
           </ImageContentStyleProvider>
-        </KonvaFormatTextSelectionProvider>
+        </TextSelectionProvider>
       </SdaContextProvider>
     </ProjectProvider>
   );

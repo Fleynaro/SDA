@@ -50,12 +50,14 @@ export const Test2 = () => {
       height={200}
       fill="blue"
       padding={{ left: 10, right: 10, top: 10, bottom: 10 }}
+      textStyle={{ fill: 'red' }}
+      textSelection={{ area: 'test', index: [0] }}
     >
-      <TextBlock text="ke 100 hi looool 555 1 keeeek" fill="red" fontSize={12} />
-      <Block width="grow" fill="green">
+      <TextBlock text="ke 100 hi looool 555 1 keeeek" fontSize={12} />
+      <Block width="grow" textSelection={{ area: 'test2' }}>
         <TextBlock text="100 2" fill="blue" />
       </Block>
-      <TextBlock text="100" fill="red" />
+      <TextBlock text="100" />
     </Block>
   );
 };

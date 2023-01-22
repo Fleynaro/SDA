@@ -1,9 +1,8 @@
 import { useCallback } from 'react';
 import { ImageRowType, ImageBaseRow, ImageInstructionRow } from 'sda-electron/api/image';
-import { PcodeNode } from 'sda-electron/api/p-code';
 import { Group, Rect } from 'react-konva';
-import { Block, buildKonvaFormatText, setCursor, TextBlock } from 'components/Konva';
-import { StylesType, useImageContentStyle } from './style';
+import { Block, setCursor, TextBlock } from 'components/Konva';
+import { StylesType } from './style';
 import { useImageContent } from './context';
 import { RenderProps } from 'components/Konva';
 import Konva from 'konva';
@@ -195,7 +194,7 @@ export const Row = ({ row, styles }: RowProps) => {
         if (firstSelectedRow !== undefined) {
           setLastSelectedRow?.(row.offset);
         }
-        // for jump hover event
+        // for jump hover event (onMouseLeave not always working there)
         setCursor(e, 'default');
       },
       [firstSelectedRow, setFirstSelectedRow, row.offset],

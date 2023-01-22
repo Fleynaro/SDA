@@ -2,7 +2,7 @@ import { useEffect, useCallback, useRef, useState } from 'react';
 import { getImageApi, ImageBaseRow } from 'sda-electron/api/image';
 import { Group, Layer, Rect, Text } from 'react-konva';
 import Konva from 'konva';
-import { useStage, useKonvaFormatTextSelection, Block } from 'components/Konva';
+import { useStage, useTextSelection, Block } from 'components/Konva';
 import { ContextMenu, ContextMenuProps, MenuNode } from 'components/Menu';
 import { animate } from 'utils';
 import { useImageContentStyle } from './style';
@@ -57,7 +57,7 @@ export function ImageContent() {
     view,
     rowSelection: { firstSelectedRow, lastSelectedRow, setSelectedRows },
   } = useImageContent();
-  const textSelection = useKonvaFormatTextSelection();
+  const textSelection = useTextSelection();
   const [totalRowsCount, setTotalRowsCount] = useState(0);
   const [scrollY, setScrollY] = useState(0); // [0, 1]
   const [rowsToRender, setRowsToRender] = useState<{
@@ -333,7 +333,7 @@ export function ImageContent() {
       <Layer onWheel={onWheel}>
         {rowsToRender.elem}
         {jumpsToRender}
-        <Text text={textSelection.selectedTextRef.current} x={10} y={10} fill="green" />
+        {/* <Text text={textSelection.selectedTextRef.current} x={10} y={10} fill="green" /> */}
       </Layer>
     </>
   );

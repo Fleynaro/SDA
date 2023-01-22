@@ -12,8 +12,8 @@ import {
 } from 'components/ImageContent';
 import {
   Block,
-  KonvaFormatTextSelectionBridgeConsumer,
-  KonvaFormatTextSelectionBridgeProvider,
+  TextSelectionBridgeConsumer,
+  TextSelectionBridgeProvider,
   Stage,
 } from 'components/Konva';
 import { useContextMenu } from 'components/Menu';
@@ -48,6 +48,7 @@ const DecompilerComponent = () => {
 };
 
 const TestComponent = () => {
+  // t123
   const tree = Block({ children: <Test2 /> });
   console.log(tree);
   return tree;
@@ -69,7 +70,7 @@ export const TabContent = ({ imageId }: TabContentProps) => {
   // There's a trouble with context exposing into konva. Solve: https://github.com/konvajs/react-konva/issues/188#issuecomment-478302062
   return (
     <ImageContentProvider imageId={imageId}>
-      <KonvaFormatTextSelectionBridgeConsumer>
+      <TextSelectionBridgeConsumer>
         {(value1) => (
           <ImageContentStyleBridgeConsumer>
             {(value2) => (
@@ -79,26 +80,26 @@ export const TabContent = ({ imageId }: TabContentProps) => {
                     sx={{ width: '100%', height: '100%', flexGrow: 1 }}
                     onContextMenu={onContextMenu}
                   >
-                    <KonvaFormatTextSelectionBridgeProvider value={value1}>
+                    <TextSelectionBridgeProvider value={value1}>
                       <ImageContentStyleBridgeProvider value={value2}>
                         <ImageContentBridgeProvider value={value3}>
-                          {/* <Layer>
+                          <Layer>
                             <TestComponent />
-                          </Layer> */}
-                          <ImageContent />
+                          </Layer>
+                          {/* <ImageContent /> */}
                           {/* <Layer>
                             <Test />
                           </Layer> */}
                         </ImageContentBridgeProvider>
                       </ImageContentStyleBridgeProvider>
-                    </KonvaFormatTextSelectionBridgeProvider>
+                    </TextSelectionBridgeProvider>
                   </Stage>
                 )}
               </ImageContentBridgeConsumer>
             )}
           </ImageContentStyleBridgeConsumer>
         )}
-      </KonvaFormatTextSelectionBridgeConsumer>
+      </TextSelectionBridgeConsumer>
       <Resizable
         defaultSize={{
           width: 200,

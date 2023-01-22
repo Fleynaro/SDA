@@ -1,6 +1,7 @@
 import { Rect } from 'react-konva';
 import React from 'react';
 import { RenderBlock, RenderBlockProps } from './RenderBlock';
+import { TextSelectionType, TextStyleType } from './StaticTextBlock';
 
 export type BlockProps = {
   x?: number;
@@ -26,6 +27,8 @@ export type BlockProps = {
   flexDir?: 'row' | 'col';
   inline?: boolean;
   fill?: string;
+  textStyle?: TextStyleType;
+  textSelection?: TextSelectionType;
   ctx?: any;
   render?: React.ReactNode;
   children?: React.ReactNode;
@@ -63,15 +66,41 @@ export const Block = (props: BlockProps) => {
     bottom: props?.margin?.bottom || 0,
   };
   const flexDir = props.flexDir || 'row';
+  const ctx = {
+    textStyle: {
+      ...props.ctx?.textStyle,
+      ...props.textStyle,
+    },
+    textSelection: {
+      ...props.ctx?.textSelection,
+      ...props.textSelection,
+      index: props.textSelection?.index
+        ? (props.ctx?.textSelection?.index || []).concat(props.textSelection.index)
+        : props.ctx?.textSelection?.index,
+    },
+  };
 
   if (
     (props.width === 'grow' && !props.freeWidth) ||
     (props.height === 'grow' && !props.freeHeight)
   ) {
+    let parentCtx = props.ctx;
+    const selIndex = parentCtx?.textSelection?.index || [];
+    if (selIndex.length > 0) {
+      selIndex[selIndex.length - 1]++;
+      parentCtx = {
+        ...parentCtx,
+        textSelection: {
+          ...props.ctx?.textSelection,
+          index: selIndex.concat([0]),
+        },
+      };
+    }
     const build = (newProps: BlockProps) => {
       return Block({
         ...props,
         ...newProps,
+        ctx: parentCtx,
       });
     };
     // return empty block to be filled later
@@ -81,16 +110,18 @@ export const Block = (props: BlockProps) => {
   const toRenderBlock = (e: JSX.Element): JSX.Element | null => {
     if (e?.type?.name === 'RenderBlock') return e;
     if (typeof e.type === 'function') {
-      let props = e.props;
+      let eprops = {
+        ...e.props,
+        ctx,
+      };
       if (e.type.name === 'Block') {
-        props = {
-          ...e.props,
+        eprops = {
+          ...eprops,
           parentWidth: width,
           parentHeight: height,
-          ctx: props.ctx,
         };
       }
-      const derivative = e.type(props) as JSX.Element;
+      const derivative = e.type(eprops) as JSX.Element;
       return toRenderBlock(derivative);
     }
     return null;
