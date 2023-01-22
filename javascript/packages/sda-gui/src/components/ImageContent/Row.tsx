@@ -162,14 +162,21 @@ interface InstructionRowProps {
 const InstructionRow = ({ row, styles }: InstructionRowProps) => {
   const tokens = row.tokens.concat({ text: '\n', type: 'Other' });
   return (
-    <Block width={styles.row.cols.instruction.width} textSelection={{ area: 'instruction' }}>
-      {tokens.map((token, i) => (
-        <TextBlock
-          key={i}
-          text={token.text}
-          fill={styles.row.instructionTokenColors[token.type] || 'white'}
-        />
-      ))}
+    <Block width={styles.row.cols.instruction.width} flexDir="col">
+      <Block textSelection={{ area: 'instruction' }}>
+        {tokens.map((token, i) => (
+          <TextBlock
+            key={i}
+            text={token.text}
+            fill={styles.row.instructionTokenColors[token.type] || 'white'}
+          />
+        ))}
+      </Block>
+      {row.pcode && (
+        <Block textSelection={{ area: 'p-code' }}>
+          <TextBlock text={'p-code'} fill="white" />
+        </Block>
+      )}
     </Block>
   );
 };
