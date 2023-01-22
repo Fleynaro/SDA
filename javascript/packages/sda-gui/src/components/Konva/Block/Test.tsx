@@ -46,16 +46,16 @@ export const Test1 = () => {
 export const Test2 = () => {
   return (
     <Block
-      width={250}
+      width={200}
       height={200}
       fill="blue"
       padding={{ left: 10, right: 10, top: 10, bottom: 10 }}
       textStyle={{ fill: 'red' }}
-      textSelection={{ area: 'test', index: [0] }}
+      textSelection={{ area: 'test', index: 100 }}
     >
-      <TextBlock text="ke 100 hi looool 555 1 keeeek" fontSize={12} />
+      <TextBlock text="ke 10000 hi looool 533355 1 keeeek" fontSize={12} />
       <Block width="grow" textSelection={{ area: 'test2' }}>
-        <TextBlock text="100 2" fill="blue" />
+        <TextBlock text="100 2" fill="black" />
       </Block>
       <TextBlock text="100" />
     </Block>

@@ -57,7 +57,7 @@ export function ImageContent() {
     view,
     rowSelection: { firstSelectedRow, lastSelectedRow, setSelectedRows },
   } = useImageContent();
-  const textSelection = useTextSelection();
+  const { selectedText } = useTextSelection();
   const [totalRowsCount, setTotalRowsCount] = useState(0);
   const [scrollY, setScrollY] = useState(0); // [0, 1]
   const [rowsToRender, setRowsToRender] = useState<{
@@ -106,8 +106,12 @@ export function ImageContent() {
         pcode: view.showPcode,
       });
       const elem = Block({
-        children: <Row row={rows[0]} styles={style} />,
+        children: <Row rowIdx={rowIdx} row={rows[0]} styles={style} />,
         width: style.row.width,
+        textSelection: {
+          index: rowIdx,
+          area: `image-${imageId.key}`,
+        },
       });
       row = {
         idx: rowIdx,
@@ -333,7 +337,7 @@ export function ImageContent() {
       <Layer onWheel={onWheel}>
         {rowsToRender.elem}
         {jumpsToRender}
-        {/* <Text text={textSelection.selectedTextRef.current} x={10} y={10} fill="green" /> */}
+        <Text text={selectedText} x={700} y={10} fill="green" />
       </Layer>
     </>
   );

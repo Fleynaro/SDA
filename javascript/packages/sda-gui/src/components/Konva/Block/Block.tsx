@@ -1,4 +1,3 @@
-import { Rect } from 'react-konva';
 import React from 'react';
 import { RenderBlock, RenderBlockProps } from './RenderBlock';
 import { TextSelectionType, TextStyleType } from './StaticTextBlock';
@@ -74,9 +73,7 @@ export const Block = (props: BlockProps) => {
     textSelection: {
       ...props.ctx?.textSelection,
       ...props.textSelection,
-      index: props.textSelection?.index
-        ? (props.ctx?.textSelection?.index || []).concat(props.textSelection.index)
-        : props.ctx?.textSelection?.index,
+      area: (props.ctx?.textSelection?.area || '') + (props.textSelection?.area || ''),
     },
   };
 
@@ -84,27 +81,25 @@ export const Block = (props: BlockProps) => {
     (props.width === 'grow' && !props.freeWidth) ||
     (props.height === 'grow' && !props.freeHeight)
   ) {
-    let parentCtx = props.ctx;
-    const selIndex = parentCtx?.textSelection?.index || [];
-    if (selIndex.length > 0) {
-      selIndex[selIndex.length - 1]++;
-      parentCtx = {
-        ...parentCtx,
-        textSelection: {
-          ...props.ctx?.textSelection,
-          index: selIndex.concat([0]),
-        },
-      };
-    }
     const build = (newProps: BlockProps) => {
       return Block({
         ...props,
         ...newProps,
-        ctx: parentCtx,
       });
     };
     // return empty block to be filled later
-    return <RenderBlock x={x} y={y} width={0} height={0} margin={margin} build={build} />;
+    return (
+      <RenderBlock
+        x={x}
+        y={y}
+        absX={0}
+        absY={0}
+        width={0}
+        height={0}
+        margin={margin}
+        build={build}
+      />
+    );
   }
 
   const toRenderBlock = (e: JSX.Element): JSX.Element | null => {
@@ -221,13 +216,15 @@ export const Block = (props: BlockProps) => {
     <RenderBlock
       x={x}
       y={y}
+      absX={x}
+      absY={y}
       width={finalWidth}
       height={finalHeight}
       margin={margin}
+      fill={props.fill}
       inline={props.inline}
       render={props.render}
     >
-      {props.fill && <Rect width={finalWidth} height={finalHeight} fill={props.fill} />}
       {childRenderBlocks}
     </RenderBlock>
   );

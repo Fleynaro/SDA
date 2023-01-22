@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { ImageRowType, ImageBaseRow, ImageInstructionRow } from 'sda-electron/api/image';
 import { Group, Rect } from 'react-konva';
-import { Block, setCursor, TextBlock } from 'components/Konva';
+import { Block, setCursor, TextBlock, toSelIndex, useTextSelection } from 'components/Konva';
 import { StylesType } from './style';
 import { useImageContent } from './context';
 import { RenderProps } from 'components/Konva';
@@ -160,9 +160,10 @@ interface InstructionRowProps {
 }
 
 const InstructionRow = ({ row, styles }: InstructionRowProps) => {
+  const tokens = row.tokens.concat({ text: '\n', type: 'Other' });
   return (
-    <Block width={styles.row.cols.instruction.width}>
-      {row.tokens.map((token, i) => (
+    <Block width={styles.row.cols.instruction.width} textSelection={{ area: 'instruction' }}>
+      {tokens.map((token, i) => (
         <TextBlock
           key={i}
           text={token.text}
@@ -174,30 +175,39 @@ const InstructionRow = ({ row, styles }: InstructionRowProps) => {
 };
 
 interface RowProps {
+  rowIdx: number;
   row: ImageBaseRow;
   styles: StylesType;
 }
 
-export const Row = ({ row, styles }: RowProps) => {
+export const Row = ({ rowIdx, row, styles }: RowProps) => {
   const RowRender = ({ x, y, width, height, children }: RenderProps) => {
     const {
       rowSelection: { selectedRows, firstSelectedRow, setFirstSelectedRow, setLastSelectedRow },
     } = useImageContent();
+    const { selecting, setLastSelectedIdx } = useTextSelection();
     const isSelected = selectedRows.includes(row.offset);
 
     const onMouseDown = useCallback(() => {
       setFirstSelectedRow?.(row.offset);
     }, [setFirstSelectedRow, row.offset]);
 
-    const onMouseMove = useCallback(
+    const onMouseMove = useCallback(() => {
+      if (firstSelectedRow !== undefined) {
+        setLastSelectedRow?.(row.offset);
+      }
+    }, [firstSelectedRow, setFirstSelectedRow, row.offset]);
+
+    const onMouseMoveForBackground = useCallback(
       (e: Konva.KonvaEventObject<MouseEvent>) => {
-        if (firstSelectedRow !== undefined) {
-          setLastSelectedRow?.(row.offset);
+        if (selecting) {
+          const pos = e.target.getStage()?.getPointerPosition();
+          setLastSelectedIdx?.(toSelIndex(rowIdx, pos?.x, pos?.y));
         }
         // for jump hover event (onMouseLeave not always working there)
         setCursor(e, 'default');
       },
-      [firstSelectedRow, setFirstSelectedRow, row.offset],
+      [firstSelectedRow, setFirstSelectedRow, row.offset, selecting, setLastSelectedIdx],
     );
 
     const onMouseUp = useCallback(() => {
@@ -215,7 +225,12 @@ export const Row = ({ row, styles }: RowProps) => {
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
       >
-        <Rect width={width} height={height} fill={isSelected ? '#360b0b' : '#00000000'} />
+        <Rect
+          width={width}
+          height={height}
+          fill={isSelected ? '#360b0b' : '#00000000'}
+          onMouseMove={onMouseMoveForBackground}
+        />
         {children}
       </Group>
     );
@@ -223,8 +238,12 @@ export const Row = ({ row, styles }: RowProps) => {
 
   return (
     <Block width="100%" padding={{ left: 5, top: 5, right: 5, bottom: 5 }} render={<RowRender />}>
-      <Block width={styles.row.cols.offset.width} margin={{ left: styles.row.cols.jump.width }}>
-        <TextBlock text={`0x${row.offset.toString(16)} | ${row.offset}`} fill="white" />
+      <Block
+        width={styles.row.cols.offset.width}
+        margin={{ left: styles.row.cols.jump.width }}
+        textSelection={{ area: 'offset' }}
+      >
+        <TextBlock text={`0x${row.offset.toString(16)}\n`} fill="white" />
       </Block>
       {row.type === ImageRowType.Instruction && (
         <InstructionRow row={row as ImageInstructionRow} styles={styles} />

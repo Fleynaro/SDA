@@ -83,10 +83,10 @@ export const TabContent = ({ imageId }: TabContentProps) => {
                     <TextSelectionBridgeProvider value={value1}>
                       <ImageContentStyleBridgeProvider value={value2}>
                         <ImageContentBridgeProvider value={value3}>
-                          <Layer>
+                          {/* <Layer>
                             <TestComponent />
-                          </Layer>
-                          {/* <ImageContent /> */}
+                          </Layer> */}
+                          <ImageContent />
                           {/* <Layer>
                             <Test />
                           </Layer> */}
