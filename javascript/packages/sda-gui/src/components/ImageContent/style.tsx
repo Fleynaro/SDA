@@ -24,15 +24,22 @@ const DefaultStyles = {
         width: 'grow',
       },
     },
-    instructionTokenColors: {
-      ['Mneumonic']: '#eddaa4',
-      ['Register']: '#93c5db',
-      ['Number']: '#e8e8e8',
-      ['AddressAbs']: '#d2b2d6',
-      ['AddressRel']: '#bdbdbd',
-    } as { [type: string]: string },
+    instruction: {
+      tokenColors: {
+        ['Mneumonic']: '#eddaa4',
+        ['Register']: '#93c5db',
+        ['Number']: '#e8e8e8',
+        ['AddressAbs']: '#d2b2d6',
+        ['AddressRel']: '#bdbdbd',
+      } as { [type: string]: string },
+    },
     pcode: {
-      width: 100,
+      tokenColors: {
+        ['Mneumonic']: '#eddaa4',
+        ['Register']: '#93c5db',
+        ['VirtRegister']: '#93c5db',
+        ['Number']: '#e8e8e8',
+      } as { [type: string]: string },
     },
   },
 

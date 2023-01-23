@@ -98,7 +98,7 @@ export function ImageContent() {
   const curRowInvisiblePart = scrollRowIdx - curRowIdx;
   const curRowVisiblePart = 1 - curRowInvisiblePart;
 
-  const getRowByIdx = async (rowIdx: number) => {
+  const getRowByIdx = async (rowIdx: number, disableCache = false) => {
     let row = cachedRows.current[rowIdx];
     if (!row) {
       const rows = await getImageApi().getImageRowsAt(imageId, rowIdx, 1, {
@@ -119,26 +119,28 @@ export function ImageContent() {
         elem,
         props: elem.props,
       };
-      // cache for better performance
-      if (cachedRowsIdxs.current.length > style.viewport.cacheSize) {
-        const removedIdx = cachedRowsIdxs.current.shift();
-        if (removedIdx) {
-          delete cachedRows.current[removedIdx];
+      if (!disableCache) {
+        // cache for better performance
+        if (cachedRowsIdxs.current.length > style.viewport.cacheSize) {
+          const removedIdx = cachedRowsIdxs.current.shift();
+          if (removedIdx) {
+            delete cachedRows.current[removedIdx];
+          }
         }
+        cachedRows.current[rowIdx] = row;
+        cachedRowsIdxs.current.push(rowIdx);
       }
-      cachedRows.current[rowIdx] = row;
-      cachedRowsIdxs.current.push(rowIdx);
     }
     return row;
   };
 
-  const getForwardRows = async (totalHeight: number) => {
+  const getForwardRows = async (totalHeight: number, disableCache = false) => {
     const rows: RowInfo[] = [];
     const y: number[] = [];
     let posY = 0;
     let rowIdx = curRowIdx;
     while (rowIdx < totalRowsCount && posY < totalHeight) {
-      const row = await getRowByIdx(rowIdx);
+      const row = await getRowByIdx(rowIdx, disableCache);
       if (rowIdx === curRowIdx) {
         posY -= curRowInvisiblePart * row.props.height;
       }
@@ -150,13 +152,13 @@ export function ImageContent() {
     return { rows, y, height: posY };
   };
 
-  const getBackwardRows = async (totalHeight: number) => {
+  const getBackwardRows = async (totalHeight: number, disableCache = false) => {
     const rows: RowInfo[] = [];
     const y: number[] = [];
     let posY = 0;
     let rowIdx = curRowIdx;
     while (rowIdx >= 0 && posY < totalHeight) {
-      const row = await getRowByIdx(rowIdx);
+      const row = await getRowByIdx(rowIdx, disableCache);
       if (rowIdx === curRowIdx) {
         posY -= curRowVisiblePart * row.props.height;
       }
@@ -166,6 +168,41 @@ export function ImageContent() {
       rowIdx--;
     }
     return { rows, y, height: posY };
+  };
+
+  const setupRowsAndJumps = async () => {
+    const { rows, y, height } = await getForwardRows(stage.size.height);
+    if (rows.length > 0) {
+      const elem = Block({
+        children: rows.map((r) => r.elem),
+        flexDir: 'col',
+        padding: { top: -rows[0].props.height * curRowInvisiblePart },
+      });
+      setRowsToRender({
+        elem,
+        count: rows.length,
+        height,
+      });
+
+      // jumps
+      const startOffset = rows[0].offset;
+      const endOffset = rows[rows.length - 1].offset;
+      const jumps = await getImageApi().getJumpsAt(imageId, startOffset, endOffset);
+      const jumpsToRender: JSX.Element[] = [];
+      for (let layerLevel = 0; layerLevel < jumps.length; layerLevel++) {
+        const jumpsOnLayer = jumps[layerLevel];
+        for (const jump of jumpsOnLayer) {
+          const fromRowIdx = rows.findIndex((r) => r.offset === jump.from);
+          const toRowIdx = rows.findIndex((r) => r.offset === jump.to);
+          const fromY =
+            fromRowIdx !== -1 ? y[fromRowIdx] + rows[fromRowIdx].props.height / 2 : undefined;
+          const toY = toRowIdx !== -1 ? y[toRowIdx] + rows[toRowIdx].props.height / 2 : undefined;
+          const jumpElem = buildJump(jump, layerLevel, style, fromY, toY);
+          jumpsToRender.push(<Group key={`${jump.from}-${jump.to}`}>{jumpElem}</Group>);
+        }
+      }
+      setJumpsToRender(jumpsToRender);
+    }
   };
 
   useEffect(
@@ -207,64 +244,37 @@ export function ImageContent() {
     [imageId, firstSelectedRow, lastSelectedRow],
   );
 
-  // render rows and jumps on scroll and stage resize
+  // render rows and jumps on scroll
   useEffect(
     withCrash_(async () => {
       // rows
       const savedRequestCount = ++sync.current.requestCount;
       if (sync.current.isLoading) return;
       sync.current.isLoading = true;
-      const { rows, y, height } = await getForwardRows(stage.size.height);
-      if (rows.length > 0) {
-        const elem = Block({
-          children: rows.map((r) => r.elem),
-          flexDir: 'col',
-          padding: { top: -rows[0].props.height * curRowInvisiblePart },
-        });
-        setRowsToRender({
-          elem,
-          count: rows.length,
-          height,
-        });
-
-        // jumps
-        const startOffset = rows[0].offset;
-        const endOffset = rows[rows.length - 1].offset;
-        const jumps = await getImageApi().getJumpsAt(imageId, startOffset, endOffset);
-        const jumpsToRender: JSX.Element[] = [];
-        for (let layerLevel = 0; layerLevel < jumps.length; layerLevel++) {
-          const jumpsOnLayer = jumps[layerLevel];
-          for (const jump of jumpsOnLayer) {
-            const fromRowIdx = rows.findIndex((r) => r.offset === jump.from);
-            const toRowIdx = rows.findIndex((r) => r.offset === jump.to);
-            const fromY =
-              fromRowIdx !== -1 ? y[fromRowIdx] + rows[fromRowIdx].props.height / 2 : undefined;
-            const toY = toRowIdx !== -1 ? y[toRowIdx] + rows[toRowIdx].props.height / 2 : undefined;
-            const jumpElem = buildJump(jump, layerLevel, style, fromY, toY);
-            jumpsToRender.push(<Group key={`${jump.from}-${jump.to}`}>{jumpElem}</Group>);
-          }
-        }
-        setJumpsToRender(jumpsToRender);
-      }
+      await setupRowsAndJumps();
       sync.current.isLoading = false;
       if (savedRequestCount < sync.current.requestCount) {
         // force component updated to render actual rows
         setForceUpdate(forceUpdate + 1);
       }
     }),
-    [scrollY, style, view, forceUpdate],
+    [scrollY, forceUpdate],
   );
 
-  useEffect(() => {
-    // clear cache on style change
-    cachedRows.current = {};
-    cachedRowsIdxs.current = [];
-  }, [style, view]);
+  useEffect(
+    withCrash_(async () => {
+      // clear cache
+      cachedRows.current = {};
+      cachedRowsIdxs.current = [];
+      await setupRowsAndJumps();
+    }),
+    [style, view],
+  );
 
   const onWheel = useCallback(
     async (e: Konva.KonvaEventObject<WheelEvent>) => {
       if (e.evt.deltaY > 0) {
-        const { rows, y } = await getForwardRows(style.viewport.wheelDelta);
+        const { rows, y } = await getForwardRows(style.viewport.wheelDelta, true);
         if (rows.length > 0) {
           const lastRow = rows[rows.length - 1];
           const lastRowY = y[y.length - 1];
@@ -273,7 +283,7 @@ export function ImageContent() {
           setScrollY(rowIdxToScroll(newScrollRowIdx));
         }
       } else {
-        const { rows, y } = await getBackwardRows(style.viewport.wheelDelta);
+        const { rows, y } = await getBackwardRows(style.viewport.wheelDelta, true);
         if (rows.length > 0) {
           const lastRow = rows[rows.length - 1];
           const lastRowY = y[y.length - 1];

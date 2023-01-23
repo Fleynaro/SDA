@@ -167,6 +167,7 @@ export const StaticTextBlock = ({ text, ctx, ...propsStyle }: TextBlockProps) =>
       if (selecting) {
         setLastSelectedIdx?.(selIndex);
       }
+      // console.log('idx', ctx?.textSelection?.index, 'absX', props.absX, 'absY', props.absY);
     }, [selecting, setLastSelectedIdx]);
 
     const onMouseEnter = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {

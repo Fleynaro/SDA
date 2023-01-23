@@ -1,67 +1,67 @@
-import { PcodeInstruction, PcodePrinter, PcodePrinterToken, RegisterRepository } from 'sda-core';
-import { PcodeNode } from 'api/p-code';
+import {
+  PcodeInstruction,
+  PcodePrinter,
+  PcodePrinterToken,
+  RegisterRepository,
+  AbstractPrinterToken,
+} from 'sda-core';
+import { PcodeGroup, PcodeText } from 'api/p-code';
 
-export const toPcodeNode = (
+export const toPcodeText = (
   regRepo: RegisterRepository,
   instructions: PcodeInstruction[],
-): PcodeNode => {
-  const resultNode: PcodeNode = {
-    type: 'group',
-    childs: [],
+): PcodeText => {
+  const result: PcodeText = {
+    tokens: [],
+    groups: [],
   };
 
   const printerCtx = {
-    curNode: resultNode,
     curIdx: 0,
   };
-
-  const newNode = (node: PcodeNode, body?: () => void): void => {
-    printerCtx.curNode.childs.push(node);
-    const prevToken = printerCtx.curNode;
-    if (node.type === 'group') {
-      printerCtx.curNode = node;
-      body?.();
-      printerCtx.curNode = prevToken;
-    }
+  const newToken = (type: string, text: string): void => {
+    result.tokens.push({
+      idx: printerCtx.curIdx++,
+      type,
+      text,
+    });
+  };
+  const newGroup = (action?: PcodeGroup['action'], body?: () => void): void => {
+    const start = printerCtx.curIdx;
+    body?.();
+    const end = printerCtx.curIdx;
+    result.groups.push({
+      start,
+      end,
+      action,
+    });
   };
 
   const printer = PcodePrinter.New(regRepo);
   printer.printTokenImpl = (text, tokenType) => {
-    newNode({
-      type: 'token',
-      text,
-      tokenType: PcodePrinterToken[tokenType],
-      idx: printerCtx.curIdx++,
-    });
+    newToken(PcodePrinterToken[tokenType] || AbstractPrinterToken[tokenType], text);
   };
   printer.printInstructionImpl = (instr) => {
-    newNode(
+    newGroup(
       {
-        type: 'group',
-        childs: [],
-        action: {
-          name: 'instruction',
-          offset: instr.offset,
-        },
+        name: 'instruction',
+        offset: instr.offset,
       },
       () => printer.printInstruction(instr),
     );
   };
   printer.printVarnodeImpl = (varnode, printSizeAndOffset) => {
-    newNode(
+    newGroup(
       {
-        type: 'group',
-        childs: [],
-        action: {
-          name: 'varnode',
-        },
+        name: 'varnode',
       },
       () => printer.printVarnode(varnode, printSizeAndOffset),
     );
   };
   for (const instr of instructions) {
     printer.printInstructionImpl(instr);
+    printer.newLine();
   }
 
-  return resultNode;
+  return result;
 };

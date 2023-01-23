@@ -1,6 +1,6 @@
 import { ObjectId, Offset, window_ } from './common';
 import { ContextObject } from './context';
-import { PcodeNode } from './p-code';
+import { PcodeText } from './p-code';
 
 export const ImageClassName = 'Image';
 
@@ -35,7 +35,7 @@ export interface ImageInstructionRow extends ImageBaseRow {
     type: string;
     text: string;
   }[];
-  pcode?: PcodeNode;
+  pcode?: PcodeText;
 }
 
 export interface ImageLoadRowOptions {
