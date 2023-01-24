@@ -1,14 +1,7 @@
 import { useCallback } from 'react';
 import { ImageRowType, ImageBaseRow, ImageInstructionRow } from 'sda-electron/api/image';
-import { Group, Rect, Text } from 'react-konva';
-import {
-  Block,
-  childrenWithProps,
-  setCursor,
-  StaticTextBlock,
-  toSelIndex,
-  useTextSelection,
-} from 'components/Konva';
+import { Group, Rect } from 'react-konva';
+import { Block, setCursor, StaticTextBlock, toSelIndex, useTextSelection } from 'components/Konva';
 import { StylesType } from './style';
 import { useImageContent } from './context';
 import { RenderProps } from 'components/Konva';
@@ -132,19 +125,19 @@ export const Row = ({ rowIdx, row, styles }: RowProps) => {
           fill={isSelected ? '#360b0b' : '#00000000'}
           onMouseMove={onMouseMoveForBackground}
         />
-        {childrenWithProps(children, (childProps) => ({
-          ...childProps,
-          // set start point to make selection position relative to row (not to whole scene)
-          // it is needed because row can be moved when scrolling
-          textSelection: { startPointX: absX, startPointY: absY },
-        }))}
+        {children}
         {/* <Text text={`${rowIdx}: ${absX}, ${absY}`} x={700} y={10} fill="green" /> */}
       </Group>
     );
   };
 
   return (
-    <Block width="100%" padding={{ left: 5, top: 5, right: 5, bottom: 5 }} render={<RowRender />}>
+    <Block
+      width="100%"
+      padding={{ left: 5, top: 5, right: 5, bottom: 5 }}
+      render={<RowRender />}
+      textSelection={{ setStartPointHere: true }}
+    >
       <Block
         width={styles.row.cols.offset.width}
         margin={{ left: styles.row.cols.jump.width }}

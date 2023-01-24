@@ -223,6 +223,7 @@ export const Block = (props: BlockProps) => {
       margin={margin}
       fill={props.fill}
       inline={props.inline}
+      setStartSelectionPointHere={props.textSelection?.setStartPointHere}
       render={props.render}
     >
       {childRenderBlocks}

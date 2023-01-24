@@ -35,6 +35,7 @@ export type RenderBlockProps = {
     startPointX?: number;
     startPointY?: number;
   };
+  setStartSelectionPointHere?: boolean;
   render?: React.ReactNode;
   children?: React.ReactNode;
   build?: (newProps: BlockProps) => JSX.Element;
@@ -57,12 +58,22 @@ export const RenderBlock = (props: RenderBlockProps) => {
     absX: props.absX + props.x,
     absY: props.absY + props.y,
   };
+  let childTextSelection = props.textSelection;
+  if (props.setStartSelectionPointHere) {
+    // set start point to make selection position relative to this render block
+    // it is needed because render block can be moved and absolute position changed
+    childTextSelection = {
+      ...childTextSelection,
+      startPointX: absPos.absX,
+      startPointY: absPos.absY,
+    };
+  }
   const childs = childrenWithProps(props.children, (childProps) => ({
     ...childProps,
     ...absPos,
     textSelection: {
       ...childProps.textSelection,
-      ...props.textSelection,
+      ...childTextSelection,
     },
   }));
   if (props.render) {

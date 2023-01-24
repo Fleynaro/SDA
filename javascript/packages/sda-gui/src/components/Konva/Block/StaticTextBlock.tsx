@@ -27,6 +27,7 @@ const selIndexInRange = (idx: SelIndexType, start: SelIndexType, end: SelIndexTy
 export type TextSelectionType = {
   area?: string;
   index?: number;
+  setStartPointHere?: boolean;
 };
 
 interface TextSelectionContextValue {
@@ -193,7 +194,7 @@ export const StaticTextBlock = ({ text, ctx, ...propsStyle }: TextBlockProps) =>
           height={props.height}
           fill={isSelected ? 'green' : undefined}
         ></Rect>
-        <Text text={text} {...style} />
+        <Text text={text} {...style} listening={false} />
       </Group>
     );
   };
