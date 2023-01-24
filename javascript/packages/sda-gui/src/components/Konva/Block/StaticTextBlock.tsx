@@ -142,7 +142,9 @@ export const StaticTextBlock = ({ text, ctx, ...propsStyle }: TextBlockProps) =>
       setSelecting,
     } = useTextSelection();
 
-    const selIndex = toSelIndex(ctx?.textSelection?.index, props.absX, props.absY);
+    const selX = (props.absX || 0) - (props.textSelection?.startPointX || 0);
+    const selY = (props.absY || 0) - (props.textSelection?.startPointY || 0);
+    const selIndex = toSelIndex(ctx?.textSelection?.index, selX, selY);
 
     const isSelected =
       firstSelectedIdx &&

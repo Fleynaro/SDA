@@ -1,7 +1,14 @@
 import { useCallback } from 'react';
 import { ImageRowType, ImageBaseRow, ImageInstructionRow } from 'sda-electron/api/image';
 import { Group, Rect, Text } from 'react-konva';
-import { Block, setCursor, StaticTextBlock, toSelIndex, useTextSelection } from 'components/Konva';
+import {
+  Block,
+  childrenWithProps,
+  setCursor,
+  StaticTextBlock,
+  toSelIndex,
+  useTextSelection,
+} from 'components/Konva';
 import { StylesType } from './style';
 import { useImageContent } from './context';
 import { RenderProps } from 'components/Konva';
@@ -93,7 +100,10 @@ export const Row = ({ rowIdx, row, styles }: RowProps) => {
       (e: Konva.KonvaEventObject<MouseEvent>) => {
         if (selecting) {
           const pos = e.target.getStage()?.getPointerPosition();
-          setLastSelectedIdx?.(toSelIndex(rowIdx, pos?.x, pos?.y));
+          if (pos && absX !== undefined && absY !== undefined) {
+            setLastSelectedIdx?.(toSelIndex(rowIdx, pos.x - absX, pos.y - absY));
+            // console.log('setLastSelectedIdx', rowIdx, pos.x - absX, pos.y - absY);
+          }
         }
         // for jump hover event (onMouseLeave not always working there)
         setCursor(e, 'default');
@@ -122,7 +132,12 @@ export const Row = ({ rowIdx, row, styles }: RowProps) => {
           fill={isSelected ? '#360b0b' : '#00000000'}
           onMouseMove={onMouseMoveForBackground}
         />
-        {children}
+        {childrenWithProps(children, (childProps) => ({
+          ...childProps,
+          // set start point to make selection position relative to row (not to whole scene)
+          // it is needed because row can be moved when scrolling
+          textSelection: { startPointX: absX, startPointY: absY },
+        }))}
         {/* <Text text={`${rowIdx}: ${absX}, ${absY}`} x={700} y={10} fill="green" /> */}
       </Group>
     );

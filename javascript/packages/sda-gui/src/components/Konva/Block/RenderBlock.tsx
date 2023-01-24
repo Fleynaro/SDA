@@ -9,6 +9,10 @@ export type RenderProps = {
   absY?: number;
   width?: number;
   height?: number;
+  textSelection?: {
+    startPointX?: number;
+    startPointY?: number;
+  };
   children?: React.ReactNode;
 };
 
@@ -27,9 +31,25 @@ export type RenderBlockProps = {
   };
   fill?: string;
   inline?: boolean;
+  textSelection?: {
+    startPointX?: number;
+    startPointY?: number;
+  };
   render?: React.ReactNode;
   children?: React.ReactNode;
   build?: (newProps: BlockProps) => JSX.Element;
+};
+
+export const childrenWithProps = (
+  children: React.ReactNode,
+  newProps: (childProps: RenderBlockProps) => RenderBlockProps,
+) => {
+  return React.Children.map(children, (child) => {
+    if (React.isValidElement(child)) {
+      return React.cloneElement(child as React.ReactElement, newProps(child.props));
+    }
+    return child;
+  });
 };
 
 export const RenderBlock = (props: RenderBlockProps) => {
@@ -37,14 +57,14 @@ export const RenderBlock = (props: RenderBlockProps) => {
     absX: props.absX + props.x,
     absY: props.absY + props.y,
   };
-  const childs = React.Children.map(props.children, (child) => {
-    if (React.isValidElement(child)) {
-      return React.cloneElement(child as React.ReactElement, {
-        ...absPos,
-      });
-    }
-    return child;
-  });
+  const childs = childrenWithProps(props.children, (childProps) => ({
+    ...childProps,
+    ...absPos,
+    textSelection: {
+      ...childProps.textSelection,
+      ...props.textSelection,
+    },
+  }));
   if (props.render) {
     return React.cloneElement(
       props.render as React.ReactElement,
@@ -53,8 +73,9 @@ export const RenderBlock = (props: RenderBlockProps) => {
         y: props.y,
         width: props.width,
         height: props.height,
+        textSelection: props.textSelection,
         ...absPos,
-      },
+      } as RenderProps,
       childs,
     );
   }
