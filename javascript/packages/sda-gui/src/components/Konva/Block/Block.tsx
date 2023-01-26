@@ -3,6 +3,7 @@ import { RenderBlock, RenderBlockProps } from './RenderBlock';
 import { TextSelectionType, TextStyleType } from './StaticTextBlock';
 
 export type BlockProps = {
+  key?: string | number;
   x?: number;
   y?: number;
   width?: number | string;
@@ -203,7 +204,6 @@ export const Block = (props: BlockProps) => {
     const childRenderBlock = childRenderBlocks[i];
     childRenderBlocks[i] = React.cloneElement(childRenderBlock, {
       ...childRenderBlock.props,
-      key: i,
       x: childAggregation[i].x,
       y: childAggregation[i].y,
     });
@@ -214,6 +214,7 @@ export const Block = (props: BlockProps) => {
 
   return (
     <RenderBlock
+      key={props.key}
       x={x}
       y={y}
       absX={x}

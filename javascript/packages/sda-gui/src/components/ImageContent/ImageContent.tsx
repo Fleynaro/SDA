@@ -83,7 +83,6 @@ export function ImageContent() {
     );
   const sliderPosX = style.row.width;
   const sliderMaxPosY = stage.size.height - sliderHeight;
-  const allRowsOnScreen = rowsToRender.height >= stage.size.height;
   const lastRowIdx = totalRowsCount - 1;
   const scrollToRowIdx = useCallback(
     (scrollY: number) => scrollY * lastRowIdx,
@@ -106,6 +105,7 @@ export function ImageContent() {
         pcode: view.showPcode,
       });
       const elem = Block({
+        key: rowIdx,
         children: <Row rowIdx={rowIdx} row={rows[0]} styles={style} />,
         width: style.row.width,
         textSelection: {
@@ -223,15 +223,6 @@ export function ImageContent() {
         );
         if (firstRowIdx > lastRowIdx) {
           [firstRowIdx, lastRowIdx] = [lastRowIdx, firstRowIdx];
-          if (firstRowIdx <= scrollRowIdx + 2) {
-            setScrollY(rowIdxToScroll(scrollRowIdx - 1));
-          }
-        } else {
-          if (allRowsOnScreen) {
-            if (lastRowIdx >= scrollRowIdx + rowsToRender.count - 1 - 2) {
-              setScrollY(rowIdxToScroll(scrollRowIdx + 1));
-            }
-          }
         }
         const newSelectedRows: number[] = [];
         for (let i = firstRowIdx; i <= lastRowIdx; i++) {
@@ -296,6 +287,27 @@ export function ImageContent() {
     [scrollY, sliderMaxPosY, style],
   );
 
+  const onScrollAreaHoverUp = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (e.evt.buttons === 1) {
+        setScrollY(rowIdxToScroll(scrollRowIdx - 0.2));
+      } else {
+        // ignore this event
+        e.cancelBubble = true;
+      }
+    },
+    [scrollRowIdx],
+  );
+
+  const onScrollAreaHoverDown = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (e.evt.buttons === 1) {
+        setScrollY(rowIdxToScroll(scrollRowIdx + 0.2));
+      }
+    },
+    [scrollRowIdx],
+  );
+
   const goToOffset = useCallback(
     async (offset: number) => {
       const targetRowIdx = await getImageApi().offsetToRowIdx(imageId, offset);
@@ -326,6 +338,18 @@ export function ImageContent() {
         <Rect width={stage.size.width} height={stage.size.height} />
       </Layer>
       <Layer onWheel={onWheel}>
+        {rowsToRender.elem}
+        {jumpsToRender}
+        <Text text={selectedText} x={700} y={10} fill="green" />
+      </Layer>
+      <Layer onWheel={onWheel}>
+        <Rect width={stage.size.width} height={10} onMouseMove={onScrollAreaHoverUp} />
+        <Rect
+          y={stage.size.height - 10}
+          width={stage.size.width}
+          height={10}
+          onMouseMove={onScrollAreaHoverDown}
+        />
         <Rect
           width={style.viewport.sliderWidth}
           height={sliderHeight}
@@ -343,11 +367,6 @@ export function ImageContent() {
             setScrollY(e.target.y() / sliderMaxPosY);
           }}
         />
-      </Layer>
-      <Layer onWheel={onWheel}>
-        {rowsToRender.elem}
-        {jumpsToRender}
-        <Text text={selectedText} x={700} y={10} fill="green" />
       </Layer>
     </>
   );

@@ -3,6 +3,7 @@ import React from 'react';
 import { BlockProps } from './Block';
 
 export type RenderProps = {
+  key?: string | number;
   x?: number;
   y?: number;
   absX?: number;
@@ -17,6 +18,7 @@ export type RenderProps = {
 };
 
 export type RenderBlockProps = {
+  key?: string | number;
   x: number;
   y: number;
   absX: number;
@@ -80,6 +82,7 @@ export const RenderBlock = (props: RenderBlockProps) => {
     return React.cloneElement(
       props.render as React.ReactElement,
       {
+        key: props.key,
         x: props.x,
         y: props.y,
         width: props.width,
@@ -91,7 +94,7 @@ export const RenderBlock = (props: RenderBlockProps) => {
     );
   }
   return (
-    <Group x={props.x} y={props.y} width={props.width} height={props.height}>
+    <Group key={props.key} x={props.x} y={props.y} width={props.width} height={props.height}>
       {props.fill && <Rect width={props.width} height={props.height} fill={props.fill} />}
       {childs}
     </Group>

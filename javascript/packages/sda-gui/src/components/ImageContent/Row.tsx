@@ -87,7 +87,7 @@ export const Row = ({ rowIdx, row, styles }: RowProps) => {
       if (firstSelectedRow !== undefined) {
         setLastSelectedRow?.(row.offset);
       }
-    }, [firstSelectedRow, setFirstSelectedRow, row.offset]);
+    }, [firstSelectedRow, setLastSelectedIdx, row.offset]);
 
     const onMouseMoveForBackground = useCallback(
       (e: Konva.KonvaEventObject<MouseEvent>) => {
@@ -95,13 +95,13 @@ export const Row = ({ rowIdx, row, styles }: RowProps) => {
           const pos = e.target.getStage()?.getPointerPosition();
           if (pos && absX !== undefined && absY !== undefined) {
             setLastSelectedIdx?.(toSelIndex(rowIdx, pos.x - absX, pos.y - absY));
-            // console.log('setLastSelectedIdx', rowIdx, pos.x - absX, pos.y - absY);
+            //console.log('setLastSelectedIdx', rowIdx, pos.x, pos.y);
           }
         }
         // for jump hover event (onMouseLeave not always working there)
         setCursor(e, 'default');
       },
-      [firstSelectedRow, setFirstSelectedRow, row.offset, selecting, setLastSelectedIdx],
+      [absX, absY, selecting, setLastSelectedIdx],
     );
 
     const onMouseUp = useCallback(() => {
