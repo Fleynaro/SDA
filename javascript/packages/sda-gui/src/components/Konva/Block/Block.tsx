@@ -29,6 +29,7 @@ export type BlockProps = {
   fill?: string;
   textStyle?: TextStyleType;
   textSelection?: TextSelectionType;
+  setStartSelectionPointHere?: boolean;
   ctx?: any;
   render?: React.ReactNode;
   children?: React.ReactNode;
@@ -224,7 +225,7 @@ export const Block = (props: BlockProps) => {
       margin={margin}
       fill={props.fill}
       inline={props.inline}
-      setStartSelectionPointHere={props.textSelection?.setStartPointHere}
+      setStartSelectionPointHere={props.setStartSelectionPointHere}
       render={props.render}
     >
       {childRenderBlocks}

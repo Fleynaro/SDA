@@ -1,7 +1,15 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { ImageRowType, ImageBaseRow, ImageInstructionRow } from 'sda-electron/api/image';
 import { Group, Rect } from 'react-konva';
-import { Block, setCursor, StaticTextBlock, toSelIndex, useTextSelection } from 'components/Konva';
+import {
+  Block,
+  setCursor,
+  StaticTextBlock,
+  TextSelectionType,
+  toSelIndex,
+  toSelIndexFromRenderProps,
+  useTextSelection,
+} from 'components/Konva';
 import { StylesType } from './style';
 import { useImageContent } from './context';
 import { RenderProps } from 'components/Konva';
@@ -11,9 +19,12 @@ import { PcodeText, PcodeToken } from 'sda-electron/api/p-code';
 interface PcodeTextViewProps {
   pcode: PcodeText;
   styles: StylesType;
+  ctx?: {
+    textSelection: TextSelectionType;
+  };
 }
 
-const PcodeTextView = ({ pcode, styles }: PcodeTextViewProps) => {
+const PcodeTextView = ({ pcode, styles, ctx }: PcodeTextViewProps) => {
   const linesOfTokens: PcodeToken[][] = [[]];
   for (const token of pcode.tokens) {
     linesOfTokens[linesOfTokens.length - 1].push(token);
@@ -21,16 +32,29 @@ const PcodeTextView = ({ pcode, styles }: PcodeTextViewProps) => {
       linesOfTokens.push([]);
     }
   }
+  const TokenRender = (props: RenderProps & { text: string }) => {
+    const { mapOfObjects, selectionContains } = useTextSelection();
+    const selIndex = toSelIndexFromRenderProps(props, ctx);
+    const isSelected = selectionContains(selIndex, ctx?.textSelection.area);
+    useEffect(() => {
+      if (isSelected) {
+        mapOfObjects.current.set(selIndex, props.text);
+        console.log('pcode token = ', props.text);
+      }
+    }, [isSelected]);
+    return <Group {...props}>{props.children}</Group>;
+  };
   return (
     <Block flexDir="col">
       {linesOfTokens.map((tokens, i) => (
         <Block key={i}>
           {tokens.map((token, j) => (
-            <StaticTextBlock
-              key={j}
-              text={token.text}
-              fill={styles.row.pcode.tokenColors[token.type] || 'white'}
-            />
+            <Block key={j} render={<TokenRender text={token.text} />}>
+              <StaticTextBlock
+                text={token.text}
+                fill={styles.row.pcode.tokenColors[token.type] || 'white'}
+              />
+            </Block>
           ))}
         </Block>
       ))}
@@ -136,7 +160,7 @@ export const Row = ({ rowIdx, row, styles }: RowProps) => {
       width="100%"
       padding={{ left: 5, top: 5, right: 5, bottom: 5 }}
       render={<RowRender />}
-      textSelection={{ setStartPointHere: true }}
+      setStartSelectionPointHere
     >
       <Block
         width={styles.row.cols.offset.width}

@@ -20,6 +20,17 @@ export const toSelIndex = (index?: number, x?: number, y?: number): SelIndexType
   return indexBn * maxSize * maxSize + yBn * maxSize + xBn;
 };
 
+export const toSelIndexFromRenderProps = (
+  { absX, absY, textSelection }: RenderProps,
+  ctx?: {
+    textSelection: TextSelectionType;
+  },
+): SelIndexType => {
+  const selX = (absX || 0) - (textSelection?.startPointX || 0);
+  const selY = (absY || 0) - (textSelection?.startPointY || 0);
+  return toSelIndex(ctx?.textSelection?.index, selX, selY);
+};
+
 const selIndexInRange = (idx: SelIndexType, start: SelIndexType, end: SelIndexType): boolean => {
   return (idx >= start && idx <= end) || (idx >= end && idx <= start);
 };
@@ -27,12 +38,15 @@ const selIndexInRange = (idx: SelIndexType, start: SelIndexType, end: SelIndexTy
 export type TextSelectionType = {
   area?: string;
   index?: number;
-  setStartPointHere?: boolean;
 };
 
+type SelectionObject = unknown;
+
 interface TextSelectionContextValue {
-  selectionRef: React.MutableRefObject<Map<SelIndexType, string>>;
+  mapOfTokens: React.MutableRefObject<Map<SelIndexType, string>>;
+  mapOfObjects: React.MutableRefObject<Map<SelIndexType, SelectionObject>>;
   selectedText: string;
+  selectedObjects: SelectionObject[];
   selectedArea: string;
   setSelectedArea: (area: string) => void;
   firstSelectedIdx?: SelIndexType;
@@ -43,6 +57,7 @@ interface TextSelectionContextValue {
   setSelecting: (selecting: boolean) => void;
   clearSelection: () => void;
   stopSelecting: () => void;
+  selectionContains: (selIndex: SelIndexType, selArea?: string) => boolean;
 }
 
 const TextSelectionContext = createContext<TextSelectionContextValue | null>(null);
@@ -52,22 +67,36 @@ export interface TextSelectionProviderProps {
 }
 
 export const TextSelectionProvider = ({ children }: TextSelectionProviderProps) => {
-  const selectionRef = useRef<Map<SelIndexType, string>>(new Map());
+  const mapOfTokens = useRef<Map<SelIndexType, string>>(new Map());
+  const mapOfObjects = useRef<Map<SelIndexType, SelectionObject>>(new Map());
   const [selectedText, setSelectedText] = useState<string>('');
+  const [selectedObjects, setSelectedObjects] = useState<SelectionObject[]>([]);
   const [selectedArea, setSelectedArea] = useState<string>('default');
   const [firstSelectedIdx, setFirstSelectedIdx] = useState<SelIndexType | undefined>();
   const [lastSelectedIdx, setLastSelectedIdx] = useState<SelIndexType | undefined>();
   const [selecting, setSelecting] = useState(false);
 
-  const extractSelectedText = useCallback(() => {
-    if (firstSelectedIdx === undefined || lastSelectedIdx === undefined) return;
-    const tokens = Array.from(selectionRef.current.entries())
+  const selectionMapToList = (selection: Map<SelIndexType, unknown>) => {
+    if (firstSelectedIdx === undefined || lastSelectedIdx === undefined) return [];
+    const objects = Array.from(selection.entries())
       .filter(([idx]) => selIndexInRange(idx, firstSelectedIdx, lastSelectedIdx))
-      .sort(([idx1], [idx2]) => (idx1 > idx2 ? 1 : -1));
-    const text = tokens.map(([, token]) => token).join('');
+      .sort(([idx1], [idx2]) => (idx1 > idx2 ? 1 : -1))
+      .map(([, object]) => object);
+    return objects;
+  };
+
+  const extractSelectedText = useCallback(() => {
+    const tokens = selectionMapToList(mapOfTokens.current);
+    const text = tokens.join('');
     setSelectedText(text);
-    selectionRef.current.clear();
-  }, [firstSelectedIdx, lastSelectedIdx, selectionRef]);
+    mapOfTokens.current.clear();
+  }, [selectionMapToList, mapOfTokens]);
+
+  const extractSelectedObjects = useCallback(() => {
+    const objects = selectionMapToList(mapOfObjects.current);
+    setSelectedObjects(objects);
+    mapOfObjects.current.clear();
+  }, [selectionMapToList, mapOfObjects]);
 
   const clearSelection = useCallback(() => {
     setFirstSelectedIdx(undefined);
@@ -79,16 +108,30 @@ export const TextSelectionProvider = ({ children }: TextSelectionProviderProps) 
     if (selecting) {
       setSelecting(false);
       extractSelectedText();
+      extractSelectedObjects();
     } else {
       clearSelection();
     }
-  }, [selecting, setSelecting, extractSelectedText, clearSelection]);
+  }, [selecting, setSelecting, extractSelectedText, extractSelectedObjects, clearSelection]);
+
+  const selectionContains = useCallback(
+    (selIndex: SelIndexType, selArea?: string) =>
+      Boolean(
+        firstSelectedIdx &&
+          lastSelectedIdx &&
+          selectedArea === (selArea || 'default') &&
+          selIndexInRange(selIndex, firstSelectedIdx, lastSelectedIdx),
+      ),
+    [firstSelectedIdx, lastSelectedIdx, selectedArea],
+  );
 
   return (
     <TextSelectionContext.Provider
       value={{
-        selectionRef,
+        mapOfTokens,
+        mapOfObjects,
         selectedText,
+        selectedObjects,
         selectedArea,
         setSelectedArea,
         firstSelectedIdx,
@@ -99,6 +142,7 @@ export const TextSelectionProvider = ({ children }: TextSelectionProviderProps) 
         setSelecting,
         clearSelection,
         stopSelecting,
+        selectionContains,
       }}
     >
       {children}
@@ -132,32 +176,22 @@ export const StaticTextBlock = ({ text, ctx, ...propsStyle }: TextBlockProps) =>
   const textSize = konvaText.measureSize(text);
   const TextRender = (props: RenderProps) => {
     const {
-      selectionRef,
-      selectedArea,
+      mapOfTokens,
       setSelectedArea,
-      firstSelectedIdx,
       setFirstSelectedIdx,
-      lastSelectedIdx,
       setLastSelectedIdx,
       selecting,
       setSelecting,
+      selectionContains,
     } = useTextSelection();
-
-    const selX = (props.absX || 0) - (props.textSelection?.startPointX || 0);
-    const selY = (props.absY || 0) - (props.textSelection?.startPointY || 0);
-    const selIndex = toSelIndex(ctx?.textSelection?.index, selX, selY);
-
-    const isSelected =
-      firstSelectedIdx &&
-      lastSelectedIdx &&
-      selectedArea === selArea &&
-      selIndexInRange(selIndex, firstSelectedIdx, lastSelectedIdx);
+    const selIndex = toSelIndexFromRenderProps(props, ctx);
+    const isSelected = selectionContains(selIndex, selArea);
 
     useEffect(() => {
       if (isSelected) {
-        selectionRef.current.set(selIndex, text);
+        mapOfTokens.current.set(selIndex, text);
       }
-    }, [firstSelectedIdx, lastSelectedIdx]);
+    }, [isSelected]);
 
     const onMouseDown = useCallback(() => {
       setSelectedArea?.(selArea);
