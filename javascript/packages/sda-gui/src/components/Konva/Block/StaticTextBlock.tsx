@@ -223,12 +223,8 @@ export const StaticTextBlock = ({ text, ctx, ...propsStyle }: TextBlockProps) =>
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       >
-        <Rect
-          width={props.width}
-          height={props.height}
-          fill={isSelected ? 'green' : undefined}
-        ></Rect>
-        <Text text={text} {...style} listening={false} />
+        {isSelected && <Rect width={props.width} height={props.height} fill="green"></Rect>}
+        <Text text={text} {...style} />
       </Group>
     );
   };
