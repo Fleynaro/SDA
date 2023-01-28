@@ -75,7 +75,9 @@ export const Block = (props: BlockProps) => {
     textSelection: {
       ...props.ctx?.textSelection,
       ...props.textSelection,
-      area: (props.ctx?.textSelection?.area || '') + (props.textSelection?.area || ''),
+      area:
+        (props.ctx?.textSelection?.area || '') +
+        (props.textSelection?.area ? `-${props.textSelection.area}` : ''),
     },
   };
 

@@ -13,28 +13,37 @@ export const toPcodeText = (
 ): PcodeText => {
   const result: PcodeText = {
     tokens: [],
-    groups: [],
+    groups: [
+      {
+        idx: 0,
+        action: {
+          name: 'root',
+        },
+      },
+    ],
   };
 
   const printerCtx = {
-    curIdx: 0,
+    curGroupIdx: 1,
+    curGroup: result.groups[0],
   };
   const newToken = (type: string, text: string): void => {
     result.tokens.push({
-      idx: printerCtx.curIdx++,
+      groupIdx: printerCtx.curGroup.idx,
       type,
       text,
     });
   };
-  const newGroup = (action?: PcodeGroup['action'], body?: () => void): void => {
-    const start = printerCtx.curIdx;
-    body?.();
-    const end = printerCtx.curIdx;
-    result.groups.push({
-      start,
-      end,
+  const newGroup = (action: PcodeGroup['action'], body?: () => void): void => {
+    const prevGroup = printerCtx.curGroup;
+    const newGroup: PcodeGroup = {
+      idx: printerCtx.curGroupIdx++,
       action,
-    });
+    };
+    result.groups.push(newGroup);
+    printerCtx.curGroup = newGroup;
+    body?.();
+    printerCtx.curGroup = prevGroup;
   };
 
   const printer = PcodePrinter.New(regRepo);

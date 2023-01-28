@@ -1,15 +1,17 @@
 import { Offset } from './common';
 
 export type PcodeToken = {
-  idx: number;
+  groupIdx: number;
   type: string;
   text: string;
 };
 
 export type PcodeGroup = {
-  start: number;
-  end: number;
-  action?:
+  idx: number;
+  action:
+    | {
+        name: 'root';
+      }
     | {
         name: 'instruction';
         offset: Offset;

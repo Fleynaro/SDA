@@ -14,7 +14,7 @@ import { StylesType } from './style';
 import { useImageContent } from './context';
 import { RenderProps } from 'components/Konva';
 import Konva from 'konva';
-import { PcodeText, PcodeToken } from 'sda-electron/api/p-code';
+import { PcodeToken, PcodeGroup, PcodeText } from 'sda-electron/api/p-code';
 
 interface PcodeTextViewProps {
   pcode: PcodeText;
@@ -32,24 +32,37 @@ const PcodeTextView = ({ pcode, styles, ctx }: PcodeTextViewProps) => {
       linesOfTokens.push([]);
     }
   }
-  const TokenRender = (props: RenderProps & { text: string }) => {
-    const { mapOfObjects, selectionContains } = useTextSelection();
+
+  const LineRender = (props: RenderProps) => {
+    const isDebugging = false; // useDebugging();
+    return (
+      <Group {...props}>
+        {isDebugging && <Rect width={props.width} height={props.height} fill="#db5a5a" />}
+        {props.children}
+      </Group>
+    );
+  };
+
+  const TokenRender = (props: RenderProps & { group: PcodeGroup }) => {
+    const { addObjectToSelection, selectionContains } = useTextSelection();
     const selIndex = toSelIndexFromRenderProps(props, ctx);
     const isSelected = selectionContains(selIndex, ctx?.textSelection.area);
     useEffect(() => {
       if (isSelected) {
-        mapOfObjects.current.set(selIndex, props.text);
-        console.log('pcode token = ', props.text);
+        if (props.group.action.name === 'instruction') {
+          addObjectToSelection(selIndex, props.group, props.group.idx);
+        }
       }
     }, [isSelected]);
     return <Group {...props}>{props.children}</Group>;
   };
+
   return (
     <Block flexDir="col">
       {linesOfTokens.map((tokens, i) => (
-        <Block key={i}>
+        <Block key={i} render={<LineRender />}>
           {tokens.map((token, j) => (
-            <Block key={j} render={<TokenRender text={token.text} />}>
+            <Block key={j} render={<TokenRender group={pcode.groups[token.groupIdx]} />}>
               <StaticTextBlock
                 text={token.text}
                 fill={styles.row.pcode.tokenColors[token.type] || 'white'}
@@ -81,7 +94,7 @@ const InstructionRow = ({ row, styles }: InstructionRowProps) => {
         ))}
       </Block>
       {row.pcode && (
-        <Block textSelection={{ area: 'p-code' }} padding={{ left: 10 }}>
+        <Block textSelection={{ area: 'pcode' }} padding={{ left: 10 }}>
           <PcodeTextView pcode={row.pcode} styles={styles} />
         </Block>
       )}

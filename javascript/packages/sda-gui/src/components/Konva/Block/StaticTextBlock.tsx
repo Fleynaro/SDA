@@ -3,7 +3,15 @@ import { TextConfig } from 'konva/lib/shapes/Text';
 import { Block } from './Block';
 import { Group, Rect, Text } from 'react-konva';
 import { RenderProps } from './RenderBlock';
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { setCursor } from 'components/Konva';
 
 export type TextStyleType = Omit<TextConfig, 'text'> & {
@@ -43,10 +51,9 @@ export type TextSelectionType = {
 type SelectionObject = unknown;
 
 interface TextSelectionContextValue {
-  mapOfTokens: React.MutableRefObject<Map<SelIndexType, string>>;
-  mapOfObjects: React.MutableRefObject<Map<SelIndexType, SelectionObject>>;
   selectedText: string;
   selectedObjects: SelectionObject[];
+  selectedAreaType: string;
   selectedArea: string;
   setSelectedArea: (area: string) => void;
   firstSelectedIdx?: SelIndexType;
@@ -58,6 +65,8 @@ interface TextSelectionContextValue {
   clearSelection: () => void;
   stopSelecting: () => void;
   selectionContains: (selIndex: SelIndexType, selArea?: string) => boolean;
+  addTokenToSelection: (selIndex: SelIndexType, token: string) => void;
+  addObjectToSelection: (selIndex: SelIndexType, object: SelectionObject, key?: number) => void;
 }
 
 const TextSelectionContext = createContext<TextSelectionContextValue | null>(null);
@@ -69,12 +78,15 @@ export interface TextSelectionProviderProps {
 export const TextSelectionProvider = ({ children }: TextSelectionProviderProps) => {
   const mapOfTokens = useRef<Map<SelIndexType, string>>(new Map());
   const mapOfObjects = useRef<Map<SelIndexType, SelectionObject>>(new Map());
+  const setOfObjectKeys = useRef<Set<number>>(new Set());
   const [selectedText, setSelectedText] = useState<string>('');
   const [selectedObjects, setSelectedObjects] = useState<SelectionObject[]>([]);
   const [selectedArea, setSelectedArea] = useState<string>('default');
   const [firstSelectedIdx, setFirstSelectedIdx] = useState<SelIndexType | undefined>();
   const [lastSelectedIdx, setLastSelectedIdx] = useState<SelIndexType | undefined>();
   const [selecting, setSelecting] = useState(false);
+
+  const selectedAreaType = useMemo(() => selectedArea.split('-').reverse()[0], [selectedArea]);
 
   const selectionMapToList = (selection: Map<SelIndexType, unknown>) => {
     if (firstSelectedIdx === undefined || lastSelectedIdx === undefined) return [];
@@ -96,6 +108,7 @@ export const TextSelectionProvider = ({ children }: TextSelectionProviderProps) 
     const objects = selectionMapToList(mapOfObjects.current);
     setSelectedObjects(objects);
     mapOfObjects.current.clear();
+    setOfObjectKeys.current.clear();
   }, [selectionMapToList, mapOfObjects]);
 
   const clearSelection = useCallback(() => {
@@ -125,13 +138,31 @@ export const TextSelectionProvider = ({ children }: TextSelectionProviderProps) 
     [firstSelectedIdx, lastSelectedIdx, selectedArea],
   );
 
+  const addTokenToSelection = useCallback(
+    (selIndex: SelIndexType, token: string) => {
+      mapOfTokens.current.set(selIndex, token);
+    },
+    [mapOfTokens],
+  );
+
+  const addObjectToSelection = useCallback(
+    (selIndex: SelIndexType, object: SelectionObject, key?: number) => {
+      if (key !== undefined) {
+        // key is used to prevent adding the same object multiple times
+        if (setOfObjectKeys.current.has(key)) return;
+        setOfObjectKeys.current.add(key);
+      }
+      mapOfObjects.current.set(selIndex, object);
+    },
+    [mapOfObjects, setOfObjectKeys],
+  );
+
   return (
     <TextSelectionContext.Provider
       value={{
-        mapOfTokens,
-        mapOfObjects,
         selectedText,
         selectedObjects,
+        selectedAreaType,
         selectedArea,
         setSelectedArea,
         firstSelectedIdx,
@@ -143,6 +174,8 @@ export const TextSelectionProvider = ({ children }: TextSelectionProviderProps) 
         clearSelection,
         stopSelecting,
         selectionContains,
+        addTokenToSelection,
+        addObjectToSelection,
       }}
     >
       {children}
@@ -176,20 +209,20 @@ export const StaticTextBlock = ({ text, ctx, ...propsStyle }: TextBlockProps) =>
   const textSize = konvaText.measureSize(text);
   const TextRender = (props: RenderProps) => {
     const {
-      mapOfTokens,
       setSelectedArea,
       setFirstSelectedIdx,
       setLastSelectedIdx,
       selecting,
       setSelecting,
       selectionContains,
+      addTokenToSelection,
     } = useTextSelection();
     const selIndex = toSelIndexFromRenderProps(props, ctx);
     const isSelected = selectionContains(selIndex, selArea);
 
     useEffect(() => {
       if (isSelected) {
-        mapOfTokens.current.set(selIndex, text);
+        addTokenToSelection(selIndex, text);
       }
     }, [isSelected]);
 
