@@ -107,8 +107,10 @@ export const Tabs = ({ tabs, onChange, selected, onSelect }: TabsProps) => {
       const newTabList = [...tabs];
       newTabList.splice(index, 1);
       onChange(newTabList);
-      if (index > 0 && selectedTabIdx === index) {
-        onSelect(tabs[index - 1]);
+      if (selectedTabIdx === index) {
+        if (newTabList.length > 0) {
+          onSelect(tabs[index !== 0 ? index - 1 : 1]);
+        }
       }
     },
     [tabs, selectedTabIdx, onChange],
