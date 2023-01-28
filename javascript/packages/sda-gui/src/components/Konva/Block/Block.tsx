@@ -206,7 +206,6 @@ export const Block = (props: BlockProps) => {
   for (let i = 0; i < childRenderBlocks.length; i++) {
     const childRenderBlock = childRenderBlocks[i];
     childRenderBlocks[i] = React.cloneElement(childRenderBlock, {
-      ...childRenderBlock.props,
       x: childAggregation[i].x,
       y: childAggregation[i].y,
     });
