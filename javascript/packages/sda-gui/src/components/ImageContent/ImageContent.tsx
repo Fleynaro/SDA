@@ -85,13 +85,10 @@ export function ImageContent() {
   const sliderPosX = style.row.width;
   const sliderMaxPosY = stage.size.height - sliderHeight;
   const lastRowIdx = totalRowsCount - 1;
-  const scrollToRowIdx = useCallback(
-    (scrollY: number) => scrollY * lastRowIdx,
-    [lastRowIdx, sliderMaxPosY],
-  );
+  const scrollToRowIdx = useCallback((scrollY: number) => scrollY * lastRowIdx, [lastRowIdx]);
   const rowIdxToScroll = useCallback(
     (rowIdx: number) => Math.min(Math.max(rowIdx, 0), lastRowIdx) / lastRowIdx,
-    [lastRowIdx, sliderMaxPosY],
+    [lastRowIdx],
   );
   const scrollRowIdx = scrollToRowIdx(scrollY);
   const curRowIdx = Math.floor(scrollRowIdx);

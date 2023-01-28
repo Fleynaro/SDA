@@ -91,7 +91,7 @@ export const TextSelectionProvider = ({ children }: TextSelectionProviderProps) 
   const selectionMapToList = (selection: Map<SelIndexType, unknown>) => {
     if (firstSelectedIdx === undefined || lastSelectedIdx === undefined) return [];
     const objects = Array.from(selection.entries())
-      .filter(([idx]) => selIndexInRange(idx, firstSelectedIdx, lastSelectedIdx))
+      .filter(([idx]) => selIndexInRange(idx, firstSelectedIdx, lastSelectedIdx)) // TODO: you can avoid filter (see StaticTextBlock)
       .sort(([idx1], [idx2]) => (idx1 > idx2 ? 1 : -1))
       .map(([, object]) => object);
     return objects;
@@ -120,7 +120,7 @@ export const TextSelectionProvider = ({ children }: TextSelectionProviderProps) 
   const stopSelecting = useCallback(() => {
     if (selecting) {
       setSelecting(false);
-      extractSelectedText();
+      extractSelectedText(); // TODO: you can call it on every change of selection (firstSelectedIdx, lastSelectedIdx). See video
       extractSelectedObjects();
     } else {
       clearSelection();
@@ -223,6 +223,7 @@ export const StaticTextBlock = ({ text, ctx, ...propsStyle }: TextBlockProps) =>
     useEffect(() => {
       if (isSelected) {
         addTokenToSelection(selIndex, text);
+        // TODO: you can also remove tokens from the selection here and no need to filter in the selectionMapToList
       }
     }, [isSelected]);
 
