@@ -21,7 +21,6 @@
     "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^18.2.0",
     "react-konva": "^18.2.3",
-    "react-konva-utils": "^0.3.2",
     "react-scripts": "5.0.1",
     "sda-electron": "file:../sda-electron",
     "web-vitals": "^2.1.4"

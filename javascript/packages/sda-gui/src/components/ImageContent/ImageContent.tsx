@@ -1,7 +1,6 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
-import { getImageApi, ImageBaseRow } from 'sda-electron/api/image';
+import { getImageApi } from 'sda-electron/api/image';
 import { Group, Layer, Rect, Text } from 'react-konva';
-import { Html } from 'react-konva-utils';
 import Konva from 'konva';
 import { useStage, useTextSelection, Block } from 'components/Konva';
 import { ContextMenu, ContextMenuProps, MenuNode } from 'components/Menu';
@@ -13,7 +12,6 @@ import { useImageContent } from './context';
 import { withCrash, withCrash_ } from 'providers/CrashProvider';
 import { RenderBlockProps } from 'components/Konva/Block/RenderBlock';
 import { PcodeGroup } from 'sda-electron/api/p-code';
-import { Box, Button } from '@mui/material';
 
 export const ImageContentContextMenu = (props: ContextMenuProps) => {
   const {
@@ -384,21 +382,6 @@ export function ImageContent() {
             setScrollY(e.target.y() / sliderMaxPosY);
           }}
         />
-        <Group x={200} y={200}>
-          <Html>
-            {/* <Button onClick={() => console.log('click!')} variant="contained">
-              Click me
-            </Button> */}
-            <Box display="flex" flexDirection="column">
-              <Button onClick={() => goToOffset(0x1000)} variant="contained" size="small">
-                Go to 0x1000
-              </Button>
-              <Button onClick={() => goToOffset(0x2000)} variant="contained" size="small">
-                Go to 0x2000
-              </Button>
-            </Box>
-          </Html>
-        </Group>
       </Layer>
     </>
   );
