@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ImageRowType, ImageBaseRow, ImageInstructionRow } from 'sda-electron/api/image';
 import { Group, Rect } from 'react-konva';
 import {
@@ -12,9 +12,25 @@ import {
 } from 'components/Konva';
 import { StylesType } from './style';
 import { useImageContent } from './context';
-import { RenderProps } from 'components/Konva';
 import Konva from 'konva';
+import { RenderProps } from 'components/Konva';
+import { usePopperFromContext } from 'components/Popper';
 import { PcodeToken, PcodeGroup, PcodeText } from 'sda-electron/api/p-code';
+import { Paper, Button } from '@mui/material';
+
+const PcodePopper = ({ action }: { action: PcodeGroup['action'] }) => {
+  if (action.name !== 'instruction') {
+    return null;
+  }
+  return (
+    <Paper sx={{ p: 5 }}>
+      Offset = 0x{action.offset.toString(16)} <br />
+      <Button variant="contained" onClick={() => console.log('action', action)}>
+        Some button
+      </Button>
+    </Paper>
+  );
+};
 
 interface PcodeTextViewProps {
   pcode: PcodeText;
@@ -44,17 +60,48 @@ const PcodeTextView = ({ pcode, styles, ctx }: PcodeTextViewProps) => {
   };
 
   const TokenRender = (props: RenderProps & { group: PcodeGroup }) => {
+    const action = props.group.action;
+    const popper = usePopperFromContext();
     const { addObjectToSelection, selectionContains } = useTextSelection();
     const selIndex = toSelIndexFromRenderProps(props, ctx);
     const isSelected = selectionContains(selIndex, ctx?.textSelection.area);
+    const [selectedByPopper, setSelectedByPopper] = useState(false);
+
     useEffect(() => {
       if (isSelected) {
-        if (props.group.action.name === 'instruction') {
+        if (action.name === 'instruction') {
           addObjectToSelection(selIndex, props.group, props.group.idx);
         }
       }
     }, [isSelected]);
-    return <Group {...props}>{props.children}</Group>;
+
+    const onMouseEnter = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (action.name === 'instruction') {
+        popper.withTimer(() => {
+          popper.openAtPos(e.evt.clientX, e.evt.clientY + 10);
+          popper.setContent(<PcodePopper action={action} />);
+          popper.setCloseCallback(() => {
+            setSelectedByPopper(false);
+          });
+          setSelectedByPopper(true);
+        }, 500);
+      }
+    }, []);
+
+    const onMouseLeave = useCallback(() => {
+      popper.withTimer(() => {
+        if (!popper.props.hovered.current) {
+          popper.close();
+        }
+      }, 500);
+    }, []);
+
+    return (
+      <Group {...props} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+        {selectedByPopper && <Rect width={props.width} height={props.height} fill="#eb4d77" />}
+        {props.children}
+      </Group>
+    );
   };
 
   return (

@@ -16,7 +16,8 @@ import {
   TextSelectionBridgeProvider,
   Stage,
 } from 'components/Konva';
-import { useContextMenu } from 'components/Menu';
+import { ContextMenu, useContextMenu } from 'components/Menu';
+import { Popper, usePopper, PopperContextProvider } from 'components/Popper';
 import { useProjectWindowStyles } from '../style';
 import Konva from 'konva';
 import Button from '@mui/material/Button';
@@ -25,7 +26,6 @@ import {
   ImageContentBridgeConsumer,
   ImageContentBridgeProvider,
 } from 'components/ImageContent/context';
-import { Layer } from 'react-konva';
 import { Test2 } from 'components/Konva/Block/Test';
 
 const DecompilerComponent = () => {
@@ -62,9 +62,11 @@ export const TabContent = ({ imageId }: TabContentProps) => {
   const theme = useTheme();
   const classes = useProjectWindowStyles();
   const contextMenu = useContextMenu();
+  const popper = usePopper();
 
   const onContextMenu = (e: Konva.KonvaEventObject<MouseEvent>) => {
     contextMenu.openAtPos(e.evt.clientX, e.evt.clientY);
+    contextMenu.setContent(<ImageContentContextMenu />);
   };
 
   // There's a trouble with context exposing into konva. Solve: https://github.com/konvajs/react-konva/issues/188#issuecomment-478302062
@@ -83,13 +85,15 @@ export const TabContent = ({ imageId }: TabContentProps) => {
                     <TextSelectionBridgeProvider value={value1}>
                       <ImageContentStyleBridgeProvider value={value2}>
                         <ImageContentBridgeProvider value={value3}>
-                          {/* <Layer>
-                            <TestComponent />
-                          </Layer> */}
-                          <ImageContent />
-                          {/* <Layer>
-                            <Test />
-                          </Layer> */}
+                          <PopperContextProvider value={popper}>
+                            {/* <Layer>
+                              <TestComponent />
+                            </Layer> */}
+                            <ImageContent />
+                            {/* <Layer>
+                              <Test />
+                            </Layer> */}
+                          </PopperContextProvider>
                         </ImageContentBridgeProvider>
                       </ImageContentStyleBridgeProvider>
                     </TextSelectionBridgeProvider>
@@ -119,7 +123,8 @@ export const TabContent = ({ imageId }: TabContentProps) => {
           <DecompilerComponent />
         </Box>
       </Resizable>
-      <ImageContentContextMenu {...contextMenu.props} />
+      <ContextMenu {...contextMenu.props} />
+      <Popper {...popper.props} closeOnMouseLeave />
     </ImageContentProvider>
   );
 };

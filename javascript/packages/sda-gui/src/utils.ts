@@ -17,3 +17,6 @@ export const animate = (updater: (progress: number) => void, duration: number) =
 export const nullFunction = () => {
   throw new Error('Function is not set');
 };
+
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+export const noop = () => {};

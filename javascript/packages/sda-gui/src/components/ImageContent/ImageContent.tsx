@@ -3,7 +3,7 @@ import { getImageApi } from 'sda-electron/api/image';
 import { Group, Layer, Rect, Text } from 'react-konva';
 import Konva from 'konva';
 import { useStage, useTextSelection, Block } from 'components/Konva';
-import { ContextMenu, ContextMenuProps, MenuNode } from 'components/Menu';
+import { MenuNode } from 'components/Menu';
 import { animate } from 'utils';
 import { useImageContentStyle } from './style';
 import { Row } from './Row';
@@ -13,7 +13,7 @@ import { withCrash, withCrash_ } from 'providers/CrashProvider';
 import { RenderBlockProps } from 'components/Konva/Block/RenderBlock';
 import { PcodeGroup } from 'sda-electron/api/p-code';
 
-export const ImageContentContextMenu = (props: ContextMenuProps) => {
+export const ImageContentContextMenu = () => {
   const {
     imageId,
     view,
@@ -35,10 +35,10 @@ export const ImageContentContextMenu = (props: ContextMenuProps) => {
   }, [view]);
 
   return (
-    <ContextMenu {...props}>
+    <>
       <MenuNode label="P-Code Analysis" onClick={onPCodeAnalysis} />
       <MenuNode label={view.showPcode ? 'Hide P-Code' : 'Show P-Code'} onClick={onShowPCode} />
-    </ContextMenu>
+    </>
   );
 };
 
