@@ -20,6 +20,8 @@ namespace utils::lexer
 
         virtual bool isKeyword(const std::string& keyword) const;
 
+        bool isOneOfKeyword(const std::initializer_list<std::string>& keywords) const;
+
         virtual bool isSymbol(char symbol) const;
         
         virtual std::string toString() const = 0;

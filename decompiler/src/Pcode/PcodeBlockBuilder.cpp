@@ -4,11 +4,29 @@
 using namespace sda;
 using namespace sda::decompiler;
 
-PcodeBlockBuilder::PcodeBlockBuilder(pcode::Graph* graph, Image* image, PcodeDecoder* decoder)
-    : m_graph(graph), m_image(image), m_decoder(decoder)
+void PcodeBlockBuilder::BaseProvider::decode(Offset offset, size_t& origInstructionLength) {
+    std::vector<uint8_t> data(100);
+    m_image->getRW()->readBytesAtOffset(offset, data);
+    m_decoder->decode(offset, data);
+    origInstructionLength = m_decoder->getInstructionLength();
+}
+
+bool PcodeBlockBuilder::BaseProvider::isOffsetValid(Offset offset) {
+    if (offset >= m_image->getSize())
+        return false;
+    auto section = m_image->getImageSectionAt(offset);
+    return section && section->m_type == ImageSection::CODE_SEGMENT;
+}
+
+PcodeBlockBuilder::PcodeBlockBuilder(pcode::Graph* graph, std::shared_ptr<Provider> provider)
+    : m_graph(graph), m_provider(provider)
 {
     m_callbacks = std::make_unique<Callbacks>();
 }
+
+PcodeBlockBuilder::PcodeBlockBuilder(pcode::Graph* graph, Image* image, PcodeDecoder* decoder)
+    : PcodeBlockBuilder(graph, std::make_shared<BaseProvider>(image, decoder))
+{}
 
 void PcodeBlockBuilder::start() {
     while (!m_unvisitedOffsets.empty()) {
@@ -28,15 +46,9 @@ void PcodeBlockBuilder::start() {
                 continue;
 
             const auto byteOffset = offset.byteOffset;
-            if (byteOffset >= m_image->getSize())
+            if (!m_provider->isOffsetValid(byteOffset))
                 continue;
-
-            std::vector<uint8_t> data(100);
-            m_image->getRW()->readBytesAtOffset(byteOffset, data);
-            m_decoder->decode(byteOffset, data);
-            for (const auto& instr : m_decoder->getDecodedInstructions())
-                m_graph->addInstruction(instr);
-            m_curOrigInstrLength = m_decoder->getInstructionLength();
+            m_provider->decode(byteOffset, m_curOrigInstrLength);
         }
 
         // get the P-code instruction at this offset
@@ -167,8 +179,7 @@ pcode::InstructionOffset PcodeBlockBuilder::StdCallbacks::getTargetOffset(const 
     }
 
     // check if the target offset is valid
-    auto section = m_builder->m_image->getImageSectionAt(targetOffset.byteOffset);
-    if (targetOffset == InvalidOffset || (section && section->m_type != ImageSection::CODE_SEGMENT)) {
+    if (targetOffset == InvalidOffset || !m_builder->m_provider->isOffsetValid(targetOffset)) {
         std::stringstream ss;
         ss << "Invalid target 0x" << utils::to_hex() << targetOffset << " at offset 0x" << utils::to_hex() << instr->getOffset();
         onWarningEmitted(ss.str());

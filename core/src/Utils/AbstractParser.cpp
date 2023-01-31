@@ -60,5 +60,15 @@ AbstractParser::Exception AbstractParser::error(ErrorCode code, const std::strin
 }
 
 void AbstractParser::nextToken() {
-    m_token = m_lexer->nextToken();
+    m_prevToken = std::move(m_token);
+    if (m_nextToken) {
+        m_token = std::move(m_nextToken);
+    } else {
+        m_token = m_lexer->nextToken();
+    }
+}
+
+void AbstractParser::prevToken() {
+    m_nextToken = std::move(m_token);
+    m_token = std::move(m_prevToken);
 }

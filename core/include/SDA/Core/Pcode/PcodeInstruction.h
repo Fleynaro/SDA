@@ -111,7 +111,7 @@ namespace sda::pcode
 			};
 		};
 
-        InstructionOffset(Offset offset);
+        InstructionOffset(Offset offset = InvalidOffset);
 
         InstructionOffset(Offset byteOffset, size_t index);
 

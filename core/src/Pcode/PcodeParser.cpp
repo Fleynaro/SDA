@@ -20,35 +20,53 @@ std::list<Instruction> Parser::Parse(const std::string& text, const RegisterRepo
 }
 
 std::list<Instruction> Parser::parse(char endSymbol) {
-    std::list<Instruction> instructions;
-    InstructionOffset offset = 0;
+    m_curOffset = 0;
+    m_instructions.clear();
+    m_labelToJump.clear();
     while (!getToken()->isSymbol(endSymbol)) {
-        auto instr = parseInstruction(offset);
-        instructions.push_back(instr);
-        offset = offset + 1;
+        parseLabelIfExists();
+        parseInstruction();
+        m_curOffset = m_curOffset + 1;
     }
-    return instructions;
+    applyLabelJumps();
+    // m_instructions to list of instructions
+    std::list<Instruction> result;
+    for (auto& [offset, instr] : m_instructions) {
+        result.push_back(instr);
+    }
+    return result;
 }
 
-Instruction Parser::parseInstruction(InstructionOffset offset) {
+void Parser::parseInstruction() {
     std::shared_ptr<Varnode> output;
     std::shared_ptr<Varnode> input0;
     std::shared_ptr<Varnode> input1;
 
-    if (!getToken()->isKeyword("STORE")) {
+    if (!getToken()->isOneOfKeyword({
+        "STORE",
+        "BRANCH",
+		"CBRANCH",
+		"BRANCHIND",
+		"CALL",
+		"CALLIND",
+		"RETURN",
+        "INT"
+    })) {
         output = parseRegisterVarnode();
         accept('=');
     }
 
     auto instrId = parseInstructionId();
 
-    input0 = parseVarnode();
-    if (getToken()->isSymbol(',')) {
-        nextToken();
-        input1 = parseVarnode();
+    if (instrId != InstructionId::RETURN && instrId != InstructionId::INT) {
+        input0 = parseVarnode();
+        if (getToken()->isSymbol(',')) {
+            nextToken();
+            input1 = parseVarnode();
+        }
     }
     
-    return Instruction(instrId, input0, input1, output, offset);
+    m_instructions[m_curOffset] = Instruction(instrId, input0, input1, output, m_curOffset);
 }
 
 InstructionId Parser::parseInstructionId() {
@@ -64,6 +82,21 @@ InstructionId Parser::parseInstructionId() {
 }
 
 std::shared_ptr<Varnode> Parser::parseVarnode() {
+    if (getToken()->isSymbol('<')) {
+        nextToken();
+        std::string labelName;
+        if (getToken()->isIdent(labelName)) {
+            nextToken();
+            accept('>');
+            auto it = m_labelToJump.find(labelName);
+            if (it != m_labelToJump.end()) {
+                it->second.startOffset = m_curOffset;
+            } else {
+                m_labelToJump[labelName] = { m_curOffset, InvalidOffset };
+            }
+        }
+        return nullptr;
+    }
     if (getToken()->type == Token::Const || getToken()->isSymbol('-'))
         return parseConstantVarnode();
     if (getToken()->type == Token::Ident || getToken()->isSymbol('$'))
@@ -168,4 +201,38 @@ size_t Parser::parseVarnodeSize() {
         }
     }
     throw error(600, "Expected size of varnode");
+}
+
+void Parser::parseLabelIfExists() {
+    if (getToken()->isSymbol('<')) {
+        nextToken();
+        std::string labelName;
+        if (getToken()->isIdent(labelName)) {
+            nextToken();
+            accept('>');
+            accept(':');
+            auto it = m_labelToJump.find(labelName);
+            if (it != m_labelToJump.end()) {
+                it->second.endOffset = m_curOffset;
+            } else {
+                m_labelToJump[labelName] = Jump{ InvalidOffset, m_curOffset };
+            }
+        }
+    }
+}
+
+void Parser::applyLabelJumps() {
+    for (auto& [labelName, jump] : m_labelToJump) {
+        if (jump.startOffset == InvalidOffset)
+            throw error(700, "Label " + labelName + " is not used");
+        if (jump.endOffset == InvalidOffset)
+            throw error(701, "Label " + labelName + " is not defined");
+        auto instrOffset = jump.startOffset;
+        auto& instr = m_instructions[instrOffset];
+        if (!instr.isAnyJump()) {
+            throw error(702, "Label " + labelName + " is not used as jump target");
+        }
+        auto addressVarnode = std::make_shared<ConstantVarnode>(jump.endOffset, 8, true);
+        m_instructions[instrOffset] = Instruction(instr.getId(), addressVarnode, nullptr, nullptr, instrOffset);
+    }
 }

@@ -7,6 +7,13 @@ namespace sda::pcode
 {
     class Parser : public utils::AbstractParser
     {
+        struct Jump {
+            InstructionOffset startOffset;
+            InstructionOffset endOffset;
+        };
+        InstructionOffset m_curOffset = 0;
+        std::map<InstructionOffset, Instruction> m_instructions;
+        std::map<std::string, Jump> m_labelToJump;
         const RegisterRepository* m_regRepo;
     public:
         Parser(utils::lexer::Lexer* lexer, const RegisterRepository* regRepo);
@@ -16,7 +23,7 @@ namespace sda::pcode
         std::list<Instruction> parse(char endSymbol = utils::lexer::EndSymbol);
 
     private:
-        Instruction parseInstruction(InstructionOffset offset);
+        void parseInstruction();
 
         InstructionId parseInstructionId();
 
@@ -27,5 +34,9 @@ namespace sda::pcode
         std::shared_ptr<ConstantVarnode> parseConstantVarnode();
 
         size_t parseVarnodeSize();
+
+        void parseLabelIfExists();
+
+        void applyLabelJumps();
     };
 };

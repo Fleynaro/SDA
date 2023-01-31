@@ -8,7 +8,9 @@ namespace utils
     {
         size_t m_prefixErrorCode;
         utils::lexer::Lexer* m_lexer;
-        std::unique_ptr<utils::lexer::Token> m_token;
+        std::unique_ptr<utils::lexer::Token> m_token; // current token
+        std::unique_ptr<utils::lexer::Token> m_prevToken;
+        std::unique_ptr<utils::lexer::Token> m_nextToken;
     public:
         class Exception : public std::exception {
         public:
@@ -32,5 +34,7 @@ namespace utils
         Exception error(utils::lexer::ErrorCode code, const std::string& message);
 
         void nextToken();
+
+        void prevToken();
     };
 };

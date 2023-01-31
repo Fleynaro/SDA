@@ -1,6 +1,7 @@
 #include "SDA/Core/IRcode/IRcodeDataTypeProvider.h"
 #include "SDA/Core/IRcode/IRcodePrinter.h"
 #include "Test/Core/Utils/TestAssertion.h"
+#include "SDA/Decompiler/Pcode/PcodeBlockBuilder.h"
 #include "SDA/Decompiler/IRcode/Generator/IRcodeBlockGenerator.h"
 #include "Test/Decompiler/PcodeFixture.h"
 
@@ -63,4 +64,16 @@ TEST_F(IRcodeBlockGeneratorTest, Sample1) {
     auto& operations = toIRcode(instructions)->getOperations();
 
     ASSERT_TRUE(cmp(operations, expectedIRCode));
+}
+
+TEST_F(IRcodeBlockGeneratorTest, Sample2) {
+    auto sourcePCode = "\
+        rax:8 = COPY 0:8 \
+        <label1>: \
+        rax:8 = INT_ADD rax:8, 1:8 \
+        BRANCH <label1> \
+    ";
+
+    auto instructions = parsePcode(sourcePCode);
+    int a = 5;
 }

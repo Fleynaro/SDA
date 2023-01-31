@@ -8,14 +8,36 @@ namespace sda::decompiler
     // Builds p-code blocks
     class PcodeBlockBuilder
     {
+    public:
+        class Provider {
+        public:
+            virtual void decode(Offset offset, size_t& origInstructionLength) = 0;
+
+            virtual bool isOffsetValid(Offset offset) = 0;
+        };
+
+        class BaseProvider : public Provider {
+            Image* m_image;
+            PcodeDecoder* m_decoder;
+        public:
+            BaseProvider(Image* image, PcodeDecoder* decoder)
+                : m_image(image), m_decoder(decoder)
+            {}
+
+            void decode(Offset offset, size_t& origInstructionLength) override;
+
+            bool isOffsetValid(Offset offset) override;
+        };
+
         pcode::Graph* m_graph;
-        Image* m_image;
-        PcodeDecoder* m_decoder;
+        std::shared_ptr<Provider> m_provider;
         std::list<pcode::InstructionOffset> m_unvisitedOffsets;
         std::set<pcode::InstructionOffset> m_visitedOffsets;
         size_t m_curOrigInstrLength = 0;
     public:
         PcodeBlockBuilder(pcode::Graph* graph, Image* image, PcodeDecoder* decoder);
+
+        PcodeBlockBuilder(pcode::Graph* graph, std::shared_ptr<Provider> provider);
 
         void start();
 

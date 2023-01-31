@@ -10,6 +10,15 @@ bool Token::isKeyword(const std::string& keyword) const {
     return false;
 }
 
+bool Token::isOneOfKeyword(const std::initializer_list<std::string>& keywords) const {
+    for (const auto& keyword : keywords) {
+        if (isKeyword(keyword)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool Token::isSymbol(char symbol) const {
     return false;
 }
