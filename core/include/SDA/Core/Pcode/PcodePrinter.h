@@ -1,5 +1,5 @@
 #pragma once
-#include "PcodeInstruction.h"
+#include "PcodeFunctionGraph.h"
 #include "SDA/Core/Utils/AbstractPrinter.h"
 
 namespace sda::pcode
@@ -15,6 +15,10 @@ namespace sda::pcode
         Printer(const RegisterRepository* regRepo);
 
         static std::string Print(const Instruction* instruction, const RegisterRepository* regRepo);
+
+        virtual void printFunctionGraph(FunctionGraph* functionGraph);
+
+        virtual void printBlock(Block* block);
 
         virtual void printInstruction(const Instruction* instruction) const;
 

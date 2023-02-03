@@ -15,6 +15,8 @@ namespace sda::pcode
 
         Block* getEntryBlock() const;
 
+        std::list<Block*> getBlocks() const;
+
         const std::list<FunctionGraph*>& getReferencedGraphsTo() const;
 
         const std::map<InstructionOffset, FunctionGraph*>& getReferencedGraphsFrom() const;

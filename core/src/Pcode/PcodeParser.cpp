@@ -26,7 +26,7 @@ std::list<Instruction> Parser::parse(char endSymbol) {
     while (!getToken()->isSymbol(endSymbol)) {
         parseLabelIfExists();
         parseInstruction();
-        m_curOffset = m_curOffset + 1;
+        m_curOffset = InstructionOffset(m_curOffset.byteOffset + 1, 0);
     }
     applyLabelJumps();
     // m_instructions to list of instructions

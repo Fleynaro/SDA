@@ -4,7 +4,7 @@
 using namespace sda;
 using namespace sda::decompiler;
 
-VtableLookupCallbacks::VtableLookupCallbacks(Image* image, PcodeBlockBuilder* builder, std::unique_ptr<Callbacks> nextCallbacks)
+VtableLookupCallbacks::VtableLookupCallbacks(Image* image, std::shared_ptr<PcodeBlockBuilder> builder, std::unique_ptr<Callbacks> nextCallbacks)
     : m_image(image), PcodeBlockBuilder::StdCallbacks(builder, std::move(nextCallbacks))
 {}
 

@@ -17,6 +17,37 @@ std::string Printer::Print(const Instruction* instruction, const RegisterReposit
     return ss.str();
 }
 
+void Printer::printFunctionGraph(FunctionGraph* functionGraph) {
+    auto blocks = functionGraph->getBlocks();
+    for (auto block : blocks) {
+        printBlock(block);
+        newLine();
+    }
+}
+
+void Printer::printBlock(pcode::Block* block) {
+    printToken("Block ", SYMBOL);
+    printToken(block->getName(), IDENTIFIER);
+    printToken("(level: ", SYMBOL);
+    printToken(std::to_string(block->getLevel()), NUMBER);
+    if (block->getNearNextBlock()) {
+        printToken(", near:", SYMBOL);
+        printToken(block->getNearNextBlock()->getName(), IDENTIFIER);
+    }
+    if (block->getFarNextBlock()) {
+        printToken(", far:", SYMBOL);
+        printToken(block->getFarNextBlock()->getName(), IDENTIFIER);
+    }
+    printToken("):", SYMBOL);
+    startBlock();
+    newLine();
+    for (const auto& [offset, instruction] : block->getInstructions()) {
+        printInstruction(instruction);
+        newLine();
+    }
+    endBlock();
+}
+
 void Printer::printInstruction(const Instruction* instruction) const {
     if (instruction->getOutput()) {
         printVarnode(instruction->getOutput());

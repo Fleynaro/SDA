@@ -40,7 +40,7 @@ std::ostream& AbstractPrinter::out() const {
     return *m_output;
 }
 
-void AbstractPrinter::newLine() {
+void AbstractPrinter::newLine() const {
     printToken("\n", SPEC_SYMBOL);
     for (size_t i = 0; i < m_blockCounter * m_tabSize; i++)
         printToken(" ", SYMBOL);

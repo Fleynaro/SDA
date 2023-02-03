@@ -10,6 +10,23 @@ Block* FunctionGraph::getEntryBlock() const {
     return m_entryBlock;
 }
 
+std::list<Block*> FunctionGraph::getBlocks() const {
+    std::list<Block*> blocks;
+    std::list<Block*> toVisit;
+    toVisit.push_back(m_entryBlock);
+    while (!toVisit.empty()) {
+        Block* block = toVisit.front();
+        toVisit.pop_front();
+        blocks.push_back(block);
+        for (Block* nextBlock : block->getNextBlocks()) {
+            if (nextBlock->getLevel() > block->getLevel()) {
+                toVisit.push_back(nextBlock);
+            }
+        }
+    }
+    return blocks;
+}
+
 const std::list<FunctionGraph*>& FunctionGraph::getReferencedGraphsTo() const {
     return m_referencedGraphsTo;
 }

@@ -10,19 +10,33 @@ namespace sda::decompiler
     {
     public:
         class Provider {
+        protected:
+            pcode::Graph* m_graph;
         public:
+            Provider(pcode::Graph* graph) : m_graph(graph) {}
+
             virtual void decode(Offset offset, size_t& origInstructionLength) = 0;
 
             virtual bool isOffsetValid(Offset offset) = 0;
         };
 
-        class BaseProvider : public Provider {
+        class ImageProvider : public Provider {
             Image* m_image;
             PcodeDecoder* m_decoder;
         public:
-            BaseProvider(Image* image, PcodeDecoder* decoder)
-                : m_image(image), m_decoder(decoder)
+            ImageProvider(pcode::Graph* graph, Image* image, PcodeDecoder* decoder)
+                : Provider(graph), m_image(image), m_decoder(decoder)
             {}
+
+            void decode(Offset offset, size_t& origInstructionLength) override;
+
+            bool isOffsetValid(Offset offset) override;
+        };
+
+        class PcodeProvider : public Provider {
+            std::map<pcode::InstructionOffset, pcode::Instruction> m_instructions;
+        public:
+            PcodeProvider(pcode::Graph* graph, const std::list<pcode::Instruction>& instructions);
 
             void decode(Offset offset, size_t& origInstructionLength) override;
 
@@ -36,6 +50,8 @@ namespace sda::decompiler
         size_t m_curOrigInstrLength = 0;
     public:
         PcodeBlockBuilder(pcode::Graph* graph, Image* image, PcodeDecoder* decoder);
+
+        PcodeBlockBuilder(pcode::Graph* graph, const std::list<pcode::Instruction>& instructions);
 
         PcodeBlockBuilder(pcode::Graph* graph, std::shared_ptr<Provider> provider);
 
@@ -58,11 +74,11 @@ namespace sda::decompiler
         class StdCallbacks : public Callbacks
         {
         protected:
-            PcodeBlockBuilder* m_builder;
+            std::shared_ptr<PcodeBlockBuilder> m_builder;
             std::shared_ptr<Callbacks> m_nextCallbacks; // chain of responsibility pattern
             std::set<pcode::Block*> m_affectedBlocks;
         public:
-            StdCallbacks(PcodeBlockBuilder* builder, std::shared_ptr<Callbacks> nextCallbacks = nullptr);
+            StdCallbacks(std::shared_ptr<PcodeBlockBuilder> builder, std::shared_ptr<Callbacks> nextCallbacks = nullptr);
 
             const std::set<pcode::Block*>& getAffectedBlocks() const;
 

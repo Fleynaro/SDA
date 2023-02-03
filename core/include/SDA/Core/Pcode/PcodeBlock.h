@@ -22,6 +22,8 @@ namespace sda::pcode
 
         Block(InstructionOffset minOffset);
 
+        std::string getName() const;
+
         std::map<InstructionOffset, const Instruction*>& getInstructions();
 
         void setNearNextBlock(Block* nearNextBlock);
@@ -31,6 +33,8 @@ namespace sda::pcode
         void setFarNextBlock(Block* farNextBlock);
 
         Block* getFarNextBlock() const;
+
+        std::list<Block*> getNextBlocks() const;
         
         const std::list<Block*>& getReferencedBlocks() const;
 

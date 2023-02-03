@@ -73,7 +73,9 @@ TEST_F(IRcodeBlockGeneratorTest, Sample2) {
         rax:8 = INT_ADD rax:8, 1:8 \
         BRANCH <label1> \
     ";
-
-    auto instructions = parsePcode(sourcePCode);
-    int a = 5;
+    pcode::Graph graph;
+    parsePcode(sourcePCode, &graph);
+    auto funcGraph = graph.getFunctionGraphAt(pcode::InstructionOffset(0));
+    printPcode(funcGraph, std::cout);
+    // TODO: affected blocks
 }

@@ -1,5 +1,6 @@
 #include "SDA/Core/Pcode/PcodeBlock.h"
 #include "SDA/Core/Pcode/PcodeGraph.h"
+#include "SDA/Core/Utils/IOManip.h"
 
 using namespace sda::pcode;
 
@@ -7,13 +8,20 @@ Block::Block(InstructionOffset minOffset)
     : m_minOffset(minOffset), m_maxOffset(minOffset)
 {}
 
+std::string Block::getName() const {
+    auto name = std::stringstream() << "B" << utils::to_hex() << (m_minOffset.byteOffset & 0xFFFF);
+    return name.str();
+}
+
 std::map<InstructionOffset, const Instruction*>& Block::getInstructions() {
     return m_instructions;
 }
 
 void Block::setNearNextBlock(Block* nearNextBlock) {
-    nearNextBlock->m_referencedBlocks.remove(m_nearNextBlock);
-    nearNextBlock->m_referencedBlocks.push_back(nearNextBlock);
+    if (nearNextBlock) {
+        nearNextBlock->m_referencedBlocks.remove(m_nearNextBlock);
+        nearNextBlock->m_referencedBlocks.push_back(nearNextBlock);
+    }
     m_nearNextBlock = nearNextBlock;
 }
 
@@ -22,13 +30,26 @@ Block* Block::getNearNextBlock() const {
 }
 
 void Block::setFarNextBlock(Block* farNextBlock) {
-    farNextBlock->m_referencedBlocks.remove(m_farNextBlock);
-    farNextBlock->m_referencedBlocks.push_back(farNextBlock);
+    if (farNextBlock) {
+        farNextBlock->m_referencedBlocks.remove(m_farNextBlock);
+        farNextBlock->m_referencedBlocks.push_back(farNextBlock);
+    }
     m_farNextBlock = farNextBlock;
 }
 
 Block* Block::getFarNextBlock() const {
     return m_farNextBlock;
+}
+
+std::list<Block*> Block::getNextBlocks() const {
+    std::list<Block*> nextBlocks;
+    if (m_nearNextBlock) {
+        nextBlocks.push_back(m_nearNextBlock);
+    }
+    if (m_farNextBlock) {
+        nextBlocks.push_back(m_farNextBlock);
+    }
+    return nextBlocks;
 }
 
 const std::list<Block*>& Block::getReferencedBlocks() const {

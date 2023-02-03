@@ -8,12 +8,10 @@ namespace sda::decompiler
     {
         pcode::Graph* m_graph;
         Image* m_image;
-        PcodeBlockBuilder m_blockBuilder;
+        std::shared_ptr<PcodeBlockBuilder> m_blockBuilder;
         
     public:
-        PcodeGraphBuilder(pcode::Graph* graph, Image* image, PcodeDecoder* decoder);
-
-        PcodeBlockBuilder* getBlockBuilder();
+        PcodeGraphBuilder(pcode::Graph* graph, std::shared_ptr<PcodeBlockBuilder> blockBuilder);
 
         void start(const std::list<pcode::InstructionOffset>& startOffsets, bool fromEntryPoints = false);
 

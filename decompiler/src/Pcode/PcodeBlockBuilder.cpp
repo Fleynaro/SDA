@@ -4,18 +4,40 @@
 using namespace sda;
 using namespace sda::decompiler;
 
-void PcodeBlockBuilder::BaseProvider::decode(Offset offset, size_t& origInstructionLength) {
+void PcodeBlockBuilder::ImageProvider::decode(Offset offset, size_t& origInstructionLength) {
     std::vector<uint8_t> data(100);
     m_image->getRW()->readBytesAtOffset(offset, data);
     m_decoder->decode(offset, data);
+    for (const auto& instr : m_decoder->getDecodedInstructions())
+        m_graph->addInstruction(instr);
     origInstructionLength = m_decoder->getInstructionLength();
 }
 
-bool PcodeBlockBuilder::BaseProvider::isOffsetValid(Offset offset) {
+bool PcodeBlockBuilder::ImageProvider::isOffsetValid(Offset offset) {
     if (offset >= m_image->getSize())
         return false;
     auto section = m_image->getImageSectionAt(offset);
     return section && section->m_type == ImageSection::CODE_SEGMENT;
+}
+
+PcodeBlockBuilder::PcodeProvider::PcodeProvider(pcode::Graph* graph, const std::list<pcode::Instruction>& instructions)
+    : Provider(graph)
+{
+    for (const auto& instr : instructions) {
+        m_instructions[instr.getOffset()] = instr;
+    }
+}
+
+void PcodeBlockBuilder::PcodeProvider::decode(Offset offset, size_t& origInstructionLength) {
+    const auto it = m_instructions.find(pcode::InstructionOffset(offset, 0));
+    if (it == m_instructions.end())
+        throw std::runtime_error("Pcode instruction not found");
+    m_graph->addInstruction(it->second);
+    origInstructionLength = 1;
+}
+
+bool PcodeBlockBuilder::PcodeProvider::isOffsetValid(Offset offset) {
+    return m_instructions.find(pcode::InstructionOffset(offset, 0)) != m_instructions.end();
 }
 
 PcodeBlockBuilder::PcodeBlockBuilder(pcode::Graph* graph, std::shared_ptr<Provider> provider)
@@ -24,8 +46,12 @@ PcodeBlockBuilder::PcodeBlockBuilder(pcode::Graph* graph, std::shared_ptr<Provid
     m_callbacks = std::make_unique<Callbacks>();
 }
 
+PcodeBlockBuilder::PcodeBlockBuilder(pcode::Graph* graph, const std::list<pcode::Instruction>& instructions)
+    : PcodeBlockBuilder(graph, std::make_shared<PcodeProvider>(graph, instructions))
+{}
+
 PcodeBlockBuilder::PcodeBlockBuilder(pcode::Graph* graph, Image* image, PcodeDecoder* decoder)
-    : PcodeBlockBuilder(graph, std::make_shared<BaseProvider>(image, decoder))
+    : PcodeBlockBuilder(graph, std::make_shared<ImageProvider>(graph, image, decoder))
 {}
 
 void PcodeBlockBuilder::start() {
@@ -81,7 +107,7 @@ void PcodeBlockBuilder::addUnvisitedOffset(pcode::InstructionOffset offset) {
     m_unvisitedOffsets.push_back(offset);
 }
 
-PcodeBlockBuilder::StdCallbacks::StdCallbacks(PcodeBlockBuilder* builder, std::shared_ptr<Callbacks> nextCallbacks)
+PcodeBlockBuilder::StdCallbacks::StdCallbacks(std::shared_ptr<PcodeBlockBuilder> builder, std::shared_ptr<Callbacks> nextCallbacks)
     : m_builder(builder), m_nextCallbacks(std::move(nextCallbacks))
 {}
 
@@ -179,7 +205,7 @@ pcode::InstructionOffset PcodeBlockBuilder::StdCallbacks::getTargetOffset(const 
     }
 
     // check if the target offset is valid
-    if (targetOffset == InvalidOffset || !m_builder->m_provider->isOffsetValid(targetOffset)) {
+    if (targetOffset == InvalidOffset || !m_builder->m_provider->isOffsetValid(targetOffset.byteOffset)) {
         std::stringstream ss;
         ss << "Invalid target 0x" << utils::to_hex() << targetOffset << " at offset 0x" << utils::to_hex() << instr->getOffset();
         onWarningEmitted(ss.str());

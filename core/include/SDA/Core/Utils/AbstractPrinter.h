@@ -37,7 +37,7 @@ namespace utils
 
         virtual void endCommenting();
 
-        void newLine();
+        void newLine() const;
         
     protected:
         std::ostream& out() const;

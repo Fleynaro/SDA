@@ -6,7 +6,8 @@ namespace sda::bind
     class PcodeGraphBuilderBind
     {
         static auto New(pcode::Graph* graph, Image* image, std::shared_ptr<PcodeDecoder> decoder) {
-            return ExportObject(new decompiler::PcodeGraphBuilder(graph, image, decoder.get()));
+            auto blockBuilder = std::make_shared<decompiler::PcodeBlockBuilder>(graph, image, decoder.get());
+            return ExportObject(new decompiler::PcodeGraphBuilder(graph, blockBuilder));
         }
     public:
         static void Init(v8pp::module& module) {

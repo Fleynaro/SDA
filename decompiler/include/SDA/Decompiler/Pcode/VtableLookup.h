@@ -13,7 +13,7 @@ namespace sda::decompiler
         std::list<VTable> m_vtables;
         Image* m_image;
     public:
-        VtableLookupCallbacks(Image* image, PcodeBlockBuilder* builder, std::unique_ptr<Callbacks> nextCallbacks = nullptr);
+        VtableLookupCallbacks(Image* image, std::shared_ptr<PcodeBlockBuilder> builder, std::unique_ptr<Callbacks> nextCallbacks = nullptr);
 
         const std::list<VTable>& getVtables() const;
 

@@ -154,6 +154,13 @@ Block* Graph::getBlockAt(InstructionOffset offset, bool halfInterval) {
 	return nullptr;
 }
 
+FunctionGraph* Graph::getFunctionGraphAt(InstructionOffset offset) {
+    auto it = m_functionGraphs.find(offset);
+    if (it == m_functionGraphs.end())
+        return nullptr;
+    return &it->second;
+}
+
 FunctionGraph* Graph::createFunctionGraph(Block* entryBlock) {
     auto offset = entryBlock->getMinOffset();
     if (m_functionGraphs.find(offset) != m_functionGraphs.end())

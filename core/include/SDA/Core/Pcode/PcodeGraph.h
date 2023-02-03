@@ -33,6 +33,8 @@ namespace sda::pcode
 
         Block* getBlockAt(InstructionOffset offset, bool halfInterval = true);
 
+        FunctionGraph* getFunctionGraphAt(InstructionOffset offset);
+
         FunctionGraph* createFunctionGraph(Block* entryBlock);
 
         void removeFunctionGraph(FunctionGraph* functionGraph);
