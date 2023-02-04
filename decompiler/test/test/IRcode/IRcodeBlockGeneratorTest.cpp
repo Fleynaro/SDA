@@ -1,7 +1,6 @@
 #include "SDA/Core/IRcode/IRcodeDataTypeProvider.h"
 #include "SDA/Core/IRcode/IRcodePrinter.h"
 #include "Test/Core/Utils/TestAssertion.h"
-#include "SDA/Decompiler/Pcode/PcodeBlockBuilder.h"
 #include "SDA/Decompiler/IRcode/Generator/IRcodeBlockGenerator.h"
 #include "Test/Decompiler/PcodeFixture.h"
 

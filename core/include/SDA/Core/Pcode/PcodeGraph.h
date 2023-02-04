@@ -1,18 +1,24 @@
 #pragma once
 #include <vector>
 #include "PcodeFunctionGraph.h"
+#include "PcodeInstructionProvider.h"
 
 namespace sda::pcode
 {
     class Graph
     {
+        std::shared_ptr<InstructionProvider> m_instructionProvider;
         std::map<InstructionOffset, Instruction> m_instructions;
         std::map<InstructionOffset, Block> m_blocks;
         std::map<InstructionOffset, FunctionGraph> m_functionGraphs;
     public:
-        Graph();
+        Graph(std::shared_ptr<InstructionProvider> instructionProvider);
 
-        void addInstruction(const Instruction& instruction);
+        std::shared_ptr<InstructionProvider> getInstructionProvider() const;
+
+        void explore(InstructionOffset startOffset);
+
+        void addInstruction(const Instruction& Instruction, InstructionOffset nextOffset);
 
         void removeInstruction(const Instruction* instruction);
 
@@ -43,11 +49,29 @@ namespace sda::pcode
         class Callbacks
         {
         public:
+            // Called when an instruction is added to the graph
+            virtual void onInstructionAdded(const Instruction* instruction, InstructionOffset nextOffset) {}
+
+            // Called when an instruction is removed from the graph
+            virtual void onInstructionRemoved(const Instruction* instruction) {}
+
+            // Called when a block is created
+            virtual void onBlockCreated(Block* block) {}
+
+            // Called when a block is removed
+            virtual void onBlockRemoved(Block* block) {}
+
             // Called when a function graph is created
             virtual void onFunctionGraphCreated(FunctionGraph* functionGraph) {}
 
             // Called when a function graph is removed
             virtual void onFunctionGraphRemoved(FunctionGraph* functionGraph) {}
+
+            // Called when an unvisited offset is found
+            virtual void onUnvisitedOffsetFound(InstructionOffset offset) {}
+
+            // Called when a warning is emitted
+            virtual void onWarningEmitted(const std::string& warning) {}
         };
 
         // Set the callbacks for the graph

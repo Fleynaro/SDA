@@ -1,14 +1,63 @@
 #include "SDA/Core/Pcode/PcodeGraph.h"
+#include <set>
 #include <stdexcept>
 
 using namespace sda::pcode;
 
-Graph::Graph() {
-    m_callbacks = std::make_unique<Callbacks>();
+Graph::Graph(std::shared_ptr<InstructionProvider> instructionProvider)
+    : m_instructionProvider(instructionProvider), m_callbacks(std::make_unique<Callbacks>())
+{}
+
+std::shared_ptr<InstructionProvider> Graph::getInstructionProvider() const {
+    return m_instructionProvider;
 }
 
-void Graph::addInstruction(const Instruction& instruction) {
-    m_instructions[instruction.getOffset()] = instruction;
+void Graph::explore(InstructionOffset startOffset) {
+    std::list<InstructionOffset> m_unvisitedOffsets = { startOffset };
+    std::set<InstructionOffset> m_visitedOffsets;
+    while (!m_unvisitedOffsets.empty()) {
+        // get the next unvisited offset
+        const auto offset = m_unvisitedOffsets.back();
+        m_unvisitedOffsets.pop_back();
+
+        // if the offset is already visited, skip it, else mark it as visited
+        if (m_visitedOffsets.find(offset) != m_visitedOffsets.end())
+            continue;
+        m_visitedOffsets.insert(offset);
+
+        if (offset.index == 0) {
+            // if there are instructions at this offset, don't visit it again (offset might not be in m_visitedOffsets!)
+            if (getInstructionAt(offset))
+                continue;
+
+            const auto byteOffset = offset.byteOffset;
+            if (!m_instructionProvider->isOffsetValid(byteOffset)) // TODO: move isOffsetValid into decode, InstructionProvider can be used in this method only
+                continue;
+            size_t origInstrLength;
+            std::list<Instruction> instructions;
+            m_instructionProvider->decode(byteOffset, instructions, origInstrLength);
+            for (auto it = instructions.begin(); it != instructions.end(); ++it) {
+                InstructionOffset nextOffset;
+                if (it != std::prev(instructions.end())) {
+                    nextOffset = InstructionOffset(it->getOffset() + 1);
+                } else {
+                    nextOffset = InstructionOffset(offset.byteOffset + origInstrLength, 0);
+                }
+                addInstruction(*it, nextOffset);
+            }
+        }
+    }
+    // TODO: make like Context callbacks
+    // make startCommit() and endCommit() callbacks for function graphs
+}
+
+
+void Graph::addInstruction(const Instruction& instruction, InstructionOffset nextOffset) {
+    auto offset = instruction.getOffset();
+    if (m_instructions.find(offset) != m_instructions.end())
+        throw std::runtime_error("Instruction already exists at this offset");
+    m_instructions[offset] = instruction;
+    getCallbacks()->onInstructionAdded(&m_instructions[offset], nextOffset);
 }
 
 void Graph::removeInstruction(const Instruction* instruction) {
@@ -16,25 +65,7 @@ void Graph::removeInstruction(const Instruction* instruction) {
     auto it = m_instructions.find(offset);
     if (it == m_instructions.end())
         throw std::runtime_error("Instruction not found");
-
-    if (instruction->isBranching()) {
-        if (auto block = getBlockAt(offset)) {
-            if (instruction == block->getInstructions().rbegin()->second) {
-                block->setNearNextBlock(nullptr);
-                block->setFarNextBlock(nullptr);
-                block->update();
-            }
-        }
-    }
-    else if (instruction->getId() == pcode::InstructionId::CALL) {
-        if (auto block = getBlockAt(offset)) {
-            auto otherFunctionGraph = block->getFunctionGraph()->getReferencedGraphsFrom().at(offset);
-            block->getFunctionGraph()->removeReferencedGraphFrom(offset);
-            if (otherFunctionGraph->getReferencedGraphsTo().empty())
-                removeFunctionGraph(otherFunctionGraph);
-        }
-    }
-
+    getCallbacks()->onInstructionRemoved(instruction);
     m_instructions.erase(it);
 }
 
