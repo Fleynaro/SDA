@@ -1,14 +1,17 @@
 #pragma once
 #include <map>
 #include <list>
+#include <set>
 #include "PcodeInstruction.h"
 
 namespace sda::pcode
 {
+    class Graph;
     class FunctionGraph;
 
     class Block
     {
+        Graph* m_graph;
         std::map<InstructionOffset, const Instruction*> m_instructions;
         Block* m_nearNextBlock = nullptr;
         Block* m_farNextBlock = nullptr;
@@ -18,9 +21,9 @@ namespace sda::pcode
         FunctionGraph* m_functionGraph = nullptr;
         size_t m_level = 0;
     public:
-        Block() = default;
+        Block();
 
-        Block(InstructionOffset minOffset);
+        Block(Graph* graph, InstructionOffset minOffset);
 
         std::string getName() const;
 
@@ -50,9 +53,11 @@ namespace sda::pcode
 
         bool contains(InstructionOffset offset, bool halfInterval = true) const;
 
-        // Called where the block was changed (nearNextBlock/farNextBlock)
-        void update();
+        bool isInited() const;
 
-        void update(std::list<Block*>& path, FunctionGraph* funcGraph);
+        bool hasLoop() const;
+
+        // Called when the block was changed
+        void update();
     };
 };

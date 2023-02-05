@@ -7,16 +7,13 @@ namespace sda::pcode
 {
     class Graph
     {
-        std::shared_ptr<InstructionProvider> m_instructionProvider;
         std::map<InstructionOffset, Instruction> m_instructions;
         std::map<InstructionOffset, Block> m_blocks;
         std::map<InstructionOffset, FunctionGraph> m_functionGraphs;
     public:
-        Graph(std::shared_ptr<InstructionProvider> instructionProvider);
+        Graph();
 
-        std::shared_ptr<InstructionProvider> getInstructionProvider() const;
-
-        void explore(InstructionOffset startOffset);
+        void explore(InstructionOffset startOffset, InstructionProvider* instrProvider);
 
         void addInstruction(const Instruction& Instruction, InstructionOffset nextOffset);
 
@@ -45,33 +42,56 @@ namespace sda::pcode
 
         void removeFunctionGraph(FunctionGraph* functionGraph);
 
-         // Callbacks for the graph (TODO: remove?)
+         // Callbacks for the graph
         class Callbacks
         {
+            std::shared_ptr<Callbacks> m_prevCallbacks;
+            bool m_enabled = true;
         public:
             // Called when an instruction is added to the graph
-            virtual void onInstructionAdded(const Instruction* instruction, InstructionOffset nextOffset) {}
+            void onInstructionAdded(const Instruction* instruction, InstructionOffset nextOffset);
 
             // Called when an instruction is removed from the graph
-            virtual void onInstructionRemoved(const Instruction* instruction) {}
+            void onInstructionRemoved(const Instruction* instruction);
 
             // Called when a block is created
-            virtual void onBlockCreated(Block* block) {}
+            void onBlockCreated(Block* block);
 
             // Called when a block is removed
-            virtual void onBlockRemoved(Block* block) {}
+            void onBlockRemoved(Block* block);
 
             // Called when a function graph is created
-            virtual void onFunctionGraphCreated(FunctionGraph* functionGraph) {}
+            void onFunctionGraphCreated(FunctionGraph* functionGraph);
 
             // Called when a function graph is removed
-            virtual void onFunctionGraphRemoved(FunctionGraph* functionGraph) {}
+            void onFunctionGraphRemoved(FunctionGraph* functionGraph);
 
             // Called when an unvisited offset is found
-            virtual void onUnvisitedOffsetFound(InstructionOffset offset) {}
+            void onUnvisitedOffsetFound(InstructionOffset offset);
 
             // Called when a warning is emitted
-            virtual void onWarningEmitted(const std::string& warning) {}
+            void onWarningEmitted(const std::string& warning);
+
+            void setPrevCallbacks(std::shared_ptr<Callbacks> prevCallbacks);
+
+            void setEnabled(bool enabled);
+
+        private:
+            virtual void onInstructionAddedImpl(const Instruction* instruction, InstructionOffset nextOffset) {};
+
+            virtual void onInstructionRemovedImpl(const Instruction* instruction) {};
+
+            virtual void onBlockCreatedImpl(Block* block) {};
+
+            virtual void onBlockRemovedImpl(Block* block) {};
+
+            virtual void onFunctionGraphCreatedImpl(FunctionGraph* functionGraph) {};
+
+            virtual void onFunctionGraphRemovedImpl(FunctionGraph* functionGraph) {};
+
+            virtual void onUnvisitedOffsetFoundImpl(InstructionOffset offset) {};
+
+            virtual void onWarningEmittedImpl(const std::string& warning) {};
         };
 
         // Set the callbacks for the graph

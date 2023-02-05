@@ -1,5 +1,6 @@
 #include "PcodeFixture.h"
 #include "SDA/Core/Pcode/PcodePrinter.h"
+#include "SDA/Core/Pcode/PcodeInstructionProvider.h"
 
 using namespace sda;
 using namespace sda::test;
@@ -11,7 +12,8 @@ std::list<pcode::Instruction> PcodeFixture::parsePcode(const std::string& text) 
 
 void PcodeFixture::parsePcode(const std::string& text, pcode::Graph* graph) const {
     auto instructions = parsePcode(text);
-    
+    pcode::ListInstructionProvider provider(instructions);
+    graph->explore(0, &provider);
 }
 
 void PcodeFixture::printPcode(pcode::FunctionGraph* graph, std::ostream& out) const {

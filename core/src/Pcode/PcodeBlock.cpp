@@ -4,8 +4,8 @@
 
 using namespace sda::pcode;
 
-Block::Block(InstructionOffset minOffset)
-    : m_minOffset(minOffset), m_maxOffset(minOffset)
+Block::Block(Graph* graph, InstructionOffset minOffset)
+    : m_graph(graph), m_minOffset(minOffset), m_maxOffset(minOffset)
 {}
 
 std::string Block::getName() const {
@@ -81,27 +81,50 @@ bool Block::contains(InstructionOffset offset, bool halfInterval) const {
         (halfInterval ? offset < m_maxOffset : offset <= m_maxOffset);
 }
 
-void Block::update() {
-    if (m_functionGraph) {
-        std::list<Block*> path;
-        m_functionGraph->getEntryBlock()->update(path, m_functionGraph);
-    }
+bool Block::isInited() const {
+    return m_level != 0;
 }
 
-void Block::update(std::list<Block*>& path, FunctionGraph* funcGraph) {
-    //check if there's a loop
-	for (auto it = path.rbegin(); it != path.rend(); it++) {
-		if (this == *it) {
-			return;
-		}
-	}
+bool Block::hasLoop() const {
+    if (!m_farNextBlock)
+        return false;
+    if (!isInited())
+        throw std::runtime_error("Block::hasLoop: block is not inited");
+    if (!m_farNextBlock->isInited())
+        throw std::runtime_error("Block::hasLoop: far next block is not inited");
+    return m_farNextBlock->m_level <= m_level;
+}
 
-    path.push_back(this);
-	m_level = std::max(m_level, path.size());
-    m_functionGraph = funcGraph;
+void Block::update() {
+    size_t newLevel = 1;
+    std::list<Block*> refBlocks;
+    for (auto refBlock : m_referencedBlocks) {
+        if (refBlock->isInited() && !refBlock->hasLoop()) {
+            refBlocks.push_back(refBlock);
+        }
+    }
+    for (auto it = refBlocks.begin(); it != refBlocks.end(); ++it) {
+        auto refBlock = *it;
+        // calculate level
+        if (!refBlock->hasLoop()) {
+            newLevel = std::max(newLevel, refBlock->m_level + 1);
+        }
+        // check if are ref. blocks of the same function graph
+        auto nextIt = std::next(it);
+        if (nextIt != refBlocks.end()) {
+            auto nextRefBlock = *nextIt;
+            if (refBlock->m_functionGraph != nextRefBlock->m_functionGraph) {
+                
+            }
+        }
+    }
+
+    if (newLevel == m_level)
+        return;
+    m_level = newLevel;
+
     if (m_nearNextBlock)
-        m_nearNextBlock->update(path, funcGraph);
-    if (m_farNextBlock)
-        m_farNextBlock->update(path, funcGraph);
-	path.pop_back();
+        m_nearNextBlock->update();
+    if (m_farNextBlock && !hasLoop())
+        m_farNextBlock->update();
 }

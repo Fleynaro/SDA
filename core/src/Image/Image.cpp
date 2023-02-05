@@ -1,7 +1,6 @@
 #include "SDA/Core/Image/Image.h"
 #include "SDA/Core/SymbolTable/OptimizedSymbolTable.h"
 #include "SDA/Core/Context.h"
-#include "SDA/Core/Pcode/PcodeGraphСonsistency.h"
 
 using namespace sda;
 
@@ -18,10 +17,7 @@ Image::Image(
     m_globalSymbolTable(globalSymbolTable)
 {
     m_context->getImages()->add(std::unique_ptr<Image>(this));
-    auto instrProvider = std::make_shared<pcode::ImageInstructionProvider>(this);
-    m_pcodeGraph = std::make_unique<pcode::Graph>(instrProvider);
-    auto graphConsistency = std::make_shared<pcode::GraphConsistency>(m_pcodeGraph.get());
-    m_pcodeGraph->setCallbacks(graphConsistency);
+    m_pcodeGraph = std::make_unique<pcode::Graph>();
 }
 
 void Image::analyse() {

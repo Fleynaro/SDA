@@ -4,26 +4,50 @@
 
 using namespace sda::pcode;
 
-Graph::Graph(std::shared_ptr<InstructionProvider> instructionProvider)
-    : m_instructionProvider(instructionProvider), m_callbacks(std::make_unique<Callbacks>())
-{}
-
-std::shared_ptr<InstructionProvider> Graph::getInstructionProvider() const {
-    return m_instructionProvider;
+InstructionOffset GetTargetOffset(const Instruction* instr) {
+    InstructionOffset targetOffset = sda::InvalidOffset;
+    if (const auto constVarnode = std::dynamic_pointer_cast<ConstantVarnode>(instr->getInput0())) {
+        // if this input contains a hardcoded constant
+        targetOffset = constVarnode->getValue();
+    }
+    return targetOffset;
 }
 
-void Graph::explore(InstructionOffset startOffset) {
-    std::list<InstructionOffset> m_unvisitedOffsets = { startOffset };
-    std::set<InstructionOffset> m_visitedOffsets;
-    while (!m_unvisitedOffsets.empty()) {
+Graph::Graph()
+    : m_callbacks(std::make_unique<Callbacks>())
+{}
+
+void Graph::explore(InstructionOffset startOffset, InstructionProvider* instrProvider) {
+    std::list<InstructionOffset> unvisitedOffsets = { startOffset };
+    std::set<InstructionOffset> visitedOffsets;
+
+    // set the callbacks to gather unvisited offsets
+    struct ExploreCallbacks : Callbacks {
+        std::list<InstructionOffset>* unvisitedOffsets;
+
+        // void onBlockCreatedImpl(Block* block) override {
+        //     //if (startOffset == block->getMinOffset())
+        // }
+
+        void onUnvisitedOffsetFoundImpl(InstructionOffset offset) override {
+            unvisitedOffsets->push_back(offset);
+        }
+    };
+    auto prevCallbacks = getCallbacks();
+    auto exploreCallbacks = std::make_shared<ExploreCallbacks>();
+    exploreCallbacks->unvisitedOffsets = &unvisitedOffsets;
+    exploreCallbacks->setPrevCallbacks(prevCallbacks);
+    setCallbacks(exploreCallbacks);
+
+    while (!unvisitedOffsets.empty()) {
         // get the next unvisited offset
-        const auto offset = m_unvisitedOffsets.back();
-        m_unvisitedOffsets.pop_back();
+        const auto offset = unvisitedOffsets.front();
+        unvisitedOffsets.pop_front();
 
         // if the offset is already visited, skip it, else mark it as visited
-        if (m_visitedOffsets.find(offset) != m_visitedOffsets.end())
+        if (visitedOffsets.find(offset) != visitedOffsets.end())
             continue;
-        m_visitedOffsets.insert(offset);
+        visitedOffsets.insert(offset);
 
         if (offset.index == 0) {
             // if there are instructions at this offset, don't visit it again (offset might not be in m_visitedOffsets!)
@@ -31,24 +55,29 @@ void Graph::explore(InstructionOffset startOffset) {
                 continue;
 
             const auto byteOffset = offset.byteOffset;
-            if (!m_instructionProvider->isOffsetValid(byteOffset)) // TODO: move isOffsetValid into decode, InstructionProvider can be used in this method only
+            if (!instrProvider->isOffsetValid(byteOffset))
                 continue;
             size_t origInstrLength;
             std::list<Instruction> instructions;
-            m_instructionProvider->decode(byteOffset, instructions, origInstrLength);
-            for (auto it = instructions.begin(); it != instructions.end(); ++it) {
-                InstructionOffset nextOffset;
-                if (it != std::prev(instructions.end())) {
-                    nextOffset = InstructionOffset(it->getOffset() + 1);
-                } else {
-                    nextOffset = InstructionOffset(offset.byteOffset + origInstrLength, 0);
+            instrProvider->decode(byteOffset, instructions, origInstrLength);
+            if (!instructions.empty()) {
+                auto offsetAfterOrigInstr = InstructionOffset(byteOffset + origInstrLength, 0);
+                unvisitedOffsets.push_back(offsetAfterOrigInstr);
+                for (auto it = instructions.begin(); it != instructions.end(); ++it) {
+                    InstructionOffset nextOffset;
+                    if (it != std::prev(instructions.end())) {
+                        nextOffset = InstructionOffset(it->getOffset() + 1);
+                    } else {
+                        nextOffset = offsetAfterOrigInstr;
+                    }
+                    addInstruction(*it, nextOffset);
                 }
-                addInstruction(*it, nextOffset);
             }
         }
     }
-    // TODO: make like Context callbacks
-    // make startCommit() and endCommit() callbacks for function graphs
+    
+    // restore the previous callbacks
+    setCallbacks(prevCallbacks);
 }
 
 
@@ -57,6 +86,80 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
     if (m_instructions.find(offset) != m_instructions.end())
         throw std::runtime_error("Instruction already exists at this offset");
     m_instructions[offset] = instruction;
+
+    // get or create a block at this offset
+    auto block = getBlockAt(offset, false);
+    if (!block) {
+        block = createBlock(offset);
+    }
+    block->getInstructions()[offset] = &m_instructions[offset];
+    if (block->getMaxOffset() < nextOffset)
+        block->setMaxOffset(nextOffset);
+    
+    // handle each type of instruction
+    if (instruction.isBranching()) {
+        auto targetOffset = GetTargetOffset(&instruction);
+        if (targetOffset == InvalidOffset)
+            return;
+
+        // near block
+        pcode::Block* nextNearBlock = nullptr;
+        if (instruction.getId() == pcode::InstructionId::CBRANCH) {
+            if (!getBlockAt(nextOffset)) {
+                nextNearBlock = createBlock(nextOffset);
+                block->setNearNextBlock(nextNearBlock);
+            }
+        }
+
+        // far block
+        pcode::Block* nextFarBlock = nullptr;
+        if (auto alreadyExistingBlock = getBlockAt(targetOffset)) {
+            if (targetOffset == alreadyExistingBlock->getMinOffset()) {
+                block->setFarNextBlock(nextFarBlock = alreadyExistingBlock);
+            }
+            else {
+                nextFarBlock = splitBlock(alreadyExistingBlock, targetOffset);
+                block->setFarNextBlock(nextFarBlock);
+            }
+        }
+        else {
+            nextFarBlock = createBlock(targetOffset);
+            block->setFarNextBlock(nextFarBlock);
+        }
+
+        // next unvisited offsets
+        if (nextFarBlock)
+            getCallbacks()->onUnvisitedOffsetFound(nextFarBlock->getMinOffset());
+        if (nextNearBlock)
+            getCallbacks()->onUnvisitedOffsetFound(nextNearBlock->getMinOffset());
+    }
+    else if (instruction.getId() != InstructionId::RETURN && instruction.getId() != InstructionId::INT) {
+        if (auto nextBlock = getBlockAt(nextOffset)) {
+            /*
+                Case 1:
+                    0x... {instructions above}
+                    0x100 ADD       <--- end of the current block
+                    0x101 INT/RET   <--- here stop
+                    0x102 COPY      <--- begin of the next block
+                    0x... {instructions below}
+
+                Case 2 (need to join blocks):
+                    0x... {instructions above}
+                    0x100 ADD       <--- end of the current block
+                    0x101 COPY      <--- begin of the next block
+                    0x... {instructions below}
+            */
+            if (block != nextBlock) {
+                if (nextBlock->getReferencedBlocks().size() == 0) {
+                    // if no other blocks reference this block, join it
+                    joinBlocks(block, nextBlock);
+                } else {
+                    // otherwise, make a link
+                    block->setNearNextBlock(nextBlock);
+                }
+            }
+        }
+    }
     getCallbacks()->onInstructionAdded(&m_instructions[offset], nextOffset);
 }
 
@@ -94,7 +197,7 @@ Block* Graph::createBlock(InstructionOffset offset) {
     if (m_blocks.find(offset) != m_blocks.end())
         throw std::runtime_error("Block already exists");
 
-    m_blocks[offset] = Block(offset);
+    m_blocks[offset] = Block(this, offset);
     return &m_blocks[offset];
 }
 
@@ -196,25 +299,21 @@ FunctionGraph* Graph::createFunctionGraph(Block* entryBlock) {
     auto offset = entryBlock->getMinOffset();
     if (m_functionGraphs.find(offset) != m_functionGraphs.end())
         throw std::runtime_error("Function graph already exists");
-
     m_functionGraphs[offset] = FunctionGraph(entryBlock);
+    entryBlock->update();
     auto functionGraph = &m_functionGraphs[offset];
-    
     getCallbacks()->onFunctionGraphCreated(functionGraph);
-
     return functionGraph;
 }
 
 void Graph::removeFunctionGraph(FunctionGraph* functionGraph) {
-    auto offset = functionGraph->getEntryBlock()->getMinOffset();
+    auto entryBlock = functionGraph->getEntryBlock();
+    auto offset = entryBlock->getMinOffset();
     auto it = m_functionGraphs.find(offset);
     if (it == m_functionGraphs.end())
         throw std::runtime_error("Function graph not found");
-
     getCallbacks()->onFunctionGraphRemoved(functionGraph);
-
-    std::list<Block*> path;
-    functionGraph->getEntryBlock()->update(path, nullptr);
+    entryBlock->update();
     m_functionGraphs.erase(it);
 }
 
