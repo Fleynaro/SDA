@@ -20,8 +20,9 @@ namespace sda::pcode
         InstructionOffset m_maxOffset = 0;
         FunctionGraph* m_functionGraph = nullptr;
         size_t m_level = 0;
+        bool m_jumpToFunction = false;
     public:
-        Block();
+        Block() = default;
 
         Block(Graph* graph, InstructionOffset minOffset);
 
@@ -59,5 +60,8 @@ namespace sda::pcode
 
         // Called when the block was changed
         void update();
+
+    private:
+        void update(std::list<Block*>& nextBlocks);
     };
 };

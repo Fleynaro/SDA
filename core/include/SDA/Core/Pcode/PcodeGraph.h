@@ -38,9 +38,9 @@ namespace sda::pcode
 
         FunctionGraph* getFunctionGraphAt(InstructionOffset offset);
 
-        FunctionGraph* createFunctionGraph(Block* entryBlock);
+        FunctionGraph* createFunctionGraph(Block* entryBlock, bool updateBlocks = true);
 
-        void removeFunctionGraph(FunctionGraph* functionGraph);
+        void removeFunctionGraph(FunctionGraph* functionGraph, bool updateBlocks = true);
 
          // Callbacks for the graph
         class Callbacks

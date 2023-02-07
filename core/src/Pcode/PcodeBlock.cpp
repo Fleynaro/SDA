@@ -18,11 +18,20 @@ std::map<InstructionOffset, const Instruction*>& Block::getInstructions() {
 }
 
 void Block::setNearNextBlock(Block* nearNextBlock) {
+    auto prevNearNextBlock = m_nearNextBlock;
+    if (prevNearNextBlock) {
+        prevNearNextBlock->m_referencedBlocks.remove(this);
+    }
     if (nearNextBlock) {
-        nearNextBlock->m_referencedBlocks.remove(m_nearNextBlock);
-        nearNextBlock->m_referencedBlocks.push_back(nearNextBlock);
+        nearNextBlock->m_referencedBlocks.push_back(this);
     }
     m_nearNextBlock = nearNextBlock;
+    if (prevNearNextBlock) {
+        prevNearNextBlock->update();
+    }
+    if (nearNextBlock) {
+        nearNextBlock->update();
+    }
 }
 
 Block* Block::getNearNextBlock() const {
@@ -30,11 +39,20 @@ Block* Block::getNearNextBlock() const {
 }
 
 void Block::setFarNextBlock(Block* farNextBlock) {
+    auto prevFarNextBlock = m_farNextBlock;
+    if (prevFarNextBlock) {
+        prevFarNextBlock->m_referencedBlocks.remove(this);
+    }
     if (farNextBlock) {
-        farNextBlock->m_referencedBlocks.remove(m_farNextBlock);
-        farNextBlock->m_referencedBlocks.push_back(farNextBlock);
+        farNextBlock->m_referencedBlocks.push_back(this);
     }
     m_farNextBlock = farNextBlock;
+    if (prevFarNextBlock) {
+        prevFarNextBlock->update();
+    }
+    if (farNextBlock) {
+        farNextBlock->update();
+    }
 }
 
 Block* Block::getFarNextBlock() const {
@@ -88,43 +106,94 @@ bool Block::isInited() const {
 bool Block::hasLoop() const {
     if (!m_farNextBlock)
         return false;
-    if (!isInited())
-        throw std::runtime_error("Block::hasLoop: block is not inited");
-    if (!m_farNextBlock->isInited())
-        throw std::runtime_error("Block::hasLoop: far next block is not inited");
+    // check if blocks are inited
+    assert(isInited() && m_farNextBlock->isInited());
     return m_farNextBlock->m_level <= m_level;
 }
 
 void Block::update() {
-    size_t newLevel = 1;
+    std::map<Block*, size_t> blockKnocks;
+    std::list<Block*> blocksToVisit;
+    blocksToVisit.push_back(this);
+    do {
+        while (!blocksToVisit.empty()) {
+            auto block = blocksToVisit.front();
+            blocksToVisit.pop_front();
+            auto it = blockKnocks.find(block);
+            if (it == blockKnocks.end()) {
+                it = blockKnocks.insert({ block, 0 }).first;
+            }
+            auto knocks = ++it->second;
+            if (knocks < block->getReferencedBlocks().size()) {
+                continue;
+            }
+            blockKnocks.erase(it);
+            block->update(blocksToVisit);
+        }
+        if (!blockKnocks.empty()) {
+            auto block = blockKnocks.begin()->first;
+            blocksToVisit.push_back(block);
+        }
+    } while (!blocksToVisit.empty());
+}
+
+void Block::update(std::list<Block*>& nextBlocks) {
+    // get inited referenced blocks
     std::list<Block*> refBlocks;
     for (auto refBlock : m_referencedBlocks) {
-        if (refBlock->isInited() && !refBlock->hasLoop()) {
+        if (refBlock->isInited()) {
             refBlocks.push_back(refBlock);
         }
     }
-    for (auto it = refBlocks.begin(); it != refBlocks.end(); ++it) {
-        auto refBlock = *it;
+
+    size_t newLevel = 1;
+    bool needNewFunctionGraph = false;
+    Block* prevRefBlock = nullptr;
+    for (auto refBlock : refBlocks) {
         // calculate level
         if (!refBlock->hasLoop()) {
             newLevel = std::max(newLevel, refBlock->m_level + 1);
         }
         // check if are ref. blocks of the same function graph
-        auto nextIt = std::next(it);
-        if (nextIt != refBlocks.end()) {
-            auto nextRefBlock = *nextIt;
-            if (refBlock->m_functionGraph != nextRefBlock->m_functionGraph) {
-                
+        if (!needNewFunctionGraph) {
+            if (prevRefBlock && refBlock->m_functionGraph != prevRefBlock->m_functionGraph) {
+                needNewFunctionGraph = true;
             }
+        }
+        prevRefBlock = refBlock;
+    }
+
+    // create new function graph
+    FunctionGraph* newFunctionGraph = nullptr;
+    if (needNewFunctionGraph) {
+        newFunctionGraph = m_graph->createFunctionGraph(this, false);
+        for (auto refBlock : m_referencedBlocks) {
+            if (!refBlock->isInited())
+                continue;
+            refBlock->m_jumpToFunction = true;
+        }
+    } else {
+        auto curFunctionGraph = m_graph->getFunctionGraphAt(m_minOffset);
+        if (refBlocks.empty()) {
+            newFunctionGraph = curFunctionGraph;
+        } else {
+            if (curFunctionGraph) {
+                m_graph->removeFunctionGraph(curFunctionGraph, false);
+            }
+            newFunctionGraph = refBlocks.front()->m_functionGraph;
         }
     }
 
-    if (newLevel == m_level)
+    // check if need to update
+    if (newLevel == m_level && newFunctionGraph == m_functionGraph)
         return;
+    // update
     m_level = newLevel;
+    m_functionGraph = newFunctionGraph;
 
+    // go to next blocks
     if (m_nearNextBlock)
-        m_nearNextBlock->update();
+        nextBlocks.push_back(m_nearNextBlock);
     if (m_farNextBlock && !hasLoop())
-        m_farNextBlock->update();
+        nextBlocks.push_back(m_farNextBlock);
 }

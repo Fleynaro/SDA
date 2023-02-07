@@ -75,6 +75,11 @@ void Graph::explore(InstructionOffset startOffset, InstructionProvider* instrPro
             }
         }
     }
+
+    auto startBlock = getBlockAt(startOffset);
+    if (!startBlock->getFunctionGraph()) {
+        createFunctionGraph(startBlock);
+    }
     
     // restore the previous callbacks
     setCallbacks(prevCallbacks);
@@ -198,7 +203,10 @@ Block* Graph::createBlock(InstructionOffset offset) {
         throw std::runtime_error("Block already exists");
 
     m_blocks[offset] = Block(this, offset);
-    return &m_blocks[offset];
+    auto newBlock = &m_blocks[offset];
+    newBlock->update();
+    getCallbacks()->onBlockCreated(newBlock);
+    return newBlock;
 }
 
 void Graph::removeBlock(Block* block) {
@@ -295,7 +303,7 @@ FunctionGraph* Graph::getFunctionGraphAt(InstructionOffset offset) {
     return &it->second;
 }
 
-FunctionGraph* Graph::createFunctionGraph(Block* entryBlock) {
+FunctionGraph* Graph::createFunctionGraph(Block* entryBlock, bool updateBlocks) {
     auto offset = entryBlock->getMinOffset();
     if (m_functionGraphs.find(offset) != m_functionGraphs.end())
         throw std::runtime_error("Function graph already exists");
@@ -306,7 +314,7 @@ FunctionGraph* Graph::createFunctionGraph(Block* entryBlock) {
     return functionGraph;
 }
 
-void Graph::removeFunctionGraph(FunctionGraph* functionGraph) {
+void Graph::removeFunctionGraph(FunctionGraph* functionGraph, bool updateBlocks) {
     auto entryBlock = functionGraph->getEntryBlock();
     auto offset = entryBlock->getMinOffset();
     auto it = m_functionGraphs.find(offset);
