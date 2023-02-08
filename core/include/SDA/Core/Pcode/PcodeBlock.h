@@ -28,6 +28,8 @@ namespace sda::pcode
 
         std::string getName() const;
 
+        Graph* getGraph();
+
         std::map<InstructionOffset, const Instruction*>& getInstructions();
 
         void setNearNextBlock(Block* nearNextBlock);

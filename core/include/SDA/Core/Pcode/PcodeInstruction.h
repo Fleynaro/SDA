@@ -10,6 +10,7 @@ namespace sda::pcode
 	enum class InstructionId {
 		NONE,
 		UNKNOWN,
+		NOP,
 
 		// Data Moving
 		COPY,

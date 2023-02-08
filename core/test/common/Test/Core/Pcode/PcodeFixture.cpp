@@ -16,8 +16,11 @@ void PcodeFixture::parsePcode(const std::string& text, pcode::Graph* graph) cons
     graph->explore(0, &provider);
 }
 
-void PcodeFixture::printPcode(pcode::FunctionGraph* graph, std::ostream& out) const {
-    pcode::Printer pcodePrinter(context->getPlatform()->getRegisterRepository().get());
+void PcodeFixture::printPcode(pcode::FunctionGraph* funcGraph, std::ostream& out, size_t tabs) const {
+    pcode::Printer pcodePrinter(context->getPlatform()->getRegisterRepository().get(), funcGraph->getGraph());
     pcodePrinter.setOutput(out);
-    pcodePrinter.printFunctionGraph(graph);
+    for (size_t i = 0; i < tabs; ++i)
+        pcodePrinter.startBlock();
+    pcodePrinter.newTabs();
+    pcodePrinter.printFunctionGraph(funcGraph);
 }

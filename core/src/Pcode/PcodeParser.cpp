@@ -43,6 +43,7 @@ void Parser::parseInstruction() {
     std::shared_ptr<Varnode> input1;
 
     if (!getToken()->isOneOfKeyword({
+        "NOP",
         "STORE",
         "BRANCH",
 		"CBRANCH",
@@ -58,7 +59,10 @@ void Parser::parseInstruction() {
 
     auto instrId = parseInstructionId();
 
-    if (instrId != InstructionId::RETURN && instrId != InstructionId::INT) {
+    if (instrId != InstructionId::NOP &&
+        instrId != InstructionId::RETURN &&
+        instrId != InstructionId::INT)
+    {
         input0 = parseVarnode();
         if (getToken()->isSymbol(',')) {
             nextToken();

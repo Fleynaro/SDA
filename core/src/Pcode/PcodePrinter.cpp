@@ -1,12 +1,13 @@
 #include "SDA/Core/Pcode/PcodePrinter.h"
+#include "SDA/Core/Pcode/PcodeGraph.h"
+#include "SDA/Core/Utils/IOManip.h"
 #include <sstream>
 #include "rang.hpp"
-#include "SDA/Core/Utils/IOManip.h"
 
 using namespace sda::pcode;
 
-Printer::Printer(const RegisterRepository* regRepo)
-    : m_regRepo(regRepo)
+Printer::Printer(const RegisterRepository* regRepo, Graph* graph)
+    : m_regRepo(regRepo), m_graph(graph)
 {}
 
 std::string Printer::Print(const Instruction* instruction, const RegisterRepository* regRepo) {
@@ -21,7 +22,8 @@ void Printer::printFunctionGraph(FunctionGraph* functionGraph) {
     auto blocks = functionGraph->getBlocks();
     for (auto block : blocks) {
         printBlock(block);
-        newLine();
+        if (block != blocks.back())
+            newLine();
     }
 }
 
@@ -31,11 +33,11 @@ void Printer::printBlock(pcode::Block* block) {
     printToken("(level: ", SYMBOL);
     printToken(std::to_string(block->getLevel()), NUMBER);
     if (block->getNearNextBlock()) {
-        printToken(", near:", SYMBOL);
+        printToken(", near: ", SYMBOL);
         printToken(block->getNearNextBlock()->getName(), IDENTIFIER);
     }
     if (block->getFarNextBlock()) {
-        printToken(", far:", SYMBOL);
+        printToken(", far: ", SYMBOL);
         printToken(block->getFarNextBlock()->getName(), IDENTIFIER);
     }
     printToken("):", SYMBOL);
@@ -43,7 +45,8 @@ void Printer::printBlock(pcode::Block* block) {
     newLine();
     for (const auto& [offset, instruction] : block->getInstructions()) {
         printInstruction(instruction);
-        newLine();
+        if (instruction != block->getInstructions().rbegin()->second)
+            newLine();
     }
     endBlock();
 }
@@ -77,6 +80,18 @@ void Printer::printVarnode(std::shared_ptr<Varnode> varnode, bool printSizeAndOf
         }
     }
     else if (auto constVarnode = std::dynamic_pointer_cast<ConstantVarnode>(varnode)) {
+        if (m_graph && constVarnode->isAddress()) {
+            auto block = m_graph->getBlockAt(constVarnode->getValue());
+            if (block) {
+                printToken("<", SYMBOL);
+                printToken(block->getName(), IDENTIFIER);
+                printToken(">", SYMBOL);
+                std::stringstream ss;
+                ss << ":" << constVarnode->getSize();
+                printToken(ss.str(), NUMBER);
+                return;
+            }
+        }
         std::stringstream ss;
         ss << "0x" << utils::to_hex() << constVarnode->getValue();
         if (printSizeAndOffset) 

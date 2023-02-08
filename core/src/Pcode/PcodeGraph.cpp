@@ -25,10 +25,6 @@ void Graph::explore(InstructionOffset startOffset, InstructionProvider* instrPro
     struct ExploreCallbacks : Callbacks {
         std::list<InstructionOffset>* unvisitedOffsets;
 
-        // void onBlockCreatedImpl(Block* block) override {
-        //     //if (startOffset == block->getMinOffset())
-        // }
-
         void onUnvisitedOffsetFoundImpl(InstructionOffset offset) override {
             unvisitedOffsets->push_back(offset);
         }
@@ -124,7 +120,11 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
             }
             else {
                 nextFarBlock = splitBlock(alreadyExistingBlock, targetOffset);
-                block->setFarNextBlock(nextFarBlock);
+                if (block == alreadyExistingBlock) {
+                    nextFarBlock->setFarNextBlock(nextFarBlock);
+                } else {
+                    block->setFarNextBlock(nextFarBlock);
+                }
             }
         }
         else {
@@ -243,8 +243,8 @@ Block* Graph::splitBlock(Block* block, InstructionOffset offset) {
     block2->getInstructions() = instrOfBlock2;
 
     // resize the blocks
-    block1->setMaxOffset(offset);
     block2->setMaxOffset(block1->getMaxOffset());
+    block1->setMaxOffset(offset);
 
     // reconnect the first block
     if (block1->getNearNextBlock())
@@ -308,7 +308,9 @@ FunctionGraph* Graph::createFunctionGraph(Block* entryBlock, bool updateBlocks) 
     if (m_functionGraphs.find(offset) != m_functionGraphs.end())
         throw std::runtime_error("Function graph already exists");
     m_functionGraphs[offset] = FunctionGraph(entryBlock);
-    entryBlock->update();
+    if (updateBlocks) {
+        entryBlock->update();
+    }
     auto functionGraph = &m_functionGraphs[offset];
     getCallbacks()->onFunctionGraphCreated(functionGraph);
     return functionGraph;
@@ -321,7 +323,9 @@ void Graph::removeFunctionGraph(FunctionGraph* functionGraph, bool updateBlocks)
     if (it == m_functionGraphs.end())
         throw std::runtime_error("Function graph not found");
     getCallbacks()->onFunctionGraphRemoved(functionGraph);
-    entryBlock->update();
+    if (updateBlocks) {
+        entryBlock->update();
+    }
     m_functionGraphs.erase(it);
 }
 

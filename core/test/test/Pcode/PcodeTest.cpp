@@ -8,18 +8,29 @@ using namespace ::testing;
 class PcodeTest : public PcodeFixture
 {
 protected:
-    
+    ::testing::AssertionResult cmp(pcode::FunctionGraph* funcGraph, const std::string& expectedCode) const {
+        std::stringstream ss;
+        printPcode(funcGraph, ss, 2);
+        return Compare(ss.str(), expectedCode);
+    }
 };
 
 TEST_F(PcodeTest, Sample1) {
     auto sourcePCode = "\
-        rax:8 = COPY 0:8 \
-        <label1>: \
-        rax:8 = INT_ADD rax:8, 1:8 \
+        NOP \n\
+        <label1>: \n\
+        NOP \n\
         BRANCH <label1> \
+    ";
+    auto expectedPCode = "\
+        Block B0(level: 1, near: B1): \n\
+            NOP \n\
+        Block B1(level: 2, far: B1): \n\
+            NOP \n\
+            BRANCH <B1>:8 \
     ";
     pcode::Graph graph;
     parsePcode(sourcePCode, &graph);
     auto funcGraph = graph.getFunctionGraphAt(pcode::InstructionOffset(0));
-    printPcode(funcGraph, std::cout);
+    ASSERT_TRUE(cmp(funcGraph, expectedPCode));
 }

@@ -10,8 +10,8 @@ namespace sda::test
     const std::list<std::string> ObjectExcludeFields = { "uuid" };
 
     ::testing::AssertionResult Compare(
-        const std::string& str1,
-        const std::string& str2,
+        const std::string& actual,
+        const std::string& expected,
         const CleanFunc& cleanFunc = DefaultCleanFunc);
 
     ::testing::AssertionResult Compare(

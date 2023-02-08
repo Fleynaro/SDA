@@ -4,18 +4,23 @@ using namespace sda;
 using namespace sda::test;
 
 ::testing::AssertionResult sda::test::Compare(
-    const std::string& str1,
-    const std::string& str2,
+    const std::string& actual,
+    const std::string& expected,
     const CleanFunc& cleanFunc)
 {
-    auto cleanStr1 = str1;
-    auto cleanStr2 = str2;
+    auto cleanStr1 = actual;
+    auto cleanStr2 = expected;
     for (auto cleanStr : { &cleanStr1, &cleanStr2 }) {
         auto it = std::remove_if(cleanStr->begin(), cleanStr->end(), cleanFunc);
         cleanStr->erase(it, cleanStr->end());
     }
     if (cleanStr1 != cleanStr2)
-        return ::testing::AssertionFailure() << "\"" << cleanStr1 << "\" != \"" << cleanStr2 << "\"";
+        return ::testing::AssertionFailure() << std::endl
+            << "Strings are not equal:" << std::endl
+            << "Expected:" << std::endl
+            << expected << std::endl
+            << "Actual:" << std::endl
+            << actual << std::endl;
     return ::testing::AssertionSuccess();
 }
 

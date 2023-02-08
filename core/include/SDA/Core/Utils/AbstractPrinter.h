@@ -38,6 +38,8 @@ namespace utils
         virtual void endCommenting();
 
         void newLine() const;
+
+        void newTabs() const;
         
     protected:
         std::ostream& out() const;

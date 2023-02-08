@@ -27,6 +27,10 @@ std::list<Block*> FunctionGraph::getBlocks() const {
     return blocks;
 }
 
+Graph* FunctionGraph::getGraph() {
+    return m_entryBlock->getGraph();
+}
+
 const std::list<FunctionGraph*>& FunctionGraph::getReferencedGraphsTo() const {
     return m_referencedGraphsTo;
 }

@@ -13,6 +13,10 @@ std::string Block::getName() const {
     return name.str();
 }
 
+Graph* Block::getGraph() {
+    return m_graph;
+}
+
 std::map<InstructionOffset, const Instruction*>& Block::getInstructions() {
     return m_instructions;
 }
@@ -141,7 +145,7 @@ void Block::update(std::list<Block*>& nextBlocks) {
     // get inited referenced blocks
     std::list<Block*> refBlocks;
     for (auto refBlock : m_referencedBlocks) {
-        if (refBlock->isInited()) {
+        if (refBlock->isInited() && !refBlock->hasLoop()) {
             refBlocks.push_back(refBlock);
         }
     }
@@ -151,9 +155,7 @@ void Block::update(std::list<Block*>& nextBlocks) {
     Block* prevRefBlock = nullptr;
     for (auto refBlock : refBlocks) {
         // calculate level
-        if (!refBlock->hasLoop()) {
-            newLevel = std::max(newLevel, refBlock->m_level + 1);
-        }
+        newLevel = std::max(newLevel, refBlock->m_level + 1);
         // check if are ref. blocks of the same function graph
         if (!needNewFunctionGraph) {
             if (prevRefBlock && refBlock->m_functionGraph != prevRefBlock->m_functionGraph) {
@@ -179,6 +181,11 @@ void Block::update(std::list<Block*>& nextBlocks) {
         } else {
             if (curFunctionGraph) {
                 m_graph->removeFunctionGraph(curFunctionGraph, false);
+                for (auto refBlock : m_referencedBlocks) {
+                    if (!refBlock->isInited())
+                        continue;
+                    refBlock->m_jumpToFunction = false;
+                }
             }
             newFunctionGraph = refBlocks.front()->m_functionGraph;
         }
