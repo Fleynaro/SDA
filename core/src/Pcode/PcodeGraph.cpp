@@ -58,7 +58,7 @@ void Graph::explore(InstructionOffset startOffset, InstructionProvider* instrPro
             instrProvider->decode(byteOffset, instructions, origInstrLength);
             if (!instructions.empty()) {
                 auto offsetAfterOrigInstr = InstructionOffset(byteOffset + origInstrLength, 0);
-                unvisitedOffsets.push_back(offsetAfterOrigInstr);
+                unvisitedOffsets.push_front(offsetAfterOrigInstr);
                 for (auto it = instructions.begin(); it != instructions.end(); ++it) {
                     InstructionOffset nextOffset;
                     if (it != std::prev(instructions.end())) {

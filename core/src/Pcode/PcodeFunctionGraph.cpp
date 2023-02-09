@@ -17,9 +17,12 @@ std::list<Block*> FunctionGraph::getBlocks() const {
     while (!toVisit.empty()) {
         Block* block = toVisit.front();
         toVisit.pop_front();
+        if (std::find(blocks.begin(), blocks.end(), block) != blocks.end()) {
+            continue;
+        }
         blocks.push_back(block);
         for (Block* nextBlock : block->getNextBlocks()) {
-            if (nextBlock->getLevel() > block->getLevel()) {
+            if (!block->hasLoopWith(nextBlock)) {
                 toVisit.push_back(nextBlock);
             }
         }

@@ -99,20 +99,20 @@ size_t Block::getLevel() const {
 }
 
 bool Block::contains(InstructionOffset offset, bool halfInterval) const {
+    if (offset == m_minOffset && offset == m_maxOffset) {
+        // Block with no instructions
+        return true;
+    }
 	return offset >= m_minOffset &&
         (halfInterval ? offset < m_maxOffset : offset <= m_maxOffset);
 }
 
-bool Block::isInited() const {
-    return m_level != 0;
-}
-
-bool Block::hasLoop() const {
-    if (!m_farNextBlock)
-        return false;
-    // check if blocks are inited
-    assert(isInited() && m_farNextBlock->isInited());
-    return m_farNextBlock->m_level <= m_level;
+bool Block::hasLoopWith(Block* block) const {
+    assert(m_inited);
+    return block->m_inited &&
+            m_farNextBlock &&
+            block == m_farNextBlock->m_farNextBlock &&
+            block->m_level <= m_level;
 }
 
 void Block::update() {
@@ -142,13 +142,15 @@ void Block::update() {
 }
 
 void Block::update(std::list<Block*>& nextBlocks) {
+    m_inited = false;
     // get inited referenced blocks
     std::list<Block*> refBlocks;
     for (auto refBlock : m_referencedBlocks) {
-        if (refBlock->isInited() && !refBlock->hasLoop()) {
+        if (refBlock->m_inited && !refBlock->hasLoopWith(this)) {
             refBlocks.push_back(refBlock);
         }
     }
+    m_inited = true;
 
     size_t newLevel = 1;
     bool needNewFunctionGraph = false;
@@ -169,9 +171,7 @@ void Block::update(std::list<Block*>& nextBlocks) {
     FunctionGraph* newFunctionGraph = nullptr;
     if (needNewFunctionGraph) {
         newFunctionGraph = m_graph->createFunctionGraph(this, false);
-        for (auto refBlock : m_referencedBlocks) {
-            if (!refBlock->isInited())
-                continue;
+        for (auto refBlock : refBlocks) {
             refBlock->m_jumpToFunction = true;
         }
     } else {
@@ -181,9 +181,7 @@ void Block::update(std::list<Block*>& nextBlocks) {
         } else {
             if (curFunctionGraph) {
                 m_graph->removeFunctionGraph(curFunctionGraph, false);
-                for (auto refBlock : m_referencedBlocks) {
-                    if (!refBlock->isInited())
-                        continue;
+                for (auto refBlock : refBlocks) {
                     refBlock->m_jumpToFunction = false;
                 }
             }
@@ -201,6 +199,6 @@ void Block::update(std::list<Block*>& nextBlocks) {
     // go to next blocks
     if (m_nearNextBlock)
         nextBlocks.push_back(m_nearNextBlock);
-    if (m_farNextBlock && !hasLoop())
+    if (m_farNextBlock && !hasLoopWith(m_farNextBlock))
         nextBlocks.push_back(m_farNextBlock);
 }

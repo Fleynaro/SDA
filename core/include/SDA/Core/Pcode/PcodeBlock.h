@@ -20,6 +20,7 @@ namespace sda::pcode
         InstructionOffset m_maxOffset = 0;
         FunctionGraph* m_functionGraph = nullptr;
         size_t m_level = 0;
+        bool m_inited = false;
         bool m_jumpToFunction = false;
     public:
         Block() = default;
@@ -56,9 +57,7 @@ namespace sda::pcode
 
         bool contains(InstructionOffset offset, bool halfInterval = true) const;
 
-        bool isInited() const;
-
-        bool hasLoop() const;
+        bool hasLoopWith(Block* block) const;
 
         // Called when the block was changed
         void update();
