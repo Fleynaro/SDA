@@ -237,6 +237,12 @@ void Parser::applyLabelJumps() {
             throw error(702, "Label " + labelName + " is not used as jump target");
         }
         auto addressVarnode = std::make_shared<ConstantVarnode>(jump.endOffset, 8, true);
-        m_instructions[instrOffset] = Instruction(instr.getId(), addressVarnode, nullptr, nullptr, instrOffset);
+        m_instructions[instrOffset] = Instruction(
+            instr.getId(),
+            addressVarnode,
+            instr.getInput1(),
+            instr.getOutput(),
+            instrOffset
+        );
     }
 }
