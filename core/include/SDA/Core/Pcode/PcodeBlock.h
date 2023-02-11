@@ -18,10 +18,9 @@ namespace sda::pcode
         std::list<Block*> m_referencedBlocks;
         InstructionOffset m_minOffset = 0;
         InstructionOffset m_maxOffset = 0;
-        FunctionGraph* m_functionGraph = nullptr;
+        Block* m_entryBlock = nullptr;
         size_t m_level = 0;
         bool m_inited = false;
-        bool m_jumpToFunction = false;
     public:
         Block() = default;
 
@@ -32,6 +31,8 @@ namespace sda::pcode
         Graph* getGraph();
 
         std::map<InstructionOffset, const Instruction*>& getInstructions();
+
+        const Instruction* getLastInstruction() const;
 
         void setNearNextBlock(Block* nearNextBlock);
 
@@ -53,16 +54,25 @@ namespace sda::pcode
 
         FunctionGraph* getFunctionGraph() const;
 
+        Block* getEntryBlock() const;
+
         size_t getLevel() const;
 
         bool contains(InstructionOffset offset, bool halfInterval = true) const;
 
+        // This method is used to check if the EXISTING link to the block is a loop
         bool hasLoopWith(Block* block) const;
+
+        bool canReach(Block* blockToReach) const;
 
         // Called when the block was changed
         void update();
 
     private:
-        void update(std::list<Block*>& nextBlocks);
+        void update(void (Block::*updateMethod)(bool& goNextBlocks));
+
+        void updateLevels(bool& goNextBlocks);
+
+        void updateEntryBlocks(bool& goNextBlocks);
     };
 };

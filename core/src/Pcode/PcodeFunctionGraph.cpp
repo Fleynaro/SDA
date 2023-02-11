@@ -15,13 +15,16 @@ std::list<Block*> FunctionGraph::getBlocks() const {
     std::list<Block*> toVisit;
     toVisit.push_back(m_entryBlock);
     while (!toVisit.empty()) {
-        Block* block = toVisit.front();
+        auto block = toVisit.front();
         toVisit.pop_front();
         if (std::find(blocks.begin(), blocks.end(), block) != blocks.end()) {
             continue;
         }
         blocks.push_back(block);
-        for (Block* nextBlock : block->getNextBlocks()) {
+        for (auto nextBlock : block->getNextBlocks()) {
+            if (m_entryBlock != nextBlock->getEntryBlock()) {
+                continue;
+            }
             if (!block->hasLoopWith(nextBlock)) {
                 toVisit.push_back(nextBlock);
             }

@@ -9,7 +9,7 @@ namespace sda::test
     protected:
         std::list<pcode::Instruction> parsePcode(const std::string& text) const;
 
-        void parsePcode(const std::string& text, pcode::Graph* graph) const;
+        pcode::FunctionGraph* parsePcode(const std::string& text, pcode::Graph* graph) const;
 
         void printPcode(pcode::FunctionGraph* graph, std::ostream& out, size_t tabs = 0) const;
     };

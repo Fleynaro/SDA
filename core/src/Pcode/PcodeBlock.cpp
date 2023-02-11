@@ -21,6 +21,10 @@ std::map<InstructionOffset, const Instruction*>& Block::getInstructions() {
     return m_instructions;
 }
 
+const Instruction* Block::getLastInstruction() const {
+    return m_instructions.empty() ? nullptr : m_instructions.rbegin()->second;
+}
+
 void Block::setNearNextBlock(Block* nearNextBlock) {
     auto prevNearNextBlock = m_nearNextBlock;
     if (prevNearNextBlock) {
@@ -91,10 +95,17 @@ InstructionOffset Block::getMaxOffset() const {
 }
 
 FunctionGraph* Block::getFunctionGraph() const {
-    return m_functionGraph;
+    assert(m_inited);
+    return m_graph->getFunctionGraphAt(m_entryBlock->m_minOffset);
+}
+
+Block* Block::getEntryBlock() const {
+    assert(m_inited);
+    return m_entryBlock;
 }
 
 size_t Block::getLevel() const {
+    assert(m_inited);
     return m_level;
 }
 
@@ -109,13 +120,45 @@ bool Block::contains(InstructionOffset offset, bool halfInterval) const {
 
 bool Block::hasLoopWith(Block* block) const {
     assert(m_inited);
-    return block->m_inited &&
-            m_farNextBlock &&
-            block == m_farNextBlock->m_farNextBlock &&
-            block->m_level <= m_level;
+    assert(block->m_inited);
+    return m_farNextBlock && block == m_farNextBlock && block->m_level <= m_level;
+}
+
+bool Block::canReach(Block* blockToReach) const {
+    std::set<const Block*> visitedBlocks;
+    std::list<const Block*> toVisit;
+    toVisit.push_back(this);
+    while (!toVisit.empty()) {
+        auto block = toVisit.front();
+        toVisit.pop_front();
+        if (visitedBlocks.find(block) != visitedBlocks.end()) {
+            continue;
+        }
+        visitedBlocks.insert(block);
+        for (auto nextBlock : block->getNextBlocks()) {
+            if (nextBlock == blockToReach) {
+                return true;
+            }
+            // hasLoopWith is here for optimization only
+            if (!block->hasLoopWith(nextBlock)) {
+                toVisit.push_back(nextBlock);
+            }
+        }
+    }
+    return false;
 }
 
 void Block::update() {
+    if (!m_graph->m_updateBlocksEnabled) {
+        return;
+    }
+    m_graph->m_updateBlocksEnabled = false;
+    update(&Block::updateLevels);
+    update(&Block::updateEntryBlocks);
+    m_graph->m_updateBlocksEnabled = true;
+}
+
+void Block::update(void (Block::*updateMethod)(bool& goNextBlocks)) {
     std::map<Block*, size_t> blockKnocks;
     std::list<Block*> blocksToVisit;
     blocksToVisit.push_back(this);
@@ -132,7 +175,13 @@ void Block::update() {
                 continue;
             }
             blockKnocks.erase(it);
-            block->update(blocksToVisit);
+            bool goNextBlocks = false;
+            (block->*updateMethod)(goNextBlocks);
+            if (goNextBlocks) {
+                for (auto nextBlock : block->getNextBlocks()) {
+                    blocksToVisit.push_back(nextBlock);
+                }
+            }
         }
         if (!blockKnocks.empty()) {
             auto block = blockKnocks.begin()->first;
@@ -141,64 +190,52 @@ void Block::update() {
     } while (!blocksToVisit.empty());
 }
 
-void Block::update(std::list<Block*>& nextBlocks) {
-    m_inited = false;
-    // get inited referenced blocks
-    std::list<Block*> refBlocks;
-    for (auto refBlock : m_referencedBlocks) {
-        if (refBlock->m_inited && !refBlock->hasLoopWith(this)) {
-            refBlocks.push_back(refBlock);
-        }
-    }
-    m_inited = true;
-
+void Block::updateLevels(bool& goNextBlocks) {
     size_t newLevel = 1;
-    bool needNewFunctionGraph = false;
-    Block* prevRefBlock = nullptr;
-    for (auto refBlock : refBlocks) {
-        // calculate level
-        newLevel = std::max(newLevel, refBlock->m_level + 1);
-        // check if are ref. blocks of the same function graph
-        if (!needNewFunctionGraph) {
-            if (prevRefBlock && refBlock->m_functionGraph != prevRefBlock->m_functionGraph) {
-                needNewFunctionGraph = true;
+    for (auto refBlock : m_referencedBlocks) {
+        if (refBlock->m_inited) {
+            // canReach is used to check if there is a loop
+            if (!m_inited || !canReach(refBlock)) {
+                newLevel = std::max(newLevel, refBlock->m_level + 1);
             }
         }
-        prevRefBlock = refBlock;
     }
+    // check if need to update
+    if (m_inited && newLevel == m_level)
+        return;
+    // update
+    m_level = newLevel;
+    m_inited = true;
+    goNextBlocks = true;
+}
 
-    // create new function graph
-    FunctionGraph* newFunctionGraph = nullptr;
-    if (needNewFunctionGraph) {
-        newFunctionGraph = m_graph->createFunctionGraph(this, false);
-        for (auto refBlock : refBlocks) {
-            refBlock->m_jumpToFunction = true;
+void Block::updateEntryBlocks(bool& goNextBlocks) {
+    Block* newEntryBlock = nullptr;
+    std::set<Block*> refEntryBlocks;
+    for (auto refBlock : m_referencedBlocks) {
+        if (refBlock->m_inited) {
+            refEntryBlocks.insert(refBlock->m_entryBlock);
         }
-    } else {
-        auto curFunctionGraph = m_graph->getFunctionGraphAt(m_minOffset);
-        if (refBlocks.empty()) {
-            newFunctionGraph = curFunctionGraph;
-        } else {
-            if (curFunctionGraph) {
-                m_graph->removeFunctionGraph(curFunctionGraph, false);
-                for (auto refBlock : refBlocks) {
-                    refBlock->m_jumpToFunction = false;
-                }
-            }
-            newFunctionGraph = refBlocks.front()->m_functionGraph;
+    }
+    auto curFunctionGraph = m_graph->getFunctionGraphAt(m_minOffset);
+    if (refEntryBlocks.size() == 1) {
+        newEntryBlock = *refEntryBlocks.begin();
+        if (curFunctionGraph && curFunctionGraph != newEntryBlock->getFunctionGraph()) {
+            m_graph->removeFunctionGraph(curFunctionGraph);
+        }
+    }
+    else {
+        newEntryBlock = this;
+        if (!curFunctionGraph) {
+            m_graph->createFunctionGraph(this);
         }
     }
 
     // check if need to update
-    if (newLevel == m_level && newFunctionGraph == m_functionGraph)
+    if (m_inited && newEntryBlock == m_entryBlock)
         return;
     // update
-    m_level = newLevel;
-    m_functionGraph = newFunctionGraph;
-
-    // go to next blocks
-    if (m_nearNextBlock)
-        nextBlocks.push_back(m_nearNextBlock);
-    if (m_farNextBlock && !hasLoopWith(m_farNextBlock))
-        nextBlocks.push_back(m_farNextBlock);
+    m_entryBlock = newEntryBlock;
+    m_inited = true;
+    goNextBlocks = true;
 }

@@ -8,7 +8,7 @@ namespace sda::pcode
     class Parser : public utils::AbstractParser
     {
         struct Jump {
-            InstructionOffset startOffset;
+            std::list<InstructionOffset> startOffsets;
             InstructionOffset endOffset;
         };
         InstructionOffset m_curOffset = 0;

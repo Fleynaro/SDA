@@ -94,9 +94,9 @@ std::shared_ptr<Varnode> Parser::parseVarnode() {
             accept('>');
             auto it = m_labelToJump.find(labelName);
             if (it != m_labelToJump.end()) {
-                it->second.startOffset = m_curOffset;
+                it->second.startOffsets.push_back(m_curOffset);
             } else {
-                m_labelToJump[labelName] = { m_curOffset, InvalidOffset };
+                m_labelToJump[labelName] = { { m_curOffset }, InvalidOffset };
             }
         }
         return nullptr;
@@ -219,7 +219,7 @@ void Parser::parseLabelIfExists() {
             if (it != m_labelToJump.end()) {
                 it->second.endOffset = m_curOffset;
             } else {
-                m_labelToJump[labelName] = Jump{ InvalidOffset, m_curOffset };
+                m_labelToJump[labelName] = Jump{ {}, m_curOffset };
             }
         }
     }
@@ -227,22 +227,23 @@ void Parser::parseLabelIfExists() {
 
 void Parser::applyLabelJumps() {
     for (auto& [labelName, jump] : m_labelToJump) {
-        if (jump.startOffset == InvalidOffset)
+        if (jump.startOffsets.empty())
             throw error(700, "Label " + labelName + " is not used");
         if (jump.endOffset == InvalidOffset)
             throw error(701, "Label " + labelName + " is not defined");
-        auto instrOffset = jump.startOffset;
-        auto& instr = m_instructions[instrOffset];
-        if (!instr.isAnyJump()) {
-            throw error(702, "Label " + labelName + " is not used as jump target");
+        for (auto instrOffset : jump.startOffsets) {
+            auto& instr = m_instructions[instrOffset];
+            if (!instr.isAnyJump()) {
+                throw error(702, "Label " + labelName + " is not used as jump target");
+            }
+            auto addressVarnode = std::make_shared<ConstantVarnode>(jump.endOffset, 8, true);
+            m_instructions[instrOffset] = Instruction(
+                instr.getId(),
+                addressVarnode,
+                instr.getInput1(),
+                instr.getOutput(),
+                instrOffset
+            );
         }
-        auto addressVarnode = std::make_shared<ConstantVarnode>(jump.endOffset, 8, true);
-        m_instructions[instrOffset] = Instruction(
-            instr.getId(),
-            addressVarnode,
-            instr.getInput1(),
-            instr.getOutput(),
-            instrOffset
-        );
     }
 }

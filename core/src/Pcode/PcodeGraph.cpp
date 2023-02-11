@@ -57,8 +57,11 @@ void Graph::explore(InstructionOffset startOffset, InstructionProvider* instrPro
             std::list<Instruction> instructions;
             instrProvider->decode(byteOffset, instructions, origInstrLength);
             if (!instructions.empty()) {
+                auto& lastInstr = *instructions.rbegin();
                 auto offsetAfterOrigInstr = InstructionOffset(byteOffset + origInstrLength, 0);
-                unvisitedOffsets.push_front(offsetAfterOrigInstr);
+                if (!lastInstr.isNotGoingNext()) {
+                    unvisitedOffsets.push_front(offsetAfterOrigInstr);
+                }
                 for (auto it = instructions.begin(); it != instructions.end(); ++it) {
                     InstructionOffset nextOffset;
                     if (it != std::prev(instructions.end())) {
@@ -70,11 +73,6 @@ void Graph::explore(InstructionOffset startOffset, InstructionProvider* instrPro
                 }
             }
         }
-    }
-
-    auto startBlock = getBlockAt(startOffset);
-    if (!startBlock->getFunctionGraph()) {
-        createFunctionGraph(startBlock);
     }
     
     // restore the previous callbacks
@@ -90,7 +88,16 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
 
     // get or create a block at this offset
     auto block = getBlockAt(offset, false);
-    if (!block) {
+    if (block) {
+        auto lastBlockInstr = block->getLastInstruction();
+        if (lastBlockInstr && lastBlockInstr->isNotGoingNext()) {
+            /*
+                BRANCH <label> <--- end of the previous block
+                NOP   <--- here we start exploring (we must not extend the previous block)
+            */
+            block = createBlock(offset);
+        }
+    } else {
         block = createBlock(offset);
     }
     block->getInstructions()[offset] = &m_instructions[offset];
@@ -138,7 +145,7 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
         if (nextNearBlock)
             getCallbacks()->onUnvisitedOffsetFound(nextNearBlock->getMinOffset());
     }
-    else if (instruction.getId() != InstructionId::RETURN && instruction.getId() != InstructionId::INT) {
+    else if (!instruction.isNotGoingNext()) {
         if (auto nextBlock = getBlockAt(nextOffset)) {
             /*
                 Case 1:
@@ -247,12 +254,15 @@ Block* Graph::splitBlock(Block* block, InstructionOffset offset) {
     block1->setMaxOffset(offset);
 
     // reconnect the first block
+    setUpdateBlocksEnabled(false);
     if (block1->getNearNextBlock())
         block2->setNearNextBlock(block1->getNearNextBlock());
     if (block1->getFarNextBlock())
         block2->setFarNextBlock(block1->getFarNextBlock());
     block1->setNearNextBlock(block2);
     block1->setFarNextBlock(nullptr);
+    setUpdateBlocksEnabled(true);
+    block2->update();
 
     return block2;
 }
@@ -303,30 +313,30 @@ FunctionGraph* Graph::getFunctionGraphAt(InstructionOffset offset) {
     return &it->second;
 }
 
-FunctionGraph* Graph::createFunctionGraph(Block* entryBlock, bool updateBlocks) {
+FunctionGraph* Graph::createFunctionGraph(Block* entryBlock) {
     auto offset = entryBlock->getMinOffset();
     if (m_functionGraphs.find(offset) != m_functionGraphs.end())
         throw std::runtime_error("Function graph already exists");
     m_functionGraphs[offset] = FunctionGraph(entryBlock);
-    if (updateBlocks) {
-        entryBlock->update();
-    }
+    entryBlock->update();
     auto functionGraph = &m_functionGraphs[offset];
     getCallbacks()->onFunctionGraphCreated(functionGraph);
     return functionGraph;
 }
 
-void Graph::removeFunctionGraph(FunctionGraph* functionGraph, bool updateBlocks) {
+void Graph::removeFunctionGraph(FunctionGraph* functionGraph) {
     auto entryBlock = functionGraph->getEntryBlock();
     auto offset = entryBlock->getMinOffset();
     auto it = m_functionGraphs.find(offset);
     if (it == m_functionGraphs.end())
         throw std::runtime_error("Function graph not found");
     getCallbacks()->onFunctionGraphRemoved(functionGraph);
-    if (updateBlocks) {
-        entryBlock->update();
-    }
+    entryBlock->update();
     m_functionGraphs.erase(it);
+}
+
+void Graph::setUpdateBlocksEnabled(bool enabled) {
+    m_updateBlocksEnabled = enabled;
 }
 
 void Graph::setCallbacks(std::shared_ptr<Callbacks> callbacks) {

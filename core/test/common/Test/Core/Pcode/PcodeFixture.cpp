@@ -10,10 +10,11 @@ std::list<pcode::Instruction> PcodeFixture::parsePcode(const std::string& text) 
     return pcode::Parser::Parse(text, context->getPlatform()->getRegisterRepository().get());
 }
 
-void PcodeFixture::parsePcode(const std::string& text, pcode::Graph* graph) const {
+pcode::FunctionGraph* PcodeFixture::parsePcode(const std::string& text, pcode::Graph* graph) const {
     auto instructions = parsePcode(text);
     pcode::ListInstructionProvider provider(instructions);
     graph->explore(0, &provider);
+    return graph->getFunctionGraphAt(pcode::InstructionOffset(0));
 }
 
 void PcodeFixture::printPcode(pcode::FunctionGraph* funcGraph, std::ostream& out, size_t tabs) const {

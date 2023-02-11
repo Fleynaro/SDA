@@ -7,9 +7,11 @@ namespace sda::pcode
 {
     class Graph
     {
+        friend void Block::update();
         std::map<InstructionOffset, Instruction> m_instructions;
         std::map<InstructionOffset, Block> m_blocks;
         std::map<InstructionOffset, FunctionGraph> m_functionGraphs;
+        bool m_updateBlocksEnabled = true;
     public:
         Graph();
 
@@ -38,9 +40,11 @@ namespace sda::pcode
 
         FunctionGraph* getFunctionGraphAt(InstructionOffset offset);
 
-        FunctionGraph* createFunctionGraph(Block* entryBlock, bool updateBlocks = true);
+        FunctionGraph* createFunctionGraph(Block* entryBlock);
 
-        void removeFunctionGraph(FunctionGraph* functionGraph, bool updateBlocks = true);
+        void removeFunctionGraph(FunctionGraph* functionGraph);
+
+        void setUpdateBlocksEnabled(bool enabled);
 
          // Callbacks for the graph
         class Callbacks

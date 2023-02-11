@@ -71,3 +71,10 @@ bool Instruction::isComutative() const {
         m_id == InstructionId::FLOAT_EQUAL ||
         m_id == InstructionId::FLOAT_NOTEQUAL;
 }
+
+bool Instruction::isNotGoingNext() const {
+    return
+            m_id == InstructionId::BRANCH ||
+            m_id == InstructionId::RETURN ||
+            m_id == InstructionId::INT;
+}
