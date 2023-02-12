@@ -167,3 +167,9 @@ TEST_F(PcodeTest, Sample5) {
     auto funcGraph = parsePcode(sourcePCode, &graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
 }
+
+// TODO: call (всегда ссылается на entryBlock, но может сослаться на блок с существуюшими refBlocks и тогда надо создать там граф, т.е. сделать блок искуственным entry блоком)
+// TODO: two nested loops (with general block) test
+// TODO: goto test
+// TODO: change graph after explore test
+// TODO: joinBlocks test

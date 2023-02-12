@@ -164,6 +164,7 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
             if (block != nextBlock) {
                 if (nextBlock->getReferencedBlocks().size() == 0) {
                     // if no other blocks reference this block, join it
+                    assert(false); // TODO: not tested
                     joinBlocks(block, nextBlock);
                 } else {
                     // otherwise, make a link
