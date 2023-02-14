@@ -20,7 +20,6 @@ namespace sda::pcode
         InstructionOffset m_maxOffset = 0;
         Block* m_entryBlock = nullptr;
         size_t m_level = 0;
-        bool m_inited = false;
     public:
         Block() = default;
 
@@ -56,6 +55,8 @@ namespace sda::pcode
 
         Block* getEntryBlock() const;
 
+        bool isEntryBlock() const;
+
         size_t getLevel() const;
 
         bool contains(InstructionOffset offset, bool halfInterval = true) const;
@@ -74,5 +75,9 @@ namespace sda::pcode
         void updateLevels(bool& goNextBlocks);
 
         void updateEntryBlocks(bool& goNextBlocks);
+
+        bool isLevelInited() const;
+
+        bool isEntryBlockInited() const;
     };
 };

@@ -19,12 +19,17 @@ namespace sda::pcode
 
         Graph* getGraph();
 
-        const std::list<FunctionGraph*>& getReferencedGraphsTo() const;
+        const std::list<FunctionGraph*>& getReferencesTo() const;
 
-        const std::map<InstructionOffset, FunctionGraph*>& getReferencedGraphsFrom() const;
+        const std::map<InstructionOffset, FunctionGraph*>& getReferencesFrom() const;
 
-        void addReferencedGraphFrom(InstructionOffset fromOffset, FunctionGraph* referencedGraph);
+        void addReferenceFrom(InstructionOffset fromOffset, FunctionGraph* referencedGraph);
 
-        void removeReferencedGraphFrom(InstructionOffset fromOffset);
+        void removeAllReferences();
+
+        void moveReferences(
+            FunctionGraph* destGraph,
+            InstructionOffset startFromOffset = InvalidOffset,
+            InstructionOffset endFromOffset = InvalidOffset);
     };
 };

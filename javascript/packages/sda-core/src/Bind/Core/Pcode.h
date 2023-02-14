@@ -67,9 +67,9 @@ namespace sda::bind
             cl
                 .auto_wrap_object_ptrs(true)
                 .property("entryBlock", &pcode::FunctionGraph::getEntryBlock)
-                .property("referencedGraphsTo", &pcode::FunctionGraph::getReferencedGraphsTo)
-                .property("referencedGraphsFrom", &pcode::FunctionGraph::getReferencedGraphsFrom)
-                .method("addReferencedGraphFrom", &pcode::FunctionGraph::addReferencedGraphFrom)
+                .property("referencedGraphsTo", &pcode::FunctionGraph::getReferencesTo)
+                .property("referencedGraphsFrom", &pcode::FunctionGraph::getReferencesFrom)
+                .method("addReferencedGraphFrom", &pcode::FunctionGraph::addReferenceFrom)
                 .method("removeReferencedGraphFrom", &pcode::FunctionGraph::removeReferencedGraphFrom);
             module.class_("PcodeFunctionGraph", cl);
         }

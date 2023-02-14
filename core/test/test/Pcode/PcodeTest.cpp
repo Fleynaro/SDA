@@ -105,7 +105,7 @@ TEST_F(PcodeTest, Sample4) {
             BRANCH <B4>:8 \
     ";
     auto expectedPCodeOfFunc3 = "\
-        Block B4(level: 2): \n\
+        Block B4(level: 1): \n\
             NOP \
     ";
     pcode::Graph graph;
@@ -114,10 +114,10 @@ TEST_F(PcodeTest, Sample4) {
     graph.explore(pcode::InstructionOffset(0, 0), &provider);
     graph.explore(pcode::InstructionOffset(2, 0), &provider);
     auto funcGraph1 = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
-    ASSERT_TRUE(cmp(funcGraph1, expectedPCodeOfFunc1));
     auto funcGraph2 = graph.getFunctionGraphAt(pcode::InstructionOffset(2, 0));
-    ASSERT_TRUE(cmp(funcGraph2, expectedPCodeOfFunc2));
     auto funcGraph3 = graph.getFunctionGraphAt(pcode::InstructionOffset(4, 0));
+    ASSERT_TRUE(cmp(funcGraph1, expectedPCodeOfFunc1));
+    ASSERT_TRUE(cmp(funcGraph2, expectedPCodeOfFunc2));
     ASSERT_TRUE(cmp(funcGraph3, expectedPCodeOfFunc3));
 }
 
@@ -166,6 +166,133 @@ TEST_F(PcodeTest, Sample5) {
     pcode::Graph graph;
     auto funcGraph = parsePcode(sourcePCode, &graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
+}
+
+TEST_F(PcodeTest, Sample6) {
+    // Graph: https://photos.app.goo.gl/cbsdJ2VmczicoZ1v5
+    auto sourcePCode = "\
+        // ---- func1 ---- \n\
+        CALL <func2> \n\
+        CALL <func3> \n\
+        // ---- func2 ---- \n\
+        <func2>: \n\
+        NOP \n\
+        BRANCH <func3> \n\
+        // ---- func3 ---- \n\
+        <func3>: \n\
+        NOP \n\
+        BRANCH <func2> \
+    ";
+    auto expectedPCodeOfFunc1 = "\
+        Block B0(level: 1): \n\
+            CALL <B2>:8 \n\
+            CALL <B4>:8 \
+    ";
+    auto expectedPCodeOfFunc2 = "\
+        Block B2(level: 1, far: B4): \n\
+            NOP \n\
+            BRANCH <B4>:8 \
+    ";
+    auto expectedPCodeOfFunc3 = "\
+        Block B4(level: 1, far: B2): \n\
+            NOP \n\
+            BRANCH <B2>:8 \
+    ";
+    pcode::Graph graph;
+    auto instructions = parsePcode(sourcePCode);
+    pcode::ListInstructionProvider provider(instructions);
+    graph.explore(pcode::InstructionOffset(0, 0), &provider);
+    graph.explore(pcode::InstructionOffset(2, 0), &provider);
+    auto funcGraph1 = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
+    auto funcGraph2 = graph.getFunctionGraphAt(pcode::InstructionOffset(2, 0));
+    auto funcGraph3 = graph.getFunctionGraphAt(pcode::InstructionOffset(4, 0));
+    auto entryBlock2 = funcGraph2->getEntryBlock();
+    auto entryBlock3 = funcGraph3->getEntryBlock();
+    ASSERT_EQ(funcGraph1->getReferencesFrom().size(), 2);
+    ASSERT_EQ(funcGraph2->getReferencesTo().size(), 1);
+    ASSERT_EQ(funcGraph3->getReferencesTo().size(), 1);
+    ASSERT_TRUE(cmp(funcGraph1, expectedPCodeOfFunc1));
+    ASSERT_TRUE(cmp(funcGraph2, expectedPCodeOfFunc2));
+    ASSERT_TRUE(cmp(funcGraph3, expectedPCodeOfFunc3));
+    // no loop because blocks belongs to different functions
+    ASSERT_FALSE(entryBlock3->hasLoopWith(entryBlock2));
+    // remove all links
+    entryBlock2->setFarNextBlock(nullptr);
+    entryBlock3->setFarNextBlock(nullptr);
+    // recover the removed links
+    entryBlock3->setFarNextBlock(entryBlock2);
+    entryBlock2->setFarNextBlock(entryBlock3);
+    // check if there are no changes
+    ASSERT_TRUE(cmp(funcGraph1, expectedPCodeOfFunc1));
+    ASSERT_TRUE(cmp(funcGraph2, expectedPCodeOfFunc2));
+    ASSERT_TRUE(cmp(funcGraph3, expectedPCodeOfFunc3));
+    ASSERT_FALSE(entryBlock3->hasLoopWith(entryBlock2));
+}
+
+TEST_F(PcodeTest, Sample7) {
+    // Graph: https://photos.app.goo.gl/1WcQpH1SoKUUPLU56
+    auto sourcePCode = "\
+        <func>: \n\
+        NOP \n\
+        BRANCH <jmp> \n\
+        <jmp>: \n\
+        CALL <func> \
+    ";
+    auto expectedPCode = "\
+        Block B0(level: 1, far: B2): \n\
+            NOP \n\
+            BRANCH <B2>:8 \n\
+        Block B2(level: 2): \n\
+            CALL <B0>:8 \
+    ";
+    pcode::Graph graph;
+    auto funcGraph = parsePcode(sourcePCode, &graph);
+    // the function graph refers to itself
+    ASSERT_EQ(funcGraph, funcGraph->getReferencesFrom().begin()->second);
+    ASSERT_EQ(funcGraph, *funcGraph->getReferencesTo().begin());
+    ASSERT_TRUE(cmp(funcGraph, expectedPCode));
+}
+
+TEST_F(PcodeTest, Sample8) {
+    // Graph: https://photos.app.goo.gl/76TRzwXeCEma5TMu8
+    auto sourcePCode = "\
+        // ---- the main function ---- \n\
+        NOP \n\
+        CALL <func> \n\
+        <newFunc>: \n\
+        NOP \n\
+        CALL <func> \n\
+        RETURN \n\
+        // ---- the function that is refered ---- \n\
+        <func>: \n\
+        RETURN \n\
+        // ---- the function that has a new call ---- \n\
+        CALL <newFunc> \
+    ";
+    auto expectedPCodeOfMainFunc = "\
+        Block B0(level: 1): \n\
+            NOP \n\
+            CALL <B5>:8 \n\
+            NOP \n\
+            CALL <B5>:8 \n\
+            RETURN \
+    ";
+    pcode::Graph graph;
+    auto instructions = parsePcode(sourcePCode);
+    pcode::ListInstructionProvider provider(instructions);
+    graph.explore(pcode::InstructionOffset(0, 0), &provider);
+    auto mainFuncGraph = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
+    ASSERT_EQ(mainFuncGraph->getReferencesFrom().size(), 2);
+    ASSERT_TRUE(cmp(mainFuncGraph, expectedPCodeOfMainFunc));
+    // explore the function that has a new call
+    graph.explore(pcode::InstructionOffset(6, 0), &provider);
+    // now the main function has 1 "from" reference
+    ASSERT_EQ(mainFuncGraph->getReferencesFrom().size(), 1);
+    // the new function also has 1 "from" reference borrowed from the main function
+    auto newFuncGraph = graph.getFunctionGraphAt(pcode::InstructionOffset(2, 0));
+    ASSERT_EQ(newFuncGraph->getReferencesFrom().size(), 1);
+    // and has 1 "to" reference
+    ASSERT_EQ(newFuncGraph->getReferencesTo().size(), 1);
 }
 
 // TODO: call (всегда ссылается на entryBlock, но может сослаться на блок с существуюшими refBlocks и тогда надо создать там граф, т.е. сделать блок искуственным entry блоком)

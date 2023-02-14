@@ -145,6 +145,39 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
         if (nextNearBlock)
             getCallbacks()->onUnvisitedOffsetFound(nextNearBlock->getMinOffset());
     }
+    else if (instruction.getId() == pcode::InstructionId::CALL) {
+        auto targetOffset = GetTargetOffset(&instruction);
+        if (targetOffset == InvalidOffset)
+            return;
+        pcode::Block* calledBlock = nullptr;
+        if (auto alreadyExistingBlock = getBlockAt(targetOffset)) {
+            if (targetOffset == alreadyExistingBlock->getMinOffset()) {
+                calledBlock = alreadyExistingBlock;
+                block->getFunctionGraph()->addReferenceFrom(
+                        instruction.getOffset(), calledBlock->getFunctionGraph());
+            }
+            else {
+                calledBlock = splitBlock(alreadyExistingBlock, targetOffset);
+                if (block == alreadyExistingBlock) {
+                    calledBlock->getFunctionGraph()->addReferenceFrom(
+                        instruction.getOffset(), calledBlock->getFunctionGraph());
+                } else {
+                    // todo: update calledBlock? + create graph if it is not entry
+                    block->getFunctionGraph()->addReferenceFrom(
+                        instruction.getOffset(), calledBlock->getFunctionGraph());
+                }
+            }
+        }
+        else {
+            calledBlock = createBlock(targetOffset);
+            block->getFunctionGraph()->addReferenceFrom(
+                instruction.getOffset(), calledBlock->getFunctionGraph());
+        }
+
+        // next unvisited offsets
+        if (calledBlock)
+            getCallbacks()->onUnvisitedOffsetFound(calledBlock->getMinOffset());
+    }
     else if (!instruction.isNotGoingNext()) {
         if (auto nextBlock = getBlockAt(nextOffset)) {
             /*
@@ -333,6 +366,7 @@ void Graph::removeFunctionGraph(FunctionGraph* functionGraph) {
         throw std::runtime_error("Function graph not found");
     getCallbacks()->onFunctionGraphRemoved(functionGraph);
     entryBlock->update();
+    it->second.removeAllReferences();
     m_functionGraphs.erase(it);
 }
 
