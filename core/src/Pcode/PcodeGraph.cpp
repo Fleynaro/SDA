@@ -153,25 +153,20 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
         if (auto alreadyExistingBlock = getBlockAt(targetOffset)) {
             if (targetOffset == alreadyExistingBlock->getMinOffset()) {
                 calledBlock = alreadyExistingBlock;
-                block->getFunctionGraph()->addReferenceFrom(
-                        instruction.getOffset(), calledBlock->getFunctionGraph());
+                block->getFunctionGraph()->addReferenceFrom(offset, calledBlock);
             }
             else {
                 calledBlock = splitBlock(alreadyExistingBlock, targetOffset);
                 if (block == alreadyExistingBlock) {
-                    calledBlock->getFunctionGraph()->addReferenceFrom(
-                        instruction.getOffset(), calledBlock->getFunctionGraph());
+                    calledBlock->getFunctionGraph()->addReferenceFrom(offset, calledBlock);
                 } else {
-                    // todo: update calledBlock? + create graph if it is not entry
-                    block->getFunctionGraph()->addReferenceFrom(
-                        instruction.getOffset(), calledBlock->getFunctionGraph());
+                    block->getFunctionGraph()->addReferenceFrom(offset, calledBlock);
                 }
             }
         }
         else {
             calledBlock = createBlock(targetOffset);
-            block->getFunctionGraph()->addReferenceFrom(
-                instruction.getOffset(), calledBlock->getFunctionGraph());
+            block->getFunctionGraph()->addReferenceFrom(offset, calledBlock);
         }
 
         // next unvisited offsets

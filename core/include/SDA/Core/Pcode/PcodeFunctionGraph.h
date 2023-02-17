@@ -25,6 +25,8 @@ namespace sda::pcode
 
         void addReferenceFrom(InstructionOffset fromOffset, FunctionGraph* referencedGraph);
 
+        void addReferenceFrom(InstructionOffset fromOffset, Block* calledBlock);
+
         void removeAllReferences();
 
         void moveReferences(

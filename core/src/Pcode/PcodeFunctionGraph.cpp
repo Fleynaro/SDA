@@ -1,4 +1,5 @@
 #include "SDA/Core/Pcode/PcodeFunctionGraph.h"
+#include "SDA/Core/Pcode/PcodeGraph.h"
 
 using namespace sda::pcode;
 
@@ -48,6 +49,19 @@ const std::map<InstructionOffset, FunctionGraph*>& FunctionGraph::getReferencesF
 void FunctionGraph::addReferenceFrom(InstructionOffset fromOffset, FunctionGraph* referencedGraph) {
     m_referencedGraphsFrom[fromOffset] = referencedGraph;
     referencedGraph->m_referencedGraphsTo.push_back(this);
+}
+
+void FunctionGraph::addReferenceFrom(InstructionOffset fromOffset, Block* calledBlock) {
+    if (calledBlock->isEntryBlock()) {
+        addReferenceFrom(fromOffset, calledBlock->getFunctionGraph());
+    } else {
+        auto graph = calledBlock->getGraph();
+        graph->setUpdateBlocksEnabled(false);
+        auto newFuncGraph = graph->createFunctionGraph(calledBlock);
+        addReferenceFrom(fromOffset, newFuncGraph);
+        graph->setUpdateBlocksEnabled(true);
+        calledBlock->update();
+    }
 }
 
 void FunctionGraph::removeAllReferences() {

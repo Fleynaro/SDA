@@ -245,6 +245,7 @@ void Block::updateEntryBlocks(bool& goNextBlocks) {
             if (curFunctionGraph != newFunctionGraph) {
                 curFunctionGraph->moveReferences(newFunctionGraph);
                 m_graph->removeFunctionGraph(curFunctionGraph);
+                curFunctionGraph = nullptr;
             }
         }
     }
@@ -253,13 +254,16 @@ void Block::updateEntryBlocks(bool& goNextBlocks) {
     if (newEntryBlock == m_entryBlock)
         return;
     // update
-    if (m_entryBlock) {
-        auto prevFunctionGraph = m_entryBlock->getFunctionGraph();
-        if (prevFunctionGraph) {
-            prevFunctionGraph->moveReferences(newEntryBlock->getFunctionGraph(), m_minOffset, m_maxOffset);
+    auto prevEntryBlock = m_entryBlock;
+    m_entryBlock = newEntryBlock;
+    if (prevEntryBlock) {
+        auto prevFunctionGraph = prevEntryBlock->getFunctionGraph();
+        auto newFunctionGraph = newEntryBlock->getFunctionGraph();
+        if (prevFunctionGraph != newFunctionGraph) {
+            // if the block becomes to belong to another func. graph then move all its "call" references to this new graph
+            prevFunctionGraph->moveReferences(newFunctionGraph, m_minOffset, m_maxOffset);
         }
     }
-    m_entryBlock = newEntryBlock;
     goNextBlocks = true;
 }
 
