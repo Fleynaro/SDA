@@ -123,21 +123,19 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
         pcode::Block* nextFarBlock = nullptr;
         if (auto alreadyExistingBlock = getBlockAt(targetOffset)) {
             if (targetOffset == alreadyExistingBlock->getMinOffset()) {
-                block->setFarNextBlock(nextFarBlock = alreadyExistingBlock);
+                nextFarBlock = alreadyExistingBlock;
             }
             else {
                 nextFarBlock = splitBlock(alreadyExistingBlock, targetOffset);
                 if (block == alreadyExistingBlock) {
-                    nextFarBlock->setFarNextBlock(nextFarBlock);
-                } else {
-                    block->setFarNextBlock(nextFarBlock);
+                    block = nextFarBlock;
                 }
             }
         }
         else {
             nextFarBlock = createBlock(targetOffset);
-            block->setFarNextBlock(nextFarBlock);
         }
+        block->setFarNextBlock(nextFarBlock);
 
         // next unvisited offsets
         if (nextFarBlock)
@@ -153,27 +151,25 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
         if (auto alreadyExistingBlock = getBlockAt(targetOffset)) {
             if (targetOffset == alreadyExistingBlock->getMinOffset()) {
                 calledBlock = alreadyExistingBlock;
-                block->getFunctionGraph()->addReferenceFrom(offset, calledBlock);
             }
             else {
                 calledBlock = splitBlock(alreadyExistingBlock, targetOffset);
                 if (block == alreadyExistingBlock) {
-                    calledBlock->getFunctionGraph()->addReferenceFrom(offset, calledBlock);
-                } else {
-                    block->getFunctionGraph()->addReferenceFrom(offset, calledBlock);
+                    block = calledBlock;
                 }
             }
         }
         else {
             calledBlock = createBlock(targetOffset);
-            block->getFunctionGraph()->addReferenceFrom(offset, calledBlock);
         }
+        block->getFunctionGraph()->addReferenceFrom(offset, calledBlock);
 
         // next unvisited offsets
         if (calledBlock)
             getCallbacks()->onUnvisitedOffsetFound(calledBlock->getMinOffset());
     }
-    else if (!instruction.isNotGoingNext()) {
+
+    if (!instruction.isNotGoingNext()) {
         if (auto nextBlock = getBlockAt(nextOffset)) {
             /*
                 Case 1:
@@ -192,7 +188,6 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
             if (block != nextBlock) {
                 if (nextBlock->getReferencedBlocks().size() == 0) {
                     // if no other blocks reference this block, join it
-                    assert(false); // TODO: not tested
                     joinBlocks(block, nextBlock);
                 } else {
                     // otherwise, make a link

@@ -15,7 +15,7 @@ protected:
     }
 };
 
-TEST_F(PcodeTest, Sample1) {
+TEST_F(PcodeTest, SimpleLoop) {
     // Graph: https://photos.app.goo.gl/j2VRr1jGHpA8EaaY9
     auto sourcePCode = "\
         NOP // block 0 \n\
@@ -35,7 +35,7 @@ TEST_F(PcodeTest, Sample1) {
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
 }
 
-TEST_F(PcodeTest, Sample2) {
+TEST_F(PcodeTest, SimpleLoopFirstBlock) {
     // Graph: https://photos.app.goo.gl/SztQ27cwyqCAKGrw9
     auto sourcePCode = "\
         <label>: \n\
@@ -55,7 +55,7 @@ TEST_F(PcodeTest, Sample2) {
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
 }
 
-TEST_F(PcodeTest, Sample3) {
+TEST_F(PcodeTest, IfElseCondition) {
     // Graph: https://photos.app.goo.gl/REjbhAcUmeLg2rfQ8
     auto sourcePCode = "\
         NOP // block 0 \n\
@@ -84,7 +84,7 @@ TEST_F(PcodeTest, Sample3) {
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
 }
 
-TEST_F(PcodeTest, Sample4) {
+TEST_F(PcodeTest, TwoEntryPointsUnion) {
     // Graph: https://photos.app.goo.gl/rHtPCcVZxJdTStND7
     auto sourcePCode = "\
         NOP // block 0 (func 1) \n\
@@ -121,7 +121,7 @@ TEST_F(PcodeTest, Sample4) {
     ASSERT_TRUE(cmp(funcGraph3, expectedPCodeOfFunc3));
 }
 
-TEST_F(PcodeTest, Sample5) {
+TEST_F(PcodeTest, ProgramWithIfElseLoop) {
     // Graph: https://photos.app.goo.gl/tXkvQ2kKjG2ZGoC5A
     auto sourcePCode = "\
         NOP // block 0 \n\
@@ -168,12 +168,122 @@ TEST_F(PcodeTest, Sample5) {
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
 }
 
-TEST_F(PcodeTest, Sample6) {
-    // Graph: https://photos.app.goo.gl/cbsdJ2VmczicoZ1v5
+TEST_F(PcodeTest, NestedLoop) {
+    // Graph: https://photos.app.goo.gl/T4xNME8267wC5rR57
+    auto sourcePCode = "\
+        <labelExternalLoop>: \n\
+        NOP // block 0 \n\
+        <labelInternalLoop>: \n\
+        NOP // block 1 \n\
+        CBRANCH <labelInternalLoop>, 0:1 \n\
+        NOP // block 3 \n\
+        CBRANCH <labelExternalLoop>, 0:1 \n\
+        NOP // block 5 \n\
+    ";
+    auto expectedPCode = "\
+        Block B0(level: 1, near: B1): \n\
+            NOP \n\
+        Block B1(level: 2, near: B3, far: B1): \n\
+            NOP \n\
+            CBRANCH <B1>:8, 0x0:1 \n\
+        Block B3(level: 3, near: B5, far: B0): \n\
+            NOP \n\
+            CBRANCH <B0>:8, 0x0:1 \n\
+        Block B5(level: 4): \n\
+            NOP \
+    ";
+    pcode::Graph graph;
+    auto funcGraph = parsePcode(sourcePCode, &graph);
+    ASSERT_TRUE(cmp(funcGraph, expectedPCode));
+}
+
+TEST_F(PcodeTest, IfConditionWithGoto) {
+    // Graph: https://photos.app.goo.gl/hdP67sRatS9AJN49A
+    auto sourcePCode = "\
+        NOP // block 0 \n\
+        CBRANCH <labelIf>, 0:1 // if condition \n\
+        NOP // then block 2 \n\
+        CBRANCH <labelGoto>, 0:1 // goto condition \n\
+        <labelIf>: \n\
+        NOP // block 4 \n\
+        <labelGoto>: \n\
+        NOP // block 5 \n\
+    ";
+    auto expectedPCode = "\
+        Block B0(level: 1, near: B2, far: B4): \n\
+            NOP \n\
+            CBRANCH <B4>:8, 0x0:1 \n\
+        Block B2(level: 2, near: B4, far: B5): \n\
+            NOP \n\
+            CBRANCH <B5>:8, 0x0:1 \n\
+        Block B4(level: 3, near: B5): \n\
+            NOP \n\
+        Block B5(level: 4): \n\
+            NOP \
+    ";
+    pcode::Graph graph;
+    auto funcGraph = parsePcode(sourcePCode, &graph);
+    ASSERT_TRUE(cmp(funcGraph, expectedPCode));
+}
+
+TEST_F(PcodeTest, IfElseConditionWithNewGoto) {
+    // Graph: https://photos.app.goo.gl/UHbX85X6rWQKQMXP9
+    // Description: in this test, we make goto (new jump) from 'then' block to 'else' block that are on the SAME level (= 2)
+    auto sourcePCode = "\
+        NOP // block 0 \n\
+        CBRANCH <labelElse>, 0:1 // if-else condition \n\
+        NOP // then block 2 \n\
+        BRANCH <labelEnd> \n\
+        <labelElse>: \n\
+        NOP // else block 4 \n\
+        <labelEnd>: \n\
+        NOP // block 5 \
+    ";
+    // BEFORE:
+    auto expectedPCodeBefore = "\
+        Block B0(level: 1, near: B2, far: B4): \n\
+            NOP \n\
+            CBRANCH <B4>:8, 0x0:1 \n\
+        Block B2(level: 2, far: B5): \n\
+            NOP \n\
+            BRANCH <B5>:8 \n\
+        Block B4(level: 2, near: B5): \n\
+            NOP \n\
+        Block B5(level: 3): \n\
+            NOP \
+    ";
+    // AFTER:
+    auto expectedPCodeAfter = "\
+        Block B0(level: 1, near: B2, far: B4): \n\
+            NOP \n\
+            CBRANCH <B4>:8, 0x0:1 \n\
+        Block B4(level: 2, near: B5, far: B2): \n\
+            NOP \n\
+        Block B2(level: 3, far: B5): \n\
+            NOP \n\
+            BRANCH <B5>:8 \n\
+        Block B5(level: 4): \n\
+            NOP \
+    ";
+    pcode::Graph graph;
+    auto funcGraph = parsePcode(sourcePCode, &graph);
+    // check that graph is as expected BEFORE modification
+    ASSERT_TRUE(cmp(funcGraph, expectedPCodeBefore));
+    // modify graph
+    auto fromBlock = graph.getBlockAt(pcode::InstructionOffset(4, 0)); // block 4
+    auto toBlock = graph.getBlockAt(pcode::InstructionOffset(2, 0)); // block 2
+    fromBlock->setFarNextBlock(toBlock);
+    // check that graph is as expected AFTER modification
+    ASSERT_TRUE(cmp(funcGraph, expectedPCodeAfter));
+}
+
+TEST_F(PcodeTest, TwoFunctionsUnitedWithJump) {
+    // Graph: https://photos.app.goo.gl/4JuF4vMJxd2DQb2F7
     auto sourcePCode = "\
         // ---- func1 ---- \n\
         CALL <func2> \n\
         CALL <func3> \n\
+        RETURN \n\
         // ---- func2 ---- \n\
         <func2>: \n\
         NOP \n\
@@ -185,18 +295,19 @@ TEST_F(PcodeTest, Sample6) {
     ";
     auto expectedPCodeOfFunc1 = "\
         Block B0(level: 1): \n\
-            CALL <B2>:8 \n\
-            CALL <B4>:8 \
+            CALL <B3>:8 \n\
+            CALL <B5>:8 \n\
+            RETURN \
     ";
     auto expectedPCodeOfFunc2 = "\
-        Block B2(level: 1, far: B4): \n\
+        Block B3(level: 1, far: B5): \n\
             NOP \n\
-            BRANCH <B4>:8 \
+            BRANCH <B5>:8 \
     ";
     auto expectedPCodeOfFunc3 = "\
-        Block B4(level: 1, far: B2): \n\
+        Block B5(level: 1, far: B3): \n\
             NOP \n\
-            BRANCH <B2>:8 \
+            BRANCH <B3>:8 \
     ";
     pcode::Graph graph;
     auto instructions = parsePcode(sourcePCode);
@@ -204,8 +315,8 @@ TEST_F(PcodeTest, Sample6) {
     graph.explore(pcode::InstructionOffset(0, 0), &provider);
     graph.explore(pcode::InstructionOffset(2, 0), &provider);
     auto funcGraph1 = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
-    auto funcGraph2 = graph.getFunctionGraphAt(pcode::InstructionOffset(2, 0));
-    auto funcGraph3 = graph.getFunctionGraphAt(pcode::InstructionOffset(4, 0));
+    auto funcGraph2 = graph.getFunctionGraphAt(pcode::InstructionOffset(3, 0));
+    auto funcGraph3 = graph.getFunctionGraphAt(pcode::InstructionOffset(5, 0));
     auto entryBlock2 = funcGraph2->getEntryBlock();
     auto entryBlock3 = funcGraph3->getEntryBlock();
     ASSERT_EQ(funcGraph1->getReferencesFrom().size(), 2);
@@ -229,7 +340,7 @@ TEST_F(PcodeTest, Sample6) {
     ASSERT_FALSE(entryBlock3->hasLoopWith(entryBlock2));
 }
 
-TEST_F(PcodeTest, Sample7) {
+TEST_F(PcodeTest, FunctionRecursion) {
     // Graph: https://photos.app.goo.gl/1WcQpH1SoKUUPLU56
     auto sourcePCode = "\
         <func>: \n\
@@ -253,7 +364,7 @@ TEST_F(PcodeTest, Sample7) {
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
 }
 
-TEST_F(PcodeTest, Sample8) {
+TEST_F(PcodeTest, NewCallSplitBlock) {
     // Graph: https://photos.app.goo.gl/76TRzwXeCEma5TMu8
     auto sourcePCode = "\
         // ---- the main function ---- \n\
@@ -295,6 +406,5 @@ TEST_F(PcodeTest, Sample8) {
     ASSERT_EQ(newFuncGraph->getReferencesTo().size(), 1);
 }
 
-// TODO: two nested loops (with general block) test
-// TODO: goto test
+// TODO: two nested loops with general block test
 // TODO: joinBlocks test
