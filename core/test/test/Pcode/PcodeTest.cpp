@@ -197,6 +197,60 @@ TEST_F(PcodeTest, NestedLoop) {
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
 }
 
+TEST_F(PcodeTest, NestedLoopWithSharedBlock) {
+    // Graph: https://photos.app.goo.gl/PtWzD6NajdQaM2227
+    auto sourcePCode = "\
+        <labelLoop>: \n\
+        NOP // block 1 \n\
+        CBRANCH <labelLoop>, 0:1 \n\
+        NOP // block 3 \n\
+        CBRANCH <labelLoop>, 0:1 \n\
+        NOP // block 5 \n\
+    ";
+    auto expectedPCode = "\
+        Block B0(level: 1, near: B2, far: B0): \n\
+            NOP \n\
+            CBRANCH <B0>:8, 0x0:1 \n\
+        Block B2(level: 2, near: B4, far: B0): \n\
+            NOP \n\
+            CBRANCH <B0>:8, 0x0:1 \n\
+        Block B4(level: 3): \n\
+            NOP \
+    ";
+    pcode::Graph graph;
+    auto funcGraph = parsePcode(sourcePCode, &graph);
+    ASSERT_TRUE(cmp(funcGraph, expectedPCode));
+}
+
+TEST_F(PcodeTest, JoinNextBlock) {
+    // Graph: https://photos.app.goo.gl/HQKwWx3KYzA4Y7z2A
+    // Description: the next block is joined with the current block.
+    auto sourcePCode = "\
+        <label>: \n\
+        // block 0 (should be joined with the block 1) \n\
+        CALL <func> \n\
+        // block 1 (should be removed) \n\
+        CALL <func> // <--- exploring is started here \n\
+        BRANCH <label>  \n\
+        // some function \n\
+        <func>: \n\
+        NOP \
+    ";
+    auto expectedPCode = "\
+        Block B0(level: 1, far: B0): \n\
+            CALL <B3>:8 \n\
+            CALL <B3>:8 \n\
+            BRANCH <B0>:8 \
+    ";
+    pcode::Graph graph;
+    auto instructions = parsePcode(sourcePCode);
+    pcode::ListInstructionProvider provider(instructions);
+    graph.explore(pcode::InstructionOffset(1, 0), &provider);
+    auto funcGraph = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
+    ASSERT_TRUE(cmp(funcGraph, expectedPCode));
+    ASSERT_EQ(funcGraph->getReferencesFrom().size(), 2);
+}
+
 TEST_F(PcodeTest, IfConditionWithGoto) {
     // Graph: https://photos.app.goo.gl/hdP67sRatS9AJN49A
     auto sourcePCode = "\
@@ -228,7 +282,7 @@ TEST_F(PcodeTest, IfConditionWithGoto) {
 
 TEST_F(PcodeTest, IfElseConditionWithNewGoto) {
     // Graph: https://photos.app.goo.gl/UHbX85X6rWQKQMXP9
-    // Description: in this test, we make goto (new jump) from 'then' block to 'else' block that are on the SAME level (= 2)
+    // Description: we make goto (new jump) from 'then' block to 'else' block that are on the SAME level (= 2)
     auto sourcePCode = "\
         NOP // block 0 \n\
         CBRANCH <labelElse>, 0:1 // if-else condition \n\
@@ -406,5 +460,11 @@ TEST_F(PcodeTest, NewCallSplitBlock) {
     ASSERT_EQ(newFuncGraph->getReferencesTo().size(), 1);
 }
 
-// TODO: two nested loops with general block test
+// TODO: do update two times like in React
 // TODO: joinBlocks test
+// TODO: split the current block with a new call that is in the block
+
+// Потом (ir-code генерация)
+// - мы должны при смене связей p-code блоков мы должны автоматически запускать процедуру генерации ir-code этих блоков
+// - должен быть прямой маппинг между p-code и ir-code блоками
+// - при структурном анализе мы можем делать дублирование маленьких блоков для избежания goto, но не делать этого в ircode! ir-code не для визуализации, а для анализа

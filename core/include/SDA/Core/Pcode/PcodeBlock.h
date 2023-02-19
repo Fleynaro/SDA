@@ -66,6 +66,8 @@ namespace sda::pcode
 
         bool canReach(Block* blockToReach) const;
 
+        bool canBeJoinedWith(Block* block) const;
+
         // Called when the block was changed
         void update();
 

@@ -145,28 +145,28 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
     }
     else if (instruction.getId() == pcode::InstructionId::CALL) {
         auto targetOffset = GetTargetOffset(&instruction);
-        if (targetOffset == InvalidOffset)
-            return;
-        pcode::Block* calledBlock = nullptr;
-        if (auto alreadyExistingBlock = getBlockAt(targetOffset)) {
-            if (targetOffset == alreadyExistingBlock->getMinOffset()) {
-                calledBlock = alreadyExistingBlock;
-            }
-            else {
-                calledBlock = splitBlock(alreadyExistingBlock, targetOffset);
-                if (block == alreadyExistingBlock) {
-                    block = calledBlock;
+        if (targetOffset != InvalidOffset) {
+            pcode::Block* calledBlock = nullptr;
+            if (auto alreadyExistingBlock = getBlockAt(targetOffset)) {
+                if (targetOffset == alreadyExistingBlock->getMinOffset()) {
+                    calledBlock = alreadyExistingBlock;
+                }
+                else {
+                    calledBlock = splitBlock(alreadyExistingBlock, targetOffset);
+                    if (block == alreadyExistingBlock) {
+                        block = calledBlock;
+                    }
                 }
             }
-        }
-        else {
-            calledBlock = createBlock(targetOffset);
-        }
-        block->getFunctionGraph()->addReferenceFrom(offset, calledBlock);
+            else {
+                calledBlock = createBlock(targetOffset);
+            }
+            block->getFunctionGraph()->addReferenceFrom(offset, calledBlock);
 
-        // next unvisited offsets
-        if (calledBlock)
-            getCallbacks()->onUnvisitedOffsetFound(calledBlock->getMinOffset());
+            // next unvisited offsets
+            if (calledBlock)
+                getCallbacks()->onUnvisitedOffsetFound(calledBlock->getMinOffset());
+        }
     }
 
     if (!instruction.isNotGoingNext()) {
@@ -186,8 +186,7 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
                     0x... {instructions below}
             */
             if (block != nextBlock) {
-                if (nextBlock->getReferencedBlocks().size() == 0) {
-                    // if no other blocks reference this block, join it
+                if (block->canBeJoinedWith(nextBlock)) {
                     joinBlocks(block, nextBlock);
                 } else {
                     // otherwise, make a link
@@ -241,17 +240,19 @@ Block* Graph::createBlock(InstructionOffset offset) {
 }
 
 void Graph::removeBlock(Block* block) {
+    auto functionGraph = block->getFunctionGraph();
+    assert(block->getReferencedBlocks().empty());
+    assert(functionGraph->getReferencesTo().empty() && functionGraph->getReferencesFrom().empty());
     // remove all instructions from the block
     for (const auto& [_, instr] : block->getInstructions())
         removeInstruction(instr);
-    
-    if (block->getReferencedBlocks().size() == 0) {
-        // remove the block from the graph
-        m_blocks.erase(block->getMinOffset());
-    } else {
-        // resize the block to 0 (to remain references to it)
-        block->setMaxOffset(block->getMinOffset());
+    block->setNearNextBlock(nullptr);
+    block->setFarNextBlock(nullptr);
+    if (functionGraph) {
+        removeFunctionGraph(functionGraph);
     }
+    // remove the block from the graph
+    m_blocks.erase(block->getMinOffset());
 }
 
 Block* Graph::splitBlock(Block* block, InstructionOffset offset) {
@@ -292,29 +293,33 @@ Block* Graph::splitBlock(Block* block, InstructionOffset offset) {
 }
 
 void Graph::joinBlocks(Block* block1, Block* block2) {
-    if (block1->getMaxOffset() != block2->getMinOffset())
-        throw std::runtime_error("Blocks are not adjacent");
-    auto refBlocksCount = block2->getReferencedBlocks().size();
-    if (refBlocksCount >= (block1->getNearNextBlock() == block2 ? 2 : 1))
-        throw std::runtime_error("Second block is referenced by other blocks");
+    assert(block1->canBeJoinedWith(block2));
+    assert(block2->getFunctionGraph()->getEntryBlock() == block2);
 
-    // join the instructions
-    block1->getInstructions().insert(
-        block2->getInstructions().begin(), block2->getInstructions().end());
-
-    // resize the block
-    block1->setMaxOffset(block2->getMaxOffset());
-
-    // reconnect the blocks
-    if (block2->getNearNextBlock())
-        block1->setNearNextBlock(block2->getNearNextBlock());
-    if (block2->getFarNextBlock())
-        block1->setFarNextBlock(block2->getFarNextBlock());
+    // save things before removing block 2
+    auto savedInstructions = block2->getInstructions();
+    block2->getInstructions().clear();
+    auto savedMaxOffset = block2->getMaxOffset();
+    auto savedNearNextBlock = block2->getNearNextBlock();
+    auto savedFarNextBlock = block2->getFarNextBlock();
+    if (savedFarNextBlock == block2) {
+        savedFarNextBlock = block1;
+    }
+    // make block 2 isolated
     block2->setNearNextBlock(nullptr);
     block2->setFarNextBlock(nullptr);
+    // move all CALL references
+    auto funcGraph1 = block1->getFunctionGraph();
+    auto funcGraph2 = block2->getFunctionGraph();
+    funcGraph2->moveReferences(funcGraph1);
+    // and then remove block 2 along with its function graph
+    removeBlock(block2);
 
-    // remove the second block
-    m_blocks.erase(block2->getMinOffset());
+    // transfer all saved things from block 2 to block 1
+    block1->getInstructions().insert(savedInstructions.begin(), savedInstructions.end());
+    block1->setMaxOffset(savedMaxOffset);
+    block1->setNearNextBlock(savedNearNextBlock);
+    block1->setFarNextBlock(savedFarNextBlock);
 }
 
 Block* Graph::getBlockAt(InstructionOffset offset, bool halfInterval) {

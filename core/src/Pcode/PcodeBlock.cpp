@@ -155,6 +155,20 @@ bool Block::canReach(Block* blockToReach) const {
     return false;
 }
 
+bool Block::canBeJoinedWith(Block* block) const {
+    // blocks must be adjacent
+    if (getMaxOffset() != block->getMinOffset()) {
+        return false;
+    }
+    // check the last instruction
+    auto lastInstr = getLastInstruction();
+    if (lastInstr->isBranching() || lastInstr->isNotGoingNext()) {
+        return false;
+    }
+    // no references to the 'block' from other blocks
+    return block->getReferencedBlocks().empty() && block->getFunctionGraph()->getReferencesTo().empty();
+}
+
 void Block::update() {
     if (!m_graph->m_updateBlocksEnabled) {
         return;
@@ -221,7 +235,7 @@ void Block::updateEntryBlocks(bool& goNextBlocks) {
     Block* newEntryBlock = nullptr;
     std::set<Block*> refEntryBlocks;
     for (auto refBlock : m_referencedBlocks) {
-        if (refBlock->isEntryBlockInited()) {
+        if (refBlock->isEntryBlockInited() && refBlock->m_entryBlock != this) {
             refEntryBlocks.insert(refBlock->m_entryBlock);
         }
     }
@@ -272,5 +286,5 @@ bool Block::isLevelInited() const {
 }
 
 bool Block::isEntryBlockInited() const {
-    return m_entryBlock != nullptr;
+    return m_entryBlock && m_entryBlock->m_entryBlock;
 }
