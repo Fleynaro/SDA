@@ -11,27 +11,29 @@ Block* FunctionGraph::getEntryBlock() const {
     return m_entryBlock;
 }
 
-std::list<Block*> FunctionGraph::getBlocks() const {
-    std::list<Block*> blocks;
-    std::list<Block*> toVisit;
-    toVisit.push_back(m_entryBlock);
-    while (!toVisit.empty()) {
-        auto block = toVisit.front();
-        toVisit.pop_front();
-        if (std::find(blocks.begin(), blocks.end(), block) != blocks.end()) {
-            continue;
+std::list<FunctionGraph::BlockInfo> FunctionGraph::getBlocks() const {
+    std::map<Block*, BlockInfo> blocks;
+    // pass blocks
+    m_entryBlock->passDescendants([&](Block* block, bool& goNextBlocks) {
+        if (blocks.find(block) != blocks.end() || block->getEntryBlock() != m_entryBlock) {
+            return;
         }
-        blocks.push_back(block);
-        for (auto nextBlock : block->getNextBlocks()) {
-            if (m_entryBlock != nextBlock->getEntryBlock()) {
-                continue;
-            }
-            if (!block->hasLoopWith(nextBlock)) {
-                toVisit.push_back(nextBlock);
+        size_t level = 1;
+        for (auto refBlock : block->getReferencedBlocks()) {
+            auto it = blocks.find(refBlock);
+            if (it != blocks.end()) {
+                level = std::max(level, it->second.level + 1);
             }
         }
+        blocks[block] = { block, level };
+        goNextBlocks = true;
+    });
+    // convert to list
+    std::list<BlockInfo> result;
+    for (auto& block : blocks) {
+        result.push_back(block.second);
     }
-    return blocks;
+    return result;
 }
 
 Graph* FunctionGraph::getGraph() {

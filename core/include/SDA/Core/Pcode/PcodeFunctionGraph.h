@@ -15,7 +15,12 @@ namespace sda::pcode
 
         Block* getEntryBlock() const;
 
-        std::list<Block*> getBlocks() const;
+        struct BlockInfo {
+            Block* block;
+            size_t level;
+        };
+
+        std::list<BlockInfo> getBlocks() const;
 
         Graph* getGraph();
 

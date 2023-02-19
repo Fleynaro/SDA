@@ -107,11 +107,6 @@ bool Block::isEntryBlock() const {
     return getEntryBlock() == this;
 }
 
-size_t Block::getLevel() const {
-    assert(isLevelInited());
-    return m_level;
-}
-
 bool Block::contains(InstructionOffset offset, bool halfInterval) const {
     if (offset == m_minOffset && offset == m_maxOffset) {
         // Block with no instructions
@@ -119,40 +114,6 @@ bool Block::contains(InstructionOffset offset, bool halfInterval) const {
     }
 	return offset >= m_minOffset &&
         (halfInterval ? offset < m_maxOffset : offset <= m_maxOffset);
-}
-
-bool Block::hasLoopWith(Block* block) const {
-    return m_farNextBlock &&
-            block == m_farNextBlock &&
-            block->getEntryBlock() == getEntryBlock() &&
-            block->getLevel() <= getLevel();
-}
-
-bool Block::canReach(Block* blockToReach) const {
-    std::set<const Block*> visitedBlocks;
-    std::list<const Block*> toVisit;
-    toVisit.push_back(this);
-    while (!toVisit.empty()) {
-        auto block = toVisit.front();
-        toVisit.pop_front();
-        if (visitedBlocks.find(block) != visitedBlocks.end()) {
-            continue;
-        }
-        visitedBlocks.insert(block);
-        for (auto nextBlock : block->getNextBlocks()) {
-            if (nextBlock == blockToReach) {
-                return true;
-            }
-            if (nextBlock->isLevelInited() && nextBlock->isEntryBlockInited()) {
-                if (!block->hasLoopWith(nextBlock)) {
-                    if (block->getEntryBlock() == nextBlock->getEntryBlock()) {
-                        toVisit.push_back(nextBlock);
-                    }
-                }
-            }
-        }
-    }
-    return false;
 }
 
 bool Block::canBeJoinedWith(Block* block) const {
@@ -169,17 +130,7 @@ bool Block::canBeJoinedWith(Block* block) const {
     return block->getReferencedBlocks().empty() && block->getFunctionGraph()->getReferencesTo().empty();
 }
 
-void Block::update() {
-    if (!m_graph->m_updateBlocksEnabled) {
-        return;
-    }
-    m_graph->m_updateBlocksEnabled = false;
-    update(&Block::updateEntryBlocks);
-    update(&Block::updateLevels);
-    m_graph->m_updateBlocksEnabled = true;
-}
-
-void Block::update(void (Block::*updateMethod)(bool& goNextBlocks)) {
+void Block::passDescendants(std::function<void(Block* block, bool& goNextBlocks)> callback) {
     std::map<Block*, size_t> blockKnocks;
     std::list<Block*> blocksToVisit;
     blocksToVisit.push_back(this);
@@ -197,7 +148,7 @@ void Block::update(void (Block::*updateMethod)(bool& goNextBlocks)) {
             }
             blockKnocks.erase(it);
             bool goNextBlocks = false;
-            (block->*updateMethod)(goNextBlocks);
+            callback(block, goNextBlocks);
             if (goNextBlocks) {
                 for (auto nextBlock : block->getNextBlocks()) {
                     blocksToVisit.push_back(nextBlock);
@@ -211,32 +162,26 @@ void Block::update(void (Block::*updateMethod)(bool& goNextBlocks)) {
     } while (!blocksToVisit.empty());
 }
 
-void Block::updateLevels(bool& goNextBlocks) {
-    size_t newLevel = 1;
-    if (!isEntryBlock()) {
-        for (auto refBlock : m_referencedBlocks) {
-            if (refBlock->isLevelInited()) {
-                // canReach is used to check if there is a loop
-                if (!isLevelInited() || !canReach(refBlock)) {
-                    newLevel = std::max(newLevel, refBlock->m_level + 1);
-                }
-            }
-        }
-    }
-    // check if need to update
-    if (newLevel == m_level)
+void Block::update() {
+    if (!m_graph->m_updateBlocksEnabled) {
         return;
-    // update
-    m_level = newLevel;
-    goNextBlocks = true;
+    }
+    m_graph->m_updateBlocksEnabled = false;
+    passDescendants([](Block* block, bool& goNextBlocks) {
+        block->updateEntryBlocks(goNextBlocks);
+    });
+    m_graph->m_updateBlocksEnabled = true;
 }
 
 void Block::updateEntryBlocks(bool& goNextBlocks) {
     Block* newEntryBlock = nullptr;
     std::set<Block*> refEntryBlocks;
     for (auto refBlock : m_referencedBlocks) {
-        if (refBlock->isEntryBlockInited() && refBlock->m_entryBlock != this) {
-            refEntryBlocks.insert(refBlock->m_entryBlock);
+        if (refBlock->isEntryBlockInited()) {
+            // the condition is needed to avoid excessive entry blocks (check tests NewEntryBlockWithLoopFirst, NewEntryBlockWithLoopSecond)
+            if (refBlock->m_entryBlock != this) {
+                refEntryBlocks.insert(refBlock->m_entryBlock);
+            }
         }
     }
     /*
@@ -257,6 +202,7 @@ void Block::updateEntryBlocks(bool& goNextBlocks) {
         if (curFunctionGraph) {
             auto newFunctionGraph = newEntryBlock->getFunctionGraph();
             if (curFunctionGraph != newFunctionGraph) {
+                // check test NewCallSplitBlock
                 curFunctionGraph->moveReferences(newFunctionGraph);
                 m_graph->removeFunctionGraph(curFunctionGraph);
                 curFunctionGraph = nullptr;
@@ -275,14 +221,11 @@ void Block::updateEntryBlocks(bool& goNextBlocks) {
         auto newFunctionGraph = newEntryBlock->getFunctionGraph();
         if (prevFunctionGraph != newFunctionGraph) {
             // if the block becomes to belong to another func. graph then move all its "call" references to this new graph
+            // check test NewCallSplitBlock
             prevFunctionGraph->moveReferences(newFunctionGraph, m_minOffset, m_maxOffset);
         }
     }
     goNextBlocks = true;
-}
-
-bool Block::isLevelInited() const {
-    return m_level != 0;
 }
 
 bool Block::isEntryBlockInited() const {

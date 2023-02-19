@@ -19,7 +19,7 @@ namespace sda::pcode
 
         virtual void printFunctionGraph(FunctionGraph* functionGraph);
 
-        virtual void printBlock(Block* block);
+        virtual void printBlock(Block* block, size_t level = 0);
 
         virtual void printInstruction(const Instruction* instruction) const;
 

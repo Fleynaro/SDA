@@ -152,8 +152,10 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
                     calledBlock = alreadyExistingBlock;
                 }
                 else {
+                    // check test NewCallSplitBlock
                     calledBlock = splitBlock(alreadyExistingBlock, targetOffset);
                     if (block == alreadyExistingBlock) {
+                        // check test CallSplitSameBlock
                         block = calledBlock;
                     }
                 }
@@ -187,6 +189,7 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
             */
             if (block != nextBlock) {
                 if (block->canBeJoinedWith(nextBlock)) {
+                    // check test JoinNextBlock
                     joinBlocks(block, nextBlock);
                 } else {
                     // otherwise, make a link

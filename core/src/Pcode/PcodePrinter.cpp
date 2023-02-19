@@ -19,26 +19,26 @@ std::string Printer::Print(const Instruction* instruction, const RegisterReposit
 }
 
 void Printer::printFunctionGraph(FunctionGraph* functionGraph) {
-    auto blocks = functionGraph->getBlocks();
+    auto blockInfos = functionGraph->getBlocks();
     // sort blocks by level and offset
-    blocks.sort([](const Block* a, const Block* b) {
-        if (a->getLevel() == b->getLevel())
-            return a->getMinOffset() < b->getMinOffset();
-        return a->getLevel() < b->getLevel();
+    blockInfos.sort([](const FunctionGraph::BlockInfo& a, const FunctionGraph::BlockInfo& b) {
+        if (a.level != b.level)
+            return a.level < b.level;
+        return a.block->getMinOffset() < b.block->getMinOffset();
     });
     // print blocks
-    for (auto block : blocks) {
-        printBlock(block);
-        if (block != blocks.back())
+    for (auto& [block, level] : blockInfos) {
+        printBlock(block, level);
+        if (block != blockInfos.back().block)
             newLine();
     }
 }
 
-void Printer::printBlock(pcode::Block* block) {
+void Printer::printBlock(pcode::Block* block, size_t level) {
     printToken("Block ", SYMBOL);
     printToken(block->getName(), IDENTIFIER);
     printToken("(level: ", SYMBOL);
-    printToken(std::to_string(block->getLevel()), NUMBER);
+    printToken(std::to_string(level), NUMBER);
     if (block->getNearNextBlock()) {
         printToken(", near: ", SYMBOL);
         printToken(block->getNearNextBlock()->getName(), IDENTIFIER);
