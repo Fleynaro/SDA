@@ -1,35 +1,42 @@
 #include "SDA/Core/IRcode/IRcodeBlock.h"
+#include "SDA/Core/IRcode/IRcodeFunction.h"
+#include "SDA/Core/Pcode/PcodeGraph.h"
 
+using namespace sda;
 using namespace sda::ircode;
 
-Block::Block(pcode::Block* pcodeBlock)
-    : m_pcodeBlock(pcodeBlock)
+Block::Block(pcode::Block* pcodeBlock, Function* function)
+    : m_pcodeBlock(pcodeBlock), m_function(function)
 {}
+
+pcode::Block* Block::getPcodeBlock() const {
+    return m_pcodeBlock;
+}
+
+std::string Block::getName() const {
+    return m_pcodeBlock->getName();
+}
 
 std::list<std::unique_ptr<Operation>>& Block::getOperations() {
     return m_operations;
 }
 
 Block* Block::getNearNextBlock() const {
-    return m_nearNextBlock;
+    return m_function->toBlock(m_pcodeBlock->getNearNextBlock());
 }
 
 Block* Block::getFarNextBlock() const {
-    return m_farNextBlock;
+    return m_function->toBlock(m_pcodeBlock->getFarNextBlock());
 }
 
-void Block::setNextBlocks(Block* nearNextBlock, Block* farNextBlock) {
-    // near next block
-    m_nearNextBlock = nearNextBlock;
-    m_nearNextBlock->m_previousBlocks.remove(this);
-    m_nearNextBlock->m_previousBlocks.push_back(this);
-
-    // far next block
-    m_farNextBlock = farNextBlock;
-    m_farNextBlock->m_previousBlocks.remove(this);
-    m_farNextBlock->m_previousBlocks.push_back(this);
+const std::list<Block*>& Block::getReferencedBlocks() const {
+    std::list<Block*> referencedBlocks;
+    for (auto pcodeBlock : m_pcodeBlock->getReferencedBlocks()) {
+        referencedBlocks.push_back(m_function->toBlock(pcodeBlock));
+    }
+    return referencedBlocks;
 }
 
-const std::list<Block*>& Block::getPreviousBlocks() const {
-    return m_previousBlocks;
+void Block::update() {
+
 }

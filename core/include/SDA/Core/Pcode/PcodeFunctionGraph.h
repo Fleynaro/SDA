@@ -20,7 +20,7 @@ namespace sda::pcode
             size_t level;
         };
 
-        std::list<BlockInfo> getBlocks() const;
+        std::list<BlockInfo> getBlocks(bool sort = false) const;
 
         Graph* getGraph();
 

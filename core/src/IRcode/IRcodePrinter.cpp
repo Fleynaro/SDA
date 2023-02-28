@@ -16,6 +16,40 @@ void Printer::setExtendInfo(bool toggle) {
     m_extendInfo = toggle;
 }
 
+void Printer::printFunction(Function* function) {
+    auto blockInfos = function->getFunctionGraph()->getBlocks(true);
+    // print blocks
+    for (auto& [block, level] : blockInfos) {
+        printBlock(function->toBlock(block), level);
+        if (block != blockInfos.back().block)
+            newLine();
+    }
+}
+
+void Printer::printBlock(Block* block, size_t level) {
+    printToken("Block ", SYMBOL);
+    printToken(block->getName(), IDENTIFIER);
+    printToken("(level: ", SYMBOL);
+    printToken(std::to_string(level), NUMBER);
+    if (block->getNearNextBlock()) {
+        printToken(", near: ", SYMBOL);
+        printToken(block->getNearNextBlock()->getName(), IDENTIFIER);
+    }
+    if (block->getFarNextBlock()) {
+        printToken(", far: ", SYMBOL);
+        printToken(block->getFarNextBlock()->getName(), IDENTIFIER);
+    }
+    printToken("):", SYMBOL);
+    startBlock();
+    newLine();
+    for (const auto& operation : block->getOperations()) {
+        printOperation(operation.get());
+        if (operation != *block->getOperations().rbegin())
+            newLine();
+    }
+    endBlock();
+}
+
 void Printer::printOperation(Operation* operation) {
     auto output = operation->getOutput();
     printValue(output.get(), true);

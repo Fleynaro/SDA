@@ -19,13 +19,7 @@ std::string Printer::Print(const Instruction* instruction, const RegisterReposit
 }
 
 void Printer::printFunctionGraph(FunctionGraph* functionGraph) {
-    auto blockInfos = functionGraph->getBlocks();
-    // sort blocks by level and offset
-    blockInfos.sort([](const FunctionGraph::BlockInfo& a, const FunctionGraph::BlockInfo& b) {
-        if (a.level != b.level)
-            return a.level < b.level;
-        return a.block->getMinOffset() < b.block->getMinOffset();
-    });
+    auto blockInfos = functionGraph->getBlocks(true);
     // print blocks
     for (auto& [block, level] : blockInfos) {
         printBlock(block, level);

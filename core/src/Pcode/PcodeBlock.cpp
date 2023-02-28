@@ -222,6 +222,7 @@ void Block::updateEntryBlocks(bool& goNextBlocks) {
         if (prevFunctionGraph != newFunctionGraph) {
             // if the block becomes to belong to another func. graph then move all its "call" references to this new graph
             // check test NewCallSplitBlock
+            // TODO: we could simplify this by implementing CALL references in block instead of function graph, along with JUMP references
             prevFunctionGraph->moveReferences(newFunctionGraph, m_minOffset, m_maxOffset);
         }
     }

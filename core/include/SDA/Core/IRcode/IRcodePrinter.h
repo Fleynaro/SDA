@@ -1,5 +1,5 @@
 #pragma once
-#include "IRcodeOperation.h"
+#include "IRcodeFunction.h"
 #include "IRcodeDataTypeProvider.h"
 #include "SDA/Core/Pcode/PcodePrinter.h"
 
@@ -19,6 +19,10 @@ namespace sda::ircode
         void setDataTypeProvider(DataTypeProvider* dataTypeProvider);
 
         void setExtendInfo(bool toggle);
+
+        virtual void printFunction(Function* function);
+
+        virtual void printBlock(Block* block, size_t level = 0);
 
         virtual void printOperation(Operation* operation);
 

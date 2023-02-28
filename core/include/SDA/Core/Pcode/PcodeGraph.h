@@ -61,6 +61,9 @@ namespace sda::pcode
             // Called when a block is created
             void onBlockCreated(Block* block);
 
+            // Called when a block is updated
+            void onBlockUpdated(Block* block);
+
             // Called when a block is removed
             void onBlockRemoved(Block* block);
 
@@ -80,12 +83,14 @@ namespace sda::pcode
 
             void setEnabled(bool enabled);
 
-        private:
+        protected:
             virtual void onInstructionAddedImpl(const Instruction* instruction, InstructionOffset nextOffset) {};
 
             virtual void onInstructionRemovedImpl(const Instruction* instruction) {};
 
             virtual void onBlockCreatedImpl(Block* block) {};
+
+            virtual void onBlockUpdatedImpl(Block* block) {};
 
             virtual void onBlockRemovedImpl(Block* block) {};
 

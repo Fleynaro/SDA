@@ -26,6 +26,14 @@ void Graph::Callbacks::onBlockCreated(Block* block) {
     }
 }
 
+void Graph::Callbacks::onBlockUpdated(Block* block) {
+    if (m_prevCallbacks)
+        m_prevCallbacks->onBlockUpdated(block);
+    if (m_enabled) {
+        onBlockUpdatedImpl(block);
+    }
+}
+
 void Graph::Callbacks::onBlockRemoved(Block* block) {
     if (m_prevCallbacks)
         m_prevCallbacks->onBlockRemoved(block);

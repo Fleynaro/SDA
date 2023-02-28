@@ -5,15 +5,19 @@
 
 namespace sda::ircode
 {
+    class Function;
+
     class Block
     {
-        std::list<std::unique_ptr<Operation>> m_operations;
-        Block* m_nearNextBlock = nullptr;
-        Block* m_farNextBlock = nullptr;
-        std::list<Block*> m_previousBlocks;
         pcode::Block* m_pcodeBlock = nullptr;
+        Function* m_function = nullptr;
+        std::list<std::unique_ptr<Operation>> m_operations;
     public:
-        Block(pcode::Block* pcodeBlock);
+        Block(pcode::Block* pcodeBlock, Function* function);
+
+        pcode::Block* getPcodeBlock() const;
+
+        std::string getName() const;
 
         std::list<std::unique_ptr<Operation>>& getOperations();
 
@@ -21,8 +25,8 @@ namespace sda::ircode
 
         Block* getFarNextBlock() const;
 
-        void setNextBlocks(Block* nearNextBlock, Block* farNextBlock);
+        const std::list<Block*>& getReferencedBlocks() const;
 
-        const std::list<Block*>& getPreviousBlocks() const;
+        void update();
     };
 };

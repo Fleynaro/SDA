@@ -11,7 +11,7 @@ Block* FunctionGraph::getEntryBlock() const {
     return m_entryBlock;
 }
 
-std::list<FunctionGraph::BlockInfo> FunctionGraph::getBlocks() const {
+std::list<FunctionGraph::BlockInfo> FunctionGraph::getBlocks(bool sort) const {
     std::map<Block*, BlockInfo> blocks;
     // pass blocks
     m_entryBlock->passDescendants([&](Block* block, bool& goNextBlocks) {
@@ -32,6 +32,14 @@ std::list<FunctionGraph::BlockInfo> FunctionGraph::getBlocks() const {
     std::list<BlockInfo> result;
     for (auto& block : blocks) {
         result.push_back(block.second);
+    }
+    // sort blocks by level and offset
+    if (sort) {
+        result.sort([](const FunctionGraph::BlockInfo& a, const FunctionGraph::BlockInfo& b) {
+            if (a.level != b.level)
+                return a.level < b.level;
+            return a.block->getMinOffset() < b.block->getMinOffset();
+        });
     }
     return result;
 }

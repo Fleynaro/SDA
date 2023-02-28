@@ -7,11 +7,15 @@ namespace sda::ircode
 {
     class Function
     {
-        std::list<Block> m_blocks;
         pcode::FunctionGraph* m_functionGraph = nullptr;
+        std::map<pcode::Block*, Block*> m_blocks;
     public:
         Function(pcode::FunctionGraph* functionGraph);
 
-        std::list<Block>& getBlocks();
+        pcode::FunctionGraph* getFunctionGraph() const;
+
+        std::map<pcode::Block*, Block*>& getBlocks();
+
+        Block* toBlock(pcode::Block* pcodeBlock) const;
     };
 };
