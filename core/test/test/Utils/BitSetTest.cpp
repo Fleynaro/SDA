@@ -1,0 +1,45 @@
+#include "SDA/Core/Utils/BitSet.h"
+#include <gtest/gtest.h>
+
+using namespace utils;
+
+TEST(BitSetTest, testGetSet) {
+    BitSet bitSet;
+    EXPECT_FALSE(bitSet.get(1000));
+    bitSet.set(1000, true);
+    EXPECT_TRUE(bitSet.get(1000));
+    bitSet.set(1000, false);
+    EXPECT_FALSE(bitSet.get(1000));
+}
+
+TEST(BitSetTest, testOr) {
+    BitSet bitSet1;
+    bitSet1.set(0, true);
+    bitSet1.set(10, true);
+    bitSet1.set(100, true);
+    BitSet bitSet2;
+    bitSet1.set(0, true);
+    bitSet1.set(1, true);
+    auto result = bitSet1 | bitSet2;
+    EXPECT_TRUE(result.get(0));
+    EXPECT_TRUE(result.get(1));
+    EXPECT_TRUE(result.get(10));
+    EXPECT_TRUE(result.get(100));
+    EXPECT_FALSE(result.get(2));
+    EXPECT_FALSE(result.get(11));
+    EXPECT_FALSE(result.get(101));
+}
+
+TEST(BitSetTest, testEqual) {
+    BitSet bitSet1;
+    bitSet1.set(0, true);
+    bitSet1.set(10, true);
+    bitSet1.set(100, true);
+    BitSet bitSet2;
+    bitSet2.set(0, true);
+    bitSet2.set(10, true);
+    bitSet2.set(100, true);
+    EXPECT_TRUE(bitSet1 == bitSet2);
+    bitSet2.set(100, false);
+    EXPECT_FALSE(bitSet1 == bitSet2);
+}
