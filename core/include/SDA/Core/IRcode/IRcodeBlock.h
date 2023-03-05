@@ -25,7 +25,7 @@ namespace sda::ircode
 
         Block* getFarNextBlock() const;
 
-        const std::list<Block*>& getReferencedBlocks() const;
+        std::list<Block*> getReferencedBlocks() const;
 
         void update();
     };

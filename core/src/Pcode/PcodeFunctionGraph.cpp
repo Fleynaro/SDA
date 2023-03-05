@@ -13,7 +13,7 @@ Block* FunctionGraph::getEntryBlock() const {
 
 std::list<FunctionGraph::BlockInfo> FunctionGraph::getBlocks(bool sort) const {
     std::map<Block*, BlockInfo> blocks;
-    // pass blocks
+    // pass blocks and calculate level
     m_entryBlock->passDescendants([&](Block* block, bool& goNextBlocks) {
         if (blocks.find(block) != blocks.end() || block->getEntryBlock() != m_entryBlock) {
             return;

@@ -29,7 +29,7 @@ Block* Block::getFarNextBlock() const {
     return m_function->toBlock(m_pcodeBlock->getFarNextBlock());
 }
 
-const std::list<Block*>& Block::getReferencedBlocks() const {
+std::list<Block*> Block::getReferencedBlocks() const {
     std::list<Block*> referencedBlocks;
     for (auto pcodeBlock : m_pcodeBlock->getReferencedBlocks()) {
         referencedBlocks.push_back(m_function->toBlock(pcodeBlock));

@@ -5,9 +5,12 @@ namespace sda::pcode
 {
     class FunctionGraph
     {
+        friend class Block;
+        friend std::list<Block*> Block::getDominantBlocks() const;
         Block* m_entryBlock = nullptr;
         std::list<FunctionGraph*> m_referencedGraphsTo;
         std::map<InstructionOffset, FunctionGraph*> m_referencedGraphsFrom;
+        std::map<size_t, Block*> m_indexToBlock;
     public:
         FunctionGraph() = default;
 

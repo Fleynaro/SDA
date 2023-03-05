@@ -338,6 +338,14 @@ Block* Graph::getBlockAt(InstructionOffset offset, bool halfInterval) {
 	return nullptr;
 }
 
+Block* Graph::getBlockByName(const std::string& name) {
+    for (auto& [_, block] : m_blocks) {
+        if (block.getName() == name)
+            return &block;
+    }
+    return nullptr;
+}
+
 FunctionGraph* Graph::getFunctionGraphAt(InstructionOffset offset) {
     auto it = m_functionGraphs.find(offset);
     if (it == m_functionGraphs.end())

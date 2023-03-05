@@ -4,6 +4,7 @@
 #include <set>
 #include <functional>
 #include "PcodeInstruction.h"
+#include "SDA/Core/Utils/BitSet.h"
 
 namespace sda::pcode
 {
@@ -20,6 +21,8 @@ namespace sda::pcode
         InstructionOffset m_minOffset = 0;
         InstructionOffset m_maxOffset = 0;
         Block* m_entryBlock = nullptr;
+        utils::BitSet m_dominantBlocks;
+        size_t m_index = -1;
     public:
         Block() = default;
 
@@ -45,6 +48,8 @@ namespace sda::pcode
         
         const std::list<Block*>& getReferencedBlocks() const;
 
+        std::list<Block*> getDominantBlocks() const;
+
         InstructionOffset getMinOffset() const;
 
         void setMaxOffset(InstructionOffset maxOffset);
@@ -67,8 +72,12 @@ namespace sda::pcode
         void update();
 
     private:
+        void updateDominantBlocks(bool& goNextBlocks);
+
         void updateEntryBlocks(bool& goNextBlocks);
 
         bool isEntryBlockInited() const;
+
+        static size_t FindNewIndex(const std::map<size_t, Block*>& indexToBlock);
     };
 };

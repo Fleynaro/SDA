@@ -14,6 +14,8 @@ namespace utils
 
         void set(size_t index, bool value);
 
+        void clear();
+
         BitSet operator|(const BitSet& other) const;
 
         bool operator==(const BitSet& other) const;

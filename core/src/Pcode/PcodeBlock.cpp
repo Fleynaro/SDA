@@ -82,6 +82,18 @@ const std::list<Block*>& Block::getReferencedBlocks() const {
     return m_referencedBlocks;
 }
 
+std::list<Block*> Block::getDominantBlocks() const {
+    std::list<Block*> dominantBlocks;
+    auto funcGraph = getFunctionGraph();
+    for (const auto& [index, block] : funcGraph->m_indexToBlock) {
+        // TODO: we could reduce the number of iterations by passing bitset instead of m_indexToBlock
+        if (m_dominantBlocks.get(index)) {
+            dominantBlocks.push_back(block);
+        }
+    }
+    return dominantBlocks;
+}
+
 InstructionOffset Block::getMinOffset() const {
     return m_minOffset;
 }
@@ -170,7 +182,26 @@ void Block::update() {
     passDescendants([](Block* block, bool& goNextBlocks) {
         block->updateEntryBlocks(goNextBlocks);
     });
+    passDescendants([](Block* block, bool& goNextBlocks) {
+        block->updateDominantBlocks(goNextBlocks);
+    });
     m_graph->m_updateBlocksEnabled = true;
+}
+
+void Block::updateDominantBlocks(bool& goNextBlocks) {
+    assert(m_index != -1);
+    utils::BitSet newDominantBlocks;
+    newDominantBlocks.set(m_index, true);
+    for (auto refBlock : m_referencedBlocks) {
+        if (refBlock->getEntryBlock() == getEntryBlock()) {
+            newDominantBlocks = newDominantBlocks | refBlock->m_dominantBlocks;
+        }
+    }
+    // check if need to update
+    if (newDominantBlocks == m_dominantBlocks)
+        return;
+    m_dominantBlocks = newDominantBlocks;
+    goNextBlocks = true;
 }
 
 void Block::updateEntryBlocks(bool& goNextBlocks) {
@@ -203,8 +234,13 @@ void Block::updateEntryBlocks(bool& goNextBlocks) {
             auto newFunctionGraph = newEntryBlock->getFunctionGraph();
             if (curFunctionGraph != newFunctionGraph) {
                 // check test NewCallSplitBlock
+                for (const auto& [index, block] : curFunctionGraph->m_indexToBlock) {
+                    // reset all indexes because the current function graph will be removed
+                    block->m_dominantBlocks.clear();
+                    // TODO: if we can iterate over all blocks of the removing graph then we can store func. graph instead of entry block for each block, it could simplify code a bit
+                }
                 curFunctionGraph->moveReferences(newFunctionGraph);
-                m_graph->removeFunctionGraph(curFunctionGraph);
+                m_graph->removeFunctionGraph(curFunctionGraph); // >>> $1 <<<
                 curFunctionGraph = nullptr;
             }
         }
@@ -216,19 +252,43 @@ void Block::updateEntryBlocks(bool& goNextBlocks) {
     // update
     auto prevEntryBlock = m_entryBlock;
     m_entryBlock = newEntryBlock;
+    auto newFunctionGraph = newEntryBlock->getFunctionGraph();
+    assert(newFunctionGraph);
     if (prevEntryBlock) {
         auto prevFunctionGraph = prevEntryBlock->getFunctionGraph();
-        auto newFunctionGraph = newEntryBlock->getFunctionGraph();
+        assert(prevFunctionGraph);
         if (prevFunctionGraph != newFunctionGraph) {
             // if the block becomes to belong to another func. graph then move all its "call" references to this new graph
             // check test NewCallSplitBlock
             // TODO: we could simplify this by implementing CALL references in block instead of function graph, along with JUMP references
             prevFunctionGraph->moveReferences(newFunctionGraph, m_minOffset, m_maxOffset);
+            prevFunctionGraph->m_indexToBlock.erase(m_index);
+            for (const auto& [index, block] : prevFunctionGraph->m_indexToBlock) {
+                // reset index because it is invalid now
+                block->m_dominantBlocks.set(m_index, false);
+            }
+        } else {
+            // if prevFunctionGraph == newFunctionGraph then the previous graph of the current block has been removed (see >>> $1 <<<)
         }
     }
+    // add the block to the new function graph
+    m_index = FindNewIndex(newFunctionGraph->m_indexToBlock);
+    newFunctionGraph->m_indexToBlock[m_index] = this;
+    // go to next blocks
     goNextBlocks = true;
 }
 
 bool Block::isEntryBlockInited() const {
     return m_entryBlock && m_entryBlock->m_entryBlock;
+}
+
+size_t Block::FindNewIndex(const std::map<size_t, Block*>& indexToBlock) {
+    auto blocksCount = indexToBlock.size();
+    for (size_t i = blocksCount; i >= 0; --i) {
+        if (indexToBlock.find(i) == indexToBlock.end()) {
+            // found free index
+            return i;
+        }
+    }
+    throw std::runtime_error("Can't find free index");
 }

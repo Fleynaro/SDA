@@ -38,6 +38,8 @@ namespace sda::pcode
 
         Block* getBlockAt(InstructionOffset offset, bool halfInterval = true);
 
+        Block* getBlockByName(const std::string& name);
+
         FunctionGraph* getFunctionGraphAt(InstructionOffset offset);
 
         FunctionGraph* createFunctionGraph(Block* entryBlock);

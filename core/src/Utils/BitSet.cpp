@@ -22,6 +22,10 @@ void BitSet::set(size_t index, bool value) {
     }
 }
 
+void BitSet::clear() {
+    m_blocks.clear();
+}
+
 BitSet BitSet::operator|(const BitSet& other) const {
     BitSet result;
     auto size = std::max(m_blocks.size(), other.m_blocks.size());

@@ -1,3 +1,4 @@
+#include "SDA/Core/Utils/AbstractPrinter.h"
 #include "Test/Core/Pcode/PcodeFixture.h"
 #include "Test/Core/Utils/TestAssertion.h"
 
@@ -8,9 +9,31 @@ using namespace ::testing;
 class PcodeTest : public PcodeFixture
 {
 protected:
+    pcode::Graph graph;
+
     ::testing::AssertionResult cmp(pcode::FunctionGraph* funcGraph, const std::string& expectedCode) const {
         std::stringstream ss;
         printPcode(funcGraph, ss, 2);
+        return Compare(ss.str(), expectedCode);
+    }
+    
+    ::testing::AssertionResult cmpDominantBlocks(pcode::FunctionGraph* funcGraph, const std::string& expectedCode) const {
+        std::stringstream ss;
+        utils::AbstractPrinter printer;
+        printer.setOutput(ss);
+        for (size_t i = 0; i < 2; ++i)
+            printer.startBlock();
+        printer.newTabs();
+        auto blockInfos = funcGraph->getBlocks(true);
+        for (auto& blockInfo : blockInfos) {
+            auto block = blockInfo.block;
+            auto domBlocks = block->getDominantBlocks();
+            ss << block->getName() << ": ";
+            for (auto& block : domBlocks)
+                ss << block->getName() << " ";
+            if (block != blockInfos.back().block)
+                printer.newLine();
+        }
         return Compare(ss.str(), expectedCode);
     }
 };
@@ -30,9 +53,13 @@ TEST_F(PcodeTest, SimpleLoop) {
             NOP \n\
             BRANCH <B1>:8 \
     ";
-    pcode::Graph graph;
+    auto expectedDomBlocks = "\
+        B0: B0 \n\
+        B1: B0 B1 \
+    ";
     auto funcGraph = parsePcode(sourcePCode, &graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
 }
 
 TEST_F(PcodeTest, SimpleLoopFirstBlock) {
@@ -50,9 +77,13 @@ TEST_F(PcodeTest, SimpleLoopFirstBlock) {
         Block B2(level: 2): \n\
             NOP \
     ";
-    pcode::Graph graph;
+    auto expectedDomBlocks = "\
+        B0: B0 \n\
+        B2: B0 B2 \
+    ";
     auto funcGraph = parsePcode(sourcePCode, &graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
 }
 
 TEST_F(PcodeTest, IfElseCondition) {
@@ -79,9 +110,15 @@ TEST_F(PcodeTest, IfElseCondition) {
         Block B5(level: 3): \n\
             NOP \
     ";
-    pcode::Graph graph;
+    auto expectedDomBlocks = "\
+        B0: B0 \n\
+        B2: B0 B2 \n\
+        B4: B0 B4 \n\
+        B5: B0 B2 B4 B5 \
+    ";
     auto funcGraph = parsePcode(sourcePCode, &graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
 }
 
 TEST_F(PcodeTest, TwoEntryPointsUnion) {
@@ -108,7 +145,15 @@ TEST_F(PcodeTest, TwoEntryPointsUnion) {
         Block B4(level: 1): \n\
             NOP \
     ";
-    pcode::Graph graph;
+    auto expectedDomBlocksOfFunc1 = "\
+        B0: B0 \
+    ";
+    auto expectedDomBlocksOfFunc2 = "\
+        B2: B2 \
+    ";
+    auto expectedDomBlocksOfFunc3 = "\
+        B4: B4 \
+    ";
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
     graph.explore(pcode::InstructionOffset(0, 0), &provider);
@@ -119,6 +164,9 @@ TEST_F(PcodeTest, TwoEntryPointsUnion) {
     ASSERT_TRUE(cmp(funcGraph1, expectedPCodeOfFunc1));
     ASSERT_TRUE(cmp(funcGraph2, expectedPCodeOfFunc2));
     ASSERT_TRUE(cmp(funcGraph3, expectedPCodeOfFunc3));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph1, expectedDomBlocksOfFunc1));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph2, expectedDomBlocksOfFunc2));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph3, expectedDomBlocksOfFunc3));
 }
 
 TEST_F(PcodeTest, NewEntryBlockWithLoopFirst) {
@@ -151,15 +199,25 @@ TEST_F(PcodeTest, NewEntryBlockWithLoopFirst) {
             NOP \n\
             BRANCH <B0>:8 \
     ";
-    pcode::Graph graph;
+    auto expectedDomBlocksBefore = "\
+        B0: B0 B2 \n\
+        B2: B0 B2 \
+    ";
+    auto expectedDomBlocksAfter = "\
+        B4: B4 \n\
+        B0: B4 B0 B2 \n\
+        B2: B4 B0 B2 \
+    "; 
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
     graph.explore(pcode::InstructionOffset(0, 0), &provider);
     auto funcGraphBefore = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
     ASSERT_TRUE(cmp(funcGraphBefore, expectedPCodeBefore));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraphBefore, expectedDomBlocksBefore));
     graph.explore(pcode::InstructionOffset(4, 0), &provider);
     auto funcGraphAfter = graph.getFunctionGraphAt(pcode::InstructionOffset(4, 0));
     ASSERT_TRUE(cmp(funcGraphAfter, expectedPCodeAfter));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraphAfter, expectedDomBlocksAfter));
 }
 
 TEST_F(PcodeTest, NewEntryBlockWithLoopSecond) {
@@ -193,15 +251,25 @@ TEST_F(PcodeTest, NewEntryBlockWithLoopSecond) {
             NOP \n\
             BRANCH <B2>:8 \
     ";
-    pcode::Graph graph;
+    auto expectedDomBlocksBefore = "\
+        B0: B0 B2 \n\
+        B2: B0 B2 \
+    ";
+    auto expectedDomBlocksAfter = "\
+        B4: B4 \n\
+        B2: B4 B2 B0 \n\
+        B0: B4 B2 B0 \
+    "; 
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
     graph.explore(pcode::InstructionOffset(0, 0), &provider);
     auto funcGraphBefore = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
     ASSERT_TRUE(cmp(funcGraphBefore, expectedPCodeBefore));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraphBefore, expectedDomBlocksBefore));
     graph.explore(pcode::InstructionOffset(4, 0), &provider);
     auto funcGraphAfter = graph.getFunctionGraphAt(pcode::InstructionOffset(4, 0));
     ASSERT_TRUE(cmp(funcGraphAfter, expectedPCodeAfter));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraphAfter, expectedDomBlocksAfter));
 }
 
 TEST_F(PcodeTest, NestedLoop) {
@@ -228,9 +296,15 @@ TEST_F(PcodeTest, NestedLoop) {
         Block B5(level: 4): \n\
             NOP \
     ";
-    pcode::Graph graph;
+    auto expectedDomBlocks = "\
+        B0: B0 B3 B1 \n\
+        B1: B0 B3 B1 \n\
+        B3: B0 B3 B1 \n\
+        B5: B0 B3 B1 B5 \
+    ";
     auto funcGraph = parsePcode(sourcePCode, &graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
 }
 
 TEST_F(PcodeTest, NestedLoopWithSharedBlock) {
@@ -253,9 +327,15 @@ TEST_F(PcodeTest, NestedLoopWithSharedBlock) {
         Block B4(level: 3): \n\
             NOP \
     ";
+    auto expectedDomBlocks = "\
+        B0: B0 B2 \n\
+        B2: B0 B2 \n\
+        B4: B0 B2 B4 \
+    ";
     pcode::Graph graph;
     auto funcGraph = parsePcode(sourcePCode, &graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
 }
 
 TEST_F(PcodeTest, JoinNextBlock) {
@@ -278,13 +358,16 @@ TEST_F(PcodeTest, JoinNextBlock) {
             CALL <B3>:8 \n\
             BRANCH <B0>:8 \
     ";
-    pcode::Graph graph;
+    auto expectedDomBlocks = "\
+        B0: B0 \
+    ";
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
     graph.explore(pcode::InstructionOffset(1, 0), &provider);
     auto funcGraph = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
     ASSERT_EQ(funcGraph->getReferencesFrom().size(), 2);
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
 }
 
 TEST_F(PcodeTest, IfConditionWithGoto) {
@@ -311,9 +394,15 @@ TEST_F(PcodeTest, IfConditionWithGoto) {
         Block B5(level: 4): \n\
             NOP \
     ";
-    pcode::Graph graph;
+    auto expectedDomBlocks = "\
+        B0: B0 \n\
+        B2: B0 B2 \n\
+        B4: B0 B2 B4 \n\
+        B5: B0 B2 B4 B5 \
+    ";
     auto funcGraph = parsePcode(sourcePCode, &graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
 }
 
 TEST_F(PcodeTest, IfElseConditionWithNewGoto) {
@@ -355,16 +444,29 @@ TEST_F(PcodeTest, IfElseConditionWithNewGoto) {
         Block B5(level: 4): \n\
             NOP \
     ";
-    pcode::Graph graph;
+    auto expectedDomBlocksBefore = "\
+        B0: B0 \n\
+        B2: B0 B2 \n\
+        B4: B0 B4 \n\
+        B5: B0 B2 B4 B5 \
+    ";
+    auto expectedDomBlocksAfter = "\
+        B0: B0 \n\
+        B4: B0 B4 \n\
+        B2: B0 B2 B4 \n\
+        B5: B0 B2 B4 B5 \
+    ";
     auto funcGraph = parsePcode(sourcePCode, &graph);
     // check that graph is as expected BEFORE modification
     ASSERT_TRUE(cmp(funcGraph, expectedPCodeBefore));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocksBefore));
     // modify graph
     auto fromBlock = graph.getBlockAt(pcode::InstructionOffset(4, 0)); // block 4
     auto toBlock = graph.getBlockAt(pcode::InstructionOffset(2, 0)); // block 2
     fromBlock->setFarNextBlock(toBlock);
     // check that graph is as expected AFTER modification
     ASSERT_TRUE(cmp(funcGraph, expectedPCodeAfter));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocksAfter));
 }
 
 TEST_F(PcodeTest, TwoFunctionsUnitedWithJump) {
@@ -400,7 +502,15 @@ TEST_F(PcodeTest, TwoFunctionsUnitedWithJump) {
             NOP \n\
             BRANCH <B3>:8 \
     ";
-    pcode::Graph graph;
+    auto expectedDomBlocksOfFunc1 = "\
+        B0: B0 \
+    ";
+    auto expectedDomBlocksOfFunc2 = "\
+        B3: B3 \
+    ";
+    auto expectedDomBlocksOfFunc3 = "\
+        B5: B5 \
+    ";
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
     graph.explore(pcode::InstructionOffset(0, 0), &provider);
@@ -416,6 +526,9 @@ TEST_F(PcodeTest, TwoFunctionsUnitedWithJump) {
     ASSERT_TRUE(cmp(funcGraph1, expectedPCodeOfFunc1));
     ASSERT_TRUE(cmp(funcGraph2, expectedPCodeOfFunc2));
     ASSERT_TRUE(cmp(funcGraph3, expectedPCodeOfFunc3));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph1, expectedDomBlocksOfFunc1));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph2, expectedDomBlocksOfFunc2));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph3, expectedDomBlocksOfFunc3));
     // remove all links
     entryBlock2->setFarNextBlock(nullptr);
     entryBlock3->setFarNextBlock(nullptr);
@@ -426,6 +539,9 @@ TEST_F(PcodeTest, TwoFunctionsUnitedWithJump) {
     ASSERT_TRUE(cmp(funcGraph1, expectedPCodeOfFunc1));
     ASSERT_TRUE(cmp(funcGraph2, expectedPCodeOfFunc2));
     ASSERT_TRUE(cmp(funcGraph3, expectedPCodeOfFunc3));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph1, expectedDomBlocksOfFunc1));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph2, expectedDomBlocksOfFunc2));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph3, expectedDomBlocksOfFunc3));
 }
 
 TEST_F(PcodeTest, FunctionRecursion) {
@@ -445,12 +561,17 @@ TEST_F(PcodeTest, FunctionRecursion) {
         Block B2(level: 2): \n\
             CALL <B0>:8 \
     ";
+    auto expectedDomBlocks = "\
+        B0: B0 \n\
+        B2: B0 B2 \
+    ";
     pcode::Graph graph;
     auto funcGraph = parsePcode(sourcePCode, &graph);
     // the function graph refers to itself
     ASSERT_EQ(funcGraph, funcGraph->getReferencesFrom().begin()->second);
     ASSERT_EQ(funcGraph, *funcGraph->getReferencesTo().begin());
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
 }
 
 TEST_F(PcodeTest, CallSplitSameBlock) {
@@ -473,7 +594,12 @@ TEST_F(PcodeTest, CallSplitSameBlock) {
             CALL <B1>:8 \n\
             NOP \
     ";
-    pcode::Graph graph;
+    auto expectedDomBlocksOfFunc1 = "\
+        B0: B0 \
+    ";
+    auto expectedDomBlocksOfFunc2 = "\
+        B1: B1 \
+    ";
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
     graph.explore(pcode::InstructionOffset(0, 0), &provider);
@@ -483,6 +609,8 @@ TEST_F(PcodeTest, CallSplitSameBlock) {
     ASSERT_EQ(funcGraph2, *funcGraph2->getReferencesTo().begin());
     ASSERT_TRUE(cmp(funcGraph1, expectedPCodeOfFunc1));
     ASSERT_TRUE(cmp(funcGraph2, expectedPCodeOfFunc2));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph1, expectedDomBlocksOfFunc1));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph2, expectedDomBlocksOfFunc2));
 }
 
 TEST_F(PcodeTest, NewCallSplitBlock) {
@@ -510,13 +638,16 @@ TEST_F(PcodeTest, NewCallSplitBlock) {
             CALL <B5>:8 \n\
             RETURN \
     ";
-    pcode::Graph graph;
+    auto expectedDomBlocksOfMainFunc = "\
+        B0: B0 \
+    ";
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
     graph.explore(pcode::InstructionOffset(0, 0), &provider);
     auto mainFuncGraph = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
     ASSERT_EQ(mainFuncGraph->getReferencesFrom().size(), 2);
     ASSERT_TRUE(cmp(mainFuncGraph, expectedPCodeOfMainFunc));
+    ASSERT_TRUE(cmpDominantBlocks(mainFuncGraph, expectedDomBlocksOfMainFunc));
     // explore the function that has a new call
     graph.explore(pcode::InstructionOffset(6, 0), &provider);
     // now the main function has 1 "from" reference
@@ -570,9 +701,19 @@ TEST_F(PcodeTest, ProgramWithIfElseLoop) {
         Block Bb(level: 7): \n\
             NOP \
     ";
-    pcode::Graph graph;
+    auto expectedDomBlocks = "\
+        B0: B0 \n\
+        B2: B0 B2 \n\
+        B3: B0 B2 B3 \n\
+        B4: B0 B2 B3 B6 B8 B9 B4 \n\
+        B6: B0 B2 B3 B6 B8 B9 B4 \n\
+        B8: B0 B2 B3 B6 B8 B9 B4 \n\
+        B9: B0 B2 B3 B6 B8 B9 B4 \n\
+        Bb: B0 B2 B3 B6 B8 B9 Bb B4 \
+    ";
     auto funcGraph = parsePcode(sourcePCode, &graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
 }
 
 TEST_F(PcodeTest, ProgramWithBreakContinueInLoop) {
@@ -605,9 +746,16 @@ TEST_F(PcodeTest, ProgramWithBreakContinueInLoop) {
         Block B7(level: 5): \n\
             NOP \
     ";
-    pcode::Graph graph;
+    auto expectedDomBlocks = "\
+        B0: B0 B2 B4 B5 \n\
+        B2: B0 B2 B4 B5 \n\
+        B4: B0 B2 B4 B5 \n\
+        B5: B0 B2 B4 B5 \n\
+        B7: B0 B2 B4 B7 B5 \
+    ";
     auto funcGraph = parsePcode(sourcePCode, &graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
 }
 
 // TODO: during test do update of blocks two times like in React
