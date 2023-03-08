@@ -169,6 +169,46 @@ TEST_F(PcodeTest, TwoEntryPointsUnion) {
     ASSERT_TRUE(cmpDominantBlocks(funcGraph3, expectedDomBlocksOfFunc3));
 }
 
+TEST_F(PcodeTest, TwoEntryPointsUnionSecond) {
+    // Graph: https://photos.app.goo.gl/MEDAJ2ADC5Mv8kbbA
+    // Description: we check dominant blocks only
+    auto sourcePCode = "\
+        NOP // block 0 (func 1) \n\
+        BRANCH <label1> \n\
+        <label1>: \n\
+        NOP // block 2 (func 1) \n\
+        BRANCH <label2> \n\
+        NOP // block 4 (func 2) \n\
+        BRANCH <label2> \n\
+        <label2>: \n\
+        NOP // block 6 (func 3) \n\
+        BRANCH <label3> \n\
+        <label3>: \n\
+        NOP // block 8 (func 3) \
+    ";
+    auto expectedDomBlocksOfFunc1 = "\
+        B0: B0 \n\
+        B2: B0 B2 \
+    ";
+    auto expectedDomBlocksOfFunc2 = "\
+        B4: B4 \
+    ";
+    auto expectedDomBlocksOfFunc3 = "\
+        B6: B6 \n\
+        B8: B6 B8 \
+    ";
+    auto instructions = parsePcode(sourcePCode);
+    pcode::ListInstructionProvider provider(instructions);
+    graph.explore(pcode::InstructionOffset(0, 0), &provider);
+    graph.explore(pcode::InstructionOffset(4, 0), &provider);
+    auto funcGraph1 = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
+    auto funcGraph2 = graph.getFunctionGraphAt(pcode::InstructionOffset(4, 0));
+    auto funcGraph3 = graph.getFunctionGraphAt(pcode::InstructionOffset(6, 0));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph1, expectedDomBlocksOfFunc1));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph2, expectedDomBlocksOfFunc2));
+    ASSERT_TRUE(cmpDominantBlocks(funcGraph3, expectedDomBlocksOfFunc3));
+}
+
 TEST_F(PcodeTest, NewEntryBlockWithLoopFirst) {
     // Graph: https://photos.app.goo.gl/FiG2gJXZK3U69RHXA
     // Description: after the second exploration, the initial entry block is not entry anymore
@@ -270,6 +310,53 @@ TEST_F(PcodeTest, NewEntryBlockWithLoopSecond) {
     auto funcGraphAfter = graph.getFunctionGraphAt(pcode::InstructionOffset(4, 0));
     ASSERT_TRUE(cmp(funcGraphAfter, expectedPCodeAfter));
     ASSERT_TRUE(cmpDominantBlocks(funcGraphAfter, expectedDomBlocksAfter));
+}
+
+TEST_F(PcodeTest, NewLoopJump) {
+    // Graph: https://photos.app.goo.gl/wU25ezTPARS8bnyS6
+    auto sourcePCode = "\
+        NOP // block 0 \n\
+        BRANCH <label1> \n\
+        <label1>: \n\
+        NOP // block 2 \n\
+        <label2>: \n\
+        NOP // block 3 \n\
+        RETURN \n\
+        BRANCH <label2> // block 5 \
+    ";
+    auto expectedPCodeBefore = "\
+        Block B0(level: 1, far: B2): \n\
+            NOP \n\
+            BRANCH <B2>:8 \n\
+        Block B2(level: 2): \n\
+            NOP \n\
+            NOP \n\
+            RETURN \
+    ";
+    auto expectedPCodeAfter = "\
+        Block B0(level: 1, far: B2): \n\
+            NOP \n\
+            BRANCH <B2>:8 \n\
+        Block B2(level: 2, near: B3): \n\
+            NOP \
+    ";
+    auto instructions = parsePcode(sourcePCode);
+    pcode::ListInstructionProvider provider(instructions);
+    graph.explore(pcode::InstructionOffset(0, 0), &provider);
+    auto funcGraphBefore = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
+    ASSERT_TRUE(cmp(funcGraphBefore, expectedPCodeBefore));
+    graph.explore(pcode::InstructionOffset(5, 0), &provider);
+    auto funcGraphAfter = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
+    ASSERT_TRUE(cmp(funcGraphAfter, expectedPCodeAfter));
+    ASSERT_TRUE(graph.getFunctionGraphAt(pcode::InstructionOffset(3, 0)));
+    ASSERT_TRUE(graph.getFunctionGraphAt(pcode::InstructionOffset(5, 0)));
+    // add new loop jump
+    graph.getBlockByName("B3")->setFarNextBlock(graph.getBlockByName("B2"));
+    // each block belongs to the different function graph
+    ASSERT_TRUE(graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0)));
+    ASSERT_TRUE(graph.getFunctionGraphAt(pcode::InstructionOffset(2, 0)));
+    ASSERT_TRUE(graph.getFunctionGraphAt(pcode::InstructionOffset(3, 0)));
+    ASSERT_TRUE(graph.getFunctionGraphAt(pcode::InstructionOffset(5, 0)));
 }
 
 TEST_F(PcodeTest, NestedLoop) {

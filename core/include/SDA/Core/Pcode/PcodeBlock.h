@@ -20,9 +20,9 @@ namespace sda::pcode
         std::list<Block*> m_referencedBlocks;
         InstructionOffset m_minOffset = 0;
         InstructionOffset m_maxOffset = 0;
+        size_t m_index = -1;
         Block* m_entryBlock = nullptr;
         utils::BitSet m_dominantBlocks;
-        size_t m_index = -1;
     public:
         Block() = default;
 

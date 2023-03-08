@@ -228,13 +228,13 @@ void Parser::parseLabelIfExists() {
 void Parser::applyLabelJumps() {
     for (auto& [labelName, jump] : m_labelToJump) {
         if (jump.startOffsets.empty())
-            throw error(700, "Label " + labelName + " is not used");
+            throw Exception(700, "Label " + labelName + " is not used");
         if (jump.endOffset == InvalidOffset)
-            throw error(701, "Label " + labelName + " is not defined");
+            throw Exception(701, "Label " + labelName + " is not defined");
         for (auto instrOffset : jump.startOffsets) {
             auto& instr = m_instructions[instrOffset];
             if (!instr.isAnyJump()) {
-                throw error(702, "Label " + labelName + " is not used as jump target");
+                throw Exception(702, "Label " + labelName + " is not used as jump target");
             }
             auto addressVarnode = std::make_shared<ConstantVarnode>(jump.endOffset, 8, true);
             m_instructions[instrOffset] = Instruction(

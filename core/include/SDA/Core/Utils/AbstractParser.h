@@ -13,8 +13,11 @@ namespace utils
         std::unique_ptr<utils::lexer::Token> m_nextToken;
     public:
         class Exception : public std::exception {
+            utils::lexer::ErrorCode code;
         public:
-            Exception(const std::string& message);
+            Exception(utils::lexer::ErrorCode code, const std::string& message);
+
+            utils::lexer::ErrorCode getCode() const { return code; }
         };
 
         void init(std::unique_ptr<utils::lexer::Token> firstToken = nullptr);

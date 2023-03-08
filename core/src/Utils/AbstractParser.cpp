@@ -3,8 +3,8 @@
 using namespace utils;
 using namespace utils::lexer;
 
-AbstractParser::Exception::Exception(const std::string& message)
-    : std::exception(message.c_str())
+AbstractParser::Exception::Exception(ErrorCode code, const std::string& message)
+    : std::exception(message.c_str()), code(code)
 {}
 
 void AbstractParser::init(std::unique_ptr<Token> firstToken) {
@@ -55,8 +55,9 @@ void AbstractParser::accept(char symbol) {
 }
 
 AbstractParser::Exception AbstractParser::error(ErrorCode code, const std::string& message) {
-    m_lexer->getIO()->error(code + m_prefixErrorCode * 1000, message);
-    return Exception(message);
+    auto resultCode = code + m_prefixErrorCode * 1000;
+    m_lexer->getIO()->error(resultCode, message);
+    return Exception(resultCode, message);
 }
 
 void AbstractParser::nextToken() {

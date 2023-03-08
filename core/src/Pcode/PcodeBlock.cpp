@@ -179,8 +179,17 @@ void Block::update() {
         return;
     }
     m_graph->m_updateBlocksEnabled = false;
+    // entry blocks & function graphs
     passDescendants([](Block* block, bool& goNextBlocks) {
         block->updateEntryBlocks(goNextBlocks);
+    });
+    // dominant blocks
+    passDescendants([&](Block* block, bool& goNextBlocks) {
+        if (block->m_dominantBlocks == utils::BitSet()) {
+            return;
+        }
+        block->m_dominantBlocks.clear();
+        goNextBlocks = true;
     });
     passDescendants([](Block* block, bool& goNextBlocks) {
         block->updateDominantBlocks(goNextBlocks);
@@ -193,7 +202,7 @@ void Block::updateDominantBlocks(bool& goNextBlocks) {
     utils::BitSet newDominantBlocks;
     newDominantBlocks.set(m_index, true);
     for (auto refBlock : m_referencedBlocks) {
-        if (refBlock->getEntryBlock() == getEntryBlock()) {
+        if (refBlock->getEntryBlock() == getEntryBlock()) { // check test TwoEntryPointsUnionSecond
             newDominantBlocks = newDominantBlocks | refBlock->m_dominantBlocks;
         }
     }
@@ -234,11 +243,6 @@ void Block::updateEntryBlocks(bool& goNextBlocks) {
             auto newFunctionGraph = newEntryBlock->getFunctionGraph();
             if (curFunctionGraph != newFunctionGraph) {
                 // check test NewCallSplitBlock
-                for (const auto& [index, block] : curFunctionGraph->m_indexToBlock) {
-                    // reset all indexes because the current function graph will be removed
-                    block->m_dominantBlocks.clear();
-                    // TODO: if we can iterate over all blocks of the removing graph then we can store func. graph instead of entry block for each block, it could simplify code a bit
-                }
                 curFunctionGraph->moveReferences(newFunctionGraph);
                 m_graph->removeFunctionGraph(curFunctionGraph); // >>> $1 <<<
                 curFunctionGraph = nullptr;
@@ -263,10 +267,6 @@ void Block::updateEntryBlocks(bool& goNextBlocks) {
             // TODO: we could simplify this by implementing CALL references in block instead of function graph, along with JUMP references
             prevFunctionGraph->moveReferences(newFunctionGraph, m_minOffset, m_maxOffset);
             prevFunctionGraph->m_indexToBlock.erase(m_index);
-            for (const auto& [index, block] : prevFunctionGraph->m_indexToBlock) {
-                // reset index because it is invalid now
-                block->m_dominantBlocks.set(m_index, false);
-            }
         } else {
             // if prevFunctionGraph == newFunctionGraph then the previous graph of the current block has been removed (see >>> $1 <<<)
         }
