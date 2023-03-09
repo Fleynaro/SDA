@@ -12,7 +12,14 @@ namespace sda::pcode
         std::map<InstructionOffset, Block> m_blocks;
         std::map<InstructionOffset, FunctionGraph> m_functionGraphs;
         bool m_updateBlocksEnabled = true;
+        size_t m_commitLevel = 0;
     public:
+        struct CommitScope {
+            Graph* m_graph;
+            CommitScope(Graph* graph) : m_graph(graph) { m_graph->startCommit(); }
+            ~CommitScope() { m_graph->endCommit(); }
+        };
+
         Graph();
 
         void explore(InstructionOffset startOffset, InstructionProvider* instrProvider);
@@ -48,6 +55,10 @@ namespace sda::pcode
 
         void setUpdateBlocksEnabled(bool enabled);
 
+        void startCommit();
+
+        void endCommit();
+
          // Callbacks for the graph
         class Callbacks
         {
@@ -66,6 +77,9 @@ namespace sda::pcode
             // Called when a block is updated
             void onBlockUpdated(Block* block);
 
+            // Called when a block's function graph is changed
+            void onBlockFunctionGraphChanged(Block* block, FunctionGraph* oldFunctionGraph, FunctionGraph* newFunctionGraph);
+
             // Called when a block is removed
             void onBlockRemoved(Block* block);
 
@@ -77,6 +91,12 @@ namespace sda::pcode
 
             // Called when an unvisited offset is found
             void onUnvisitedOffsetFound(InstructionOffset offset);
+
+            // Called when the commit starts
+            void onCommitStarted();
+
+            // Called when the commit ends
+            void onCommitEnded();
 
             // Called when a warning is emitted
             void onWarningEmitted(const std::string& warning);
@@ -94,6 +114,8 @@ namespace sda::pcode
 
             virtual void onBlockUpdatedImpl(Block* block) {};
 
+            virtual void onBlockFunctionGraphChangedImpl(Block* block, FunctionGraph* oldFunctionGraph, FunctionGraph* newFunctionGraph) {};
+
             virtual void onBlockRemovedImpl(Block* block) {};
 
             virtual void onFunctionGraphCreatedImpl(FunctionGraph* functionGraph) {};
@@ -101,6 +123,10 @@ namespace sda::pcode
             virtual void onFunctionGraphRemovedImpl(FunctionGraph* functionGraph) {};
 
             virtual void onUnvisitedOffsetFoundImpl(InstructionOffset offset) {};
+
+            virtual void onCommitStartedImpl() {};
+
+            virtual void onCommitEndedImpl() {};
 
             virtual void onWarningEmittedImpl(const std::string& warning) {};
         };

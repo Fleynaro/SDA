@@ -37,6 +37,14 @@ std::list<Block*> Block::getReferencedBlocks() const {
     return referencedBlocks;
 }
 
-void Block::update() {
+void Block::passDescendants(std::function<void(Block* block, bool& goNextBlocks)> callback) {
+    m_pcodeBlock->passDescendants([this, &callback](pcode::Block* pcodeBlock, bool& goNextBlocks) {
+        callback(m_function->toBlock(pcodeBlock), goNextBlocks);
+    });
+}
 
+void Block::update() {
+    passDescendants([&](Block* block, bool& goNextBlocks) {
+        goNextBlocks = false;
+    });
 }

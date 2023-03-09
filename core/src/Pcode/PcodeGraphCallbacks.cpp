@@ -34,6 +34,14 @@ void Graph::Callbacks::onBlockUpdated(Block* block) {
     }
 }
 
+void Graph::Callbacks::onBlockFunctionGraphChanged(Block* block, FunctionGraph* oldFunctionGraph, FunctionGraph* newFunctionGraph) {
+    if (m_prevCallbacks)
+        m_prevCallbacks->onBlockFunctionGraphChanged(block, oldFunctionGraph, newFunctionGraph);
+    if (m_enabled) {
+        onBlockFunctionGraphChangedImpl(block, oldFunctionGraph, newFunctionGraph);
+    }
+}
+
 void Graph::Callbacks::onBlockRemoved(Block* block) {
     if (m_prevCallbacks)
         m_prevCallbacks->onBlockRemoved(block);
@@ -63,6 +71,22 @@ void Graph::Callbacks::onUnvisitedOffsetFound(InstructionOffset offset) {
         m_prevCallbacks->onUnvisitedOffsetFound(offset);
     if (m_enabled) {
         onUnvisitedOffsetFoundImpl(offset);
+    }
+}
+
+void Graph::Callbacks::onCommitStarted() {
+    if (m_prevCallbacks)
+        m_prevCallbacks->onCommitStarted();
+    if (m_enabled) {
+        onCommitStartedImpl();
+    }
+}
+
+void Graph::Callbacks::onCommitEnded() {
+    if (m_prevCallbacks)
+        m_prevCallbacks->onCommitEnded();
+    if (m_enabled) {
+        onCommitEndedImpl();
     }
 }
 

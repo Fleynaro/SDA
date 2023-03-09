@@ -15,16 +15,28 @@ namespace sda::ircode
         public:
             PcodeGraphCallbacks(Program* program) : m_program(program) {}
 
-            void onBlockUpdatedImpl(pcode::Block* block) override;
+            void onBlockUpdatedImpl(pcode::Block* pcodeBlock) override;
+
+            void onBlockFunctionGraphChangedImpl(pcode::Block* pcodeBlock, pcode::FunctionGraph* oldFunctionGraph, pcode::FunctionGraph* newFunctionGraph) override;
+
+            // void onBlockCreatedImpl(pcode::Block* pcodeBlock) override;
+
+            // void onBlockRemovedImpl(pcode::Block* pcodeBlock) override;
 
             void onFunctionGraphCreatedImpl(pcode::FunctionGraph* functionGraph) override;
 
             void onFunctionGraphRemovedImpl(pcode::FunctionGraph* functionGraph) override;
+
+            void onCommitStartedImpl() override;
+
+            void onCommitEndedImpl() override;
         };
         PcodeGraphCallbacks m_pcodeGraphCallbacks;
     public:
         Program(pcode::Graph* graph);
 
         std::map<pcode::FunctionGraph*, Function>& getFunctions();
+
+        Function* toFunction(pcode::FunctionGraph* functionGraph);
     };
 };

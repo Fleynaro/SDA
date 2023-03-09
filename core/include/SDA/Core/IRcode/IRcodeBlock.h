@@ -27,6 +27,8 @@ namespace sda::ircode
 
         std::list<Block*> getReferencedBlocks() const;
 
+        void passDescendants(std::function<void(Block* block, bool& goNextBlocks)> callback);
+
         void update();
     };
 };

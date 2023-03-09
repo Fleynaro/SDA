@@ -195,6 +195,7 @@ void Block::update() {
         block->updateDominantBlocks(goNextBlocks);
     });
     m_graph->m_updateBlocksEnabled = true;
+    m_graph->getCallbacks()->onBlockUpdated(this);
 }
 
 void Block::updateDominantBlocks(bool& goNextBlocks) {
@@ -267,9 +268,13 @@ void Block::updateEntryBlocks(bool& goNextBlocks) {
             // TODO: we could simplify this by implementing CALL references in block instead of function graph, along with JUMP references
             prevFunctionGraph->moveReferences(newFunctionGraph, m_minOffset, m_maxOffset);
             prevFunctionGraph->m_indexToBlock.erase(m_index);
+            m_graph->getCallbacks()->onBlockFunctionGraphChanged(this, prevFunctionGraph, newFunctionGraph);
         } else {
+            m_graph->getCallbacks()->onBlockFunctionGraphChanged(this, nullptr, newFunctionGraph);
             // if prevFunctionGraph == newFunctionGraph then the previous graph of the current block has been removed (see >>> $1 <<<)
         }
+    } else {
+        m_graph->getCallbacks()->onBlockFunctionGraphChanged(this, nullptr, newFunctionGraph);
     }
     // add the block to the new function graph
     m_index = FindNewIndex(newFunctionGraph->m_indexToBlock);
