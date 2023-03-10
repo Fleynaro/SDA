@@ -7,11 +7,18 @@ namespace sda::pcode
 {
     class Graph
     {
+        enum class UpdateBlockState {
+            Enabled,
+            Disabled,
+            DisabledByUpdater
+        };
+
         friend void Block::update();
+        friend FunctionGraph; 
         std::map<InstructionOffset, Instruction> m_instructions;
         std::map<InstructionOffset, Block> m_blocks;
         std::map<InstructionOffset, FunctionGraph> m_functionGraphs;
-        bool m_updateBlocksEnabled = true;
+        UpdateBlockState m_updateBlockState = UpdateBlockState::Enabled;
         size_t m_commitLevel = 0;
     public:
         struct CommitScope {
@@ -77,6 +84,9 @@ namespace sda::pcode
             // Called when a block is updated
             void onBlockUpdated(Block* block);
 
+            // Called when a block is requested to be updated
+            void onBlockUpdateRequested(Block* block);
+
             // Called when a block's function graph is changed
             void onBlockFunctionGraphChanged(Block* block, FunctionGraph* oldFunctionGraph, FunctionGraph* newFunctionGraph);
 
@@ -113,6 +123,8 @@ namespace sda::pcode
             virtual void onBlockCreatedImpl(Block* block) {};
 
             virtual void onBlockUpdatedImpl(Block* block) {};
+
+            virtual void onBlockUpdateRequestedImpl(Block* block) {};
 
             virtual void onBlockFunctionGraphChangedImpl(Block* block, FunctionGraph* oldFunctionGraph, FunctionGraph* newFunctionGraph) {};
 

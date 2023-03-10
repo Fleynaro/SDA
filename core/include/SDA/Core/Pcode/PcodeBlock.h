@@ -71,6 +71,8 @@ namespace sda::pcode
         // Called when the block was changed
         void update();
 
+        void requestUpdate();
+
     private:
         void updateDominantBlocks(bool& goNextBlocks);
 

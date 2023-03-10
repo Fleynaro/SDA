@@ -66,10 +66,11 @@ void FunctionGraph::addReferenceFrom(InstructionOffset fromOffset, Block* called
         addReferenceFrom(fromOffset, calledBlock->getFunctionGraph());
     } else {
         auto graph = calledBlock->getGraph();
-        graph->setUpdateBlocksEnabled(false);
+        auto prevUpdateBlockState = graph->m_updateBlockState;
+        graph->m_updateBlockState = Graph::UpdateBlockState::Disabled;
         auto newFuncGraph = graph->createFunctionGraph(calledBlock);
         addReferenceFrom(fromOffset, newFuncGraph);
-        graph->setUpdateBlocksEnabled(true);
+        graph->m_updateBlockState = prevUpdateBlockState;
         calledBlock->update();
     }
 }

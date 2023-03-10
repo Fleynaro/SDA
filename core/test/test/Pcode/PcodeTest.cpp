@@ -28,6 +28,9 @@ protected:
         for (auto& blockInfo : blockInfos) {
             auto block = blockInfo.block;
             auto domBlocks = block->getDominantBlocks();
+            domBlocks.sort([](pcode::Block* a, pcode::Block* b) {
+                return a->getMinOffset() < b->getMinOffset();
+            });
             ss << block->getName() << ": ";
             for (auto& block : domBlocks)
                 ss << block->getName() << " ";
@@ -245,8 +248,8 @@ TEST_F(PcodeTest, NewEntryBlockWithLoopFirst) {
     ";
     auto expectedDomBlocksAfter = "\
         B4: B4 \n\
-        B0: B4 B0 B2 \n\
-        B2: B4 B0 B2 \
+        B0: B0 B2 B4 \n\
+        B2: B0 B2 B4 \
     "; 
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
@@ -297,8 +300,8 @@ TEST_F(PcodeTest, NewEntryBlockWithLoopSecond) {
     ";
     auto expectedDomBlocksAfter = "\
         B4: B4 \n\
-        B2: B4 B2 B0 \n\
-        B0: B4 B2 B0 \
+        B2: B0 B2 B4 \n\
+        B0: B0 B2 B4 \
     "; 
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
@@ -384,10 +387,10 @@ TEST_F(PcodeTest, NestedLoop) {
             NOP \
     ";
     auto expectedDomBlocks = "\
-        B0: B0 B3 B1 \n\
-        B1: B0 B3 B1 \n\
-        B3: B0 B3 B1 \n\
-        B5: B0 B3 B1 B5 \
+        B0: B0 B1 B3 \n\
+        B1: B0 B1 B3 \n\
+        B3: B0 B1 B3 \n\
+        B5: B0 B1 B3 B5 \
     ";
     auto funcGraph = parsePcode(sourcePCode, &graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
@@ -792,11 +795,11 @@ TEST_F(PcodeTest, ProgramWithIfElseLoop) {
         B0: B0 \n\
         B2: B0 B2 \n\
         B3: B0 B2 B3 \n\
-        B4: B0 B2 B3 B6 B8 B9 B4 \n\
-        B6: B0 B2 B3 B6 B8 B9 B4 \n\
-        B8: B0 B2 B3 B6 B8 B9 B4 \n\
-        B9: B0 B2 B3 B6 B8 B9 B4 \n\
-        Bb: B0 B2 B3 B6 B8 B9 Bb B4 \
+        B4: B0 B2 B3 B4 B6 B8 B9 \n\
+        B6: B0 B2 B3 B4 B6 B8 B9 \n\
+        B8: B0 B2 B3 B4 B6 B8 B9 \n\
+        B9: B0 B2 B3 B4 B6 B8 B9 \n\
+        Bb: B0 B2 B3 B4 B6 B8 B9 Bb \
     ";
     auto funcGraph = parsePcode(sourcePCode, &graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
@@ -838,7 +841,7 @@ TEST_F(PcodeTest, ProgramWithBreakContinueInLoop) {
         B2: B0 B2 B4 B5 \n\
         B4: B0 B2 B4 B5 \n\
         B5: B0 B2 B4 B5 \n\
-        B7: B0 B2 B4 B7 B5 \
+        B7: B0 B2 B4 B5 B7 \
     ";
     auto funcGraph = parsePcode(sourcePCode, &graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));

@@ -13,12 +13,57 @@ InstructionOffset GetTargetOffset(const Instruction* instr) {
     return targetOffset;
 }
 
+class OptimizationCallbacks : public Graph::Callbacks {
+    // TODO: to use it we should move CALL references to a block
+    Graph* m_graph;
+    bool m_enabled = true;
+    std::list<Block*> m_blocksToUpdate;
+    std::set<Block*> m_updatedBlocks;
+
+    void onBlockUpdateRequestedImpl(Block* block) override {
+        if (!m_enabled) {
+            return;
+        }
+        m_blocksToUpdate.push_back(block);
+    }
+
+    void onBlockUpdatedImpl(Block* block) override {
+        if (!m_enabled) {
+            return;
+        }
+        m_updatedBlocks.insert(block);
+    }
+
+    void onCommitStartedImpl() override {
+        m_enabled = true;
+        m_graph->setUpdateBlocksEnabled(false);
+        m_blocksToUpdate.clear();
+        m_updatedBlocks.clear();
+    }
+
+    void onCommitEndedImpl() override {
+        m_enabled = false;
+        m_graph->setUpdateBlocksEnabled(true);
+        for (auto block : m_blocksToUpdate) {
+            if (m_updatedBlocks.find(block) == m_updatedBlocks.end()) {
+                block->update();
+            }
+        }
+    }
+
+public:
+    OptimizationCallbacks(Graph* graph)
+        : m_graph(graph)
+    {}
+};
+
 Graph::Graph()
-    : m_callbacks(std::make_unique<Callbacks>())
+    //: m_callbacks(std::make_shared<OptimizationCallbacks>(this))
+    : m_callbacks(std::make_shared<Callbacks>())
 {}
 
 void Graph::explore(InstructionOffset startOffset, InstructionProvider* instrProvider) {
-    CommitScope(this);
+    CommitScope commit(this);
     std::list<InstructionOffset> unvisitedOffsets = { startOffset };
     std::set<InstructionOffset> visitedOffsets;
 
@@ -82,7 +127,7 @@ void Graph::explore(InstructionOffset startOffset, InstructionProvider* instrPro
 
 
 void Graph::addInstruction(const Instruction& instruction, InstructionOffset nextOffset) {
-    CommitScope(this);
+    CommitScope commit(this);
     auto offset = instruction.getOffset();
     if (m_instructions.find(offset) != m_instructions.end())
         throw std::runtime_error("Instruction already exists at this offset");
@@ -261,7 +306,7 @@ void Graph::removeBlock(Block* block) {
 }
 
 Block* Graph::splitBlock(Block* block, InstructionOffset offset) {
-    CommitScope(this);
+    CommitScope commit(this);
     if (offset <= block->getMinOffset() || offset >= block->getMaxOffset())
         throw std::runtime_error("Invalid offset");
     
@@ -285,21 +330,17 @@ Block* Graph::splitBlock(Block* block, InstructionOffset offset) {
     block1->setMaxOffset(offset);
 
     // reconnect the first block
-    setUpdateBlocksEnabled(false);
     if (block1->getNearNextBlock())
         block2->setNearNextBlock(block1->getNearNextBlock());
     if (block1->getFarNextBlock())
         block2->setFarNextBlock(block1->getFarNextBlock());
     block1->setNearNextBlock(block2);
     block1->setFarNextBlock(nullptr);
-    setUpdateBlocksEnabled(true);
-    block2->update();
-
     return block2;
 }
 
 void Graph::joinBlocks(Block* block1, Block* block2) {
-    CommitScope(this);
+    CommitScope commit(this);
     assert(block1->canBeJoinedWith(block2));
     assert(block2->getFunctionGraph()->getEntryBlock() == block2);
 
@@ -381,7 +422,7 @@ void Graph::removeFunctionGraph(FunctionGraph* functionGraph) {
 }
 
 void Graph::setUpdateBlocksEnabled(bool enabled) {
-    m_updateBlocksEnabled = enabled;
+    m_updateBlockState = enabled ? UpdateBlockState::Enabled : UpdateBlockState::Disabled;
 }
 
 void Graph::startCommit() {

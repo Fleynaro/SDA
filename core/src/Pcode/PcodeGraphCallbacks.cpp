@@ -34,6 +34,14 @@ void Graph::Callbacks::onBlockUpdated(Block* block) {
     }
 }
 
+void Graph::Callbacks::onBlockUpdateRequested(Block* block) {
+    if (m_prevCallbacks)
+        m_prevCallbacks->onBlockUpdateRequested(block);
+    if (m_enabled) {
+        onBlockUpdateRequestedImpl(block);
+    }
+}
+
 void Graph::Callbacks::onBlockFunctionGraphChanged(Block* block, FunctionGraph* oldFunctionGraph, FunctionGraph* newFunctionGraph) {
     if (m_prevCallbacks)
         m_prevCallbacks->onBlockFunctionGraphChanged(block, oldFunctionGraph, newFunctionGraph);

@@ -33,6 +33,7 @@ TEST_F(IRcodeTest, Simple) {
             BRANCH <B1>:8 \
     ";
     ircode::Program program(&graph);
-    auto funcGraph = parsePcode(sourcePCode, &graph);
+    // auto funcGraph = parsePcode(sourcePCode, &graph);
+    // todo: сделать события, запустить этот тест. Далее реализовывать декомпиляцию (update метод ir-code блока)
     
 }
