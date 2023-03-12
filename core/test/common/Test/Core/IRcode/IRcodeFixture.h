@@ -8,5 +8,7 @@ namespace sda::test
     {
     protected:
         void printIRcode(ircode::Function* function, std::ostream& out, size_t tabs = 0) const;
+
+        ircode::Function* parsePcode(const std::string& text, ircode::Program* program) const;
     };
 };

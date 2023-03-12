@@ -48,6 +48,8 @@ namespace sda::pcode
         
         const std::list<Block*>& getReferencedBlocks() const;
 
+        utils::BitSet getDominantBlocksSet() const;
+
         std::list<Block*> getDominantBlocks() const;
 
         InstructionOffset getMinOffset() const;

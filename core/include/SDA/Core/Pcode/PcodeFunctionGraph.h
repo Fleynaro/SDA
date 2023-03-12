@@ -41,5 +41,7 @@ namespace sda::pcode
             FunctionGraph* destGraph,
             InstructionOffset startFromOffset = InvalidOffset,
             InstructionOffset endFromOffset = InvalidOffset);
+
+        std::list<Block*> toBlocks(const utils::BitSet& blockSet) const;
     };
 };

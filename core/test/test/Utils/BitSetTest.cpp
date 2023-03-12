@@ -18,8 +18,8 @@ TEST(BitSetTest, testOr) {
     bitSet1.set(10, true);
     bitSet1.set(100, true);
     BitSet bitSet2;
-    bitSet1.set(0, true);
-    bitSet1.set(1, true);
+    bitSet2.set(0, true);
+    bitSet2.set(1, true);
     auto result = bitSet1 | bitSet2;
     EXPECT_TRUE(result.get(0));
     EXPECT_TRUE(result.get(1));
@@ -28,6 +28,21 @@ TEST(BitSetTest, testOr) {
     EXPECT_FALSE(result.get(2));
     EXPECT_FALSE(result.get(11));
     EXPECT_FALSE(result.get(101));
+}
+
+TEST(BitSetTest, testAnd) {
+    BitSet bitSet1;
+    bitSet1.set(0, true);
+    bitSet1.set(10, true);
+    bitSet1.set(100, true);
+    BitSet bitSet2;
+    bitSet2.set(0, true);
+    bitSet2.set(1, true);
+    auto result = bitSet1 & bitSet2;
+    EXPECT_TRUE(result.get(0));
+    EXPECT_FALSE(result.get(1));
+    EXPECT_FALSE(result.get(10));
+    EXPECT_FALSE(result.get(100));
 }
 
 TEST(BitSetTest, testEqual) {

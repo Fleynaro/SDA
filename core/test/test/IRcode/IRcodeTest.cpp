@@ -9,6 +9,7 @@ class IRcodeTest : public IRcodeFixture
 {
 protected:
     pcode::Graph graph;
+    ircode::Program program = ircode::Program(&graph);
 
     ::testing::AssertionResult cmp(ircode::Function* function, const std::string& expectedCode) const {
         std::stringstream ss;
@@ -25,15 +26,13 @@ TEST_F(IRcodeTest, Simple) {
         NOP // block 1 \n\
         BRANCH <label> \
     ";
-    auto expectedPCode = "\
+    auto expectedIRode = "\
         Block B0(level: 1, near: B1): \n\
             NOP \n\
         Block B1(level: 2, far: B1): \n\
             NOP \n\
             BRANCH <B1>:8 \
     ";
-    ircode::Program program(&graph);
-    // auto funcGraph = parsePcode(sourcePCode, &graph);
-    // todo: сделать события, запустить этот тест. Далее реализовывать декомпиляцию (update метод ir-code блока)
-    
+    auto function = parsePcode(sourcePCode, &program);
+    ASSERT_TRUE(cmp(function, expectedIRode));
 }

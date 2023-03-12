@@ -18,6 +18,8 @@ namespace utils
 
         BitSet operator|(const BitSet& other) const;
 
+        BitSet operator&(const BitSet& other) const;
+
         bool operator==(const BitSet& other) const;
 
     private:

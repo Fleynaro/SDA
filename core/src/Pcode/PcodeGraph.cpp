@@ -37,8 +37,6 @@ class OptimizationCallbacks : public Graph::Callbacks {
     void onCommitStartedImpl() override {
         m_enabled = true;
         m_graph->setUpdateBlocksEnabled(false);
-        m_blocksToUpdate.clear();
-        m_updatedBlocks.clear();
     }
 
     void onCommitEndedImpl() override {
@@ -49,6 +47,8 @@ class OptimizationCallbacks : public Graph::Callbacks {
                 block->update();
             }
         }
+        m_blocksToUpdate.clear();
+        m_updatedBlocks.clear();
     }
 
 public:

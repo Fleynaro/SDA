@@ -92,3 +92,14 @@ void FunctionGraph::moveReferences(FunctionGraph* destGraph, InstructionOffset s
         }
     }
 }
+
+std::list<Block*> FunctionGraph::toBlocks(const utils::BitSet& blockSet) const {
+    std::list<Block*> blocks;
+    for (const auto& [index, block] : m_indexToBlock) {
+        // TODO: we could reduce the number of iterations by passing bitset instead of m_indexToBlock
+        if (blockSet.get(index)) {
+            blocks.push_back(block);
+        }
+    }
+    return blocks;
+}

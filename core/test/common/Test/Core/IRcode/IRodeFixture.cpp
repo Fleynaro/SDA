@@ -14,3 +14,8 @@ void IRcodeFixture::printIRcode(ircode::Function* function, std::ostream& out, s
     ircodePrinter.newTabs();
     ircodePrinter.printFunction(function);
 }
+
+ircode::Function* IRcodeFixture::parsePcode(const std::string& text, ircode::Program* program) const {
+    auto funcGraph = PcodeFixture::parsePcode(text, program->getGraph());
+    return program->toFunction(funcGraph);
+}

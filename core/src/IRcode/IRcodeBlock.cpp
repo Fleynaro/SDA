@@ -22,11 +22,19 @@ std::list<std::unique_ptr<Operation>>& Block::getOperations() {
 }
 
 Block* Block::getNearNextBlock() const {
-    return m_function->toBlock(m_pcodeBlock->getNearNextBlock());
+    auto pcodeBlock = m_pcodeBlock->getNearNextBlock();
+    if (!pcodeBlock) {
+        return nullptr;
+    }
+    return m_function->toBlock(pcodeBlock);
 }
 
 Block* Block::getFarNextBlock() const {
-    return m_function->toBlock(m_pcodeBlock->getFarNextBlock());
+    auto pcodeBlock = m_pcodeBlock->getFarNextBlock();
+    if (!pcodeBlock) {
+        return nullptr;
+    }
+    return m_function->toBlock(pcodeBlock);
 }
 
 std::list<Block*> Block::getReferencedBlocks() const {

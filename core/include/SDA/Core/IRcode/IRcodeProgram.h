@@ -12,10 +12,10 @@ namespace sda::ircode
         class PcodeGraphCallbacks : public pcode::Graph::Callbacks
         {
             Program* m_program;
-        public:
-            PcodeGraphCallbacks(Program* program) : m_program(program) {}
+            bool m_commitStarted = false;
+            std::set<pcode::Block*> m_pcodeBlocksToUpdate;
 
-            void onBlockUpdatedImpl(pcode::Block* pcodeBlock) override;
+            void onBlockUpdateRequestedImpl(pcode::Block* pcodeBlock) override;
 
             void onBlockFunctionGraphChangedImpl(pcode::Block* pcodeBlock, pcode::FunctionGraph* oldFunctionGraph, pcode::FunctionGraph* newFunctionGraph) override;
 
@@ -30,10 +30,17 @@ namespace sda::ircode
             void onCommitStartedImpl() override;
 
             void onCommitEndedImpl() override;
+
+            void updateBlocks();
+
+        public:
+            PcodeGraphCallbacks(Program* program) : m_program(program) {}
         };
-        PcodeGraphCallbacks m_pcodeGraphCallbacks;
+        std::shared_ptr<PcodeGraphCallbacks> m_pcodeGraphCallbacks;
     public:
         Program(pcode::Graph* graph);
+
+        pcode::Graph* getGraph();
 
         std::map<pcode::FunctionGraph*, Function>& getFunctions();
 

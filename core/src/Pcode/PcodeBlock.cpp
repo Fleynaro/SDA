@@ -82,16 +82,13 @@ const std::list<Block*>& Block::getReferencedBlocks() const {
     return m_referencedBlocks;
 }
 
+utils::BitSet Block::getDominantBlocksSet() const {
+    return m_dominantBlocks;
+}
+
 std::list<Block*> Block::getDominantBlocks() const {
-    std::list<Block*> dominantBlocks;
     auto funcGraph = getFunctionGraph();
-    for (const auto& [index, block] : funcGraph->m_indexToBlock) {
-        // TODO: we could reduce the number of iterations by passing bitset instead of m_indexToBlock
-        if (m_dominantBlocks.get(index)) {
-            dominantBlocks.push_back(block);
-        }
-    }
-    return dominantBlocks;
+    return funcGraph->toBlocks(m_dominantBlocks);
 }
 
 InstructionOffset Block::getMinOffset() const {

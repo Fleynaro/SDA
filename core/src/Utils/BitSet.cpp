@@ -38,6 +38,18 @@ BitSet BitSet::operator|(const BitSet& other) const {
     return result;
 }
 
+BitSet BitSet::operator&(const BitSet& other) const {
+    BitSet result;
+    auto size = std::min(m_blocks.size(), other.m_blocks.size());
+    result.m_blocks.resize(size);
+    for (size_t i = 0; i < size; ++i) {
+        auto block1 = getBlock(i);
+        auto block2 = other.getBlock(i);
+        result.m_blocks[i] = block1 & block2;
+    }
+    return result;
+}
+
 bool BitSet::operator==(const BitSet& other) const {
     auto size = std::max(m_blocks.size(), other.m_blocks.size());
     for (size_t i = 0; i < size; ++i) {
