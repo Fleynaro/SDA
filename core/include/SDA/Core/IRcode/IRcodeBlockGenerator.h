@@ -1,25 +1,13 @@
 #pragma once
-#include "SDA/Core/IRcode/IRcodeBlock.h"
 #include "SDA/Core/IRcode/IRcodeDataTypeProvider.h"
+#include "SDA/Core/IRcode/IRcodeBlock.h"
 #include "SDA/Core/Pcode/PcodeInstruction.h"
 
-namespace sda::decompiler
+namespace sda::ircode
 {
-    struct MemorySpace {
-        std::list<std::shared_ptr<ircode::Variable>> variables;
-    };
-
-    class TotalMemorySpace
-    {
-        std::map<ircode::Hash, MemorySpace> m_memorySpaces;
-    public:
-        MemorySpace* getMemSpace(ircode::Hash baseAddrHash);
-    };
-
     class IRcodeBlockGenerator
     {
-        ircode::Block* m_block;
-        TotalMemorySpace* m_totalMemSpace;
+        Block* m_block;
         ircode::DataTypeProvider* m_dataTypeProvider;
         size_t m_nextVarId;
         const pcode::Instruction* m_curInstr = nullptr;
@@ -27,8 +15,7 @@ namespace sda::decompiler
         std::list<ircode::Operation*> m_genOperations;
     public:
         IRcodeBlockGenerator(
-            ircode::Block* block,
-            TotalMemorySpace* totalMemSpace,
+            Block* block,
             ircode::DataTypeProvider* dataTypeProvider,
             size_t nextVarId = 1);
 
@@ -37,16 +24,28 @@ namespace sda::decompiler
         const std::list<ircode::Operation*>& getGeneratedOperations() const;
 
     private:
-        void genWriteMemory(MemorySpace* memSpace, std::shared_ptr<ircode::Variable> variable);
+        void genWriteMemory(MemorySubspace* memSpace, std::shared_ptr<ircode::Variable> variable);
 
         struct VariableReadInfo {
             std::shared_ptr<ircode::Variable> variable;
             Offset offset;
         };
 
-        std::list<VariableReadInfo> genReadMemory(MemorySpace* memSpace, Offset readOffset, size_t readSize, utils::BitMask& readMask);
+        std::list<VariableReadInfo> genReadMemory(
+            MemorySubspace* memSpace,
+            Offset readOffset,
+            size_t readSize,
+            utils::BitMask& readMask);
 
-        ircode::MemoryAddress getRegisterMemoryAddress(const Register& reg) const;
+        utils::BitSet m_visitedBlocks;
+        std::list<VariableReadInfo> genReadMemory(
+            Block* block,
+            Hash baseAddrHash,
+            Offset readOffset,
+            size_t readSize,
+            utils::BitMask& readMask);
+
+        ircode::MemoryAddress getRegisterMemoryAddress(const sda::Register& reg) const;
 
         ircode::MemoryAddress getMemoryAddress(std::shared_ptr<ircode::Value> addrValue) const;
 
@@ -65,5 +64,7 @@ namespace sda::decompiler
         std::shared_ptr<ircode::Register> createRegister(std::shared_ptr<pcode::RegisterVarnode> regVarnode, const ircode::MemoryAddress& memAddr) const;
 
         std::shared_ptr<ircode::Variable> createVariable(const ircode::MemoryAddress& memAddress, ircode::Hash hash, size_t size);
+
+        MemorySpace* getCurMemSpace() const;
     };
 };

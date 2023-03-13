@@ -21,10 +21,7 @@ protected:
 TEST_F(IRcodeTest, Simple) {
     // Graph: https://photos.app.goo.gl/j2VRr1jGHpA8EaaY9
     auto sourcePCode = "\
-        NOP // block 0 \n\
-        <label>: \n\
-        NOP // block 1 \n\
-        BRANCH <label> \
+        rax:8 = INT_ADD rax:8, 1:8 \
     ";
     auto expectedIRode = "\
         Block B0(level: 1, near: B1): \n\
@@ -36,3 +33,9 @@ TEST_F(IRcodeTest, Simple) {
     auto function = parsePcode(sourcePCode, &program);
     ASSERT_TRUE(cmp(function, expectedIRode));
 }
+
+/*
+    TODO:
+    1) ir-code generator tests
+    2) ir-code gen without providers yet, just use block's references to go to parents
+*/

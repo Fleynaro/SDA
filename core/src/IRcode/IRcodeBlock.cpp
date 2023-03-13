@@ -17,8 +17,16 @@ std::string Block::getName() const {
     return m_pcodeBlock->getName();
 }
 
+size_t Block::getIndex() const {
+    return m_pcodeBlock->getIndex();
+}
+
 std::list<std::unique_ptr<Operation>>& Block::getOperations() {
     return m_operations;
+}
+
+MemorySpace* Block::getMemorySpace() {
+    return &m_memSpace;
 }
 
 Block* Block::getNearNextBlock() const {
@@ -53,6 +61,14 @@ void Block::passDescendants(std::function<void(Block* block, bool& goNextBlocks)
 
 void Block::update() {
     passDescendants([&](Block* block, bool& goNextBlocks) {
-        goNextBlocks = false;
+        block->decompile(goNextBlocks);
     });
+}
+
+void Block::decompile(bool& goNextBlocks) {
+    auto& instructions = m_pcodeBlock->getInstructions();
+    for (auto& [offset, instruction] : instructions) {
+        
+    }
+    goNextBlocks = false;
 }

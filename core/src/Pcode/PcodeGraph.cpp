@@ -14,7 +14,7 @@ InstructionOffset GetTargetOffset(const Instruction* instr) {
 }
 
 class OptimizationCallbacks : public Graph::Callbacks {
-    // TODO: to use it we should move CALL references to a block
+    // TODO: to use it we should move CALL references from the func. graph class to the block class
     Graph* m_graph;
     bool m_enabled = true;
     std::list<Block*> m_blocksToUpdate;

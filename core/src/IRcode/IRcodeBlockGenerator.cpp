@@ -2,24 +2,13 @@
 #include <boost/functional/hash.hpp>
 
 using namespace sda;
-using namespace sda::decompiler;
-
-MemorySpace* TotalMemorySpace::getMemSpace(ircode::Hash baseAddrHash) {
-    auto it = m_memorySpaces.find(baseAddrHash);
-    if (it == m_memorySpaces.end()) {
-        m_memorySpaces[baseAddrHash] = MemorySpace();
-        return &m_memorySpaces[baseAddrHash];
-    }
-    return &it->second;
-}
+using namespace sda::ircode;
 
 IRcodeBlockGenerator::IRcodeBlockGenerator(
-    ircode::Block* block,
-    TotalMemorySpace* totalMemSpace,
+    Block* block,
     ircode::DataTypeProvider* dataTypeProvider,
     size_t nextVarId)
     : m_block(block),
-    m_totalMemSpace(totalMemSpace),
     m_dataTypeProvider(dataTypeProvider),
     m_nextVarId(nextVarId)
 {}
@@ -150,7 +139,7 @@ void IRcodeBlockGenerator::executePcode(const pcode::Instruction* instr) {
 
                 // get memory space and load size
                 auto loadSize = instr->getOutput()->getSize();
-                auto memSpace = m_totalMemSpace->getMemSpace(memAddr.baseAddrHash);
+                auto memSpace = getCurMemSpace()->getSubspace(memAddr.baseAddrHash);
 
                 // check if it is an array
                 if (!memAddr.value->getLinearExpr().isArrayType()) {
@@ -176,7 +165,7 @@ void IRcodeBlockGenerator::executePcode(const pcode::Instruction* instr) {
 
                 auto dstMemAddr = outputMemAddr;
                 dstMemAddr.offset = varReadInfo.offset;
-                auto dstMemSpace = m_totalMemSpace->getMemSpace(dstMemAddr.baseAddrHash);
+                auto dstMemSpace = getCurMemSpace()->getSubspace(dstMemAddr.baseAddrHash);
                 auto dstVar = createVariable(dstMemAddr, srcVar->getHash(), dstMemAddr.value->getSize());
                 genWriteMemory(dstMemSpace, dstVar);
                 genOperation(std::make_unique<ircode::UnaryOperation>(ircode::OperationId::COPY, srcVar, dstVar));
@@ -189,7 +178,7 @@ const std::list<ircode::Operation*>& IRcodeBlockGenerator::getGeneratedOperation
     return m_genOperations;
 }
 
-void IRcodeBlockGenerator::genWriteMemory(MemorySpace* memSpace, std::shared_ptr<ircode::Variable> newVariable) {
+void IRcodeBlockGenerator::genWriteMemory(MemorySubspace* memSpace, std::shared_ptr<ircode::Variable> newVariable) {
     auto& variables = memSpace->variables;
     auto newVarOffset = newVariable->getMemAddress().offset;
     auto newVarSize = newVariable->getSize();
@@ -216,7 +205,12 @@ void IRcodeBlockGenerator::genWriteMemory(MemorySpace* memSpace, std::shared_ptr
     memSpace->variables.push_front(newVariable);
 }
 
-std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadMemory(MemorySpace* memSpace, Offset readOffset, size_t readSize, utils::BitMask& readMask) {
+std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadMemory(
+    MemorySubspace* memSpace,
+    Offset readOffset,
+    size_t readSize,
+    utils::BitMask& readMask
+) {
     std::list<VariableReadInfo> varReadInfos;
 
     for (auto variable : memSpace->variables) {
@@ -287,10 +281,36 @@ std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadM
     return varReadInfos;
 }
 
-ircode::MemoryAddress IRcodeBlockGenerator::getRegisterMemoryAddress(const Register& reg) const {
+std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadMemory(
+    Block* block,
+    Hash baseAddrHash,
+    Offset readOffset,
+    size_t readSize,
+    utils::BitMask& readMask
+) {
+    auto memSpace = block->getMemorySpace()->getSubspace(baseAddrHash);
+    auto varReadInfos = genReadMemory(memSpace, readOffset, readSize, readMask);
+    if (readMask != 0) {
+        utils::BitMask resultReadMask(0);
+        for (auto refBlock : block->getReferencedBlocks()) {
+            if (m_visitedBlocks.get(refBlock->getIndex()))
+                continue;
+            auto refReadMask = readMask;
+            m_visitedBlocks.set(refBlock->getIndex(), true);
+            auto refVarReadInfos = genReadMemory(refBlock, baseAddrHash, readOffset, readSize, refReadMask);
+            m_visitedBlocks.set(refBlock->getIndex(), false);
+            varReadInfos.splice(varReadInfos.end(), refVarReadInfos);
+            resultReadMask = resultReadMask | refReadMask;
+        }
+        readMask = readMask & resultReadMask;
+    }
+    return varReadInfos;
+}
+
+ircode::MemoryAddress IRcodeBlockGenerator::getRegisterMemoryAddress(const sda::Register& reg) const {
     auto baseAddrHash = std::hash<size_t>()(reg.getRegId());
     Offset offset = 0;
-    if (reg.getRegType() == Register::Virtual) {
+    if (reg.getRegType() == sda::Register::Virtual) {
         boost::hash_combine(baseAddrHash, reg.getRegIndex());
     } else {
         offset = reg.getBitOffset() / utils::BitsInBytes;
@@ -312,16 +332,16 @@ ircode::MemoryAddress IRcodeBlockGenerator::getMemoryAddress(std::shared_ptr<irc
 
 std::list<IRcodeBlockGenerator::VariableReadInfo> IRcodeBlockGenerator::genReadRegisterVarnode(std::shared_ptr<pcode::RegisterVarnode> regVarnode) {
     auto memAddr = getRegisterMemoryAddress(regVarnode->getRegister());
-    auto memSpace = m_totalMemSpace->getMemSpace(memAddr.baseAddrHash);
     auto readSize = regVarnode->getSize();
     auto readMask = utils::BitMask(readSize, 0);
 
-    auto varReadInfos = genReadMemory(memSpace, memAddr.offset, readSize, readMask);
+    auto varReadInfos = genReadMemory(m_block, memAddr.baseAddrHash, memAddr.offset, readSize, readMask);
 
     if (readMask != 0) { // TODO: readMask can be 0xFF00FF00, which is not a valid mask
         // TODO: see case when request eax, then rax
         memAddr.value = createRegister(regVarnode, memAddr);
         auto outVariable = genLoadOperation(memAddr, readSize);
+        auto memSpace = getCurMemSpace()->getSubspace(memAddr.baseAddrHash);
         memSpace->variables.push_back(outVariable);
         varReadInfos.push_front({ outVariable, 0 });
     }
@@ -366,7 +386,6 @@ void IRcodeBlockGenerator::genOperation(std::unique_ptr<ircode::Operation> opera
     operation->getPcodeInstructions().insert(m_curInstr);
     operation->getOverwrittenVariables() = m_overwrittenVariables;
     m_overwrittenVariables.clear();
-    m_block->getOperations().push_back(std::move(operation));
 }
 
 void IRcodeBlockGenerator::genGenericOperation(const pcode::Instruction* instr, ircode::OperationId operationId, ircode::MemoryAddress& outputMemAddr) {
@@ -407,7 +426,7 @@ void IRcodeBlockGenerator::genGenericOperation(const pcode::Instruction* instr, 
         }
     }
     // create variable and save it to the memory space
-    auto outputMemSpace = m_totalMemSpace->getMemSpace(outputMemAddr.baseAddrHash);
+    auto outputMemSpace = getCurMemSpace()->getSubspace(outputMemAddr.baseAddrHash);
     auto outputVar = createVariable(outputMemAddr, hash, outputMemAddr.value->getSize());
     genWriteMemory(outputMemSpace, outputVar);
 
@@ -463,4 +482,8 @@ std::shared_ptr<ircode::Variable> IRcodeBlockGenerator::createVariable(const irc
     auto value = std::make_shared<ircode::Variable>(m_nextVarId++, memAddress, hash, size);
     value->setLinearExpr(ircode::LinearExpression(value));
     return value;
+}
+
+MemorySpace* IRcodeBlockGenerator::getCurMemSpace() const {
+    return m_block->getMemorySpace();
 }

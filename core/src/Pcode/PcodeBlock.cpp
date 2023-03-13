@@ -116,6 +116,10 @@ bool Block::isEntryBlock() const {
     return getEntryBlock() == this;
 }
 
+size_t Block::getIndex() const {
+    return m_index;
+}
+
 bool Block::contains(InstructionOffset offset, bool halfInterval) const {
     if (offset == m_minOffset && offset == m_maxOffset) {
         // Block with no instructions
