@@ -45,6 +45,20 @@ TEST(BitSetTest, testAnd) {
     EXPECT_FALSE(result.get(100));
 }
 
+TEST(BitSetTest, testNot) {
+    BitSet bitSet;
+    bitSet.set(0, true);
+    bitSet.set(10, true);
+    bitSet.set(100, true);
+    auto result = ~bitSet;
+    EXPECT_FALSE(result.get(0));
+    EXPECT_FALSE(result.get(10));
+    EXPECT_FALSE(result.get(100));
+    EXPECT_TRUE(result.get(1));
+    EXPECT_TRUE(result.get(11));
+    EXPECT_TRUE(result.get(1001));
+}
+
 TEST(BitSetTest, testEqual) {
     BitSet bitSet1;
     bitSet1.set(0, true);

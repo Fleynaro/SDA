@@ -7,6 +7,7 @@ namespace utils
     {
         using Block = size_t;
         std::vector<Block> m_blocks;
+        bool m_inverted = false;
     public:
         BitSet() = default;
 
@@ -19,6 +20,8 @@ namespace utils
         BitSet operator|(const BitSet& other) const;
 
         BitSet operator&(const BitSet& other) const;
+
+        BitSet operator~() const;
 
         bool operator==(const BitSet& other) const;
 

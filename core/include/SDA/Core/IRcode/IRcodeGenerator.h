@@ -5,21 +5,21 @@
 
 namespace sda::ircode
 {
-    class IRcodeBlockGenerator
+    class IRcodeGenerator
     {
         Block* m_block;
         ircode::DataTypeProvider* m_dataTypeProvider;
-        size_t m_nextVarId;
+        std::function<size_t()> m_nextVarIdProvider;
         const pcode::Instruction* m_curInstr = nullptr;
         std::set<std::shared_ptr<ircode::Variable>> m_overwrittenVariables;
         std::list<ircode::Operation*> m_genOperations;
     public:
-        IRcodeBlockGenerator(
+        IRcodeGenerator(
             Block* block,
             ircode::DataTypeProvider* dataTypeProvider,
-            size_t nextVarId = 1);
+            std::function<size_t()> nextVarIdProvider);
 
-        void executePcode(const pcode::Instruction* instr);
+        void ingestPcode(const pcode::Instruction* instr);
 
         const std::list<ircode::Operation*>& getGeneratedOperations() const;
 
@@ -29,6 +29,11 @@ namespace sda::ircode
         struct VariableReadInfo {
             std::shared_ptr<ircode::Variable> variable;
             Offset offset;
+            Block* srcBlock = nullptr;
+
+            bool operator==(const VariableReadInfo& other) const {
+                return variable == other.variable && offset == other.offset;
+            }
         };
 
         std::list<VariableReadInfo> genReadMemory(
@@ -44,6 +49,8 @@ namespace sda::ircode
             Offset readOffset,
             size_t readSize,
             utils::BitMask& readMask);
+
+        std::shared_ptr<ircode::Variable> joinVariables(std::list<VariableReadInfo> varReadInfos, size_t size);
 
         ircode::MemoryAddress getRegisterMemoryAddress(const sda::Register& reg) const;
 

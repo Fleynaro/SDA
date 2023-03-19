@@ -14,6 +14,7 @@ namespace sda::ircode
         Function* m_function = nullptr;
         std::list<std::unique_ptr<Operation>> m_operations;
         MemorySpace m_memSpace;
+        utils::BitSet m_varIds;
     public:
         Block(pcode::Block* pcodeBlock, Function* function);
 
@@ -39,5 +40,7 @@ namespace sda::ircode
 
     private:
         void decompile(bool& goNextBlocks);
+
+        size_t getNextVarId();
     };
 };

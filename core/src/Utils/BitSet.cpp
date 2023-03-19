@@ -30,6 +30,7 @@ BitSet BitSet::operator|(const BitSet& other) const {
     BitSet result;
     auto size = std::max(m_blocks.size(), other.m_blocks.size());
     result.m_blocks.resize(size);
+    result.m_inverted = m_inverted || other.m_inverted;
     for (size_t i = 0; i < size; ++i) {
         auto block1 = getBlock(i);
         auto block2 = other.getBlock(i);
@@ -40,12 +41,24 @@ BitSet BitSet::operator|(const BitSet& other) const {
 
 BitSet BitSet::operator&(const BitSet& other) const {
     BitSet result;
-    auto size = std::min(m_blocks.size(), other.m_blocks.size());
+    auto size = std::max(m_blocks.size(), other.m_blocks.size());
     result.m_blocks.resize(size);
+    result.m_inverted = m_inverted && other.m_inverted;
     for (size_t i = 0; i < size; ++i) {
         auto block1 = getBlock(i);
         auto block2 = other.getBlock(i);
         result.m_blocks[i] = block1 & block2;
+    }
+    return result;
+}
+
+BitSet BitSet::operator~() const {
+    BitSet result;
+    result.m_blocks.resize(m_blocks.size());
+    result.m_inverted = !m_inverted;
+    for (size_t i = 0; i < m_blocks.size(); ++i) {
+        auto block = getBlock(i);
+        result.m_blocks[i] = ~block;
     }
     return result;
 }
@@ -64,7 +77,7 @@ bool BitSet::operator==(const BitSet& other) const {
 
 BitSet::Block BitSet::getBlock(size_t blockIdx) const {
     if (blockIdx >= m_blocks.size()) {
-        return Block(0);
+        return Block(m_inverted ? size_t(-1) : 0);
     }
     return m_blocks[blockIdx];
 }

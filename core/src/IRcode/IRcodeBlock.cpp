@@ -1,5 +1,6 @@
 #include "SDA/Core/IRcode/IRcodeBlock.h"
 #include "SDA/Core/IRcode/IRcodeFunction.h"
+#include "SDA/Core/IRcode/IRcodeGenerator.h"
 #include "SDA/Core/Pcode/PcodeGraph.h"
 
 using namespace sda;
@@ -66,9 +67,28 @@ void Block::update() {
 }
 
 void Block::decompile(bool& goNextBlocks) {
+    goNextBlocks = m_operations.empty();
+    Block tempBlock(m_pcodeBlock, m_function);
+    auto nextVarIdProvider = [this]() {
+        return getNextVarId();
+    };
+    IRcodeGenerator ircodeGen(&tempBlock, nullptr, nextVarIdProvider);
     auto& instructions = m_pcodeBlock->getInstructions();
+    m_function->m_varIds = m_function->m_varIds & ~m_varIds;
+    m_varIds.clear();
     for (auto& [offset, instruction] : instructions) {
-        
+        ircodeGen.ingestPcode(instruction);
     }
-    goNextBlocks = false;
+    m_memSpace = std::move(tempBlock.m_memSpace);
+    m_operations = std::move(tempBlock.m_operations);
+}
+
+size_t Block::getNextVarId() {
+    size_t freeIdx = 0;
+    while (m_function->m_varIds.get(freeIdx)) {
+        freeIdx++;
+    }
+    m_function->m_varIds.set(freeIdx, true);
+    m_varIds.set(freeIdx, true);
+    return freeIdx + 1;
 }

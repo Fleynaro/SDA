@@ -118,10 +118,13 @@ void Printer::printValue(const Value* value, bool extended) const {
     else if (auto varValue = dynamic_cast<const Variable*>(value)) {
         printToken(varValue->getName(), VARIABLE);
         if (extended) {
-            printToken("[", SYMBOL);
-            printLinearExpr(&varValue->getMemAddress().value->getLinearExpr());
-            printToken("]:", SYMBOL);
-            printToken(std::to_string(varValue->getSize()), SYMBOL);
+            auto memAddressValue = varValue->getMemAddress().value;
+            if (memAddressValue) {
+                printToken("[", SYMBOL);
+                printLinearExpr(&memAddressValue->getLinearExpr());
+                printToken("]:", SYMBOL);
+                printToken(std::to_string(varValue->getSize()), SYMBOL);
+            }
         }
     }
 }

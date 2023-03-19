@@ -151,4 +151,13 @@ namespace sda::ircode
 
 		size_t getOffset() const;
 	};
+
+	class PhiOperation : public BinaryOperation
+	{
+	public:
+		PhiOperation(
+			std::shared_ptr<Value> input1,
+			std::shared_ptr<Value> input2,
+			std::shared_ptr<Variable> output);
+	};
 };

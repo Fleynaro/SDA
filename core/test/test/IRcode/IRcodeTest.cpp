@@ -18,24 +18,39 @@ protected:
     }
 };
 
-TEST_F(IRcodeTest, Simple) {
-    // Graph: https://photos.app.goo.gl/j2VRr1jGHpA8EaaY9
+TEST_F(IRcodeTest, Simplest) {
+    // Graph: https://photos.app.goo.gl/qZr7FEV3H7bY9d9Q7
     auto sourcePCode = "\
+        rax:8 = COPY 1:8 \n\
         rax:8 = INT_ADD rax:8, 1:8 \
     ";
     auto expectedIRode = "\
-        Block B0(level: 1, near: B1): \n\
-            NOP \n\
-        Block B1(level: 2, far: B1): \n\
-            NOP \n\
-            BRANCH <B1>:8 \
+        Block B0(level: 1): \n\
+            var1[rax]:8 = COPY 0x1:8 \n\
+            var2[rax]:8 = INT_ADD var1, 0x1:8 \
     ";
     auto function = parsePcode(sourcePCode, &program);
     ASSERT_TRUE(cmp(function, expectedIRode));
 }
 
-/*
-    TODO:
-    1) ir-code generator tests
-    2) ir-code gen without providers yet, just use block's references to go to parents
-*/
+TEST_F(IRcodeTest, SimpleConcat) {
+    // Graph: https://photos.app.goo.gl/aHmMvgUYDTZnQQTm7
+    auto sourcePCode = "\
+        rax:8 = COPY 0x2100:8 \n\
+        BRANCH <label> \n\
+        <label>: \n\
+        rax:1 = COPY 0x34:1 \n\
+        r10:2 = INT_2COMP rax:2 \n\
+    ";
+    auto expectedIRode = "\
+        Block B0(level: 1, far: B2): \n\
+            var1[rax]:8 = COPY 0x2100:8 \n\
+        Block B2(level: 2): \n\
+            var2[rax]:1 = COPY 0x34:1 \n\
+            var3[rax]:2 = EXTRACT var1, 0 \n\
+            var4 = CONCAT var3, var2, 0 \n\
+            var5[r10]:2 = INT_2COMP var4 \
+    ";
+    auto function = parsePcode(sourcePCode, &program);
+    ASSERT_TRUE(cmp(function, expectedIRode));
+}

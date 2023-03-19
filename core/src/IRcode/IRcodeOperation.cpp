@@ -79,7 +79,7 @@ size_t ExtractOperation::getOffset() const {
     return m_offset;
 }
 
-ConcatOperation ::ConcatOperation(
+ConcatOperation::ConcatOperation(
     std::shared_ptr<Value> input1,
     std::shared_ptr<Value> input2,
     size_t offset,
@@ -91,3 +91,10 @@ ConcatOperation ::ConcatOperation(
 size_t ConcatOperation::getOffset() const {
     return m_offset;
 }
+
+PhiOperation::PhiOperation(
+    std::shared_ptr<Value> input1,
+    std::shared_ptr<Value> input2,
+    std::shared_ptr<Variable> output)
+    : BinaryOperation(OperationId::PHI, input1, input2, output)
+{}
