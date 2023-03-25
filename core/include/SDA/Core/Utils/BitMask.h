@@ -17,12 +17,15 @@ namespace utils
     public:
         BitMask(Value mask);
 
+        // size and offset are in bytes
         BitMask(size_t size, size_t offset);
 
         size_t getMaxSizeInBits() const;
 
+        // size is in bytes
         size_t getSize() const;
 
+        // offset is in bits
         size_t getOffset() const;
 
         operator size_t() const;
