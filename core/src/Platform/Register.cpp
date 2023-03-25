@@ -44,8 +44,6 @@ std::string Register::toString(const RegisterRepository* regRepo, bool printSize
     std::stringstream ss;
     if (m_type == Register::Virtual) {
         ss << "$U" << (m_index + 1);
-        if (printSizeAndOffset)
-            ss << ":" << m_size;
     } else {
         if (m_type == Register::Flag) {
             ss << regRepo->getRegisterFlagName(m_mask);
@@ -57,15 +55,17 @@ std::string Register::toString(const RegisterRepository* regRepo, bool printSize
             else 
                 ss << regRepo->getRegisterName(m_id);
         }
-
-        if (printSizeAndOffset) {
-            if (m_type == Register::Vector) {
-                if (m_size == 4 || m_size == 8) {
-                    ss << (m_size == 4 ? "D" : "Q");
-                    ss << static_cast<char>('a' + static_cast<char>(getBitOffset() / (m_size * utils::BitsInBytes)));
-                }
-            } else {
-                ss << ":" << m_size;
+    }
+    if (printSizeAndOffset) {
+        if (m_type == Register::Vector) {
+            if (m_size == 4 || m_size == 8) {
+                ss << (m_size == 4 ? "D" : "Q");
+                ss << static_cast<char>('a' + static_cast<char>(getBitOffset() / (m_size * utils::BitsInBytes)));
+            }
+        } else {
+            ss << ":" << m_size;
+            if (auto offset = getBitOffset()) {
+                ss << ":" << offset;
             }
         }
     }

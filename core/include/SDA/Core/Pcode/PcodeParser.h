@@ -33,7 +33,9 @@ namespace sda::pcode
 
         std::shared_ptr<ConstantVarnode> parseConstantVarnode();
 
-        size_t parseVarnodeSize();
+        void parseVarnodeSizeOffset(size_t& size, size_t& offset);
+
+        void parseVarnodeSizeOffsetOfVector(size_t& size, size_t& offset);
 
         void parseLabelIfExists();
 

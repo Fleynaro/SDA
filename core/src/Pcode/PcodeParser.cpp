@@ -116,12 +116,14 @@ std::shared_ptr<RegisterVarnode> Parser::parseRegisterVarnode() {
             nextToken();
             auto regIdxStr = name.substr(1);
             auto regIdx = std::stoull(regIdxStr) - 1;
-            auto size = parseVarnodeSize();
+            size_t size = 0;
+            size_t offset = 0;
+            parseVarnodeSizeOffset(size, offset);
             auto reg = Register(
                 Register::Virtual,
                 Register::VirtualId,
                 regIdx,
-                utils::BitMask(size, 0)
+                utils::BitMask(size, offset)
             );
             return std::make_shared<RegisterVarnode>(reg);
         }
@@ -134,24 +136,9 @@ std::shared_ptr<RegisterVarnode> Parser::parseRegisterVarnode() {
             size_t size = 0;
             size_t offset = 0;
             if (type == Register::Vector) {
-                if (getToken()->isSymbol(':')) {
-                    nextToken();
-                    std::string sizeAndOffset;
-                    if (getToken()->isIdent(sizeAndOffset)) {
-                        if (sizeAndOffset.size() == 2) {
-                            if (sizeAndOffset[0] == 'D')
-                                size = 4;
-                            else if (sizeAndOffset[0] == 'Q')
-                                size = 8;
-                            offset = (sizeAndOffset[1] - 'a') * size;
-                            nextToken();
-                        }
-                    }
-                } else {
-                    throw error(400, "Expected size of vector register");
-                }
+                parseVarnodeSizeOffsetOfVector(size, offset);
             } else {
-                size = parseVarnodeSize();
+                parseVarnodeSizeOffset(size, offset);
             }
             if (size == 0)
                 throw error(401, "Invalid size of register");
@@ -185,7 +172,9 @@ std::shared_ptr<ConstantVarnode> Parser::parseConstantVarnode() {
             throw error(500, "Expected number, got string");
         }
         nextToken();
-        auto size = parseVarnodeSize();
+        size_t size = 0;
+        size_t offset = 0;
+        parseVarnodeSizeOffset(size, offset);
         value &= utils::BitMask(size, 0);
         auto constVarnode = std::make_shared<ConstantVarnode>(value, size, false);
         return constVarnode;
@@ -193,18 +182,48 @@ std::shared_ptr<ConstantVarnode> Parser::parseConstantVarnode() {
     throw error(501, "Expected constant varnode");
 }
 
-size_t Parser::parseVarnodeSize() {
+void Parser::parseVarnodeSizeOffset(size_t& size, size_t& offset) {
     if (getToken()->isSymbol(':')) {
         nextToken();
         if (auto constToken = dynamic_cast<const ConstToken*>(getToken().get())) {
             if (constToken->valueType == ConstToken::Integer) {
-                auto integer = constToken->value.integer;
+                size = constToken->value.integer;
                 nextToken();
-                return integer;
+                if (getToken()->isSymbol(':')) {
+                    nextToken();
+                    if (auto constToken = dynamic_cast<const ConstToken*>(getToken().get())) {
+                        if (constToken->valueType == ConstToken::Integer) {
+                            offset = constToken->value.integer;
+                            nextToken();
+                            return;
+                        }
+                    }
+                    throw error(601, "Expected offset of varnode");
+                }
+                return;
             }
         }
     }
     throw error(600, "Expected size of varnode");
+}
+
+void Parser::parseVarnodeSizeOffsetOfVector(size_t& size, size_t& offset) {
+    if (getToken()->isSymbol(':')) {
+        nextToken();
+        std::string sizeAndOffset;
+        if (getToken()->isIdent(sizeAndOffset)) {
+            if (sizeAndOffset.size() == 2) {
+                if (sizeAndOffset[0] == 'D')
+                    size = 4;
+                else if (sizeAndOffset[0] == 'Q')
+                    size = 8;
+                offset = (sizeAndOffset[1] - 'a') * size;
+                nextToken();
+                return;
+            }
+        }
+    }
+    throw error(400, "Expected size & offset of vector register");
 }
 
 void Parser::parseLabelIfExists() {

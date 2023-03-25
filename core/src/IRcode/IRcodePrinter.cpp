@@ -42,10 +42,14 @@ void Printer::printBlock(Block* block, size_t level) {
     printToken("):", SYMBOL);
     startBlock();
     newLine();
-    for (const auto& operation : block->getOperations()) {
-        printOperation(operation.get());
-        if (operation != *block->getOperations().rbegin())
-            newLine();
+    if (block->getOperations().empty()) {
+        printToken("empty", SYMBOL);
+    } else {
+        for (const auto& operation : block->getOperations()) {
+            printOperation(operation.get());
+            if (operation != *block->getOperations().rbegin())
+                newLine();
+        }
     }
     endBlock();
 }
@@ -122,9 +126,10 @@ void Printer::printValue(const Value* value, bool extended) const {
             if (memAddressValue) {
                 printToken("[", SYMBOL);
                 printLinearExpr(&memAddressValue->getLinearExpr());
-                printToken("]:", SYMBOL);
-                printToken(std::to_string(varValue->getSize()), SYMBOL);
+                printToken("]", SYMBOL);
             }
+            printToken(":", SYMBOL);
+            printToken(std::to_string(varValue->getSize()), SYMBOL);
         }
     }
 }

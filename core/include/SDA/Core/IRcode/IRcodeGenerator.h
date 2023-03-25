@@ -43,8 +43,19 @@ namespace sda::ircode
             utils::BitMask& readMask);
 
         utils::BitSet m_visitedBlocks;
+        struct BlockReadCache {
+            std::list<VariableReadInfo> varReadInfos;
+            utils::BitMask readMask;
+        };
+        std::map<Hash, BlockReadCache> m_blockReadCache;
         std::list<VariableReadInfo> genReadMemory(
             Block* block,
+            Hash baseAddrHash,
+            Offset readOffset,
+            size_t readSize,
+            utils::BitMask& readMask);
+
+        std::list<VariableReadInfo> genReadMemory(
             Hash baseAddrHash,
             Offset readOffset,
             size_t readSize,
