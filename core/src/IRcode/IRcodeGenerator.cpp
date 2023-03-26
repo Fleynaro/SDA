@@ -77,8 +77,7 @@ void IRcodeGenerator::ingestPcode(const pcode::Instruction* instr) {
     ircode::MemoryAddress outputMemAddr;
     if (auto output = instr->getOutput()) {
         if (auto regVarnode = std::dynamic_pointer_cast<pcode::RegisterVarnode>(output)) {
-            outputMemAddr = getRegisterMemoryAddress(regVarnode->getRegister());
-            outputMemAddr.value = createRegister(regVarnode, outputMemAddr);
+            outputMemAddr = getRegisterMemoryAddress(regVarnode);
         } else {
             assert(false && "Output varnode is not a register");
         }
@@ -145,13 +144,7 @@ void IRcodeGenerator::ingestPcode(const pcode::Instruction* instr) {
                 if (!memAddr.value->getLinearExpr().isArrayType()) {
                     // see non-array case
                     auto readMask = utils::BitMask(loadSize, 0);
-                    varReadInfos = genReadMemory(memAddr.baseAddrHash, memAddr.offset, loadSize, readMask);
-                    if (readMask != 0) {
-                        // this logic is similar to genReadRegisterVarnode()
-                        auto outVariable = genLoadOperation(memAddr, loadSize);
-                        memSpace->variables.push_back(outVariable);
-                        varReadInfos.push_front({ outVariable, 0 });
-                    }
+                    varReadInfos = genReadMemory(memAddr, loadSize, readMask);
                 } else {
                     // see array case (e.g. RAX:4 = LOAD [RCX:8 + RDX:8 * 0x4:8 + 0x10:8])
                     auto outVariable = genLoadOperation(memAddr, loadSize);
@@ -281,24 +274,18 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(
     return varReadInfos;
 }
 
-std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(
-    Block* block,
-    Hash baseAddrHash,
-    Offset readOffset,
-    size_t readSize,
-    utils::BitMask& readMask
-) {
+std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(Block* block,  utils::BitMask& readMask, BlockReadContext& ctx) {
     Hash cacheHash;
     boost::hash_combine(cacheHash, block);
-    boost::hash_combine(cacheHash, readMask);
-    if (auto it = m_blockReadCache.find(cacheHash); it != m_blockReadCache.end()) {
+    boost::hash_combine(cacheHash, (size_t)readMask);
+    if (auto it = ctx.cache.find(cacheHash); it != ctx.cache.end()) {
         auto readInfo = it->second;
         readMask = readMask & ~readInfo.readMask;
         return readInfo.varReadInfos;
     }
     auto prevReadMask = readMask;
-    auto memSpace = block->getMemorySpace()->getSubspace(baseAddrHash);
-    auto varReadInfos = genReadMemory(memSpace, readOffset, readSize, readMask);
+    auto memSpace = block->getMemorySpace()->getSubspace(ctx.memAddr.baseAddrHash);
+    auto varReadInfos = genReadMemory(memSpace, ctx.memAddr.offset, ctx.readSize, readMask);
     for (auto varReadInfo : varReadInfos) {
         varReadInfo.srcBlock = block;
     }
@@ -306,31 +293,40 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(
         std::list<VariableReadInfo> remainVarReadInfos;
         utils::BitMask remainReadMask(0);
         for (auto refBlock : block->getReferencedBlocks()) {
-            if (m_visitedBlocks.get(refBlock->getIndex()))
+            if (ctx.visitedBlocks.get(refBlock->getIndex()))
                 continue;
             auto refReadMask = readMask;
-            m_visitedBlocks.set(refBlock->getIndex(), true);
-            auto refVarReadInfos = genReadMemory(refBlock, baseAddrHash, readOffset, readSize, refReadMask);
-            m_visitedBlocks.set(refBlock->getIndex(), false);
+            ctx.visitedBlocks.set(refBlock->getIndex(), true);
+            auto refVarReadInfos = genReadMemory(refBlock, refReadMask, ctx);
+            ctx.visitedBlocks.set(refBlock->getIndex(), false);
             remainReadMask = remainReadMask | refReadMask;
             if (remainVarReadInfos.empty()) {
                 remainVarReadInfos = refVarReadInfos;
             } else {
                 if (refVarReadInfos != remainVarReadInfos) {
-                    auto var1 = joinVariables(remainVarReadInfos, readSize);
-                    auto var2 = joinVariables(refVarReadInfos, readSize);
+                    if (remainReadMask != 0) {
+                        auto var = genLoadBackgroundValue(ctx);
+                        remainVarReadInfos.push_front({ var, 0 });
+                    }
+                    if (refReadMask != 0) {
+                        auto var = genLoadBackgroundValue(ctx);
+                        refVarReadInfos.push_front({ var, 0 });
+                    }
+                    auto var1 = joinVariables(remainVarReadInfos, ctx.readSize);
+                    auto var2 = joinVariables(refVarReadInfos, ctx.readSize);
 
                     ircode::Hash hash;
                     boost::hash_combine(hash, ircode::OperationId::PHI);
                     boost::hash_combine(hash, var1->getHash());
                     boost::hash_combine(hash, var2->getHash());
-                    auto phiVariable = createVariable(ircode::MemoryAddress(), hash, readSize);
+                    auto phiVariable = createVariable(ircode::MemoryAddress(), hash, ctx.readSize);
                     genOperation(std::make_unique<ircode::PhiOperation>(
                         var1,
                         var2,
                         phiVariable));
                     remainVarReadInfos = { { phiVariable, 0, m_block } };
-                    // TODO: write in memory
+                    remainReadMask = 0;
+                    // TODO: write in memory?
                 }
             }
         }
@@ -339,19 +335,38 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(
             varReadInfos.splice(varReadInfos.begin(), remainVarReadInfos);
         }
     }
-    m_blockReadCache[cacheHash] = { varReadInfos, prevReadMask ^ readMask };
+    ctx.cache[cacheHash] = { varReadInfos, prevReadMask ^ readMask };
     return varReadInfos;
 }
 
+std::shared_ptr<ircode::Variable> IRcodeGenerator::genLoadBackgroundValue(BlockReadContext& ctx) {
+    if (ctx.backgroundValue) {
+        return ctx.backgroundValue;
+    }
+    auto var = genLoadOperation(ctx.memAddr, ctx.readSize);
+    auto memSpace = getCurMemSpace()->getSubspace(ctx.memAddr.baseAddrHash);
+    memSpace->variables.push_back(var);
+    ctx.backgroundValue = var;
+    return var;
+}
+
 std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(
-    Hash baseAddrHash,
-    Offset readOffset,
+    const MemoryAddress& memAddr,
     size_t readSize,
     utils::BitMask& readMask
 ) {
-    m_visitedBlocks.clear();
-    m_blockReadCache.clear();
-    return genReadMemory(m_block, baseAddrHash, readOffset, readSize, readMask);
+    BlockReadContext ctx = {
+        memAddr,
+        readSize,
+    };
+    auto varReadInfos = genReadMemory(m_block, readMask, ctx);
+    // TODO: see case when request eax, then rax
+    // TODO: readMask can be 0xFF00FF00, which is not a valid mask
+    if (readMask != 0) {
+        auto var = genLoadBackgroundValue(ctx);
+        varReadInfos.push_front({ var, 0 });
+    }
+    return varReadInfos;
 }
 
 std::shared_ptr<ircode::Variable> IRcodeGenerator::joinVariables(std::list<VariableReadInfo> varReadInfos, size_t size) {
@@ -375,7 +390,8 @@ std::shared_ptr<ircode::Variable> IRcodeGenerator::joinVariables(std::list<Varia
     return concatVariable;
 }
 
-ircode::MemoryAddress IRcodeGenerator::getRegisterMemoryAddress(const sda::Register& reg) const {
+ircode::MemoryAddress IRcodeGenerator::getRegisterMemoryAddress(std::shared_ptr<pcode::RegisterVarnode> regVarnode) const {
+    auto reg = regVarnode->getRegister();
     auto baseAddrHash = std::hash<size_t>()(reg.getRegId());
     Offset offset = 0;
     if (reg.getRegType() == sda::Register::Virtual) {
@@ -383,7 +399,10 @@ ircode::MemoryAddress IRcodeGenerator::getRegisterMemoryAddress(const sda::Regis
     } else {
         offset = reg.getBitOffset() / utils::BitsInBytes;
     }
-    return { nullptr, baseAddrHash, offset };
+    MemoryAddress memAddr = { nullptr, baseAddrHash, offset };
+    memAddr.value = createRegister(regVarnode, memAddr);
+    memAddr.value->setLinearExpr(memAddr.value->getLinearExpr() + offset); // for ah/xmm registers
+    return memAddr;
 }
 
 ircode::MemoryAddress IRcodeGenerator::getMemoryAddress(std::shared_ptr<ircode::Value> addrValue) const {
@@ -399,22 +418,10 @@ ircode::MemoryAddress IRcodeGenerator::getMemoryAddress(std::shared_ptr<ircode::
 }
 
 std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadRegisterVarnode(std::shared_ptr<pcode::RegisterVarnode> regVarnode) {
-    auto memAddr = getRegisterMemoryAddress(regVarnode->getRegister());
+    auto memAddr = getRegisterMemoryAddress(regVarnode);
     auto readSize = regVarnode->getSize();
     auto readMask = utils::BitMask(readSize, 0);
-
-    auto varReadInfos = genReadMemory(memAddr.baseAddrHash, memAddr.offset, readSize, readMask);
-
-    if (readMask != 0) { // TODO: readMask can be 0xFF00FF00, which is not a valid mask
-        // TODO: see case when request eax, then rax
-        memAddr.value = createRegister(regVarnode, memAddr);
-        auto outVariable = genLoadOperation(memAddr, readSize);
-        auto memSpace = getCurMemSpace()->getSubspace(memAddr.baseAddrHash);
-        memSpace->variables.push_back(outVariable);
-        varReadInfos.push_front({ outVariable, 0 });
-    }
-
-    return varReadInfos;
+    return genReadMemory(memAddr, readSize, readMask);
 }
 
 
@@ -503,7 +510,7 @@ std::shared_ptr<ircode::Variable> IRcodeGenerator::genLoadOperation(const ircode
     boost::hash_combine(hash, ircode::OperationId::LOAD);
     boost::hash_combine(hash, memAddr.value->getHash());
 
-    auto regVariable = createVariable(memAddr, hash, loadSize);
+    auto regVariable = createVariable(MemoryAddress(), hash, loadSize); // MemoryAddress() vs memAddr?
     genOperation(std::make_unique<ircode::UnaryOperation>(ircode::OperationId::LOAD, memAddr.value, regVariable));
     return regVariable;
 }

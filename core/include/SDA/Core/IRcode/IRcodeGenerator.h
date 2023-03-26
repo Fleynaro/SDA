@@ -42,28 +42,29 @@ namespace sda::ircode
             size_t readSize,
             utils::BitMask& readMask);
 
-        utils::BitSet m_visitedBlocks;
-        struct BlockReadCache {
-            std::list<VariableReadInfo> varReadInfos;
-            utils::BitMask readMask;
+        struct BlockReadContext {
+            struct Cache {
+                std::list<VariableReadInfo> varReadInfos;
+                utils::BitMask readMask = 0;
+            };
+            const MemoryAddress& memAddr;
+            size_t readSize;
+            std::shared_ptr<ircode::Variable> backgroundValue;
+            utils::BitSet visitedBlocks;
+            std::map<Hash, Cache> cache;
         };
-        std::map<Hash, BlockReadCache> m_blockReadCache;
-        std::list<VariableReadInfo> genReadMemory(
-            Block* block,
-            Hash baseAddrHash,
-            Offset readOffset,
-            size_t readSize,
-            utils::BitMask& readMask);
+        std::list<VariableReadInfo> genReadMemory(Block* block,  utils::BitMask& readMask, BlockReadContext& ctx);
+
+        std::shared_ptr<ircode::Variable> genLoadBackgroundValue(BlockReadContext& ctx);
 
         std::list<VariableReadInfo> genReadMemory(
-            Hash baseAddrHash,
-            Offset readOffset,
+            const MemoryAddress& memAddr,
             size_t readSize,
             utils::BitMask& readMask);
 
         std::shared_ptr<ircode::Variable> joinVariables(std::list<VariableReadInfo> varReadInfos, size_t size);
 
-        ircode::MemoryAddress getRegisterMemoryAddress(const sda::Register& reg) const;
+        ircode::MemoryAddress getRegisterMemoryAddress(std::shared_ptr<pcode::RegisterVarnode> regVarnode) const;
 
         ircode::MemoryAddress getMemoryAddress(std::shared_ptr<ircode::Value> addrValue) const;
 
