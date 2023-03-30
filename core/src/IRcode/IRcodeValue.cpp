@@ -13,7 +13,7 @@ Hash Value::getHash() const {
     return m_hash;
 }
 
-const std::list<Operation*>& Value::getOperations() const {
+std::list<Operation*> Value::getOperations() const {
     return m_operations;
 }
 
@@ -72,6 +72,10 @@ Variable::Variable(size_t id, const MemoryAddress& memAddress, Hash hash, size_t
     , m_size(size)
 {}
 
+size_t Variable::getId() const {
+    return m_id;
+}
+
 std::string Variable::getName() const {
     return std::string("var") + std::to_string(m_id);
 }
@@ -86,4 +90,36 @@ const MemoryAddress& Variable::getMemAddress() const {
 
 size_t Variable::getSize() const {
     return m_size;
+}
+
+RefVariable::RefVariable(std::shared_ptr<Variable> refVariable, const Reference& reference)
+    : Variable(refVariable->getId(), refVariable->getMemAddress(), 0, refVariable->getSize())
+    , m_reference(reference)
+{
+    setLinearExpr(refVariable->getLinearExpr());
+    calcHash();
+}
+
+std::list<Operation*> RefVariable::getOperations() const {
+    return getTargetVariable() ? getTargetVariable()->getOperations() : std::list<Operation*>();
+}
+
+const RefVariable::Reference& RefVariable::getReference() const {
+    return m_reference;
+}
+
+void RefVariable::setTargetVariable(std::shared_ptr<Variable> variable) {
+    m_targetVariable = variable;
+    m_id = variable->getId();
+}
+
+std::shared_ptr<Variable> RefVariable::getTargetVariable() const {
+    return m_targetVariable;
+}
+
+void RefVariable::calcHash() {
+    boost::hash_combine(m_hash, m_reference.block);
+    boost::hash_combine(m_hash, m_reference.baseAddrHash);
+    boost::hash_combine(m_hash, m_reference.offset);
+    boost::hash_combine(m_hash, m_reference.size);
 }

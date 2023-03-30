@@ -64,6 +64,8 @@ namespace sda::pcode
 
         bool isEntryBlock() const;
 
+        bool hasSameEntryBlockAs(Block* block) const;
+
         size_t getIndex() const;
 
         bool contains(InstructionOffset offset, bool halfInterval = true) const;

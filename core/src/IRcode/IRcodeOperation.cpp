@@ -42,6 +42,13 @@ UnaryOperation::UnaryOperation(
     m_input->addOperation(this);
 }
 
+Hash UnaryOperation::getHash() const {
+    Hash hash = 0;
+    boost::hash_combine(hash, getInput()->getHash());
+    boost::hash_combine(hash, getOutput()->getHash());
+    return hash;
+}
+
 std::shared_ptr<Value> UnaryOperation::getInput() const {
     return m_input;
 }
@@ -57,6 +64,14 @@ BinaryOperation::BinaryOperation(
 {
     m_input1->addOperation(this);
     m_input2->addOperation(this);
+}
+
+Hash BinaryOperation::getHash() const {
+    Hash hash = 0;
+    boost::hash_combine(hash, getInput1()->getHash());
+    boost::hash_combine(hash, getInput2()->getHash());
+    boost::hash_combine(hash, getOutput()->getHash());
+    return hash;
 }
 
 std::shared_ptr<Value> BinaryOperation::getInput1() const {

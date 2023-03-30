@@ -1,5 +1,4 @@
 #include "SDA/Core/IRcode/IRcodeGenerator.h"
-#include <boost/functional/hash.hpp>
 
 using namespace sda;
 using namespace sda::ircode;
@@ -171,6 +170,10 @@ const std::list<ircode::Operation*>& IRcodeGenerator::getGeneratedOperations() c
     return m_genOperations;
 }
 
+const std::set<std::shared_ptr<ircode::RefVariable>>& IRcodeGenerator::getGeneratedRefVariables() const {
+    return m_genRefVariables;
+}
+
 void IRcodeGenerator::genWriteMemory(MemorySubspace* memSpace, std::shared_ptr<ircode::Variable> newVariable) {
     auto& variables = memSpace->variables;
     auto newVarOffset = newVariable->getMemAddress().offset;
@@ -199,12 +202,14 @@ void IRcodeGenerator::genWriteMemory(MemorySubspace* memSpace, std::shared_ptr<i
 }
 
 std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(
-    MemorySubspace* memSpace,
+    Block* block,
+    Hash baseAddrHash,
     Offset readOffset,
     size_t readSize,
     utils::BitMask& readMask
 ) {
     std::list<VariableReadInfo> varReadInfos;
+    auto memSpace = block->getMemorySpace()->getSubspace(baseAddrHash);
 
     for (auto variable : memSpace->variables) {
         auto varOffset = variable->getMemAddress().offset;
@@ -249,18 +254,32 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(
         // does the new mask intersect with the old one?
         auto newReadMask = readMask & ~varMask;
         if (newReadMask != readMask) {
-            auto resultVariable = variable;
+            std::shared_ptr<Variable> resultVariable = variable;
+            if (block != m_block) {
+                // if the variable is from another block, we need to create a reference variable
+                RefVariable::Reference ref = {
+                    block,
+                    baseAddrHash,
+                    varOffset,
+                    varSize
+                };
+                auto refVariable = std::make_shared<RefVariable>(resultVariable, ref);
+                m_genRefVariables.insert(refVariable);
+                resultVariable = refVariable;
+            }
             if (extractSize != 0) {
-                auto memAddress = variable->getMemAddress();
+                // if we need to extract a part of the variable, we need to generate an extract operation
+                auto inputVar = resultVariable;
+                auto memAddress = inputVar->getMemAddress();
                 memAddress.offset += extractOffset;
 
-                ircode::Hash hash;
+                ircode::Hash hash = 0;
                 boost::hash_combine(hash, ircode::OperationId::EXTRACT);
-                boost::hash_combine(hash, variable->getHash());
+                boost::hash_combine(hash, inputVar->getHash());
                 boost::hash_combine(hash, extractOffset);
 
                 resultVariable = createVariable(memAddress, hash, extractSize);
-                genOperation(std::make_unique<ircode::ExtractOperation>(variable, extractOffset, resultVariable));
+                genOperation(std::make_unique<ircode::ExtractOperation>(inputVar, extractOffset, resultVariable));
             }
 
             varReadInfos.push_front({ resultVariable, varMask.getOffset() / 0x8 });
@@ -274,7 +293,7 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(
     return varReadInfos;
 }
 
-std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(Block* block,  utils::BitMask& readMask, BlockReadContext& ctx) {
+std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(Block* block, utils::BitMask& readMask, BlockReadContext& ctx) {
     Hash cacheHash;
     boost::hash_combine(cacheHash, block);
     boost::hash_combine(cacheHash, (size_t)readMask);
@@ -284,8 +303,12 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(Bloc
         return readInfo.varReadInfos;
     }
     auto prevReadMask = readMask;
-    auto memSpace = block->getMemorySpace()->getSubspace(ctx.memAddr.baseAddrHash);
-    auto varReadInfos = genReadMemory(memSpace, ctx.memAddr.offset, ctx.readSize, readMask);
+    auto varReadInfos = genReadMemory(
+        block,
+        ctx.memAddr.baseAddrHash,
+        ctx.memAddr.offset,
+        ctx.readSize,
+        readMask);
     for (auto varReadInfo : varReadInfos) {
         varReadInfo.srcBlock = block;
     }
@@ -315,7 +338,7 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(Bloc
                     auto var1 = joinVariables(remainVarReadInfos, ctx.readSize);
                     auto var2 = joinVariables(refVarReadInfos, ctx.readSize);
 
-                    ircode::Hash hash;
+                    ircode::Hash hash = 0;
                     boost::hash_combine(hash, ircode::OperationId::PHI);
                     boost::hash_combine(hash, var1->getHash());
                     boost::hash_combine(hash, var2->getHash());
@@ -373,7 +396,7 @@ std::shared_ptr<ircode::Variable> IRcodeGenerator::joinVariables(std::list<Varia
     auto concatVariable = varReadInfos.front().variable;
     varReadInfos.pop_front();
     for (const auto& varReadInfo : varReadInfos) {
-        ircode::Hash hash;
+        ircode::Hash hash = 0;
         boost::hash_combine(hash, ircode::OperationId::CONCAT);
         boost::hash_combine(hash, concatVariable->getHash());
         boost::hash_combine(hash, varReadInfo.variable->getHash());
@@ -464,7 +487,7 @@ void IRcodeGenerator::genGenericOperation(const pcode::Instruction* instr, ircod
     }
     
     // calculate hash
-    ircode::Hash hash;
+    ircode::Hash hash = 0;
     if (instr->isComutative()) {
         // INT_ADD, INT_MULT used for address calculation ([x+4y]*2 == 2x+8y == 8y+2x)
         if (instr->getId() == pcode::InstructionId::INT_ADD) {
@@ -506,7 +529,7 @@ void IRcodeGenerator::genGenericOperation(const pcode::Instruction* instr, ircod
 }
 
 std::shared_ptr<ircode::Variable> IRcodeGenerator::genLoadOperation(const ircode::MemoryAddress& memAddr, size_t loadSize) {
-    ircode::Hash hash;
+    ircode::Hash hash = 0;
     boost::hash_combine(hash, ircode::OperationId::LOAD);
     boost::hash_combine(hash, memAddr.value->getHash());
 

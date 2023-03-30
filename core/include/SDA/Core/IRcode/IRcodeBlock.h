@@ -15,8 +15,12 @@ namespace sda::ircode
         std::list<std::unique_ptr<Operation>> m_operations;
         MemorySpace m_memSpace;
         utils::BitSet m_varIds;
+        Hash m_hash = 0;
+        Hash m_dominantHash = 0;
     public:
         Block(pcode::Block* pcodeBlock, Function* function);
+
+        Hash getHash() const;
 
         pcode::Block* getPcodeBlock() const;
 
@@ -34,13 +38,28 @@ namespace sda::ircode
 
         std::list<Block*> getReferencedBlocks() const;
 
+        std::list<Block*> getDominantBlocks() const;
+
+        void clear();
+
         void passDescendants(std::function<void(Block* block, bool& goNextBlocks)> callback);
 
         void update();
 
     private:
-        void decompile(bool& goNextBlocks);
+        struct DecompilationContext {
+            using RefVariableSet = std::set<std::shared_ptr<RefVariable>>;
+            std::map<Block*, RefVariableSet> genRefVariables;
+        };
+
+        void decompile(bool& goNextBlocks, DecompilationContext& ctx);
+
+        Hash calcHash();
+
+        Hash calcDominantHash();
 
         size_t getNextVarId();
+
+        void clearVarIds();
     };
 };

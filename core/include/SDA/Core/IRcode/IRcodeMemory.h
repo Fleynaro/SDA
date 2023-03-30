@@ -12,5 +12,9 @@ namespace sda::ircode
         std::map<Hash, MemorySubspace> m_subspaces;
     public:
         MemorySubspace* getSubspace(Hash baseAddrHash);
+
+        std::shared_ptr<Variable> findVariable(const RefVariable::Reference& reference);
+
+        void clear();
     };
 };

@@ -116,6 +116,10 @@ bool Block::isEntryBlock() const {
     return getEntryBlock() == this;
 }
 
+bool Block::hasSameEntryBlockAs(Block* block) const {
+    return getEntryBlock() == block->getEntryBlock();
+}
+
 size_t Block::getIndex() const {
     return m_index;
 }
@@ -207,7 +211,7 @@ void Block::updateDominantBlocks(bool& goNextBlocks) {
     utils::BitSet newDominantBlocks;
     newDominantBlocks.set(m_index, true);
     for (auto refBlock : m_referencedBlocks) {
-        if (refBlock->getEntryBlock() == getEntryBlock()) { // check test TwoEntryPointsUnionSecond
+        if (refBlock->hasSameEntryBlockAs(this)) { // check test TwoEntryPointsUnionSecond
             newDominantBlocks = newDominantBlocks | refBlock->m_dominantBlocks;
         }
     }

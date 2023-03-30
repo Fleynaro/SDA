@@ -88,6 +88,8 @@ namespace sda::ircode
 
 		virtual ~Operation() = default;
 
+		virtual Hash getHash() const = 0;
+
         OperationId getId() const;
 
 		size_t getSize() const;
@@ -108,6 +110,8 @@ namespace sda::ircode
 			std::shared_ptr<Value> input,
 			std::shared_ptr<Variable> output);
 
+		Hash getHash() const override;
+
 		std::shared_ptr<Value> getInput() const;
 	};
 
@@ -121,6 +125,8 @@ namespace sda::ircode
 			std::shared_ptr<Value> input1,
 			std::shared_ptr<Value> input2,
 			std::shared_ptr<Variable> output);
+
+		Hash getHash() const override;
 
 		std::shared_ptr<Value> getInput1() const;
 

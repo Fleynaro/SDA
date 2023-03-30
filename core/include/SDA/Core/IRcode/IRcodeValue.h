@@ -5,14 +5,17 @@
 #include "SDA/Core/Pcode/PcodeVarnodes.h"
 #include "SDA/Core/DataType/DataType.h"
 #include "SDA/Core/SymbolTable/SymbolTable.h"
+#include <boost/functional/hash.hpp>
 
 namespace sda::ircode
 {
+    class Block;
     class Operation;
     using Hash = size_t;
 
     class Value
     {
+    protected:
         Hash m_hash;
         std::list<Operation*> m_operations;
         LinearExpression m_linearExpr;
@@ -32,7 +35,7 @@ namespace sda::ircode
 
         virtual size_t getSize() const = 0;
 
-        const std::list<Operation*>& getOperations() const;
+        virtual std::list<Operation*> getOperations() const;
 
         void addOperation(Operation* operation);
 
@@ -77,11 +80,14 @@ namespace sda::ircode
 
     class Variable : public Value
     {
-        size_t m_id;
         MemoryAddress m_memAddress;
         size_t m_size;
+    protected:
+        size_t m_id;
     public:
         Variable(size_t id, const MemoryAddress& memAddress, Hash hash, size_t size);
+
+        size_t getId() const;
 
         std::string getName() const;
 
@@ -90,5 +96,32 @@ namespace sda::ircode
         const MemoryAddress& getMemAddress() const;
 
         size_t getSize() const override;
+    };
+
+    class RefVariable : public Variable
+    {
+    public:
+        struct Reference {
+            Block* block;
+            Hash baseAddrHash;
+            Offset offset;
+            size_t size;
+        };
+    private:
+        Reference m_reference;
+        std::shared_ptr<Variable> m_targetVariable;
+    public:
+        RefVariable(std::shared_ptr<Variable> refVariable, const Reference& reference);
+
+        std::list<Operation*> getOperations() const;
+
+        const Reference& getReference() const;
+
+        void setTargetVariable(std::shared_ptr<Variable> variable);
+
+        std::shared_ptr<Variable> getTargetVariable() const;
+
+    private:
+        void calcHash();
     };
 };

@@ -13,6 +13,7 @@ namespace sda::ircode
         const pcode::Instruction* m_curInstr = nullptr;
         std::set<std::shared_ptr<ircode::Variable>> m_overwrittenVariables;
         std::list<ircode::Operation*> m_genOperations;
+        std::set<std::shared_ptr<RefVariable>> m_genRefVariables;
     public:
         IRcodeGenerator(
             Block* block,
@@ -22,6 +23,8 @@ namespace sda::ircode
         void ingestPcode(const pcode::Instruction* instr);
 
         const std::list<ircode::Operation*>& getGeneratedOperations() const;
+
+        const std::set<std::shared_ptr<RefVariable>>& getGeneratedRefVariables() const;
 
     private:
         void genWriteMemory(MemorySubspace* memSpace, std::shared_ptr<ircode::Variable> variable);
@@ -37,7 +40,8 @@ namespace sda::ircode
         };
 
         std::list<VariableReadInfo> genReadMemory(
-            MemorySubspace* memSpace,
+            Block* block,
+            Hash baseAddrHash,
             Offset readOffset,
             size_t readSize,
             utils::BitMask& readMask);

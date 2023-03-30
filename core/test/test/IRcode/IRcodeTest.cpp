@@ -24,13 +24,13 @@ TEST_F(IRcodeTest, Simplest) {
         rax:8 = COPY 1:8 \n\
         rax:8 = INT_ADD rax:8, 1:8 \
     ";
-    auto expectedIRode = "\
+    auto expectedIRCode = "\
         Block B0(level: 1): \n\
             var1[rax]:8 = COPY 0x1:8 \n\
             var2[rax]:8 = INT_ADD var1, 0x1:8 \
     ";
     auto function = parsePcode(sourcePCode, &program);
-    ASSERT_TRUE(cmp(function, expectedIRode));
+    ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
 TEST_F(IRcodeTest, SimpleConcat) {
@@ -42,7 +42,7 @@ TEST_F(IRcodeTest, SimpleConcat) {
         rax:1 = COPY 0x34:1 \n\
         r10:2 = INT_2COMP rax:2 \n\
     ";
-    auto expectedIRode = "\
+    auto expectedIRCode = "\
         Block B0(level: 1, far: B2): \n\
             var1[rax]:8 = COPY 0x2100:8 \n\
         Block B2(level: 2): \n\
@@ -52,7 +52,7 @@ TEST_F(IRcodeTest, SimpleConcat) {
             var5[r10]:2 = INT_2COMP var4 \
     ";
     auto function = parsePcode(sourcePCode, &program);
-    ASSERT_TRUE(cmp(function, expectedIRode));
+    ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
 TEST_F(IRcodeTest, IfElseCondition) {
@@ -67,7 +67,7 @@ TEST_F(IRcodeTest, IfElseCondition) {
         <labelEnd>: \n\
         r10:8 = INT_2COMP rax:8 \
     ";
-    auto expectedIRode = "\
+    auto expectedIRCode = "\
         Block B0(level: 1, near: B2, far: B4): \n\
             var1[rax]:8 = COPY 0x0:8 \n\
         Block B2(level: 2, far: B5): \n\
@@ -79,7 +79,7 @@ TEST_F(IRcodeTest, IfElseCondition) {
             var4[r10]:8 = INT_2COMP var3 \
     ";
     auto function = parsePcode(sourcePCode, &program);
-    ASSERT_TRUE(cmp(function, expectedIRode));
+    ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
 TEST_F(IRcodeTest, IfElseConditionMem) {
@@ -95,7 +95,7 @@ TEST_F(IRcodeTest, IfElseConditionMem) {
         <labelEnd>: \n\
         r10:8 = LOAD rax:8, 8:8 \
     ";
-    auto expectedIRode = "\
+    auto expectedIRCode = "\
         Block B0(level: 1, near: B3, far: B5): \n\
             var1:8 = LOAD rsp \n\
             var2[rax]:8 = INT_ADD var1, 0x10:8 \n\
@@ -109,7 +109,7 @@ TEST_F(IRcodeTest, IfElseConditionMem) {
             var6[r10]:8 = COPY var5 \
     ";
     auto function = parsePcode(sourcePCode, &program);
-    ASSERT_TRUE(cmp(function, expectedIRode));
+    ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
 TEST_F(IRcodeTest, IfElseConditionAlAh) {
@@ -124,7 +124,7 @@ TEST_F(IRcodeTest, IfElseConditionAlAh) {
         <labelEnd>: \n\
         r10:2 = INT_2COMP rax:2 \
     ";
-    auto expectedIRode = "\
+    auto expectedIRCode = "\
         Block B0(level: 1, near: B2, far: B4): \n\
             empty \n\
         Block B2(level: 2, far: B5): \n\
@@ -139,7 +139,7 @@ TEST_F(IRcodeTest, IfElseConditionAlAh) {
             var7[r10]:2 = INT_2COMP var6 \
     ";
     auto function = parsePcode(sourcePCode, &program);
-    ASSERT_TRUE(cmp(function, expectedIRode));
+    ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
 TEST_F(IRcodeTest, IfElseConditionXmm) {
@@ -170,7 +170,7 @@ TEST_F(IRcodeTest, IfElseConditionXmm) {
         rax:8 = INT_ADD rsp:8, 12:8 \n\
         STORE rax:8, xmm0:Dd \
     ";
-    auto expectedIRode = "\
+    auto expectedIRCode = "\
         Block B0(level: 1, near: B5, far: Ba): \n\
             var1[xmm0]:4 = COPY 0x1:4 \n\
             var2[xmm0 + 4]:4 = COPY 0x2:4 \n\
@@ -202,7 +202,7 @@ TEST_F(IRcodeTest, IfElseConditionXmm) {
             var25[var13 + 12]:4 = COPY var24 \
     ";
     auto function = parsePcode(sourcePCode, &program);
-    ASSERT_TRUE(cmp(function, expectedIRode));
+    ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
 TEST_F(IRcodeTest, MultipleParentBlocksNoPhi) {
@@ -222,7 +222,7 @@ TEST_F(IRcodeTest, MultipleParentBlocksNoPhi) {
         <labelEnd>: \n\
         r10:8 = INT_2COMP rax:8 \
     ";
-    auto expectedIRode = "\
+    auto expectedIRCode = "\
         Block B0(level: 1, near: B2, far: B8): \n\
             var1[rax]:8 = COPY 0x1:8 \n\
         Block B2(level: 2, near: B4, far: B6): \n\
@@ -237,7 +237,7 @@ TEST_F(IRcodeTest, MultipleParentBlocksNoPhi) {
             var2[r10]:8 = INT_2COMP var1 \
     ";
     auto function = parsePcode(sourcePCode, &program);
-    ASSERT_TRUE(cmp(function, expectedIRode));
+    ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
 TEST_F(IRcodeTest, MultipleParentBlocksDoublePhi) {
@@ -257,7 +257,7 @@ TEST_F(IRcodeTest, MultipleParentBlocksDoublePhi) {
         <labelEnd>: \n\
         r10:8 = INT_2COMP rax:8 \
     ";
-    auto expectedIRode = "\
+    auto expectedIRCode = "\
         Block B0(level: 1, near: B2, far: B8): \n\
             empty \n\
         Block B2(level: 2, near: B4, far: B6): \n\
@@ -274,5 +274,111 @@ TEST_F(IRcodeTest, MultipleParentBlocksDoublePhi) {
             var6[r10]:8 = INT_2COMP var5 \
     ";
     auto function = parsePcode(sourcePCode, &program);
-    ASSERT_TRUE(cmp(function, expectedIRode));
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+}
+
+TEST_F(IRcodeTest, Loop) {
+    // Graph: https://photos.app.goo.gl/ee1qx3J8rPKsBXa49
+    auto sourcePCode = "\
+        RAX:4 = COPY 0x1:4 \n\
+        <labelLoop>: \n\
+        RAX:4 = INT_ADD RAX:4, 0x1:4 \n\
+        BRANCH <labelLoop> \
+    ";
+    auto expectedIRCode = "\
+        Block B0(level: 1, near: B1): \n\
+            var1[rax]:4 = COPY 0x1:4 \n\
+        Block B1(level: 2, far: B1): \n\
+            var2:4 = PHI var1, var3 \n\
+            var3[rax]:4 = INT_ADD var2, 0x1:4 \
+    ";
+    auto function = parsePcode(sourcePCode, &program);
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+}
+
+TEST_F(IRcodeTest, LoopTwoVariable) {
+    // Graph: https://photos.app.goo.gl/4zVVVLuVFSsUkSxK9
+    auto sourcePCode = "\
+        RAX:4 = COPY 0x1:4 \n\
+        RCX:4 = COPY 0x1:4 \n\
+        <labelLoop>: \n\
+        RAX:4 = INT_ADD RAX:4, RCX:4 \n\
+        BRANCH <labelJmp> \n\
+        <labelJmp>: \n\
+        RCX:4 = INT_ADD RCX:4, 0x1:4 \n\
+        BRANCH <labelLoop> \
+    ";
+    auto expectedIRCode = "\
+        Block B0(level: 1, near: B2): \n\
+            var1[rax]:4 = COPY 0x1:4 \n\
+            var2[rcx]:4 = COPY 0x1:4 \n\
+        Block B2(level: 2, far: B4): \n\
+            var3:4 = PHI var1, var7 \n\
+            var6:4 = PHI var2, var5 \n\
+            var7[rax]:4 = INT_ADD var3, var6 \n\
+        Block B4(level: 3, far: B2): \n\
+            var4:4 = PHI var2, var5 \n\
+            var5[rcx]:4 = INT_ADD var4, 0x1:4 \
+    ";
+    auto function = parsePcode(sourcePCode, &program);
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+}
+
+TEST_F(IRcodeTest, NestedLoop) {
+    // Graph: https://photos.app.goo.gl/jF3aeZGeaW5LhcGh9
+    auto sourcePCode = "\
+        RAX:4 = COPY 0x1:4 \n\
+        <labelLoop>: \n\
+        RAX:4 = INT_ADD RAX:4, 0x1:4 \n\
+        CBRANCH <labelLoop>, 0:1 \n\
+        RAX:4 = INT_MULT RAX:4, 0x2:4 \n\
+        BRANCH <labelLoop> \n\
+    ";
+    auto expectedIRCode = "\
+        Block B0(level: 1, near: B1): \n\
+            var1[rax]:4 = COPY 0x1:4 \n\
+        Block B1(level: 2, near: B3, far: B1): \n\
+            var2:4 = PHI var1, var4 \n\
+            var3:4 = PHI var2, var5 \n\
+            var4[rax]:4 = INT_ADD var3, 0x1:4 \n\
+        Block B3(level: 3, far: B1): \n\
+            var5[rax]:4 = INT_MULT var4, 0x2:4 \
+    ";
+    auto function = parsePcode(sourcePCode, &program);
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+}
+
+TEST_F(IRcodeTest, TwoEntryPointsUnion) {
+    // Graph: https://photos.app.goo.gl/vVGiX5e3cDuH8q84A
+    auto sourcePCode = "\
+        RAX:4 = COPY 0x1:4 \n\
+        BRANCH <label> \n\
+        RAX:4 = COPY 0x2:4 \n\
+        BRANCH <label> \n\
+        <label>: \n\
+        RAX:4 = INT_ADD RAX:4, 0x1:4 \
+    ";
+    auto expectedIRCodeOfFunc1 = "\
+        Block B0(level: 1): \n\
+            var1[rax]:4 = COPY 0x1:4 \
+    ";
+    auto expectedIRCodeOfFunc2 = "\
+        Block B2(level: 1): \n\
+            var1[rax]:4 = COPY 0x2:4 \
+    ";
+    auto expectedIRCodeOfFunc3 = "\
+        Block B4(level: 1): \n\
+            var1:4 = LOAD rax \n\
+            var2[rax]:4 = INT_ADD var1, 0x1:4 \
+    ";
+    auto instructions = PcodeFixture::parsePcode(sourcePCode);
+    pcode::ListInstructionProvider provider(instructions);
+    graph.explore(pcode::InstructionOffset(0, 0), &provider);
+    graph.explore(pcode::InstructionOffset(2, 0), &provider);
+    auto func1 = program.toFunction(graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0)));
+    auto func2 = program.toFunction(graph.getFunctionGraphAt(pcode::InstructionOffset(2, 0)));
+    auto func3 = program.toFunction(graph.getFunctionGraphAt(pcode::InstructionOffset(4, 0)));
+    ASSERT_TRUE(cmp(func1, expectedIRCodeOfFunc1));
+    ASSERT_TRUE(cmp(func2, expectedIRCodeOfFunc2));
+    ASSERT_TRUE(cmp(func3, expectedIRCodeOfFunc3));
 }
