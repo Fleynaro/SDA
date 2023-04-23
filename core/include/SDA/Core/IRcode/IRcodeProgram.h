@@ -45,5 +45,35 @@ namespace sda::ircode
         std::map<pcode::FunctionGraph*, Function>& getFunctions();
 
         Function* toFunction(pcode::FunctionGraph* functionGraph);
+
+        class Callbacks
+        {
+            std::shared_ptr<Callbacks> m_prevCallbacks;
+            bool m_enabled = true;
+        public:
+            // Called when an operation is added
+            void onOperationAdded(const Operation* op, Block* block);
+
+            // Called when an operation is removed
+            void onOperationRemoved(const Operation* op, Block* block);
+
+            void setPrevCallbacks(std::shared_ptr<Callbacks> prevCallbacks);
+
+            void setEnabled(bool enabled);
+
+        protected:
+            virtual void onOperationAddedImpl(const Operation* op, Block* block) {};
+
+            virtual void onOperationRemovedImpl(const Operation* op, Block* block) {};
+        };
+
+        // Set the callbacks for the graph
+        void setCallbacks(std::shared_ptr<Callbacks> callbacks);
+
+        // Get the callbacks for the graph
+        std::shared_ptr<Callbacks> getCallbacks() const;
+
+    private:
+        std::shared_ptr<Callbacks> m_callbacks;
     };
 };

@@ -20,6 +20,8 @@ namespace sda::ircode
     public:
         Block(pcode::Block* pcodeBlock, Function* function);
 
+        Function* getFunction() const;
+
         Hash getHash() const;
 
         pcode::Block* getPcodeBlock() const;

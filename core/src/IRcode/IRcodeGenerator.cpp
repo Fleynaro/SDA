@@ -1,4 +1,6 @@
 #include "SDA/Core/IRcode/IRcodeGenerator.h"
+#include "SDA/Core/IRcode/IRcodeFunction.h"
+#include "SDA/Core/IRcode/IRcodeProgram.h"
 
 using namespace sda;
 using namespace sda::ircode;
@@ -461,11 +463,13 @@ std::shared_ptr<ircode::Value> IRcodeGenerator::genReadVarnode(std::shared_ptr<p
 }
 
 void IRcodeGenerator::genOperation(std::unique_ptr<ircode::Operation> operation) {
-    m_genOperations.push_back(operation.get());
+    auto op = operation.get();
+    m_genOperations.push_back(op);
     operation->getPcodeInstructions().insert(m_curInstr);
     operation->getOverwrittenVariables() = m_overwrittenVariables;
     m_overwrittenVariables.clear();
     m_block->getOperations().push_back(std::move(operation));
+    m_block->getFunction()->getProgram()->getCallbacks()->onOperationAdded(op, m_block);
 }
 
 void IRcodeGenerator::genGenericOperation(const pcode::Instruction* instr, ircode::OperationId operationId, ircode::MemoryAddress& outputMemAddr) {

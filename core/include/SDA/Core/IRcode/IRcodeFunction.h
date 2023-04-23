@@ -5,14 +5,18 @@
 
 namespace sda::ircode
 {
+    class Program;
     class Function
     {
         friend class Block;
+        Program* m_program = nullptr;
         pcode::FunctionGraph* m_functionGraph = nullptr;
         std::map<pcode::Block*, Block> m_blocks;
         utils::BitSet m_varIds;
     public:
-        Function(pcode::FunctionGraph* functionGraph);
+        Function(Program* program, pcode::FunctionGraph* functionGraph);
+
+        Program* getProgram() const;
 
         pcode::FunctionGraph* getFunctionGraph() const;
 

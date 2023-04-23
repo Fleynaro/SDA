@@ -18,7 +18,7 @@ void Program::PcodeGraphCallbacks::onBlockFunctionGraphChangedImpl(pcode::Block*
 }
 
 void Program::PcodeGraphCallbacks::onFunctionGraphCreatedImpl(pcode::FunctionGraph* functionGraph) {
-    m_program->m_functions.emplace(functionGraph, Function(functionGraph));
+    m_program->m_functions.emplace(functionGraph, Function(m_program, functionGraph));
 }
 
 void Program::PcodeGraphCallbacks::onFunctionGraphRemovedImpl(pcode::FunctionGraph* functionGraph) {
@@ -89,4 +89,12 @@ Function* Program::toFunction(pcode::FunctionGraph* functionGraph) {
         return nullptr;
     }
     return &it->second;
+}
+
+void Program::setCallbacks(std::shared_ptr<Callbacks> callbacks) {
+    m_callbacks = callbacks;
+}
+
+std::shared_ptr<Program::Callbacks> Program::getCallbacks() const {
+    return m_callbacks;
 }

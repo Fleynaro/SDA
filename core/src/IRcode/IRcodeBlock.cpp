@@ -1,5 +1,6 @@
 #include "SDA/Core/IRcode/IRcodeBlock.h"
 #include "SDA/Core/IRcode/IRcodeFunction.h"
+#include "SDA/Core/IRcode/IRcodeProgram.h"
 #include "SDA/Core/IRcode/IRcodeGenerator.h"
 #include "SDA/Core/Pcode/PcodeGraph.h"
 
@@ -9,6 +10,10 @@ using namespace sda::ircode;
 Block::Block(pcode::Block* pcodeBlock, Function* function)
     : m_pcodeBlock(pcodeBlock), m_function(function)
 {}
+
+Function* Block::getFunction() const {
+    return m_function;
+}
 
 Hash Block::getHash() const {
     return m_hash;
@@ -70,8 +75,11 @@ std::list<Block*> Block::getDominantBlocks() const {
 }
 
 void Block::clear() {
+    for (auto& op : m_operations) {
+        m_function->getProgram()->getCallbacks()->onOperationRemoved(op.get(), this);
+    }
     m_memSpace.clear();
-    m_operations.clear();
+    m_memSpace.clear();
     clearVarIds();
 }
 

@@ -3,9 +3,13 @@
 using namespace sda;
 using namespace sda::ircode;
 
-Function::Function(pcode::FunctionGraph* functionGraph)
-    : m_functionGraph(functionGraph)
+Function::Function(Program* program, pcode::FunctionGraph* functionGraph)
+    : m_program(program), m_functionGraph(functionGraph)
 {}
+
+Program* Function::getProgram() const {
+    return m_program;
+}
 
 pcode::FunctionGraph* Function::getFunctionGraph() const {
     return m_functionGraph;
