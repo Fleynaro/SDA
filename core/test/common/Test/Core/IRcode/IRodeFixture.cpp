@@ -1,5 +1,6 @@
 #include "IRcodeFixture.h"
 #include "SDA/Core/IRcode/IRcodePrinter.h"
+#include "Test/Core/Utils/TestAssertion.h"
 
 using namespace sda;
 using namespace sda::test;
@@ -18,4 +19,10 @@ void IRcodeFixture::printIRcode(ircode::Function* function, std::ostream& out, s
 ircode::Function* IRcodeFixture::parsePcode(const std::string& text, ircode::Program* program) const {
     auto funcGraph = PcodeFixture::parsePcode(text, program->getGraph());
     return program->toFunction(funcGraph);
+}
+
+::testing::AssertionResult IRcodeFixture::cmp(ircode::Function* function, const std::string& expectedCode) const {
+    std::stringstream ss;
+    printIRcode(function, ss, 2);
+    return Compare(ss.str(), expectedCode);
 }

@@ -12,6 +12,7 @@ std::map<std::string, ZydisRegister> RegisterNameToId = {
     {"rdx", ZYDIS_REGISTER_RDX},
     {"rbx", ZYDIS_REGISTER_RBX},
     {"rsp", ZYDIS_REGISTER_RSP},
+    {"rip", ZYDIS_REGISTER_RIP},
     {"rbp", ZYDIS_REGISTER_RBP},
     {"rsi", ZYDIS_REGISTER_RSI},
     {"rdi", ZYDIS_REGISTER_RDI},
@@ -70,11 +71,15 @@ std::map<std::string, ZydisRegister> RegisterNameToId = {
 };
 
 std::string RegisterRepositoryX86::getRegisterName(size_t regId) const {
+    if (regId == Register::StackPointerId)
+        return ZydisRegisterGetString(ZYDIS_REGISTER_RSP);
+    if (regId == Register::InstructionPointerId)
+        return ZydisRegisterGetString(ZYDIS_REGISTER_RIP);
     return ZydisRegisterGetString(static_cast<ZydisRegister>(regId));
 }
 
 size_t RegisterRepositoryX86::getRegisterId(const std::string& regName) const {
-    return RegisterNameToId.at(regName);
+    return transformZydisRegId(RegisterNameToId.at(regName));
 }
 
 sda::Register::Type RegisterRepositoryX86::getRegisterType(size_t regId) const {

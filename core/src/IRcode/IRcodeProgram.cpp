@@ -68,7 +68,9 @@ void Program::PcodeGraphCallbacks::updateBlocks() {
 }
 
 Program::Program(pcode::Graph* graph)
-    : m_graph(graph), m_pcodeGraphCallbacks(std::make_shared<PcodeGraphCallbacks>(this))
+    : m_graph(graph)
+    , m_pcodeGraphCallbacks(std::make_shared<PcodeGraphCallbacks>(this))
+    , m_callbacks(std::make_shared<Callbacks>())
 {
     auto prevCallbacks = m_graph->getCallbacks();
     m_pcodeGraphCallbacks->setPrevCallbacks(prevCallbacks);

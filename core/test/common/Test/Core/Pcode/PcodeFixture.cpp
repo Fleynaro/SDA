@@ -1,6 +1,7 @@
 #include "PcodeFixture.h"
 #include "SDA/Core/Pcode/PcodePrinter.h"
 #include "SDA/Core/Pcode/PcodeInstructionProvider.h"
+#include "Test/Core/Utils/TestAssertion.h"
 
 using namespace sda;
 using namespace sda::test;
@@ -24,4 +25,10 @@ void PcodeFixture::printPcode(pcode::FunctionGraph* funcGraph, std::ostream& out
         pcodePrinter.startBlock();
     pcodePrinter.newTabs();
     pcodePrinter.printFunctionGraph(funcGraph);
+}
+
+::testing::AssertionResult PcodeFixture::cmp(pcode::FunctionGraph* funcGraph, const std::string& expectedCode) const {
+    std::stringstream ss;
+    printPcode(funcGraph, ss, 2);
+    return Compare(ss.str(), expectedCode);
 }

@@ -6,15 +6,7 @@ using namespace sda;
 
 Register::Register(Type type, size_t id, size_t index, utils::BitMask mask)
     : m_type(type), m_id(id), m_index(index), m_mask(mask), m_size(mask.getSize())
-{
-    if (type == Type::StackPointer) {
-        m_id = StackPointerId;
-    } else if (type == Type::InstructionPointer) {
-        m_id = InstructionPointerId;
-    } else if (type == Type::Flag) {
-        m_id = FlagId;
-    }
-}
+{}
 
 Register::Type Register::getRegType() const {
     return m_type;
@@ -48,12 +40,7 @@ std::string Register::toString(const RegisterRepository* regRepo, bool printSize
         if (m_type == Register::Flag) {
             ss << regRepo->getRegisterFlagName(m_mask);
         } else {
-            if (m_type == Register::StackPointer)
-                ss << "RSP";
-            else if (m_type == Register::InstructionPointer)
-                ss << "RIP";
-            else 
-                ss << regRepo->getRegisterName(m_id);
+            ss << regRepo->getRegisterName(m_id);
         }
     }
     if (printSizeAndOffset) {

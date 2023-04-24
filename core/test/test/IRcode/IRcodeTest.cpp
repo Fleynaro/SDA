@@ -1,22 +1,10 @@
 #include "Test/Core/IRcode/IRcodeFixture.h"
-#include "Test/Core/Utils/TestAssertion.h"
 
 using namespace sda;
 using namespace sda::test;
 using namespace ::testing;
 
-class IRcodeTest : public IRcodeFixture
-{
-protected:
-    pcode::Graph graph;
-    ircode::Program program = ircode::Program(&graph);
-
-    ::testing::AssertionResult cmp(ircode::Function* function, const std::string& expectedCode) const {
-        std::stringstream ss;
-        printIRcode(function, ss, 2);
-        return Compare(ss.str(), expectedCode);
-    }
-};
+class IRcodeTest : public IRcodeFixture {};
 
 TEST_F(IRcodeTest, Simplest) {
     // Graph: https://photos.app.goo.gl/qZr7FEV3H7bY9d9Q7

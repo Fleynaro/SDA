@@ -9,14 +9,6 @@ using namespace ::testing;
 class PcodeTest : public PcodeFixture
 {
 protected:
-    pcode::Graph graph;
-
-    ::testing::AssertionResult cmp(pcode::FunctionGraph* funcGraph, const std::string& expectedCode) const {
-        std::stringstream ss;
-        printPcode(funcGraph, ss, 2);
-        return Compare(ss.str(), expectedCode);
-    }
-    
     ::testing::AssertionResult cmpDominantBlocks(pcode::FunctionGraph* funcGraph, const std::string& expectedCode) const {
         std::stringstream ss;
         utils::AbstractPrinter printer;

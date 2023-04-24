@@ -1,25 +1,23 @@
 #pragma once
 #include "SDA/Core/IRcode/IRcodeProgram.h"
-#include "SDA/Core/SymbolTable/SymbolTable.h"
-#include "SDA/Core/Symbol/FunctionSymbol.h"
 
 namespace sda::semantics
 {
     struct SemanticsPropagationContext {
-        SymbolTable* globalSymbolTable;
-        FunctionSymbol* functionSymbol;
-    };
+        ircode::Function* function = nullptr;
+        const ircode::Operation* operation = nullptr;
+        std::map<ircode::Function*, std::list<const ircode::Operation*>> nextOperations;
 
-    struct SemanticsOperation {
-        std::shared_ptr<SemanticsPropagationContext> context;
-        const ircode::Operation* operation;
+        SemanticsPropagationContext(ircode::Function* function, const ircode::Operation* operation)
+            : nextOperations({ { function, { operation } } })
+        {}
 
-        bool operator<(const SemanticsOperation& other) const {
-            return operation < other.operation;
+        void markValueAsAffected(std::shared_ptr<ircode::Value> value) {
+            for (auto op : value->getOperations()) {
+                nextOperations[function].push_back(op);
+            }
         }
     };
-
-    using SemanticsOperations = std::set<SemanticsOperation>;
 
     class SemanticsManager;
     class Semantics;
@@ -37,10 +35,7 @@ namespace sda::semantics
 
         virtual std::list<Semantics*> findSemanticsOfVariable(std::shared_ptr<ircode::Variable> variable) = 0;
 
-        virtual void propogate(
-            const std::shared_ptr<SemanticsPropagationContext>& ctx,
-            const ircode::Operation* op,
-            SemanticsOperations& nextOps) = 0;
+        virtual void propogate(SemanticsPropagationContext& ctx) = 0;
     };
 
     class SemanticsManager
@@ -52,8 +47,8 @@ namespace sda::semantics
             SemanticsManager* m_semManager;
 
             void onOperationAddedImpl(const ircode::Operation* op, ircode::Block* block) override {
-                auto ctx = std::make_shared<SemanticsPropagationContext>(SemanticsPropagationContext { nullptr, nullptr });
-                m_semManager->propagate(SemanticsOperations({{ ctx, op }}));
+                SemanticsPropagationContext ctx(block->getFunction(), op);
+                m_semManager->propagate(ctx);
             }
 
             void onOperationRemovedImpl(const ircode::Operation* op, ircode::Block* block) override {
@@ -64,31 +59,34 @@ namespace sda::semantics
         };
         std::shared_ptr<IRcodeProgramCallbacks> m_ircodeProgramCallbacks;
     public:
-        SemanticsManager() {
-
+        SemanticsManager(ircode::Program* program)
+            : m_ircodeProgramCallbacks(std::make_shared<IRcodeProgramCallbacks>(this))
+        {
+            auto prevCallbacks = program->getCallbacks();
+            m_ircodeProgramCallbacks->setPrevCallbacks(prevCallbacks);
+            program->setCallbacks(m_ircodeProgramCallbacks);
         }
 
         void addRepository(std::unique_ptr<SemanticsRepository> repository) {
             m_repositories.push_back(std::move(repository));
         }
 
-        void propagate(SemanticsOperations& operations) {
-            auto selectedOps = operations;
-            while (!selectedOps.empty()) {
-                auto it = selectedOps.begin();
-                auto op = *it;
-
-                for (auto& repo : m_repositories)
-                    repo->propogate(op.context, op.operation, operations);
-
-                selectedOps.erase(it);
-                operations.erase(op);
-            }
-        }
-
-        void propagateThroughly(SemanticsOperations& operations) {
-            while (!operations.empty()) {
-                propagate(operations);
+        void propagate(SemanticsPropagationContext& ctx) {
+            while(!ctx.nextOperations.empty()) {
+                auto it = ctx.nextOperations.begin();
+                while (it != ctx.nextOperations.end()) {
+                    ctx.function = it->first;
+                    auto& ops = it->second;
+                    auto it2 = ops.begin();
+                    while (it2 != ops.end()) {
+                        ctx.operation = *it2;
+                        for (auto& repo : m_repositories) {
+                            repo->propogate(ctx);
+                        }
+                        it2 = ops.erase(it2);
+                    }
+                    it = ctx.nextOperations.erase(it);
+                }
             }
         }
     };
@@ -159,7 +157,8 @@ namespace sda::semantics
             return result;
         }
 
-        T* addSemantics(std::shared_ptr<ircode::Variable> variable, const T& semantics) {
+        T* addSemantics(const T& semantics) {
+            auto variable = semantics.getVariable();
             for (auto sem : findSemantics(variable)) {
                 if (sem->equals(&semantics)) {
                     return nullptr;
@@ -167,15 +166,6 @@ namespace sda::semantics
             }
             m_items[variable].push_back(semantics);
             return &m_items[variable].back();
-        }
-
-        void addValueOperations(
-            const std::shared_ptr<SemanticsPropagationContext>& ctx,
-            std::shared_ptr<ircode::Value> value,
-            SemanticsOperations& nextOps) {
-            for (auto op : value->getOperations()) {
-                nextOps.insert({ ctx, op });
-            }
         }
     };
 
@@ -204,25 +194,40 @@ namespace sda::semantics
     class GlobalVarSemanticsRepository : public BaseSemanticsRepository<GlobalVarSemantics>
     {
         Platform* m_platform;
+        std::map<Offset, std::list<GlobalVarSemantics*>> m_offsetToSemantics;
     public:
         GlobalVarSemanticsRepository(SemanticsManager* manager, Platform* platform)
             : BaseSemanticsRepository<GlobalVarSemantics>(manager), m_platform(platform)
         {}
 
-        void propogate(
-            const std::shared_ptr<SemanticsPropagationContext>& ctx,
-            const ircode::Operation* op,
-            SemanticsOperations& nextOps) override
-        {
-            auto output = op->getOutput();
+        std::list<GlobalVarSemantics*> findSemanticsAtOffset(Offset offset) {
+            auto it = m_offsetToSemantics.find(offset);
+            if (it == m_offsetToSemantics.end()) {
+                return std::list<GlobalVarSemantics*>();
+            }
+            return it->second;
+        }
 
-            if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(op)) {
+        GlobalVarSemantics* addSemantics(const GlobalVarSemantics& semantics) {
+            auto newSem = BaseSemanticsRepository<GlobalVarSemantics>::addSemantics(semantics);
+            if (newSem) {
+                auto offset = semantics.getOffset();
+                m_offsetToSemantics[offset].push_back(newSem);
+            }
+            return newSem;
+        }
+
+        void propogate(SemanticsPropagationContext& ctx) override
+        {
+            auto output = ctx.operation->getOutput();
+
+            if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(ctx.operation)) {
                 auto input = unaryOp->getInput();
                 if (unaryOp->getId() == ircode::OperationId::LOAD) {
                     if (auto inputReg = std::dynamic_pointer_cast<ircode::Register>(input)) {
                         if (inputReg->getRegister().getRegId() == Register::InstructionPointerId) {
-                            if (addSemantics(output, GlobalVarSemantics(output, output, 0))) {
-                                addValueOperations(ctx, output, nextOps);
+                            if (addSemantics(GlobalVarSemantics(output, output, 0))) {
+                                ctx.markValueAsAffected(output);
                             }
                         }
                     }
@@ -236,9 +241,9 @@ namespace sda::semantics
                     continue;
                 if (auto termVar = std::dynamic_pointer_cast<ircode::Variable>(term.value)) {
                     for (auto sem : findSemantics(termVar)) {
-                        if (auto newSem = addSemantics(output, GlobalVarSemantics(termVar, sem->getSource(), sem->getOffset() + offset))) {
+                        if (auto newSem = addSemantics(GlobalVarSemantics(output, sem->getSource(), sem->getOffset() + offset))) {
                             sem->addSuccessor(newSem);
-                            addValueOperations(ctx, termVar, nextOps);
+                            ctx.markValueAsAffected(output);
                         }
                     }
                 }
