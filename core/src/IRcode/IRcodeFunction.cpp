@@ -15,6 +15,14 @@ pcode::FunctionGraph* Function::getFunctionGraph() const {
     return m_functionGraph;
 }
 
+Offset Function::getEntryOffset() const {
+    return m_functionGraph->getEntryBlock()->getMinOffset();
+}
+
+Block* Function::getEntryBlock() {
+    return toBlock(m_functionGraph->getEntryBlock());
+}
+
 std::map<pcode::Block*, Block>& Function::getBlocks() {
     return m_blocks;
 }

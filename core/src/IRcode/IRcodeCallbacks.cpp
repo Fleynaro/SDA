@@ -2,19 +2,19 @@
 
 using namespace sda::ircode;
 
-void Program::Callbacks::onOperationAdded(const Operation* op, Block* block) {
+void Program::Callbacks::onOperationAdded(const Operation* op) {
     if (m_prevCallbacks)
-        m_prevCallbacks->onOperationAdded(op, block);
+        m_prevCallbacks->onOperationAdded(op);
     if (m_enabled) {
-        onOperationAddedImpl(op, block);
+        onOperationAddedImpl(op);
     }
 }
 
-void Program::Callbacks::onOperationRemoved(const Operation* op, Block* block) {
+void Program::Callbacks::onOperationRemoved(const Operation* op) {
     if (m_prevCallbacks)
-        m_prevCallbacks->onOperationRemoved(op, block);
+        m_prevCallbacks->onOperationRemoved(op);
     if (m_enabled) {
-        onOperationRemovedImpl(op, block);
+        onOperationRemovedImpl(op);
     }
 }
 

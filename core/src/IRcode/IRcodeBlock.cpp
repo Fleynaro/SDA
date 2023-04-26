@@ -76,7 +76,7 @@ std::list<Block*> Block::getDominantBlocks() const {
 
 void Block::clear() {
     for (auto& op : m_operations) {
-        m_function->getProgram()->getCallbacks()->onOperationRemoved(op.get(), this);
+        m_function->getProgram()->getCallbacks()->onOperationRemoved(op.get());
     }
     m_memSpace.clear();
     m_memSpace.clear();

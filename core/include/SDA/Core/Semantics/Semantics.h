@@ -1,20 +1,33 @@
 #pragma once
 #include "SDA/Core/IRcode/IRcodeProgram.h"
+#include "SDA/Core/Symbol/FunctionSymbol.h"
+#include "SDA/Core/DataType/ScalarDataType.h"
+#include "SDA/Core/DataType/PointerDataType.h"
+#include "SDA/Core/DataType/ArrayDataType.h"
+#include "SDA/Core/DataType/StructureDataType.h"
 
 namespace sda::semantics
 {
     struct SemanticsPropagationContext {
-        ircode::Function* function = nullptr;
         const ircode::Operation* operation = nullptr;
         std::map<ircode::Function*, std::list<const ircode::Operation*>> nextOperations;
 
-        SemanticsPropagationContext(ircode::Function* function, const ircode::Operation* operation)
-            : nextOperations({ { function, { operation } } })
-        {}
+        void addNextOperation(const ircode::Operation* operation) {
+            auto func = operation->getBlock()->getFunction();
+            auto it = nextOperations.find(func);
+            if (it == nextOperations.end()) {
+                it = nextOperations.insert(
+                    std::make_pair(func, std::list<const ircode::Operation*>())).first;
+            }
+            auto& ops = it->second;
+            if (std::find(ops.begin(), ops.end(), operation) == ops.end()) {
+                ops.push_back(operation);
+            }
+        }
 
         void markValueAsAffected(std::shared_ptr<ircode::Value> value) {
             for (auto op : value->getOperations()) {
-                nextOperations[function].push_back(op);
+                addNextOperation(op);
             }
         }
     };
@@ -46,12 +59,13 @@ namespace sda::semantics
         {
             SemanticsManager* m_semManager;
 
-            void onOperationAddedImpl(const ircode::Operation* op, ircode::Block* block) override {
-                SemanticsPropagationContext ctx(block->getFunction(), op);
+            void onOperationAddedImpl(const ircode::Operation* op) override {
+                SemanticsPropagationContext ctx;
+                ctx.addNextOperation(op);
                 m_semManager->propagate(ctx);
             }
 
-            void onOperationRemovedImpl(const ircode::Operation* op, ircode::Block* block) override {
+            void onOperationRemovedImpl(const ircode::Operation* op) override {
 
             }
         public:
@@ -75,7 +89,6 @@ namespace sda::semantics
             while(!ctx.nextOperations.empty()) {
                 auto it = ctx.nextOperations.begin();
                 while (it != ctx.nextOperations.end()) {
-                    ctx.function = it->first;
                     auto& ops = it->second;
                     auto it2 = ops.begin();
                     while (it2 != ops.end()) {
@@ -179,7 +192,8 @@ namespace sda::semantics
             std::shared_ptr<ircode::Variable> variable,
             std::shared_ptr<ircode::Value> source,
             Offset offset)
-            : Semantics(variable, source), m_offset(offset)
+            : Semantics(variable, source)
+            , m_offset(offset)
         {}
 
         Offset getOffset() const {
@@ -187,7 +201,8 @@ namespace sda::semantics
         }
 
         bool equals(const GlobalVarSemantics* other) const {
-            return Semantics::equals(other) && m_offset == other->m_offset;
+            return Semantics::equals(other) &&
+                    m_offset == other->m_offset;
         }
     };
 
@@ -200,7 +215,7 @@ namespace sda::semantics
             : BaseSemanticsRepository<GlobalVarSemantics>(manager), m_platform(platform)
         {}
 
-        std::list<GlobalVarSemantics*> findSemanticsAtOffset(Offset offset) {
+        std::list<GlobalVarSemantics*> findSemanticsAt(Offset offset) {
             auto it = m_offsetToSemantics.find(offset);
             if (it == m_offsetToSemantics.end()) {
                 return std::list<GlobalVarSemantics*>();
@@ -241,13 +256,228 @@ namespace sda::semantics
                     continue;
                 if (auto termVar = std::dynamic_pointer_cast<ircode::Variable>(term.value)) {
                     for (auto sem : findSemantics(termVar)) {
-                        if (auto newSem = addSemantics(GlobalVarSemantics(output, sem->getSource(), sem->getOffset() + offset))) {
+                        if (auto newSem = addSemantics(GlobalVarSemantics(output, sem->getSource(), offset))) {
                             sem->addSuccessor(newSem);
                             ctx.markValueAsAffected(output);
                         }
                     }
                 }
             }
+        }
+    };
+
+    class SymbolTableSemantics : public Semantics
+    {
+        SymbolTable* m_symbolTable = nullptr;
+        Offset m_offset = 0;
+    public:
+        SymbolTableSemantics() = default;
+
+        SymbolTableSemantics(
+            std::shared_ptr<ircode::Variable> variable,
+            std::shared_ptr<ircode::Value> source,
+            SymbolTable* symbolTable,
+            Offset offset)
+            : Semantics(variable, source)
+            , m_symbolTable(symbolTable)
+            , m_offset(offset)
+        {}
+
+        SymbolTable* getSymbolTable() const {
+            return m_symbolTable;
+        }
+
+        Offset getOffset() const {
+            return m_offset;
+        }
+
+        bool equals(const SymbolTableSemantics* other) const {
+            return Semantics::equals(other) &&
+                    m_symbolTable == other->m_symbolTable &&
+                    m_offset == other->m_offset;
+        }
+    };
+
+    class SymbolTableSemanticsRepository : public BaseSemanticsRepository<SymbolTableSemantics>
+    {
+        SymbolTable* m_globalSymbolTable = nullptr;
+        std::map<std::pair<SymbolTable*, Offset>, std::list<SymbolTableSemantics*>> m_locToSemantics;
+    public:
+        SymbolTableSemanticsRepository(SemanticsManager* manager, SymbolTable* globalSymbolTable)
+            : BaseSemanticsRepository<SymbolTableSemantics>(manager), m_globalSymbolTable(globalSymbolTable)
+        {}
+
+        std::list<SymbolTableSemantics*> findSemanticsAt(SymbolTable* symbolTable, Offset offset) {
+            auto it = m_locToSemantics.find(std::make_pair(symbolTable, offset));
+            if (it == m_locToSemantics.end()) {
+                return std::list<SymbolTableSemantics*>();
+            }
+            return it->second;
+        }
+
+        SymbolTableSemantics* addSemantics(const SymbolTableSemantics& semantics) {
+            auto newSem = BaseSemanticsRepository<SymbolTableSemantics>::addSemantics(semantics);
+            if (newSem) {
+                auto symbolTable = semantics.getSymbolTable();
+                auto offset = semantics.getOffset();
+                m_locToSemantics[std::make_pair(symbolTable, offset)].push_back(newSem);
+            }
+            return newSem;
+        }
+
+        void propogate(SemanticsPropagationContext& ctx) override
+        {
+            auto funcSymbol = getFunctionSymbol(ctx);
+            auto output = ctx.operation->getOutput();
+
+            if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(ctx.operation)) {
+                auto input = unaryOp->getInput();
+                if (unaryOp->getId() == ircode::OperationId::LOAD) {
+                    if (auto inputReg = std::dynamic_pointer_cast<ircode::Register>(input)) {
+                        auto signatureDt = funcSymbol->getSignature();
+                        auto it = signatureDt->getStorages().find({
+                            CallingConvention::Storage::Read,
+                            inputReg->getRegister().getRegId()
+                        });
+                        if (it != signatureDt->getStorages().end()) {
+                            // if it is a parameter
+                            const auto& storageInfo = it->second;
+                            auto paramIdx = storageInfo.paramIdx;
+                            auto paramSymbol = signatureDt->getParameters()[paramIdx];
+                            if (auto symbolTable = extractSymbolTable(paramSymbol)) {
+                                if (addSemantics(
+                                    SymbolTableSemantics(
+                                        output,
+                                        output,
+                                        symbolTable,
+                                        0))
+                                ) {
+                                    ctx.markValueAsAffected(output);
+                                }
+                            }
+                        } else {
+                            auto regId = inputReg->getRegister().getRegId();
+                            if (regId == Register::InstructionPointerId) {
+                                if (addSemantics(
+                                    SymbolTableSemantics(
+                                        output,
+                                        output,
+                                        m_globalSymbolTable,
+                                        0))
+                                ) {
+                                    ctx.markValueAsAffected(output);
+                                }
+                            } else if (regId == Register::StackPointerId) {
+                                auto stackSymbolTable = funcSymbol->getStackSymbolTable();
+                                if (addSemantics(
+                                    SymbolTableSemantics(
+                                        output,
+                                        output,
+                                        stackSymbolTable,
+                                        0))
+                                ) {
+                                    ctx.markValueAsAffected(output);
+                                }
+                            }
+                        }
+                    } else if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
+                        for (auto sem : findSemantics(inputVar)) {
+                            auto symbolTable = sem->getSymbolTable();
+                            auto offset = sem->getOffset();
+                            auto symbols = getAllSymbolsAt(funcSymbol, symbolTable, offset, false);
+                            for (auto& [symbolOffset, symbol] : symbols) {
+                                if (auto symbolTable = extractSymbolTable(symbol)) {
+                                    if (addSemantics(
+                                        SymbolTableSemantics(
+                                            output,
+                                            sem->getSource(),
+                                            symbolTable,
+                                            0))
+                                    ) {
+                                        ctx.markValueAsAffected(output);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            auto linearExpr = output->getLinearExpr();
+            Offset offset = linearExpr.getConstTermValue();
+            for (auto& term : linearExpr.getTerms()) {
+                if (term.factor != 1 || term.value->getSize() != getContext()->getPlatform()->getPointerSize())
+                    continue;
+                if (auto termVar = std::dynamic_pointer_cast<ircode::Variable>(term.value)) {
+                    for (auto sem : findSemantics(termVar)) {
+                        if (auto newSem = addSemantics(
+                            SymbolTableSemantics(
+                                output,
+                                sem->getSource(),
+                                sem->getSymbolTable(),
+                                offset))
+                        ) {
+                            sem->addSuccessor(newSem);
+                            ctx.markValueAsAffected(output);
+                        }
+                    }
+                }
+            }
+        }
+
+    private:
+        Context* getContext() const {
+            return m_globalSymbolTable->getContext();
+        }
+
+        FunctionSymbol* getFunctionSymbol(SemanticsPropagationContext& ctx) const {
+            auto function = ctx.operation->getBlock()->getFunction();
+            auto offset = function->getEntryOffset();
+            auto symbol = m_globalSymbolTable->getSymbolAt(offset).symbol;
+            return dynamic_cast<FunctionSymbol*>(symbol);
+        }
+
+        SymbolTable* extractSymbolTable(Symbol* symbol) const {
+            auto symbolDt = symbol->getDataType();
+            if (auto pointerDt = dynamic_cast<const PointerDataType*>(symbolDt)) {
+                if (auto structDt = dynamic_cast<const StructureDataType*>(pointerDt->getPointedType())) {
+                    return structDt->getSymbolTable();
+                }
+            }
+            return nullptr;
+        }
+
+        std::list<std::pair<Offset, Symbol*>> getAllSymbolsAt(
+            FunctionSymbol* funcSymbol,
+            SymbolTable* symbolTable,
+            Offset offset,
+            bool write) const
+        {
+            std::list<std::pair<Offset, Symbol*>> symbols;
+            if (symbolTable == m_globalSymbolTable ||
+                symbolTable == funcSymbol->getStackSymbolTable())
+            {
+                CallingConvention::Storage storage;
+                storage.useType = write ? CallingConvention::Storage::Write : CallingConvention::Storage::Read;
+                storage.registerId = Register::StackPointerId;
+                if (symbolTable == m_globalSymbolTable)
+                    storage.registerId = Register::InstructionPointerId;
+                storage.offset = offset;
+                auto signatureDt = funcSymbol->getSignature();
+                auto it = signatureDt->getStorages().find(storage);
+                if (it != signatureDt->getStorages().end()) {
+                    const auto& storageInfo = it->second;
+                    auto paramIdx = storageInfo.paramIdx;
+                    auto paramSymbol = signatureDt->getParameters()[paramIdx];
+                    symbols.emplace_back(offset, paramSymbol);
+                }
+            }
+            if (symbols.empty()) {
+                auto foundSymbols = symbolTable->getAllSymbolsRecursivelyAt(offset);
+                for (auto [_, symbolOffset, symbol] : foundSymbols)
+                    symbols.emplace_back(symbolOffset, symbol);
+            }
+            return symbols;
         }
     };
 };

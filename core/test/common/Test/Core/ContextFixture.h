@@ -3,6 +3,7 @@
 #include "SDA/Core/ContextInclude.h"
 #include "SDA/Core/DataType/DataType.h"
 #include "SDA/Core/SymbolTable/SymbolTable.h"
+#include "SDA/Core/Symbol/FunctionSymbol.h"
 
 namespace sda::test
 {
@@ -12,6 +13,7 @@ namespace sda::test
         std::list<Context*> createdContexts;
     protected:
         Context* context;
+        SymbolTable* globalSymbolTable;
 
         void SetUp() override;
         
@@ -26,5 +28,12 @@ namespace sda::test
         DataType* newTestStruct() const;
 
         SymbolTable* parseSymbolTable(const std::string& text, bool withName = true) const;
+
+        FunctionSymbol* newFunction(
+            Offset offset,
+            const std::string& name,
+            const std::string& signature,
+            SymbolTable* stackSymbolTable = nullptr,
+            SymbolTable* instrSymbolTable = nullptr);
     };
 };

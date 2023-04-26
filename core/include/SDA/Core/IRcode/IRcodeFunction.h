@@ -19,6 +19,10 @@ namespace sda::ircode
         Program* getProgram() const;
 
         pcode::FunctionGraph* getFunctionGraph() const;
+        
+        Offset getEntryOffset() const;
+
+        Block* getEntryBlock();
 
         std::map<pcode::Block*, Block>& getBlocks();
 

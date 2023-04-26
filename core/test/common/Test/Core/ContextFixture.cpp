@@ -12,6 +12,9 @@ void ContextFixture::SetUp() {
     platform = new PlatformX86(true);
     context = newContext();
     context->initDefault();
+    globalSymbolTable = parseSymbolTable("\
+        GlobalSymbolTable = {} \
+    ");
 }
 
 void ContextFixture::TearDown() {
@@ -47,4 +50,28 @@ DataType* ContextFixture::newTestStruct() const {
 
 SymbolTable* ContextFixture::parseSymbolTable(const std::string& text, bool withName) const {
     return SymbolTableParser::Parse(text, context, false, withName);
+}
+
+FunctionSymbol* ContextFixture::newFunction(
+    Offset offset,
+    const std::string& name,
+    const std::string& signature,
+    SymbolTable* stackSymbolTable,
+    SymbolTable* instrSymbolTable
+) {
+    if (!stackSymbolTable) {
+        stackSymbolTable = parseSymbolTable("\
+            StackSymbolTable = {} \
+        ");
+    }
+    if (!instrSymbolTable) {
+        instrSymbolTable = parseSymbolTable("\
+            InstrSymbolTable = {} \
+        ");
+    }
+    auto functionSignature = dynamic_cast<SignatureDataType*>(parseDataType(signature));
+    auto functionSymbol = new FunctionSymbol(
+        context, nullptr, name, functionSignature, stackSymbolTable, instrSymbolTable);
+    globalSymbolTable->addSymbol(offset, functionSymbol);
+    return functionSymbol;
 }

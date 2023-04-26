@@ -465,11 +465,12 @@ std::shared_ptr<ircode::Value> IRcodeGenerator::genReadVarnode(std::shared_ptr<p
 void IRcodeGenerator::genOperation(std::unique_ptr<ircode::Operation> operation) {
     auto op = operation.get();
     m_genOperations.push_back(op);
+    operation->setBlock(m_block);
     operation->getPcodeInstructions().insert(m_curInstr);
     operation->getOverwrittenVariables() = m_overwrittenVariables;
     m_overwrittenVariables.clear();
     m_block->getOperations().push_back(std::move(operation));
-    m_block->getFunction()->getProgram()->getCallbacks()->onOperationAdded(op, m_block);
+    m_block->getFunction()->getProgram()->getCallbacks()->onOperationAdded(op);
 }
 
 void IRcodeGenerator::genGenericOperation(const pcode::Instruction* instr, ircode::OperationId operationId, ircode::MemoryAddress& outputMemAddr) {
@@ -516,8 +517,6 @@ void IRcodeGenerator::genGenericOperation(const pcode::Instruction* instr, ircod
 
     // generate operation
     if (inputVal2) {
-        genOperation(std::make_unique<ircode::BinaryOperation>(operationId, inputVal1, inputVal2, outputVar));
-
         // calculate address as linear expression
         const auto& linearExprInp1 = inputVal1->getLinearExpr();
         const auto& linearExprInp2 = inputVal2->getLinearExpr();
@@ -527,6 +526,8 @@ void IRcodeGenerator::genGenericOperation(const pcode::Instruction* instr, ircod
             if (linearExprInp1.getTerms().empty() || linearExprInp2.getTerms().empty())
                 outputVar->setLinearExpr(linearExprInp1 * linearExprInp2);
         }
+
+        genOperation(std::make_unique<ircode::BinaryOperation>(operationId, inputVal1, inputVal2, outputVar));
     } else {
         genOperation(std::make_unique<ircode::UnaryOperation>(operationId, inputVal1, outputVar));
     }

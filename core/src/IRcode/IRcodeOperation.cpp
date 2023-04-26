@@ -24,6 +24,14 @@ std::shared_ptr<Variable> Operation::getOutput() const {
     return m_output;
 }
 
+Block* Operation::getBlock() const {
+    return m_block;
+}
+
+void Operation::setBlock(Block* block) {
+    m_block = block;
+}
+
 std::set<const pcode::Instruction*>& Operation::getPcodeInstructions() {
     return m_pcodeInstructions;
 }

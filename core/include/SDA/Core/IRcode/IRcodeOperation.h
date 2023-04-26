@@ -79,6 +79,7 @@ namespace sda::ircode
     {
         OperationId m_id = OperationId::NONE;
         std::shared_ptr<Variable> m_output;
+		Block* m_block = nullptr;
         std::set<const pcode::Instruction*> m_pcodeInstructions;
 		std::set<std::shared_ptr<Variable>> m_overwrittenVariables;
     public:
@@ -95,6 +96,10 @@ namespace sda::ircode
 		size_t getSize() const;
 
         std::shared_ptr<Variable> getOutput() const;
+
+		Block* getBlock() const;
+
+		void setBlock(Block* block);
 
         std::set<const pcode::Instruction*>& getPcodeInstructions();
 

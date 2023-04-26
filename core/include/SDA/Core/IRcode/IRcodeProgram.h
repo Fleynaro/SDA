@@ -52,19 +52,19 @@ namespace sda::ircode
             bool m_enabled = true;
         public:
             // Called when an operation is added
-            void onOperationAdded(const Operation* op, Block* block);
+            void onOperationAdded(const Operation* op);
 
             // Called when an operation is removed
-            void onOperationRemoved(const Operation* op, Block* block);
+            void onOperationRemoved(const Operation* op);
 
             void setPrevCallbacks(std::shared_ptr<Callbacks> prevCallbacks);
 
             void setEnabled(bool enabled);
 
         protected:
-            virtual void onOperationAddedImpl(const Operation* op, Block* block) {};
+            virtual void onOperationAddedImpl(const Operation* op) {};
 
-            virtual void onOperationRemovedImpl(const Operation* op, Block* block) {};
+            virtual void onOperationRemovedImpl(const Operation* op) {};
         };
 
         // Set the callbacks for the graph
