@@ -47,13 +47,18 @@ namespace sda::semantics
         }
 
         virtual std::list<Semantics*> findSemanticsOfVariable(std::shared_ptr<ircode::Variable> variable) = 0;
+    };
 
+    class SemanticsPropagator
+    {
+    public:
         virtual void propogate(SemanticsPropagationContext& ctx) = 0;
     };
 
     class SemanticsManager
     {
         std::list<std::unique_ptr<SemanticsRepository>> m_repositories;
+        std::list<std::unique_ptr<SemanticsPropagator>> m_propagators;
 
         class IRcodeProgramCallbacks : public ircode::Program::Callbacks
         {
@@ -85,6 +90,10 @@ namespace sda::semantics
             m_repositories.push_back(std::move(repository));
         }
 
+        void addPropagator(std::unique_ptr<SemanticsPropagator> propagator) {
+            m_propagators.push_back(std::move(propagator));
+        }
+
         void propagate(SemanticsPropagationContext& ctx) {
             while(!ctx.nextOperations.empty()) {
                 auto it = ctx.nextOperations.begin();
@@ -93,8 +102,8 @@ namespace sda::semantics
                     auto it2 = ops.begin();
                     while (it2 != ops.end()) {
                         ctx.operation = *it2;
-                        for (auto& repo : m_repositories) {
-                            repo->propogate(ctx);
+                        for (auto& propogator : m_propagators) {
+                            propogator->propogate(ctx);
                         }
                         it2 = ops.erase(it2);
                     }
@@ -208,11 +217,10 @@ namespace sda::semantics
 
     class GlobalVarSemanticsRepository : public BaseSemanticsRepository<GlobalVarSemantics>
     {
-        Platform* m_platform;
         std::map<Offset, std::list<GlobalVarSemantics*>> m_offsetToSemantics;
     public:
-        GlobalVarSemanticsRepository(SemanticsManager* manager, Platform* platform)
-            : BaseSemanticsRepository<GlobalVarSemantics>(manager), m_platform(platform)
+        GlobalVarSemanticsRepository(SemanticsManager* manager)
+            : BaseSemanticsRepository<GlobalVarSemantics>(manager)
         {}
 
         std::list<GlobalVarSemantics*> findSemanticsAt(Offset offset) {
@@ -232,38 +240,38 @@ namespace sda::semantics
             return newSem;
         }
 
-        void propogate(SemanticsPropagationContext& ctx) override
-        {
-            auto output = ctx.operation->getOutput();
+        // void propogate(SemanticsPropagationContext& ctx) override
+        // {
+        //     auto output = ctx.operation->getOutput();
 
-            if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(ctx.operation)) {
-                auto input = unaryOp->getInput();
-                if (unaryOp->getId() == ircode::OperationId::LOAD) {
-                    if (auto inputReg = std::dynamic_pointer_cast<ircode::Register>(input)) {
-                        if (inputReg->getRegister().getRegId() == Register::InstructionPointerId) {
-                            if (addSemantics(GlobalVarSemantics(output, output, 0))) {
-                                ctx.markValueAsAffected(output);
-                            }
-                        }
-                    }
-                }
-            }
+        //     if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(ctx.operation)) {
+        //         auto input = unaryOp->getInput();
+        //         if (unaryOp->getId() == ircode::OperationId::LOAD) {
+        //             if (auto inputReg = std::dynamic_pointer_cast<ircode::Register>(input)) {
+        //                 if (inputReg->getRegister().getRegId() == Register::InstructionPointerId) {
+        //                     if (addSemantics(GlobalVarSemantics(output, output, 0))) {
+        //                         ctx.markValueAsAffected(output);
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
 
-            auto linearExpr = output->getLinearExpr();
-            Offset offset = linearExpr.getConstTermValue();
-            for (auto& term : linearExpr.getTerms()) {
-                if (term.factor != 1 || term.value->getSize() != m_platform->getPointerSize())
-                    continue;
-                if (auto termVar = std::dynamic_pointer_cast<ircode::Variable>(term.value)) {
-                    for (auto sem : findSemantics(termVar)) {
-                        if (auto newSem = addSemantics(GlobalVarSemantics(output, sem->getSource(), offset))) {
-                            sem->addSuccessor(newSem);
-                            ctx.markValueAsAffected(output);
-                        }
-                    }
-                }
-            }
-        }
+        //     auto linearExpr = output->getLinearExpr();
+        //     Offset offset = linearExpr.getConstTermValue();
+        //     for (auto& term : linearExpr.getTerms()) {
+        //         if (term.factor != 1 || term.value->getSize() != m_platform->getPointerSize())
+        //             continue;
+        //         if (auto termVar = std::dynamic_pointer_cast<ircode::Variable>(term.value)) {
+        //             for (auto sem : findSemantics(termVar)) {
+        //                 if (auto newSem = addSemantics(GlobalVarSemantics(output, sem->getSource(), offset))) {
+        //                     sem->addSuccessor(newSem);
+        //                     ctx.markValueAsAffected(output);
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
     };
 
     class SymbolTableSemantics : public Semantics
@@ -300,11 +308,10 @@ namespace sda::semantics
 
     class SymbolTableSemanticsRepository : public BaseSemanticsRepository<SymbolTableSemantics>
     {
-        SymbolTable* m_globalSymbolTable = nullptr;
         std::map<std::pair<SymbolTable*, Offset>, std::list<SymbolTableSemantics*>> m_locToSemantics;
     public:
-        SymbolTableSemanticsRepository(SemanticsManager* manager, SymbolTable* globalSymbolTable)
-            : BaseSemanticsRepository<SymbolTableSemantics>(manager), m_globalSymbolTable(globalSymbolTable)
+        SymbolTableSemanticsRepository(SemanticsManager* manager)
+            : BaseSemanticsRepository<SymbolTableSemantics>(manager)
         {}
 
         std::list<SymbolTableSemantics*> findSemanticsAt(SymbolTable* symbolTable, Offset offset) {
@@ -324,6 +331,20 @@ namespace sda::semantics
             }
             return newSem;
         }
+    };
+
+    class BaseSemanticsPropagator : public SemanticsPropagator
+    {
+        SymbolTable* m_globalSymbolTable = nullptr;
+        SymbolTableSemanticsRepository* m_symbolTableRepo;
+    public:
+        BaseSemanticsPropagator(
+            SymbolTable* globalSymbolTable,
+            SymbolTableSemanticsRepository* symbolTableRepo
+        )
+            : m_globalSymbolTable(globalSymbolTable)
+            , m_symbolTableRepo(symbolTableRepo)
+        {}
 
         void propogate(SemanticsPropagationContext& ctx) override
         {
@@ -345,7 +366,7 @@ namespace sda::semantics
                             auto paramIdx = storageInfo.paramIdx;
                             auto paramSymbol = signatureDt->getParameters()[paramIdx];
                             if (auto symbolTable = extractSymbolTable(paramSymbol)) {
-                                if (addSemantics(
+                                if (m_symbolTableRepo->addSemantics(
                                     SymbolTableSemantics(
                                         output,
                                         output,
@@ -358,7 +379,7 @@ namespace sda::semantics
                         } else {
                             auto regId = inputReg->getRegister().getRegId();
                             if (regId == Register::InstructionPointerId) {
-                                if (addSemantics(
+                                if (m_symbolTableRepo->addSemantics(
                                     SymbolTableSemantics(
                                         output,
                                         output,
@@ -369,7 +390,7 @@ namespace sda::semantics
                                 }
                             } else if (regId == Register::StackPointerId) {
                                 auto stackSymbolTable = funcSymbol->getStackSymbolTable();
-                                if (addSemantics(
+                                if (m_symbolTableRepo->addSemantics(
                                     SymbolTableSemantics(
                                         output,
                                         output,
@@ -381,13 +402,13 @@ namespace sda::semantics
                             }
                         }
                     } else if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
-                        for (auto sem : findSemantics(inputVar)) {
+                        for (auto sem : m_symbolTableRepo->findSemantics(inputVar)) {
                             auto symbolTable = sem->getSymbolTable();
                             auto offset = sem->getOffset();
                             auto symbols = getAllSymbolsAt(funcSymbol, symbolTable, offset, false);
                             for (auto& [symbolOffset, symbol] : symbols) {
                                 if (auto symbolTable = extractSymbolTable(symbol)) {
-                                    if (addSemantics(
+                                    if (m_symbolTableRepo->addSemantics(
                                         SymbolTableSemantics(
                                             output,
                                             sem->getSource(),
@@ -409,8 +430,8 @@ namespace sda::semantics
                 if (term.factor != 1 || term.value->getSize() != getContext()->getPlatform()->getPointerSize())
                     continue;
                 if (auto termVar = std::dynamic_pointer_cast<ircode::Variable>(term.value)) {
-                    for (auto sem : findSemantics(termVar)) {
-                        if (auto newSem = addSemantics(
+                    for (auto sem : m_symbolTableRepo->findSemantics(termVar)) {
+                        if (auto newSem = m_symbolTableRepo->addSemantics(
                             SymbolTableSemantics(
                                 output,
                                 sem->getSource(),

@@ -13,16 +13,20 @@ protected:
     semantics::GlobalVarSemanticsRepository* globalVarRepo = nullptr;
     semantics::SymbolTableSemanticsRepository* symbolTableRepo = nullptr;
 
-    void addGlobalVarSemanticsRepository() {
-        auto globalVarRepo = std::make_unique<semantics::GlobalVarSemanticsRepository>(&semManager, context->getPlatform());
+    void SetUp() override {
+        IRcodeFixture::SetUp();
+        // add repositories
+        auto globalVarRepo = std::make_unique<semantics::GlobalVarSemanticsRepository>(&semManager);
+        auto symbolTableRepo = std::make_unique<semantics::SymbolTableSemanticsRepository>(&semManager);
         this->globalVarRepo = globalVarRepo.get();
+        this->symbolTableRepo = symbolTableRepo.get();
         semManager.addRepository(std::move(globalVarRepo));
+        semManager.addRepository(std::move(symbolTableRepo));
     }
 
-    void addSymbolTableSemanticsRepository() {
-        auto symbolTableRepo = std::make_unique<semantics::SymbolTableSemanticsRepository>(&semManager, globalSymbolTable);
-        this->symbolTableRepo = symbolTableRepo.get();
-        semManager.addRepository(std::move(symbolTableRepo));
+    void addBaseSemanticsPropagator() {
+        semManager.addPropagator(
+            std::make_unique<semantics::BaseSemanticsPropagator>(globalSymbolTable, symbolTableRepo));
     }
 };
 
@@ -33,7 +37,8 @@ TEST_F(SemanticsTest, Simplest) {
             return globalVar;
         }
     */
-   addSymbolTableSemanticsRepository();
+    addBaseSemanticsPropagator();
+
     auto func = newFunction(
         0,
         "main",
