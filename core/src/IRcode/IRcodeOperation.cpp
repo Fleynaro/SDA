@@ -10,6 +10,9 @@ Operation::Operation(
     , m_output(output)
 {
     m_output->addOperation(this);
+    if (auto memAddrValue = m_output->getMemAddress().value) {
+        memAddrValue->addOperation(this);
+    }
 }
 
 OperationId Operation::getId() const {

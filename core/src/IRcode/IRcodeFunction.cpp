@@ -34,3 +34,24 @@ Block* Function::toBlock(pcode::Block* pcodeBlock) {
     }
     return &it->second;
 }
+
+std::list<std::shared_ptr<Variable>> Function::getVariables() {
+    std::list<std::shared_ptr<Variable>> variables;
+    for (auto& [pcodeBlock, ircodeBlock] : m_blocks) {
+        for (auto& op : ircodeBlock.getOperations()) {
+            variables.push_back(op->getOutput());
+        }
+    }
+    return variables;
+}
+
+std::shared_ptr<Variable> Function::findVariableById(size_t id) {
+    if (m_varIds.get(id)) {
+        for (auto var : getVariables()) {
+            if (var->getId() == id) {
+                return var;
+            }
+        }
+    }
+    return nullptr;
+}

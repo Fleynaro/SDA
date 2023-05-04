@@ -45,14 +45,12 @@ namespace sda::semantics
         SemanticsManager* getManager() const {
             return m_manager;
         }
-
-        virtual std::list<Semantics*> findSemanticsOfVariable(std::shared_ptr<ircode::Variable> variable) = 0;
     };
 
     class SemanticsPropagator
     {
     public:
-        virtual void propogate(SemanticsPropagationContext& ctx) = 0;
+        virtual void propagate(SemanticsPropagationContext& ctx) = 0;
     };
 
     class SemanticsManager
@@ -94,7 +92,13 @@ namespace sda::semantics
             m_propagators.push_back(std::move(propagator));
         }
 
-        void propagate(SemanticsPropagationContext& ctx) {
+        void propagate(SemanticsPropagationContext ctx) {
+            for (auto& propagator : m_propagators) {
+                propagate(ctx, propagator.get());
+            }
+        }
+
+        void propagate(SemanticsPropagationContext ctx, SemanticsPropagator* propagator) {
             while(!ctx.nextOperations.empty()) {
                 auto it = ctx.nextOperations.begin();
                 while (it != ctx.nextOperations.end()) {
@@ -102,9 +106,7 @@ namespace sda::semantics
                     auto it2 = ops.begin();
                     while (it2 != ops.end()) {
                         ctx.operation = *it2;
-                        for (auto& propogator : m_propagators) {
-                            propogator->propogate(ctx);
-                        }
+                        propagator->propagate(ctx);
                         it2 = ops.erase(it2);
                     }
                     it = ctx.nextOperations.erase(it);
@@ -159,14 +161,6 @@ namespace sda::semantics
     public:
         using SemanticsRepository::SemanticsRepository;        
 
-        std::list<Semantics*> findSemanticsOfVariable(std::shared_ptr<ircode::Variable> variable) override {
-            std::list<Semantics*> result;
-            for (auto sem : findSemantics(variable)) {
-                result.push_back(sem);
-            }
-            return result;
-        }
-
         std::list<T*> findSemantics(std::shared_ptr<ircode::Variable> variable) {
             auto it = m_items.find(variable);
             if (it == m_items.end()) {
@@ -191,87 +185,190 @@ namespace sda::semantics
         }
     };
 
-    class GlobalVarSemantics : public Semantics
+    class MemoryStructureSemanticsRepository : public SemanticsRepository
     {
-        Offset m_offset = 0;
+        struct Node {
+            enum Type {
+                Start,
+                AddOffset,
+                Load
+            };
+            Type type;
+            Offset offset;
+            std::list<std::shared_ptr<ircode::Variable>> variables;
+            std::list<Node*> predecessors;
+            std::list<Node*> successors;
+        };
+        std::list<Node> m_nodes;
+        std::map<std::shared_ptr<ircode::Variable>, Node*> m_varToNode;
+        Node* m_globalNode;
     public:
-        GlobalVarSemantics() = default;
-
-        GlobalVarSemantics(
-            std::shared_ptr<ircode::Variable> variable,
-            std::shared_ptr<ircode::Value> source,
-            Offset offset)
-            : Semantics(variable, source)
-            , m_offset(offset)
-        {}
-
-        Offset getOffset() const {
-            return m_offset;
+        MemoryStructureSemanticsRepository(SemanticsManager* manager)
+            : SemanticsRepository(manager)
+        {
+            m_globalNode = createNode(Node::Start);
         }
 
-        bool equals(const GlobalVarSemantics* other) const {
-            return Semantics::equals(other) &&
-                    m_offset == other->m_offset;
+        Node* getGlobalStartNode() const {
+            return m_globalNode;
         }
-    };
 
-    class GlobalVarSemanticsRepository : public BaseSemanticsRepository<GlobalVarSemantics>
-    {
-        std::map<Offset, std::list<GlobalVarSemantics*>> m_offsetToSemantics;
-    public:
-        GlobalVarSemanticsRepository(SemanticsManager* manager)
-            : BaseSemanticsRepository<GlobalVarSemantics>(manager)
-        {}
-
-        std::list<GlobalVarSemantics*> findSemanticsAt(Offset offset) {
-            auto it = m_offsetToSemantics.find(offset);
-            if (it == m_offsetToSemantics.end()) {
-                return std::list<GlobalVarSemantics*>();
+        Node* getNode(std::shared_ptr<ircode::Variable> variable) {
+            auto it = m_varToNode.find(variable);
+            if (it == m_varToNode.end()) {
+                return nullptr;
             }
             return it->second;
         }
 
-        GlobalVarSemantics* addSemantics(const GlobalVarSemantics& semantics) {
-            auto newSem = BaseSemanticsRepository<GlobalVarSemantics>::addSemantics(semantics);
-            if (newSem) {
-                auto offset = semantics.getOffset();
-                m_offsetToSemantics[offset].push_back(newSem);
-            }
-            return newSem;
+        std::list<std::shared_ptr<ircode::Variable>> getSameVariables(std::shared_ptr<ircode::Variable> variable) {
+            auto node = getNode(variable);
+            return node->variables;
         }
 
-        // void propogate(SemanticsPropagationContext& ctx) override
-        // {
-        //     auto output = ctx.operation->getOutput();
+        Node* addStartVariable(Node* node, std::shared_ptr<ircode::Variable> variable) {
+            return addVariable(node, variable);
+        }
 
-        //     if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(ctx.operation)) {
-        //         auto input = unaryOp->getInput();
-        //         if (unaryOp->getId() == ircode::OperationId::LOAD) {
-        //             if (auto inputReg = std::dynamic_pointer_cast<ircode::Register>(input)) {
-        //                 if (inputReg->getRegister().getRegId() == Register::InstructionPointerId) {
-        //                     if (addSemantics(GlobalVarSemantics(output, output, 0))) {
-        //                         ctx.markValueAsAffected(output);
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
+        Node* addCopyVariable(Node* node, std::shared_ptr<ircode::Variable> variable) {
+            return addVariable(node, variable);
+        }
 
-        //     auto linearExpr = output->getLinearExpr();
-        //     Offset offset = linearExpr.getConstTermValue();
-        //     for (auto& term : linearExpr.getTerms()) {
-        //         if (term.factor != 1 || term.value->getSize() != m_platform->getPointerSize())
-        //             continue;
-        //         if (auto termVar = std::dynamic_pointer_cast<ircode::Variable>(term.value)) {
-        //             for (auto sem : findSemantics(termVar)) {
-        //                 if (auto newSem = addSemantics(GlobalVarSemantics(output, sem->getSource(), offset))) {
-        //                     sem->addSuccessor(newSem);
-        //                     ctx.markValueAsAffected(output);
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+        Node* addLoadVariable(Node* parentNode, std::shared_ptr<ircode::Variable> variable) {
+            return addVariable(parentNode, variable, Node::Load);
+        }
+
+        Node* addOffsetVariable(Node* parentNode, std::shared_ptr<ircode::Variable> variable, Offset offset) {
+            return addVariable(parentNode, variable, Node::AddOffset, offset);
+        }
+
+        void addSuccessor(Node* node, Node* successor) {
+            node->successors.push_back(successor);
+            successor->predecessors.push_back(node);
+        }
+
+    private:
+        Node* addVariable(
+            Node* parentNode,
+            std::shared_ptr<ircode::Variable> variable,
+            Node::Type type,
+            Offset offset = 0)
+        {
+            auto successor = findSuccessor(parentNode, type, offset);
+            if (!successor) {
+                successor = createNode(type, offset);
+                addSuccessor(parentNode, successor);
+            }
+            return addVariable(successor, variable);
+        }
+
+        Node* addVariable(Node* node, std::shared_ptr<ircode::Variable> variable) {
+            auto existingNode = getNode(variable);
+            if (existingNode) {
+                return nullptr;
+            }
+            node->variables.push_back(variable);
+            m_varToNode[variable] = node;
+            return node;
+        }
+
+        Node* createNode(Node::Type type, Offset offset = 0) {
+            m_nodes.push_back({ type, offset });
+            return &m_nodes.back();
+        }
+
+        Node* findSuccessor(Node* node, Node::Type type, Offset offset = 0) {
+            // TODO: optimize (use map)
+            for (auto successor : node->successors) {
+                if (successor->type == type && successor->offset == offset) {
+                    return successor;
+                }
+            }
+            return nullptr;
+        }
+    };
+
+    class MemoryStructureSemanticsPropagator : public SemanticsPropagator
+    {
+        Platform* m_platform;
+        MemoryStructureSemanticsRepository* m_memStructRepo;
+    public:
+        MemoryStructureSemanticsPropagator(
+            Platform* platform,
+            MemoryStructureSemanticsRepository* memStructRepo
+        )
+            : m_platform(platform)
+            , m_memStructRepo(memStructRepo)
+        {}
+
+        void propagate(SemanticsPropagationContext& ctx) override
+        {
+            auto output = ctx.operation->getOutput();
+            if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(ctx.operation)) {
+                auto input = unaryOp->getInput();
+                if (unaryOp->getId() == ircode::OperationId::LOAD) {
+                    if (auto inputReg = std::dynamic_pointer_cast<ircode::Register>(input)) {
+                        auto regId = inputReg->getRegister().getRegId();
+                        if (regId == Register::InstructionPointerId) {
+                            auto startNode = m_memStructRepo->getGlobalStartNode();
+                            if (m_memStructRepo->addStartVariable(startNode, output)) {
+                                ctx.markValueAsAffected(output);
+                            }
+                        }
+                    }
+                    else if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
+                        if (auto node = m_memStructRepo->getNode(inputVar)) {
+                            if (m_memStructRepo->addLoadVariable(node, output)) {
+                                ctx.markValueAsAffected(output);
+                            }
+                        }
+                    }
+                }
+                else if (unaryOp->getId() == ircode::OperationId::COPY) {
+                    if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
+                        if (auto node = m_memStructRepo->getNode(inputVar)) {
+                            if (m_memStructRepo->addCopyVariable(node, output)) {
+                                ctx.markValueAsAffected(output);
+                            }
+                        }
+                        auto outputAddrVal = output->getMemAddress().value;
+                        if (auto outputAddrVar = std::dynamic_pointer_cast<ircode::Variable>(outputAddrVal)) {
+                            if (auto addrNode = m_memStructRepo->getNode(outputAddrVar)) {
+                                if (auto inputNode = m_memStructRepo->getNode(inputVar)) {
+                                    m_memStructRepo->addSuccessor(addrNode, inputNode);
+                                } else {
+                                    if (auto loadNode = m_memStructRepo->addLoadVariable(addrNode, output)) {
+                                        if (m_memStructRepo->addCopyVariable(loadNode, inputVar)) {
+                                            ctx.markValueAsAffected(inputVar);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if (auto binaryOp = dynamic_cast<const ircode::BinaryOperation*>(ctx.operation)) {
+                if (binaryOp->getId() == ircode::OperationId::INT_ADD ||
+                    binaryOp->getId() == ircode::OperationId::INT_MULT)
+                {
+                    auto linearExpr = output->getLinearExpr();
+                    Offset offset = linearExpr.getConstTermValue();
+                    for (auto& term : linearExpr.getTerms()) {
+                        if (term.factor != 1 || term.value->getSize() != m_platform->getPointerSize())
+                            continue;
+                        if (auto termVar = std::dynamic_pointer_cast<ircode::Variable>(term.value)) {
+                            if (auto node = m_memStructRepo->getNode(termVar)) {
+                                if (m_memStructRepo->addOffsetVariable(node, output, offset)) {
+                                    ctx.markValueAsAffected(output);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     };
 
     class SymbolTableSemantics : public Semantics
@@ -308,18 +405,22 @@ namespace sda::semantics
 
     class SymbolTableSemanticsRepository : public BaseSemanticsRepository<SymbolTableSemantics>
     {
-        std::map<std::pair<SymbolTable*, Offset>, std::list<SymbolTableSemantics*>> m_locToSemantics;
+        std::map<SymbolTable*, std::map<Offset, std::list<SymbolTableSemantics*>>> m_locToSemantics;
     public:
         SymbolTableSemanticsRepository(SemanticsManager* manager)
             : BaseSemanticsRepository<SymbolTableSemantics>(manager)
         {}
 
         std::list<SymbolTableSemantics*> findSemanticsAt(SymbolTable* symbolTable, Offset offset) {
-            auto it = m_locToSemantics.find(std::make_pair(symbolTable, offset));
+            auto it = m_locToSemantics.find(symbolTable);
             if (it == m_locToSemantics.end()) {
                 return std::list<SymbolTableSemantics*>();
             }
-            return it->second;
+            auto it2 = it->second.find(offset);
+            if (it2 == it->second.end()) {
+                return std::list<SymbolTableSemantics*>();
+            }
+            return it2->second;
         }
 
         SymbolTableSemantics* addSemantics(const SymbolTableSemantics& semantics) {
@@ -327,26 +428,61 @@ namespace sda::semantics
             if (newSem) {
                 auto symbolTable = semantics.getSymbolTable();
                 auto offset = semantics.getOffset();
-                m_locToSemantics[std::make_pair(symbolTable, offset)].push_back(newSem);
+                m_locToSemantics[symbolTable][offset].push_back(newSem);
             }
             return newSem;
         }
     };
 
-    class BaseSemanticsPropagator : public SemanticsPropagator
+    class DataTypeSemantics : public Semantics
+    {
+        DataType* m_dataType = nullptr;
+    public:
+        DataTypeSemantics() = default;
+
+        DataTypeSemantics(
+            std::shared_ptr<ircode::Variable> variable,
+            std::shared_ptr<ircode::Value> source,
+            DataType* dataType)
+            : Semantics(variable, source)
+            , m_dataType(dataType)
+        {}
+
+        DataType* getDataType() const {
+            return m_dataType;
+        }
+
+        bool equals(const DataTypeSemantics* other) const {
+            return Semantics::equals(other) &&
+                    m_dataType == other->m_dataType;
+        }
+    };
+
+    class DataTypeSemanticsRepository : public BaseSemanticsRepository<DataTypeSemantics>
+    {
+    public:
+        DataTypeSemanticsRepository(SemanticsManager* manager)
+            : BaseSemanticsRepository<DataTypeSemantics>(manager)
+        {}
+    };
+
+    class DataTypeSemanticsPropagator : public SemanticsPropagator
     {
         SymbolTable* m_globalSymbolTable = nullptr;
         SymbolTableSemanticsRepository* m_symbolTableRepo;
+        DataTypeSemanticsRepository* m_dataTypeRepo;
     public:
-        BaseSemanticsPropagator(
+        DataTypeSemanticsPropagator(
             SymbolTable* globalSymbolTable,
-            SymbolTableSemanticsRepository* symbolTableRepo
+            SymbolTableSemanticsRepository* symbolTableRepo,
+            DataTypeSemanticsRepository* dataTypeRepo
         )
             : m_globalSymbolTable(globalSymbolTable)
             , m_symbolTableRepo(symbolTableRepo)
+            , m_dataTypeRepo(dataTypeRepo)
         {}
 
-        void propogate(SemanticsPropagationContext& ctx) override
+        void propagate(SemanticsPropagationContext& ctx) override
         {
             auto funcSymbol = getFunctionSymbol(ctx);
             auto output = ctx.operation->getOutput();
@@ -365,16 +501,13 @@ namespace sda::semantics
                             const auto& storageInfo = it->second;
                             auto paramIdx = storageInfo.paramIdx;
                             auto paramSymbol = signatureDt->getParameters()[paramIdx];
-                            if (auto symbolTable = extractSymbolTable(paramSymbol)) {
-                                if (m_symbolTableRepo->addSemantics(
-                                    SymbolTableSemantics(
-                                        output,
-                                        output,
-                                        symbolTable,
-                                        0))
-                                ) {
-                                    ctx.markValueAsAffected(output);
-                                }
+                            auto paramSymbolDt = paramSymbol->getDataType();
+                            if (auto newDtSem = newDataTypeSemantics(
+                                output,
+                                output,
+                                paramSymbolDt
+                            )) {
+                                ctx.markValueAsAffected(output);
                             }
                         } else {
                             auto regId = inputReg->getRegister().getRegId();
@@ -402,22 +535,31 @@ namespace sda::semantics
                             }
                         }
                     } else if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
-                        for (auto sem : m_symbolTableRepo->findSemantics(inputVar)) {
-                            auto symbolTable = sem->getSymbolTable();
-                            auto offset = sem->getOffset();
-                            auto symbols = getAllSymbolsAt(funcSymbol, symbolTable, offset, false);
-                            for (auto& [symbolOffset, symbol] : symbols) {
-                                if (auto symbolTable = extractSymbolTable(symbol)) {
-                                    if (m_symbolTableRepo->addSemantics(
-                                        SymbolTableSemantics(
-                                            output,
-                                            sem->getSource(),
-                                            symbolTable,
-                                            0))
-                                    ) {
-                                        ctx.markValueAsAffected(output);
-                                    }
+                        for (auto dtSem : m_dataTypeRepo->findSemantics(inputVar)) {
+                            if (auto pointerDt = dynamic_cast<PointerDataType*>(dtSem->getDataType())) {
+                                auto pointedDt = pointerDt->getPointedType();
+                                if (auto newDtSem = newDataTypeSemantics(
+                                    output,
+                                    dtSem->getSource(),
+                                    pointedDt
+                                )) {
+                                    dtSem->addSuccessor(newDtSem);
+                                    ctx.markValueAsAffected(output);
                                 }
+                            }
+                        }
+                        for (auto stSem : m_symbolTableRepo->findSemantics(inputVar)) {
+                            auto symbolTable = stSem->getSymbolTable();
+                            auto offset = stSem->getOffset();
+                            auto symbol = getSymbolAt(funcSymbol, symbolTable, offset, false);
+                            auto symbolDt = symbol->getDataType();
+                            if (auto newDtSem = newDataTypeSemantics(
+                                output,
+                                stSem->getSource(),
+                                symbolDt
+                            )) {
+                                stSem->addSuccessor(newDtSem);
+                                ctx.markValueAsAffected(output);
                             }
                         }
                     }
@@ -458,23 +600,43 @@ namespace sda::semantics
             return dynamic_cast<FunctionSymbol*>(symbol);
         }
 
-        SymbolTable* extractSymbolTable(Symbol* symbol) const {
-            auto symbolDt = symbol->getDataType();
-            if (auto pointerDt = dynamic_cast<const PointerDataType*>(symbolDt)) {
-                if (auto structDt = dynamic_cast<const StructureDataType*>(pointerDt->getPointedType())) {
-                    return structDt->getSymbolTable();
+        DataTypeSemantics* newDataTypeSemantics(
+            std::shared_ptr<ircode::Variable> value,
+            std::shared_ptr<ircode::Value> source,
+            DataType* dataType)
+        {
+            if (auto newDtSem =  m_dataTypeRepo->addSemantics(
+                DataTypeSemantics(
+                    value,
+                    source,
+                    dataType
+                )
+            )) {
+                if (auto pointerDt = dynamic_cast<PointerDataType*>(dataType)) {
+                    if (auto structDt = dynamic_cast<StructureDataType*>(pointerDt->getPointedType())) {
+                        if (auto newStSem = m_symbolTableRepo->addSemantics(
+                            SymbolTableSemantics(
+                                newDtSem->getVariable(),
+                                newDtSem->getSource(),
+                                structDt->getSymbolTable(),
+                                0
+                            )
+                        )) {
+                            newDtSem->addSuccessor(newStSem);
+                        }
+                    }
                 }
+                return newDtSem;
             }
             return nullptr;
         }
 
-        std::list<std::pair<Offset, Symbol*>> getAllSymbolsAt(
+        Symbol* getSymbolAt(
             FunctionSymbol* funcSymbol,
             SymbolTable* symbolTable,
             Offset offset,
             bool write) const
         {
-            std::list<std::pair<Offset, Symbol*>> symbols;
             if (symbolTable == m_globalSymbolTable ||
                 symbolTable == funcSymbol->getStackSymbolTable())
             {
@@ -490,15 +652,10 @@ namespace sda::semantics
                     const auto& storageInfo = it->second;
                     auto paramIdx = storageInfo.paramIdx;
                     auto paramSymbol = signatureDt->getParameters()[paramIdx];
-                    symbols.emplace_back(offset, paramSymbol);
+                    return paramSymbol;
                 }
             }
-            if (symbols.empty()) {
-                auto foundSymbols = symbolTable->getAllSymbolsRecursivelyAt(offset);
-                for (auto [_, symbolOffset, symbol] : foundSymbols)
-                    symbols.emplace_back(symbolOffset, symbol);
-            }
-            return symbols;
+            return symbolTable->getSymbolAt(offset).symbol;
         }
     };
 };

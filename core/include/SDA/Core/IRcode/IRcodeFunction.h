@@ -27,5 +27,9 @@ namespace sda::ircode
         std::map<pcode::Block*, Block>& getBlocks();
 
         Block* toBlock(pcode::Block* pcodeBlock);
+
+        std::list<std::shared_ptr<Variable>> getVariables();
+
+        std::shared_ptr<Variable> findVariableById(size_t id);
     };
 };
