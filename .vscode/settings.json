@@ -113,5 +113,10 @@
         "**/third-party/**": true
     },
 
-    "todo-tree.filtering.useBuiltInExcludes": "search excludes"
+    "todo-tree.filtering.useBuiltInExcludes": "search excludes",
+    
+    "cSpell.words": [
+        "ircode",
+        "pcode"
+    ]
 }
