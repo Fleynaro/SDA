@@ -84,6 +84,10 @@ Value::Type Variable::getType() const {
     return Type::Variable;
 }
 
+Operation* Variable::getSourceOperation() const {
+    return m_operations.empty() ? nullptr : m_operations.front();
+}
+
 const MemoryAddress& Variable::getMemAddress() const {
     return m_memAddress;
 }

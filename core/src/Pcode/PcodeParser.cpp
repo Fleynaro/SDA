@@ -112,20 +112,21 @@ std::shared_ptr<RegisterVarnode> Parser::parseRegisterVarnode() {
     std::string name;
     if (getToken()->isSymbol('$')) {
         nextToken();
-        if (getToken()->isIdent(name)) {
-            nextToken();
-            auto regIdxStr = name.substr(1);
-            auto regIdx = std::stoull(regIdxStr) - 1;
-            size_t size = 0;
-            size_t offset = 0;
-            parseVarnodeSizeOffset(size, offset);
-            auto reg = Register(
-                Register::Virtual,
-                Register::VirtualId,
-                regIdx,
-                utils::BitMask(size, offset)
-            );
-            return std::make_shared<RegisterVarnode>(reg);
+        if (auto constToken = dynamic_cast<const ConstToken*>(getToken().get())) {
+            if (constToken->valueType == ConstToken::Integer) {
+                auto regIdx = constToken->value.integer - 1;
+                nextToken();
+                size_t size = 0;
+                size_t offset = 0;
+                parseVarnodeSizeOffset(size, offset);
+                auto reg = Register(
+                    Register::Virtual,
+                    Register::VirtualId,
+                    regIdx,
+                    utils::BitMask(size, offset)
+                );
+                return std::make_shared<RegisterVarnode>(reg);
+            }
         }
     } else if (getToken()->isIdent(name)) {
         nextToken();

@@ -51,6 +51,15 @@ namespace sda::ircode
             std::shared_ptr<Callbacks> m_prevCallbacks;
             bool m_enabled = true;
         public:
+            // Called when a block is created
+            void onBlockCreated(Block* block);
+
+            // Called when a block is decompiled
+            void onBlockDecompiled(Block* block);
+
+            // Called when a block is removed
+            void onBlockRemoved(Block* block);
+
             // Called when an operation is added
             void onOperationAdded(const Operation* op);
 
@@ -62,6 +71,12 @@ namespace sda::ircode
             void setEnabled(bool enabled);
 
         protected:
+            virtual void onBlockCreatedImpl(Block* block) {};
+
+            virtual void onBlockDecompiledImpl(Block* block) {};
+
+            virtual void onBlockRemovedImpl(Block* block) {};
+
             virtual void onOperationAddedImpl(const Operation* op) {};
 
             virtual void onOperationRemovedImpl(const Operation* op) {};

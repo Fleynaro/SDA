@@ -74,7 +74,12 @@ std::list<Block*> Block::getDominantBlocks() const {
     return dominantBlocks;
 }
 
+std::shared_ptr<Value>& Block::getCondition() {
+    return m_condition;
+}
+
 void Block::clear() {
+    m_condition = nullptr;
     for (auto& op : m_operations) {
         m_function->getProgram()->getCallbacks()->onOperationRemoved(op.get());
     }
@@ -137,10 +142,12 @@ void Block::decompile(bool& goNextBlocks, DecompilationContext& ctx) {
     }
     m_memSpace = std::move(tempBlock.m_memSpace);
     m_operations = std::move(tempBlock.m_operations);
+    m_condition = std::move(tempBlock.m_condition);
     ctx.genRefVariables[this] = ircodeGen.getGeneratedRefVariables();
     m_hash = calcHash();
     m_dominantHash = actualDominantHash;
     goNextBlocks = true;
+    m_function->getProgram()->getCallbacks()->onBlockDecompiled(this);
 }
 
 Hash Block::calcHash() {

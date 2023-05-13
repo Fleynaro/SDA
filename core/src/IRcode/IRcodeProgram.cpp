@@ -11,10 +11,12 @@ void Program::PcodeGraphCallbacks::onBlockFunctionGraphChangedImpl(pcode::Block*
     if (oldFunctionGraph) {
         auto oldFunction = m_program->toFunction(oldFunctionGraph);
         auto block = oldFunction->toBlock(pcodeBlock);
+        m_program->getCallbacks()->onBlockRemoved(block);
         oldFunction->getBlocks().erase(pcodeBlock);
     }
     auto newFunction = m_program->toFunction(newFunctionGraph);
     newFunction->getBlocks().emplace(pcodeBlock, Block(pcodeBlock, newFunction));
+    m_program->getCallbacks()->onBlockCreated(newFunction->toBlock(pcodeBlock));
 }
 
 void Program::PcodeGraphCallbacks::onFunctionGraphCreatedImpl(pcode::FunctionGraph* functionGraph) {

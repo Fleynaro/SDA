@@ -17,6 +17,7 @@ namespace sda::ircode
         utils::BitSet m_varIds;
         Hash m_hash = 0;
         Hash m_dominantHash = 0;
+        std::shared_ptr<Value> m_condition;
     public:
         Block(pcode::Block* pcodeBlock, Function* function);
 
@@ -41,6 +42,8 @@ namespace sda::ircode
         std::list<Block*> getReferencedBlocks() const;
 
         std::list<Block*> getDominantBlocks() const;
+
+        std::shared_ptr<Value>& getCondition();
 
         void clear();
 

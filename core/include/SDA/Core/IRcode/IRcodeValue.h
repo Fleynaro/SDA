@@ -93,6 +93,8 @@ namespace sda::ircode
 
         Type getType() const override;
 
+        Operation* getSourceOperation() const;
+
         const MemoryAddress& getMemAddress() const;
 
         size_t getSize() const override;

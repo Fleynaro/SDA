@@ -87,6 +87,8 @@ void IRcodeGenerator::ingestPcode(const pcode::Instruction* instr) {
     auto it = InstructionToOperation.find(instr->getId());
     if (it != InstructionToOperation.end()) {
         genGenericOperation(instr, it->second, outputMemAddr);
+    } else if (instr->getId() == pcode::InstructionId::CBRANCH) {
+        handleConditionJumpOperation(instr);
     } else {
         auto isCopyInstr = instr->getId() == pcode::InstructionId::COPY;
         auto isLoadInstr = instr->getId() == pcode::InstructionId::LOAD;
@@ -541,6 +543,12 @@ std::shared_ptr<ircode::Variable> IRcodeGenerator::genLoadOperation(const ircode
     auto regVariable = createVariable(MemoryAddress(), hash, loadSize); // MemoryAddress() vs memAddr?
     genOperation(std::make_unique<ircode::UnaryOperation>(ircode::OperationId::LOAD, memAddr.value, regVariable));
     return regVariable;
+}
+
+void IRcodeGenerator::handleConditionJumpOperation(const pcode::Instruction* instr) {
+    if (auto conditionVarnode = instr->getInput1()) {
+        m_block->getCondition() = genReadVarnode(conditionVarnode);
+    }
 }
 
 std::shared_ptr<ircode::Constant> IRcodeGenerator::createConstant(std::shared_ptr<pcode::ConstantVarnode> constVarnode) const {

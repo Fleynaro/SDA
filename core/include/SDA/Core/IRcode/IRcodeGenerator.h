@@ -82,6 +82,8 @@ namespace sda::ircode
 
         std::shared_ptr<ircode::Variable> genLoadOperation(const ircode::MemoryAddress& memAddr, size_t loadSize);
 
+        void handleConditionJumpOperation(const pcode::Instruction* instr);
+
         std::shared_ptr<ircode::Constant> createConstant(std::shared_ptr<pcode::ConstantVarnode> constVarnode) const;
 
         std::shared_ptr<ircode::Register> createRegister(std::shared_ptr<pcode::RegisterVarnode> regVarnode, const ircode::MemoryAddress& memAddr) const;
