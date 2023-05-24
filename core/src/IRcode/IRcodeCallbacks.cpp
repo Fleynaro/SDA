@@ -2,19 +2,19 @@
 
 using namespace sda::ircode;
 
+void Program::Callbacks::onFunctionDecompiled(Function* function, std::list<Block*> blocks) {
+    if (m_prevCallbacks)
+        m_prevCallbacks->onFunctionDecompiled(function, blocks);
+    if (m_enabled) {
+        onFunctionDecompiledImpl(function, blocks);
+    }
+}
+
 void Program::Callbacks::onBlockCreated(Block* block) {
     if (m_prevCallbacks)
         m_prevCallbacks->onBlockCreated(block);
     if (m_enabled) {
         onBlockCreatedImpl(block);
-    }
-}
-
-void Program::Callbacks::onBlockDecompiled(Block* block) {
-    if (m_prevCallbacks)
-        m_prevCallbacks->onBlockDecompiled(block);
-    if (m_enabled) {
-        onBlockDecompiledImpl(block);
     }
 }
 

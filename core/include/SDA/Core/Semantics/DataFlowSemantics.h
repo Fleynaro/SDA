@@ -1,5 +1,6 @@
 #pragma once
 #include "Semantics.h"
+#include "SDA/Core/IRcode/IRcodeBlock.h"
 
 namespace sda::semantics
 {
@@ -18,13 +19,12 @@ namespace sda::semantics
         std::list<DataFlowNode*> successors;
     };
 
-    class DataFlowSemanticsRepository : public SemanticsRepository
+    class DataFlowRepository
     {
         std::map<std::shared_ptr<ircode::Variable>, DataFlowNode> m_nodes;
         DataFlowNode m_globalNode;
     public:
-        DataFlowSemanticsRepository(SemanticsManager* manager)
-            : SemanticsRepository(manager)
+        DataFlowRepository()
         {
             m_globalNode = { DataFlowNode::Start };
         }
@@ -66,20 +66,46 @@ namespace sda::semantics
         }
     };
 
-    class DataFlowSemanticsPropagator : public SemanticsPropagator
+    class DataFlowCollector
     {
         Platform* m_platform;
-        DataFlowSemanticsRepository* m_dataFlowRepo;
+        DataFlowRepository* m_dataFlowRepo;
+
+        class IRcodeProgramCallbacks : public ircode::Program::Callbacks
+        {
+            DataFlowCollector* m_collector;
+
+            void onFunctionDecompiledImpl(ircode::Function* function, std::list<ircode::Block*> blocks) override {
+                SemanticsPropagationContext ctx;
+                for (auto block : blocks) { 
+                    for (auto& op : block->getOperations()) {
+                        ctx.addNextOperation(op.get());
+                    }
+                }
+                ctx.collect([&]() {
+                    m_collector->collect(ctx);
+                });
+            }
+        public:
+            IRcodeProgramCallbacks(DataFlowCollector* collector) : m_collector(collector) {}
+        };
+        std::shared_ptr<IRcodeProgramCallbacks> m_programCallbacks;
     public:
-        DataFlowSemanticsPropagator(
+        DataFlowCollector(
+            ircode::Program* program,
             Platform* platform,
-            DataFlowSemanticsRepository* dataFlowRepo
+            DataFlowRepository* dataFlowRepo
         )
             : m_platform(platform)
             , m_dataFlowRepo(dataFlowRepo)
-        {}
+            , m_programCallbacks(std::make_shared<IRcodeProgramCallbacks>(this))
+        {
+            auto prevCallbacks = program->getCallbacks();
+            m_programCallbacks->setPrevCallbacks(prevCallbacks);
+            program->setCallbacks(m_programCallbacks);
+        }
 
-        void propagate(SemanticsPropagationContext& ctx) override
+        void collect(SemanticsPropagationContext& ctx)
         {
             auto output = ctx.operation->getOutput();
             if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(ctx.operation)) {

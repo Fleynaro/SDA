@@ -30,6 +30,22 @@ namespace sda::semantics
                 addNextOperation(op);
             }
         }
+
+        void collect(std::function<void()> collector) {
+            while(!nextOperations.empty()) {
+                auto it = nextOperations.begin();
+                while (it != nextOperations.end()) {
+                    auto& ops = it->second;
+                    auto it2 = ops.begin();
+                    while (it2 != ops.end()) {
+                        operation = *it2;
+                        collector();
+                        it2 = ops.erase(it2);
+                    }
+                    it = nextOperations.erase(it);
+                }
+            }
+        }
     };
 
     class SemanticsManager;

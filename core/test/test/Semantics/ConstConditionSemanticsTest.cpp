@@ -8,12 +8,11 @@ using namespace ::testing;
 class ConstConditionSemanticsTest : public SemanticsFixture
 {
 protected:
-    semantics::SemanticsManager semManager = semantics::SemanticsManager(&program);
-    std::unique_ptr<semantics::ConstConditionSemanticsRepository> constCondRepo;
+    std::unique_ptr<semantics::ConstConditionRepository> constCondRepo;
 
     void SetUp() override {
         IRcodeFixture::SetUp();
-        constCondRepo = std::make_unique<semantics::ConstConditionSemanticsRepository>(&program);
+        constCondRepo = std::make_unique<semantics::ConstConditionRepository>(&program);
     }
 
     ::testing::AssertionResult cmpConditions(ircode::Function* function, const std::string& expectedCode) const {

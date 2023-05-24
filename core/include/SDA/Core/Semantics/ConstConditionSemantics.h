@@ -12,7 +12,7 @@ namespace sda::semantics
         size_t value = 0;
     };
 
-    class ConstConditionSemanticsRepository
+    class ConstConditionRepository
     {
         struct Condition {
             std::shared_ptr<ircode::Variable> var;
@@ -27,22 +27,24 @@ namespace sda::semantics
 
         class IRcodeProgramCallbacks : public ircode::Program::Callbacks
         {
-            ConstConditionSemanticsRepository* m_repo;
+            ConstConditionRepository* m_repo;
 
-            void onBlockDecompiledImpl(ircode::Block* block) override {
-                if (auto condVar = std::dynamic_pointer_cast<ircode::Variable>(block->getCondition())) {
-                    auto op = condVar->getSourceOperation();
-                    if (op->getId() == ircode::OperationId::INT_EQUAL || op->getId() == ircode::OperationId::INT_NOTEQUAL) {
-                        if (auto binaryOp = dynamic_cast<const ircode::BinaryOperation*>(op)) {
-                            if (auto inputVar1 = std::dynamic_pointer_cast<ircode::Variable>(binaryOp->getInput1())) {
-                                if (auto inputVar2 = std::dynamic_pointer_cast<ircode::Constant>(binaryOp->getInput2())) {
-                                    auto value = inputVar2->getConstVarnode()->getValue();
-                                    m_repo->addCondition(block->getFunction(), {
-                                        inputVar1,
-                                        value,
-                                        block,
-                                        op->getId() == ircode::OperationId::INT_NOTEQUAL
-                                    });
+            void onFunctionDecompiledImpl(ircode::Function* function, std::list<ircode::Block*> blocks) override {
+                for (auto block : blocks) { 
+                    if (auto condVar = std::dynamic_pointer_cast<ircode::Variable>(block->getCondition())) {
+                        auto op = condVar->getSourceOperation();
+                        if (op->getId() == ircode::OperationId::INT_EQUAL || op->getId() == ircode::OperationId::INT_NOTEQUAL) {
+                            if (auto binaryOp = dynamic_cast<const ircode::BinaryOperation*>(op)) {
+                                if (auto inputVar1 = std::dynamic_pointer_cast<ircode::Variable>(binaryOp->getInput1())) {
+                                    if (auto inputVar2 = std::dynamic_pointer_cast<ircode::Constant>(binaryOp->getInput2())) {
+                                        auto value = inputVar2->getConstVarnode()->getValue();
+                                        m_repo->addCondition(function, {
+                                            inputVar1,
+                                            value,
+                                            block,
+                                            op->getId() == ircode::OperationId::INT_NOTEQUAL
+                                        });
+                                    }
                                 }
                             }
                         }
@@ -50,11 +52,11 @@ namespace sda::semantics
                 }
             }
         public:
-            IRcodeProgramCallbacks(ConstConditionSemanticsRepository* scope) : m_repo(scope) {}
+            IRcodeProgramCallbacks(ConstConditionRepository* repo) : m_repo(repo) {}
         };
         std::shared_ptr<IRcodeProgramCallbacks> m_ircodeProgramCallbacks;
     public:
-        ConstConditionSemanticsRepository(ircode::Program* program)
+        ConstConditionRepository(ircode::Program* program)
             : m_ircodeProgramCallbacks(std::make_shared<IRcodeProgramCallbacks>(this))
         {
             auto prevCallbacks = program->getCallbacks();

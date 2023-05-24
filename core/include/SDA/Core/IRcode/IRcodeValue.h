@@ -77,7 +77,7 @@ namespace sda::ircode
         Hash baseAddrHash = 0; // this hash can be different from the hash of the value!
         Offset offset = 0;
     };
-
+    
     class Variable : public Value
     {
         MemoryAddress m_memAddress;

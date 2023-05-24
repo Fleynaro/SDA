@@ -9,16 +9,16 @@ using namespace ::testing;
 class DataFlowSemanticsTest : public SemanticsFixture
 {
 protected:
-    semantics::SemanticsManager semManager = semantics::SemanticsManager(&program);
-    semantics::DataFlowSemanticsRepository* dataFlowRepo = nullptr;
+    std::unique_ptr<semantics::DataFlowRepository> dataFlowRepo;
+    std::unique_ptr<semantics::DataFlowCollector> dataFlowCollector;
 
     void SetUp() override {
         IRcodeFixture::SetUp();
-        auto dataFlowRepo = std::make_unique<semantics::DataFlowSemanticsRepository>(&semManager);
-        this->dataFlowRepo = dataFlowRepo.get();
-        semManager.addRepository(std::move(dataFlowRepo));
-        semManager.addPropagator(
-            std::make_unique<semantics::DataFlowSemanticsPropagator>(context->getPlatform(), this->dataFlowRepo));
+        dataFlowRepo = std::make_unique<semantics::DataFlowRepository>();
+        dataFlowCollector = std::make_unique<semantics::DataFlowCollector>(
+            &program,
+            context->getPlatform(),
+            dataFlowRepo.get());
     }
 
     ::testing::AssertionResult cmpDataFlow(ircode::Function* function, const std::string& expectedCode) const {
@@ -198,6 +198,41 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentObjectDouble) {
         var8 <- Copy var5 + 0x208 \n\
         var9 <- Write var8 \n\
         var9 <- Write var1 \
+    ";
+    auto function = parsePcode(sourcePCode, &program);
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+    ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
+}
+
+TEST_F(DataFlowSemanticsTest, If) {
+    auto sourcePCode = "\
+        rax:8 = COPY $10:8 \n\
+        $1:1 = INT_NOTEQUAL rcx:4, 5:4 \n\
+        CBRANCH <label>, $1:1 \n\
+        rax:8 = COPY $11:8 \n\
+        <label>: \n\
+        r10:8 = INT_2COMP rax:8 \
+    ";
+    auto expectedIRCode = "\
+        Block B0(level: 1, near: B3, far: B4): \n\
+            var1:8 = LOAD $U10 \n\
+            var2[rax]:8 = COPY var1 \n\
+            var3:4 = LOAD rcx \n\
+            var4[$U1]:1 = INT_NOTEQUAL var3, 0x5:4 \n\
+        Block B3(level: 2, near: B4): \n\
+            var5:8 = LOAD $U11 \n\
+            var6[rax]:8 = COPY var5 \n\
+        Block B4(level: 3): \n\
+            var7:8 = PHI var2, var6 \n\
+            var8[r10]:8 = INT_2COMP var7 \
+    ";
+    auto expectedDataFlow = "\
+        var1 <- Unknown \n\
+        var2 <- Copy var1 \n\
+        var5 <- Unknown \n\
+        var6 <- Copy var5 \n\
+        var7 <- Copy var2 \n\
+        var7 <- Copy var6 \
     ";
     auto function = parsePcode(sourcePCode, &program);
     ASSERT_TRUE(cmp(function, expectedIRCode));

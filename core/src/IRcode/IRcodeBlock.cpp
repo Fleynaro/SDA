@@ -100,11 +100,13 @@ void Block::passDescendants(std::function<void(Block* block, bool& goNextBlocks)
 void Block::update() {
     // clear all descendant blocks
     utils::BitSet clearedBlocks;
+    std::list<Block*> decompiledBlocks;
     passDescendants([&](Block* block, bool& goNextBlocks) {
         if (clearedBlocks.get(block->getIndex()))
             return;
         block->clear();
         clearedBlocks.set(block->getIndex(), true);
+        decompiledBlocks.push_back(block);
         goNextBlocks = true;
     });
 
@@ -121,6 +123,7 @@ void Block::update() {
             refVariable->setTargetVariable(foundTargetVariable);
         }
     }
+    m_function->getProgram()->getCallbacks()->onFunctionDecompiled(m_function, decompiledBlocks);
 }
 
 void Block::decompile(bool& goNextBlocks, DecompilationContext& ctx) {
@@ -147,7 +150,6 @@ void Block::decompile(bool& goNextBlocks, DecompilationContext& ctx) {
     m_hash = calcHash();
     m_dominantHash = actualDominantHash;
     goNextBlocks = true;
-    m_function->getProgram()->getCallbacks()->onBlockDecompiled(this);
 }
 
 Hash Block::calcHash() {
