@@ -39,6 +39,10 @@ void Printer::printBlock(Block* block, size_t level) {
         printToken(", far: ", SYMBOL);
         printToken(block->getFarNextBlock()->getName(), IDENTIFIER);
     }
+    if (block->getCondition()) {
+        printToken(", cond: ", SYMBOL);
+        printValue(block->getCondition().get());
+    }
     printToken("):", SYMBOL);
     startBlock();
     newLine();

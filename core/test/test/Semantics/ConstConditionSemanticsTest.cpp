@@ -56,7 +56,7 @@ TEST_F(ConstConditionSemanticsTest, IfElse) {
         r10:8 = INT_2COMP rax:8 \
     ";
     auto expectedIRCode = "\
-        Block B0(level: 1, near: B3, far: B5): \n\
+        Block B0(level: 1, near: B3, far: B5, cond: var3): \n\
             var1[rax]:8 = COPY 0x0:8 \n\
             var2:4 = LOAD rcx \n\
             var3[$U1]:1 = INT_EQUAL var2, 0x5:4 \n\
@@ -91,11 +91,11 @@ TEST_F(ConstConditionSemanticsTest, NestedIf) {
         r10:8 = INT_2COMP rax:8 \
     ";
     auto expectedIRCode = "\
-        Block B0(level: 1, near: B3, far: B6): \n\
+        Block B0(level: 1, near: B3, far: B6, cond: var3): \n\
             var1[rax]:8 = COPY 0x0:8 \n\
             var2:4 = LOAD rcx \n\
             var3[$U1]:1 = INT_NOTEQUAL var2, 0x5:4 \n\
-        Block B3(level: 2, near: B5, far: B6): \n\
+        Block B3(level: 2, near: B5, far: B6, cond: var5): \n\
             var4:4 = LOAD rdx \n\
             var5[$U2]:1 = INT_NOTEQUAL var4, 0x7:4 \n\
         Block B5(level: 3, near: B6): \n\

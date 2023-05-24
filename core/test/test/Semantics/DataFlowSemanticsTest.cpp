@@ -214,7 +214,7 @@ TEST_F(DataFlowSemanticsTest, If) {
         r10:8 = INT_2COMP rax:8 \
     ";
     auto expectedIRCode = "\
-        Block B0(level: 1, near: B3, far: B4): \n\
+        Block B0(level: 1, near: B3, far: B4, cond: var4): \n\
             var1:8 = LOAD $U10 \n\
             var2[rax]:8 = COPY var1 \n\
             var3:4 = LOAD rcx \n\
