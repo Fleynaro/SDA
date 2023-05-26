@@ -75,7 +75,7 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignment) {
             var1:8 = LOAD rip \n\
             var2[r10]:8 = INT_ADD var1, 0x10:8 \n\
             var3:4 = LOAD xmm0 \n\
-            var4[var1 + 16]:4 = COPY var3 \n\
+            var4[var2]:4 = COPY var3 \n\
             var5:8 = LOAD var2 \n\
             var6[rax]:8 = COPY var5 \
     ";
@@ -106,10 +106,10 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentDouble) {
             var1:8 = LOAD rip \n\
             var2[r10]:8 = INT_ADD var1, 0x10:8 \n\
             var3:4 = LOAD xmm0 \n\
-            var4[var1 + 16]:4 = COPY var3 \n\
+            var4[var2]:4 = COPY var3 \n\
             var5[r10]:8 = INT_ADD var1, 0x18:8 \n\
             var6:4 = LOAD xmm1 \n\
-            var7[var1 + 24]:4 = COPY var6 \n\
+            var7[var5]:4 = COPY var6 \n\
             var8:8 = LOAD var5 \n\
             var9[rax]:8 = COPY var8 \
     ";
@@ -143,10 +143,10 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentObject) {
             var1:8 = LOAD rcx \n\
             var2[r10]:8 = INT_ADD var1, 0x10:8 \n\
             var3:4 = LOAD xmm1 \n\
-            var4[var1 + 16]:4 = COPY var3 \n\
+            var4[var2]:4 = COPY var3 \n\
             var5:8 = LOAD rip \n\
             var6[r10]:8 = INT_ADD var5, 0x200:8 \n\
-            var7[var5 + 512]:8 = COPY var1 \
+            var7[var6]:8 = COPY var1 \
     ";
     auto expectedDataFlow = "\
         var1 <- Unknown \n\
@@ -178,12 +178,12 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentObjectDouble) {
             var1:8 = LOAD rcx \n\
             var2[r10]:8 = INT_ADD var1, 0x10:8 \n\
             var3:4 = LOAD xmm1 \n\
-            var4[var1 + 16]:4 = COPY var3 \n\
+            var4[var2]:4 = COPY var3 \n\
             var5:8 = LOAD rip \n\
             var6[r10]:8 = INT_ADD var5, 0x200:8 \n\
-            var7[var5 + 512]:8 = COPY var1 \n\
+            var7[var6]:8 = COPY var1 \n\
             var8[r10]:8 = INT_ADD var5, 0x208:8 \n\
-            var9[var5 + 520]:8 = COPY var1 \
+            var9[var8]:8 = COPY var1 \
     ";
     auto expectedDataFlow = "\
         var1 <- Unknown \n\
@@ -223,8 +223,10 @@ TEST_F(DataFlowSemanticsTest, If) {
             var5:8 = LOAD $U11 \n\
             var6[rax]:8 = COPY var5 \n\
         Block B4(level: 3): \n\
-            var7:8 = PHI var2, var6 \n\
-            var8[r10]:8 = INT_2COMP var7 \
+            var7:8 = REF var2 \n\
+            var8:8 = REF var6 \n\
+            var9:8 = PHI var7, var8 \n\
+            var10[r10]:8 = INT_2COMP var9 \
     ";
     auto expectedDataFlow = "\
         var1 <- Unknown \n\
@@ -232,7 +234,9 @@ TEST_F(DataFlowSemanticsTest, If) {
         var5 <- Unknown \n\
         var6 <- Copy var5 \n\
         var7 <- Copy var2 \n\
-        var7 <- Copy var6 \
+        var8 <- Copy var6 \n\
+        var9 <- Copy var7 \n\
+        var9 <- Copy var8 \
     ";
     auto function = parsePcode(sourcePCode, &program);
     ASSERT_TRUE(cmp(function, expectedIRCode));

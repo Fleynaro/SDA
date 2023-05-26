@@ -1,4 +1,5 @@
 #include "SDA/Core/IRcode/IRcodeValue.h"
+#include "SDA/Core/IRcode/IRcodeOperation.h"
 #include "SDA/Core/DataType/PointerDataType.h"
 #include "SDA/Core/DataType/StructureDataType.h"
 
@@ -19,6 +20,10 @@ std::list<Operation*> Value::getOperations() const {
 
 void Value::addOperation(Operation* operation) {
     m_operations.push_back(operation);
+}
+
+void Value::removeOperation(Operation* operation) {
+    m_operations.remove(operation);
 }
 
 const LinearExpression& Value::getLinearExpr() const {
@@ -88,42 +93,25 @@ Operation* Variable::getSourceOperation() const {
     return m_operations.empty() ? nullptr : m_operations.front();
 }
 
+std::list<RefOperation*> Variable::getRefOperations() const {
+    std::list<RefOperation*> refOperations;
+    auto srcOp = getSourceOperation();
+    for (auto operation : m_operations) {
+        // ignore source operation
+        if (operation == srcOp) {
+            continue;
+        }
+        if (auto refOperation = dynamic_cast<RefOperation*>(operation)) {
+            refOperations.push_back(refOperation);
+        }
+    }
+    return refOperations;
+}
+
 const MemoryAddress& Variable::getMemAddress() const {
     return m_memAddress;
 }
 
 size_t Variable::getSize() const {
     return m_size;
-}
-
-RefVariable::RefVariable(std::shared_ptr<Variable> refVariable, const Reference& reference)
-    : Variable(refVariable->getId(), refVariable->getMemAddress(), 0, refVariable->getSize())
-    , m_reference(reference)
-{
-    setLinearExpr(refVariable->getLinearExpr());
-    calcHash();
-}
-
-std::list<Operation*> RefVariable::getOperations() const {
-    return getTargetVariable() ? getTargetVariable()->getOperations() : std::list<Operation*>();
-}
-
-const RefVariable::Reference& RefVariable::getReference() const {
-    return m_reference;
-}
-
-void RefVariable::setTargetVariable(std::shared_ptr<Variable> variable) {
-    m_targetVariable = variable;
-    m_id = variable->getId();
-}
-
-std::shared_ptr<Variable> RefVariable::getTargetVariable() const {
-    return m_targetVariable;
-}
-
-void RefVariable::calcHash() {
-    boost::hash_combine(m_hash, m_reference.block);
-    boost::hash_combine(m_hash, m_reference.baseAddrHash);
-    boost::hash_combine(m_hash, m_reference.offset);
-    boost::hash_combine(m_hash, m_reference.size);
 }

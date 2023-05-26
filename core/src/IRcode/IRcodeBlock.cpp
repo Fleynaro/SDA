@@ -109,24 +109,14 @@ void Block::update() {
         decompiledBlocks.push_back(block);
         goNextBlocks = true;
     });
-
     // decompile all descendant blocks
-    DecompilationContext decCtx;
     passDescendants([&](Block* block, bool& goNextBlocks) {
-        block->decompile(goNextBlocks, decCtx);
+        block->decompile(goNextBlocks);
     });
-    // set target variables for all generated ref variables directly
-    for (auto& [_, genRefVariables] : decCtx.genRefVariables) {
-        for (auto refVariable : genRefVariables) {
-            auto& reference = refVariable->getReference();
-            auto foundTargetVariable = reference.block->getMemorySpace()->findVariable(reference);
-            refVariable->setTargetVariable(foundTargetVariable);
-        }
-    }
     m_function->getProgram()->getCallbacks()->onFunctionDecompiled(m_function, decompiledBlocks);
 }
 
-void Block::decompile(bool& goNextBlocks, DecompilationContext& ctx) {
+void Block::decompile(bool& goNextBlocks) {
     // if parent blocks have been changed, decompile this block again
     // "changes" can be checked by dominant hash
     auto actualDominantHash = calcDominantHash();
@@ -143,11 +133,7 @@ void Block::decompile(bool& goNextBlocks, DecompilationContext& ctx) {
     for (auto& [offset, instruction] : instructions) {
         ircodeGen.ingestPcode(instruction);
     }
-    m_memSpace = std::move(tempBlock.m_memSpace);
-    m_operations = std::move(tempBlock.m_operations);
-    m_condition = std::move(tempBlock.m_condition);
-    ctx.genRefVariables[this] = ircodeGen.getGeneratedRefVariables();
-    m_hash = calcHash();
+    replaceWith(&tempBlock);
     m_dominantHash = actualDominantHash;
     goNextBlocks = true;
 }
@@ -183,4 +169,37 @@ size_t Block::getNextVarId() {
 void Block::clearVarIds() {
     m_function->m_varIds = m_function->m_varIds & ~m_varIds;
     m_varIds.clear();
+}
+
+void Block::replaceWith(Block* block) {
+    // gather all related ref operations
+    std::list<RefOperation*> refOperations;
+    for (auto& oldOp : m_operations) {
+        for (auto refOp : oldOp->getOutput()->getRefOperations()) {
+            // ignore ref operations that are in the current block as they will be replaced
+            bool isFound = false;
+            for (auto& oldOp2 : m_operations) {
+                if (refOp == oldOp2.get()) {
+                    isFound = true;
+                    break;
+                }
+            }
+            if (!isFound) {
+                refOp->clear();
+                refOperations.push_back(refOp);
+            }
+        }
+    }
+    // replace data
+    m_memSpace = std::move(block->m_memSpace);
+    m_operations = std::move(block->m_operations);
+    m_condition = std::move(block->m_condition);
+    m_hash = calcHash();
+    // update ref operations
+    for (auto refOp : refOperations) {
+        auto& reference = refOp->getReference();
+        auto foundTargetVariable = reference.block->getMemorySpace()->findVariable(reference);
+        assert(foundTargetVariable);
+        refOp->setTargetVariable(foundTargetVariable);
+    }
 }

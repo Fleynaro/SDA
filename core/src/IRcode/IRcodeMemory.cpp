@@ -12,7 +12,7 @@ MemorySubspace* MemorySpace::getSubspace(ircode::Hash baseAddrHash) {
     return &it->second;
 }
 
-std::shared_ptr<Variable> MemorySpace::findVariable(const RefVariable::Reference& reference) {
+std::shared_ptr<Variable> MemorySpace::findVariable(const RefOperation::Reference& reference) {
     auto it = m_subspaces.find(reference.baseAddrHash);
     if (it == m_subspaces.end()) {
         return nullptr;

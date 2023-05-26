@@ -52,12 +52,7 @@ namespace sda::ircode
         void update();
 
     private:
-        struct DecompilationContext {
-            using RefVariableSet = std::set<std::shared_ptr<RefVariable>>;
-            std::map<Block*, RefVariableSet> genRefVariables;
-        };
-
-        void decompile(bool& goNextBlocks, DecompilationContext& ctx);
+        void decompile(bool& goNextBlocks);
 
         Hash calcHash();
 
@@ -66,5 +61,7 @@ namespace sda::ircode
         size_t getNextVarId();
 
         void clearVarIds();
+
+        void replaceWith(Block* block);
     };
 };

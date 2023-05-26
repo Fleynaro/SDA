@@ -15,6 +15,13 @@ Operation::Operation(
     }
 }
 
+Operation::~Operation() {
+    m_output->removeOperation(this);
+    if (auto memAddrValue = m_output->getMemAddress().value) {
+        memAddrValue->removeOperation(this);
+    }
+}
+
 OperationId Operation::getId() const {
     return m_id;
 }
@@ -53,6 +60,10 @@ UnaryOperation::UnaryOperation(
     m_input->addOperation(this);
 }
 
+UnaryOperation::~UnaryOperation() {
+    m_input->removeOperation(this);
+}
+
 Hash UnaryOperation::getHash() const {
     Hash hash = 0;
     boost::hash_combine(hash, getInput()->getHash());
@@ -77,6 +88,11 @@ BinaryOperation::BinaryOperation(
     m_input2->addOperation(this);
 }
 
+BinaryOperation::~BinaryOperation() {
+    m_input1->removeOperation(this);
+    m_input2->removeOperation(this);
+}
+
 Hash BinaryOperation::getHash() const {
     Hash hash = 0;
     boost::hash_combine(hash, getInput1()->getHash());
@@ -91,6 +107,49 @@ std::shared_ptr<Value> BinaryOperation::getInput1() const {
 
 std::shared_ptr<Value> BinaryOperation::getInput2() const {
     return m_input2;
+}
+
+Hash RefOperation::Reference::getHash() const {
+    Hash hash = 0;
+    boost::hash_combine(hash, block);
+    boost::hash_combine(hash, baseAddrHash);
+    boost::hash_combine(hash, offset);
+    boost::hash_combine(hash, size);
+    return hash;
+}
+
+RefOperation::RefOperation(
+    const RefOperation::Reference& reference,
+    std::shared_ptr<Variable> input,
+    std::shared_ptr<Variable> output)
+    : UnaryOperation(OperationId::REF, input, output)
+    , m_reference(reference)
+{
+    output->setLinearExpr(input->getLinearExpr());
+}
+
+Hash RefOperation::getHash() const {
+    return m_reference.getHash();
+}
+
+const RefOperation::Reference& RefOperation::getReference() const {
+    return m_reference;
+}
+
+void RefOperation::setTargetVariable(std::shared_ptr<Variable> variable) {
+    m_input = variable;
+    variable->addOperation(this);
+    getOutput()->setLinearExpr(m_input->getLinearExpr());
+}
+
+std::shared_ptr<Variable> RefOperation::getTargetVariable() const {
+    return std::dynamic_pointer_cast<Variable>(m_input);
+}
+
+void RefOperation::clear() {
+    getOutput()->setLinearExpr({});
+    m_input->removeOperation(this);
+    m_input = nullptr;
 }
 
 ExtractOperation::ExtractOperation(

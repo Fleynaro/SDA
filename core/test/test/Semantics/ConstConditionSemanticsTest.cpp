@@ -65,8 +65,10 @@ TEST_F(ConstConditionSemanticsTest, IfElse) {
         Block B5(level: 2, near: B6): \n\
             var5[rax]:8 = COPY 0x2:8 \n\
         Block B6(level: 3): \n\
-            var6:8 = PHI var4, var5 \n\
-            var7[r10]:8 = INT_2COMP var6 \
+            var6:8 = REF var4 \n\
+            var7:8 = REF var5 \n\
+            var8:8 = PHI var6, var7 \n\
+            var9[r10]:8 = INT_2COMP var8 \
     ";
     auto expectedConditions = "\
         Block B3: \n\
@@ -101,8 +103,10 @@ TEST_F(ConstConditionSemanticsTest, NestedIf) {
         Block B5(level: 3, near: B6): \n\
             var6[rax]:8 = COPY 0x1:8 \n\
         Block B6(level: 4): \n\
-            var7:8 = PHI var1, var6 \n\
-            var8[r10]:8 = INT_2COMP var7 \
+            var7:8 = REF var1 \n\
+            var8:8 = REF var6 \n\
+            var9:8 = PHI var7, var8 \n\
+            var10[r10]:8 = INT_2COMP var9 \
     ";
     auto expectedConditions = "\
         Block B3: \n\

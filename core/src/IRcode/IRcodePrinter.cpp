@@ -129,7 +129,7 @@ void Printer::printValue(const Value* value, bool extended) const {
             auto memAddressValue = varValue->getMemAddress().value;
             if (memAddressValue) {
                 printToken("[", SYMBOL);
-                printLinearExpr(&memAddressValue->getLinearExpr());
+                printValue(memAddressValue.get());
                 printToken("]", SYMBOL);
             }
             printToken(":", SYMBOL);

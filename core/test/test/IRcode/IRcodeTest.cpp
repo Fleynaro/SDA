@@ -35,9 +35,10 @@ TEST_F(IRcodeTest, SimpleConcat) {
             var1[rax]:8 = COPY 0x2100:8 \n\
         Block B2(level: 2): \n\
             var2[rax]:1 = COPY 0x34:1 \n\
-            var3[rax]:2 = EXTRACT var1, 0 \n\
-            var4:2 = CONCAT var3, var2, 0 \n\
-            var5[r10]:2 = INT_2COMP var4 \
+            var3:8 = REF var1 \n\
+            var4:2 = EXTRACT var3, 0 \n\
+            var5:2 = CONCAT var4, var2, 0 \n\
+            var6[r10]:2 = INT_2COMP var5 \
     ";
     auto function = parsePcode(sourcePCode, &program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
@@ -63,8 +64,10 @@ TEST_F(IRcodeTest, IfElseCondition) {
         Block B4(level: 2, near: B5): \n\
             empty \n\
         Block B5(level: 3): \n\
-            var3:8 = PHI var2, var1 \n\
-            var4[r10]:8 = INT_2COMP var3 \
+            var3:8 = REF var2 \n\
+            var4:8 = REF var1 \n\
+            var5:8 = PHI var3, var4 \n\
+            var6[r10]:8 = INT_2COMP var5 \
     ";
     auto function = parsePcode(sourcePCode, &program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
@@ -87,14 +90,18 @@ TEST_F(IRcodeTest, IfElseConditionMem) {
         Block B0(level: 1, near: B3, far: B5, cond: 0x0:1): \n\
             var1:8 = LOAD rsp \n\
             var2[rax]:8 = INT_ADD var1, 0x10:8 \n\
-            var3[var1 + 16]:8 = COPY 0x0:8 \n\
+            var3[var2]:8 = COPY 0x0:8 \n\
         Block B3(level: 2, far: B6): \n\
-            var4[var1 + 16]:8 = COPY 0x1:8 \n\
+            var4:8 = REF var2 \n\
+            var5[var4]:8 = COPY 0x1:8 \n\
         Block B5(level: 2, near: B6): \n\
             empty \n\
         Block B6(level: 3): \n\
-            var5:8 = PHI var4, var3 \n\
-            var6[r10]:8 = COPY var5 \
+            var6:8 = REF var2 \n\
+            var7:8 = REF var5 \n\
+            var8:8 = REF var3 \n\
+            var9:8 = PHI var7, var8 \n\
+            var10[r10]:8 = COPY var9 \
     ";
     auto function = parsePcode(sourcePCode, &program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
@@ -118,13 +125,15 @@ TEST_F(IRcodeTest, IfElseConditionAlAh) {
         Block B2(level: 2, far: B5): \n\
             var1[rax]:1 = COPY 0x1:1 \n\
         Block B4(level: 2, near: B5): \n\
-            var2[rax + 1]:1 = COPY 0x2:1 \n\
+            var2[rax]:1 = COPY 0x2:1 \n\
         Block B5(level: 3): \n\
-            var3:2 = LOAD rax \n\
-            var4:2 = CONCAT var3, var1, 0 \n\
-            var5:2 = CONCAT var3, var2, 1 \n\
-            var6:2 = PHI var4, var5 \n\
-            var7[r10]:2 = INT_2COMP var6 \
+            var3:1 = REF var1 \n\
+            var4:1 = REF var2 \n\
+            var5:2 = LOAD rax \n\
+            var6:2 = CONCAT var5, var3, 0 \n\
+            var7:2 = CONCAT var5, var4, 1 \n\
+            var8:2 = PHI var6, var7 \n\
+            var9[r10]:2 = INT_2COMP var8 \
     ";
     auto function = parsePcode(sourcePCode, &program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
@@ -161,33 +170,49 @@ TEST_F(IRcodeTest, IfElseConditionXmm) {
     auto expectedIRCode = "\
         Block B0(level: 1, near: B5, far: Ba, cond: 0x0:1): \n\
             var1[xmm0]:4 = COPY 0x1:4 \n\
-            var2[xmm0 + 4]:4 = COPY 0x2:4 \n\
-            var3[xmm0 + 8]:4 = COPY 0x3:4 \n\
-            var4[xmm0 + 12]:4 = COPY 0x4:4 \n\
+            var2[xmm0]:4 = COPY 0x2:4 \n\
+            var3[xmm0]:4 = COPY 0x3:4 \n\
+            var4[xmm0]:4 = COPY 0x4:4 \n\
         Block B5(level: 2, far: Be): \n\
-            var5[xmm0]:4 = INT_ADD var1, 0x1:4 \n\
-            var6[xmm0 + 4]:4 = INT_ADD var2, 0x2:4 \n\
-            var7[xmm0 + 8]:4 = INT_ADD var3, 0x3:4 \n\
-            var8[xmm0 + 12]:4 = INT_ADD var4, 0x4:4 \n\
+            var5:4 = REF var1 \n\
+            var6[xmm0]:4 = INT_ADD var5, 0x1:4 \n\
+            var7:4 = REF var2 \n\
+            var8[xmm0]:4 = INT_ADD var7, 0x2:4 \n\
+            var9:4 = REF var3 \n\
+            var10[xmm0]:4 = INT_ADD var9, 0x3:4 \n\
+            var11:4 = REF var4 \n\
+            var12[xmm0]:4 = INT_ADD var11, 0x4:4 \n\
         Block Ba(level: 2, near: Be): \n\
-            var9[xmm0]:4 = INT_SUB var1, 0x1:4 \n\
-            var10[xmm0 + 4]:4 = INT_SUB var2, 0x2:4 \n\
-            var11[xmm0 + 8]:4 = INT_SUB var3, 0x3:4 \n\
-            var12[xmm0 + 12]:4 = INT_SUB var4, 0x4:4 \n\
+            var13:4 = REF var1 \n\
+            var14[xmm0]:4 = INT_SUB var13, 0x1:4 \n\
+            var15:4 = REF var2 \n\
+            var16[xmm0]:4 = INT_SUB var15, 0x2:4 \n\
+            var17:4 = REF var3 \n\
+            var18[xmm0]:4 = INT_SUB var17, 0x3:4 \n\
+            var19:4 = REF var4 \n\
+            var20[xmm0]:4 = INT_SUB var19, 0x4:4 \n\
         Block Be(level: 3): \n\
-            var13:8 = LOAD rsp \n\
-            var14[rax]:8 = INT_ADD var13, 0x0:8 \n\
-            var15:4 = PHI var5, var9 \n\
-            var16[var13]:4 = COPY var15 \n\
-            var17[rax]:8 = INT_ADD var13, 0x4:8 \n\
-            var18:4 = PHI var6, var10 \n\
-            var19[var13 + 4]:4 = COPY var18 \n\
-            var20[rax]:8 = INT_ADD var13, 0x8:8 \n\
-            var21:4 = PHI var7, var11 \n\
-            var22[var13 + 8]:4 = COPY var21 \n\
-            var23[rax]:8 = INT_ADD var13, 0xc:8 \n\
-            var24:4 = PHI var8, var12 \n\
-            var25[var13 + 12]:4 = COPY var24 \
+            var21:8 = LOAD rsp \n\
+            var22[rax]:8 = INT_ADD var21, 0x0:8 \n\
+            var23:4 = REF var6 \n\
+            var24:4 = REF var14 \n\
+            var25:4 = PHI var23, var24 \n\
+            var26[var22]:4 = COPY var25 \n\
+            var27[rax]:8 = INT_ADD var21, 0x4:8 \n\
+            var28:4 = REF var8 \n\
+            var29:4 = REF var16 \n\
+            var30:4 = PHI var28, var29 \n\
+            var31[var27]:4 = COPY var30 \n\
+            var32[rax]:8 = INT_ADD var21, 0x8:8 \n\
+            var33:4 = REF var10 \n\
+            var34:4 = REF var18 \n\
+            var35:4 = PHI var33, var34 \n\
+            var36[var32]:4 = COPY var35 \n\
+            var37[rax]:8 = INT_ADD var21, 0xc:8 \n\
+            var38:4 = REF var12 \n\
+            var39:4 = REF var20 \n\
+            var40:4 = PHI var38, var39 \n\
+            var41[var37]:4 = COPY var40 \
     ";
     auto function = parsePcode(sourcePCode, &program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
@@ -222,7 +247,8 @@ TEST_F(IRcodeTest, MultipleParentBlocksNoPhi) {
         Block B6(level: 3, far: B9): \n\
             empty \n\
         Block B9(level: 4): \n\
-            var2[r10]:8 = INT_2COMP var1 \
+            var2:8 = REF var1 \n\
+            var3[r10]:8 = INT_2COMP var2 \
     ";
     auto function = parsePcode(sourcePCode, &program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
@@ -257,9 +283,12 @@ TEST_F(IRcodeTest, MultipleParentBlocksDoublePhi) {
         Block B6(level: 3, far: B9): \n\
             empty \n\
         Block B9(level: 4): \n\
-            var4:8 = PHI var3, var2 \n\
-            var5:8 = PHI var4, var1 \n\
-            var6[r10]:8 = INT_2COMP var5 \
+            var4:8 = REF var3 \n\
+            var5:8 = REF var2 \n\
+            var6:8 = PHI var4, var5 \n\
+            var7:8 = REF var1 \n\
+            var8:8 = PHI var6, var7 \n\
+            var9[r10]:8 = INT_2COMP var8 \
     ";
     auto function = parsePcode(sourcePCode, &program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
@@ -277,8 +306,10 @@ TEST_F(IRcodeTest, Loop) {
         Block B0(level: 1, near: B1): \n\
             var1[rax]:4 = COPY 0x1:4 \n\
         Block B1(level: 2, far: B1): \n\
-            var2:4 = PHI var1, var3 \n\
-            var3[rax]:4 = INT_ADD var2, 0x1:4 \
+            var2:4 = REF var1 \n\
+            var3:4 = REF var5 \n\
+            var4:4 = PHI var2, var3 \n\
+            var5[rax]:4 = INT_ADD var4, 0x1:4 \
     ";
     auto function = parsePcode(sourcePCode, &program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
@@ -301,12 +332,18 @@ TEST_F(IRcodeTest, LoopTwoVariable) {
             var1[rax]:4 = COPY 0x1:4 \n\
             var2[rcx]:4 = COPY 0x1:4 \n\
         Block B2(level: 2, far: B4): \n\
-            var3:4 = PHI var1, var7 \n\
-            var6:4 = PHI var2, var5 \n\
-            var7[rax]:4 = INT_ADD var3, var6 \n\
+            var3:4 = REF var1 \n\
+            var4:4 = REF var13 \n\
+            var5:4 = PHI var3, var4 \n\
+            var10:4 = REF var2 \n\
+            var11:4 = REF var9 \n\
+            var12:4 = PHI var10, var11 \n\
+            var13[rax]:4 = INT_ADD var5, var12 \n\
         Block B4(level: 3, far: B2): \n\
-            var4:4 = PHI var2, var5 \n\
-            var5[rcx]:4 = INT_ADD var4, 0x1:4 \
+            var6:4 = REF var2 \n\
+            var7:4 = REF var9 \n\
+            var8:4 = PHI var6, var7 \n\
+            var9[rcx]:4 = INT_ADD var8, 0x1:4 \
     ";
     auto function = parsePcode(sourcePCode, &program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
@@ -326,11 +363,15 @@ TEST_F(IRcodeTest, NestedLoop) {
         Block B0(level: 1, near: B1): \n\
             var1[rax]:4 = COPY 0x1:4 \n\
         Block B1(level: 2, near: B3, far: B1, cond: 0x0:1): \n\
-            var2:4 = PHI var1, var4 \n\
-            var3:4 = PHI var2, var5 \n\
-            var4[rax]:4 = INT_ADD var3, 0x1:4 \n\
+            var2:4 = REF var1 \n\
+            var3:4 = REF var7 \n\
+            var4:4 = PHI var2, var3 \n\
+            var5:4 = REF var9 \n\
+            var6:4 = PHI var4, var5 \n\
+            var7[rax]:4 = INT_ADD var6, 0x1:4 \n\
         Block B3(level: 3, far: B1): \n\
-            var5[rax]:4 = INT_MULT var4, 0x2:4 \
+            var8:4 = REF var7 \n\
+            var9[rax]:4 = INT_MULT var8, 0x2:4 \
     ";
     auto function = parsePcode(sourcePCode, &program);
     ASSERT_TRUE(cmp(function, expectedIRCode));

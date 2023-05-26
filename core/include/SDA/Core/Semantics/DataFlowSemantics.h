@@ -129,7 +129,7 @@ namespace sda::semantics
                         }
                     }
                 }
-                else if (unaryOp->getId() == ircode::OperationId::COPY) {
+                else if (unaryOp->getId() == ircode::OperationId::COPY || unaryOp->getId() == ircode::OperationId::REF) {
                     if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
                         if (auto inputNode = m_dataFlowRepo->getOrCreateNode(inputVar)) {
                             auto outputAddrVal = output->getMemAddress().value;

@@ -11,6 +11,7 @@ namespace sda::ircode
 {
     class Block;
     class Operation;
+    class RefOperation;
     using Hash = size_t;
 
     class Value
@@ -38,6 +39,8 @@ namespace sda::ircode
         virtual std::list<Operation*> getOperations() const;
 
         void addOperation(Operation* operation);
+
+        void removeOperation(Operation* operation);
 
         const LinearExpression& getLinearExpr() const;
 
@@ -95,35 +98,10 @@ namespace sda::ircode
 
         Operation* getSourceOperation() const;
 
+        std::list<RefOperation*> getRefOperations() const;
+
         const MemoryAddress& getMemAddress() const;
 
         size_t getSize() const override;
-    };
-
-    class RefVariable : public Variable
-    {
-    public:
-        struct Reference {
-            Block* block;
-            Hash baseAddrHash;
-            Offset offset;
-            size_t size;
-        };
-    private:
-        Reference m_reference;
-        std::shared_ptr<Variable> m_targetVariable;
-    public:
-        RefVariable(std::shared_ptr<Variable> refVariable, const Reference& reference);
-
-        std::list<Operation*> getOperations() const;
-
-        const Reference& getReference() const;
-
-        void setTargetVariable(std::shared_ptr<Variable> variable);
-
-        std::shared_ptr<Variable> getTargetVariable() const;
-
-    private:
-        void calcHash();
     };
 };

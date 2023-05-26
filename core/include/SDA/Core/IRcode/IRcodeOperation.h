@@ -15,6 +15,7 @@ namespace sda::ircode
 		// Data Moving
 		COPY,
 		LOAD,
+		REF,
 
 		// Arithmetic
 		INT_ADD,
@@ -87,7 +88,7 @@ namespace sda::ircode
 			OperationId id,
 			std::shared_ptr<Variable> output);
 
-		virtual ~Operation() = default;
+		virtual ~Operation();
 
 		virtual Hash getHash() const = 0;
 
@@ -108,12 +109,15 @@ namespace sda::ircode
 
 	class UnaryOperation : public Operation
 	{
+	protected:
 		std::shared_ptr<Value> m_input;
 	public:
 		UnaryOperation(
 			OperationId id,
 			std::shared_ptr<Value> input,
 			std::shared_ptr<Variable> output);
+
+		~UnaryOperation() override;
 
 		Hash getHash() const override;
 
@@ -122,6 +126,7 @@ namespace sda::ircode
 
 	class BinaryOperation : public Operation
 	{
+	protected:
 		std::shared_ptr<Value> m_input1;
 		std::shared_ptr<Value> m_input2;
 	public:
@@ -131,11 +136,42 @@ namespace sda::ircode
 			std::shared_ptr<Value> input2,
 			std::shared_ptr<Variable> output);
 
+		~BinaryOperation() override;
+
 		Hash getHash() const override;
 
 		std::shared_ptr<Value> getInput1() const;
 
 		std::shared_ptr<Value> getInput2() const;
+	};
+
+	class RefOperation : public UnaryOperation
+	{
+	public:
+		struct Reference {
+            Block* block;
+            Hash baseAddrHash;
+            Offset offset;
+            size_t size;
+
+			Hash getHash() const;
+        };
+		Reference m_reference;
+	public:
+		RefOperation(
+			const Reference& reference,
+			std::shared_ptr<Variable> input,
+			std::shared_ptr<Variable> output);
+
+		Hash getHash() const override;
+
+		const Reference& getReference() const;
+
+        void setTargetVariable(std::shared_ptr<Variable> variable);
+
+        std::shared_ptr<Variable> getTargetVariable() const;
+
+		void clear();
 	};
 
 	class ExtractOperation : public UnaryOperation

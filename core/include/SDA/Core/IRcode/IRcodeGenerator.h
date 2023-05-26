@@ -13,7 +13,6 @@ namespace sda::ircode
         const pcode::Instruction* m_curInstr = nullptr;
         std::set<std::shared_ptr<ircode::Variable>> m_overwrittenVariables;
         std::list<ircode::Operation*> m_genOperations;
-        std::set<std::shared_ptr<RefVariable>> m_genRefVariables;
     public:
         IRcodeGenerator(
             Block* block,
@@ -24,10 +23,8 @@ namespace sda::ircode
 
         const std::list<ircode::Operation*>& getGeneratedOperations() const;
 
-        const std::set<std::shared_ptr<RefVariable>>& getGeneratedRefVariables() const;
-
     private:
-        void genWriteMemory(MemorySubspace* memSpace, std::shared_ptr<ircode::Variable> variable);
+        void genWriteMemory(MemorySubspace* memSpace, std::shared_ptr<ircode::Variable> variable, bool blockScope = false);
 
         struct VariableReadInfo {
             std::shared_ptr<ircode::Variable> variable;
@@ -41,8 +38,7 @@ namespace sda::ircode
 
         std::list<VariableReadInfo> genReadMemory(
             Block* block,
-            Hash baseAddrHash,
-            Offset readOffset,
+            const MemoryAddress& memAddr,
             size_t readSize,
             utils::BitMask& readMask);
 
@@ -62,7 +58,7 @@ namespace sda::ircode
         std::shared_ptr<ircode::Variable> genLoadBackgroundValue(BlockReadContext& ctx);
 
         std::list<VariableReadInfo> genReadMemory(
-            const MemoryAddress& memAddr,
+            const MemoryAddress& readMemAddr,
             size_t readSize,
             utils::BitMask& readMask);
 

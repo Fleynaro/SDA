@@ -131,10 +131,7 @@ void IRcodeGenerator::ingestPcode(const pcode::Instruction* instr) {
                 // memory value copying (RAX:4 = LOAD [RCX:8 + 0x10:8])
 
                 // get source address value ([RCX:8 + 0x10:8])
-                std::shared_ptr<ircode::Value> addrValue;
-                if (auto input0 = instr->getInput0()) {
-                    addrValue = genReadVarnode(input0);
-                }
+                auto addrValue = genReadVarnode(instr->getInput0());
 
                 // parse source address value into base and offset (RCX:8 and 0x10:8)
                 auto memAddr = getMemoryAddress(addrValue);
@@ -174,11 +171,7 @@ const std::list<ircode::Operation*>& IRcodeGenerator::getGeneratedOperations() c
     return m_genOperations;
 }
 
-const std::set<std::shared_ptr<ircode::RefVariable>>& IRcodeGenerator::getGeneratedRefVariables() const {
-    return m_genRefVariables;
-}
-
-void IRcodeGenerator::genWriteMemory(MemorySubspace* memSpace, std::shared_ptr<ircode::Variable> newVariable) {
+void IRcodeGenerator::genWriteMemory(MemorySubspace* memSpace, std::shared_ptr<ircode::Variable> newVariable, bool blockScope) {
     auto& variables = memSpace->variables;
     auto newVarOffset = newVariable->getMemAddress().offset;
     auto newVarSize = newVariable->getSize();
@@ -196,6 +189,7 @@ void IRcodeGenerator::genWriteMemory(MemorySubspace* memSpace, std::shared_ptr<i
 
         // check full intersection
         if (varOffset >= newVarOffset && varOffset + varSize <= newVarOffset + newVarSize) {
+            memSpace->blockScopedVars.erase(*it);
             it = variables.erase(it);
         } else {
             ++it;
@@ -203,19 +197,27 @@ void IRcodeGenerator::genWriteMemory(MemorySubspace* memSpace, std::shared_ptr<i
     }
 
     memSpace->variables.push_front(newVariable);
+    if (blockScope) {
+        memSpace->blockScopedVars.insert(newVariable);
+    }
 }
 
 std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(
     Block* block,
-    Hash baseAddrHash,
-    Offset readOffset,
+    const MemoryAddress& readMemAddr,
     size_t readSize,
     utils::BitMask& readMask
 ) {
     std::list<VariableReadInfo> varReadInfos;
+    auto isCurrentBlock = block == m_block;
+    auto baseAddrHash = readMemAddr.baseAddrHash;
+    auto readOffset = readMemAddr.offset;
     auto memSpace = block->getMemorySpace()->getSubspace(baseAddrHash);
 
     for (auto variable : memSpace->variables) {
+        //  if variable is block scoped and we are not in the same block, skip
+        if (!isCurrentBlock && memSpace->blockScopedVars.find(variable) != memSpace->blockScopedVars.end())
+            continue;
         auto varOffset = variable->getMemAddress().offset;
         auto varSize = variable->getSize();
         // if not intersecting, skip
@@ -259,22 +261,24 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(
         auto newReadMask = readMask & ~varMask;
         if (newReadMask != readMask) {
             std::shared_ptr<Variable> resultVariable = variable;
-            if (block != m_block) {
-                // if the variable is from another block, we need to create a reference variable
-                RefVariable::Reference ref = {
+            if (!isCurrentBlock) {
+                // if the variable is from another block, we need to create a reference operation
+                RefOperation::Reference ref = {
                     block,
                     baseAddrHash,
                     varOffset,
                     varSize
                 };
-                auto refVariable = std::make_shared<RefVariable>(resultVariable, ref);
-                m_genRefVariables.insert(refVariable);
-                resultVariable = refVariable;
+                auto refVar = createVariable(ircode::MemoryAddress(), ref.getHash(), resultVariable->getSize());
+                auto curMemSpace = getCurMemSpace()->getSubspace(baseAddrHash);
+                //genWriteMemory(curMemSpace, resultVariable, true);
+                genOperation(std::make_unique<ircode::RefOperation>(ref, resultVariable, refVar));
+                resultVariable = refVar;
             }
             if (extractSize != 0) {
                 // if we need to extract a part of the variable, we need to generate an extract operation
                 auto inputVar = resultVariable;
-                auto memAddress = inputVar->getMemAddress();
+                auto memAddress = ircode::MemoryAddress();
                 memAddress.offset += extractOffset;
 
                 ircode::Hash hash = 0;
@@ -309,8 +313,7 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(Bloc
     auto prevReadMask = readMask;
     auto varReadInfos = genReadMemory(
         block,
-        ctx.memAddr.baseAddrHash,
-        ctx.memAddr.offset,
+        ctx.memAddr,
         ctx.readSize,
         readMask);
     for (auto varReadInfo : varReadInfos) {
