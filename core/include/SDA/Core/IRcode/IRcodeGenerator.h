@@ -13,6 +13,7 @@ namespace sda::ircode
         const pcode::Instruction* m_curInstr = nullptr;
         std::set<std::shared_ptr<ircode::Variable>> m_overwrittenVariables;
         std::list<ircode::Operation*> m_genOperations;
+        bool m_generationEnabled = true;
     public:
         IRcodeGenerator(
             Block* block,

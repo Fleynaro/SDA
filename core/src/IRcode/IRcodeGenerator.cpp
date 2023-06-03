@@ -131,7 +131,9 @@ void IRcodeGenerator::ingestPcode(const pcode::Instruction* instr) {
                 // memory value copying (RAX:4 = LOAD [RCX:8 + 0x10:8])
 
                 // get source address value ([RCX:8 + 0x10:8])
+                m_generationEnabled = false;
                 auto addrValue = genReadVarnode(instr->getInput0());
+                m_generationEnabled = true;
 
                 // parse source address value into base and offset (RCX:8 and 0x10:8)
                 auto memAddr = getMemoryAddress(addrValue);
@@ -468,14 +470,16 @@ std::shared_ptr<ircode::Value> IRcodeGenerator::genReadVarnode(std::shared_ptr<p
 }
 
 void IRcodeGenerator::genOperation(std::unique_ptr<ircode::Operation> operation) {
-    auto op = operation.get();
-    m_genOperations.push_back(op);
-    operation->setBlock(m_block);
-    operation->getPcodeInstructions().insert(m_curInstr);
-    operation->getOverwrittenVariables() = m_overwrittenVariables;
+    if (m_generationEnabled) {
+        auto op = operation.get();
+        m_genOperations.push_back(op);
+        operation->setBlock(m_block);
+        operation->getPcodeInstructions().insert(m_curInstr);
+        operation->getOverwrittenVariables() = m_overwrittenVariables;
+        m_block->getOperations().push_back(std::move(operation));
+        m_block->getFunction()->getProgram()->getCallbacks()->onOperationAdded(op);
+    }
     m_overwrittenVariables.clear();
-    m_block->getOperations().push_back(std::move(operation));
-    m_block->getFunction()->getProgram()->getCallbacks()->onOperationAdded(op);
 }
 
 void IRcodeGenerator::genGenericOperation(const pcode::Instruction* instr, ircode::OperationId operationId, ircode::MemoryAddress& outputMemAddr) {
@@ -575,7 +579,7 @@ std::shared_ptr<ircode::Register> IRcodeGenerator::createRegister(std::shared_pt
 std::shared_ptr<ircode::Variable> IRcodeGenerator::createVariable(const ircode::MemoryAddress& memAddress, ircode::Hash hash, size_t size) {
     boost::hash_combine(hash, size);
     boost::hash_combine(hash, ircode::Value::Variable);
-    auto varId = m_nextVarIdProvider();
+    auto varId = m_generationEnabled ? m_nextVarIdProvider() : 0;
     auto value = std::make_shared<ircode::Variable>(varId, memAddress, hash, size);
     value->setLinearExpr(ircode::LinearExpression(value));
     return value;
