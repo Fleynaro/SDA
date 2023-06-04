@@ -32,6 +32,12 @@ namespace sda
             Type type = None;
             size_t paramIdx = 0;
             bool isStoringFloat = false;
+
+            bool operator==(const StorageInfo& other) const {
+                return type == other.type &&
+                        paramIdx == other.paramIdx &&
+                        isStoringFloat == other.isStoringFloat;
+            }
         };
         
         using Map = std::map<Storage, StorageInfo>;

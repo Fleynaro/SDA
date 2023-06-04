@@ -4,7 +4,7 @@
 
 using namespace sda::pcode;
 
-InstructionOffset GetTargetOffset(const Instruction* instr) {
+InstructionOffset sda::pcode::GetTargetOffset(const Instruction* instr) {
     InstructionOffset targetOffset = sda::InvalidOffset;
     if (const auto constVarnode = std::dynamic_pointer_cast<ConstantVarnode>(instr->getInput0())) {
         // if this input contains a hardcoded constant

@@ -1,4 +1,5 @@
 #include "SDA/Core/IRcode/IRcodeProgram.h"
+#include "SDA/Core/Pcode/PcodeGraph.h"
 
 using namespace sda;
 using namespace sda::ircode;
@@ -69,18 +70,25 @@ void Program::PcodeGraphCallbacks::updateBlocks() {
     m_pcodeBlocksToUpdate.clear();
 }
 
-Program::Program(pcode::Graph* graph)
+Program::Program(pcode::Graph* graph, SymbolTable* globalSymbolTable)
     : m_graph(graph)
+    , m_globalSymbolTable(globalSymbolTable)
     , m_pcodeGraphCallbacks(std::make_shared<PcodeGraphCallbacks>(this))
     , m_callbacks(std::make_shared<Callbacks>())
 {
-    auto prevCallbacks = m_graph->getCallbacks();
-    m_pcodeGraphCallbacks->setPrevCallbacks(prevCallbacks);
-    m_graph->setCallbacks(m_pcodeGraphCallbacks);
+    if (m_graph) {
+        auto prevCallbacks = m_graph->getCallbacks();
+        m_pcodeGraphCallbacks->setPrevCallbacks(prevCallbacks);
+        m_graph->setCallbacks(m_pcodeGraphCallbacks);
+    }
 }
 
 pcode::Graph* Program::getGraph() {
     return m_graph;
+}
+
+SymbolTable* Program::getGlobalSymbolTable() {
+    return m_globalSymbolTable;
 }
 
 std::map<pcode::FunctionGraph*, Function>& Program::getFunctions() {
@@ -93,6 +101,27 @@ Function* Program::toFunction(pcode::FunctionGraph* functionGraph) {
         return nullptr;
     }
     return &it->second;
+}
+
+Function* Program::getFunctionAt(pcode::InstructionOffset offset) {
+    auto functionGraph = m_graph->getFunctionGraphAt(offset);
+    if (functionGraph) {
+        return toFunction(functionGraph);
+    }
+    return nullptr;
+}
+
+std::list<Function*> Program::getFunctionsByCallInstruction(const pcode::Instruction* instr) {
+    auto offset = GetTargetOffset(instr);
+    if (offset != InvalidOffset) {
+        auto function = getFunctionAt(offset);
+        if (function) {
+            return { function };
+        }
+        return {};
+    }
+    // TODO: virtual calls
+    return {};
 }
 
 void Program::setCallbacks(std::shared_ptr<Callbacks> callbacks) {

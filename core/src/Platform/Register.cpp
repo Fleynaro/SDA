@@ -58,3 +58,9 @@ std::string Register::toString(const RegisterRepository* regRepo, bool printSize
     }
     return ss.str();
 }
+
+Register Register::Create(const RegisterRepository* regRepo, size_t registerId, size_t size) {
+    auto regType = regRepo->getRegisterType(registerId);
+    auto regMask = utils::BitMask(size, 0);
+    return sda::Register(regType, registerId, 0, regMask);
+}

@@ -109,6 +109,36 @@ std::shared_ptr<Value> BinaryOperation::getInput2() const {
     return m_input2;
 }
 
+CallOperation::CallOperation(
+    std::vector<std::shared_ptr<Value>> inputs,
+    std::shared_ptr<Variable> output)
+    : Operation(OperationId::CALL, output)
+    , m_inputs(inputs)
+{
+    for (auto input : m_inputs) {
+        input->addOperation(this);
+    }
+}
+
+CallOperation::~CallOperation() {
+    for (auto input : m_inputs) {
+        input->removeOperation(this);
+    }
+}
+
+Hash CallOperation::getHash() const {
+    Hash hash = 0;
+    for (auto input : m_inputs) {
+        boost::hash_combine(hash, input->getHash());
+    }
+    boost::hash_combine(hash, getOutput()->getHash());
+    return hash;
+}
+
+const std::vector<std::shared_ptr<Value>>& CallOperation::getInputs() const {
+    return m_inputs;
+}
+
 Hash RefOperation::Reference::getHash() const {
     Hash hash = 0;
     boost::hash_combine(hash, block);

@@ -5,6 +5,8 @@
 
 namespace sda::pcode
 {
+    InstructionOffset GetTargetOffset(const Instruction* instr);
+
     class Graph
     {
         enum class UpdateBlockState {

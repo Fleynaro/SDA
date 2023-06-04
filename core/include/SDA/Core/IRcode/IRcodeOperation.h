@@ -145,6 +145,21 @@ namespace sda::ircode
 		std::shared_ptr<Value> getInput2() const;
 	};
 
+	class CallOperation : public Operation
+	{
+		std::vector<std::shared_ptr<Value>> m_inputs;
+	public:
+		CallOperation(
+			std::vector<std::shared_ptr<Value>> inputs,
+			std::shared_ptr<Variable> output);
+
+		~CallOperation() override;
+
+		Hash getHash() const override;
+
+		const std::vector<std::shared_ptr<Value>>& getInputs() const ;
+	};
+
 	class RefOperation : public UnaryOperation
 	{
 	public:

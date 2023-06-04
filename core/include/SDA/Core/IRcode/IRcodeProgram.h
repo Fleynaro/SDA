@@ -1,12 +1,14 @@
 #pragma once
 #include "IRcodeFunction.h"
 #include "SDA/Core/Pcode/PcodeGraph.h"
+#include "SDA/Core/SymbolTable/SymbolTable.h"
 
 namespace sda::ircode
 {
     class Program
     {
         pcode::Graph* m_graph;
+        SymbolTable* m_globalSymbolTable;
         std::map<pcode::FunctionGraph*, Function> m_functions;
 
         class PcodeGraphCallbacks : public pcode::Graph::Callbacks
@@ -38,13 +40,19 @@ namespace sda::ircode
         };
         std::shared_ptr<PcodeGraphCallbacks> m_pcodeGraphCallbacks;
     public:
-        Program(pcode::Graph* graph);
+        Program(pcode::Graph* graph, SymbolTable* globalSymbolTable);
 
         pcode::Graph* getGraph();
+
+        SymbolTable* getGlobalSymbolTable();
 
         std::map<pcode::FunctionGraph*, Function>& getFunctions();
 
         Function* toFunction(pcode::FunctionGraph* functionGraph);
+
+        Function* getFunctionAt(pcode::InstructionOffset offset);
+
+        std::list<Function*> getFunctionsByCallInstruction(const pcode::Instruction* instr);
 
         class Callbacks
         {

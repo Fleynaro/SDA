@@ -38,6 +38,8 @@ namespace sda
 
         size_t getSize() const override;
 
+        void clear();
+
         void serialize(boost::json::object& data) const override;
 
         void deserialize(boost::json::object& data) override;

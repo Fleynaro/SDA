@@ -2,6 +2,8 @@
 #include <list>
 #include "IRcodeBlock.h"
 #include "SDA/Core/Pcode/PcodeFunctionGraph.h"
+#include "SDA/Core/DataType/SignatureDataType.h"
+#include "SDA/Core/Symbol/FunctionSymbol.h"
 
 namespace sda::ircode
 {
@@ -19,6 +21,8 @@ namespace sda::ircode
         Program* getProgram() const;
 
         pcode::FunctionGraph* getFunctionGraph() const;
+
+        FunctionSymbol* getFunctionSymbol() const;
         
         Offset getEntryOffset() const;
 

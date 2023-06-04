@@ -1,4 +1,5 @@
 #include "SDA/Core/IRcode/IRcodeFunction.h"
+#include "SDA/Core/IRcode/IRcodeProgram.h"
 
 using namespace sda;
 using namespace sda::ircode;
@@ -13,6 +14,13 @@ Program* Function::getProgram() const {
 
 pcode::FunctionGraph* Function::getFunctionGraph() const {
     return m_functionGraph;
+}
+
+FunctionSymbol* Function::getFunctionSymbol() const {
+    auto offset = getEntryOffset();
+    auto globalSymbolTable = m_program->getGlobalSymbolTable();
+    auto symbol = globalSymbolTable->getSymbolAt(offset).symbol;
+    return dynamic_cast<FunctionSymbol*>(symbol);
 }
 
 Offset Function::getEntryOffset() const {

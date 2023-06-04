@@ -7,7 +7,9 @@ namespace sda::test
     class IRcodeFixture : public PcodeFixture
     {
     protected:
-        ircode::Program program = ircode::Program(&graph);
+        ircode::Program program = ircode::Program(nullptr, nullptr);
+
+        void SetUp() override;
         
         void printIRcode(ircode::Function* function, std::ostream& out, size_t tabs = 0) const;
 

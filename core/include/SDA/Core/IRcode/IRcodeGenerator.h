@@ -78,6 +78,8 @@ namespace sda::ircode
         void genGenericOperation(const pcode::Instruction* instr, ircode::OperationId operationId, ircode::MemoryAddress& outputMemAddr);
 
         std::shared_ptr<ircode::Variable> genLoadOperation(const ircode::MemoryAddress& memAddr, size_t loadSize);
+        
+        void genCallOperation(const pcode::Instruction* instr);
 
         void handleConditionJumpOperation(const pcode::Instruction* instr);
 

@@ -58,6 +58,15 @@ size_t SignatureDataType::getSize() const {
     return 1;
 }
 
+void SignatureDataType::clear() {
+    for (auto param : m_parameters) {
+        param->destroy();
+    }
+    setParameters({});
+    m_returnType->destroy();
+    setReturnType(m_context->getDataTypes()->getByName("void"));
+}
+
 void SignatureDataType::serialize(boost::json::object& data) const {
     DataType::serialize(data);
     data["type"] = Type;

@@ -6,6 +6,11 @@ using namespace sda;
 using namespace sda::test;
 using namespace ::testing;
 
+void IRcodeFixture::SetUp() {
+    PcodeFixture::SetUp();
+    program = ircode::Program(&graph, globalSymbolTable);
+}
+
 void IRcodeFixture::printIRcode(ircode::Function* function, std::ostream& out, size_t tabs) const {
     pcode::Printer pcodePrinter(context->getPlatform()->getRegisterRepository().get());
     ircode::Printer ircodePrinter(&pcodePrinter);

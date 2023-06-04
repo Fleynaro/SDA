@@ -1,6 +1,7 @@
 #include "SDA/Core/IRcode/IRcodeGenerator.h"
 #include "SDA/Core/IRcode/IRcodeFunction.h"
 #include "SDA/Core/IRcode/IRcodeProgram.h"
+#include "SDA/Core/Platform/RegisterRepository.h"
 
 using namespace sda;
 using namespace sda::ircode;
@@ -87,6 +88,8 @@ void IRcodeGenerator::ingestPcode(const pcode::Instruction* instr) {
     auto it = InstructionToOperation.find(instr->getId());
     if (it != InstructionToOperation.end()) {
         genGenericOperation(instr, it->second, outputMemAddr);
+    } else if (instr->getId() == pcode::InstructionId::CALL) {
+        genCallOperation(instr);
     } else if (instr->getId() == pcode::InstructionId::CBRANCH) {
         handleConditionJumpOperation(instr);
     } else {
@@ -162,6 +165,7 @@ void IRcodeGenerator::ingestPcode(const pcode::Instruction* instr) {
                 dstMemAddr.offset = varReadInfo.offset;
                 auto dstMemSpace = getCurMemSpace()->getSubspace(dstMemAddr.baseAddrHash);
                 auto dstVar = createVariable(dstMemAddr, srcVar->getHash(), srcVar->getSize());
+                dstVar->setLinearExpr(srcVar->getLinearExpr());
                 genWriteMemory(dstMemSpace, dstVar);
                 genOperation(std::make_unique<ircode::UnaryOperation>(ircode::OperationId::COPY, srcVar, dstVar));
             }
@@ -550,6 +554,90 @@ std::shared_ptr<ircode::Variable> IRcodeGenerator::genLoadOperation(const ircode
     auto regVariable = createVariable(MemoryAddress(), hash, loadSize); // MemoryAddress() vs memAddr?
     genOperation(std::make_unique<ircode::UnaryOperation>(ircode::OperationId::LOAD, memAddr.value, regVariable));
     return regVariable;
+}
+
+void IRcodeGenerator::genCallOperation(const pcode::Instruction* instr) {
+    auto functions = m_block->getFunction()->getProgram()->getFunctionsByCallInstruction(instr);
+    if (functions.empty()) {
+        return;
+    }
+    ircode::Hash hash = 0;
+    boost::hash_combine(hash, ircode::OperationId::CALL);
+    boost::hash_combine(hash, instr->getOffset().fullOffset); // TODO: make it like that everywhere?
+    auto function = functions.front();
+    auto signature = function->getFunctionSymbol()->getSignature();
+    auto platform = signature->getContext()->getPlatform();
+    auto& parameters = signature->getParameters();
+    auto& storages = signature->getStorages();
+    // inputs
+    std::vector<std::shared_ptr<Value>> inputs;
+    for (size_t i = 0; i < parameters.size(); ++i) {
+        auto param = parameters[i];
+        auto paramSize = param->getDataType()->getSize();
+        std::shared_ptr<pcode::RegisterVarnode> regVarnode;
+        size_t offset = 0;
+        bool isSpOrIp = false;
+        for (auto& [storage, storageInfo] : storages) {
+            if (storageInfo.type == CallingConvention::StorageInfo::Parameter && storageInfo.paramIdx == i) {
+                auto regId = storage.registerId;
+                isSpOrIp = regId == sda::Register::InstructionPointerId || regId == sda::Register::StackPointerId;
+                auto reg = sda::Register::Create(
+                    platform->getRegisterRepository().get(),
+                    regId,
+                    isSpOrIp ? platform->getPointerSize() : paramSize);
+                regVarnode = std::make_shared<pcode::RegisterVarnode>(reg);
+                offset = storage.offset;
+                break;
+            }
+        }
+        if (regVarnode) {
+            auto regId = regVarnode->getRegister().getRegId();
+            auto regValue = genReadVarnode(regVarnode);
+            if (isSpOrIp) {
+                auto offsetConst = createConstant(std::make_shared<pcode::ConstantVarnode>(offset, platform->getPointerSize(), false));
+                auto addrVarHash = hash;
+                boost::hash_combine(addrVarHash, i);
+                auto addrVar = createVariable(MemoryAddress(), hash, platform->getPointerSize());
+                addrVar->setLinearExpr(regValue->getLinearExpr() + offsetConst->getLinearExpr());
+                genOperation(std::make_unique<ircode::BinaryOperation>(ircode::OperationId::INT_ADD, regValue, offsetConst, addrVar));
+                auto memAddr = getMemoryAddress(addrVar);
+                utils::BitMask readMask(paramSize, 0);
+                auto varReadInfos = genReadMemory(memAddr, paramSize, readMask);
+                auto input = joinVariables(varReadInfos, paramSize);
+                inputs.push_back(input);
+            } else {
+                inputs.push_back(regValue);
+            }
+        } else {
+            throw std::runtime_error("Parameter not found");
+        }
+    }
+    // output
+    std::shared_ptr<Variable> output;
+    {
+        auto resultSize = signature->getReturnType()->getSize();
+        std::shared_ptr<pcode::RegisterVarnode> regVarnode;
+        size_t offset = 0;
+        for (auto& [storage, storageInfo] : storages) {
+            if (storageInfo.type == CallingConvention::StorageInfo::Return) {
+                auto reg = sda::Register::Create(
+                    platform->getRegisterRepository().get(),
+                    storage.registerId,
+                    resultSize);
+                regVarnode = std::make_shared<pcode::RegisterVarnode>(reg);
+                offset = storage.offset;
+            }
+        }
+        if (regVarnode) {
+            auto outputMemAddr = getRegisterMemoryAddress(regVarnode);
+            auto memSpace = getCurMemSpace()->getSubspace(outputMemAddr.baseAddrHash);
+            output = createVariable(outputMemAddr, hash, resultSize);
+            genWriteMemory(memSpace, output);
+        } else {
+            output = createVariable(MemoryAddress(), hash, resultSize);
+        }
+    }
+    genOperation(std::make_unique<ircode::CallOperation>(inputs, output));
 }
 
 void IRcodeGenerator::handleConditionJumpOperation(const pcode::Instruction* instr) {
