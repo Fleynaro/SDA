@@ -5,6 +5,7 @@
 
 namespace sda
 {
+    class FunctionSymbol;
     class SignatureDataType : public DataType
     {
         std::shared_ptr<CallingConvention> m_callingConvention;
@@ -22,6 +23,8 @@ namespace sda
             const std::string& name = "",
             DataType* returnType = nullptr,
             const std::vector<FunctionParameterSymbol*>& parameters = {});
+    
+        std::list<FunctionSymbol*> getFunctionSymbols() const;
 
         std::shared_ptr<CallingConvention> getCallingConvention() const;
 

@@ -12,8 +12,8 @@ namespace sda::test
         Platform* platform = nullptr;
         std::list<Context*> createdContexts;
     protected:
-        Context* context;
-        SymbolTable* globalSymbolTable;
+        Context* context = nullptr;
+        SymbolTable* globalSymbolTable = nullptr;
 
         void SetUp() override;
         
@@ -35,5 +35,7 @@ namespace sda::test
             const std::string& signature,
             SymbolTable* stackSymbolTable = nullptr,
             SymbolTable* instrSymbolTable = nullptr);
+
+        ::testing::AssertionResult cmpDataType(DataType* dataType, const std::string& expectedCode, bool withName = false) const;
     };
 };

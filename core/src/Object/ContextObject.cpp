@@ -4,7 +4,7 @@
 using namespace sda;
 
 void ContextObject::notifyModified(Object::ModState state) {
-    if (state == Object::ModState::Before) {
+    if (state == Object::ModState::After) {
         m_context->getCallbacks()->onObjectModified(this);
     }
 }

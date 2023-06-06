@@ -1,4 +1,5 @@
 #include "SDA/Core/DataType/SignatureDataType.h"
+#include "SDA/Core/Symbol/FunctionSymbol.h"
 #include "SDA/Core/Context.h"
 
 using namespace sda;
@@ -18,6 +19,16 @@ SignatureDataType::SignatureDataType(
     if (!m_returnType)
         m_returnType = m_context->getDataTypes()->getByName("void");
     m_context->getDataTypes()->add(std::unique_ptr<SignatureDataType>(this));
+}
+
+std::list<FunctionSymbol*> SignatureDataType::getFunctionSymbols() const {
+    std::list<FunctionSymbol*> result;
+    for (auto parent : getParents()) {
+        if (auto funcSymbol = dynamic_cast<FunctionSymbol*>(parent)) {
+            result.push_back(funcSymbol);
+        }
+    }
+    return result;
 }
 
 std::shared_ptr<CallingConvention> SignatureDataType::getCallingConvention() const {
@@ -63,7 +74,6 @@ void SignatureDataType::clear() {
         param->destroy();
     }
     setParameters({});
-    m_returnType->destroy();
     setReturnType(m_context->getDataTypes()->getByName("void"));
 }
 

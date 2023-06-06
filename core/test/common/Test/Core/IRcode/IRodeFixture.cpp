@@ -8,7 +8,12 @@ using namespace ::testing;
 
 void IRcodeFixture::SetUp() {
     PcodeFixture::SetUp();
-    program = ircode::Program(&graph, globalSymbolTable);
+    program = new ircode::Program(graph, globalSymbolTable);
+}
+
+void IRcodeFixture::TearDown() {
+    delete program;
+    PcodeFixture::TearDown();
 }
 
 void IRcodeFixture::printIRcode(ircode::Function* function, std::ostream& out, size_t tabs) const {

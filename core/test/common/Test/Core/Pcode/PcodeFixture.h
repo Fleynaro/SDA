@@ -7,7 +7,11 @@ namespace sda::test
     class PcodeFixture : public ContextFixture
     {
     protected:
-        pcode::Graph graph;
+        pcode::Graph* graph = nullptr;
+
+        void SetUp() override;
+
+        void TearDown() override;
 
         std::list<pcode::Instruction> parsePcode(const std::string& text) const;
 

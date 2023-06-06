@@ -17,6 +17,7 @@ namespace sda
 
     private:
         Id m_id;
+        std::list<Object*> m_parents;
 
     public:
         Object(Id* id);
@@ -25,6 +26,15 @@ namespace sda
 
         // Get the unique identifier of the object
         Id getId() const;
+
+        // Get the list of parents of the object
+        const std::list<Object*>& getParents() const;
+
+        // Add a parent to the object
+        void addParent(Object* parent);
+
+        // Remove a parent from the object
+        void removeParent(Object* parent);
 
         // Serialize the object id to a json string
         boost::json::string serializeId() const;

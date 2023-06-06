@@ -110,33 +110,42 @@ std::shared_ptr<Value> BinaryOperation::getInput2() const {
 }
 
 CallOperation::CallOperation(
-    std::vector<std::shared_ptr<Value>> inputs,
+    std::shared_ptr<Value> dest,
+	const std::vector<std::shared_ptr<Value>>& args,
     std::shared_ptr<Variable> output)
     : Operation(OperationId::CALL, output)
-    , m_inputs(inputs)
+    , m_dest(dest)
+    , m_args(args)
 {
-    for (auto input : m_inputs) {
-        input->addOperation(this);
+    m_dest->addOperation(this);
+    for (auto arg : m_args) {
+        arg->addOperation(this);
     }
 }
 
 CallOperation::~CallOperation() {
-    for (auto input : m_inputs) {
-        input->removeOperation(this);
+    m_dest->removeOperation(this);
+    for (auto arg : m_args) {
+        arg->removeOperation(this);
     }
 }
 
 Hash CallOperation::getHash() const {
     Hash hash = 0;
-    for (auto input : m_inputs) {
+    boost::hash_combine(hash, m_dest->getHash());
+    for (auto input : m_args) {
         boost::hash_combine(hash, input->getHash());
     }
     boost::hash_combine(hash, getOutput()->getHash());
     return hash;
 }
 
-const std::vector<std::shared_ptr<Value>>& CallOperation::getInputs() const {
-    return m_inputs;
+std::shared_ptr<Value> CallOperation::getDestination() const {
+    return m_dest;
+}
+
+const std::vector<std::shared_ptr<Value>>& CallOperation::getArguments() const {
+    return m_args;
 }
 
 Hash RefOperation::Reference::getHash() const {

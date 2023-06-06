@@ -147,17 +147,21 @@ namespace sda::ircode
 
 	class CallOperation : public Operation
 	{
-		std::vector<std::shared_ptr<Value>> m_inputs;
+		std::shared_ptr<Value> m_dest;
+		std::vector<std::shared_ptr<Value>> m_args;
 	public:
 		CallOperation(
-			std::vector<std::shared_ptr<Value>> inputs,
+			std::shared_ptr<Value> dest,
+			const std::vector<std::shared_ptr<Value>>& args,
 			std::shared_ptr<Variable> output);
 
 		~CallOperation() override;
 
 		Hash getHash() const override;
 
-		const std::vector<std::shared_ptr<Value>>& getInputs() const ;
+		std::shared_ptr<Value> getDestination() const;
+
+		const std::vector<std::shared_ptr<Value>>& getArguments() const;
 	};
 
 	class RefOperation : public UnaryOperation

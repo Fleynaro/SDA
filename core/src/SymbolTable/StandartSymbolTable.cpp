@@ -22,6 +22,7 @@ void StandartSymbolTable::addSymbol(Offset offset, Symbol* symbol) {
         throw std::runtime_error("Symbol already exists at offset " + std::to_string(offset));
     notifyModified(Object::ModState::Before);
     m_symbols[offset] = symbol;
+    symbol->setSymbolTable(this, offset);
     notifyModified(Object::ModState::After);
 }
 
@@ -29,6 +30,7 @@ void StandartSymbolTable::removeSymbol(Offset offset) {
     notifyModified(Object::ModState::Before);
     auto [_, symbolOffset, symbol] = getSymbolAt(offset);
     if (symbol) {
+        symbol->unsetSymbolTable();
         m_symbols.erase(symbolOffset);
     }
     notifyModified(Object::ModState::After);

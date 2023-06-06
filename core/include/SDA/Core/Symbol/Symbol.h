@@ -1,13 +1,16 @@
 #pragma once
 #include "SDA/Core/Object/ObjectList.h"
+#include "SDA/Core/Offset.h"
 
 namespace sda
 {
     class DataType;
+    class SymbolTable;
 
     class Symbol : public ContextObject
     {
         DataType* m_dataType;
+        Offset m_offset = 0;
     protected:
         Symbol(
             Context* context,
@@ -17,6 +20,16 @@ namespace sda
             
     public:
         static inline const std::string Collection = "symbols";
+
+        ~Symbol();
+
+        SymbolTable* getSymbolTable() const;
+
+        Offset getOffset() const;
+
+        void setSymbolTable(SymbolTable* symbolTable, Offset offset);
+
+        void unsetSymbolTable();
 
         DataType* getDataType() const;
 

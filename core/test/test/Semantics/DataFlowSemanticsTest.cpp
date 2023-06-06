@@ -13,10 +13,10 @@ protected:
     std::unique_ptr<semantics::DataFlowCollector> dataFlowCollector;
 
     void SetUp() override {
-        IRcodeFixture::SetUp();
+        SemanticsFixture::SetUp();
         dataFlowRepo = std::make_unique<semantics::DataFlowRepository>();
         dataFlowCollector = std::make_unique<semantics::DataFlowCollector>(
-            &program,
+            program,
             context->getPlatform(),
             dataFlowRepo.get());
     }
@@ -88,7 +88,7 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignment) {
         var5 <- Read var2 \n\
         var6 <- Copy var5 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
     ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
 }
@@ -126,7 +126,7 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentDouble) {
         var8 <- Read var5 \n\
         var9 <- Copy var8 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
     ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
 }
@@ -159,7 +159,7 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentObject) {
         var7 <- Write var6 \n\
         var7 <- Write var1 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
     ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
 }
@@ -199,7 +199,7 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentObjectDouble) {
         var9 <- Write var8 \n\
         var9 <- Write var1 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
     ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
 }
@@ -238,7 +238,7 @@ TEST_F(DataFlowSemanticsTest, If) {
         var9 <- Copy var7 \n\
         var9 <- Copy var8 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
     ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
 }

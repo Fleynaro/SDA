@@ -2,20 +2,13 @@
 #include "SDA/Core/DataType/DataTypePrinter.h"
 #include "Test/Core/ContextFixture.h"
 #include "Test/Core/Plaftorm/CallingConventionMock.h"
-#include "Test/Core/Utils/TestAssertion.h"
 
 using namespace sda;
 using namespace sda::test;
 using namespace ::testing;
 
 class DataTypeParserTest : public ContextFixture
-{
-protected:
-    ::testing::AssertionResult cmp(DataType* dataType, const std::string& expectedCode) const {
-        auto actualCode = DataTypePrinter::Print(dataType, context, true);
-        return Compare(actualCode, expectedCode);
-    }
-};
+{};
 
 TEST_F(DataTypeParserTest, TypedefSample1) {
     auto expectedCode = "\
@@ -23,7 +16,7 @@ TEST_F(DataTypeParserTest, TypedefSample1) {
         dataType = typedef uint32_t \
     ";
     auto typedefDt = parseDataType(expectedCode);
-    ASSERT_TRUE(cmp(typedefDt, expectedCode));
+    ASSERT_TRUE(cmpDataType(typedefDt, expectedCode, true));
 }
 
 TEST_F(DataTypeParserTest, EnumSample1) {
@@ -36,7 +29,7 @@ TEST_F(DataTypeParserTest, EnumSample1) {
         } \
     ";
     auto enumDt = parseDataType(expectedCode);
-    ASSERT_TRUE(cmp(enumDt, expectedCode));
+    ASSERT_TRUE(cmpDataType(enumDt, expectedCode, true));
 }
 
 TEST_F(DataTypeParserTest, StructureSample1) {
@@ -50,7 +43,7 @@ TEST_F(DataTypeParserTest, StructureSample1) {
         } \
     ";
     auto structDt = parseDataType(expectedCode);
-    ASSERT_TRUE(cmp(structDt, expectedCode));
+    ASSERT_TRUE(cmpDataType(structDt, expectedCode, true));
 }
 
 TEST_F(DataTypeParserTest, SignatureSample1) {
@@ -62,5 +55,5 @@ TEST_F(DataTypeParserTest, SignatureSample1) {
         ) \
     ";
     auto signatureDt = parseDataType(expectedCode);
-    ASSERT_TRUE(cmp(signatureDt, expectedCode));
+    ASSERT_TRUE(cmpDataType(signatureDt, expectedCode, true));
 }

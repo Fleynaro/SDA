@@ -13,6 +13,18 @@ Object::Id Object::getId() const {
     return m_id;
 }
 
+const std::list<Object*>& Object::getParents() const {
+    return m_parents;
+}
+
+void Object::addParent(Object* parent) {
+    m_parents.push_back(parent);
+}
+
+void Object::removeParent(Object* parent) {
+    m_parents.remove(parent);
+}
+
 boost::json::string Object::serializeId() const {
     return boost::uuids::to_string(getId());
 }

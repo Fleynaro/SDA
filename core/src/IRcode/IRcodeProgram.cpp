@@ -4,47 +4,14 @@
 using namespace sda;
 using namespace sda::ircode;
 
-void Program::PcodeGraphCallbacks::onBlockUpdateRequestedImpl(pcode::Block* pcodeBlock) {
-    m_pcodeBlocksToUpdate.insert(pcodeBlock);
-}
-
-void Program::PcodeGraphCallbacks::onBlockFunctionGraphChangedImpl(pcode::Block* pcodeBlock, pcode::FunctionGraph* oldFunctionGraph, pcode::FunctionGraph* newFunctionGraph) {
-    if (oldFunctionGraph) {
-        auto oldFunction = m_program->toFunction(oldFunctionGraph);
-        auto block = oldFunction->toBlock(pcodeBlock);
-        m_program->getCallbacks()->onBlockRemoved(block);
-        oldFunction->getBlocks().erase(pcodeBlock);
-    }
-    auto newFunction = m_program->toFunction(newFunctionGraph);
-    newFunction->getBlocks().emplace(pcodeBlock, Block(pcodeBlock, newFunction));
-    m_program->getCallbacks()->onBlockCreated(newFunction->toBlock(pcodeBlock));
-}
-
-void Program::PcodeGraphCallbacks::onFunctionGraphCreatedImpl(pcode::FunctionGraph* functionGraph) {
-    m_program->m_functions.emplace(functionGraph, Function(m_program, functionGraph));
-}
-
-void Program::PcodeGraphCallbacks::onFunctionGraphRemovedImpl(pcode::FunctionGraph* functionGraph) {
-    m_program->m_functions.erase(functionGraph);
-}
-
-void Program::PcodeGraphCallbacks::onCommitStartedImpl() {
-    m_commitStarted = true;
-}
-
-void Program::PcodeGraphCallbacks::onCommitEndedImpl() {
-    m_commitStarted = false;
-    updateBlocks();
-}
-
-void Program::PcodeGraphCallbacks::updateBlocks() {
+void UpdateBlocks(Program* program, const std::set<pcode::Block*>& pcodeBlocks) {
     std::map<pcode::FunctionGraph*, std::list<pcode::Block*>> blocksToUpdateByFunction;
-    for (auto pcodeBlock : m_pcodeBlocksToUpdate) {
+    for (auto pcodeBlock : pcodeBlocks) {
         auto pcodeFunctionGraph = pcodeBlock->getFunctionGraph();
         blocksToUpdateByFunction[pcodeFunctionGraph].push_back(pcodeBlock);
     }
     for (auto& [pcodeFunctionGraph, pcodeBlocksToUpdate] : blocksToUpdateByFunction) {
-        auto function = m_program->toFunction(pcodeFunctionGraph);
+        auto function = program->toFunction(pcodeFunctionGraph);
         utils::BitSet mutualDomBlockSet;
         for (auto pcodeBlock : pcodeBlocksToUpdate) {
             if (pcodeBlock == *pcodeBlocksToUpdate.begin()) {
@@ -67,19 +34,81 @@ void Program::PcodeGraphCallbacks::updateBlocks() {
         auto block = function->toBlock(mostDominatedBlock);
         block->update();
     }
+}
+
+void Program::PcodeGraphCallbacks::onBlockUpdateRequestedImpl(pcode::Block* pcodeBlock) {
+    m_pcodeBlocksToUpdate.insert(pcodeBlock);
+}
+
+void Program::PcodeGraphCallbacks::onBlockFunctionGraphChangedImpl(pcode::Block* pcodeBlock, pcode::FunctionGraph* oldFunctionGraph, pcode::FunctionGraph* newFunctionGraph) {
+    if (oldFunctionGraph) {
+        auto oldFunction = m_program->toFunction(oldFunctionGraph);
+        auto block = oldFunction->toBlock(pcodeBlock);
+        m_program->getCallbacks()->onBlockRemoved(block);
+        oldFunction->getBlocks().erase(pcodeBlock);
+    }
+    auto newFunction = m_program->toFunction(newFunctionGraph);
+    newFunction->getBlocks().emplace(pcodeBlock, Block(pcodeBlock, newFunction));
+    m_program->getCallbacks()->onBlockCreated(newFunction->toBlock(pcodeBlock));
+}
+
+void Program::PcodeGraphCallbacks::onFunctionGraphCreatedImpl(pcode::FunctionGraph* functionGraph) {
+    m_program->m_functions.emplace(functionGraph, Function(m_program, functionGraph));
+    m_program->getCallbacks()->onFunctionCreated(m_program->toFunction(functionGraph));
+}
+
+void Program::PcodeGraphCallbacks::onFunctionGraphRemovedImpl(pcode::FunctionGraph* functionGraph) {
+    m_program->getCallbacks()->onFunctionRemoved(m_program->toFunction(functionGraph));
+    m_program->m_functions.erase(functionGraph);
+}
+
+void Program::PcodeGraphCallbacks::onCommitStartedImpl() {
+    m_commitStarted = true;
+}
+
+void Program::PcodeGraphCallbacks::onCommitEndedImpl() {
+    m_commitStarted = false;
+    UpdateBlocks(m_program, m_pcodeBlocksToUpdate);
     m_pcodeBlocksToUpdate.clear();
+}
+
+void Program::ContextCallbacks::onObjectModifiedImpl(Object* object) {
+    if (auto signatureDt = dynamic_cast<SignatureDataType*>(object)) {
+        for (auto funcSymbol : signatureDt->getFunctionSymbols()) {
+            if (auto symbolTable = funcSymbol->getSymbolTable()) {
+                if (symbolTable == m_program->m_globalSymbolTable) {
+                    auto function = m_program->getFunctionAt(funcSymbol->getOffset());
+                    auto blocks = m_program->getBlocksRefToFunction(function);
+                    std::set<pcode::Block*> pcodeBlocks;
+                    for (auto block : blocks) {
+                        pcodeBlocks.insert(block->getPcodeBlock());
+                    }
+                    UpdateBlocks(m_program, pcodeBlocks);
+                }
+            }
+        }
+    }
 }
 
 Program::Program(pcode::Graph* graph, SymbolTable* globalSymbolTable)
     : m_graph(graph)
     , m_globalSymbolTable(globalSymbolTable)
     , m_pcodeGraphCallbacks(std::make_shared<PcodeGraphCallbacks>(this))
+    , m_contextCallbacks(std::make_shared<ContextCallbacks>(this))
     , m_callbacks(std::make_shared<Callbacks>())
 {
-    if (m_graph) {
+    {
+        // graph callbacks
         auto prevCallbacks = m_graph->getCallbacks();
         m_pcodeGraphCallbacks->setPrevCallbacks(prevCallbacks);
         m_graph->setCallbacks(m_pcodeGraphCallbacks);
+    }
+    {
+        // context callbacks
+        auto context = m_globalSymbolTable->getContext();
+        auto prevCallbacks = context->getCallbacks();
+        m_contextCallbacks->setPrevCallbacks(prevCallbacks);
+        context->setCallbacks(m_contextCallbacks);
     }
 }
 
@@ -122,6 +151,29 @@ std::list<Function*> Program::getFunctionsByCallInstruction(const pcode::Instruc
     }
     // TODO: virtual calls
     return {};
+}
+
+std::list<Block*> Program::getBlocksRefToFunction(Function* function) {
+    std::list<Block*> result;
+    auto funcGraph = function->getFunctionGraph();
+    auto fromFuncGraphs = funcGraph->getReferencesTo();
+    for (auto fromFuncGraph : fromFuncGraphs) {
+        for (auto& [offset, toFuncGraph] : fromFuncGraph->getReferencesFrom()) {
+            if (toFuncGraph == funcGraph) {
+                auto fromFunction = toFunction(fromFuncGraph);
+                if (fromFunction) {
+                    auto fromPcodeBlock = m_graph->getBlockAt(offset);
+                    if (fromPcodeBlock) {
+                        auto fromBlock = fromFunction->toBlock(fromPcodeBlock);
+                        if (fromBlock) {
+                            result.push_back(fromBlock);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return result;
 }
 
 void Program::setCallbacks(std::shared_ptr<Callbacks> callbacks) {

@@ -8,20 +8,19 @@ using namespace ::testing;
 class DataTypeSemanticsTest : public SemanticsFixture
 {
 protected:
-    semantics::SemanticsManager semManager = semantics::SemanticsManager(&program);
     semantics::SymbolTableSemanticsRepository* symbolTableRepo = nullptr;
     semantics::DataTypeSemanticsRepository* dataTypeRepo = nullptr;
 
     void SetUp() override {
-        IRcodeFixture::SetUp();
+        SemanticsFixture::SetUp();
         // add repositories
-        auto symbolTableRepo = std::make_unique<semantics::SymbolTableSemanticsRepository>(&semManager);
-        auto dataTypeRepo = std::make_unique<semantics::DataTypeSemanticsRepository>(&semManager);
+        auto symbolTableRepo = std::make_unique<semantics::SymbolTableSemanticsRepository>(semManager);
+        auto dataTypeRepo = std::make_unique<semantics::DataTypeSemanticsRepository>(semManager);
         this->symbolTableRepo = symbolTableRepo.get();
         this->dataTypeRepo = dataTypeRepo.get();
-        semManager.addRepository(std::move(symbolTableRepo));
-        semManager.addRepository(std::move(dataTypeRepo));
-        semManager.addPropagator(
+        semManager->addRepository(std::move(symbolTableRepo));
+        semManager->addRepository(std::move(dataTypeRepo));
+        semManager->addPropagator(
             std::make_unique<semantics::DataTypeSemanticsPropagator>(globalSymbolTable, this->symbolTableRepo, this->dataTypeRepo));
     }
 };

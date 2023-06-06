@@ -12,7 +12,7 @@ protected:
 
     void SetUp() override {
         IRcodeFixture::SetUp();
-        constCondRepo = std::make_unique<semantics::ConstConditionRepository>(&program);
+        constCondRepo = std::make_unique<semantics::ConstConditionRepository>(program);
     }
 
     ::testing::AssertionResult cmpConditions(ircode::Function* function, const std::string& expectedCode) const {
@@ -76,7 +76,7 @@ TEST_F(ConstConditionSemanticsTest, IfElse) {
         Block B5: \n\
             var2 == 5 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
     ASSERT_TRUE(cmpConditions(function, expectedConditions));
 }
@@ -115,7 +115,7 @@ TEST_F(ConstConditionSemanticsTest, NestedIf) {
             var2 == 5 \n\
             var4 == 7 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
     ASSERT_TRUE(cmpConditions(function, expectedConditions));
 }

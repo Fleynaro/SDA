@@ -83,7 +83,7 @@ void Block::clear() {
     for (auto& op : m_operations) {
         m_function->getProgram()->getCallbacks()->onOperationRemoved(op.get());
     }
-    m_memSpace.clear();
+    m_dominantHash = 0;
     m_memSpace.clear();
     clearVarIds();
 }
@@ -192,8 +192,11 @@ void Block::replaceWith(Block* block) {
     }
     // replace data
     m_memSpace = std::move(block->m_memSpace);
-    m_operations = std::move(block->m_operations);
     m_condition = std::move(block->m_condition);
+    m_operations = std::move(block->m_operations);
+    for (auto& op : m_operations) {
+        op->setBlock(this);
+    }
     m_hash = calcHash();
     // update ref operations
     for (auto refOp : refOperations) {

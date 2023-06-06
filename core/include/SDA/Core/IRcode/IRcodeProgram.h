@@ -33,12 +33,21 @@ namespace sda::ircode
 
             void onCommitEndedImpl() override;
 
-            void updateBlocks();
-
         public:
             PcodeGraphCallbacks(Program* program) : m_program(program) {}
         };
+
+        class ContextCallbacks : public Context::Callbacks
+        {
+            Program* m_program;
+        public:
+            ContextCallbacks(Program* program) : m_program(program) {}
+
+            void onObjectModifiedImpl(Object* object) override;
+        };
+
         std::shared_ptr<PcodeGraphCallbacks> m_pcodeGraphCallbacks;
+        std::shared_ptr<ContextCallbacks> m_contextCallbacks;
     public:
         Program(pcode::Graph* graph, SymbolTable* globalSymbolTable);
 
@@ -54,11 +63,19 @@ namespace sda::ircode
 
         std::list<Function*> getFunctionsByCallInstruction(const pcode::Instruction* instr);
 
+        std::list<Block*> getBlocksRefToFunction(Function* function);
+
         class Callbacks
         {
             std::shared_ptr<Callbacks> m_prevCallbacks;
             bool m_enabled = true;
         public:
+            // Called when a function is created
+            void onFunctionCreated(Function* function);
+
+            // Called when a function is removed
+            void onFunctionRemoved(Function* function);
+
             // Called when a function is decompiled
             void onFunctionDecompiled(Function* function, std::list<Block*> blocks);
 
@@ -79,6 +96,10 @@ namespace sda::ircode
             void setEnabled(bool enabled);
 
         protected:
+            virtual void onFunctionCreatedImpl(Function* function) {};
+
+            virtual void onFunctionRemovedImpl(Function* function) {};
+
             virtual void onFunctionDecompiledImpl(Function* function, std::list<Block*> blocks) {};
 
             virtual void onBlockCreatedImpl(Block* block) {};

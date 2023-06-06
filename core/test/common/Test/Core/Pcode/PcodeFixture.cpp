@@ -7,6 +7,15 @@ using namespace sda;
 using namespace sda::test;
 using namespace ::testing;
 
+void PcodeFixture::SetUp() {
+    ContextFixture::SetUp();
+    graph = new pcode::Graph();
+}
+
+void PcodeFixture::TearDown() {
+    delete graph;
+}
+
 std::list<pcode::Instruction> PcodeFixture::parsePcode(const std::string& text) const {
     return pcode::Parser::Parse(text, context->getPlatform()->getRegisterRepository().get());
 }

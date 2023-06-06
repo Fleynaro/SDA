@@ -81,6 +81,13 @@ void Printer::printOperation(Operation* operation) {
             printToken(std::to_string(concatOp->getOffset()), SYMBOL);
         }
     }
+    else if (auto callOp = dynamic_cast<const CallOperation*>(operation)) {
+        printValue(callOp->getDestination().get());
+        for (auto input : callOp->getArguments()) {
+            printToken(", ", SYMBOL);
+            printValue(input.get());
+        }
+    }
 
     if (m_extendInfo) {
         if (m_dataTypeProvider) {

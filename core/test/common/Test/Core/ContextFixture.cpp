@@ -3,6 +3,7 @@
 #include "SDA/Core/DataType/DataTypePrinter.h"
 #include "SDA/Core/SymbolTable/SymbolTableParser.h"
 #include "SDA/Platform/x86/Platform.h"
+#include "Test/Core/Utils/TestAssertion.h"
 
 using namespace sda;
 using namespace sda::test;
@@ -74,4 +75,9 @@ FunctionSymbol* ContextFixture::newFunction(
         context, nullptr, name, functionSignature, stackSymbolTable, instrSymbolTable);
     globalSymbolTable->addSymbol(offset, functionSymbol);
     return functionSymbol;
+}
+
+::testing::AssertionResult ContextFixture::cmpDataType(DataType* dataType, const std::string& expectedCode, bool withName) const {
+    auto actualCode = DataTypePrinter::Print(dataType, context, withName);
+    return Compare(actualCode, expectedCode);
 }

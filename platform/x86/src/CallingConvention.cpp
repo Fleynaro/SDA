@@ -53,36 +53,38 @@ CallingConvention::Map FastcallCallingConvention::getStorages(const SignatureDat
 
 bool FastcallCallingConvention::getStorageInfo(const Storage& storage, StorageInfo& storageInfo) const {
     static const std::map<size_t, size_t> RegToParamIdx = {
-		std::make_pair(ZYDIS_REGISTER_RCX, 1),
-		std::make_pair(ZYDIS_REGISTER_XMM0, 1),
-		std::make_pair(ZYDIS_REGISTER_RDX, 2),
-		std::make_pair(ZYDIS_REGISTER_XMM1, 2),
-		std::make_pair(ZYDIS_REGISTER_R8, 3),
-		std::make_pair(ZYDIS_REGISTER_XMM2, 3),
-		std::make_pair(ZYDIS_REGISTER_R9, 4),
-		std::make_pair(ZYDIS_REGISTER_XMM3, 4),
+		std::make_pair(ZYDIS_REGISTER_RCX, 0),
+		std::make_pair(ZYDIS_REGISTER_XMM0, 0),
+		std::make_pair(ZYDIS_REGISTER_RDX, 1),
+		std::make_pair(ZYDIS_REGISTER_XMM1, 1),
+		std::make_pair(ZYDIS_REGISTER_R8, 2),
+		std::make_pair(ZYDIS_REGISTER_XMM2, 2),
+		std::make_pair(ZYDIS_REGISTER_R9, 3),
+		std::make_pair(ZYDIS_REGISTER_XMM3, 3),
 	};
 
-    if (storage.registerId == Register::StackPointerId) {
-		storageInfo.type = StorageInfo::Parameter;
-        storageInfo.paramIdx = storage.offset / 0x8 - 5 + 1;
-		return true;
-	}
+    if (storage.useType == Storage::Read) {
+        if (storage.registerId == Register::StackPointerId) {
+            storageInfo.type = StorageInfo::Parameter;
+            storageInfo.paramIdx = storage.offset / 0x8 - 5;
+            return true;
+        }
 
-    const auto it = RegToParamIdx.find(storage.registerId);
-	if (it != RegToParamIdx.end()) {
-        auto regType = RegisterRepositoryX86().getRegisterType(storage.registerId);
-        storageInfo.type = StorageInfo::Parameter;
-        storageInfo.paramIdx = it->second;
-        storageInfo.isStoringFloat = regType == Register::Vector;
-		return true;
-	}
-
-    if (storage.registerId == ZYDIS_REGISTER_RAX ||
-        storage.registerId == ZYDIS_REGISTER_XMM0) {
-        storageInfo.type = StorageInfo::Return;
-        storageInfo.isStoringFloat = storage.registerId == ZYDIS_REGISTER_XMM0;
-        return true;
+        const auto it = RegToParamIdx.find(storage.registerId);
+        if (it != RegToParamIdx.end()) {
+            auto regType = RegisterRepositoryX86().getRegisterType(storage.registerId);
+            storageInfo.type = StorageInfo::Parameter;
+            storageInfo.paramIdx = it->second;
+            storageInfo.isStoringFloat = regType == Register::Vector;
+            return true;
+        }
+    } else if (storage.useType == Storage::Write) {
+        if (storage.registerId == ZYDIS_REGISTER_RAX ||
+            storage.registerId == ZYDIS_REGISTER_XMM0) {
+            storageInfo.type = StorageInfo::Return;
+            storageInfo.isStoringFloat = storage.registerId == ZYDIS_REGISTER_XMM0;
+            return true;
+        }
     }
 	return false;
 }

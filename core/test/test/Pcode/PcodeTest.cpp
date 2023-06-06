@@ -52,7 +52,7 @@ TEST_F(PcodeTest, SimpleLoop) {
         B0: B0 \n\
         B1: B0 B1 \
     ";
-    auto funcGraph = parsePcode(sourcePCode, &graph);
+    auto funcGraph = parsePcode(sourcePCode, graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
     ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
 }
@@ -76,7 +76,7 @@ TEST_F(PcodeTest, SimpleLoopFirstBlock) {
         B0: B0 \n\
         B2: B0 B2 \
     ";
-    auto funcGraph = parsePcode(sourcePCode, &graph);
+    auto funcGraph = parsePcode(sourcePCode, graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
     ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
 }
@@ -111,7 +111,7 @@ TEST_F(PcodeTest, IfElseCondition) {
         B4: B0 B4 \n\
         B5: B0 B2 B4 B5 \
     ";
-    auto funcGraph = parsePcode(sourcePCode, &graph);
+    auto funcGraph = parsePcode(sourcePCode, graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
     ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
 }
@@ -151,11 +151,11 @@ TEST_F(PcodeTest, TwoEntryPointsUnion) {
     ";
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
-    graph.explore(pcode::InstructionOffset(0, 0), &provider);
-    graph.explore(pcode::InstructionOffset(2, 0), &provider);
-    auto funcGraph1 = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
-    auto funcGraph2 = graph.getFunctionGraphAt(pcode::InstructionOffset(2, 0));
-    auto funcGraph3 = graph.getFunctionGraphAt(pcode::InstructionOffset(4, 0));
+    graph->explore(pcode::InstructionOffset(0, 0), &provider);
+    graph->explore(pcode::InstructionOffset(2, 0), &provider);
+    auto funcGraph1 = graph->getFunctionGraphAt(pcode::InstructionOffset(0, 0));
+    auto funcGraph2 = graph->getFunctionGraphAt(pcode::InstructionOffset(2, 0));
+    auto funcGraph3 = graph->getFunctionGraphAt(pcode::InstructionOffset(4, 0));
     ASSERT_TRUE(cmp(funcGraph1, expectedPCodeOfFunc1));
     ASSERT_TRUE(cmp(funcGraph2, expectedPCodeOfFunc2));
     ASSERT_TRUE(cmp(funcGraph3, expectedPCodeOfFunc3));
@@ -194,11 +194,11 @@ TEST_F(PcodeTest, TwoEntryPointsUnionSecond) {
     ";
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
-    graph.explore(pcode::InstructionOffset(0, 0), &provider);
-    graph.explore(pcode::InstructionOffset(4, 0), &provider);
-    auto funcGraph1 = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
-    auto funcGraph2 = graph.getFunctionGraphAt(pcode::InstructionOffset(4, 0));
-    auto funcGraph3 = graph.getFunctionGraphAt(pcode::InstructionOffset(6, 0));
+    graph->explore(pcode::InstructionOffset(0, 0), &provider);
+    graph->explore(pcode::InstructionOffset(4, 0), &provider);
+    auto funcGraph1 = graph->getFunctionGraphAt(pcode::InstructionOffset(0, 0));
+    auto funcGraph2 = graph->getFunctionGraphAt(pcode::InstructionOffset(4, 0));
+    auto funcGraph3 = graph->getFunctionGraphAt(pcode::InstructionOffset(6, 0));
     ASSERT_TRUE(cmpDominantBlocks(funcGraph1, expectedDomBlocksOfFunc1));
     ASSERT_TRUE(cmpDominantBlocks(funcGraph2, expectedDomBlocksOfFunc2));
     ASSERT_TRUE(cmpDominantBlocks(funcGraph3, expectedDomBlocksOfFunc3));
@@ -245,12 +245,12 @@ TEST_F(PcodeTest, NewEntryBlockWithLoopFirst) {
     "; 
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
-    graph.explore(pcode::InstructionOffset(0, 0), &provider);
-    auto funcGraphBefore = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
+    graph->explore(pcode::InstructionOffset(0, 0), &provider);
+    auto funcGraphBefore = graph->getFunctionGraphAt(pcode::InstructionOffset(0, 0));
     ASSERT_TRUE(cmp(funcGraphBefore, expectedPCodeBefore));
     ASSERT_TRUE(cmpDominantBlocks(funcGraphBefore, expectedDomBlocksBefore));
-    graph.explore(pcode::InstructionOffset(4, 0), &provider);
-    auto funcGraphAfter = graph.getFunctionGraphAt(pcode::InstructionOffset(4, 0));
+    graph->explore(pcode::InstructionOffset(4, 0), &provider);
+    auto funcGraphAfter = graph->getFunctionGraphAt(pcode::InstructionOffset(4, 0));
     ASSERT_TRUE(cmp(funcGraphAfter, expectedPCodeAfter));
     ASSERT_TRUE(cmpDominantBlocks(funcGraphAfter, expectedDomBlocksAfter));
 }
@@ -297,12 +297,12 @@ TEST_F(PcodeTest, NewEntryBlockWithLoopSecond) {
     "; 
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
-    graph.explore(pcode::InstructionOffset(0, 0), &provider);
-    auto funcGraphBefore = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
+    graph->explore(pcode::InstructionOffset(0, 0), &provider);
+    auto funcGraphBefore = graph->getFunctionGraphAt(pcode::InstructionOffset(0, 0));
     ASSERT_TRUE(cmp(funcGraphBefore, expectedPCodeBefore));
     ASSERT_TRUE(cmpDominantBlocks(funcGraphBefore, expectedDomBlocksBefore));
-    graph.explore(pcode::InstructionOffset(4, 0), &provider);
-    auto funcGraphAfter = graph.getFunctionGraphAt(pcode::InstructionOffset(4, 0));
+    graph->explore(pcode::InstructionOffset(4, 0), &provider);
+    auto funcGraphAfter = graph->getFunctionGraphAt(pcode::InstructionOffset(4, 0));
     ASSERT_TRUE(cmp(funcGraphAfter, expectedPCodeAfter));
     ASSERT_TRUE(cmpDominantBlocks(funcGraphAfter, expectedDomBlocksAfter));
 }
@@ -337,21 +337,21 @@ TEST_F(PcodeTest, NewLoopJump) {
     ";
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
-    graph.explore(pcode::InstructionOffset(0, 0), &provider);
-    auto funcGraphBefore = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
+    graph->explore(pcode::InstructionOffset(0, 0), &provider);
+    auto funcGraphBefore = graph->getFunctionGraphAt(pcode::InstructionOffset(0, 0));
     ASSERT_TRUE(cmp(funcGraphBefore, expectedPCodeBefore));
-    graph.explore(pcode::InstructionOffset(5, 0), &provider);
-    auto funcGraphAfter = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
+    graph->explore(pcode::InstructionOffset(5, 0), &provider);
+    auto funcGraphAfter = graph->getFunctionGraphAt(pcode::InstructionOffset(0, 0));
     ASSERT_TRUE(cmp(funcGraphAfter, expectedPCodeAfter));
-    ASSERT_TRUE(graph.getFunctionGraphAt(pcode::InstructionOffset(3, 0)));
-    ASSERT_TRUE(graph.getFunctionGraphAt(pcode::InstructionOffset(5, 0)));
+    ASSERT_TRUE(graph->getFunctionGraphAt(pcode::InstructionOffset(3, 0)));
+    ASSERT_TRUE(graph->getFunctionGraphAt(pcode::InstructionOffset(5, 0)));
     // add new loop jump
-    graph.getBlockByName("B3")->setFarNextBlock(graph.getBlockByName("B2"));
+    graph->getBlockByName("B3")->setFarNextBlock(graph->getBlockByName("B2"));
     // each block belongs to the different function graph
-    ASSERT_TRUE(graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0)));
-    ASSERT_TRUE(graph.getFunctionGraphAt(pcode::InstructionOffset(2, 0)));
-    ASSERT_TRUE(graph.getFunctionGraphAt(pcode::InstructionOffset(3, 0)));
-    ASSERT_TRUE(graph.getFunctionGraphAt(pcode::InstructionOffset(5, 0)));
+    ASSERT_TRUE(graph->getFunctionGraphAt(pcode::InstructionOffset(0, 0)));
+    ASSERT_TRUE(graph->getFunctionGraphAt(pcode::InstructionOffset(2, 0)));
+    ASSERT_TRUE(graph->getFunctionGraphAt(pcode::InstructionOffset(3, 0)));
+    ASSERT_TRUE(graph->getFunctionGraphAt(pcode::InstructionOffset(5, 0)));
 }
 
 TEST_F(PcodeTest, NestedLoop) {
@@ -384,7 +384,7 @@ TEST_F(PcodeTest, NestedLoop) {
         B3: B0 B1 B3 \n\
         B5: B0 B1 B3 B5 \
     ";
-    auto funcGraph = parsePcode(sourcePCode, &graph);
+    auto funcGraph = parsePcode(sourcePCode, graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
     ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
 }
@@ -445,8 +445,8 @@ TEST_F(PcodeTest, JoinNextBlock) {
     ";
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
-    graph.explore(pcode::InstructionOffset(1, 0), &provider);
-    auto funcGraph = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
+    graph->explore(pcode::InstructionOffset(1, 0), &provider);
+    auto funcGraph = graph->getFunctionGraphAt(pcode::InstructionOffset(0, 0));
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
     ASSERT_EQ(funcGraph->getReferencesFrom().size(), 2);
     ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
@@ -482,7 +482,7 @@ TEST_F(PcodeTest, IfConditionWithGoto) {
         B4: B0 B2 B4 \n\
         B5: B0 B2 B4 B5 \
     ";
-    auto funcGraph = parsePcode(sourcePCode, &graph);
+    auto funcGraph = parsePcode(sourcePCode, graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
     ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
 }
@@ -538,13 +538,13 @@ TEST_F(PcodeTest, IfElseConditionWithNewGoto) {
         B2: B0 B2 B4 \n\
         B5: B0 B2 B4 B5 \
     ";
-    auto funcGraph = parsePcode(sourcePCode, &graph);
+    auto funcGraph = parsePcode(sourcePCode, graph);
     // check that graph is as expected BEFORE modification
     ASSERT_TRUE(cmp(funcGraph, expectedPCodeBefore));
     ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocksBefore));
     // modify graph
-    auto fromBlock = graph.getBlockAt(pcode::InstructionOffset(4, 0)); // block 4
-    auto toBlock = graph.getBlockAt(pcode::InstructionOffset(2, 0)); // block 2
+    auto fromBlock = graph->getBlockAt(pcode::InstructionOffset(4, 0)); // block 4
+    auto toBlock = graph->getBlockAt(pcode::InstructionOffset(2, 0)); // block 2
     fromBlock->setFarNextBlock(toBlock);
     // check that graph is as expected AFTER modification
     ASSERT_TRUE(cmp(funcGraph, expectedPCodeAfter));
@@ -595,11 +595,11 @@ TEST_F(PcodeTest, TwoFunctionsUnitedWithJump) {
     ";
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
-    graph.explore(pcode::InstructionOffset(0, 0), &provider);
-    graph.explore(pcode::InstructionOffset(2, 0), &provider);
-    auto funcGraph1 = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
-    auto funcGraph2 = graph.getFunctionGraphAt(pcode::InstructionOffset(3, 0));
-    auto funcGraph3 = graph.getFunctionGraphAt(pcode::InstructionOffset(5, 0));
+    graph->explore(pcode::InstructionOffset(0, 0), &provider);
+    graph->explore(pcode::InstructionOffset(2, 0), &provider);
+    auto funcGraph1 = graph->getFunctionGraphAt(pcode::InstructionOffset(0, 0));
+    auto funcGraph2 = graph->getFunctionGraphAt(pcode::InstructionOffset(3, 0));
+    auto funcGraph3 = graph->getFunctionGraphAt(pcode::InstructionOffset(5, 0));
     auto entryBlock2 = funcGraph2->getEntryBlock();
     auto entryBlock3 = funcGraph3->getEntryBlock();
     ASSERT_EQ(funcGraph1->getReferencesFrom().size(), 2);
@@ -684,9 +684,9 @@ TEST_F(PcodeTest, CallSplitSameBlock) {
     ";
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
-    graph.explore(pcode::InstructionOffset(0, 0), &provider);
-    auto funcGraph1 = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
-    auto funcGraph2 = graph.getFunctionGraphAt(pcode::InstructionOffset(1, 0));
+    graph->explore(pcode::InstructionOffset(0, 0), &provider);
+    auto funcGraph1 = graph->getFunctionGraphAt(pcode::InstructionOffset(0, 0));
+    auto funcGraph2 = graph->getFunctionGraphAt(pcode::InstructionOffset(1, 0));
     // the second function graph refers to itself (recursion)
     ASSERT_EQ(funcGraph2, *funcGraph2->getReferencesTo().begin());
     ASSERT_TRUE(cmp(funcGraph1, expectedPCodeOfFunc1));
@@ -725,17 +725,17 @@ TEST_F(PcodeTest, NewCallSplitBlock) {
     ";
     auto instructions = parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
-    graph.explore(pcode::InstructionOffset(0, 0), &provider);
-    auto mainFuncGraph = graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0));
+    graph->explore(pcode::InstructionOffset(0, 0), &provider);
+    auto mainFuncGraph = graph->getFunctionGraphAt(pcode::InstructionOffset(0, 0));
     ASSERT_EQ(mainFuncGraph->getReferencesFrom().size(), 2);
     ASSERT_TRUE(cmp(mainFuncGraph, expectedPCodeOfMainFunc));
     ASSERT_TRUE(cmpDominantBlocks(mainFuncGraph, expectedDomBlocksOfMainFunc));
     // explore the function that has a new call
-    graph.explore(pcode::InstructionOffset(6, 0), &provider);
+    graph->explore(pcode::InstructionOffset(6, 0), &provider);
     // now the main function has 1 "from" reference
     ASSERT_EQ(mainFuncGraph->getReferencesFrom().size(), 1);
     // the new function also has 1 "from" reference borrowed from the main function
-    auto newFuncGraph = graph.getFunctionGraphAt(pcode::InstructionOffset(2, 0));
+    auto newFuncGraph = graph->getFunctionGraphAt(pcode::InstructionOffset(2, 0));
     ASSERT_EQ(newFuncGraph->getReferencesFrom().size(), 1);
     // and has 1 "to" reference
     ASSERT_EQ(newFuncGraph->getReferencesTo().size(), 1);
@@ -793,7 +793,7 @@ TEST_F(PcodeTest, ProgramWithIfElseLoop) {
         B9: B0 B2 B3 B4 B6 B8 B9 \n\
         Bb: B0 B2 B3 B4 B6 B8 B9 Bb \
     ";
-    auto funcGraph = parsePcode(sourcePCode, &graph);
+    auto funcGraph = parsePcode(sourcePCode, graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
     ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
 }
@@ -835,7 +835,7 @@ TEST_F(PcodeTest, ProgramWithBreakContinueInLoop) {
         B5: B0 B2 B4 B5 \n\
         B7: B0 B2 B4 B5 B7 \
     ";
-    auto funcGraph = parsePcode(sourcePCode, &graph);
+    auto funcGraph = parsePcode(sourcePCode, graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
     ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
 }

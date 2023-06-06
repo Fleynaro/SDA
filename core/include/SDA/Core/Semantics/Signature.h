@@ -117,6 +117,12 @@ namespace sda::semantics
                 ctx.collect([&]() {
                     m_collector->collect(ctx);
                 });
+                if (function->getFunctionSymbol()) {
+                    auto sig = m_collector->m_signatureRepo->getSignature(function);
+                    if (sig) {
+                        sig->updateSignatureDataType(function->getFunctionSymbol()->getSignature());
+                    }
+                }
             }
         public:
             IRcodeProgramCallbacks(SignatureCollector* collector) : m_collector(collector) {}

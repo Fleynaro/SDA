@@ -2,6 +2,22 @@
 
 using namespace sda::ircode;
 
+void Program::Callbacks::onFunctionCreated(Function* function) {
+    if (m_prevCallbacks)
+        m_prevCallbacks->onFunctionCreated(function);
+    if (m_enabled) {
+        onFunctionCreatedImpl(function);
+    }
+}
+
+void Program::Callbacks::onFunctionRemoved(Function* function) {
+    if (m_prevCallbacks)
+        m_prevCallbacks->onFunctionRemoved(function);
+    if (m_enabled) {
+        onFunctionRemovedImpl(function);
+    }
+}
+
 void Program::Callbacks::onFunctionDecompiled(Function* function, std::list<Block*> blocks) {
     if (m_prevCallbacks)
         m_prevCallbacks->onFunctionDecompiled(function, blocks);

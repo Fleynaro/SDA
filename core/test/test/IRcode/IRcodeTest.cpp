@@ -17,7 +17,7 @@ TEST_F(IRcodeTest, Simplest) {
             var1[rax]:8 = COPY 0x1:8 \n\
             var2[rax]:8 = INT_ADD var1, 0x1:8 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
@@ -40,7 +40,7 @@ TEST_F(IRcodeTest, SimpleConcat) {
             var5:2 = CONCAT var4, var2, 0 \n\
             var6[r10]:2 = INT_2COMP var5 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
@@ -69,7 +69,7 @@ TEST_F(IRcodeTest, IfElseCondition) {
             var5:8 = PHI var3, var4 \n\
             var6[r10]:8 = INT_2COMP var5 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
@@ -102,7 +102,7 @@ TEST_F(IRcodeTest, IfElseConditionMem) {
             var8:8 = PHI var6, var7 \n\
             var9[r10]:8 = COPY var8 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
@@ -134,7 +134,7 @@ TEST_F(IRcodeTest, IfElseConditionAlAh) {
             var8:2 = PHI var6, var7 \n\
             var9[r10]:2 = INT_2COMP var8 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
@@ -213,7 +213,7 @@ TEST_F(IRcodeTest, IfElseConditionXmm) {
             var40:4 = PHI var38, var39 \n\
             var41[var37]:4 = COPY var40 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
@@ -249,7 +249,7 @@ TEST_F(IRcodeTest, MultipleParentBlocksNoPhi) {
             var2:8 = REF var1 \n\
             var3[r10]:8 = INT_2COMP var2 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
@@ -289,7 +289,7 @@ TEST_F(IRcodeTest, MultipleParentBlocksDoublePhi) {
             var8:8 = PHI var6, var7 \n\
             var9[r10]:8 = INT_2COMP var8 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
@@ -310,7 +310,7 @@ TEST_F(IRcodeTest, Loop) {
             var4:4 = PHI var2, var3 \n\
             var5[rax]:4 = INT_ADD var4, 0x1:4 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
@@ -344,7 +344,7 @@ TEST_F(IRcodeTest, LoopTwoVariable) {
             var8:4 = PHI var6, var7 \n\
             var9[rcx]:4 = INT_ADD var8, 0x1:4 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
@@ -372,7 +372,7 @@ TEST_F(IRcodeTest, NestedLoop) {
             var8:4 = REF var7 \n\
             var9[rax]:4 = INT_MULT var8, 0x2:4 \
     ";
-    auto function = parsePcode(sourcePCode, &program);
+    auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
@@ -401,11 +401,11 @@ TEST_F(IRcodeTest, TwoEntryPointsUnion) {
     ";
     auto instructions = PcodeFixture::parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
-    graph.explore(pcode::InstructionOffset(0, 0), &provider);
-    graph.explore(pcode::InstructionOffset(2, 0), &provider);
-    auto func1 = program.toFunction(graph.getFunctionGraphAt(pcode::InstructionOffset(0, 0)));
-    auto func2 = program.toFunction(graph.getFunctionGraphAt(pcode::InstructionOffset(2, 0)));
-    auto func3 = program.toFunction(graph.getFunctionGraphAt(pcode::InstructionOffset(4, 0)));
+    graph->explore(pcode::InstructionOffset(0, 0), &provider);
+    graph->explore(pcode::InstructionOffset(2, 0), &provider);
+    auto func1 = program->toFunction(graph->getFunctionGraphAt(pcode::InstructionOffset(0, 0)));
+    auto func2 = program->toFunction(graph->getFunctionGraphAt(pcode::InstructionOffset(2, 0)));
+    auto func3 = program->toFunction(graph->getFunctionGraphAt(pcode::InstructionOffset(4, 0)));
     ASSERT_TRUE(cmp(func1, expectedIRCodeOfFunc1));
     ASSERT_TRUE(cmp(func2, expectedIRCodeOfFunc2));
     ASSERT_TRUE(cmp(func3, expectedIRCodeOfFunc3));
