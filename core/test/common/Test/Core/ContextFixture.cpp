@@ -10,8 +10,9 @@ using namespace sda::test;
 using namespace ::testing;
 
 void ContextFixture::SetUp() {
+    auto eventPipe = new EventPipe();
     platform = new PlatformX86(true);
-    context = newContext();
+    context = newContext(eventPipe);
     context->initDefault();
     globalSymbolTable = parseSymbolTable("\
         GlobalSymbolTable = {} \
@@ -24,8 +25,8 @@ void ContextFixture::TearDown() {
     delete platform;
 }
 
-Context* ContextFixture::newContext() {
-    auto context = new Context(platform);
+Context* ContextFixture::newContext(EventPipe* eventPipe) {
+    auto context = new Context(eventPipe, platform);
     createdContexts.push_back(context);
     return context;
 }

@@ -1,5 +1,6 @@
 #include "SDA/Core/IRcode/IRcodeProgram.h"
-#include "SDA/Core/Pcode/PcodeGraph.h"
+#include "SDA/Core/IRcode/IRcodeEvents.h"
+#include "SDA/Core/Commit.h"
 
 using namespace sda;
 using namespace sda::ircode;
@@ -36,44 +37,57 @@ void UpdateBlocks(Program* program, const std::set<pcode::Block*>& pcodeBlocks) 
     }
 }
 
-void Program::PcodeGraphCallbacks::onBlockUpdateRequestedImpl(pcode::Block* pcodeBlock) {
-    m_pcodeBlocksToUpdate.insert(pcodeBlock);
+EventPipe UpdateBlocksEventPipe(Program* program) {
+    auto pipe = EventPipe();
+    auto commitPipe = CommitPipe();
+    auto pcodeBlocksToUpdate = std::make_shared<std::set<pcode::Block*>>();
+    commitPipe.handle(std::function([=](const CommitEndEvent& event) {
+        UpdateBlocks(program, *pcodeBlocksToUpdate);
+        pcodeBlocksToUpdate->clear();
+    }));
+    pipe.connect(commitPipe);
+    pipe.handle(std::function([=](const pcode::BlockUpdateRequestedEvent& event) {
+        pcodeBlocksToUpdate->insert(event.block);
+    }));
+    return pipe;
 }
 
-void Program::PcodeGraphCallbacks::onBlockFunctionGraphChangedImpl(pcode::Block* pcodeBlock, pcode::FunctionGraph* oldFunctionGraph, pcode::FunctionGraph* newFunctionGraph) {
-    if (oldFunctionGraph) {
-        auto oldFunction = m_program->toFunction(oldFunctionGraph);
-        auto block = oldFunction->toBlock(pcodeBlock);
-        m_program->getCallbacks()->onBlockRemoved(block);
-        oldFunction->getBlocks().erase(pcodeBlock);
+void Program::PcodeEventHandler::handleBlockFunctionGraphChanged(const pcode::BlockFunctionGraphChangedEvent& event) {
+    if (event.oldFunctionGraph) {
+        auto oldFunction = m_program->toFunction(event.oldFunctionGraph);
+        auto block = oldFunction->toBlock(event.block);
+        m_program->getEventPipe()->send(BlockRemovedEvent(block));
+        oldFunction->getBlocks().erase(event.block);
     }
-    auto newFunction = m_program->toFunction(newFunctionGraph);
-    newFunction->getBlocks().emplace(pcodeBlock, Block(pcodeBlock, newFunction));
-    m_program->getCallbacks()->onBlockCreated(newFunction->toBlock(pcodeBlock));
+    auto newFunction = m_program->toFunction(event.newFunctionGraph);
+    newFunction->getBlocks().emplace(event.block, Block(event.block, newFunction));
+    m_program->getEventPipe()->send(BlockCreatedEvent(
+        newFunction->toBlock(event.block)));
 }
 
-void Program::PcodeGraphCallbacks::onFunctionGraphCreatedImpl(pcode::FunctionGraph* functionGraph) {
-    m_program->m_functions.emplace(functionGraph, Function(m_program, functionGraph));
-    m_program->getCallbacks()->onFunctionCreated(m_program->toFunction(functionGraph));
+void Program::PcodeEventHandler::handleFunctionGraphCreated(const pcode::FunctionGraphCreatedEvent& event) {
+    m_program->m_functions.emplace(event.functionGraph, Function(m_program, event.functionGraph));
+    m_program->getEventPipe()->send(FunctionCreatedEvent(
+        m_program->toFunction(event.functionGraph)));
 }
 
-void Program::PcodeGraphCallbacks::onFunctionGraphRemovedImpl(pcode::FunctionGraph* functionGraph) {
-    m_program->getCallbacks()->onFunctionRemoved(m_program->toFunction(functionGraph));
-    m_program->m_functions.erase(functionGraph);
+void Program::PcodeEventHandler::handleFunctionGraphRemoved(const pcode::FunctionGraphRemovedEvent& event) {
+    m_program->getEventPipe()->send(FunctionRemovedEvent(
+        m_program->toFunction(event.functionGraph)));
+    m_program->m_functions.erase(event.functionGraph);
 }
 
-void Program::PcodeGraphCallbacks::onCommitStartedImpl() {
-    m_commitStarted = true;
+EventPipe Program::PcodeEventHandler::getEventPipe() {
+    auto pipe = EventPipe();
+    pipe.connect(UpdateBlocksEventPipe(m_program));
+    pipe.handleMethod(this, &PcodeEventHandler::handleBlockFunctionGraphChanged);
+    pipe.handleMethod(this, &PcodeEventHandler::handleFunctionGraphCreated);
+    pipe.handleMethod(this, &PcodeEventHandler::handleFunctionGraphRemoved);
+    return pipe;
 }
 
-void Program::PcodeGraphCallbacks::onCommitEndedImpl() {
-    m_commitStarted = false;
-    UpdateBlocks(m_program, m_pcodeBlocksToUpdate);
-    m_pcodeBlocksToUpdate.clear();
-}
-
-void Program::ContextCallbacks::onObjectModifiedImpl(Object* object) {
-    if (auto signatureDt = dynamic_cast<SignatureDataType*>(object)) {
+void Program::ContextEventHandler::handleObjectModified(const ObjectModifiedEvent& event) {
+    if (auto signatureDt = dynamic_cast<SignatureDataType*>(event.object)) {
         for (auto funcSymbol : signatureDt->getFunctionSymbols()) {
             if (auto symbolTable = funcSymbol->getSymbolTable()) {
                 if (symbolTable == m_program->m_globalSymbolTable) {
@@ -90,26 +104,24 @@ void Program::ContextCallbacks::onObjectModifiedImpl(Object* object) {
     }
 }
 
+EventPipe Program::ContextEventHandler::getEventPipe() {
+    auto pipe = EventPipe();
+    pipe.handleMethod(this, &ContextEventHandler::handleObjectModified);
+    return pipe;
+}
+
 Program::Program(pcode::Graph* graph, SymbolTable* globalSymbolTable)
     : m_graph(graph)
     , m_globalSymbolTable(globalSymbolTable)
-    , m_pcodeGraphCallbacks(std::make_shared<PcodeGraphCallbacks>(this))
-    , m_contextCallbacks(std::make_shared<ContextCallbacks>(this))
-    , m_callbacks(std::make_shared<Callbacks>())
+    , m_pcodeEventHandler(this)
+    , m_contextEventHandler(this)
 {
-    {
-        // graph callbacks
-        auto prevCallbacks = m_graph->getCallbacks();
-        m_pcodeGraphCallbacks->setPrevCallbacks(prevCallbacks);
-        m_graph->setCallbacks(m_pcodeGraphCallbacks);
-    }
-    {
-        // context callbacks
-        auto context = m_globalSymbolTable->getContext();
-        auto prevCallbacks = context->getCallbacks();
-        m_contextCallbacks->setPrevCallbacks(prevCallbacks);
-        context->setCallbacks(m_contextCallbacks);
-    }
+    m_graph->getEventPipe()->connect(m_pcodeEventHandler.getEventPipe());
+    m_graph->getEventPipe()->connect(m_contextEventHandler.getEventPipe());
+}
+
+EventPipe* Program::getEventPipe() {
+    return m_graph->getEventPipe();
 }
 
 pcode::Graph* Program::getGraph() {
@@ -174,12 +186,4 @@ std::list<Block*> Program::getBlocksRefToFunction(Function* function) {
         }
     }
     return result;
-}
-
-void Program::setCallbacks(std::shared_ptr<Callbacks> callbacks) {
-    m_callbacks = callbacks;
-}
-
-std::shared_ptr<Program::Callbacks> Program::getCallbacks() const {
-    return m_callbacks;
 }

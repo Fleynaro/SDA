@@ -74,30 +74,17 @@ namespace sda::semantics
         std::list<std::unique_ptr<SemanticsRepository>> m_repositories;
         std::list<std::unique_ptr<SemanticsPropagator>> m_propagators;
 
-        class IRcodeProgramCallbacks : public ircode::Program::Callbacks
+        class IRcodeEventHandler
         {
             SemanticsManager* m_semManager;
-
-            void onOperationAddedImpl(const ircode::Operation* op) override {
-                SemanticsPropagationContext ctx;
-                ctx.addNextOperation(op);
-                m_semManager->propagate(ctx);
-            }
-
-            void onOperationRemovedImpl(const ircode::Operation* op) override {
-
-            }
         public:
-            IRcodeProgramCallbacks(SemanticsManager* semManager) : m_semManager(semManager) {}
+            IRcodeEventHandler(SemanticsManager* semManager) : m_semManager(semManager) {}
         };
-        std::shared_ptr<IRcodeProgramCallbacks> m_ircodeProgramCallbacks;
+        IRcodeEventHandler m_ircodeEventHandler;
     public:
         SemanticsManager(ircode::Program* program)
-            : m_ircodeProgramCallbacks(std::make_shared<IRcodeProgramCallbacks>(this))
+            : m_ircodeEventHandler(this)
         {
-            auto prevCallbacks = program->getCallbacks();
-            m_ircodeProgramCallbacks->setPrevCallbacks(prevCallbacks);
-            program->setCallbacks(m_ircodeProgramCallbacks);
         }
 
         void addRepository(std::unique_ptr<SemanticsRepository> repository) {

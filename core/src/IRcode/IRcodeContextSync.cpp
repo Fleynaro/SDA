@@ -5,16 +5,16 @@
 using namespace sda;
 using namespace sda::ircode;
 
-ContextSyncCallbacks::ContextSyncCallbacks(
+ContextSync::ContextSync(
     SymbolTable* globalSymbolTable,
     std::shared_ptr<CallingConvention> callingConvention)
     : m_globalSymbolTable(globalSymbolTable)
     , m_callingConvention(callingConvention)
 {}
 
-void ContextSyncCallbacks::onFunctionCreatedImpl(ircode::Function* function) {
+void ContextSync::handleFunctionCreated(const FunctionCreatedEvent& event) {
     auto ctx = m_globalSymbolTable->getContext();
-    auto offset = function->getEntryOffset();
+    auto offset = event.function->getEntryOffset();
     std::stringstream name;
     name << "function_" << utils::to_hex() << offset;
 
@@ -25,11 +25,18 @@ void ContextSyncCallbacks::onFunctionCreatedImpl(ircode::Function* function) {
     m_globalSymbolTable->addSymbol(offset, symbol);
 }
 
-void ContextSyncCallbacks::onFunctionRemovedImpl(ircode::Function* function) {
-    auto offset = function->getEntryOffset();
+void ContextSync::handleFunctionRemoved(const FunctionRemovedEvent& event) {
+    auto offset = event.function->getEntryOffset();
     auto symbolInfo = m_globalSymbolTable->getSymbolAt(offset);
     m_globalSymbolTable->removeSymbol(offset);
     if (symbolInfo.symbol) {
         symbolInfo.symbol->destroy();
     }
+}
+
+EventPipe ContextSync::getEventPipe() {
+    EventPipe pipe;
+    pipe.handleMethod(this, &ContextSync::handleFunctionCreated);
+    pipe.handleMethod(this, &ContextSync::handleFunctionRemoved);
+    return pipe;
 }

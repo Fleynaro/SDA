@@ -2,6 +2,7 @@
 #include "Semantics.h"
 #include "SDA/Core/DataType/SignatureDataType.h"
 #include "SDA/Core/IRcode/IRcodeBlock.h"
+#include "SDA/Core/IRcode/IRcodeEvents.h"
 
 namespace sda::semantics
 {
@@ -103,13 +104,13 @@ namespace sda::semantics
         SignatureRepository* m_signatureRepo;
         std::shared_ptr<CallingConvention> m_callingConvention;
 
-        class IRcodeProgramCallbacks : public ircode::Program::Callbacks
+        class IRcodeEventHandler
         {
             SignatureCollector* m_collector;
 
-            void onFunctionDecompiledImpl(ircode::Function* function, std::list<ircode::Block*> blocks) override {
+            void handleFunctionDecompiled(const ircode::FunctionDecompiledEvent& event) {
                 SemanticsPropagationContext ctx;
-                for (auto block : blocks) { 
+                for (auto block : event.blocks) { 
                     for (auto& op : block->getOperations()) {
                         ctx.addNextOperation(op.get());
                     }
@@ -117,17 +118,23 @@ namespace sda::semantics
                 ctx.collect([&]() {
                     m_collector->collect(ctx);
                 });
-                if (function->getFunctionSymbol()) {
-                    auto sig = m_collector->m_signatureRepo->getSignature(function);
+                if (event.function->getFunctionSymbol()) {
+                    auto sig = m_collector->m_signatureRepo->getSignature(event.function);
                     if (sig) {
-                        sig->updateSignatureDataType(function->getFunctionSymbol()->getSignature());
+                        sig->updateSignatureDataType(event.function->getFunctionSymbol()->getSignature());
                     }
                 }
             }
         public:
-            IRcodeProgramCallbacks(SignatureCollector* collector) : m_collector(collector) {}
+            IRcodeEventHandler(SignatureCollector* collector) : m_collector(collector) {}
+
+            EventPipe getEventPipe() {
+                auto pipe = EventPipe();
+                pipe.handleMethod(this, &IRcodeEventHandler::handleFunctionDecompiled);
+                return pipe;
+            }
         };
-        std::shared_ptr<IRcodeProgramCallbacks> m_programCallbacks;
+        IRcodeEventHandler m_ircodeEventHandler;
     public:
         SignatureCollector(
             ircode::Program* program,
@@ -138,11 +145,9 @@ namespace sda::semantics
             : m_platform(platform)
             , m_signatureRepo(signatureRepo)
             , m_callingConvention(callingConvention)
-            , m_programCallbacks(std::make_shared<IRcodeProgramCallbacks>(this))
+            , m_ircodeEventHandler(this)
         {
-            auto prevCallbacks = program->getCallbacks();
-            m_programCallbacks->setPrevCallbacks(prevCallbacks);
-            program->setCallbacks(m_programCallbacks);
+            program->getEventPipe()->connect(m_ircodeEventHandler.getEventPipe());
         }
 
         void collect(SemanticsPropagationContext& ctx)

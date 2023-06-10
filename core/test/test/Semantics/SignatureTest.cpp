@@ -11,15 +11,14 @@ class SignatureSemanticsTest : public SemanticsFixture
 protected:
     std::unique_ptr<semantics::SignatureRepository> signatureRepo;
     std::unique_ptr<semantics::SignatureCollector> signatureCollector;
+    std::unique_ptr<ircode::ContextSync> ctxSync;
 
     void SetUp() override {
         SemanticsFixture::SetUp();
         auto callConv = std::make_shared<platform::FastcallCallingConvention>();
 
-        auto programCallbacks = std::make_shared<ircode::ContextSyncCallbacks>(globalSymbolTable, callConv);
-        auto prevCallbacks = program->getCallbacks();
-        programCallbacks->setPrevCallbacks(prevCallbacks);
-        program->setCallbacks(programCallbacks);
+        ctxSync = std::make_unique<ircode::ContextSync>(globalSymbolTable, callConv);
+        program->getEventPipe()->connect(ctxSync->getEventPipe());
 
         signatureRepo = std::make_unique<semantics::SignatureRepository>();
         signatureCollector = std::make_unique<semantics::SignatureCollector>(
@@ -69,4 +68,5 @@ TEST_F(SignatureSemanticsTest, Simple) {
     ASSERT_TRUE(cmp(func2, expectedIRCodeOfFunc2));
     ASSERT_TRUE(cmpDataType(mainFunction->getFunctionSymbol()->getSignature(), expectedSigOfMainFunc));
     ASSERT_TRUE(cmpDataType(func2->getFunctionSymbol()->getSignature(), expectedSigOfFunc2));
+    // TODO: оптимизация - уменьшение кол-ва вызовов декомпиляции
 }

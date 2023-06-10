@@ -1,4 +1,5 @@
 #pragma once
+#include "SDA/Core/Event/EventPipe.h"
 #include "SDA/Core/Object/ContextObject.h"
 #include "SDA/Core/Platform/Platform.h"
 
@@ -14,6 +15,7 @@ namespace sda
     // Core context that contains all important entities
     class Context
     {
+        EventPipe* m_eventPipe;
         Platform* m_platform;
         std::unique_ptr<AddressSpaceList> m_addressSpaces;
         std::unique_ptr<ImageList> m_images;
@@ -21,12 +23,14 @@ namespace sda
         std::unique_ptr<SymbolList> m_symbols;
         std::unique_ptr<SymbolTableList> m_symbolTables;
     public:
-        Context(Platform* platform);
+        Context(EventPipe* eventPipe, Platform* platform);
 
         ~Context();
 
         // Init context with default objects
         void initDefault();
+
+        EventPipe* getEventPipe() const;
 
         // Get the platform (e.g. x86, arm, etc.)
         Platform* getPlatform() const;
@@ -45,49 +49,5 @@ namespace sda
 
         // Get the list of symbol tables
         SymbolTableList* getSymbolTables() const;
-    
-        // Callbacks for the context
-        class Callbacks {
-            std::shared_ptr<Callbacks> m_prevCallbacks;
-            bool m_enabled = true;
-        public:
-            virtual std::string getName() const;
-
-            // Called when an object is added to the context
-            void onObjectAdded(Object* obj);
-
-            // Called when an object is modified in the context
-            void onObjectModified(Object* obj);
-
-            // Called when an object is removed from the context
-            void onObjectRemoved(Object* obj);
-
-            // Called when context is destroyed
-            void onContextDestroyed(Context* context);
-
-            void setPrevCallbacks(std::shared_ptr<Callbacks> prevCallbacks);
-
-            void setEnabled(bool enabled);
-
-            static std::shared_ptr<Callbacks> Find(const std::string& name, std::shared_ptr<Callbacks> callbacks);
-
-        protected:
-            virtual void onObjectAddedImpl(Object* obj) {};
-
-            virtual void onObjectModifiedImpl(Object* obj) {};
-
-            virtual void onObjectRemovedImpl(Object* obj) {};
-
-            virtual void onContextDestroyedImpl(Context* context) {};
-        };
-
-        // Set the callbacks for the context
-        void setCallbacks(std::shared_ptr<Callbacks> callbacks);
-
-        // Get the callbacks for the context
-        std::shared_ptr<Callbacks> getCallbacks() const;
-
-    private:
-        std::shared_ptr<Callbacks> m_callbacks;
     };
 };

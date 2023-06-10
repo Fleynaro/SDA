@@ -1,6 +1,7 @@
 #pragma once
 #include "Semantics.h"
 #include "SDA/Core/IRcode/IRcodeBlock.h"
+#include "SDA/Core/IRcode/IRcodeEvents.h"
 
 namespace sda::semantics
 {
@@ -71,13 +72,13 @@ namespace sda::semantics
         Platform* m_platform;
         DataFlowRepository* m_dataFlowRepo;
 
-        class IRcodeProgramCallbacks : public ircode::Program::Callbacks
+        class IRcodeEventHandler
         {
             DataFlowCollector* m_collector;
 
-            void onFunctionDecompiledImpl(ircode::Function* function, std::list<ircode::Block*> blocks) override {
+            void handleFunctionDecompiled(const ircode::FunctionDecompiledEvent& event) {
                 SemanticsPropagationContext ctx;
-                for (auto block : blocks) { 
+                for (auto block : event.blocks) { 
                     for (auto& op : block->getOperations()) {
                         ctx.addNextOperation(op.get());
                     }
@@ -87,9 +88,15 @@ namespace sda::semantics
                 });
             }
         public:
-            IRcodeProgramCallbacks(DataFlowCollector* collector) : m_collector(collector) {}
+            IRcodeEventHandler(DataFlowCollector* collector) : m_collector(collector) {}
+
+            EventPipe getEventPipe() {
+                auto pipe = EventPipe();
+                pipe.handleMethod(this, &IRcodeEventHandler::handleFunctionDecompiled);
+                return pipe;
+            }
         };
-        std::shared_ptr<IRcodeProgramCallbacks> m_programCallbacks;
+        IRcodeEventHandler m_ircodeEventHandler;
     public:
         DataFlowCollector(
             ircode::Program* program,
@@ -98,11 +105,9 @@ namespace sda::semantics
         )
             : m_platform(platform)
             , m_dataFlowRepo(dataFlowRepo)
-            , m_programCallbacks(std::make_shared<IRcodeProgramCallbacks>(this))
+            , m_ircodeEventHandler(this)
         {
-            auto prevCallbacks = program->getCallbacks();
-            m_programCallbacks->setPrevCallbacks(prevCallbacks);
-            program->setCallbacks(m_programCallbacks);
+            program->getEventPipe()->connect(m_ircodeEventHandler.getEventPipe());
         }
 
         void collect(SemanticsPropagationContext& ctx)

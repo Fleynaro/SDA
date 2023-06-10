@@ -1,4 +1,6 @@
 #include "SDA/Core/Pcode/PcodeGraph.h"
+#include "SDA/Core/Pcode/PcodeEvents.h"
+#include "SDA/Core/Commit.h"
 #include <set>
 #include <stdexcept>
 
@@ -13,73 +15,66 @@ InstructionOffset sda::pcode::GetTargetOffset(const Instruction* instr) {
     return targetOffset;
 }
 
-class OptimizationCallbacks : public Graph::Callbacks {
-    // TODO: to use it we should move CALL references from the func. graph class to the block class
-    Graph* m_graph;
-    bool m_enabled = true;
-    std::list<Block*> m_blocksToUpdate;
-    std::set<Block*> m_updatedBlocks;
+// class OptimizationCallbacks : public Graph::Callbacks {
+//     // TODO: to use it we should move CALL references from the func. graph class to the block class
+//     Graph* m_graph;
+//     bool m_enabled = true;
+//     std::list<Block*> m_blocksToUpdate;
+//     std::set<Block*> m_updatedBlocks;
 
-    void onBlockUpdateRequestedImpl(Block* block) override {
-        if (!m_enabled) {
-            return;
-        }
-        m_blocksToUpdate.push_back(block);
-    }
+//     void onBlockUpdateRequestedImpl(Block* block) override {
+//         if (!m_enabled) {
+//             return;
+//         }
+//         m_blocksToUpdate.push_back(block);
+//     }
 
-    void onBlockUpdatedImpl(Block* block) override {
-        if (!m_enabled) {
-            return;
-        }
-        m_updatedBlocks.insert(block);
-    }
+//     void onBlockUpdatedImpl(Block* block) override {
+//         if (!m_enabled) {
+//             return;
+//         }
+//         m_updatedBlocks.insert(block);
+//     }
 
-    void onCommitStartedImpl() override {
-        m_enabled = true;
-        m_graph->setUpdateBlocksEnabled(false);
-    }
+//     void onCommitStartedImpl() override {
+//         m_enabled = true;
+//         m_graph->setUpdateBlocksEnabled(false);
+//     }
 
-    void onCommitEndedImpl() override {
-        m_enabled = false;
-        m_graph->setUpdateBlocksEnabled(true);
-        for (auto block : m_blocksToUpdate) {
-            if (m_updatedBlocks.find(block) == m_updatedBlocks.end()) {
-                block->update();
-            }
-        }
-        m_blocksToUpdate.clear();
-        m_updatedBlocks.clear();
-    }
+//     void onCommitEndedImpl() override {
+//         m_enabled = false;
+//         m_graph->setUpdateBlocksEnabled(true);
+//         for (auto block : m_blocksToUpdate) {
+//             if (m_updatedBlocks.find(block) == m_updatedBlocks.end()) {
+//                 block->update();
+//             }
+//         }
+//         m_blocksToUpdate.clear();
+//         m_updatedBlocks.clear();
+//     }
 
-public:
-    OptimizationCallbacks(Graph* graph)
-        : m_graph(graph)
-    {}
-};
+// public:
+//     OptimizationCallbacks(Graph* graph)
+//         : m_graph(graph)
+//     {}
+// };
 
-Graph::Graph()
-    //: m_callbacks(std::make_shared<OptimizationCallbacks>(this))
-    : m_callbacks(std::make_shared<Callbacks>())
+Graph::Graph(EventPipe* eventPipe)
+    : m_eventPipe(eventPipe)
 {}
 
+sda::EventPipe* Graph::getEventPipe() {
+    return m_eventPipe;
+}
+
 void Graph::explore(InstructionOffset startOffset, InstructionProvider* instrProvider) {
-    CommitScope commit(this);
+    CommitScope commit(m_eventPipe);
     std::list<InstructionOffset> unvisitedOffsets = { startOffset };
     std::set<InstructionOffset> visitedOffsets;
 
-    // set the callbacks to gather unvisited offsets
-    struct ExploreCallbacks : Callbacks {
-        std::list<InstructionOffset>* unvisitedOffsets;
-
-        void onUnvisitedOffsetFoundImpl(InstructionOffset offset) override {
-            unvisitedOffsets->push_back(offset);
-        }
-    };
-    auto prevCallbacks = getCallbacks();
-    auto exploreCallbacks = std::make_shared<ExploreCallbacks>();
-    exploreCallbacks->unvisitedOffsets = &unvisitedOffsets;
-    exploreCallbacks->setPrevCallbacks(prevCallbacks);
-    setCallbacks(exploreCallbacks);
+    auto& pipe = m_eventPipe->handle(std::function([&](const pcode::UnvisitedOffsetFoundEvent& event) {
+        unvisitedOffsets.push_back(event.offset);
+    }));
 
     while (!unvisitedOffsets.empty()) {
         // get the next unvisited offset
@@ -121,13 +116,12 @@ void Graph::explore(InstructionOffset startOffset, InstructionProvider* instrPro
         }
     }
     
-    // restore the previous callbacks
-    setCallbacks(prevCallbacks);
+    m_eventPipe->disconnect(pipe);
 }
 
 
 void Graph::addInstruction(const Instruction& instruction, InstructionOffset nextOffset) {
-    CommitScope commit(this);
+    CommitScope commit(m_eventPipe);
     auto offset = instruction.getOffset();
     if (m_instructions.find(offset) != m_instructions.end())
         throw std::runtime_error("Instruction already exists at this offset");
@@ -185,10 +179,16 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
         block->setFarNextBlock(nextFarBlock);
 
         // next unvisited offsets
-        if (nextFarBlock)
-            getCallbacks()->onUnvisitedOffsetFound(nextFarBlock->getMinOffset());
-        if (nextNearBlock)
-            getCallbacks()->onUnvisitedOffsetFound(nextNearBlock->getMinOffset());
+        if (nextFarBlock) {
+            m_eventPipe->send(UnvisitedOffsetFoundEvent {
+                nextFarBlock->getMinOffset()
+            });
+        }
+        if (nextNearBlock) {
+            m_eventPipe->send(UnvisitedOffsetFoundEvent {
+                nextNearBlock->getMinOffset()
+            });
+        }
     }
     else if (instruction.getId() == pcode::InstructionId::CALL) {
         auto targetOffset = GetTargetOffset(&instruction);
@@ -213,8 +213,11 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
             block->getFunctionGraph()->addReferenceFrom(offset, calledBlock);
 
             // next unvisited offsets
-            if (calledBlock)
-                getCallbacks()->onUnvisitedOffsetFound(calledBlock->getMinOffset());
+            if (calledBlock) {
+                m_eventPipe->send(UnvisitedOffsetFoundEvent {
+                    calledBlock->getMinOffset()
+                });
+            }
         }
     }
 
@@ -245,7 +248,10 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
             }
         }
     }
-    getCallbacks()->onInstructionAdded(&m_instructions[offset], nextOffset);
+    m_eventPipe->send(InstructionAddedEvent {
+        &m_instructions[offset],
+        nextOffset
+    });
 }
 
 void Graph::removeInstruction(const Instruction* instruction) {
@@ -253,7 +259,9 @@ void Graph::removeInstruction(const Instruction* instruction) {
     auto it = m_instructions.find(offset);
     if (it == m_instructions.end())
         throw std::runtime_error("Instruction not found");
-    getCallbacks()->onInstructionRemoved(instruction);
+    m_eventPipe->send(InstructionRemovedEvent {
+        instruction
+    });
     m_instructions.erase(it);
 }
 
@@ -285,7 +293,9 @@ Block* Graph::createBlock(InstructionOffset offset) {
     m_blocks[offset] = Block(this, offset);
     auto newBlock = &m_blocks[offset];
     newBlock->update();
-    getCallbacks()->onBlockCreated(newBlock);
+    m_eventPipe->send(BlockCreatedEvent {
+        newBlock
+    });
     return newBlock;
 }
 
@@ -306,7 +316,7 @@ void Graph::removeBlock(Block* block) {
 }
 
 Block* Graph::splitBlock(Block* block, InstructionOffset offset) {
-    CommitScope commit(this);
+    CommitScope commit(m_eventPipe);
     if (offset <= block->getMinOffset() || offset >= block->getMaxOffset())
         throw std::runtime_error("Invalid offset");
     
@@ -340,7 +350,7 @@ Block* Graph::splitBlock(Block* block, InstructionOffset offset) {
 }
 
 void Graph::joinBlocks(Block* block1, Block* block2) {
-    CommitScope commit(this);
+    CommitScope commit(m_eventPipe);
     assert(block1->canBeJoinedWith(block2));
     assert(block2->getFunctionGraph()->getEntryBlock() == block2);
 
@@ -405,7 +415,9 @@ FunctionGraph* Graph::createFunctionGraph(Block* entryBlock) {
     m_functionGraphs[offset] = FunctionGraph(entryBlock);
     entryBlock->update();
     auto functionGraph = &m_functionGraphs[offset];
-    getCallbacks()->onFunctionGraphCreated(functionGraph);
+    m_eventPipe->send(FunctionGraphCreatedEvent {
+        functionGraph
+    });
     return functionGraph;
 }
 
@@ -415,7 +427,9 @@ void Graph::removeFunctionGraph(FunctionGraph* functionGraph) {
     auto it = m_functionGraphs.find(offset);
     if (it == m_functionGraphs.end())
         throw std::runtime_error("Function graph not found");
-    getCallbacks()->onFunctionGraphRemoved(functionGraph);
+    m_eventPipe->send(FunctionGraphRemovedEvent {
+        functionGraph
+    });
     entryBlock->update();
     it->second.removeAllReferences();
     m_functionGraphs.erase(it);
@@ -423,24 +437,4 @@ void Graph::removeFunctionGraph(FunctionGraph* functionGraph) {
 
 void Graph::setUpdateBlocksEnabled(bool enabled) {
     m_updateBlockState = enabled ? UpdateBlockState::Enabled : UpdateBlockState::Disabled;
-}
-
-void Graph::startCommit() {
-    if (m_commitLevel++ == 0) {
-        getCallbacks()->onCommitStarted();
-    }
-}
-
-void Graph::endCommit() {
-    if (--m_commitLevel == 0) {
-        getCallbacks()->onCommitEnded();
-    }
-}
-
-void Graph::setCallbacks(std::shared_ptr<Callbacks> callbacks) {
-    m_callbacks = callbacks;
-}
-
-std::shared_ptr<Graph::Callbacks> Graph::getCallbacks() const {
-    return m_callbacks;
 }

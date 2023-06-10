@@ -1,7 +1,9 @@
 #pragma once
 #include "IRcodeFunction.h"
 #include "SDA/Core/Pcode/PcodeGraph.h"
+#include "SDA/Core/Pcode/PcodeEvents.h"
 #include "SDA/Core/SymbolTable/SymbolTable.h"
+#include "SDA/Core/ContextEvents.h"
 
 namespace sda::ircode
 {
@@ -11,45 +13,40 @@ namespace sda::ircode
         SymbolTable* m_globalSymbolTable;
         std::map<pcode::FunctionGraph*, Function> m_functions;
 
-        class PcodeGraphCallbacks : public pcode::Graph::Callbacks
+        class PcodeEventHandler
         {
             Program* m_program;
-            bool m_commitStarted = false;
-            std::set<pcode::Block*> m_pcodeBlocksToUpdate;
 
-            void onBlockUpdateRequestedImpl(pcode::Block* pcodeBlock) override;
+            void handleBlockFunctionGraphChanged(const pcode::BlockFunctionGraphChangedEvent& event);
 
-            void onBlockFunctionGraphChangedImpl(pcode::Block* pcodeBlock, pcode::FunctionGraph* oldFunctionGraph, pcode::FunctionGraph* newFunctionGraph) override;
+            void handleFunctionGraphCreated(const pcode::FunctionGraphCreatedEvent& event);
 
-            // void onBlockCreatedImpl(pcode::Block* pcodeBlock) override;
-
-            // void onBlockRemovedImpl(pcode::Block* pcodeBlock) override;
-
-            void onFunctionGraphCreatedImpl(pcode::FunctionGraph* functionGraph) override;
-
-            void onFunctionGraphRemovedImpl(pcode::FunctionGraph* functionGraph) override;
-
-            void onCommitStartedImpl() override;
-
-            void onCommitEndedImpl() override;
+            void handleFunctionGraphRemoved(const pcode::FunctionGraphRemovedEvent& event);
 
         public:
-            PcodeGraphCallbacks(Program* program) : m_program(program) {}
+            PcodeEventHandler(Program* program) : m_program(program) {}
+
+            EventPipe getEventPipe();
         };
 
-        class ContextCallbacks : public Context::Callbacks
+        class ContextEventHandler
         {
             Program* m_program;
-        public:
-            ContextCallbacks(Program* program) : m_program(program) {}
 
-            void onObjectModifiedImpl(Object* object) override;
+            void handleObjectModified(const ObjectModifiedEvent& event);
+
+        public:
+            ContextEventHandler(Program* program) : m_program(program) {}
+
+            EventPipe getEventPipe();
         };
 
-        std::shared_ptr<PcodeGraphCallbacks> m_pcodeGraphCallbacks;
-        std::shared_ptr<ContextCallbacks> m_contextCallbacks;
+        PcodeEventHandler m_pcodeEventHandler;
+        ContextEventHandler m_contextEventHandler;
     public:
         Program(pcode::Graph* graph, SymbolTable* globalSymbolTable);
+
+        EventPipe* getEventPipe();
 
         pcode::Graph* getGraph();
 
@@ -64,60 +61,5 @@ namespace sda::ircode
         std::list<Function*> getFunctionsByCallInstruction(const pcode::Instruction* instr);
 
         std::list<Block*> getBlocksRefToFunction(Function* function);
-
-        class Callbacks
-        {
-            std::shared_ptr<Callbacks> m_prevCallbacks;
-            bool m_enabled = true;
-        public:
-            // Called when a function is created
-            void onFunctionCreated(Function* function);
-
-            // Called when a function is removed
-            void onFunctionRemoved(Function* function);
-
-            // Called when a function is decompiled
-            void onFunctionDecompiled(Function* function, std::list<Block*> blocks);
-
-            // Called when a block is created
-            void onBlockCreated(Block* block);
-
-            // Called when a block is removed
-            void onBlockRemoved(Block* block);
-
-            // Called when an operation is added
-            void onOperationAdded(const Operation* op);
-
-            // Called when an operation is removed
-            void onOperationRemoved(const Operation* op);
-
-            void setPrevCallbacks(std::shared_ptr<Callbacks> prevCallbacks);
-
-            void setEnabled(bool enabled);
-
-        protected:
-            virtual void onFunctionCreatedImpl(Function* function) {};
-
-            virtual void onFunctionRemovedImpl(Function* function) {};
-
-            virtual void onFunctionDecompiledImpl(Function* function, std::list<Block*> blocks) {};
-
-            virtual void onBlockCreatedImpl(Block* block) {};
-
-            virtual void onBlockRemovedImpl(Block* block) {};
-
-            virtual void onOperationAddedImpl(const Operation* op) {};
-
-            virtual void onOperationRemovedImpl(const Operation* op) {};
-        };
-
-        // Set the callbacks for the graph
-        void setCallbacks(std::shared_ptr<Callbacks> callbacks);
-
-        // Get the callbacks for the graph
-        std::shared_ptr<Callbacks> getCallbacks() const;
-
-    private:
-        std::shared_ptr<Callbacks> m_callbacks;
     };
 };

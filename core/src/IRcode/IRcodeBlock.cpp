@@ -2,6 +2,7 @@
 #include "SDA/Core/IRcode/IRcodeFunction.h"
 #include "SDA/Core/IRcode/IRcodeProgram.h"
 #include "SDA/Core/IRcode/IRcodeGenerator.h"
+#include "SDA/Core/IRcode/IRcodeEvents.h"
 #include "SDA/Core/Pcode/PcodeGraph.h"
 
 using namespace sda;
@@ -81,7 +82,8 @@ std::shared_ptr<Value>& Block::getCondition() {
 void Block::clear() {
     m_condition = nullptr;
     for (auto& op : m_operations) {
-        m_function->getProgram()->getCallbacks()->onOperationRemoved(op.get());
+        m_function->getProgram()->getEventPipe()->send(
+            OperationRemovedEvent(op.get()));
     }
     m_dominantHash = 0;
     m_memSpace.clear();
@@ -113,7 +115,8 @@ void Block::update() {
     passDescendants([&](Block* block, bool& goNextBlocks) {
         block->decompile(goNextBlocks);
     });
-    m_function->getProgram()->getCallbacks()->onFunctionDecompiled(m_function, decompiledBlocks);
+    m_function->getProgram()->getEventPipe()->send(
+        FunctionDecompiledEvent(m_function, std::move(decompiledBlocks)));
 }
 
 void Block::decompile(bool& goNextBlocks) {

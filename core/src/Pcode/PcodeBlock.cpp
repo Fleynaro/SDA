@@ -1,5 +1,6 @@
 #include "SDA/Core/Pcode/PcodeBlock.h"
 #include "SDA/Core/Pcode/PcodeGraph.h"
+#include "SDA/Core/Pcode/PcodeEvents.h"
 #include "SDA/Core/Utils/IOManip.h"
 
 using namespace sda::pcode;
@@ -181,7 +182,9 @@ void Block::passDescendants(std::function<void(Block* block, bool& goNextBlocks)
 
 void Block::update() {
     if (m_graph->m_updateBlockState != Graph::UpdateBlockState::DisabledByUpdater) {
-        m_graph->getCallbacks()->onBlockUpdateRequested(this);
+        m_graph->getEventPipe()->send(BlockUpdateRequestedEvent {
+            this
+        });
     }
     if (m_graph->m_updateBlockState != Graph::UpdateBlockState::Enabled) {
         return;
@@ -201,7 +204,9 @@ void Block::update() {
     });
     passDescendants([&](Block* block, bool& goNextBlocks) {
         block->updateDominantBlocks(goNextBlocks);
-        m_graph->getCallbacks()->onBlockUpdated(block);
+        m_graph->getEventPipe()->send(BlockUpdatedEvent {
+            this
+        });
     });
     m_graph->m_updateBlockState = Graph::UpdateBlockState::Enabled;
 }
@@ -276,13 +281,19 @@ void Block::updateEntryBlocks(bool& goNextBlocks) {
             // TODO: we could simplify this by implementing CALL references in block instead of function graph, along with JUMP references
             prevFunctionGraph->moveReferences(newFunctionGraph, m_minOffset, m_maxOffset);
             prevFunctionGraph->m_indexToBlock.erase(m_index);
-            m_graph->getCallbacks()->onBlockFunctionGraphChanged(this, prevFunctionGraph, newFunctionGraph);
+            m_graph->getEventPipe()->send(BlockFunctionGraphChangedEvent {
+                this, prevFunctionGraph, newFunctionGraph
+            });
         } else {
-            m_graph->getCallbacks()->onBlockFunctionGraphChanged(this, nullptr, newFunctionGraph);
+            m_graph->getEventPipe()->send(BlockFunctionGraphChangedEvent {
+                this, nullptr, newFunctionGraph
+            });
             // if prevFunctionGraph == newFunctionGraph then the previous graph of the current block has been removed (see >>> $1 <<<)
         }
     } else {
-        m_graph->getCallbacks()->onBlockFunctionGraphChanged(this, nullptr, newFunctionGraph);
+        m_graph->getEventPipe()->send(BlockFunctionGraphChangedEvent {
+            this, nullptr, newFunctionGraph
+        });
     }
     // add the block to the new function graph
     m_index = FindNewIndex(newFunctionGraph->m_indexToBlock);

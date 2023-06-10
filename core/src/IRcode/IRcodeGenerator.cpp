@@ -1,6 +1,7 @@
 #include "SDA/Core/IRcode/IRcodeGenerator.h"
 #include "SDA/Core/IRcode/IRcodeFunction.h"
 #include "SDA/Core/IRcode/IRcodeProgram.h"
+#include "SDA/Core/IRcode/IRcodeEvents.h"
 #include "SDA/Core/Platform/RegisterRepository.h"
 
 using namespace sda;
@@ -481,7 +482,8 @@ void IRcodeGenerator::genOperation(std::unique_ptr<ircode::Operation> operation)
         operation->getPcodeInstructions().insert(m_curInstr);
         operation->getOverwrittenVariables() = m_overwrittenVariables;
         m_block->getOperations().push_back(std::move(operation));
-        m_block->getFunction()->getProgram()->getCallbacks()->onOperationAdded(op);
+        m_block->getFunction()->getProgram()->getEventPipe()->send(
+            OperationAddedEvent(op));
     }
     m_overwrittenVariables.clear();
 }

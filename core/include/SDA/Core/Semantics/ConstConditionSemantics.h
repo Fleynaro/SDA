@@ -1,5 +1,6 @@
 #pragma once
 #include "SDA/Core/IRcode/IRcodeProgram.h"
+#include "SDA/Core/IRcode/IRcodeEvents.h"
 
 namespace sda::semantics
 {
@@ -25,12 +26,12 @@ namespace sda::semantics
         };
         std::map<ircode::Function*, FunctionInfo> m_functionInfos;
 
-        class IRcodeProgramCallbacks : public ircode::Program::Callbacks
+        class IRcodeEventHandler
         {
             ConstConditionRepository* m_repo;
 
-            void onFunctionDecompiledImpl(ircode::Function* function, std::list<ircode::Block*> blocks) override {
-                for (auto block : blocks) { 
+            void handleFunctionDecompiled(const ircode::FunctionDecompiledEvent& event) {
+                for (auto block : event.blocks) { 
                     if (auto condVar = std::dynamic_pointer_cast<ircode::Variable>(block->getCondition())) {
                         auto op = condVar->getSourceOperation();
                         if (op->getId() == ircode::OperationId::INT_EQUAL || op->getId() == ircode::OperationId::INT_NOTEQUAL) {
@@ -38,7 +39,7 @@ namespace sda::semantics
                                 if (auto inputVar1 = std::dynamic_pointer_cast<ircode::Variable>(binaryOp->getInput1())) {
                                     if (auto inputVar2 = std::dynamic_pointer_cast<ircode::Constant>(binaryOp->getInput2())) {
                                         auto value = inputVar2->getConstVarnode()->getValue();
-                                        m_repo->addCondition(function, {
+                                        m_repo->addCondition(event.function, {
                                             inputVar1,
                                             value,
                                             block,
@@ -52,16 +53,20 @@ namespace sda::semantics
                 }
             }
         public:
-            IRcodeProgramCallbacks(ConstConditionRepository* repo) : m_repo(repo) {}
+            IRcodeEventHandler(ConstConditionRepository* repo) : m_repo(repo) {}
+
+            EventPipe getEventPipe() {
+                auto pipe = EventPipe();
+                pipe.handleMethod(this, &IRcodeEventHandler::handleFunctionDecompiled);
+                return pipe;
+            }
         };
-        std::shared_ptr<IRcodeProgramCallbacks> m_ircodeProgramCallbacks;
+        IRcodeEventHandler m_ircodeEventHandler;
     public:
         ConstConditionRepository(ircode::Program* program)
-            : m_ircodeProgramCallbacks(std::make_shared<IRcodeProgramCallbacks>(this))
+            : m_ircodeEventHandler(this)
         {
-            auto prevCallbacks = program->getCallbacks();
-            m_ircodeProgramCallbacks->setPrevCallbacks(prevCallbacks);
-            program->setCallbacks(m_ircodeProgramCallbacks);
+            program->getEventPipe()->connect(m_ircodeEventHandler.getEventPipe());
         }
 
         std::list<ConstantCondition> findConditions(ircode::Block* block) {

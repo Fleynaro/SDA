@@ -1,11 +1,12 @@
 #include "SDA/Core/Object/ContextObject.h"
 #include "SDA/Core/Context.h"
+#include "SDA/Core/ContextEvents.h"
 
 using namespace sda;
 
 void ContextObject::notifyModified(Object::ModState state) {
     if (state == Object::ModState::After) {
-        m_context->getCallbacks()->onObjectModified(this);
+        m_context->getEventPipe()->send(ObjectModifiedEvent(this));
     }
 }
 

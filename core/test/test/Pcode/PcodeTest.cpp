@@ -1,3 +1,4 @@
+#include "SDA/Core/Pcode/PcodeEvents.h"
 #include "SDA/Core/Utils/AbstractPrinter.h"
 #include "Test/Core/Pcode/PcodeFixture.h"
 #include "Test/Core/Utils/TestAssertion.h"
@@ -52,6 +53,7 @@ TEST_F(PcodeTest, SimpleLoop) {
         B0: B0 \n\
         B1: B0 B1 \
     ";
+    
     auto funcGraph = parsePcode(sourcePCode, graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
     ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
@@ -414,7 +416,7 @@ TEST_F(PcodeTest, NestedLoopWithSharedBlock) {
         B2: B0 B2 \n\
         B4: B0 B2 B4 \
     ";
-    pcode::Graph graph;
+    pcode::Graph graph(context->getEventPipe());
     auto funcGraph = parsePcode(sourcePCode, &graph);
     ASSERT_TRUE(cmp(funcGraph, expectedPCode));
     ASSERT_TRUE(cmpDominantBlocks(funcGraph, expectedDomBlocks));
@@ -647,7 +649,7 @@ TEST_F(PcodeTest, FunctionRecursion) {
         B0: B0 \n\
         B2: B0 B2 \
     ";
-    pcode::Graph graph;
+    pcode::Graph graph(context->getEventPipe());
     auto funcGraph = parsePcode(sourcePCode, &graph);
     // the function graph refers to itself
     ASSERT_EQ(funcGraph, funcGraph->getReferencesFrom().begin()->second);

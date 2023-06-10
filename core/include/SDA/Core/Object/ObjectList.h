@@ -1,5 +1,6 @@
 #pragma once
 #include "SDA/Core/Context.h"
+#include "SDA/Core/ContextEvents.h"
 #include <boost/uuid/string_generator.hpp>
 #include <map>
 
@@ -57,7 +58,7 @@ namespace sda
 
         // Add an object to the list
         void add(std::unique_ptr<T> object) {
-            m_context->getCallbacks()->onObjectAdded(object.get());
+            m_context->getEventPipe()->send(ObjectAddedEvent(object.get()));
             onObjectAdded(object.get());
             m_objects[object->getId()] = std::move(object);
         }
@@ -67,7 +68,7 @@ namespace sda
             auto it = m_objects.find(object->getId());
             if (it == m_objects.end())
                 throw std::runtime_error("Object not found");
-            m_context->getCallbacks()->onObjectRemoved(object);
+            m_context->getEventPipe()->send(ObjectRemovedEvent(object));
             onObjectRemoved(object);
             m_objects.erase(it);
         }
