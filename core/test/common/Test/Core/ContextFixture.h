@@ -19,7 +19,7 @@ namespace sda::test
         
         void TearDown() override;
 
-        Context* newContext(EventPipe* eventPipe);
+        Context* newContext(std::shared_ptr<EventPipe> eventPipe);
 
         DataType* findDataType(const std::string& name) const;
 

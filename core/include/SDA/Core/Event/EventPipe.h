@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <functional>
 #include "Event.h"
 
@@ -11,20 +12,20 @@ namespace sda
 
     class EventPipe {
         EventProcessor m_processor;
-        std::list<EventPipe> m_nextPipes;
+        std::list<std::shared_ptr<EventPipe>> m_nextPipes;
     public:
-        EventPipe(const EventProcessor& processor = [](const Event& e, const EventNext& f) { f(e); });
-
+        EventPipe(const EventProcessor& processor);
+        
         void send(const Event& event);
 
-        EventPipe& process(const EventProcessor& processor);
+        std::shared_ptr<EventPipe> process(const EventProcessor& processor);
 
-        EventPipe& filter(const EventFilter& filter);
+        std::shared_ptr<EventPipe> filter(const EventFilter& filter);
         
-        EventPipe& handle(const EventHandler& handler);
+        std::shared_ptr<EventPipe> handle(const EventHandler& handler);
 
         template<typename T>
-        EventPipe& handle(const std::function<void(const T&)>& handler) {
+        std::shared_ptr<EventPipe> handle(const std::function<void(const T&)>& handler) {
             return handle([handler](const Event& event) {
                 if (auto e = dynamic_cast<const T*>(&event))
                     handler(*e);
@@ -32,14 +33,18 @@ namespace sda
         }
 
         template<typename T, typename R>
-        EventPipe& handleMethod(R* instance, void (R::* method)(const T&)) {
+        std::shared_ptr<EventPipe> handleMethod(R* instance, void (R::* method)(const T&)) {
             return handle<T>([method, instance](const T& event) {
                 (instance->*method)(event);
             });
         }
 
-        EventPipe& connect(const EventPipe& pipe);
+        std::shared_ptr<EventPipe> connect(std::shared_ptr<EventPipe> pipe);
 
-        void disconnect(const EventPipe& pipe);
+        void disconnect(std::shared_ptr<EventPipe> pipe);
+
+        static std::shared_ptr<EventPipe> New();
+
+        static std::shared_ptr<EventPipe> New(std::shared_ptr<EventPipe> pipeIn, std::shared_ptr<EventPipe> pipeOut);
     };
 };

@@ -34,9 +34,9 @@ void ContextSync::handleFunctionRemoved(const FunctionRemovedEvent& event) {
     }
 }
 
-EventPipe ContextSync::getEventPipe() {
-    EventPipe pipe;
-    pipe.handleMethod(this, &ContextSync::handleFunctionCreated);
-    pipe.handleMethod(this, &ContextSync::handleFunctionRemoved);
+std::shared_ptr<EventPipe> ContextSync::getEventPipe() {
+    auto pipe = EventPipe::New();
+    pipe->handleMethod(this, &ContextSync::handleFunctionCreated);
+    pipe->handleMethod(this, &ContextSync::handleFunctionRemoved);
     return pipe;
 }

@@ -18,6 +18,6 @@ namespace sda::ircode
             SymbolTable* globalSymbolTable,
             std::shared_ptr<CallingConvention> callingConvention);
 
-        EventPipe getEventPipe();
+        std::shared_ptr<EventPipe> getEventPipe();
     };
 };

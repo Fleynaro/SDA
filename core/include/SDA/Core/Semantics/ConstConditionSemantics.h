@@ -55,9 +55,9 @@ namespace sda::semantics
         public:
             IRcodeEventHandler(ConstConditionRepository* repo) : m_repo(repo) {}
 
-            EventPipe getEventPipe() {
-                auto pipe = EventPipe();
-                pipe.handleMethod(this, &IRcodeEventHandler::handleFunctionDecompiled);
+            std::shared_ptr<EventPipe> getEventPipe() {
+                auto pipe = EventPipe::New();
+                pipe->handleMethod(this, &IRcodeEventHandler::handleFunctionDecompiled);
                 return pipe;
             }
         };

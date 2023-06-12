@@ -15,7 +15,7 @@ namespace sda
     // Core context that contains all important entities
     class Context
     {
-        EventPipe* m_eventPipe;
+        std::shared_ptr<EventPipe> m_eventPipe;
         Platform* m_platform;
         std::unique_ptr<AddressSpaceList> m_addressSpaces;
         std::unique_ptr<ImageList> m_images;
@@ -23,14 +23,14 @@ namespace sda
         std::unique_ptr<SymbolList> m_symbols;
         std::unique_ptr<SymbolTableList> m_symbolTables;
     public:
-        Context(EventPipe* eventPipe, Platform* platform);
+        Context(std::shared_ptr<EventPipe> eventPipe, Platform* platform);
 
         ~Context();
 
         // Init context with default objects
         void initDefault();
 
-        EventPipe* getEventPipe() const;
+        std::shared_ptr<EventPipe> getEventPipe() const;
 
         // Get the platform (e.g. x86, arm, etc.)
         Platform* getPlatform() const;

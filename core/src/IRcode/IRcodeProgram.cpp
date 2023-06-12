@@ -37,17 +37,29 @@ void UpdateBlocks(Program* program, const std::set<pcode::Block*>& pcodeBlocks) 
     }
 }
 
-EventPipe UpdateBlocksEventPipe(Program* program) {
-    auto pipe = EventPipe();
+std::shared_ptr<EventPipe> UpdateBlocksEventPipe(Program* program) {
+    struct Data {
+        bool commit = false;
+        std::set<pcode::Block*> pcodeBlocksToUpdate;
+    };
+    auto pipe = EventPipe::New();
     auto commitPipe = CommitPipe();
-    auto pcodeBlocksToUpdate = std::make_shared<std::set<pcode::Block*>>();
-    commitPipe.handle(std::function([=](const CommitEndEvent& event) {
-        UpdateBlocks(program, *pcodeBlocksToUpdate);
-        pcodeBlocksToUpdate->clear();
+    auto data = std::make_shared<Data>();
+    commitPipe->handle(std::function([data](const CommitBeginEvent& event) {
+        data->commit = true;
     }));
-    pipe.connect(commitPipe);
-    pipe.handle(std::function([=](const pcode::BlockUpdateRequestedEvent& event) {
-        pcodeBlocksToUpdate->insert(event.block);
+    commitPipe->handle(std::function([program, data](const CommitEndEvent& event) {
+        UpdateBlocks(program, data->pcodeBlocksToUpdate);
+        data->pcodeBlocksToUpdate.clear();
+        data->commit = false;
+    }));
+    pipe->connect(commitPipe);
+    pipe->handle(std::function([program, data](const pcode::BlockUpdateRequestedEvent& event) {
+        if (data->commit) {
+            data->pcodeBlocksToUpdate.insert(event.block);
+        } else {
+            UpdateBlocks(program, { event.block });
+        }
     }));
     return pipe;
 }
@@ -77,12 +89,12 @@ void Program::PcodeEventHandler::handleFunctionGraphRemoved(const pcode::Functio
     m_program->m_functions.erase(event.functionGraph);
 }
 
-EventPipe Program::PcodeEventHandler::getEventPipe() {
-    auto pipe = EventPipe();
-    pipe.connect(UpdateBlocksEventPipe(m_program));
-    pipe.handleMethod(this, &PcodeEventHandler::handleBlockFunctionGraphChanged);
-    pipe.handleMethod(this, &PcodeEventHandler::handleFunctionGraphCreated);
-    pipe.handleMethod(this, &PcodeEventHandler::handleFunctionGraphRemoved);
+std::shared_ptr<EventPipe> Program::PcodeEventHandler::getEventPipe() {
+    auto pipe = EventPipe::New();
+    pipe->connect(UpdateBlocksEventPipe(m_program));
+    pipe->handleMethod(this, &PcodeEventHandler::handleBlockFunctionGraphChanged);
+    pipe->handleMethod(this, &PcodeEventHandler::handleFunctionGraphCreated);
+    pipe->handleMethod(this, &PcodeEventHandler::handleFunctionGraphRemoved);
     return pipe;
 }
 
@@ -104,9 +116,9 @@ void Program::ContextEventHandler::handleObjectModified(const ObjectModifiedEven
     }
 }
 
-EventPipe Program::ContextEventHandler::getEventPipe() {
-    auto pipe = EventPipe();
-    pipe.handleMethod(this, &ContextEventHandler::handleObjectModified);
+std::shared_ptr<EventPipe> Program::ContextEventHandler::getEventPipe() {
+    auto pipe = EventPipe::New();
+    pipe->handleMethod(this, &ContextEventHandler::handleObjectModified);
     return pipe;
 }
 
@@ -120,7 +132,7 @@ Program::Program(pcode::Graph* graph, SymbolTable* globalSymbolTable)
     m_graph->getEventPipe()->connect(m_contextEventHandler.getEventPipe());
 }
 
-EventPipe* Program::getEventPipe() {
+std::shared_ptr<EventPipe> Program::getEventPipe() {
     return m_graph->getEventPipe();
 }
 

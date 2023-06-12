@@ -3,7 +3,7 @@
 
 using namespace sda;
 
-CommitScope::CommitScope(EventPipe* pipe)
+CommitScope::CommitScope(std::shared_ptr<EventPipe> pipe)
     : m_pipe(pipe)
 {
     m_pipe->send(CommitBeginEvent());
@@ -13,10 +13,10 @@ CommitScope::~CommitScope() {
     m_pipe->send(CommitEndEvent());
 }
 
-EventPipe sda::CommitPipe() {
+std::shared_ptr<EventPipe> sda::CommitPipe() {
     auto commitLevel = std::make_shared<size_t>(0);
-    return EventPipe()
-        .process([commitLevel](const Event& event, const EventNext& next) {
+    return EventPipe::New()
+        ->process([commitLevel](const Event& event, const EventNext& next) {
             if (dynamic_cast<const CommitBeginEvent*>(&event)) {
                 if (++*commitLevel == 1) {
                     next(event);

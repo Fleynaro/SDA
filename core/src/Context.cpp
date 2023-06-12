@@ -1,5 +1,6 @@
 #include "SDA/Core/Context.h"
 #include "SDA/Core/ContextEvents.h"
+#include "SDA/Core/Commit.h"
 #include "SDA/Core/Image/AddressSpace.h"
 #include "SDA/Core/Image/Image.h"
 #include "SDA/Core/DataType/DataType.h"
@@ -8,7 +9,7 @@
 
 using namespace sda;
 
-Context::Context(EventPipe* eventPipe, Platform* platform)
+Context::Context(std::shared_ptr<EventPipe> eventPipe, Platform* platform)
     : m_eventPipe(eventPipe)
     , m_platform(platform)
 {
@@ -27,7 +28,7 @@ void Context::initDefault() {
     m_dataTypes->initDefault();
 }
 
-EventPipe* Context::getEventPipe() const {
+std::shared_ptr<EventPipe> Context::getEventPipe() const {
     return m_eventPipe;
 }
 

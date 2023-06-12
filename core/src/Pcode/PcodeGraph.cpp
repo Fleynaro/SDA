@@ -59,11 +59,11 @@ InstructionOffset sda::pcode::GetTargetOffset(const Instruction* instr) {
 //     {}
 // };
 
-Graph::Graph(EventPipe* eventPipe)
+Graph::Graph(std::shared_ptr<EventPipe> eventPipe)
     : m_eventPipe(eventPipe)
 {}
 
-sda::EventPipe* Graph::getEventPipe() {
+std::shared_ptr<sda::EventPipe> Graph::getEventPipe() {
     return m_eventPipe;
 }
 

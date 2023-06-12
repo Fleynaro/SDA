@@ -6,34 +6,28 @@ namespace sda
 {
     static const size_t ContextEventTopic = TopicName("ContextEventTopic");
 
-    // When an object is added to the context
-    struct ObjectAddedEvent : Event {
+    struct ObjectActionEvent : Event {
         Object* object;
 
-        ObjectAddedEvent(Object* object)
+        ObjectActionEvent(Object* object)
             : Event(ContextEventTopic)
             , object(object)
         {}
+    };
+
+    // When an object is added to the context
+    struct ObjectAddedEvent : ObjectActionEvent {
+        using ObjectActionEvent::ObjectActionEvent;
     };
 
     // When an object is modified in the context
-    struct ObjectModifiedEvent : Event {
-        Object* object;
-
-        ObjectModifiedEvent(Object* object)
-            : Event(ContextEventTopic)
-            , object(object)
-        {}
+    struct ObjectModifiedEvent : ObjectActionEvent {
+        using ObjectActionEvent::ObjectActionEvent;
     };
 
     // When an object is removed from the context
-    struct ObjectRemovedEvent : Event {
-        Object* object;
-
-        ObjectRemovedEvent(Object* object)
-            : Event(ContextEventTopic)
-            , object(object)
-        {}
+    struct ObjectRemovedEvent : ObjectActionEvent {
+        using ObjectActionEvent::ObjectActionEvent;
     };
 
     // When context is destroyed

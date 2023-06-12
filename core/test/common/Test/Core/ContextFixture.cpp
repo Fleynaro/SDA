@@ -10,7 +10,7 @@ using namespace sda::test;
 using namespace ::testing;
 
 void ContextFixture::SetUp() {
-    auto eventPipe = new EventPipe();
+    auto eventPipe = EventPipe::New();
     platform = new PlatformX86(true);
     context = newContext(eventPipe);
     context->initDefault();
@@ -25,7 +25,7 @@ void ContextFixture::TearDown() {
     delete platform;
 }
 
-Context* ContextFixture::newContext(EventPipe* eventPipe) {
+Context* ContextFixture::newContext(std::shared_ptr<EventPipe> eventPipe) {
     auto context = new Context(eventPipe, platform);
     createdContexts.push_back(context);
     return context;

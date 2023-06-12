@@ -23,11 +23,11 @@ namespace sda::pcode
         std::map<InstructionOffset, FunctionGraph> m_functionGraphs;
         UpdateBlockState m_updateBlockState = UpdateBlockState::Enabled;
         size_t m_commitLevel = 0;
-        EventPipe* m_eventPipe;
+        std::shared_ptr<EventPipe> m_eventPipe;
     public:
-        Graph(EventPipe* eventPipe);
+        Graph(std::shared_ptr<EventPipe> eventPipe);
 
-        EventPipe* getEventPipe();
+        std::shared_ptr<EventPipe> getEventPipe();
 
         void explore(InstructionOffset startOffset, InstructionProvider* instrProvider);
 

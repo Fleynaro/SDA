@@ -26,7 +26,7 @@ namespace sda::ircode
         public:
             PcodeEventHandler(Program* program) : m_program(program) {}
 
-            EventPipe getEventPipe();
+            std::shared_ptr<EventPipe> getEventPipe();
         };
 
         class ContextEventHandler
@@ -38,7 +38,7 @@ namespace sda::ircode
         public:
             ContextEventHandler(Program* program) : m_program(program) {}
 
-            EventPipe getEventPipe();
+            std::shared_ptr<EventPipe> getEventPipe();
         };
 
         PcodeEventHandler m_pcodeEventHandler;
@@ -46,7 +46,7 @@ namespace sda::ircode
     public:
         Program(pcode::Graph* graph, SymbolTable* globalSymbolTable);
 
-        EventPipe* getEventPipe();
+        std::shared_ptr<EventPipe> getEventPipe();
 
         pcode::Graph* getGraph();
 

@@ -14,12 +14,12 @@ namespace sda
     };
 
     class CommitScope {
-        EventPipe* m_pipe;
+        std::shared_ptr<EventPipe> m_pipe;
     public:
-        CommitScope(EventPipe* pipe);
+        CommitScope(std::shared_ptr<EventPipe> pipe);
 
         ~CommitScope();
     };
 
-    EventPipe CommitPipe();
+    std::shared_ptr<EventPipe> CommitPipe();
 };
