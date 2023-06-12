@@ -92,7 +92,7 @@ namespace sda::semantics
 
             std::shared_ptr<EventPipe> getEventPipe() {
                 auto pipe = EventPipe::New();
-                pipe->handleMethod(this, &IRcodeEventHandler::handleFunctionDecompiled);
+                pipe->subscribeMethod(this, &IRcodeEventHandler::handleFunctionDecompiled);
                 return pipe;
             }
         };

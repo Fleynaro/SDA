@@ -1,5 +1,6 @@
 #pragma once
 #include "Semantics.h"
+#include "SDA/Core/Commit.h"
 #include "SDA/Core/DataType/SignatureDataType.h"
 #include "SDA/Core/IRcode/IRcodeBlock.h"
 #include "SDA/Core/IRcode/IRcodeEvents.h"
@@ -100,6 +101,7 @@ namespace sda::semantics
 
     class SignatureCollector
     {
+        ircode::Program* m_program;
         Platform* m_platform;
         SignatureRepository* m_signatureRepo;
         std::shared_ptr<CallingConvention> m_callingConvention;
@@ -121,6 +123,7 @@ namespace sda::semantics
                 if (event.function->getFunctionSymbol()) {
                     auto sig = m_collector->m_signatureRepo->getSignature(event.function);
                     if (sig) {
+                        CommitScope commit(m_collector->m_program->getEventPipe()); // TODO: fix
                         sig->updateSignatureDataType(event.function->getFunctionSymbol()->getSignature());
                     }
                 }
@@ -130,7 +133,7 @@ namespace sda::semantics
 
             std::shared_ptr<EventPipe> getEventPipe() {
                 auto pipe = EventPipe::New();
-                pipe->handleMethod(this, &IRcodeEventHandler::handleFunctionDecompiled);
+                pipe->subscribeMethod(this, &IRcodeEventHandler::handleFunctionDecompiled);
                 return pipe;
             }
         };
@@ -142,12 +145,13 @@ namespace sda::semantics
             std::shared_ptr<CallingConvention> callingConvention,
             SignatureRepository* signatureRepo
         )
-            : m_platform(platform)
+            : m_program(program)
+            , m_platform(platform)
             , m_signatureRepo(signatureRepo)
             , m_callingConvention(callingConvention)
             , m_ircodeEventHandler(this)
         {
-            program->getEventPipe()->connect(m_ircodeEventHandler.getEventPipe());
+            m_program->getEventPipe()->connect(m_ircodeEventHandler.getEventPipe());
         }
 
         void collect(SemanticsPropagationContext& ctx)

@@ -68,5 +68,4 @@ TEST_F(SignatureSemanticsTest, Simple) {
     ASSERT_TRUE(cmp(func2, expectedIRCodeOfFunc2));
     ASSERT_TRUE(cmpDataType(mainFunction->getFunctionSymbol()->getSignature(), expectedSigOfMainFunc));
     ASSERT_TRUE(cmpDataType(func2->getFunctionSymbol()->getSignature(), expectedSigOfFunc2));
-    // TODO: оптимизация - уменьшение кол-ва вызовов декомпиляции
 }

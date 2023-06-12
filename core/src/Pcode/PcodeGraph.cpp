@@ -72,7 +72,7 @@ void Graph::explore(InstructionOffset startOffset, InstructionProvider* instrPro
     std::list<InstructionOffset> unvisitedOffsets = { startOffset };
     std::set<InstructionOffset> visitedOffsets;
 
-    auto& pipe = m_eventPipe->handle(std::function([&](const pcode::UnvisitedOffsetFoundEvent& event) {
+    auto unsubscribe = m_eventPipe->subscribe(std::function([&](const pcode::UnvisitedOffsetFoundEvent& event) {
         unvisitedOffsets.push_back(event.offset);
     }));
 
@@ -116,7 +116,7 @@ void Graph::explore(InstructionOffset startOffset, InstructionProvider* instrPro
         }
     }
     
-    m_eventPipe->disconnect(pipe);
+    unsubscribe();
 }
 
 
@@ -145,7 +145,7 @@ void Graph::addInstruction(const Instruction& instruction, InstructionOffset nex
     if (block->getMaxOffset() < nextOffset)
         block->setMaxOffset(nextOffset);
     
-    // handle each type of instruction
+    // subscribe each type of instruction
     if (instruction.isBranching()) {
         auto targetOffset = GetTargetOffset(&instruction);
         if (targetOffset == InvalidOffset)

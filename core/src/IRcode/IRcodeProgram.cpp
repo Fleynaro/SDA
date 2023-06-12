@@ -42,19 +42,20 @@ std::shared_ptr<EventPipe> UpdateBlocksEventPipe(Program* program) {
         bool commit = false;
         std::set<pcode::Block*> pcodeBlocksToUpdate;
     };
-    auto pipe = EventPipe::New();
-    auto commitPipe = CommitPipe();
     auto data = std::make_shared<Data>();
-    commitPipe->handle(std::function([data](const CommitBeginEvent& event) {
+    auto pipe = EventPipe::New("UpdateBlocksEventPipe");
+    auto commitPipe = pipe->connect(CommitPipe());
+    commitPipe->subscribe(std::function([data](const CommitBeginEvent& event) {
         data->commit = true;
     }));
-    commitPipe->handle(std::function([program, data](const CommitEndEvent& event) {
-        UpdateBlocks(program, data->pcodeBlocksToUpdate);
+    commitPipe->subscribe(std::function([program, data](const CommitEndEvent& event) {
+        auto blocks = std::move(data->pcodeBlocksToUpdate);
         data->pcodeBlocksToUpdate.clear();
         data->commit = false;
+        // call UpdateBlocks in the end to avoid endless recursion
+        UpdateBlocks(program, blocks);
     }));
-    pipe->connect(commitPipe);
-    pipe->handle(std::function([program, data](const pcode::BlockUpdateRequestedEvent& event) {
+    pipe->subscribe(std::function([program, data](const pcode::BlockUpdateRequestedEvent& event) {
         if (data->commit) {
             data->pcodeBlocksToUpdate.insert(event.block);
         } else {
@@ -90,11 +91,11 @@ void Program::PcodeEventHandler::handleFunctionGraphRemoved(const pcode::Functio
 }
 
 std::shared_ptr<EventPipe> Program::PcodeEventHandler::getEventPipe() {
-    auto pipe = EventPipe::New();
+    auto pipe = EventPipe::New("Program::PcodeEventHandler");
     pipe->connect(UpdateBlocksEventPipe(m_program));
-    pipe->handleMethod(this, &PcodeEventHandler::handleBlockFunctionGraphChanged);
-    pipe->handleMethod(this, &PcodeEventHandler::handleFunctionGraphCreated);
-    pipe->handleMethod(this, &PcodeEventHandler::handleFunctionGraphRemoved);
+    pipe->subscribeMethod(this, &PcodeEventHandler::handleBlockFunctionGraphChanged);
+    pipe->subscribeMethod(this, &PcodeEventHandler::handleFunctionGraphCreated);
+    pipe->subscribeMethod(this, &PcodeEventHandler::handleFunctionGraphRemoved);
     return pipe;
 }
 
@@ -117,8 +118,8 @@ void Program::ContextEventHandler::handleObjectModified(const ObjectModifiedEven
 }
 
 std::shared_ptr<EventPipe> Program::ContextEventHandler::getEventPipe() {
-    auto pipe = EventPipe::New();
-    pipe->handleMethod(this, &ContextEventHandler::handleObjectModified);
+    auto pipe = Context::CreateOptimizedEventPipe();
+    pipe->subscribeMethod(this, &ContextEventHandler::handleObjectModified);
     return pipe;
 }
 
