@@ -49,5 +49,8 @@ namespace sda
 
         // Get the list of symbol tables
         SymbolTableList* getSymbolTables() const;
+
+        // Allows to optimize event handling by avoiding multiple same events within commit
+        static std::shared_ptr<EventPipe> CreateOptimizedEventPipe();
     };
 };
