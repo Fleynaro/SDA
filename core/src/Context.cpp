@@ -6,6 +6,7 @@
 #include "SDA/Core/DataType/DataType.h"
 #include "SDA/Core/Symbol/Symbol.h"
 #include "SDA/Core/SymbolTable/SymbolTable.h"
+#include "SDA/Core/Utils/Logger.h"
 
 using namespace sda;
 
@@ -18,6 +19,30 @@ Context::Context(std::shared_ptr<EventPipe> eventPipe, Platform* platform)
     m_dataTypes = std::make_unique<DataTypeList>(this);
     m_symbols = std::make_unique<SymbolList>(this);
     m_symbolTables = std::make_unique<SymbolTableList>(this);
+
+    IF_PLOG(plog::debug) {
+        m_eventPipe->subscribe(std::function([&](const ObjectAddedEvent& event) {
+            if (auto ctxObj = dynamic_cast<ContextObject*>(event.object)) {
+                PLOG_DEBUG << "ObjectAddedEvent: " << ctxObj->getName();
+            } else {
+                PLOG_DEBUG << "ObjectAddedEvent: " << event.object->serializeId();
+            }
+        }));
+        m_eventPipe->subscribe(std::function([&](const ObjectModifiedEvent& event) {
+            if (auto ctxObj = dynamic_cast<ContextObject*>(event.object)) {
+                PLOG_DEBUG << "ObjectModifiedEvent: " << ctxObj->getName();
+            } else {
+                PLOG_DEBUG << "ObjectModifiedEvent: " << event.object->serializeId();
+            }
+        }));
+        m_eventPipe->subscribe(std::function([&](const ObjectRemovedEvent& event) {
+            if (auto ctxObj = dynamic_cast<ContextObject*>(event.object)) {
+                PLOG_DEBUG << "ObjectRemovedEvent: " << ctxObj->getName();
+            } else {
+                PLOG_DEBUG << "ObjectRemovedEvent: " << event.object->serializeId();
+            }
+        }));
+    }
 }
 
 Context::~Context() {

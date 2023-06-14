@@ -1,5 +1,6 @@
 #include "SDA/Core/Pcode/PcodeParser.h"
 #include "SDA/Core/Platform/RegisterRepository.h"
+#include "SDA/Core/Utils/Logger.h"
 #include <sstream>
 #include <boost/algorithm/string.hpp>
 
@@ -11,6 +12,7 @@ Parser::Parser(utils::lexer::Lexer* lexer, const RegisterRepository* regRepo)
 {}
 
 std::list<Instruction> Parser::Parse(const std::string& text, const RegisterRepository* regRepo) {
+    PLOG_DEBUG << "Parsing pcode:\n" << text;
     std::stringstream ss(text);
     IO io(ss, std::cout);
     Lexer lexer(&io);

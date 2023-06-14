@@ -104,7 +104,9 @@ namespace sda::ircode
 
         std::set<const pcode::Instruction*>& getPcodeInstructions();
 
-		std::set<std::shared_ptr<Variable>>& getOverwrittenVariables();
+		const std::set<std::shared_ptr<Variable>>& getOverwrittenVariables() const;
+
+		void setOverwrittenVariables(const std::set<std::shared_ptr<Variable>>& variables);
     };
 
 	class UnaryOperation : public Operation

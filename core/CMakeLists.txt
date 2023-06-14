@@ -4,6 +4,8 @@ find_package(
     filesystem
     json)
 find_package(
+    plog CONFIG REQUIRED)
+find_package(
     magic_enum CONFIG REQUIRED)
 find_path(
     RANG_INCLUDE_DIRS "rang.hpp")
@@ -27,6 +29,7 @@ target_link_libraries(
     Boost::system
     Boost::filesystem
     Boost::json
+    plog::plog
     magic_enum::magic_enum)
 
 if(BUILD_TESTING)

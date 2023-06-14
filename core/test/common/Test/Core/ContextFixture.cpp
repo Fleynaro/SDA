@@ -2,6 +2,7 @@
 #include "SDA/Core/DataType/DataTypeParser.h"
 #include "SDA/Core/DataType/DataTypePrinter.h"
 #include "SDA/Core/SymbolTable/SymbolTableParser.h"
+#include "SDA/Core/Utils/Logger.h"
 #include "SDA/Platform/x86/Platform.h"
 #include "Test/Core/Utils/TestAssertion.h"
 
@@ -10,6 +11,7 @@ using namespace sda::test;
 using namespace ::testing;
 
 void ContextFixture::SetUp() {
+    utils::InitLogger();
     auto eventPipe = EventPipe::New();
     platform = new PlatformX86(true);
     context = newContext(eventPipe);

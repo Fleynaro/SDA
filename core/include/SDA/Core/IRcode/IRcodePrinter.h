@@ -24,7 +24,7 @@ namespace sda::ircode
 
         virtual void printBlock(Block* block, size_t level = 0);
 
-        virtual void printOperation(Operation* operation);
+        virtual void printOperation(const Operation* operation);
 
         virtual void printValue(const Value* value, bool extended = false) const;
 

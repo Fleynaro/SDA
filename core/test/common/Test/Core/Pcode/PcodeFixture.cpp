@@ -9,7 +9,7 @@ using namespace ::testing;
 
 void PcodeFixture::SetUp() {
     ContextFixture::SetUp();
-    graph = new pcode::Graph(context->getEventPipe());
+    graph = new pcode::Graph(context->getEventPipe(), context->getPlatform());
 }
 
 void PcodeFixture::TearDown() {

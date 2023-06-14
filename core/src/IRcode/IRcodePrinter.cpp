@@ -58,7 +58,7 @@ void Printer::printBlock(Block* block, size_t level) {
     endBlock();
 }
 
-void Printer::printOperation(Operation* operation) {
+void Printer::printOperation(const Operation* operation) {
     auto output = operation->getOutput();
     printValue(output.get(), true);
     printToken(" = ", SYMBOL);

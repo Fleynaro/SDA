@@ -1,6 +1,8 @@
 #include "SDA/Core/IRcode/IRcodeProgram.h"
 #include "SDA/Core/IRcode/IRcodeEvents.h"
+#include "SDA/Core/IRcode/IRcodePrinter.h"
 #include "SDA/Core/Commit.h"
+#include "SDA/Core/Utils/Logger.h"
 
 using namespace sda;
 using namespace sda::ircode;
@@ -129,6 +131,48 @@ Program::Program(pcode::Graph* graph, SymbolTable* globalSymbolTable)
     , m_pcodeEventHandler(this)
     , m_contextEventHandler(this)
 {
+    IF_PLOG(plog::debug) {
+        m_graph->getEventPipe()->subscribe(std::function([&](const FunctionCreatedEvent& event) {
+            PLOG_DEBUG << "FunctionCreatedEvent: " << event.function->getFunctionGraph()->getEntryBlock()->getName();
+        }));
+        m_graph->getEventPipe()->subscribe(std::function([&](const FunctionRemovedEvent& event) {
+            PLOG_DEBUG << "FunctionRemovedEvent: " << event.function->getEntryBlock()->getName();
+        }));
+        m_graph->getEventPipe()->subscribe(std::function([&](const FunctionDecompiledEvent& event) {
+            PLOG_DEBUG << "FunctionDecompiledEvent: " << event.function->getEntryBlock()->getName();
+        }));
+        m_graph->getEventPipe()->subscribe(std::function([&](const BlockCreatedEvent& event) {
+            PLOG_DEBUG << "BlockCreatedEvent: " << event.block->getName();
+        }));
+        m_graph->getEventPipe()->subscribe(std::function([&](const BlockRemovedEvent& event) {
+            PLOG_DEBUG << "BlockRemovedEvent: " << event.block->getName();
+        }));
+        m_graph->getEventPipe()->subscribe(std::function([&](const OperationAddedEvent& event) {
+            auto platform = m_globalSymbolTable->getContext()->getPlatform();
+            pcode::Printer pcodePrinter(platform->getRegisterRepository().get());
+            ircode::Printer ircodePrinter(&pcodePrinter);
+            std::stringstream ss;
+            ircodePrinter.setOutput(ss);
+            ircodePrinter.printOperation(event.op);
+            PLOG_DEBUG << "OperationAddedEvent: " << ss.str();
+        }));
+        m_graph->getEventPipe()->subscribe(std::function([&](const OperationRemovedEvent& event) {
+            auto platform = m_globalSymbolTable->getContext()->getPlatform();
+            pcode::Printer pcodePrinter(platform->getRegisterRepository().get());
+            ircode::Printer ircodePrinter(&pcodePrinter);
+            std::stringstream ss;
+            ircodePrinter.setOutput(ss);
+            ircodePrinter.printOperation(event.op);
+            PLOG_DEBUG << "OperationRemovedEvent: " << ss.str();
+        }));
+        auto commitPipe = m_graph->getEventPipe()->connect(CommitPipe());
+        commitPipe->subscribe(std::function([&](const CommitBeginEvent& event) {
+            PLOG_DEBUG << "CommitBeginEvent";
+        }));
+        commitPipe->subscribe(std::function([&](const CommitEndEvent& event) {
+            PLOG_DEBUG << "CommitEndEvent";
+        }));
+    }
     m_graph->getEventPipe()->connect(m_pcodeEventHandler.getEventPipe());
     m_graph->getEventPipe()->connect(m_contextEventHandler.getEventPipe());
 }

@@ -1,5 +1,8 @@
 #include "SDA/Core/Pcode/PcodeGraph.h"
 #include "SDA/Core/Pcode/PcodeEvents.h"
+#include "SDA/Core/Pcode/PcodePrinter.h"
+#include "SDA/Core/Utils/Logger.h"
+#include "SDA/Core/Utils/IOManip.h"
 #include "SDA/Core/Commit.h"
 #include <set>
 #include <stdexcept>
@@ -59,15 +62,49 @@ InstructionOffset sda::pcode::GetTargetOffset(const Instruction* instr) {
 //     {}
 // };
 
-Graph::Graph(std::shared_ptr<EventPipe> eventPipe)
-    : m_eventPipe(eventPipe)
-{}
+Graph::Graph(std::shared_ptr<EventPipe> eventPipe, Platform* platform)
+    : m_eventPipe(eventPipe), m_platform(platform)
+{
+    IF_PLOG(plog::debug) {
+        m_eventPipe->subscribe(std::function([&](const pcode::InstructionAddedEvent& event) {
+            PLOG_DEBUG << "InstructionAddedEvent: " << Printer::Print(event.instruction, m_platform->getRegisterRepository().get());
+        }));
+        m_eventPipe->subscribe(std::function([&](const pcode::InstructionRemovedEvent& event) {
+            PLOG_DEBUG << "InstructionRemovedEvent: " << Printer::Print(event.instruction, m_platform->getRegisterRepository().get());
+        }));
+        m_eventPipe->subscribe(std::function([&](const pcode::BlockCreatedEvent& event) {
+            PLOG_DEBUG << "BlockCreatedEvent: " << event.block->getName();
+        }));
+        m_eventPipe->subscribe(std::function([&](const pcode::BlockUpdatedEvent& event) {
+            PLOG_DEBUG << "BlockUpdatedEvent: " << event.block->getName();
+        }));
+        m_eventPipe->subscribe(std::function([&](const pcode::BlockUpdateRequestedEvent& event) {
+            PLOG_DEBUG << "BlockUpdateRequestedEvent: " << event.block->getName();
+        }));
+        m_eventPipe->subscribe(std::function([&](const pcode::BlockFunctionGraphChangedEvent& event) {
+            PLOG_DEBUG << "BlockFunctionGraphChangedEvent: " << event.block->getName();
+        }));
+        m_eventPipe->subscribe(std::function([&](const pcode::BlockRemovedEvent& event) {
+            PLOG_DEBUG << "BlockRemovedEvent: " << event.block->getName();
+        }));
+        m_eventPipe->subscribe(std::function([&](const pcode::FunctionGraphCreatedEvent& event) {
+            PLOG_DEBUG << "FunctionGraphCreatedEvent: " << event.functionGraph->getEntryBlock()->getName();
+        }));
+        m_eventPipe->subscribe(std::function([&](const pcode::FunctionGraphRemovedEvent& event) {
+            PLOG_DEBUG << "FunctionGraphRemovedEvent: " << event.functionGraph->getEntryBlock()->getName();
+        }));
+        m_eventPipe->subscribe(std::function([&](const pcode::UnvisitedOffsetFoundEvent& event) {
+            PLOG_DEBUG << "UnvisitedOffsetFoundEvent: 0x" << (std::stringstream() << utils::to_hex() << event.offset).str();
+        })); 
+    }
+}
 
 std::shared_ptr<sda::EventPipe> Graph::getEventPipe() {
     return m_eventPipe;
 }
 
 void Graph::explore(InstructionOffset startOffset, InstructionProvider* instrProvider) {
+    PLOG_DEBUG << "Explore at offset 0x" << (std::stringstream() << utils::to_hex() << startOffset).str();
     CommitScope commit(m_eventPipe);
     std::list<InstructionOffset> unvisitedOffsets = { startOffset };
     std::set<InstructionOffset> visitedOffsets;

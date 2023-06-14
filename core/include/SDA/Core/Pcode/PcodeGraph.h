@@ -2,6 +2,7 @@
 #include <vector>
 #include "PcodeFunctionGraph.h"
 #include "PcodeInstructionProvider.h"
+#include "SDA/Core/Platform/Platform.h"
 #include "SDA/Core/Event/EventPipe.h"
 
 namespace sda::pcode
@@ -24,8 +25,9 @@ namespace sda::pcode
         UpdateBlockState m_updateBlockState = UpdateBlockState::Enabled;
         size_t m_commitLevel = 0;
         std::shared_ptr<EventPipe> m_eventPipe;
+        Platform* m_platform;
     public:
-        Graph(std::shared_ptr<EventPipe> eventPipe);
+        Graph(std::shared_ptr<EventPipe> eventPipe, Platform* platform);
 
         std::shared_ptr<EventPipe> getEventPipe();
 

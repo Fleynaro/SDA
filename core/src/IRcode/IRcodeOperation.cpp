@@ -46,8 +46,12 @@ std::set<const pcode::Instruction*>& Operation::getPcodeInstructions() {
     return m_pcodeInstructions;
 }
 
-std::set<std::shared_ptr<Variable>>& Operation::getOverwrittenVariables() {
+const std::set<std::shared_ptr<Variable>>& Operation::getOverwrittenVariables() const {
     return m_overwrittenVariables;
+}
+
+void Operation::setOverwrittenVariables(const std::set<std::shared_ptr<Variable>>& variables) {
+    m_overwrittenVariables = variables;
 }
 
 UnaryOperation::UnaryOperation(

@@ -18,9 +18,9 @@ void ContextSync::handleFunctionCreated(const FunctionCreatedEvent& event) {
     std::stringstream name;
     name << "function_" << utils::to_hex() << offset;
 
-    auto signatureDt = new SignatureDataType(ctx, m_callingConvention);
-    auto stackSymbolTable = new StandartSymbolTable(ctx);
-    auto instrSymbolTable = new StandartSymbolTable(ctx);
+    auto signatureDt = new SignatureDataType(ctx, m_callingConvention, nullptr, name.str() + "-sig");
+    auto stackSymbolTable = new StandartSymbolTable(ctx, nullptr, name.str() + "-stack-table");
+    auto instrSymbolTable = new StandartSymbolTable(ctx, nullptr, name.str() + "-instr-table");
     auto symbol = new FunctionSymbol(ctx, nullptr, name.str(), signatureDt, stackSymbolTable, instrSymbolTable);
     m_globalSymbolTable->addSymbol(offset, symbol);
 }
