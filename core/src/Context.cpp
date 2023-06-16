@@ -83,38 +83,21 @@ SymbolTableList* Context::getSymbolTables() const {
 
 std::shared_ptr<EventPipe> Context::CreateOptimizedEventPipe() {
     struct Data {
-        bool commit = false;
-        bool locked = false;
         std::list<std::unique_ptr<Event>> events;
     };
     auto data = std::make_shared<Data>();
-    auto pipeIn = EventPipe::New("Context::OptimizedEventPipe")
-        ->filter(std::function([data](const Event& event) {
-            return event.topic == CommitEventTopic ||
-                    dynamic_cast<const ObjectActionEvent*>(&event);
-        }));
-    pipeIn
-        ->connect(CommitPipe())
-        ->subscribe(std::function([data](const CommitBeginEvent& event) {
-            data->commit = true;
-        }));
-    auto commitPipeIn = EventPipe::New();
-    auto commitPipeOut = commitPipeIn
-        ->connect(CommitPipe())
-        ->process(std::function([data](const Event& event, const EventNext& next) {
-            if (dynamic_cast<const CommitEndEvent*>(&event)) {
-                data->commit = false;
-                if (!data->locked) {
-                    data->locked = true;
-                    while(!data->events.empty()) {
-                        auto e = std::move(data->events.front());
-                        data->events.pop_front();
-                        next(*e);
-                    }
-                    data->locked = false;
-                }
-            }
-        }));
+    auto filter = std::function([](const Event& event) {
+        return dynamic_cast<const ObjectActionEvent*>(&event);
+    });
+    auto commitEmitter = std::function([data](const EventNext& next) {
+        while(!data->events.empty()) {
+            auto e = std::move(data->events.front());
+            data->events.pop_front();
+            next(*e);
+        }
+    });
+    std::shared_ptr<EventPipe> commitPipeIn;
+    auto result = OptimizedCommitPipe(filter, commitPipeIn, commitEmitter);
     commitPipeIn->subscribe(std::function([data](const ObjectAddedEvent& event) {
         data->events.push_back(std::make_unique<ObjectAddedEvent>(event));
     }));
@@ -155,19 +138,5 @@ std::shared_ptr<EventPipe> Context::CreateOptimizedEventPipe() {
             data->events.push_back(std::make_unique<ObjectRemovedEvent>(event));
         }
     }));
-    // All input events are moving through pipeIn and filtered:
-    // - if event is emitted within some commit, it is handled by commitPipeIn and when commit ends it leaves through commitPipeOut
-    // - if event is emitted outside of commit, it immediately leaves pipeIn
-    return EventPipe::Combine(
-        pipeIn,
-        pipeIn->connect(
-            EventPipe::If(
-                std::function([data](const Event& event) {
-                    return data->commit;
-                }),
-                EventPipe::Combine(commitPipeIn, commitPipeOut),
-                EventPipe::New()
-            )
-        )
-    );
+    return result;
 }
