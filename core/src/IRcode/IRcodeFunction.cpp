@@ -8,6 +8,10 @@ Function::Function(Program* program, pcode::FunctionGraph* functionGraph)
     : m_program(program), m_functionGraph(functionGraph)
 {}
 
+std::string Function::getName() {
+    return getEntryBlock()->getName();
+}
+
 Program* Function::getProgram() const {
     return m_program;
 }

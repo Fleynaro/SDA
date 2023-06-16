@@ -18,6 +18,8 @@ namespace sda::ircode
     public:
         Function(Program* program, pcode::FunctionGraph* functionGraph);
 
+        std::string getName();
+
         Program* getProgram() const;
 
         pcode::FunctionGraph* getFunctionGraph() const;

@@ -11,18 +11,12 @@ namespace sda::pcode
 
     class Graph
     {
-        enum class UpdateBlockState {
-            Enabled,
-            Disabled,
-            DisabledByUpdater
-        };
-
         friend void Block::update();
         friend FunctionGraph; 
         std::map<InstructionOffset, Instruction> m_instructions;
         std::map<InstructionOffset, Block> m_blocks;
         std::map<InstructionOffset, FunctionGraph> m_functionGraphs;
-        UpdateBlockState m_updateBlockState = UpdateBlockState::Enabled;
+        bool m_updateBlockEnabled = true;
         size_t m_commitLevel = 0;
         std::shared_ptr<EventPipe> m_eventPipe;
         Platform* m_platform;
@@ -61,7 +55,5 @@ namespace sda::pcode
         FunctionGraph* createFunctionGraph(Block* entryBlock);
 
         void removeFunctionGraph(FunctionGraph* functionGraph);
-
-        void setUpdateBlocksEnabled(bool enabled);
     };
 };

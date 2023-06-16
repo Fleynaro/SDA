@@ -7,6 +7,10 @@ FunctionGraph::FunctionGraph(Block* entryBlock)
     : m_entryBlock(entryBlock)
 {}
 
+std::string FunctionGraph::getName() const {
+    return getEntryBlock()->getName();
+}
+
 Block* FunctionGraph::getEntryBlock() const {
     return m_entryBlock;
 }
@@ -66,11 +70,11 @@ void FunctionGraph::addReferenceFrom(InstructionOffset fromOffset, Block* called
         addReferenceFrom(fromOffset, calledBlock->getFunctionGraph());
     } else {
         auto graph = calledBlock->getGraph();
-        auto prevUpdateBlockState = graph->m_updateBlockState;
-        graph->m_updateBlockState = Graph::UpdateBlockState::Disabled;
+        auto prevUpdateBlockEnabled = graph->m_updateBlockEnabled;
+        graph->m_updateBlockEnabled = false;
         auto newFuncGraph = graph->createFunctionGraph(calledBlock);
         addReferenceFrom(fromOffset, newFuncGraph);
-        graph->m_updateBlockState = prevUpdateBlockState;
+        graph->m_updateBlockEnabled = prevUpdateBlockEnabled;
         calledBlock->update();
     }
 }

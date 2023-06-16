@@ -84,6 +84,7 @@ SymbolTableList* Context::getSymbolTables() const {
 std::shared_ptr<EventPipe> Context::CreateOptimizedEventPipe() {
     struct Data {
         bool commit = false;
+        bool locked = false;
         std::list<std::unique_ptr<Event>> events;
     };
     auto data = std::make_shared<Data>();
@@ -102,11 +103,15 @@ std::shared_ptr<EventPipe> Context::CreateOptimizedEventPipe() {
         ->connect(CommitPipe())
         ->process(std::function([data](const Event& event, const EventNext& next) {
             if (dynamic_cast<const CommitEndEvent*>(&event)) {
-                auto events = std::move(data->events);
-                data->events.clear();
                 data->commit = false;
-                for (auto& e : events) {
-                    next(*e);
+                if (!data->locked) {
+                    data->locked = true;
+                    while(!data->events.empty()) {
+                        auto e = std::move(data->events.front());
+                        data->events.pop_front();
+                        next(*e);
+                    }
+                    data->locked = false;
                 }
             }
         }));
@@ -150,6 +155,9 @@ std::shared_ptr<EventPipe> Context::CreateOptimizedEventPipe() {
             data->events.push_back(std::make_unique<ObjectRemovedEvent>(event));
         }
     }));
+    // All input events are moving through pipeIn and filtered:
+    // - if event is emitted within some commit, it is handled by commitPipeIn and when commit ends it leaves through commitPipeOut
+    // - if event is emitted outside of commit, it immediately leaves pipeIn
     return EventPipe::Combine(
         pipeIn,
         pipeIn->connect(

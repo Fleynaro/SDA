@@ -181,15 +181,9 @@ void Block::passDescendants(std::function<void(Block* block, bool& goNextBlocks)
 }
 
 void Block::update() {
-    if (m_graph->m_updateBlockState != Graph::UpdateBlockState::DisabledByUpdater) {
-        m_graph->getEventPipe()->send(BlockUpdateRequestedEvent {
-            this
-        });
-    }
-    if (m_graph->m_updateBlockState != Graph::UpdateBlockState::Enabled) {
+    if (!m_graph->m_updateBlockEnabled)
         return;
-    }
-    m_graph->m_updateBlockState = Graph::UpdateBlockState::DisabledByUpdater;
+    m_graph->m_updateBlockEnabled = false;
     // entry blocks & function graphs
     passDescendants([](Block* block, bool& goNextBlocks) {
         block->updateEntryBlocks(goNextBlocks);
@@ -205,10 +199,11 @@ void Block::update() {
     passDescendants([&](Block* block, bool& goNextBlocks) {
         block->updateDominantBlocks(goNextBlocks);
         m_graph->getEventPipe()->send(BlockUpdatedEvent {
-            this
+            this,
+            block == this
         });
     });
-    m_graph->m_updateBlockState = Graph::UpdateBlockState::Enabled;
+    m_graph->m_updateBlockEnabled = true;
 }
 
 void Block::updateDominantBlocks(bool& goNextBlocks) {

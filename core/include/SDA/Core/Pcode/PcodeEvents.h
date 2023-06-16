@@ -41,20 +41,12 @@ namespace sda::pcode
     // When a block is updated
     struct BlockUpdatedEvent : Event {
         Block* block;
+        bool requested;
 
-        BlockUpdatedEvent(Block* block)
+        BlockUpdatedEvent(Block* block, bool requested = true)
             : Event(PcodeEventTopic)
             , block(block)
-        {}
-    };
-
-    // When a block is requested to be updated
-    struct BlockUpdateRequestedEvent : Event {
-        Block* block;
-
-        BlockUpdateRequestedEvent(Block* block)
-            : Event(PcodeEventTopic)
-            , block(block)
+            , requested(requested)
         {}
     };
 

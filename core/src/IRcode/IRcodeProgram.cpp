@@ -7,64 +7,90 @@
 using namespace sda;
 using namespace sda::ircode;
 
-void UpdateBlocks(Program* program, const std::set<pcode::Block*>& pcodeBlocks) {
-    std::map<pcode::FunctionGraph*, std::list<pcode::Block*>> blocksToUpdateByFunction;
-    for (auto pcodeBlock : pcodeBlocks) {
-        auto pcodeFunctionGraph = pcodeBlock->getFunctionGraph();
-        blocksToUpdateByFunction[pcodeFunctionGraph].push_back(pcodeBlock);
-    }
-    for (auto& [pcodeFunctionGraph, pcodeBlocksToUpdate] : blocksToUpdateByFunction) {
-        auto function = program->toFunction(pcodeFunctionGraph);
-        utils::BitSet mutualDomBlockSet;
-        for (auto pcodeBlock : pcodeBlocksToUpdate) {
-            if (pcodeBlock == *pcodeBlocksToUpdate.begin()) {
-                mutualDomBlockSet = pcodeBlock->getDominantBlocksSet();
-            } else {
-                mutualDomBlockSet = mutualDomBlockSet & pcodeBlock->getDominantBlocksSet();
-            }
-        }
-        auto mutualDomBlocks = pcodeFunctionGraph->toBlocks(mutualDomBlockSet);
-        pcode::Block* mostDominatedBlock = nullptr;
-        size_t maxSize = 0;
-        for (auto pcodeBlock : mutualDomBlocks) {
-            auto size = pcodeBlock->getDominantBlocks().size();
-            if (size > maxSize) {
-                mostDominatedBlock = pcodeBlock;
-                maxSize = size;
-            }
-        }
-        assert(mostDominatedBlock);
-        auto block = function->toBlock(mostDominatedBlock);
-        block->update();
-    }
-}
-
-std::shared_ptr<EventPipe> UpdateBlocksEventPipe(Program* program) {
+std::shared_ptr<EventPipe> CreateOptimizedUpdateBlocksEventPipe(Program* program) {
     struct Data {
         bool commit = false;
-        std::set<pcode::Block*> pcodeBlocksToUpdate;
+        bool locked = false;
+        std::map<pcode::FunctionGraph*, std::set<pcode::Block*>> pcodeBlocksToUpdate;
     };
     auto data = std::make_shared<Data>();
-    auto pipe = EventPipe::New("UpdateBlocksEventPipe");
-    auto commitPipe = pipe->connect(CommitPipe());
-    commitPipe->subscribe(std::function([data](const CommitBeginEvent& event) {
-        data->commit = true;
+    auto pipeIn = EventPipe::New("IRcode::OptimizedUpdateBlocksEventPipe")
+        ->filter(std::function([data](const Event& event) {
+            auto e =  dynamic_cast<const pcode::BlockUpdatedEvent*>(&event);
+            return event.topic == CommitEventTopic ||
+                    dynamic_cast<const pcode::FunctionGraphRemovedEvent*>(&event) ||
+                    (e && e->requested);
+        }));
+    pipeIn
+        ->connect(CommitPipe())
+        ->subscribe(std::function([data](const CommitBeginEvent& event) {
+            data->commit = true;
+        }));
+    auto commitPipeIn = EventPipe::New();
+    auto commitPipeOut = commitPipeIn
+        ->connect(CommitPipe())
+        ->process(std::function([data, program](const Event& event, const EventNext& next) {
+            if (dynamic_cast<const CommitEndEvent*>(&event)) {
+                data->commit = false;
+                if (!data->locked) {
+                    data->locked = true;
+                    while (!data->pcodeBlocksToUpdate.empty()) {
+                        auto it = data->pcodeBlocksToUpdate.begin(); // TODO: optimize by firstly selecting the lowest function
+                        auto& [funcGraph, pcodeBlocks] = *it;
+                        auto function = program->toFunction(funcGraph);
+                        utils::BitSet mutualDomBlockSet;
+                        for (auto pcodeBlock : pcodeBlocks) {
+                            if (pcodeBlock == *pcodeBlocks.begin()) {
+                                mutualDomBlockSet = pcodeBlock->getDominantBlocksSet();
+                            } else {
+                                mutualDomBlockSet = mutualDomBlockSet & pcodeBlock->getDominantBlocksSet();
+                            }
+                        }
+                        auto mutualDomBlocks = funcGraph->toBlocks(mutualDomBlockSet);
+                        pcode::Block* mostDominatedBlock = nullptr;
+                        size_t maxSize = 0;
+                        for (auto pcodeBlock : mutualDomBlocks) {
+                            auto size = pcodeBlock->getDominantBlocks().size();
+                            if (size > maxSize) {
+                                mostDominatedBlock = pcodeBlock;
+                                maxSize = size;
+                            }
+                        }
+                        assert(mostDominatedBlock);
+                        data->pcodeBlocksToUpdate.erase(it);
+                        next(pcode::BlockUpdatedEvent(mostDominatedBlock));
+                    }
+                    data->locked = false;
+                }
+            }
+        }));
+    commitPipeIn->subscribe(std::function([data](const pcode::BlockUpdatedEvent& event) {
+        data->pcodeBlocksToUpdate[event.block->getFunctionGraph()].insert(event.block);
     }));
-    commitPipe->subscribe(std::function([program, data](const CommitEndEvent& event) {
-        auto blocks = std::move(data->pcodeBlocksToUpdate);
-        data->pcodeBlocksToUpdate.clear();
-        data->commit = false;
-        // call UpdateBlocks in the end to avoid endless recursion
-        UpdateBlocks(program, blocks);
+    commitPipeIn->subscribe(std::function([data](const pcode::FunctionGraphRemovedEvent& event) {
+        data->pcodeBlocksToUpdate.erase(event.functionGraph);
     }));
-    pipe->subscribe(std::function([program, data](const pcode::BlockUpdateRequestedEvent& event) {
-        if (data->commit) {
-            data->pcodeBlocksToUpdate.insert(event.block);
-        } else {
-            UpdateBlocks(program, { event.block });
-        }
-    }));
-    return pipe;
+    // All input events are moving through pipeIn and filtered:
+    // - if event is emitted within some commit, it is handled by commitPipeIn and when commit ends it leaves through commitPipeOut
+    // - if event is emitted outside of commit, it immediately leaves pipeIn
+    return EventPipe::Combine(
+        pipeIn,
+        pipeIn->connect(
+            EventPipe::If(
+                std::function([data](const Event& event) {
+                    return data->commit;
+                }),
+                EventPipe::Combine(commitPipeIn, commitPipeOut),
+                EventPipe::New()
+            )
+        )
+    );
+}
+
+void Program::PcodeEventHandler::handleBlockUpdatedEvent(const pcode::BlockUpdatedEvent& event) {
+    auto function = m_program->toFunction(event.block->getFunctionGraph());
+    auto block = function->toBlock(event.block);
+    block->update();
 }
 
 void Program::PcodeEventHandler::handleBlockFunctionGraphChanged(const pcode::BlockFunctionGraphChangedEvent& event) {
@@ -94,7 +120,9 @@ void Program::PcodeEventHandler::handleFunctionGraphRemoved(const pcode::Functio
 
 std::shared_ptr<EventPipe> Program::PcodeEventHandler::getEventPipe() {
     auto pipe = EventPipe::New("Program::PcodeEventHandler");
-    pipe->connect(UpdateBlocksEventPipe(m_program));
+    pipe
+        ->connect(CreateOptimizedUpdateBlocksEventPipe(m_program))
+        ->subscribeMethod(this, &PcodeEventHandler::handleBlockUpdatedEvent);
     pipe->subscribeMethod(this, &PcodeEventHandler::handleBlockFunctionGraphChanged);
     pipe->subscribeMethod(this, &PcodeEventHandler::handleFunctionGraphCreated);
     pipe->subscribeMethod(this, &PcodeEventHandler::handleFunctionGraphRemoved);
@@ -108,11 +136,10 @@ void Program::ContextEventHandler::handleObjectModified(const ObjectModifiedEven
                 if (symbolTable == m_program->m_globalSymbolTable) {
                     auto function = m_program->getFunctionAt(funcSymbol->getOffset());
                     auto blocks = m_program->getBlocksRefToFunction(function);
-                    std::set<pcode::Block*> pcodeBlocks;
+                    CommitScope commitScope(m_program->getEventPipe());
                     for (auto block : blocks) {
-                        pcodeBlocks.insert(block->getPcodeBlock());
+                        m_program->getEventPipe()->send(pcode::BlockUpdatedEvent(block->getPcodeBlock()));
                     }
-                    UpdateBlocks(m_program, pcodeBlocks);
                 }
             }
         }
@@ -133,13 +160,13 @@ Program::Program(pcode::Graph* graph, SymbolTable* globalSymbolTable)
 {
     IF_PLOG(plog::debug) {
         m_graph->getEventPipe()->subscribe(std::function([&](const FunctionCreatedEvent& event) {
-            PLOG_DEBUG << "FunctionCreatedEvent: " << event.function->getFunctionGraph()->getEntryBlock()->getName();
+            PLOG_DEBUG << "FunctionCreatedEvent: " << event.function->getFunctionGraph()->getName();
         }));
         m_graph->getEventPipe()->subscribe(std::function([&](const FunctionRemovedEvent& event) {
-            PLOG_DEBUG << "FunctionRemovedEvent: " << event.function->getEntryBlock()->getName();
+            PLOG_DEBUG << "FunctionRemovedEvent: " << event.function->getName();
         }));
         m_graph->getEventPipe()->subscribe(std::function([&](const FunctionDecompiledEvent& event) {
-            PLOG_DEBUG << "FunctionDecompiledEvent: " << event.function->getEntryBlock()->getName();
+            PLOG_DEBUG << "FunctionDecompiledEvent: " << event.function->getName();
         }));
         m_graph->getEventPipe()->subscribe(std::function([&](const BlockCreatedEvent& event) {
             PLOG_DEBUG << "BlockCreatedEvent: " << event.block->getName();
@@ -173,8 +200,8 @@ Program::Program(pcode::Graph* graph, SymbolTable* globalSymbolTable)
             PLOG_DEBUG << "CommitEndEvent";
         }));
     }
-    m_graph->getEventPipe()->connect(m_pcodeEventHandler.getEventPipe());
     m_graph->getEventPipe()->connect(m_contextEventHandler.getEventPipe());
+    m_graph->getEventPipe()->connect(m_pcodeEventHandler.getEventPipe());
 }
 
 std::shared_ptr<EventPipe> Program::getEventPipe() {

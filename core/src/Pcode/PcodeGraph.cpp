@@ -76,22 +76,24 @@ Graph::Graph(std::shared_ptr<EventPipe> eventPipe, Platform* platform)
             PLOG_DEBUG << "BlockCreatedEvent: " << event.block->getName();
         }));
         m_eventPipe->subscribe(std::function([&](const pcode::BlockUpdatedEvent& event) {
-            PLOG_DEBUG << "BlockUpdatedEvent: " << event.block->getName();
-        }));
-        m_eventPipe->subscribe(std::function([&](const pcode::BlockUpdateRequestedEvent& event) {
-            PLOG_DEBUG << "BlockUpdateRequestedEvent: " << event.block->getName();
+            PLOG_DEBUG << "BlockUpdatedEvent: " << event.block->getName() << ", requested = " << event.requested;
         }));
         m_eventPipe->subscribe(std::function([&](const pcode::BlockFunctionGraphChangedEvent& event) {
-            PLOG_DEBUG << "BlockFunctionGraphChangedEvent: " << event.block->getName();
+            auto oldFunctionGraphName = event.oldFunctionGraph ? event.oldFunctionGraph->getName() : "none";
+            auto newFunctionGraphName = event.newFunctionGraph ? event.newFunctionGraph->getName() : "none";
+            PLOG_DEBUG << "BlockFunctionGraphChangedEvent: " <<
+                "block = " << event.block->getName() <<
+                ", old func = " << oldFunctionGraphName <<
+                ", new func = " << newFunctionGraphName;
         }));
         m_eventPipe->subscribe(std::function([&](const pcode::BlockRemovedEvent& event) {
             PLOG_DEBUG << "BlockRemovedEvent: " << event.block->getName();
         }));
         m_eventPipe->subscribe(std::function([&](const pcode::FunctionGraphCreatedEvent& event) {
-            PLOG_DEBUG << "FunctionGraphCreatedEvent: " << event.functionGraph->getEntryBlock()->getName();
+            PLOG_DEBUG << "FunctionGraphCreatedEvent: " << event.functionGraph->getName();
         }));
         m_eventPipe->subscribe(std::function([&](const pcode::FunctionGraphRemovedEvent& event) {
-            PLOG_DEBUG << "FunctionGraphRemovedEvent: " << event.functionGraph->getEntryBlock()->getName();
+            PLOG_DEBUG << "FunctionGraphRemovedEvent: " << event.functionGraph->getName();
         }));
         m_eventPipe->subscribe(std::function([&](const pcode::UnvisitedOffsetFoundEvent& event) {
             PLOG_DEBUG << "UnvisitedOffsetFoundEvent: 0x" << (std::stringstream() << utils::to_hex() << event.offset).str();
@@ -470,8 +472,4 @@ void Graph::removeFunctionGraph(FunctionGraph* functionGraph) {
     entryBlock->update();
     it->second.removeAllReferences();
     m_functionGraphs.erase(it);
-}
-
-void Graph::setUpdateBlocksEnabled(bool enabled) {
-    m_updateBlockState = enabled ? UpdateBlockState::Enabled : UpdateBlockState::Disabled;
 }

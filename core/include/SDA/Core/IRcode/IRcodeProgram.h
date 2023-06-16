@@ -17,6 +17,8 @@ namespace sda::ircode
         {
             Program* m_program;
 
+            void handleBlockUpdatedEvent(const pcode::BlockUpdatedEvent& event);
+
             void handleBlockFunctionGraphChanged(const pcode::BlockFunctionGraphChangedEvent& event);
 
             void handleFunctionGraphCreated(const pcode::FunctionGraphCreatedEvent& event);

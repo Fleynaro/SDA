@@ -123,7 +123,7 @@ namespace sda::semantics
                 if (event.function->getFunctionSymbol()) {
                     auto sig = m_collector->m_signatureRepo->getSignature(event.function);
                     if (sig) {
-                        CommitScope commit(m_collector->m_program->getEventPipe()); // TODO: fix
+                        CommitScope commit(m_collector->m_program->getEventPipe());
                         sig->updateSignatureDataType(event.function->getFunctionSymbol()->getSignature());
                     }
                 }

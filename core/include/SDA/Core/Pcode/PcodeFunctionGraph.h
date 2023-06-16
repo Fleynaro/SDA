@@ -15,6 +15,8 @@ namespace sda::pcode
 
         FunctionGraph(Block* entryBlock);
 
+        std::string getName() const;
+
         Block* getEntryBlock() const;
 
         struct BlockInfo {
