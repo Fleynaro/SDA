@@ -55,7 +55,7 @@ bool Instruction::isBranching() const {
     return m_id >= InstructionId::BRANCH && m_id <= InstructionId::BRANCHIND;
 }
 
-bool Instruction::isComutative() const {
+bool Instruction::isCommutative() const {
     return
         // integers
         m_id == InstructionId::INT_ADD ||

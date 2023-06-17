@@ -84,7 +84,7 @@ namespace sda::pcode
 
         void updateEntryBlocks(bool& goNextBlocks);
 
-        bool isEntryBlockInited() const;
+        bool isEntryBlockInitialized() const;
 
         static size_t FindNewIndex(const std::map<size_t, Block*>& indexToBlock);
     };

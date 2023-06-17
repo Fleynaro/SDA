@@ -154,8 +154,8 @@ namespace sda::pcode
 		// Check if the instruction is some kind of branching (BRANCH, CBRANCH, BRANCHIND)
 		bool isBranching() const;
 
-		// Check if the instruction has comutative operands (INT_ADD, INT_MULT, INT_XOR, INT_AND, INT_OR)
-		bool isComutative() const;
+		// Check if the instruction has commutative operands (INT_ADD, INT_MULT, INT_XOR, INT_AND, INT_OR)
+		bool isCommutative() const;
 
 		// Check if the instruction is not going to the next instruction (BRANCH, RETURN, INT)
 		bool isNotGoingNext() const;

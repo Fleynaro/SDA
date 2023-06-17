@@ -109,7 +109,7 @@ FunctionGraph* Block::getFunctionGraph() const {
 }
 
 Block* Block::getEntryBlock() const {
-    assert(isEntryBlockInited());
+    assert(isEntryBlockInitialized());
     return m_entryBlock;
 }
 
@@ -226,7 +226,7 @@ void Block::updateEntryBlocks(bool& goNextBlocks) {
     Block* newEntryBlock = nullptr;
     std::set<Block*> refEntryBlocks;
     for (auto refBlock : m_referencedBlocks) {
-        if (refBlock->isEntryBlockInited()) {
+        if (refBlock->isEntryBlockInitialized()) {
             // the condition is needed to avoid excessive entry blocks (check tests NewEntryBlockWithLoopFirst, NewEntryBlockWithLoopSecond)
             if (refBlock->m_entryBlock != this) {
                 refEntryBlocks.insert(refBlock->m_entryBlock);
@@ -297,7 +297,7 @@ void Block::updateEntryBlocks(bool& goNextBlocks) {
     goNextBlocks = true;
 }
 
-bool Block::isEntryBlockInited() const {
+bool Block::isEntryBlockInitialized() const {
     return m_entryBlock && m_entryBlock->m_entryBlock;
 }
 

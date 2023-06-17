@@ -508,7 +508,7 @@ void IRcodeGenerator::genGenericOperation(const pcode::Instruction* instr, ircod
     
     // calculate hash
     ircode::Hash hash = 0;
-    if (instr->isComutative()) {
+    if (instr->isCommutative()) {
         // INT_ADD, INT_MULT used for address calculation ([x+4y]*2 == 2x+8y == 8y+2x)
         if (instr->getId() == pcode::InstructionId::INT_ADD) {
             hash = inputVal1->getHash() + inputVal2->getHash();
