@@ -29,7 +29,7 @@ protected:
     }
 };
 
-TEST_F(SignatureSemanticsTest, Simple) {
+TEST_F(SignatureSemanticsTest, Simple1) {
     auto sourcePCode = "\
         // main() \n\
         xmm0:Da = COPY 0.5:4 \n\
@@ -64,6 +64,41 @@ TEST_F(SignatureSemanticsTest, Simple) {
     auto mainFunction = parsePcode(sourcePCode, program);
     auto func2 = program->toFunction(
         graph->getFunctionGraphAt(pcode::InstructionOffset(3, 0)));
+    ASSERT_TRUE(cmp(mainFunction, expectedIRCodeOfMainFunc));
+    ASSERT_TRUE(cmp(func2, expectedIRCodeOfFunc2));
+    ASSERT_TRUE(cmpDataType(mainFunction->getFunctionSymbol()->getSignature(), expectedSigOfMainFunc));
+    ASSERT_TRUE(cmpDataType(func2->getFunctionSymbol()->getSignature(), expectedSigOfFunc2));
+}
+
+TEST_F(SignatureSemanticsTest, Simple2) {
+    auto sourcePCode = "\
+        // main() \n\
+        CALL <getValue> \n\
+        RETURN \n\
+        \n\
+        \n\
+        // uint32_t getValue() \n\
+        <getValue>: \n\
+        rax:4 = COPY 1000:4 \n\
+        RETURN \n\
+    ";
+    auto expectedIRCodeOfMainFunc = "\
+        Block B0(level: 1): \n\
+            var1[rax]:4 = CALL 0x200:8 \
+    ";
+    auto expectedSigOfMainFunc = "\
+        signature fastcall uint32_t () \
+    ";
+    auto expectedIRCodeOfFunc2 = "\
+        Block B2(level: 1): \n\
+            var1[rax]:4 = COPY 0x3e8:4 \
+    ";
+    auto expectedSigOfFunc2 = "\
+        signature fastcall uint32_t () \
+    ";
+    auto mainFunction = parsePcode(sourcePCode, program);
+    auto func2 = program->toFunction(
+        graph->getFunctionGraphAt(pcode::InstructionOffset(2, 0)));
     ASSERT_TRUE(cmp(mainFunction, expectedIRCodeOfMainFunc));
     ASSERT_TRUE(cmp(func2, expectedIRCodeOfFunc2));
     ASSERT_TRUE(cmpDataType(mainFunction->getFunctionSymbol()->getSignature(), expectedSigOfMainFunc));
