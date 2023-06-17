@@ -7,6 +7,7 @@
 using namespace sda;
 using namespace sda::ircode;
 
+// Allows to optimize event handling by avoiding multiple same events (BlockUpdatedEvent) within commit
 std::shared_ptr<EventPipe> CreateOptimizedUpdateBlocksEventPipe(Program* program) {
     struct Data {
         using Map = std::map<pcode::FunctionGraph*, std::set<pcode::Block*>>;
@@ -111,6 +112,8 @@ std::shared_ptr<EventPipe> Program::PcodeEventHandler::getEventPipe() {
 }
 
 void Program::ContextEventHandler::handleObjectModified(const ObjectModifiedEvent& event) {
+    if (event.state == Object::ModState::Before)
+        return;
     if (auto signatureDt = dynamic_cast<SignatureDataType*>(event.object)) {
         for (auto funcSymbol : signatureDt->getFunctionSymbols()) {
             if (auto symbolTable = funcSymbol->getSymbolTable()) {

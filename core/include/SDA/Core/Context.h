@@ -52,5 +52,8 @@ namespace sda
 
         // Allows to optimize event handling by avoiding multiple same events within commit
         static std::shared_ptr<EventPipe> CreateOptimizedEventPipe();
+
+        // Allows to track which property of an object has changed
+        static std::shared_ptr<EventPipe> CreatePropertyEventPipe(const std::function<size_t(Object*)>& propertyHasher);
     };
 };

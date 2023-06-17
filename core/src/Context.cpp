@@ -7,6 +7,7 @@
 #include "SDA/Core/Symbol/Symbol.h"
 #include "SDA/Core/SymbolTable/SymbolTable.h"
 #include "SDA/Core/Utils/Logger.h"
+#include <stack>
 
 using namespace sda;
 
@@ -29,6 +30,8 @@ Context::Context(std::shared_ptr<EventPipe> eventPipe, Platform* platform)
             }
         }));
         m_eventPipe->subscribe(std::function([&](const ObjectModifiedEvent& event) {
+            if (event.state == Object::ModState::Before)
+                return;
             if (auto ctxObj = dynamic_cast<ContextObject*>(event.object)) {
                 PLOG_DEBUG << "ObjectModifiedEvent: " << ctxObj->getName();
             } else {
@@ -87,7 +90,13 @@ std::shared_ptr<EventPipe> Context::CreateOptimizedEventPipe() {
     };
     auto data = std::make_shared<Data>();
     auto filter = std::function([](const Event& event) {
-        return dynamic_cast<const ObjectActionEvent*>(&event);
+        if(auto actionEvent = dynamic_cast<const ObjectActionEvent*>(&event)) {
+             if (auto changeEvent = dynamic_cast<const ObjectModifiedEvent*>(actionEvent)) {
+                return changeEvent->state == Object::ModState::After;
+             }
+            return true;
+        }
+        return false;
     });
     auto commitEmitter = std::function([data](const EventNext& next) {
         while(!data->events.empty()) {
@@ -139,4 +148,27 @@ std::shared_ptr<EventPipe> Context::CreateOptimizedEventPipe() {
         }
     }));
     return result;
+}
+
+std::shared_ptr<EventPipe> Context::CreatePropertyEventPipe(const std::function<size_t(Object*)>& propertyHasher) {
+    struct Data {
+        std::stack<size_t> valueHashes;
+    };
+    auto data = std::make_shared<Data>();
+    auto pipe = EventPipe::New();
+    pipe->process(std::function([data, propertyHasher](const Event& event, const EventNext& next) {
+        if (auto changeEvent = dynamic_cast<const ObjectModifiedEvent*>(&event)) {
+            if (changeEvent->state == Object::ModState::Before) {
+                auto valueHash = propertyHasher(changeEvent->object);
+                data->valueHashes.push(valueHash);
+            } else {
+                auto valueHash = propertyHasher(changeEvent->object);
+                if (data->valueHashes.top() != valueHash) {
+                    next(ObjectModifiedEvent(changeEvent->object, Object::ModState::After));
+                }
+                data->valueHashes.pop();
+            }
+        }
+    }));
+    return pipe;
 }

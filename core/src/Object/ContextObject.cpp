@@ -5,9 +5,7 @@
 using namespace sda;
 
 void ContextObject::notifyModified(Object::ModState state) {
-    if (state == Object::ModState::After) {
-        m_context->getEventPipe()->send(ObjectModifiedEvent(this));
-    }
+    m_context->getEventPipe()->send(ObjectModifiedEvent(this, state));
 }
 
 ContextObject::ContextObject(Context* context, Object::Id* id, const std::string& name)

@@ -22,7 +22,12 @@ namespace sda
 
     // When an object is modified in the context
     struct ObjectModifiedEvent : ObjectActionEvent {
-        using ObjectActionEvent::ObjectActionEvent;
+        Object::ModState state;
+        
+        ObjectModifiedEvent(Object* object, Object::ModState state)
+            : ObjectActionEvent(object)
+            , state(state)
+        {}
     };
 
     // When an object is removed from the context
