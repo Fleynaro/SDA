@@ -109,6 +109,11 @@
         "-DBUILD_TESTING=ON"
     ],
 
+    "cmake.environment": {
+        "GTEST_FILTER": "*", // Select tests to run
+        "GTEST_CATCH_EXCEPTIONS": "0" // Disable when debug tests
+    },
+
     "search.exclude": {
         "**/third-party/**": true
     },
@@ -116,7 +121,23 @@
     "todo-tree.filtering.useBuiltInExcludes": "search excludes",
     
     "cSpell.words": [
+        "BRANCHIND",
+        "CALLIND",
+        "CBRANCH",
+        "CPOOLREF",
+        "decompilation",
+        "decompile",
+        "decompiled",
+        "ghidra",
         "ircode",
-        "pcode"
-    ]
+        "LESSEQUAL",
+        "NOTEQUAL",
+        "pcode",
+        "SBORROW",
+        "SLESS",
+        "SLESSEQUAL",
+        "SUBPIECE",
+        "varnode",
+        "ZEXT"
+    ],
 }
