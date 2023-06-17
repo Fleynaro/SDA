@@ -71,7 +71,8 @@ namespace sda::semantics
         Signature* getSignature(ircode::Function* function) {
             auto it = m_funcToSignature.find(function);
             if (it == m_funcToSignature.end()) {
-                return nullptr;
+                m_funcToSignature[function] = Signature();
+                it = m_funcToSignature.find(function);
             }
             return &it->second;
         }
@@ -81,13 +82,8 @@ namespace sda::semantics
             const CallingConvention::StorageInfo& storageInfo,
             std::shared_ptr<ircode::Variable> variable)
         {
-            auto it = m_funcToSignature.find(function);
-            if (it == m_funcToSignature.end()) {
-                m_funcToSignature[function] = Signature();
-                it = m_funcToSignature.find(function);
-            }
-            auto& signature = it->second;
-            auto& storageInfos = signature.storageInfos;
+            auto signature = getSignature(function);
+            auto& storageInfos = signature->storageInfos;
             auto it2 = std::find(storageInfos.begin(), storageInfos.end(), storageInfo);
             if (it2 == storageInfos.end()) {
                 storageInfos.push_back({ storageInfo });
@@ -95,6 +91,26 @@ namespace sda::semantics
             }
             if (std::find(it2->variables.begin(), it2->variables.end(), variable) == it2->variables.end()) {
                 it2->variables.push_back(variable);
+            }
+        }
+
+        void removeVariable(ircode::Function* function, std::shared_ptr<ircode::Variable> variable) {
+            auto signature = getSignature(function);
+            for (auto it2 = signature->storageInfos.begin(); it2 != signature->storageInfos.end(); ) {
+                auto& storageInfo = *it2;
+                auto it3 = std::find(storageInfo.variables.begin(), storageInfo.variables.end(), variable);
+                if (it3 != storageInfo.variables.end()) {
+                    storageInfo.variables.erase(it3);
+                    if (storageInfo.variables.empty()) {
+                        it2 = signature->storageInfos.erase(it2);
+                    }
+                    else {
+                        it2++;
+                    }
+                }
+                else {
+                    it2++;
+                }
             }
         }
     };
@@ -121,12 +137,17 @@ namespace sda::semantics
                     m_collector->collect(ctx);
                 });
                 if (event.function->getFunctionSymbol()) {
+                    CommitScope commit(m_collector->m_program->getEventPipe());
                     auto sig = m_collector->m_signatureRepo->getSignature(event.function);
-                    if (sig) {
-                        CommitScope commit(m_collector->m_program->getEventPipe());
-                        sig->updateSignatureDataType(event.function->getFunctionSymbol()->getSignature());
-                    }
+                    sig->updateSignatureDataType(event.function->getFunctionSymbol()->getSignature());
                 }
+            }
+
+            void handleOperationRemoved(const ircode::OperationRemovedEvent& event) {
+                auto function = event.op->getBlock()->getFunction();
+                auto output = event.op->getOutput();
+                m_collector->m_signatureRepo->removeVariable(function, output);
+                // No need to call updateSignatureDataType here because the FunctionDecompiledEvent will be called anyway
             }
         public:
             IRcodeEventHandler(SignatureCollector* collector) : m_collector(collector) {}
@@ -134,6 +155,7 @@ namespace sda::semantics
             std::shared_ptr<EventPipe> getEventPipe() {
                 auto pipe = EventPipe::New();
                 pipe->subscribeMethod(this, &IRcodeEventHandler::handleFunctionDecompiled);
+                pipe->subscribeMethod(this, &IRcodeEventHandler::handleOperationRemoved);
                 return pipe;
             }
         };
@@ -164,8 +186,10 @@ namespace sda::semantics
                     exploreValue(ctx, input, CallingConvention::Storage::Read);
                 }
             }
-            auto outputAddrVal = output->getMemAddress().value;
-            exploreValue(ctx, outputAddrVal, CallingConvention::Storage::Write);
+            if (output->getOperations().size() == 1) {
+                auto outputAddrVal = output->getMemAddress().value;
+                exploreValue(ctx, outputAddrVal, CallingConvention::Storage::Write);
+            }
         }
     private:
         void exploreValue(

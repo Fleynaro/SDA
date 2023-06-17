@@ -28,7 +28,7 @@ FunctionSymbol* Function::getFunctionSymbol() const {
 }
 
 Offset Function::getEntryOffset() const {
-    return m_functionGraph->getEntryBlock()->getMinOffset();
+    return m_functionGraph->getEntryOffset();
 }
 
 Block* Function::getEntryBlock() {

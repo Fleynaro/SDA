@@ -49,7 +49,7 @@ TEST_F(SignatureSemanticsTest, Simple) {
             var2:1 = CALL 0x300:8, var1 \
     ";
     auto expectedSigOfMainFunc = "\
-        signature fastcall float () \
+        signature fastcall void () \
     ";
     auto expectedIRCodeOfFunc2 = "\
         Block B3(level: 1): \n\

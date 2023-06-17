@@ -19,6 +19,8 @@ namespace sda::pcode
 
         Block* getEntryBlock() const;
 
+        Offset getEntryOffset() const;
+
         struct BlockInfo {
             Block* block;
             size_t level;

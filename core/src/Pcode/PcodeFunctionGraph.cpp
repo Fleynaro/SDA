@@ -15,6 +15,10 @@ Block* FunctionGraph::getEntryBlock() const {
     return m_entryBlock;
 }
 
+sda::Offset FunctionGraph::getEntryOffset() const {
+    return m_entryBlock->getMinOffset();
+}
+
 std::list<FunctionGraph::BlockInfo> FunctionGraph::getBlocks(bool sort) const {
     std::map<Block*, BlockInfo> blocks;
     // pass blocks and calculate level

@@ -9,7 +9,19 @@ using namespace sda::ircode;
 
 std::shared_ptr<EventPipe> CreateOptimizedUpdateBlocksEventPipe(Program* program) {
     struct Data {
-        std::map<pcode::FunctionGraph*, std::set<pcode::Block*>> pcodeBlocksToUpdate;
+        using Map = std::map<pcode::FunctionGraph*, std::set<pcode::Block*>>;
+        Map pcodeBlocksToUpdate;
+
+        Map::iterator selectLowestFunction() {
+            // TODO: optimize by firstly selecting the lowest function
+            Map::iterator resultIt = pcodeBlocksToUpdate.begin();
+            for (auto it = pcodeBlocksToUpdate.begin(); it != pcodeBlocksToUpdate.end(); ++it) {
+                if (it->first->getEntryOffset() < resultIt->first->getEntryOffset()) {
+                    resultIt = it;
+                }
+            }
+            return resultIt;
+        }
     };
     auto data = std::make_shared<Data>();
     auto filter = std::function([](const Event& event) {
@@ -19,7 +31,7 @@ std::shared_ptr<EventPipe> CreateOptimizedUpdateBlocksEventPipe(Program* program
     });
     auto commitEmitter = std::function([data, program](const EventNext& next) {
         while (!data->pcodeBlocksToUpdate.empty()) {
-            auto it = data->pcodeBlocksToUpdate.begin(); // TODO: optimize by firstly selecting the lowest function
+            auto it = data->selectLowestFunction();
             auto& [funcGraph, pcodeBlocks] = *it;
             auto function = program->toFunction(funcGraph);
             utils::BitSet mutualDomBlockSet;
