@@ -186,7 +186,7 @@ namespace sda::semantics
                     exploreValue(ctx, input, CallingConvention::Storage::Read);
                 }
             }
-            if (output->getOperations().size() == 1) {
+            if (!output->isUsed()) {
                 auto outputAddrVal = output->getMemAddress().value;
                 exploreValue(ctx, outputAddrVal, CallingConvention::Storage::Write);
             }

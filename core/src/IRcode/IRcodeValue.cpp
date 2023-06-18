@@ -108,6 +108,10 @@ std::list<RefOperation*> Variable::getRefOperations() const {
     return refOperations;
 }
 
+bool Variable::isUsed() const {
+    return m_operations.size() > 1;
+}
+
 const MemoryAddress& Variable::getMemAddress() const {
     return m_memAddress;
 }

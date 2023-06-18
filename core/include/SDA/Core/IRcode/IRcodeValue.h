@@ -100,6 +100,8 @@ namespace sda::ircode
 
         std::list<RefOperation*> getRefOperations() const;
 
+        bool isUsed() const;
+
         const MemoryAddress& getMemAddress() const;
 
         size_t getSize() const override;
