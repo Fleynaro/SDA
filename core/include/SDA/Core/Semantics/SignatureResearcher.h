@@ -115,7 +115,7 @@ namespace sda::semantics
         }
     };
 
-    class SignatureCollector
+    class SignatureResearcher
     {
         ircode::Program* m_program;
         Platform* m_platform;
@@ -124,7 +124,7 @@ namespace sda::semantics
 
         class IRcodeEventHandler
         {
-            SignatureCollector* m_collector;
+            SignatureResearcher* m_researcher;
 
             void handleFunctionDecompiled(const ircode::FunctionDecompiledEvent& event) {
                 SemanticsPropagationContext ctx;
@@ -134,11 +134,11 @@ namespace sda::semantics
                     }
                 }
                 ctx.collect([&]() {
-                    m_collector->collect(ctx);
+                    m_researcher->research(ctx);
                 });
                 if (event.function->getFunctionSymbol()) {
-                    CommitScope commit(m_collector->m_program->getEventPipe());
-                    auto sig = m_collector->m_signatureRepo->getSignature(event.function);
+                    CommitScope commit(m_researcher->m_program->getEventPipe());
+                    auto sig = m_researcher->m_signatureRepo->getSignature(event.function);
                     sig->updateSignatureDataType(event.function->getFunctionSymbol()->getSignature());
                 }
             }
@@ -146,11 +146,11 @@ namespace sda::semantics
             void handleOperationRemoved(const ircode::OperationRemovedEvent& event) {
                 auto function = event.op->getBlock()->getFunction();
                 auto output = event.op->getOutput();
-                m_collector->m_signatureRepo->removeVariable(function, output);
+                m_researcher->m_signatureRepo->removeVariable(function, output);
                 // No need to call updateSignatureDataType here because the FunctionDecompiledEvent will be called anyway
             }
         public:
-            IRcodeEventHandler(SignatureCollector* collector) : m_collector(collector) {}
+            IRcodeEventHandler(SignatureResearcher* researcher) : m_researcher(researcher) {}
 
             std::shared_ptr<EventPipe> getEventPipe() {
                 auto pipe = EventPipe::New();
@@ -161,7 +161,7 @@ namespace sda::semantics
         };
         IRcodeEventHandler m_ircodeEventHandler;
     public:
-        SignatureCollector(
+        SignatureResearcher(
             ircode::Program* program,
             Platform* platform,
             std::shared_ptr<CallingConvention> callingConvention,
@@ -176,23 +176,23 @@ namespace sda::semantics
             m_program->getEventPipe()->connect(m_ircodeEventHandler.getEventPipe());
         }
 
-        void collect(SemanticsPropagationContext& ctx)
+        void research(SemanticsPropagationContext& ctx)
         {
             auto function = ctx.operation->getBlock()->getFunction();
             auto output = ctx.operation->getOutput();
             if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(ctx.operation)) {
                 auto input = unaryOp->getInput();
                 if (unaryOp->getId() == ircode::OperationId::LOAD) {
-                    exploreValue(ctx, input, CallingConvention::Storage::Read);
+                    researchValue(ctx, input, CallingConvention::Storage::Read);
                 }
             }
             if (!output->isUsed()) {
                 auto outputAddrVal = output->getMemAddress().value;
-                exploreValue(ctx, outputAddrVal, CallingConvention::Storage::Write);
+                researchValue(ctx, outputAddrVal, CallingConvention::Storage::Write);
             }
         }
     private:
-        void exploreValue(
+        void researchValue(
             SemanticsPropagationContext& ctx,
             std::shared_ptr<ircode::Value> value,
             CallingConvention::Storage::UseType type)

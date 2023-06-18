@@ -9,6 +9,8 @@ namespace sda::ircode
 {
     class Program
     {
+        friend class ContextSync;
+        friend class PcodeSync;
         pcode::Graph* m_graph;
         SymbolTable* m_globalSymbolTable;
         std::map<pcode::FunctionGraph*, Function> m_functions;
@@ -31,20 +33,6 @@ namespace sda::ircode
             std::shared_ptr<EventPipe> getEventPipe();
         };
 
-        class ContextEventHandler
-        {
-            Program* m_program;
-
-            void handleObjectModified(const ObjectModifiedEvent& event);
-
-        public:
-            ContextEventHandler(Program* program) : m_program(program) {}
-
-            std::shared_ptr<EventPipe> getEventPipe();
-        };
-
-        PcodeEventHandler m_pcodeEventHandler;
-        ContextEventHandler m_contextEventHandler;
     public:
         Program(pcode::Graph* graph, SymbolTable* globalSymbolTable);
 

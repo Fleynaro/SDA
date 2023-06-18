@@ -98,7 +98,9 @@
         "any": "cpp",
         "unordered_set": "cpp",
         "condition_variable": "cpp",
-        "source_location": "cpp"
+        "source_location": "cpp",
+        "ranges": "cpp",
+        "span": "cpp"
     },
 
     "cmake.debugConfig": {

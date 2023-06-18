@@ -1,27 +1,22 @@
 #include "Test/Core/Semantics/SemanticsFixture.h"
-#include "SDA/Core/Semantics/Signature.h"
+#include "SDA/Core/Semantics/SignatureResearcher.h"
 #include "SDA/Platform/X86/CallingConvention.h"
 
 using namespace sda;
 using namespace sda::test;
 using namespace ::testing;
 
-class SignatureSemanticsTest : public SemanticsFixture
+class SignatureResearcherTest : public SemanticsFixture
 {
 protected:
     std::unique_ptr<semantics::SignatureRepository> signatureRepo;
-    std::unique_ptr<semantics::SignatureCollector> signatureCollector;
-    std::unique_ptr<ircode::ContextSync> ctxSync;
+    std::unique_ptr<semantics::SignatureResearcher> signatureResearcher;
 
     void SetUp() override {
         SemanticsFixture::SetUp();
         auto callConv = std::make_shared<platform::FastcallCallingConvention>();
-
-        ctxSync = std::make_unique<ircode::ContextSync>(globalSymbolTable, callConv);
-        program->getEventPipe()->connect(ctxSync->getEventPipe());
-
         signatureRepo = std::make_unique<semantics::SignatureRepository>();
-        signatureCollector = std::make_unique<semantics::SignatureCollector>(
+        signatureResearcher = std::make_unique<semantics::SignatureResearcher>(
             program,
             context->getPlatform(),
             callConv,
@@ -29,7 +24,7 @@ protected:
     }
 };
 
-TEST_F(SignatureSemanticsTest, Simple1) {
+TEST_F(SignatureResearcherTest, Simple1) {
     auto sourcePCode = "\
         // main() \n\
         xmm0:Da = COPY 0.5:4 \n\
@@ -70,7 +65,7 @@ TEST_F(SignatureSemanticsTest, Simple1) {
     ASSERT_TRUE(cmpDataType(func2->getFunctionSymbol()->getSignature(), expectedSigOfFunc2));
 }
 
-TEST_F(SignatureSemanticsTest, Simple2) {
+TEST_F(SignatureResearcherTest, Simple2) {
     auto sourcePCode = "\
         // main() \n\
         CALL <getValue> \n\
