@@ -8,12 +8,8 @@ Printer::Printer(pcode::Printer* pcodePrinter)
     : m_pcodePrinter(pcodePrinter)
 {}
 
-void Printer::setDataTypeProvider(DataTypeProvider* dataTypeProvider) {
-    m_dataTypeProvider = dataTypeProvider;
-}
-
-void Printer::setExtendInfo(bool toggle) {
-    m_extendInfo = toggle;
+void Printer::setOperationCommentProvider(const OperationCommentProvider& operationCommentProvider) {
+    m_operationCommentProvider = operationCommentProvider;
 }
 
 void Printer::printFunction(Function* function) {
@@ -89,33 +85,12 @@ void Printer::printOperation(const Operation* operation) {
         }
     }
 
-    if (m_extendInfo) {
-        if (m_dataTypeProvider) {
-            if (auto dataType = m_dataTypeProvider->getDataType(output)) {
-                startCommenting();
-                printToken(" // ", COMMENT);
-                printToken(dataType->getName(), COMMENT);
-                endCommenting();
-            }
-        }
-
-        const auto& terms = output->getLinearExpr().getTerms();
-        if (!(terms.size() == 1 && terms.front().factor == 1)) {
+    if (m_operationCommentProvider) {
+        auto comment = m_operationCommentProvider(operation);
+        if (!comment.empty()) {
             startCommenting();
             printToken(" // ", COMMENT);
-            printLinearExpr(&output->getLinearExpr());
-            endCommenting();
-        }
-
-        const auto& vars = operation->getOverwrittenVariables();
-        if (!vars.empty()) {
-            startCommenting();
-            printToken(" // overwrites ", COMMENT);
-            for (const auto& var : vars) {
-                printValue(var.get());
-                if (var != *vars.rbegin())
-                    printToken(", ", COMMENT);
-            }
+            printToken(m_operationCommentProvider(operation), COMMENT);
             endCommenting();
         }
     }

@@ -4,6 +4,7 @@
 #include "SDA/Core/DataType/SignatureDataType.h"
 #include "SDA/Core/IRcode/IRcodeBlock.h"
 #include "SDA/Core/IRcode/IRcodeEvents.h"
+#include "SDA/Core/IRcode/IRcodeHelper.h"
 
 namespace sda::semantics
 {
@@ -215,7 +216,7 @@ namespace sda::semantics
                 for (auto& term : linearExpr.getTerms()) {
                     if (term.factor != 1 || term.value->getSize() != m_platform->getPointerSize())
                         continue;
-                    if (auto baseRegister = extractRegister(term.value)) {
+                    if (auto baseRegister = ExtractRegister(term.value)) {
                         CallingConvention::Storage storage = {
                             type,
                             baseRegister->getRegId(),
@@ -229,19 +230,6 @@ namespace sda::semantics
                     }
                 }
             }
-        }
-
-        const Register* extractRegister(std::shared_ptr<ircode::Value> value) {
-            if (auto variable = std::dynamic_pointer_cast<ircode::Variable>(value)) {
-                if (auto unarySrcOp = dynamic_cast<const ircode::UnaryOperation*>(variable->getSourceOperation())) {
-                    if (unarySrcOp->getId() == ircode::OperationId::LOAD) {
-                        if (auto reg = std::dynamic_pointer_cast<ircode::Register>(unarySrcOp->getInput())) {
-                            return &reg->getRegister();
-                        }
-                    }
-                }
-            }
-            return nullptr;
         }
     };
 };

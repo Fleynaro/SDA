@@ -8,17 +8,16 @@ namespace sda::ircode
     class Printer : public utils::AbstractPrinter
     {
         pcode::Printer* m_pcodePrinter;
-        bool m_extendInfo = false;
         DataTypeProvider* m_dataTypeProvider;
+        using OperationCommentProvider = std::function<std::string(const Operation*)>;
+        OperationCommentProvider m_operationCommentProvider;
     public:
         static inline const Token OPERATION = KEYWORD;
         static inline const Token VARIABLE = IDENTIFIER;
 
         Printer(pcode::Printer* pcodePrinter);
 
-        void setDataTypeProvider(DataTypeProvider* dataTypeProvider);
-
-        void setExtendInfo(bool toggle);
+        void setOperationCommentProvider(const OperationCommentProvider& operationCommentProvider);
 
         virtual void printFunction(Function* function);
 

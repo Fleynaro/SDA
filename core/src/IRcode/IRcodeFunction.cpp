@@ -57,6 +57,14 @@ std::list<std::shared_ptr<Variable>> Function::getVariables() {
     return variables;
 }
 
+const std::vector<std::shared_ptr<Variable>>& Function::getParamVariables() {
+    return m_paramVars;
+}
+
+std::shared_ptr<Variable> Function::getReturnVariable() {
+    return m_returnVar;
+}
+
 std::shared_ptr<Variable> Function::findVariableById(size_t id) {
     if (m_varIds.get(id)) {
         for (auto var : getVariables()) {

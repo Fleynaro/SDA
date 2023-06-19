@@ -30,6 +30,8 @@ namespace sda
 
         const CallingConvention::Map& getStorages();
 
+        const CallingConvention::StorageInfo* findStorageInfo(const CallingConvention::Storage& storage);
+
         // TODO: to change the parameters, use setParameters() only (like in react js)
         void setParameters(const std::vector<FunctionParameterSymbol*>& parameters);
 

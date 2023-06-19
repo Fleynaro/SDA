@@ -11,10 +11,13 @@ namespace sda::ircode
     class Function
     {
         friend class Block;
+        friend class ContextSync;
         Program* m_program = nullptr;
         pcode::FunctionGraph* m_functionGraph = nullptr;
         std::map<pcode::Block*, Block> m_blocks;
         utils::BitSet m_varIds;
+        std::vector<std::shared_ptr<Variable>> m_paramVars;
+        std::shared_ptr<Variable> m_returnVar;
     public:
         Function(Program* program, pcode::FunctionGraph* functionGraph);
 
@@ -35,6 +38,10 @@ namespace sda::ircode
         Block* toBlock(pcode::Block* pcodeBlock);
 
         std::list<std::shared_ptr<Variable>> getVariables();
+
+        const std::vector<std::shared_ptr<Variable>>& getParamVariables();
+
+        std::shared_ptr<Variable> getReturnVariable();
 
         std::shared_ptr<Variable> findVariableById(size_t id);
     };

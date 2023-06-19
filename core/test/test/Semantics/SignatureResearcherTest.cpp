@@ -50,7 +50,7 @@ TEST_F(SignatureResearcherTest, Simple1) {
         Block B3(level: 1): \n\
             var1:8 = LOAD rip \n\
             var2[$U0]:8 = INT_ADD var1, 0x10:8 \n\
-            var3:4 = LOAD xmm0 \n\
+            var3:4 = LOAD xmm0 // param1 \n\
             var4[var2]:4 = COPY var3 \
     ";
     auto expectedSigOfFunc2 = "\
@@ -79,14 +79,14 @@ TEST_F(SignatureResearcherTest, Simple2) {
     ";
     auto expectedIRCodeOfMainFunc = "\
         Block B0(level: 1): \n\
-            var1[rax]:4 = CALL 0x200:8 \
+            var1[rax]:4 = CALL 0x200:8 // return \
     ";
     auto expectedSigOfMainFunc = "\
         signature fastcall uint32_t () \
     ";
     auto expectedIRCodeOfFunc2 = "\
         Block B2(level: 1): \n\
-            var1[rax]:4 = COPY 0x3e8:4 \
+            var1[rax]:4 = COPY 0x3e8:4 // return \
     ";
     auto expectedSigOfFunc2 = "\
         signature fastcall uint32_t () \

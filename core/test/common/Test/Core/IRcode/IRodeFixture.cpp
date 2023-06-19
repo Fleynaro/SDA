@@ -26,6 +26,22 @@ void IRcodeFixture::printIRcode(ircode::Function* function, std::ostream& out, s
     pcode::Printer pcodePrinter(context->getPlatform()->getRegisterRepository().get());
     ircode::Printer ircodePrinter(&pcodePrinter);
     ircodePrinter.setOutput(out);
+    ircodePrinter.setOperationCommentProvider([](const ircode::Operation* operation) -> std::string {
+        auto function = operation->getBlock()->getFunction();
+        auto output = operation->getOutput();
+        if (output == function->getReturnVariable()) {
+            return "return";
+        } else {
+            auto paramVars = function->getParamVariables();
+            for (size_t i = 0; i < paramVars.size(); ++i) {
+                if (output == paramVars[i]) {
+                    auto signatureDt = function->getFunctionSymbol()->getSignature();
+                    return signatureDt->getParameters()[i]->getName();
+                }
+            }
+        }
+        return "";
+    });
     for (size_t i = 0; i < tabs; ++i)
         ircodePrinter.startBlock();
     ircodePrinter.newTabs();

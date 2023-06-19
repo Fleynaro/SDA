@@ -43,6 +43,14 @@ const CallingConvention::Map& SignatureDataType::getStorages() {
     return m_storages;
 }
 
+const CallingConvention::StorageInfo* SignatureDataType::findStorageInfo(const CallingConvention::Storage& storage) {
+    auto& storages = getStorages();
+    auto it = storages.find(storage);
+    if (it != storages.end())
+        return &it->second;
+    return nullptr;
+}
+
 void SignatureDataType::setParameters(const std::vector<FunctionParameterSymbol*>& parameters) {
     notifyModified(Object::ModState::Before);
     m_parameters = parameters;
