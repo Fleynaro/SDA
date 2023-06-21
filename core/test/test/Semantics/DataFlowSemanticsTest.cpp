@@ -14,7 +14,7 @@ protected:
 
     void SetUp() override {
         SemanticsFixture::SetUp();
-        dataFlowRepo = std::make_unique<semantics::DataFlowRepository>();
+        dataFlowRepo = std::make_unique<semantics::DataFlowRepository>(context->getEventPipe());
         dataFlowCollector = std::make_unique<semantics::DataFlowCollector>(
             program,
             context->getPlatform(),

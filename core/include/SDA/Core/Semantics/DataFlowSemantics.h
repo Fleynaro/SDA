@@ -5,6 +5,42 @@
 
 namespace sda::semantics
 {
+    static const size_t DataFlowEventTopic = TopicName("DataFlowEventTopic");
+
+    struct DataFlowNode;
+
+    // When a data flow node is created
+    struct DataFlowNodeCreatedEvent : Event {
+        DataFlowNode* node;
+
+        DataFlowNodeCreatedEvent(DataFlowNode* node)
+            : Event(DataFlowEventTopic)
+            , node(node)
+        {}
+    };
+
+    // When a data flow node is removed
+    struct DataFlowNodeRemovedEvent : Event {
+        DataFlowNode* node;
+
+        DataFlowNodeRemovedEvent(DataFlowNode* node)
+            : Event(DataFlowEventTopic)
+            , node(node)
+        {}
+    };
+
+    // When data flow node predecessor is added
+    struct DataFlowNodePredecessorAddedEvent : Event {
+        DataFlowNode* node;
+        DataFlowNode* predecessor;
+
+        DataFlowNodePredecessorAddedEvent(DataFlowNode* node, DataFlowNode* predecessor)
+            : Event(DataFlowEventTopic)
+            , node(node)
+            , predecessor(predecessor)
+        {}
+    };
+
     struct DataFlowNode {
         enum Type {
             Unknown,
@@ -24,8 +60,10 @@ namespace sda::semantics
     {
         std::map<std::shared_ptr<ircode::Variable>, DataFlowNode> m_nodes;
         DataFlowNode m_globalNode;
+        std::shared_ptr<EventPipe> m_eventPipe;
     public:
-        DataFlowRepository()
+        DataFlowRepository(std::shared_ptr<EventPipe> eventPipe)
+            : m_eventPipe(eventPipe)
         {
             m_globalNode = { DataFlowNode::Start };
         }
@@ -46,7 +84,9 @@ namespace sda::semantics
             auto node = getNode(variable);
             if (!node) {
                 m_nodes[variable] = { DataFlowNode::Unknown, variable };
-                return &m_nodes[variable];
+                auto newNode = &m_nodes[variable];
+                m_eventPipe->send(DataFlowNodeCreatedEvent(newNode));
+                return newNode;
             }
             return node;
         }
@@ -62,6 +102,7 @@ namespace sda::semantics
         }
 
         void removeNode(DataFlowNode* node) {
+            m_eventPipe->send(DataFlowNodeRemovedEvent(node));
             for (auto pred : node->predecessors) {
                 pred->successors.remove(node);
             }
@@ -79,6 +120,7 @@ namespace sda::semantics
             }
             successors.push_back(successor);
             successor->predecessors.push_back(node);
+            m_eventPipe->send(DataFlowNodePredecessorAddedEvent(successor, node));
         }
     };
 
