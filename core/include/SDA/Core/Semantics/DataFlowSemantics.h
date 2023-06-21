@@ -61,14 +61,30 @@ namespace sda::semantics
             return nullptr;
         }
 
+        void removeNode(DataFlowNode* node) {
+            for (auto pred : node->predecessors) {
+                pred->successors.remove(node);
+            }
+            for (auto succ : node->successors) {
+                succ->predecessors.remove(node);
+            }
+            m_nodes.erase(node->variable);
+        }
+
         void addSuccessor(DataFlowNode* node, DataFlowNode* successor) {
-            node->successors.push_back(successor);
+            auto& successors = node->successors;
+            auto it = std::find(successors.begin(), successors.end(), successor);
+            if (it != successors.end()) {
+                return;
+            }
+            successors.push_back(successor);
             successor->predecessors.push_back(node);
         }
     };
 
     class DataFlowCollector
     {
+        ircode::Program* m_program;
         Platform* m_platform;
         DataFlowRepository* m_dataFlowRepo;
 
@@ -84,8 +100,20 @@ namespace sda::semantics
                     }
                 }
                 ctx.collect([&]() {
-                    m_collector->collect(ctx);
+                    m_collector->research(ctx);
                 });
+                // update data flow nodes in other function because some vars can be removed in this function
+                auto callOps = m_collector->m_program->getCallsRefToFunction(event.function);
+                for (auto callOp : callOps) {
+                    m_collector->researchCallOperation(callOp, event.function);
+                }
+            }
+
+            void handleOperationRemoved(const ircode::OperationRemovedEvent& event) {
+                auto output = event.op->getOutput();
+                if (auto node = m_collector->m_dataFlowRepo->getNode(output)) {
+                    m_collector->m_dataFlowRepo->removeNode(node);
+                }
             }
         public:
             IRcodeEventHandler(DataFlowCollector* collector) : m_collector(collector) {}
@@ -93,6 +121,7 @@ namespace sda::semantics
             std::shared_ptr<EventPipe> getEventPipe() {
                 auto pipe = EventPipe::New();
                 pipe->subscribeMethod(this, &IRcodeEventHandler::handleFunctionDecompiled);
+                pipe->subscribeMethod(this, &IRcodeEventHandler::handleOperationRemoved);
                 return pipe;
             }
         };
@@ -103,14 +132,15 @@ namespace sda::semantics
             Platform* platform,
             DataFlowRepository* dataFlowRepo
         )
-            : m_platform(platform)
+            : m_program(program)
+            , m_platform(platform)
             , m_dataFlowRepo(dataFlowRepo)
             , m_ircodeEventHandler(this)
         {
-            program->getEventPipe()->connect(m_ircodeEventHandler.getEventPipe());
+            m_program->getEventPipe()->connect(m_ircodeEventHandler.getEventPipe());
         }
 
-        void collect(SemanticsPropagationContext& ctx)
+        void research(SemanticsPropagationContext& ctx)
         {
             auto output = ctx.operation->getOutput();
             if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(ctx.operation)) {
@@ -192,6 +222,39 @@ namespace sda::semantics
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+            }
+            else if (auto callOp = dynamic_cast<const ircode::CallOperation*>(ctx.operation)) {
+                auto functions = m_program->getFunctionsByCallInstruction(callOp->getPcodeInstruction());
+                for (auto function : functions) {
+                    researchCallOperation(callOp, function);
+                }
+            }
+        }
+
+        void researchCallOperation(const ircode::CallOperation* callOp, ircode::Function* function)
+        {
+            auto& argValues = callOp->getArguments();
+            auto& paramsVars = function->getParamVariables();
+            assert(argValues.size() == paramsVars.size());
+            for (size_t i = 0; i < argValues.size(); ++i) {
+                auto argValue = argValues[i];
+                auto paramVar = paramsVars[i];
+                if (auto argVar = std::dynamic_pointer_cast<ircode::Variable>(argValue)) {
+                    if (auto argNode = m_dataFlowRepo->getOrCreateNode(argVar)) {
+                        if (auto paramNode = m_dataFlowRepo->getOrCreateNode(paramVar)) {
+                            m_dataFlowRepo->addSuccessor(argNode, paramNode);
+                        }
+                    }
+                }
+            }
+            if (auto returnVar = function->getReturnVariable()) {
+                if (auto outputVar = std::dynamic_pointer_cast<ircode::Variable>(callOp->getOutput())) {
+                    if (auto outputNode = m_dataFlowRepo->getOrCreateNode(outputVar)) {
+                        if (auto returnNode = m_dataFlowRepo->getOrCreateNode(returnVar)) {
+                            m_dataFlowRepo->addSuccessor(returnNode, outputNode);
                         }
                     }
                 }

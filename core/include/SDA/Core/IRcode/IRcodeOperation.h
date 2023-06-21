@@ -102,7 +102,9 @@ namespace sda::ircode
 
 		void setBlock(Block* block);
 
-        std::set<const pcode::Instruction*>& getPcodeInstructions();
+        const std::set<const pcode::Instruction*>& getPcodeInstructions() const;
+
+		void addPcodeInstruction(const pcode::Instruction* instruction);
 
 		const std::set<std::shared_ptr<Variable>>& getOverwrittenVariables() const;
 
@@ -164,6 +166,8 @@ namespace sda::ircode
 		std::shared_ptr<Value> getDestination() const;
 
 		const std::vector<std::shared_ptr<Value>>& getArguments() const;
+
+		const pcode::Instruction* getPcodeInstruction() const;
 	};
 
 	class RefOperation : public UnaryOperation

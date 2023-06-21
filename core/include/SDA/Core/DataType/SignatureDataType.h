@@ -41,6 +41,8 @@ namespace sda
 
         DataType* getReturnType() const;
 
+        void copyFrom(const SignatureDataType* signatureDt);
+
         size_t getSize() const override;
 
         void clear();

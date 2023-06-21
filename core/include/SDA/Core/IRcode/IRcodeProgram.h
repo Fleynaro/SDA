@@ -50,6 +50,6 @@ namespace sda::ircode
 
         std::list<Function*> getFunctionsByCallInstruction(const pcode::Instruction* instr);
 
-        std::list<Block*> getBlocksRefToFunction(Function* function);
+        std::list<CallOperation*> getCallsRefToFunction(Function* function);
     };
 };

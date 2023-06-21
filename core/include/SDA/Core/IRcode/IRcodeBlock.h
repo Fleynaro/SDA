@@ -33,6 +33,8 @@ namespace sda::ircode
 
         std::list<std::unique_ptr<Operation>>& getOperations();
 
+        Operation* getOperationAt(pcode::InstructionOffset offset) const;
+
         MemorySpace* getMemorySpace();
 
         Block* getNearNextBlock() const;

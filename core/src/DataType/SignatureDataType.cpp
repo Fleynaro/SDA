@@ -73,16 +73,27 @@ DataType* SignatureDataType::getReturnType() const {
     return m_returnType;
 }
 
+void SignatureDataType::copyFrom(const SignatureDataType* signatureDt) {
+    notifyModified(Object::ModState::Before);
+    m_parameters = signatureDt->getParameters();
+    m_returnType = signatureDt->getReturnType();
+    m_updateStorages = true;
+    notifyModified(Object::ModState::After);
+}
+
 size_t SignatureDataType::getSize() const {
     return 1;
 }
 
 void SignatureDataType::clear() {
+    notifyModified(Object::ModState::Before);
     for (auto param : m_parameters) {
         param->destroy();
     }
-    setParameters({});
-    setReturnType(m_context->getDataTypes()->getByName("void"));
+    m_parameters.clear();
+    m_returnType = m_context->getDataTypes()->getByName("void");
+    m_updateStorages = true;
+    notifyModified(Object::ModState::After);
 }
 
 void SignatureDataType::serialize(boost::json::object& data) const {

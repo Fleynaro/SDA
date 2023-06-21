@@ -9,10 +9,12 @@ namespace sda::ircode
     class ContextSync
     {
         class SignatureToVariableMappingUpdater {
+            Function* m_function;
             semantics::SemanticsPropagationContext* m_ctx;
             SignatureDataType* m_signatureDt;
         public:
             SignatureToVariableMappingUpdater(
+                Function* function,
                 semantics::SemanticsPropagationContext* ctx,
                 SignatureDataType* signatureDt
             );

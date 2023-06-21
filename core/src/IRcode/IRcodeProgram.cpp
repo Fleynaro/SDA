@@ -100,8 +100,8 @@ std::list<Function*> Program::getFunctionsByCallInstruction(const pcode::Instruc
     return {};
 }
 
-std::list<Block*> Program::getBlocksRefToFunction(Function* function) {
-    std::list<Block*> result;
+std::list<CallOperation*> Program::getCallsRefToFunction(Function* function) {
+    std::list<CallOperation*> result;
     auto funcGraph = function->getFunctionGraph();
     auto fromFuncGraphs = funcGraph->getReferencesTo();
     for (auto fromFuncGraph : fromFuncGraphs) {
@@ -113,7 +113,10 @@ std::list<Block*> Program::getBlocksRefToFunction(Function* function) {
                     if (fromPcodeBlock) {
                         auto fromBlock = fromFunction->toBlock(fromPcodeBlock);
                         if (fromBlock) {
-                            result.push_back(fromBlock);
+                            auto op = fromBlock->getOperationAt(offset);
+                            if (auto callOp = dynamic_cast<ircode::CallOperation*>(op)) {
+                                result.push_back(callOp);
+                            }
                         }
                     }
                 }

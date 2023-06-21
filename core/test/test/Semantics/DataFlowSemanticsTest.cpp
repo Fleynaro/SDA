@@ -28,18 +28,33 @@ protected:
         for (size_t i = 0; i < 2; ++i)
             printer.startBlock();
         printer.newTabs();
+        // create list of current variables (of current function) and external variables (of referred functions)
         auto variables = function->getVariables();
-        variables.sort([](std::shared_ptr<ircode::Variable> var1, std::shared_ptr<ircode::Variable> var2) {
-            return var1->getId() < var2->getId();
-        });
+        std::list<std::shared_ptr<sda::ircode::Variable>> extVariables;
+        for (auto var : variables) {
+            if (auto node = dataFlowRepo->getNode(var)) {
+                for (auto succNode : node->successors) {
+                    if (std::find(variables.begin(), variables.end(), succNode->variable) != variables.end())
+                        continue;
+                    extVariables.push_back(succNode->variable);
+                }
+            }
+        }
+        for (auto vars : { &variables, &extVariables }) {
+            vars->sort([](std::shared_ptr<ircode::Variable> var1, std::shared_ptr<ircode::Variable> var2) {
+                return GetVariableName(var1) < GetVariableName(var2);
+            });
+        }
+        variables.insert(variables.end(), extVariables.begin(), extVariables.end());
+        // output
         for (auto var : variables) {
             if (auto node = dataFlowRepo->getNode(var)) {
                 if (node->predecessors.empty()) {
-                    ss << var->getName() << " <- Unknown";
+                    ss << GetVariableName(var, function) << " <- Unknown";
                     printer.newLine();
                 } else {
                     for (auto predNode : node->predecessors) {
-                        ss << var->getName() << " <- ";
+                        ss << GetVariableName(var, function) << " <- ";
                         if (node->type == semantics::DataFlowNode::Copy)
                             ss << "Copy ";
                         else if (node->type == semantics::DataFlowNode::Write)
@@ -47,7 +62,7 @@ protected:
                         else if (node->type == semantics::DataFlowNode::Read)
                             ss << "Read ";
                         if (predNode->variable) {
-                            ss << predNode->variable->getName();
+                            ss << GetVariableName(predNode->variable, function);
                         } else {
                             if (predNode->type == semantics::DataFlowNode::Start)
                                 ss << "<- Start";
@@ -61,6 +76,14 @@ protected:
             }
         }
         return Compare(ss.str(), expectedCode);
+    }
+
+    static std::string GetVariableName(std::shared_ptr<ircode::Variable> var, ircode::Function* function = nullptr) {
+        auto varFunction = var->getSourceOperation()->getBlock()->getFunction();
+        if (varFunction != function) {
+            return varFunction->getName() + ":" + var->getName();
+        }
+        return var->getName();
     }
 };
 
@@ -241,4 +264,63 @@ TEST_F(DataFlowSemanticsTest, If) {
     auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
     ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
+}
+
+TEST_F(DataFlowSemanticsTest, Functions) {
+    auto sourcePCode = "\
+        // main() \n\
+        xmm0:Da = COPY 0.5:4 \n\
+        CALL <setGlobalFloatValue> \n\
+        RETURN \n\
+        \n\
+        \n\
+        // bool setGlobalFloatValue(float value) \n\
+        <setGlobalFloatValue>: \n\
+        $0:8 = INT_ADD rip:8, 0x10:8 \n\
+        STORE $0:8, xmm0:Da \n\
+        rax:1 = COPY 0x1:1 \n\
+        RETURN \n\
+    ";
+    auto setGlobalFloatValueSig = "\
+        setGlobalFloatValueSig = signature fastcall bool( \
+            float param1 \
+        ) \
+    ";
+    auto expectedIRCodeOfMainFunc = "\
+        Block B0(level: 1): \n\
+            var1[xmm0]:4 = COPY 0x0:4 \n\
+            var2[rax]:1 = CALL 0x300:8, var1 \
+    ";
+    auto expectedDataFlowOfMainFunc = "\
+        var1 <- Unknown \n\
+        var2 <- B3:var5 \n\
+        B3:var3 <- var1 \
+    ";
+    auto expectedIRCodeOfFunc2 = "\
+        Block B3(level: 1): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U0]:8 = INT_ADD var1, 0x10:8 \n\
+            var3:4 = LOAD xmm0 // param1 \n\
+            var4[var2]:4 = COPY var3 \n\
+            var5[rax]:1 = COPY 0x1:1 // return \
+    ";
+    auto expectedDataFlowOfFunc2 = "\
+        var1 <- Copy <- Start \n\
+        var2 <- Copy var1 + 0x10 \n\
+        var3 <- B0:var1 \n\
+        var4 <- Write var2 \n\
+        var4 <- Write var3 \n\
+        var5 <- Unknown \n\
+        B0:var2 <- var5 \
+    ";
+    auto mainFunction = parsePcode(sourcePCode, program);
+    auto setGlobalFloatValueSigDt = dynamic_cast<SignatureDataType*>(
+        parseDataType(setGlobalFloatValueSig));
+    auto func2 = program->toFunction(
+        graph->getFunctionGraphAt(pcode::InstructionOffset(3, 0)));
+    func2->getFunctionSymbol()->getSignature()->copyFrom(setGlobalFloatValueSigDt);
+    ASSERT_TRUE(cmp(mainFunction, expectedIRCodeOfMainFunc));
+    ASSERT_TRUE(cmp(func2, expectedIRCodeOfFunc2));
+    ASSERT_TRUE(cmpDataFlow(mainFunction, expectedDataFlowOfMainFunc));
+    ASSERT_TRUE(cmpDataFlow(func2, expectedDataFlowOfFunc2));
 }

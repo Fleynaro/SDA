@@ -36,6 +36,17 @@ std::list<std::unique_ptr<Operation>>& Block::getOperations() {
     return m_operations;
 }
 
+Operation* Block::getOperationAt(pcode::InstructionOffset offset) const {
+    for (auto& op : m_operations) {
+        for (auto pcodeOp : op->getPcodeInstructions()) {
+            if (pcodeOp->getOffset() == offset) {
+                return op.get();
+            }
+        }
+    }
+    return nullptr;
+}
+
 MemorySpace* Block::getMemorySpace() {
     return &m_memSpace;
 }

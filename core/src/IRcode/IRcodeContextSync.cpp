@@ -9,10 +9,12 @@ using namespace sda;
 using namespace sda::ircode;
 
 ContextSync::SignatureToVariableMappingUpdater::SignatureToVariableMappingUpdater(
+    Function* function,
     semantics::SemanticsPropagationContext* ctx,
     SignatureDataType* signatureDt
 )
-    : m_ctx(ctx)
+    : m_function(function)
+    , m_ctx(ctx)
     , m_signatureDt(signatureDt)
 {}
 
@@ -73,13 +75,12 @@ void ContextSync::SignatureToVariableMappingUpdater::updateForValue(
 }
 
 void ContextSync::SignatureToVariableMappingUpdater::updateForStorageInfo(const CallingConvention::StorageInfo* storageInfo) {
-    auto function = m_ctx->operation->getBlock()->getFunction();
     auto output = m_ctx->operation->getOutput();
     if (storageInfo->type == CallingConvention::StorageInfo::Return) {
-        function->m_returnVar = output;
+        m_function->m_returnVar = output;
     }
     else {
-        function->m_paramVars[storageInfo->paramIdx] = output;
+        m_function->m_paramVars[storageInfo->paramIdx] = output;
     }
 }
 
@@ -122,7 +123,7 @@ void ContextSync::handleFunctionDecompiled(const ircode::FunctionDecompiledEvent
         }
     }
     auto signatureDt = event.function->getFunctionSymbol()->getSignature();
-    SignatureToVariableMappingUpdater updater(&ctx, signatureDt);
+    SignatureToVariableMappingUpdater updater(event.function, &ctx, signatureDt);
     updater.start();
 }
 
@@ -154,22 +155,21 @@ void ContextSync::handleObjectModified(const ObjectModifiedEvent& event) {
                         // update 'signature->variable' mapping
                         function->m_paramVars.clear();
                         function->m_paramVars.resize(signatureDt->getParameters().size());
-                        function->m_returnVar = nullptr;
                         semantics::SemanticsPropagationContext ctx;
                         for (auto& [_, block] : function->getBlocks()) { 
                             for (auto& op : block.getOperations()) {
                                 ctx.addNextOperation(op.get());
                             }
                         }
-                        SignatureToVariableMappingUpdater updater(&ctx, signatureDt);
+                        SignatureToVariableMappingUpdater updater(function, &ctx, signatureDt);
                         updater.start();
                     }
                     {
                         // update blocks
                         CommitScope commitScope(m_program->getEventPipe());
-                        auto blocks = m_program->getBlocksRefToFunction(function);
-                        for (auto block : blocks) {
-                            m_program->getEventPipe()->send(pcode::BlockUpdatedEvent(block->getPcodeBlock()));
+                        auto callOps = m_program->getCallsRefToFunction(function);
+                        for (auto callOp : callOps) {
+                            m_program->getEventPipe()->send(pcode::BlockUpdatedEvent(callOp->getBlock()->getPcodeBlock()));
                         }
                     }
                 }
