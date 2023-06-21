@@ -1,4 +1,5 @@
 #include "SDA/Core/Event/EventPipe.h"
+#include <stack>
 
 using namespace sda;
 
@@ -20,10 +21,10 @@ std::shared_ptr<EventPipe> EventPipe::process(const EventProcessor& processor) {
 }
 
 std::shared_ptr<EventPipe> EventPipe::filter(const EventFilter& filter) {
-    return process([filter](const Event& event, const EventNext& next) {
+    return connect(std::make_shared<EventPipe>("Filter", [filter](const Event& event, const EventNext& next) {
         if (filter(event))
             next(event);
-    });
+    }));
 }
 
 EventUnsubscribe EventPipe::subscribe(const EventHandler& handler) {
@@ -52,10 +53,18 @@ std::shared_ptr<EventPipe> EventPipe::New(const std::string& name) {
 }
 
 std::shared_ptr<EventPipe> EventPipe::Combine(std::shared_ptr<EventPipe> pipeIn, std::shared_ptr<EventPipe> pipeOut) {
-    return std::make_shared<EventPipe>("Combine", [pipeIn, pipeOut](const Event& event, const EventNext& next) {
-        auto unsubscribe = pipeOut->subscribe(next);
-        pipeIn->send(event);
-        unsubscribe();
+    // we need lock for nested case (see CommitTest.aggregateEventsNestedNotIgnored)
+    auto locked = std::make_shared<bool>();
+    return std::make_shared<EventPipe>("Combine", [pipeIn, pipeOut, locked](const Event& event, const EventNext& next) {
+        if (!*locked) {
+            *locked = true;
+            auto unsubscribe = pipeOut->subscribe(next);
+            pipeIn->send(event);
+            unsubscribe();
+            *locked = false;
+        } else {
+            pipeIn->send(event);
+        }
     });
 }
 
@@ -64,15 +73,32 @@ std::shared_ptr<EventPipe> EventPipe::If(
     std::shared_ptr<EventPipe> pipeThen,
     std::shared_ptr<EventPipe> pipeElse)
 {
-    return std::make_shared<EventPipe>("If", [condition, pipeThen, pipeElse](const Event& event, const EventNext& next) {
+    struct Lock {
+        bool then_;
+        bool else_;
+    };
+    auto locked = std::make_shared<Lock>();
+    return std::make_shared<EventPipe>("If", [condition, pipeThen, pipeElse, locked](const Event& event, const EventNext& next) {
         if (condition(event)) {
-            auto unsubscribe = pipeThen->subscribe(next);
-            pipeThen->send(event);
-            unsubscribe();
+            if (!locked->then_) {
+                locked->then_ = true;
+                auto unsubscribe = pipeThen->subscribe(next);
+                pipeThen->send(event);
+                unsubscribe();
+                locked->then_ = false;
+            } else {
+                pipeThen->send(event);
+            }
         } else {
-            auto unsubscribe = pipeElse->subscribe(next);
-            pipeElse->send(event);
-            unsubscribe();
+            if (!locked->else_) {
+                locked->else_ = true;
+                auto unsubscribe = pipeElse->subscribe(next);
+                pipeElse->send(event);
+                unsubscribe();
+                locked->else_ = false;
+            } else {
+                pipeElse->send(event);
+            }
         }
     });
 }

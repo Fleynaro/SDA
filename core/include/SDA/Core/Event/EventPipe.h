@@ -24,6 +24,15 @@ namespace sda
         std::shared_ptr<EventPipe> process(const EventProcessor& processor);
 
         std::shared_ptr<EventPipe> filter(const EventFilter& filter);
+
+        template<typename T>
+        std::shared_ptr<EventPipe> filter(const std::function<bool(const T&)>& filter) {
+            return this->filter([filter](const Event& event) {
+                if (auto e = dynamic_cast<const T*>(&event))
+                    return filter(*e);
+                return false;
+            });
+        }
         
         EventUnsubscribe subscribe(const EventHandler& handler);
 

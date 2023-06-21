@@ -15,7 +15,7 @@ struct TestEvent : Event {
 
 std::function<void(const TestEvent&)> Handler(size_t& result) {
     return [&](const TestEvent& e) {
-        result = e.value;
+        result += e.value;
     };
 }
 
@@ -34,6 +34,20 @@ TEST(EventPipeTest, unsubscribe) {
     unsubscribe();
     pipe->send(TestEvent(1));
     EXPECT_EQ(result, 0);
+}
+
+TEST(EventPipeTest, nested) {
+    auto pipe = EventPipe::New();
+    size_t result = 0;
+    pipe->subscribe(Handler(result));
+    pipe->subscribe(std::function([&](const TestEvent& e) {
+        if (e.value <= 3) {
+            // send another event inside event handler
+            pipe->send(TestEvent(e.value + 1));
+        }
+    }));
+    pipe->send(TestEvent(1));
+    EXPECT_EQ(result, 10); // 1 + 2 + 3 + 4
 }
 
 TEST(EventPipeTest, filter) {

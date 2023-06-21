@@ -39,7 +39,7 @@ std::shared_ptr<EventPipe> sda::OptimizedCommitPipe(
         bool locked = false;
     };
     auto data = std::make_shared<Data>();
-    auto pipeIn = EventPipe::New("OptimizedCommitPipe")
+    auto pipeIn = EventPipe::New("OptimizedCommitPipe::PipeIn")
         ->filter(std::function([filter](const Event& event) {
             return event.topic == CommitEventTopic || filter(event);
         }));
@@ -48,7 +48,7 @@ std::shared_ptr<EventPipe> sda::OptimizedCommitPipe(
         ->subscribe(std::function([data](const CommitBeginEvent& event) {
             data->commit = true;
         }));
-    commitPipeIn = EventPipe::New();
+    commitPipeIn = EventPipe::New("OptimizedCommitPipe::CommitPipeIn");
     auto commitPipeOut = commitPipeIn
         ->connect(CommitPipe())
         ->process(std::function([data, commitEmitter](const Event& event, const EventNext& next) {
@@ -72,7 +72,7 @@ std::shared_ptr<EventPipe> sda::OptimizedCommitPipe(
                     return data->commit;
                 }),
                 EventPipe::Combine(commitPipeIn, commitPipeOut),
-                EventPipe::New()
+                EventPipe::New("OptimizedCommitPipe::PipeOut")
             )
         )
     );
