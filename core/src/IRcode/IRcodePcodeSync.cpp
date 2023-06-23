@@ -23,11 +23,14 @@ std::shared_ptr<EventPipe> CreateOptimizedUpdateBlocksEventPipe(Program* program
         }
     };
     auto data = std::make_shared<Data>();
-    auto filter = std::function([](const Event& event) {
-        auto e =  dynamic_cast<const pcode::BlockUpdatedEvent*>(&event);
-        return dynamic_cast<const pcode::FunctionGraphRemovedEvent*>(&event) ||
-                (e && e->requested);
-    });
+    auto filter = EventPipe::FilterOr(
+        EventPipe::Filter(std::function([](const pcode::BlockUpdatedEvent& event) {
+            return event.requested;
+        })),
+        EventPipe::Filter(std::function([](const pcode::FunctionGraphRemovedEvent& event) {
+            return true;
+        }))
+    );
     auto commitEmitter = std::function([data, program](const EventNext& next) {
         while (!data->pcodeBlocksToUpdate.empty()) {
             auto it = data->selectLowestFunction();

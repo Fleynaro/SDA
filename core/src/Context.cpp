@@ -89,15 +89,12 @@ std::shared_ptr<EventPipe> Context::CreateOptimizedEventPipe() {
         std::list<std::unique_ptr<Event>> events;
     };
     auto data = std::make_shared<Data>();
-    auto filter = std::function([](const Event& event) {
-        if(auto actionEvent = dynamic_cast<const ObjectActionEvent*>(&event)) {
-             if (auto changeEvent = dynamic_cast<const ObjectModifiedEvent*>(actionEvent)) {
-                return changeEvent->state == Object::ModState::After;
-             }
-            return true;
+    auto filter = EventPipe::Filter(std::function([](const ObjectActionEvent& event) {
+        if (auto changeEvent = dynamic_cast<const ObjectModifiedEvent*>(&event)) {
+            return changeEvent->state == Object::ModState::After;
         }
-        return false;
-    });
+        return true;
+    }));
     auto commitEmitter = std::function([data](const EventNext& next) {
         while(!data->events.empty()) {
             auto e = std::move(data->events.front());

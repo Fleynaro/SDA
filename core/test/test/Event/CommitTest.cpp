@@ -73,16 +73,16 @@ TEST(CommitTest, commitEventsWithCommitPipe) {
 TEST(CommitTest, commitEventsWithMultipleCommitPipe) {
     auto pipe = EventPipe::New();
     std::list<size_t> result;
+    // notice that CommitEndEvent behaves differently than TestEvent: TestEvent is always ingested by BOTH pipes
     pipe
         // this pipe has the highest priority
         ->connect(CommitPipe())
         ->subscribe(std::function([&](const CommitEndEvent& e) {
-            // called twice
             if (result.size() == 0) {
                 CommitScope commit(pipe);
                 pipe->send(TestEvent());
                 result.push_back(1);
-                // CommitEndEvent is emitted here
+                // CommitEndEvent is emitted here and sent to the FIRST pipe ONLY (step 2)
             }
             else if (result.size() == 1) {
                 result.push_back(2);
@@ -90,17 +90,21 @@ TEST(CommitTest, commitEventsWithMultipleCommitPipe) {
             else if (result.size() == 2) {
                 result.push_back(3);
             }
+            else {
+                throw std::runtime_error("should not be called");
+            }
         }));
     pipe
         ->connect(CommitPipe())
         ->subscribe(std::function([&](const CommitEndEvent& e) {
-            // called once
             if (result.size() == 2) {
                 {
                     CommitScope commit(pipe);
                     pipe->send(TestEvent());
-                    // CommitEndEvent is emitted here and sent to the first pipe
+                    // CommitEndEvent is emitted here and sent to BOTH pipes (steps 3, 4)
                 }
+                result.push_back(5);
+            } else {
                 result.push_back(4);
             }
         }));
@@ -108,19 +112,16 @@ TEST(CommitTest, commitEventsWithMultipleCommitPipe) {
         // start here
         CommitScope commit(pipe);
         pipe->send(TestEvent());
-        // CommitEndEvent is emitted here
+        // CommitEndEvent is emitted here and sent to BOTH pipes
     }
-    EXPECT_EQ(result, std::list<size_t>({ 1, 2, 3, 4 }));
+    EXPECT_EQ(result, std::list<size_t>({ 1, 2, 3, 4, 5 }));
 }
 
-std::shared_ptr<EventPipe> CreateOptimizedCommitPipe() {
+std::shared_ptr<EventPipe> CreateOptimizedCommitPipe(const EventFilter& filter = EventPipe::FilterTrue) {
     struct Data {
         std::list<size_t> values;
     };
     auto data = std::make_shared<Data>();
-    auto filter = std::function([](const Event& event) {
-        return event.topic == TestEventTopic;
-    });
     auto commitEmitter = std::function([data](const EventNext& next) {
         // called when commit is done (after CommitEndEvent)
         auto& values = data->values;
@@ -273,31 +274,36 @@ TEST(CommitTest, aggregateEventsMultipleNested) {
 TEST(CommitTest, pipeline) {
     auto pipe = EventPipe::New("test");
     std::list<size_t> result;
-    // stage 1
+    // stage 1 (odd numbers - 11, 21)
     pipe
-        ->filter(std::function([&](const TestEvent& e) {
-            return e.value % 2 == 1;
-        }))
-        ->connect(CreateOptimizedCommitPipe())
+        ->connect(CreateOptimizedCommitPipe(
+            EventPipe::Filter(std::function([&](const TestEvent& e) {
+                return e.value % 2 == 1;
+            }))
+        ))
         ->subscribe(std::function([&](const TestEvent& e) {
+            // produce new events as output of stage 1
             pipe->send(TestEvent(20));
             pipe->send(TestEvent(30));
-            result.push_back(e.value + 1000);
+            pipe->send(TestEvent(30)); // ignored
+            result.push_back(e.value);
         }));
-    // stage 2
+    // stage 2 (even numbers that generated from stage 1 - 20, 30)
     pipe
-        ->filter(std::function([&](const TestEvent& e) {
-            return e.value % 2 == 0;
-        }))
-        ->connect(CreateOptimizedCommitPipe())
+        ->connect(CreateOptimizedCommitPipe(
+            EventPipe::Filter(std::function([&](const TestEvent& e) {
+                return e.value % 2 == 0;
+            }))
+        ))
         ->subscribe(std::function([&](const TestEvent& e) {
-            result.push_back(e.value + 2000);
+            result.push_back(e.value);
         }));
     {
         // start here
         CommitScope commit(pipe);
         pipe->send(TestEvent(11));
         pipe->send(TestEvent(21));
+        pipe->send(TestEvent(11)); // ignored
     }
-    EXPECT_EQ(result, (std::list<size_t>{ 2010, 2020, 2030, 1011 }));
+    EXPECT_EQ(result, (std::list<size_t>{ 11, 21, 20, 30 }));
 }

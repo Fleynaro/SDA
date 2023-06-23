@@ -102,3 +102,27 @@ std::shared_ptr<EventPipe> EventPipe::If(
         }
     });
 }
+
+EventFilter EventPipe::FilterOr(const EventFilter& filter1, const EventFilter& filter2) {
+    return [filter1, filter2](const Event& event) {
+        return filter1(event) || filter2(event);
+    };
+}
+
+EventFilter EventPipe::FilterAnd(const EventFilter& filter1, const EventFilter& filter2) {
+    return [filter1, filter2](const Event& event) {
+        return filter1(event) && filter2(event);
+    };
+}
+
+EventFilter EventPipe::FilterNot(const EventFilter& filter) {
+    return [filter](const Event& event) {
+        return !filter(event);
+    };
+}
+
+EventFilter EventPipe::FilterTopic(size_t topic) {
+    return [topic](const Event& event) {
+        return event.topic == topic;
+    };
+}

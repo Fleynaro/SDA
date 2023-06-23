@@ -24,15 +24,6 @@ namespace sda
         std::shared_ptr<EventPipe> process(const EventProcessor& processor);
 
         std::shared_ptr<EventPipe> filter(const EventFilter& filter);
-
-        template<typename T>
-        std::shared_ptr<EventPipe> filter(const std::function<bool(const T&)>& filter) {
-            return this->filter([filter](const Event& event) {
-                if (auto e = dynamic_cast<const T*>(&event))
-                    return filter(*e);
-                return false;
-            });
-        }
         
         EventUnsubscribe subscribe(const EventHandler& handler);
 
@@ -63,5 +54,26 @@ namespace sda
             const EventFilter& condition,
             std::shared_ptr<EventPipe> pipeThen,
             std::shared_ptr<EventPipe> pipeElse);
+
+        static const inline EventFilter FilterTrue = [](const Event&) { return true; };
+        
+        static const inline EventFilter FilterFalse = [](const Event&) { return false; };
+
+        static EventFilter FilterOr(const EventFilter& filter1, const EventFilter& filter2);
+
+        static EventFilter FilterAnd(const EventFilter& filter1, const EventFilter& filter2);
+
+        static EventFilter FilterNot(const EventFilter& filter);
+
+        static EventFilter FilterTopic(size_t topic);
+
+        template<typename T>
+        static EventFilter Filter(const std::function<bool(const T&)>& filter) {
+            return [filter](const Event& event) {
+                if (auto e = dynamic_cast<const T*>(&event))
+                    return filter(*e);
+                return false;
+            };
+        }
     };
 };

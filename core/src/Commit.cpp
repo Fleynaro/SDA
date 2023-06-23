@@ -40,9 +40,10 @@ std::shared_ptr<EventPipe> sda::OptimizedCommitPipe(
     };
     auto data = std::make_shared<Data>();
     auto pipeIn = EventPipe::New("OptimizedCommitPipe::PipeIn")
-        ->filter(std::function([filter](const Event& event) {
-            return event.topic == CommitEventTopic || filter(event);
-        }));
+        ->filter(
+            EventPipe::FilterOr(
+                EventPipe::FilterTopic(CommitEventTopic),
+                filter));
     pipeIn
         ->connect(CommitPipe())
         ->subscribe(std::function([data](const CommitBeginEvent& event) {
