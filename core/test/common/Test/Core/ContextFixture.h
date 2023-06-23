@@ -12,6 +12,7 @@ namespace sda::test
         Platform* platform = nullptr;
         std::list<Context*> createdContexts;
     protected:
+        std::shared_ptr<EventPipe> eventPipe;
         Context* context = nullptr;
         SymbolTable* globalSymbolTable = nullptr;
 

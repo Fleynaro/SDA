@@ -178,8 +178,10 @@ namespace sda::semantics
             , m_platform(platform)
             , m_dataFlowRepo(dataFlowRepo)
             , m_ircodeEventHandler(this)
-        {
-            m_program->getEventPipe()->connect(m_ircodeEventHandler.getEventPipe());
+        {}
+
+        std::shared_ptr<EventPipe> getEventPipe() {
+            return m_ircodeEventHandler.getEventPipe();
         }
 
         void research(SemanticsPropagationContext& ctx)

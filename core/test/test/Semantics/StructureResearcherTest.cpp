@@ -18,6 +18,7 @@ protected:
             program,
             context->getPlatform(),
             structureRepo.get());
+        eventPipe->connect(structureResearcher->getEventPipe());
     }
 };
 

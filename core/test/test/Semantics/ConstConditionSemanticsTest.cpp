@@ -13,6 +13,7 @@ protected:
     void SetUp() override {
         IRcodeFixture::SetUp();
         constCondRepo = std::make_unique<semantics::ConstConditionRepository>(program);
+        eventPipe->connect(constCondRepo->getEventPipe());
     }
 
     ::testing::AssertionResult cmpConditions(ircode::Function* function, const std::string& expectedCode) const {

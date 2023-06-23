@@ -21,6 +21,7 @@ protected:
             context->getPlatform(),
             callConv,
             signatureRepo.get());
+        eventPipe->connect(signatureResearcher->getEventPipe());
     }
 };
 

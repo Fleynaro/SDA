@@ -65,8 +65,10 @@ namespace sda::semantics
     public:
         ConstConditionRepository(ircode::Program* program)
             : m_ircodeEventHandler(this)
-        {
-            program->getEventPipe()->connect(m_ircodeEventHandler.getEventPipe());
+        {}
+
+        std::shared_ptr<EventPipe> getEventPipe() {
+            return m_ircodeEventHandler.getEventPipe();
         }
 
         std::list<ConstantCondition> findConditions(ircode::Block* block) {

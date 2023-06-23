@@ -12,7 +12,7 @@ using namespace ::testing;
 
 void ContextFixture::SetUp() {
     utils::InitLogger();
-    auto eventPipe = EventPipe::New();
+    eventPipe = EventPipe::New();
     platform = new PlatformX86(true);
     context = newContext(eventPipe);
     context->initDefault();

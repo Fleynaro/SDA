@@ -19,6 +19,7 @@ protected:
             program,
             context->getPlatform(),
             dataFlowRepo.get());
+        eventPipe->connect(dataFlowCollector->getEventPipe());
     }
 
     ::testing::AssertionResult cmpDataFlow(ircode::Function* function, const std::string& expectedCode) const {

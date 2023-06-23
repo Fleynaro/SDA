@@ -12,9 +12,9 @@ void IRcodeFixture::SetUp() {
     program = new ircode::Program(graph, globalSymbolTable);
     auto callConv = std::make_shared<platform::FastcallCallingConvention>();
     ctxSync = std::make_unique<ircode::ContextSync>(program, globalSymbolTable, callConv);
-    program->getEventPipe()->connect(ctxSync->getEventPipe());
     pcodeSync = std::make_unique<ircode::PcodeSync>(program);
-    program->getEventPipe()->connect(pcodeSync->getEventPipe());
+    eventPipe->connect(ctxSync->getEventPipe());
+    eventPipe->connect(pcodeSync->getEventPipe());
 }
 
 void IRcodeFixture::TearDown() {
