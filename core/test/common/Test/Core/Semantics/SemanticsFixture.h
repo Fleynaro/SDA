@@ -1,3 +1,4 @@
+#pragma once
 #include "Test/Core/IRcode/IRcodeFixture.h"
 #include "Test/Core/Utils/TestAssertion.h"
 #include "SDA/Core/Semantics/Semantics.h"

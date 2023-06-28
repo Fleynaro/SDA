@@ -92,7 +92,7 @@ namespace sda::ircode
 
         size_t getId() const;
 
-        std::string getName() const;
+        std::string getName(bool full = false) const;
 
         Type getType() const override;
 

@@ -1,5 +1,6 @@
 #include "SDA/Core/IRcode/IRcodeValue.h"
 #include "SDA/Core/IRcode/IRcodeOperation.h"
+#include "SDA/Core/IRcode/IRcodeFunction.h"
 #include "SDA/Core/DataType/PointerDataType.h"
 #include "SDA/Core/DataType/StructureDataType.h"
 
@@ -81,7 +82,12 @@ size_t Variable::getId() const {
     return m_id;
 }
 
-std::string Variable::getName() const {
+std::string Variable::getName(bool full) const {
+    if (full) {
+        if (auto varFunction = getSourceOperation()->getBlock()->getFunction()) {
+            return varFunction->getName() + ":" + getName(false);
+        }
+    }
     return std::string("var") + std::to_string(m_id);
 }
 

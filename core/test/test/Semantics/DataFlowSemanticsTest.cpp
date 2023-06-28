@@ -1,94 +1,18 @@
-#include "Test/Core/Semantics/SemanticsFixture.h"
-#include "SDA/Core/Semantics/DataFlowSemantics.h"
-#include "SDA/Core/Utils/IOManip.h"
+#include "Test/Core/Semantics/DataFlowSemanticsFixture.h"
 
 using namespace sda;
 using namespace sda::test;
 using namespace ::testing;
 
-class DataFlowSemanticsTest : public SemanticsFixture
-{
-protected:
-    std::unique_ptr<semantics::DataFlowRepository> dataFlowRepo;
-    std::unique_ptr<semantics::DataFlowCollector> dataFlowCollector;
-
-    void SetUp() override {
-        SemanticsFixture::SetUp();
-        dataFlowRepo = std::make_unique<semantics::DataFlowRepository>(context->getEventPipe());
-        dataFlowCollector = std::make_unique<semantics::DataFlowCollector>(
-            program,
-            context->getPlatform(),
-            dataFlowRepo.get());
-        eventPipe->connect(dataFlowCollector->getEventPipe());
-    }
-
-    ::testing::AssertionResult cmpDataFlow(ircode::Function* function, const std::string& expectedCode) const {
-        std::stringstream ss;
-        utils::AbstractPrinter printer;
-        printer.setOutput(ss);
-        for (size_t i = 0; i < 2; ++i)
-            printer.startBlock();
-        printer.newTabs();
-        // create list of current variables (of current function) and external variables (of referred functions)
-        auto variables = function->getVariables();
-        std::list<std::shared_ptr<sda::ircode::Variable>> extVariables;
-        for (auto var : variables) {
-            if (auto node = dataFlowRepo->getNode(var)) {
-                for (auto succNode : node->successors) {
-                    if (std::find(variables.begin(), variables.end(), succNode->variable) != variables.end())
-                        continue;
-                    extVariables.push_back(succNode->variable);
-                }
-            }
-        }
-        for (auto vars : { &variables, &extVariables }) {
-            vars->sort([](std::shared_ptr<ircode::Variable> var1, std::shared_ptr<ircode::Variable> var2) {
-                return GetVariableName(var1) < GetVariableName(var2);
-            });
-        }
-        variables.insert(variables.end(), extVariables.begin(), extVariables.end());
-        // output
-        for (auto var : variables) {
-            if (auto node = dataFlowRepo->getNode(var)) {
-                if (node->predecessors.empty()) {
-                    ss << GetVariableName(var, function) << " <- Unknown";
-                    printer.newLine();
-                } else {
-                    for (auto predNode : node->predecessors) {
-                        ss << GetVariableName(var, function) << " <- ";
-                        if (node->type == semantics::DataFlowNode::Copy)
-                            ss << "Copy ";
-                        else if (node->type == semantics::DataFlowNode::Write)
-                            ss << "Write ";
-                        else if (node->type == semantics::DataFlowNode::Read)
-                            ss << "Read ";
-                        if (predNode->variable) {
-                            ss << GetVariableName(predNode->variable, function);
-                        } else {
-                            if (predNode->type == semantics::DataFlowNode::Start)
-                                ss << "<- Start";
-                        }
-                        if (node->offset > 0) {
-                            ss << " + 0x" << utils::to_hex() << node->offset;
-                        }
-                        printer.newLine();
-                    }
-                }
-            }
-        }
-        return Compare(ss.str(), expectedCode);
-    }
-
-    static std::string GetVariableName(std::shared_ptr<ircode::Variable> var, ircode::Function* function = nullptr) {
-        auto varFunction = var->getSourceOperation()->getBlock()->getFunction();
-        if (varFunction != function) {
-            return varFunction->getName() + ":" + var->getName();
-        }
-        return var->getName();
-    }
-};
+class DataFlowSemanticsTest : public DataFlowSemanticsFixture {};
 
 TEST_F(DataFlowSemanticsTest, GlobalVarAssignment) {
+    /*
+        float func(float param1) {
+            globalVar_0x10 = param1;
+            return globalVar_0x10;
+        }
+    */
     auto sourcePCode = "\
         r10:8 = INT_ADD rip:8, 0x10:8 \n\
         STORE r10:8, xmm0:Da \n\
@@ -118,6 +42,13 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignment) {
 }
 
 TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentDouble) {
+    /*
+        float func(float param1, float param2) {
+            globalVar_0x10 = param1;
+            globalVar_0x18 = param2;
+            return globalVar_0x18;
+        }
+    */
     auto sourcePCode = "\
         r10:8 = INT_ADD rip:8, 0x10:8 \n\
         STORE r10:8, xmm0:Da \n\
@@ -156,6 +87,12 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentDouble) {
 }
 
 TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentObject) {
+    /*
+        void func(Object* param1, float param2) {
+            param1->field_0x10 = param2;
+            globalVar_0x200 = param1;
+        }
+    */
     auto sourcePCode = "\
         r10:8 = INT_ADD rcx:8, 0x10:8 \n\
         STORE r10:8, xmm1:Da \n\
@@ -189,6 +126,13 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentObject) {
 }
 
 TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentObjectDouble) {
+    /*
+        void func(Object* param1, float param2) {
+            param1->field_0x10 = param2;
+            globalVar_0x200 = param1;
+            globalVar_0x208 = param1;
+        }
+    */
     auto sourcePCode = "\
         r10:8 = INT_ADD rcx:8, 0x10:8 \n\
         STORE r10:8, xmm1:Da \n\
@@ -229,6 +173,15 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentObjectDouble) {
 }
 
 TEST_F(DataFlowSemanticsTest, If) {
+    /*
+        void func() {
+            ...
+            result = var10;
+            if (param1 == 5) {
+                result = var11;
+            }
+        }
+    */
     auto sourcePCode = "\
         rax:8 = COPY $10:8 \n\
         $1:1 = INT_NOTEQUAL rcx:4, 5:4 \n\
@@ -268,6 +221,16 @@ TEST_F(DataFlowSemanticsTest, If) {
 }
 
 TEST_F(DataFlowSemanticsTest, Functions) {
+    /*
+        void main() {
+            setGlobalFloatValue(0.5);
+        }
+
+        bool setGlobalFloatValue(float value) {
+            globalVar_0x10 = value;
+            return true;
+        }
+    */
     auto sourcePCode = "\
         // main() \n\
         xmm0:Da = COPY 0.5:4 \n\

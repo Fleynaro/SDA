@@ -2,6 +2,7 @@
 #include "Semantics.h"
 #include "SDA/Core/IRcode/IRcodeBlock.h"
 #include "SDA/Core/IRcode/IRcodeEvents.h"
+#include "SDA/Core/Utils/Logger.h"
 
 namespace sda::semantics
 {
@@ -19,6 +20,16 @@ namespace sda::semantics
         {}
     };
 
+    // When data flow node predecessor is updated
+    struct DataFlowNodeUpdatedEvent : Event {
+        DataFlowNode* node;
+
+        DataFlowNodeUpdatedEvent(DataFlowNode* node)
+            : Event(DataFlowEventTopic)
+            , node(node)
+        {}
+    };
+
     // When a data flow node is removed
     struct DataFlowNodeRemovedEvent : Event {
         DataFlowNode* node;
@@ -26,18 +37,6 @@ namespace sda::semantics
         DataFlowNodeRemovedEvent(DataFlowNode* node)
             : Event(DataFlowEventTopic)
             , node(node)
-        {}
-    };
-
-    // When data flow node predecessor is added
-    struct DataFlowNodePredecessorAddedEvent : Event {
-        DataFlowNode* node;
-        DataFlowNode* predecessor;
-
-        DataFlowNodePredecessorAddedEvent(DataFlowNode* node, DataFlowNode* predecessor)
-            : Event(DataFlowEventTopic)
-            , node(node)
-            , predecessor(predecessor)
         {}
     };
 
@@ -54,6 +53,47 @@ namespace sda::semantics
         Offset offset = 0;
         std::list<DataFlowNode*> predecessors;
         std::list<DataFlowNode*> successors;
+
+        std::string getName() {
+            if (!variable) {
+                return "Start";
+            }
+            return variable->getName(true);
+        }
+
+        static void PassSuccessors(const std::list<DataFlowNode*>& startNodes, std::function<void(DataFlowNode* node, bool& goNextNodes)> callback) {
+            std::map<DataFlowNode*, size_t> nodeKnocks;
+            std::list<DataFlowNode*> nodesToVisit;
+            for (auto startNode : startNodes) {
+                nodesToVisit.push_back(startNode);
+            }
+            do {
+                while (!nodesToVisit.empty()) {
+                    auto node = nodesToVisit.front();
+                    nodesToVisit.pop_front();
+                    auto it = nodeKnocks.find(node);
+                    if (it == nodeKnocks.end()) {
+                        it = nodeKnocks.insert({ node, 0 }).first;
+                    }
+                    auto knocks = ++it->second;
+                    if (knocks < node->predecessors.size()) {
+                        continue;
+                    }
+                    nodeKnocks.erase(it);
+                    bool goNextNodes = false;
+                    callback(node, goNextNodes);
+                    if (goNextNodes) {
+                        for (auto nextNode : node->successors) {
+                            nodesToVisit.push_back(nextNode);
+                        }
+                    }
+                }
+                if (!nodeKnocks.empty()) {
+                    auto node = nodeKnocks.begin()->first;
+                    nodesToVisit.push_back(node);
+                }
+            } while (!nodesToVisit.empty());
+        }
     };
 
     class DataFlowRepository
@@ -62,11 +102,7 @@ namespace sda::semantics
         DataFlowNode m_globalNode;
         std::shared_ptr<EventPipe> m_eventPipe;
     public:
-        DataFlowRepository(std::shared_ptr<EventPipe> eventPipe)
-            : m_eventPipe(eventPipe)
-        {
-            m_globalNode = { DataFlowNode::Start };
-        }
+        DataFlowRepository(std::shared_ptr<EventPipe> eventPipe);
 
         DataFlowNode* getGlobalStartNode() {
             return &m_globalNode;
@@ -96,6 +132,7 @@ namespace sda::semantics
             if (node->type == DataFlowNode::Unknown) {
                 node->type = type;
                 node->offset = offset;
+                m_eventPipe->send(DataFlowNodeUpdatedEvent(node));
                 return node;
             }
             return nullptr;
@@ -120,7 +157,7 @@ namespace sda::semantics
             }
             successors.push_back(successor);
             successor->predecessors.push_back(node);
-            m_eventPipe->send(DataFlowNodePredecessorAddedEvent(successor, node));
+            m_eventPipe->send(DataFlowNodeUpdatedEvent(successor));
         }
     };
 
