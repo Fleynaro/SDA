@@ -316,7 +316,7 @@ namespace sda::semantics
                     continue;
                 if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(variable->getSourceOperation())) {
                     if (unaryOp->getId() == ircode::OperationId::LOAD) {
-                        auto linearExpr = variable->getLinearExpr();
+                        auto linearExpr = ircode::Value::GetLinearExpr(variable);
                         Offset offset = linearExpr.getConstTermValue();
                         for (auto& term : linearExpr.getTerms()) {
                             if (term.factor != 1 || term.value->getSize() != m_platform->getPointerSize())

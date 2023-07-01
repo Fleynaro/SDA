@@ -198,7 +198,7 @@ namespace sda::semantics
                 }
             }
 
-            auto linearExpr = output->getLinearExpr();
+            auto linearExpr = ircode::Value::GetLinearExpr(output);
             Offset offset = linearExpr.getConstTermValue();
             for (auto& term : linearExpr.getTerms()) {
                 if (term.factor != 1 || term.value->getSize() != getContext()->getPlatform()->getPointerSize())

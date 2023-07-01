@@ -53,7 +53,7 @@ void ContextSync::SignatureToVariableMappingUpdater::updateForValue(
         }
     }
     else if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
-        auto linearExpr = var->getLinearExpr();
+        auto linearExpr = Value::GetLinearExpr(var, true);
         Offset offset = linearExpr.getConstTermValue();
         auto platform = m_signatureDt->getContext()->getPlatform();
         for (auto& term : linearExpr.getTerms()) {

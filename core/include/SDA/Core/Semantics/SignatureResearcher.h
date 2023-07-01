@@ -213,7 +213,7 @@ namespace sda::semantics
                 }
             }
             else if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
-                auto linearExpr = var->getLinearExpr();
+                auto linearExpr = ircode::Value::GetLinearExpr(var, true);
                 Offset offset = linearExpr.getConstTermValue();
                 for (auto& term : linearExpr.getTerms()) {
                     if (term.factor != 1 || term.value->getSize() != m_platform->getPointerSize())

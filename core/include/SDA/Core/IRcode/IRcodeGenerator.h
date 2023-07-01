@@ -66,7 +66,7 @@ namespace sda::ircode
 
         ircode::MemoryAddress getRegisterMemoryAddress(std::shared_ptr<pcode::RegisterVarnode> regVarnode) const;
 
-        ircode::MemoryAddress getMemoryAddress(std::shared_ptr<ircode::Value> addrValue) const;
+        ircode::MemoryAddress getMemoryAddress(std::shared_ptr<ircode::Value> addrValue, bool* isArrayType = nullptr) const;
 
         std::list<VariableReadInfo> genReadRegisterVarnode(std::shared_ptr<pcode::RegisterVarnode> regVarnode);
 

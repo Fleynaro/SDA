@@ -27,12 +27,35 @@ void Value::removeOperation(Operation* operation) {
     m_operations.remove(operation);
 }
 
-const LinearExpression& Value::getLinearExpr() const {
-    return m_linearExpr;
-}
-
-void Value::setLinearExpr(const LinearExpression& linearExpr) {
-    m_linearExpr = linearExpr;
+LinearExpression Value::GetLinearExpr(std::shared_ptr<Value> value, bool goThroughRef) {
+    if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
+        auto srcOp = var->getSourceOperation();
+        if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(srcOp)) {
+            if (unaryOp->getId() == ircode::OperationId::COPY || (goThroughRef && unaryOp->getId() == ircode::OperationId::REF)) {
+                return GetLinearExpr(unaryOp->getInput());
+            }
+        }
+        else if (auto binaryOp = dynamic_cast<const ircode::BinaryOperation*>(srcOp)) {
+            auto linearExprInp1 = GetLinearExpr(binaryOp->getInput1());
+            auto linearExprInp2 = GetLinearExpr(binaryOp->getInput2());
+            if (binaryOp->getId() == ircode::OperationId::INT_ADD) {
+                return linearExprInp1 + linearExprInp2;
+            }
+            else if (binaryOp->getId() == ircode::OperationId::INT_MULT) {
+                if (linearExprInp1.getTerms().empty() || linearExprInp2.getTerms().empty()) {
+                    return linearExprInp1 * linearExprInp2;
+                }
+            }
+        }
+    }
+    else if (auto reg = std::dynamic_pointer_cast<ircode::Register>(value)) {
+        auto offset = reg->getRegister().getBitOffset() / utils::BitsInBytes;
+        return LinearExpression(value) + LinearExpression(offset);
+    }
+    else if (auto constant = std::dynamic_pointer_cast<ircode::Constant>(value)) {
+        return LinearExpression(constant->getConstVarnode()->getValue());
+    }
+    return LinearExpression(value);
 }
 
 Constant::Constant(std::shared_ptr<pcode::ConstantVarnode> constVarnode, Hash hash)

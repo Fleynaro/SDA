@@ -175,9 +175,7 @@ RefOperation::RefOperation(
     std::shared_ptr<Variable> output)
     : UnaryOperation(OperationId::REF, input, output)
     , m_reference(reference)
-{
-    output->setLinearExpr(input->getLinearExpr());
-}
+{}
 
 Hash RefOperation::getHash() const {
     return m_reference.getHash();
@@ -190,7 +188,6 @@ const RefOperation::Reference& RefOperation::getReference() const {
 void RefOperation::setTargetVariable(std::shared_ptr<Variable> variable) {
     m_input = variable;
     variable->addOperation(this);
-    getOutput()->setLinearExpr(m_input->getLinearExpr());
 }
 
 std::shared_ptr<Variable> RefOperation::getTargetVariable() const {
@@ -198,7 +195,6 @@ std::shared_ptr<Variable> RefOperation::getTargetVariable() const {
 }
 
 void RefOperation::clear() {
-    getOutput()->setLinearExpr({});
     m_input->removeOperation(this);
     m_input = nullptr;
 }

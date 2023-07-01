@@ -272,7 +272,7 @@ namespace sda::semantics
                 if (binaryOp->getId() == ircode::OperationId::INT_ADD ||
                     binaryOp->getId() == ircode::OperationId::INT_MULT)
                 {
-                    auto linearExpr = output->getLinearExpr();
+                    auto linearExpr = ircode::Value::GetLinearExpr(output);
                     Offset offset = linearExpr.getConstTermValue();
                     for (auto& term : linearExpr.getTerms()) {
                         if (term.factor != 1 || term.value->getSize() != m_platform->getPointerSize())

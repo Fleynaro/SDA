@@ -19,7 +19,6 @@ namespace sda::ircode
     protected:
         Hash m_hash;
         std::list<Operation*> m_operations;
-        LinearExpression m_linearExpr;
 
     public:
         Value(Hash hash);
@@ -42,9 +41,7 @@ namespace sda::ircode
 
         void removeOperation(Operation* operation);
 
-        const LinearExpression& getLinearExpr() const;
-
-        void setLinearExpr(const LinearExpression& linearExpr);
+        static LinearExpression GetLinearExpr(std::shared_ptr<Value> value, bool goThroughRef = false);
     };
 
     class Constant : public Value
