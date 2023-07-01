@@ -97,10 +97,11 @@ TEST_F(IRcodeTest, IfElseConditionMem) {
         Block B5(level: 2, near: B6): \n\
             empty \n\
         Block B6(level: 3): \n\
-            var6:8 = REF var5 \n\
-            var7:8 = REF var3 \n\
-            var8:8 = PHI var6, var7 \n\
-            var9[r10]:8 = COPY var8 \
+            var6:8 = REF var2 \n\
+            var7:8 = REF var5 \n\
+            var8:8 = REF var3 \n\
+            var9:8 = PHI var7, var8 \n\
+            var10[r10]:8 = COPY var9 \
     ";
     auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
