@@ -302,7 +302,14 @@ TEST_F(StructureResearcherTest, If) {
             empty \
     ";
     auto expectedDataFlow = "\
-        \n\
+        var1 <- Unknown \n\
+        var2 <- Read var1 \n\
+        var3 <- Copy var2 \n\
+        var5 <- Copy var1 \n\
+        var6 <- Copy var5 + 0x10 \n\
+        var8 <- Copy var3 \n\
+        var10 <- Copy var1 \n\
+        var11 <- Copy var10 + 0x18 \
     ";
     auto expectedStructures = "\
         \n\

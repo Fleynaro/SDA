@@ -270,7 +270,7 @@ namespace sda::semantics
                             if (conditions.hash() != predLink->structure->conditions.hash()) {
                                 auto structure = m_structureRepo->getOrCreateStructure(node);
                                 structure->clearChilds();
-                                predLink->structure->addChild(structure);
+                                predLink->structure->addChild(structure); // TODO: add itself
                                 structure->conditions = conditions;
                             }
                         }
@@ -314,18 +314,16 @@ namespace sda::semantics
             for (auto& [type, variable, value] : conditions) {
                 if (type != ConstantCondition::EQUAL)
                     continue;
-                if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(variable->getSourceOperation())) {
-                    if (unaryOp->getId() == ircode::OperationId::LOAD) {
-                        auto linearExpr = ircode::Value::GetLinearExpr(variable);
-                        Offset offset = linearExpr.getConstTermValue();
-                        for (auto& term : linearExpr.getTerms()) {
-                            if (term.factor != 1 || term.value->getSize() != m_platform->getPointerSize())
-                                continue;
-                            if (auto ptrVar = std::dynamic_pointer_cast<ircode::Variable>(term.value)) {
-                                if (auto ptrVarNode = m_dataFlowRepo->getNode(ptrVar)) {
-                                    if (auto link = m_structureRepo->getLink(ptrVarNode)) {
-                                        result[link->structure].insert(offset, value);
-                                    }
+                if (auto loadOp = goToLoadOperation(variable->getSourceOperation())) {
+                    auto linearExpr = ircode::Value::GetLinearExpr(loadOp->getInput());
+                    Offset offset = linearExpr.getConstTermValue();
+                    for (auto& term : linearExpr.getTerms()) {
+                        if (term.factor != 1 || term.value->getSize() != m_platform->getPointerSize())
+                            continue;
+                        if (auto ptrVar = std::dynamic_pointer_cast<ircode::Variable>(term.value)) {
+                            if (auto ptrVarNode = m_dataFlowRepo->getNode(ptrVar)) {
+                                if (auto link = m_structureRepo->getLink(ptrVarNode)) {
+                                    result[link->structure].insert(offset, value);
                                 }
                             }
                         }
@@ -333,6 +331,20 @@ namespace sda::semantics
                 }
             }
             return result;
+        }
+
+        const ircode::UnaryOperation* goToLoadOperation(const ircode::Operation* operation) {
+            if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(operation)) {
+                if (unaryOp->getId() == ircode::OperationId::COPY) {
+                    if (auto var = std::dynamic_pointer_cast<ircode::Variable>(unaryOp->getInput())) {
+                        return goToLoadOperation(var->getSourceOperation());
+                    }
+                }
+                else if (unaryOp->getId() == ircode::OperationId::LOAD) {
+                    return unaryOp;
+                }
+            }
+            return nullptr;
         }
     };
 };
