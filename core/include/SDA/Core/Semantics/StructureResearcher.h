@@ -404,7 +404,7 @@ namespace sda::semantics
                 if (type != ConstantCondition::EQUAL)
                     continue;
                 if (auto loadOp = goToLoadOperation(variable->getSourceOperation())) {
-                    auto linearExpr = ircode::Value::GetLinearExpr(loadOp->getInput());
+                    auto linearExpr = ircode::Value::GetLinearExpr(loadOp->getInput(), true);
                     Offset offset = linearExpr.getConstTermValue();
                     for (auto& term : linearExpr.getTerms()) {
                         if (term.factor != 1 || term.value->getSize() != m_platform->getPointerSize())

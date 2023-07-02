@@ -32,12 +32,12 @@ LinearExpression Value::GetLinearExpr(std::shared_ptr<Value> value, bool goThrou
         auto srcOp = var->getSourceOperation();
         if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(srcOp)) {
             if (unaryOp->getId() == ircode::OperationId::COPY || (goThroughRef && unaryOp->getId() == ircode::OperationId::REF)) {
-                return GetLinearExpr(unaryOp->getInput());
+                return GetLinearExpr(unaryOp->getInput(), goThroughRef);
             }
         }
         else if (auto binaryOp = dynamic_cast<const ircode::BinaryOperation*>(srcOp)) {
-            auto linearExprInp1 = GetLinearExpr(binaryOp->getInput1());
-            auto linearExprInp2 = GetLinearExpr(binaryOp->getInput2());
+            auto linearExprInp1 = GetLinearExpr(binaryOp->getInput1(), goThroughRef);
+            auto linearExprInp2 = GetLinearExpr(binaryOp->getInput2(), goThroughRef);
             if (binaryOp->getId() == ircode::OperationId::INT_ADD) {
                 return linearExprInp1 + linearExprInp2;
             }
