@@ -1,5 +1,6 @@
 #include "Test/Core/Semantics/SemanticsFixture.h"
 #include "Test/Core/Semantics/DataFlowSemanticsFixture.h"
+#include "Test/Core/Semantics/ConstConditionSemanticsFixture.h"
 #include "SDA/Core/Semantics/StructureResearcher.h"
 
 using namespace sda;
@@ -18,7 +19,7 @@ protected:
     void SetUp() override {
         SemanticsFixture::SetUp();
         constCondRepo = std::make_unique<semantics::ConstConditionRepository>(program);
-        structureRepo = std::make_unique<semantics::StructureRepository>();
+        structureRepo = std::make_unique<semantics::StructureRepository>(eventPipe);
         dataFlowRepo = std::make_unique<semantics::DataFlowRepository>(eventPipe);
         dataFlowCollector = std::make_unique<semantics::DataFlowCollector>(
             program,
@@ -44,7 +45,7 @@ protected:
         std::stringstream ss;
         bool isFirstPrinted = false;
         for (auto structure : allStructures) {
-            if (structure->fields.empty())
+            if (structure->fields.empty() && structure->conditions.values().empty())
                 continue;
             if (isFirstPrinted) {
                 ss << std::endl << std::endl;
@@ -86,17 +87,35 @@ protected:
             ss << " ";
         }
         ss << "{" << std::endl;
-        for (auto& [offset, fieldStructure] : structure->fields) {
+        std::set<size_t> fieldOffsets;
+        for (auto& [offset, _] : structure->fields) {
+            fieldOffsets.insert(offset);
+        }
+        for (auto& [offset, _] : structure->conditions.values()) {
+            fieldOffsets.insert(offset);
+        }
+        for (auto offset : fieldOffsets) {
+            std::string sep;
+            std::stringstream fieldValues;
+            // structures
+            auto it = structure->fields.find(offset);
+            if (it != structure->fields.end()) {      
+                auto childs = sortByName(it->second->childs);
+                for (auto child : childs) {
+                    fieldValues << sep << child->name;
+                    sep = ", ";
+                }
+            }
+            // constants
+            auto it2 = structure->conditions.values().find(offset);
+            if (it2 != structure->conditions.values().end()) {
+                for (auto value : it2->second) {
+                    fieldValues << sep << "0x" << utils::to_hex() << value;
+                    sep = ", ";
+                }
+            }
             auto offsetStr = (std::stringstream() << "0x" << utils::to_hex() << offset).str();
-            std::string valueStructures;
-            for (auto child : sortByName(fieldStructure->childs)) {
-                valueStructures += child->name + ", ";
-            }
-            if (!valueStructures.empty()) {
-                valueStructures.pop_back();
-                valueStructures.pop_back();
-            }
-            ss << "    " << offsetStr << ": " << valueStructures << std::endl;
+            ss << "    " << offsetStr << ": " << fieldValues.str() << std::endl;
         }
         ss << "}";
     }
@@ -106,6 +125,10 @@ protected:
             return a->name < b->name;
         });
         return structures;
+    }
+
+    ::testing::AssertionResult cmpConditions(ircode::Function* function, const std::string& expectedCode) const {
+        return ConstConditionSemanticsFixture::CmpConditions(constCondRepo.get(), function, expectedCode);
     }
 
     ::testing::AssertionResult cmpDataFlow(ircode::Function* function, const std::string& expectedCode) const {
@@ -260,10 +283,10 @@ TEST_F(StructureResearcherTest, If) {
         void func(Object* param1) {
             if (param1->field_0x0 == 1) {
                 player = static_cast<Player*>(param1);
-                player->field_0x10 = 100;
+                player->field_0x10 = 0x64;
             } else if (param1->field_0x0 == 2) {
                 vehicle = static_cast<Vehicle*>(param1);
-                vehicle->field_0x18 = 200;
+                vehicle->field_0x18 = 0xC8;
             }
         }
     */
@@ -301,6 +324,12 @@ TEST_F(StructureResearcherTest, If) {
         Block B9(level: 5): \n\
             empty \
     ";
+    auto expectedConditions = "\
+        Block B3: \n\
+            var3 == 1 \n\
+        Block B7: \n\
+            var8 == 2 \
+    ";
     auto expectedDataFlow = "\
         var1 <- Unknown \n\
         var2 <- Read var1 \n\
@@ -316,10 +345,23 @@ TEST_F(StructureResearcherTest, If) {
         var12 <- Write 0xc8 \
     ";
     auto expectedStructures = "\
+        struct B0:var1 { \n\
+            0x0: B0:var2 \n\
+        } \n\
         \n\
+        struct B0:var10 : B0:var1 { \n\
+            0x0: 0x2 \n\
+            0x18: 0xc8 \n\
+        } \n\
+        \n\
+        struct B0:var5 : B0:var1 { \n\
+            0x0: 0x1 \n\
+            0x10: 0x64 \n\
+        } \
     ";
     auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
+    ASSERT_TRUE(cmpConditions(function, expectedConditions));
     ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
     ASSERT_TRUE(cmpStructures(expectedStructures));
 }

@@ -10,10 +10,42 @@
 
 namespace sda::semantics
 {
+    static const size_t StructureResearchTopic = TopicName("StructureResearchTopic");
+
+    struct Structure;
+
+    // When a structure is created
+    struct StructureCreatedEvent : Event {
+        Structure* structure;
+
+        StructureCreatedEvent(Structure* structure)
+            : Event(StructureResearchTopic)
+            , structure(structure)
+        {}
+    };
+
+    // When a link is created
+    struct LinkCreatedEvent : Event {
+        DataFlowNode* node;
+        Structure* structure;
+        size_t offset;
+
+        LinkCreatedEvent(DataFlowNode* node, Structure* structure, size_t offset = 0)
+            : Event(StructureResearchTopic)
+            , node(node)
+            , structure(structure)
+            , offset(offset)
+        {}
+    };
+
     class ConditionSet {
         std::map<size_t, std::set<size_t>> m_conditions;
     public:
         ConditionSet() = default;
+
+        const std::map<size_t, std::set<size_t>>& values() const {
+            return m_conditions;
+        }
 
         void insert(size_t offset, size_t value) {
             m_conditions[offset].insert(value);
@@ -76,12 +108,26 @@ namespace sda::semantics
         struct Link {
             Structure* structure;
             size_t offset;
+            bool own;
         };
         std::list<Structure> m_structures;
         std::map<DataFlowNode*, Link> m_nodeToStructure;
+        std::map<DataFlowNode*, size_t> m_nodeToConstant;
+        std::shared_ptr<EventPipe> m_eventPipe;
     public:
-        StructureRepository()
-        {}
+        StructureRepository(std::shared_ptr<EventPipe> eventPipe);
+
+        void setConstant(DataFlowNode* node, size_t value) {
+            m_nodeToConstant[node] = value;
+        }
+
+        const size_t* getConstant(DataFlowNode* node) const {
+            auto it = m_nodeToConstant.find(node);
+            if (it == m_nodeToConstant.end()) {
+                return 0;
+            }
+            return &it->second;
+        }
 
         std::list<Structure*> getRootStructures() {
             std::list<Structure*> result;
@@ -95,14 +141,18 @@ namespace sda::semantics
 
         Structure* createStructure(const std::string& name) {
             m_structures.emplace_back(Structure { name });
-            return &m_structures.back();
+            auto structure = &m_structures.back();
+            m_eventPipe->send(StructureCreatedEvent(structure));
+            return structure;
         }
 
-        Structure* getOrCreateStructure(DataFlowNode* node) {
+        Structure* getOrCreateStructure(DataFlowNode* node, bool own = false) {
             auto link = getLink(node);
-            if (link == nullptr) {
-                auto structure = createStructure(node->variable ? node->variable->getName(true) : "root");
-                addLink(node, structure);
+            if (link == nullptr || own && !link->own) {
+                auto variable = node->getVariable();
+                auto structure = createStructure(variable ? variable->getName(true) : "root");
+                m_nodeToStructure[node] = { structure, 0, true };
+                m_eventPipe->send(LinkCreatedEvent(node, structure));
                 return structure;
             }
             return link->structure;
@@ -129,7 +179,8 @@ namespace sda::semantics
         }
 
         void addLink(DataFlowNode* node, Structure* structure, size_t offset = 0) {
-            m_nodeToStructure[node] = { structure, offset };
+            m_nodeToStructure[node] = { structure, offset, false };
+            m_eventPipe->send(LinkCreatedEvent(node, structure, offset));
         }
 
         const Link* getLink(DataFlowNode* node) const {
@@ -142,7 +193,10 @@ namespace sda::semantics
 
         size_t getHash(DataFlowNode* node) const {
             auto link = getLink(node);
-            if (link == nullptr) {
+            if (!link) {
+                if (auto constant = getConstant(node)) {
+                    return std::hash<size_t>()(*constant);
+                }
                 return 0;
             }
             size_t result = reinterpret_cast<size_t>(link->structure);
@@ -243,24 +297,43 @@ namespace sda::semantics
 
     private:
         void research(DataFlowNode* node, bool& goNextNodes) {
-            // stop if at least one of predecessors has no structure
-            for (auto pred : node->predecessors) {
-                if (!m_structureRepo->getLink(pred)) return;
-            }
-            auto block = node->variable->getSourceOperation()->getBlock();
             auto hash = m_structureRepo->getHash(node);
+            researchConstants(node);
+            researchStructures(node);
+            // go next if there are changes
+            goNextNodes = hash != m_structureRepo->getHash(node);
+        }
+
+        void researchConstants(DataFlowNode* node) {
             if (node->type == DataFlowNode::Copy) {
                 if (node->predecessors.size() == 1) {
                     auto pred = node->predecessors.front();
-                    auto predLink = m_structureRepo->getLink(pred);
-                    if (auto link = m_structureRepo->getLink(node)) {
-                        if (link->structure != predLink->structure) {
-                            m_structureRepo->removeStructure(link->structure);
-                        }
+                    if (auto predConstant = m_structureRepo->getConstant(pred)) {
+                        m_structureRepo->setConstant(node, *predConstant);
                     }
-                    m_structureRepo->addLink(node, predLink->structure, predLink->offset + node->offset);
+                }
+            }
+            else if (node->type == DataFlowNode::Unknown) {
+                if (auto constant = node->getConstant()) {
+                    m_structureRepo->setConstant(node, constant->getConstVarnode()->getValue());
+                }
+            }
+        }
 
+        void researchStructures(DataFlowNode* node) {
+            if (node->type == DataFlowNode::Copy) {
+                for (auto pred : node->predecessors) {
+                    if (!m_structureRepo->getLink(pred)) return;
+                }
+                if (node->predecessors.size() == 1) {
+                    auto pred = node->predecessors.front();
+                    auto predLink = m_structureRepo->getLink(pred);
+                    
+                    bool isNewStructure = false;
                     if (node->offset == 0) {
+                        auto variable = node->getVariable();
+                        assert(variable);
+                        auto block = variable->getSourceOperation()->getBlock();
                         auto structToConditions = findConditions(block);
                         auto it = structToConditions.find(predLink->structure);
                         if (it != structToConditions.end()) {
@@ -268,15 +341,25 @@ namespace sda::semantics
                             auto& newConditions = it->second;
                             conditions.merge(newConditions, true);
                             if (conditions.hash() != predLink->structure->conditions.hash()) {
-                                auto structure = m_structureRepo->getOrCreateStructure(node);
-                                structure->clearChilds();
-                                predLink->structure->addChild(structure); // TODO: add itself
+                                auto structure = m_structureRepo->getOrCreateStructure(node, true);
+                                structure->clearParents();
+                                predLink->structure->addChild(structure);
                                 structure->conditions = conditions;
+                                isNewStructure = true;
                             }
                         }
                     }
+
+                    if (!isNewStructure) {
+                        if (auto link = m_structureRepo->getLink(node)) {
+                            if (link->structure != predLink->structure) {
+                                m_structureRepo->removeStructure(link->structure);
+                            }
+                        }
+                        m_structureRepo->addLink(node, predLink->structure, predLink->offset + node->offset);
+                    }
                 } else {
-                    auto structure = m_structureRepo->getOrCreateStructure(node);
+                    auto structure = m_structureRepo->getOrCreateStructure(node, true);
                     structure->clearChilds();
                     structure->conditions.clear();
                     for (auto pred : node->predecessors) {
@@ -288,9 +371,10 @@ namespace sda::semantics
             }
             else if (node->type == DataFlowNode::Read) {
                 assert(node->predecessors.size() == 1);
-                auto structure = m_structureRepo->getOrCreateStructure(node);
                 auto addrNode = node->predecessors.front();
                 auto addrLink = m_structureRepo->getLink(addrNode);
+                if (!addrLink) return;
+                auto structure = m_structureRepo->getOrCreateStructure(node);
                 m_structureRepo->addField(addrLink->structure, addrLink->offset, structure);
             }
             else if (node->type == DataFlowNode::Write) {
@@ -298,14 +382,19 @@ namespace sda::semantics
                 auto addrNode = node->predecessors.front();
                 auto valueNode = node->predecessors.back();
                 auto addrLink = m_structureRepo->getLink(addrNode);
-                auto valueLink = m_structureRepo->getLink(valueNode);
-                m_structureRepo->addField(addrLink->structure, addrLink->offset, valueLink->structure);
+                if (!addrLink) return;
+                if (auto valueLink = m_structureRepo->getLink(valueNode)) {
+                    m_structureRepo->addField(addrLink->structure, addrLink->offset, valueLink->structure);
+                }
+                else if (auto constValue = m_structureRepo->getConstant(valueNode)) {
+                    addrLink->structure->conditions.insert(addrLink->offset, *constValue);
+                }
             }
             else if (node->type == DataFlowNode::Unknown) {
-                m_structureRepo->getOrCreateStructure(node);
-            }
-
-            goNextNodes = hash != m_structureRepo->getHash(node);
+                if (node->getVariable()) {
+                    m_structureRepo->getOrCreateStructure(node);
+                }
+            }      
         }
 
         std::map<Structure*, ConditionSet> findConditions(ircode::Block* block) {
@@ -335,7 +424,7 @@ namespace sda::semantics
 
         const ircode::UnaryOperation* goToLoadOperation(const ircode::Operation* operation) {
             if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(operation)) {
-                if (unaryOp->getId() == ircode::OperationId::COPY) {
+                if (unaryOp->getId() == ircode::OperationId::COPY || unaryOp->getId() == ircode::OperationId::REF) {
                     if (auto var = std::dynamic_pointer_cast<ircode::Variable>(unaryOp->getInput())) {
                         return goToLoadOperation(var->getSourceOperation());
                     }
