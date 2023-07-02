@@ -31,7 +31,9 @@ namespace sda::semantics
             ConstConditionRepository* m_repo;
 
             void handleFunctionDecompiled(const ircode::FunctionDecompiledEvent& event) {
-                for (auto block : event.blocks) { 
+                auto functionInfo = m_repo->getFunctionInfo(event.function);
+                for (auto block : event.blocks) {
+                    m_repo->removeConditions(functionInfo, block);
                     if (auto condVar = std::dynamic_pointer_cast<ircode::Variable>(block->getCondition())) {
                         auto op = condVar->getSourceOperation();
                         if (op->getId() == ircode::OperationId::INT_EQUAL || op->getId() == ircode::OperationId::INT_NOTEQUAL) {
@@ -39,7 +41,7 @@ namespace sda::semantics
                                 if (auto inputVar1 = std::dynamic_pointer_cast<ircode::Variable>(binaryOp->getInput1())) {
                                     if (auto inputVar2 = std::dynamic_pointer_cast<ircode::Constant>(binaryOp->getInput2())) {
                                         auto value = inputVar2->getConstVarnode()->getValue();
-                                        m_repo->addCondition(event.function, {
+                                        m_repo->addCondition(functionInfo, {
                                             inputVar1,
                                             value,
                                             block,
@@ -52,12 +54,18 @@ namespace sda::semantics
                     }
                 }
             }
+
+            void handleBlockRemovedEvent(const ircode::BlockRemovedEvent& event) {
+                auto functionInfo = m_repo->getFunctionInfo(event.block->getFunction());
+                m_repo->removeConditions(functionInfo, event.block);
+            }
         public:
             IRcodeEventHandler(ConstConditionRepository* repo) : m_repo(repo) {}
 
             std::shared_ptr<EventPipe> getEventPipe() {
                 auto pipe = EventPipe::New();
                 pipe->subscribeMethod(this, &IRcodeEventHandler::handleFunctionDecompiled);
+                pipe->subscribeMethod(this, &IRcodeEventHandler::handleBlockRemovedEvent);
                 return pipe;
             }
         };
@@ -94,18 +102,19 @@ namespace sda::semantics
         FunctionInfo* getFunctionInfo(ircode::Function* function) {
             auto it = m_functionInfos.find(function);
             if (it == m_functionInfos.end()) {
-                return nullptr;
+                it = m_functionInfos.insert({ function, {} }).first;
             }
             return &it->second;
         }
 
-        void addCondition(ircode::Function* function, const Condition& condition) {
-            auto functionInfo = getFunctionInfo(function);
-            if (!functionInfo) {
-                m_functionInfos[function] = {};
-                functionInfo = getFunctionInfo(function);
-            }
+        void addCondition(FunctionInfo* functionInfo, const Condition& condition) {
             functionInfo->conditions.push_back(condition);
+        }
+
+        void removeConditions(FunctionInfo* functionInfo, ircode::Block* block) {
+            functionInfo->conditions.remove_if([block](const Condition& cond) {
+                return cond.block == block;
+            });
         }
     };
 };
