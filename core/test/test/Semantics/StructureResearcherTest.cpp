@@ -365,3 +365,266 @@ TEST_F(StructureResearcherTest, If) {
     ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
     ASSERT_TRUE(cmpStructures(expectedStructures));
 }
+
+TEST_F(StructureResearcherTest, IfNested) {
+    /*
+        void func(Object* param1) {
+            if (param1->field_0x0 == 1) {
+                player = static_cast<Player*>(param1);
+                if (player->field_0x40 == 2) {
+                    player->field_0x10 = 0x64;
+                }
+            }
+        }
+    */
+   auto sourcePCode = "\
+        $1:4 = LOAD rcx:8, 4:8 \n\
+        $2:1 = INT_NOTEQUAL $1:4, 1:4 \n\
+        CBRANCH <label>, $2:1 \n\
+        $3:4 = INT_ADD rcx:8, 0x40:8 \n\
+        $4:4 = LOAD $3:4, 4:4 \n\
+        $5:1 = INT_NOTEQUAL $4:4, 2:4 \n\
+        CBRANCH <label>, $5:1 \n\
+        $6:4 = INT_ADD rcx:8, 0x10:8 \n\
+        STORE $6:4, 100:4 \n\
+        <label>: \n\
+        RETURN \
+    ";
+    auto expectedIRCode = "\
+        Block B0(level: 1, near: B3, far: B9, cond: var4): \n\
+            var1:8 = LOAD rcx \n\
+            var2:4 = LOAD var1 \n\
+            var3[$U1]:4 = COPY var2 \n\
+            var4[$U2]:1 = INT_NOTEQUAL var3, 0x1:4 \n\
+        Block B3(level: 2, near: B7, far: B9, cond: var9): \n\
+            var5:8 = REF var1 \n\
+            var6[$U3]:4 = INT_ADD var5, 0x40:8 \n\
+            var7:4 = LOAD var6 \n\
+            var8[$U4]:4 = COPY var7 \n\
+            var9[$U5]:1 = INT_NOTEQUAL var8, 0x2:4 \n\
+        Block B7(level: 3, near: B9): \n\
+            var10:8 = REF var1 \n\
+            var11[$U6]:4 = INT_ADD var10, 0x10:8 \n\
+            var12[var11]:4 = COPY 0x64:4 \n\
+        Block B9(level: 4): \n\
+            empty \
+    ";
+    auto expectedConditions = "\
+        Block B3: \n\
+            var3 == 1 \n\
+        Block B7: \n\
+            var3 == 1 \n\
+            var8 == 2 \
+    ";
+    auto expectedDataFlow = "\
+        var1 <- Unknown \n\
+        var2 <- Read var1 \n\
+        var3 <- Copy var2 \n\
+        var5 <- Copy var1 \n\
+        var6 <- Copy var5 + 0x40 \n\
+        var7 <- Read var6 \n\
+        var8 <- Copy var7 \n\
+        var10 <- Copy var1 \n\
+        var11 <- Copy var10 + 0x10 \n\
+        var12 <- Write var11 \n\
+        var12 <- Write 0x64 \
+    ";
+    auto expectedStructures = "\
+        struct B0:var1 { \n\
+            0x0: B0:var2 \n\
+        } \n\
+        \n\
+        struct B0:var10 : B0:var1 { \n\
+            0x0: 0x1 \n\
+            0x10: 0x64 \n\
+            0x40: 0x2 \n\
+        } \n\
+        \n\
+        struct B0:var5 : B0:var1 { \n\
+            0x0: 0x1 \n\
+            0x40: B0:var7 \n\
+        } \
+    ";
+    auto function = parsePcode(sourcePCode, program);
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+    ASSERT_TRUE(cmpConditions(function, expectedConditions));
+    ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
+    ASSERT_TRUE(cmpStructures(expectedStructures));
+}
+
+TEST_F(StructureResearcherTest, Functions) {
+    /*
+        void main() {
+            if (globalVar_0x100->field_0x0 == 1) {
+                player = static_cast<Player*>(globalVar_0x100);
+                func(player);
+            }
+            else if (globalVar_0x100->field_0x0 == 2) {
+                vehicle = static_cast<Vehicle*>(globalVar_0x100);
+                func(vehicle);
+            }
+        }
+
+        void func(Object* param1) {
+            param1->field_0x4 = 1;
+            if (param1->field_0x0 == 1) {
+                player = static_cast<Player*>(param1);
+                player->field_0x10 = 0x64;
+            }
+        }
+    */
+   auto sourcePCode = "\
+        // main() \n\
+        $1:8 = INT_ADD rip:8, 0x100:8 \n\
+        $2:8 = LOAD $1:8, 8:8 \n\
+        $3:4 = LOAD $2:8, 4:8 \n\
+        $4:1 = INT_NOTEQUAL $3:4, 1:4 \n\
+        CBRANCH <main_label>, $4:1 \n\
+        rcx:8 = COPY $2:8 \n\
+        CALL <func> \n\
+        BRANCH <main_end> \n\
+        <main_label>: \n\
+        $5:1 = INT_NOTEQUAL $3:4, 2:4 \n\
+        CBRANCH <main_end>, $5:1 \n\
+        rcx:8 = COPY $2:8 \n\
+        CALL <func> \n\
+        <main_end>: \n\
+        RETURN \n\
+        \n\
+        \n\
+        // func(Object* param1) \n\
+        <func>: \n\
+        $1:4 = LOAD rcx:8, 4:8 \n\
+        $2:8 = INT_ADD rcx:8, 0x4:8 \n\
+        STORE $2:8, 1:4 \n\
+        $3:1 = INT_NOTEQUAL $1:4, 1:4 \n\
+        CBRANCH <func_end>, $3:1 \n\
+        $4:8 = INT_ADD rcx:8, 0x10:8 \n\
+        STORE $4:8, 0x64:4 \n\
+        <func_end>: \n\
+        RETURN \
+    ";
+    auto funcSig = "\
+        funcSig = signature fastcall bool(void* param1) \
+    ";
+    auto expectedIRCodeOfMainFunc = "\
+        Block B0(level: 1, near: B5, far: B8, cond: var7): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U1]:8 = INT_ADD var1, 0x100:8 \n\
+            var3:8 = LOAD var2 \n\
+            var4[$U2]:8 = COPY var3 \n\
+            var5:4 = LOAD var4 \n\
+            var6[$U3]:4 = COPY var5 \n\
+            var7[$U4]:1 = INT_NOTEQUAL var6, 0x1:4 \n\
+        Block B5(level: 2, far: Bc): \n\
+            var8:8 = REF var4 \n\
+            var9[rcx]:8 = COPY var8 \n\
+            var10[rax]:1 = CALL 0xd00:8, var9 \n\
+        Block B8(level: 2, near: Ba, far: Bc, cond: var12): \n\
+            var11:4 = REF var6 \n\
+            var12[$U5]:1 = INT_NOTEQUAL var11, 0x2:4 \n\
+        Block Ba(level: 3, near: Bc): \n\
+            var13:8 = REF var4 \n\
+            var14[rcx]:8 = COPY var13 \n\
+            var15[rax]:1 = CALL 0xd00:8, var14 \n\
+        Block Bc(level: 4): \n\
+            empty \
+    ";
+    auto expectedIRCodeOfFunc = "\
+        Block Bd(level: 1, near: B12, far: B14, cond: var6): \n\
+            var1:8 = LOAD rcx // param1 \n\
+            var2:4 = LOAD var1 \n\
+            var3[$U1]:4 = COPY var2 \n\
+            var4[$U2]:8 = INT_ADD var1, 0x4:8 \n\
+            var5[var4]:8 = COPY 0x1:4 \n\
+            var6[$U3]:1 = INT_NOTEQUAL var3, 0x1:4 \n\
+        Block B12(level: 2, near: B14): \n\
+            var7:8 = REF var1 \n\
+            var8[$U4]:8 = INT_ADD var7, 0x10:8 \n\
+            var9[var8]:8 = COPY 0x64:4 \n\
+        Block B14(level: 3): \n\
+            empty \
+    ";
+    auto expectedConditionsOfMainFunc = "\
+        Block B5: \n\
+            var6 == 1 \n\
+        Block B8: \n\
+            var6 != 1 \n\
+        Block Ba: \n\
+            var6 != 1 \n\
+            var11 == 2 \
+    ";
+    auto expectedConditionsOfFunc = "\
+        Block B12: \n\
+            var3 == 1 \
+    ";
+    auto expectedDataFlowOfMainFunc = "\
+        var1 <- Copy Start \n\
+        var2 <- Copy var1 + 0x100 \n\
+        var3 <- Read var2 \n\
+        var4 <- Copy var3 \n\
+        var5 <- Read var4 \n\
+        var6 <- Copy var5 \n\
+        var8 <- Copy var4 \n\
+        var9 <- Copy var8 \n\
+        var11 <- Copy var6 \n\
+        var13 <- Copy var4 \n\
+        var14 <- Copy var13 \n\
+        Bd:var1 <- var9 \n\
+        Bd:var1 <- var14 \
+    ";
+    auto expectedDataFlowOfFunc = "\
+        var1 <- B0:var9 \n\
+        var1 <- B0:var14 \n\
+        var2 <- Read var1 \n\
+        var3 <- Copy var2 \n\
+        var4 <- Copy var1 + 0x4 \n\
+        var5 <- Write var4 \n\
+        var5 <- Write 0x1 \n\
+        var7 <- Copy var1 \n\
+        var8 <- Copy var7 + 0x10 \n\
+        var9 <- Write var8 \n\
+        var9 <- Write 0x64 \
+    ";
+    auto expectedStructures = "\
+        struct Bd:var1 { \n\
+            0x0: Bd:var2 \n\
+            0x4: 0x1 \n\
+        } \n\
+        \n\
+        struct Bd:var7 : Bd:var1 { \n\
+            0x0: 0x1 \n\
+            0x4: 0x1 \n\
+            0x10: 0x64 \n\
+        } \n\
+        \n\
+        struct root { \n\
+            0x100: B0:var3 \n\
+        } \n\
+        \n\
+        struct B0:var3 : root_0x100 { \n\
+            0x0: B0:var5 \n\
+        } \n\
+        \n\
+        struct B0:var13 : B0:var3 { \n\
+            0x0: 0x2 \n\
+        } \n\
+        \n\
+        struct B0:var8 : B0:var3 { \n\
+            0x0: 0x1 \n\
+        } \
+    ";
+    auto mainFunction = parsePcode(sourcePCode, program);
+    auto funcSigDt = dynamic_cast<SignatureDataType*>(
+        parseDataType(funcSig));
+    auto func = program->toFunction(
+        graph->getFunctionGraphAt(pcode::InstructionOffset(13, 0)));
+    func->getFunctionSymbol()->getSignature()->copyFrom(funcSigDt);
+    ASSERT_TRUE(cmp(mainFunction, expectedIRCodeOfMainFunc));
+    ASSERT_TRUE(cmp(func, expectedIRCodeOfFunc));
+    ASSERT_TRUE(cmpConditions(mainFunction, expectedConditionsOfMainFunc));
+    ASSERT_TRUE(cmpConditions(func, expectedConditionsOfFunc));
+    ASSERT_TRUE(cmpDataFlow(mainFunction, expectedDataFlowOfMainFunc));
+    ASSERT_TRUE(cmpDataFlow(func, expectedDataFlowOfFunc));
+    ASSERT_TRUE(cmpStructures(expectedStructures));
+}

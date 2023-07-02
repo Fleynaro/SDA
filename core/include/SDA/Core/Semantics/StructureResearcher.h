@@ -183,6 +183,16 @@ namespace sda::semantics
             m_eventPipe->send(LinkCreatedEvent(node, structure, offset));
         }
 
+        void removeLink(DataFlowNode* node) {
+            auto link = getLink(node);
+            if (link) {
+                if (link->own) {
+                    removeStructure(link->structure);
+                }
+                m_nodeToStructure.erase(node);
+            }
+        }
+
         const Link* getLink(DataFlowNode* node) const {
             auto it = m_nodeToStructure.find(node);
             if (it == m_nodeToStructure.end()) {
@@ -216,6 +226,10 @@ namespace sda::semantics
         class EventHandler
         {
             StructureResearcher* m_researcher;
+
+            void handleDataFlowNodeRemovedEvent(const DataFlowNodeRemovedEvent& event) {
+                m_researcher->m_structureRepo->removeLink(event.node);
+            }
 
             void handleDataFlowNodeUpdatedEvent(const DataFlowNodeUpdatedEvent& event) {
                 m_researcher->research(event.node);
@@ -263,6 +277,7 @@ namespace sda::semantics
                 pipe
                     ->connect(GetOptimizedEventPipe())
                     ->subscribeMethod(this, &EventHandler::handleDataFlowNodeUpdatedEvent);
+                pipe->subscribeMethod(this, &EventHandler::handleDataFlowNodeRemovedEvent);
                 return pipe;
             }
         };
