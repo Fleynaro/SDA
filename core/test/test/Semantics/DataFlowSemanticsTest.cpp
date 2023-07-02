@@ -28,7 +28,7 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignment) {
             var6[rax]:8 = COPY var5 \
     ";
     auto expectedDataFlow = "\
-        var1 <- Copy <- Start \n\
+        var1 <- Copy Start \n\
         var2 <- Copy var1 + 0x10 \n\
         var3 <- Unknown \n\
         var4 <- Write var2 \n\
@@ -69,7 +69,7 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentDouble) {
             var9[rax]:8 = COPY var8 \
     ";
     auto expectedDataFlow = "\
-        var1 <- Copy <- Start \n\
+        var1 <- Copy Start \n\
         var2 <- Copy var1 + 0x10 \n\
         var3 <- Unknown \n\
         var4 <- Write var2 \n\
@@ -115,7 +115,7 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentObject) {
         var3 <- Unknown \n\
         var4 <- Write var2 \n\
         var4 <- Write var3 \n\
-        var5 <- Copy <- Start \n\
+        var5 <- Copy Start \n\
         var6 <- Copy var5 + 0x200 \n\
         var7 <- Write var6 \n\
         var7 <- Write var1 \
@@ -159,7 +159,7 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentObjectDouble) {
         var3 <- Unknown \n\
         var4 <- Write var2 \n\
         var4 <- Write var3 \n\
-        var5 <- Copy <- Start \n\
+        var5 <- Copy Start \n\
         var6 <- Copy var5 + 0x200 \n\
         var7 <- Write var6 \n\
         var7 <- Write var1 \n\
@@ -256,7 +256,7 @@ TEST_F(DataFlowSemanticsTest, Functions) {
             var2[rax]:1 = CALL 0x300:8, var1 \
     ";
     auto expectedDataFlowOfMainFunc = "\
-        var1 <- Unknown \n\
+        var1 <- Copy 0x0 \n\
         var2 <- B3:var5 \n\
         B3:var3 <- var1 \
     ";
@@ -269,12 +269,12 @@ TEST_F(DataFlowSemanticsTest, Functions) {
             var5[rax]:1 = COPY 0x1:1 // return \
     ";
     auto expectedDataFlowOfFunc2 = "\
-        var1 <- Copy <- Start \n\
+        var1 <- Copy Start \n\
         var2 <- Copy var1 + 0x10 \n\
         var3 <- B0:var1 \n\
         var4 <- Write var2 \n\
         var4 <- Write var3 \n\
-        var5 <- Unknown \n\
+        var5 <- Copy 0x1 \n\
         B0:var2 <- var5 \
     ";
     auto mainFunction = parsePcode(sourcePCode, program);

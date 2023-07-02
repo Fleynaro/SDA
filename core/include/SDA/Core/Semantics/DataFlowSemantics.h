@@ -3,6 +3,7 @@
 #include "SDA/Core/IRcode/IRcodeBlock.h"
 #include "SDA/Core/IRcode/IRcodeEvents.h"
 #include "SDA/Core/Utils/Logger.h"
+#include "SDA/Core/Utils/IOManip.h"
 
 namespace sda::semantics
 {
@@ -49,16 +50,36 @@ namespace sda::semantics
             Read
         };
         Type type = Unknown;
-        std::shared_ptr<ircode::Variable> variable;
+        std::shared_ptr<ircode::Value> value;
         Offset offset = 0;
         std::list<DataFlowNode*> predecessors;
         std::list<DataFlowNode*> successors;
 
-        std::string getName() {
-            if (!variable) {
+        std::shared_ptr<ircode::Variable> getVariable() {
+            if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
+                return var;
+            }
+            return nullptr;
+        }
+
+        std::shared_ptr<ircode::Constant> getConstant() {
+            if (auto constant = std::dynamic_pointer_cast<ircode::Constant>(value)) {
+                return constant;
+            }
+            return nullptr;
+        }
+
+        std::string getName(bool full = true) {
+            if (!value) {
                 return "Start";
             }
-            return variable->getName(true);
+            else if (auto constant = std::dynamic_pointer_cast<ircode::Constant>(value)) {
+                return (std::stringstream() << "0x" << utils::to_hex() << constant->getConstVarnode()->getValue()).str();
+            }
+            else if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
+                return var->getName(full);
+            }
+            throw std::runtime_error("Unknown value type");
         }
 
         static void PassSuccessors(const std::list<DataFlowNode*>& startNodes, std::function<void(DataFlowNode* node, bool& goNextNodes)> callback) {
@@ -98,7 +119,7 @@ namespace sda::semantics
 
     class DataFlowRepository
     {
-        std::map<std::shared_ptr<ircode::Variable>, DataFlowNode> m_nodes;
+        std::map<std::shared_ptr<ircode::Value>, DataFlowNode> m_nodes;
         DataFlowNode m_globalNode;
         std::shared_ptr<EventPipe> m_eventPipe;
     public:
@@ -108,27 +129,27 @@ namespace sda::semantics
             return &m_globalNode;
         }
 
-        DataFlowNode* getNode(std::shared_ptr<ircode::Variable> variable) {
-            auto it = m_nodes.find(variable);
+        DataFlowNode* getNode(std::shared_ptr<ircode::Value> value) {
+            auto it = m_nodes.find(value);
             if (it == m_nodes.end()) {
                 return nullptr;
             }
             return &it->second;
         }
 
-        DataFlowNode* getOrCreateNode(std::shared_ptr<ircode::Variable> variable) {
-            auto node = getNode(variable);
+        DataFlowNode* getOrCreateNode(std::shared_ptr<ircode::Value> value) {
+            auto node = getNode(value);
             if (!node) {
-                m_nodes[variable] = { DataFlowNode::Unknown, variable };
-                auto newNode = &m_nodes[variable];
+                m_nodes[value] = { DataFlowNode::Unknown, value };
+                auto newNode = &m_nodes[value];
                 m_eventPipe->send(DataFlowNodeCreatedEvent(newNode));
                 return newNode;
             }
             return node;
         }
 
-        DataFlowNode* createNode(DataFlowNode::Type type, std::shared_ptr<ircode::Variable> variable, Offset offset = 0) {
-            auto node = getOrCreateNode(variable);
+        DataFlowNode* createNode(DataFlowNode::Type type, std::shared_ptr<ircode::Value> value, Offset offset = 0) {
+            auto node = getOrCreateNode(value);
             if (node->type == DataFlowNode::Unknown) {
                 node->type = type;
                 node->offset = offset;
@@ -146,7 +167,7 @@ namespace sda::semantics
             for (auto succ : node->successors) {
                 succ->predecessors.remove(node);
             }
-            m_nodes.erase(node->variable);
+            m_nodes.erase(node->value);
         }
 
         void addSuccessor(DataFlowNode* node, DataFlowNode* successor) {
@@ -228,6 +249,7 @@ namespace sda::semantics
                 auto input = unaryOp->getInput();
                 if (unaryOp->getId() == ircode::OperationId::LOAD) {
                     if (auto inputReg = std::dynamic_pointer_cast<ircode::Register>(input)) {
+                        // register
                         auto regId = inputReg->getRegister().getRegId();
                         if (regId == Register::InstructionPointerId) {
                             auto startNode = m_dataFlowRepo->getGlobalStartNode();
@@ -235,34 +257,32 @@ namespace sda::semantics
                                 m_dataFlowRepo->addSuccessor(startNode, copyNode);
                             }
                         }
-                    }
-                    else if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
-                        if (auto inputNode = m_dataFlowRepo->getOrCreateNode(inputVar)) {
+                    } else {
+                        // variable or constant
+                        if (auto inputNode = m_dataFlowRepo->getOrCreateNode(input)) {
                             if (auto readNode = m_dataFlowRepo->createNode(DataFlowNode::Read, output)) {
                                 m_dataFlowRepo->addSuccessor(inputNode, readNode);
-                                ctx.markValueAsAffected(inputVar);
+                                ctx.markValueAsAffected(input);
                             }
                         }
                     }
                 }
                 else if (unaryOp->getId() == ircode::OperationId::COPY || unaryOp->getId() == ircode::OperationId::REF) {
-                    if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
-                        if (auto inputNode = m_dataFlowRepo->getOrCreateNode(inputVar)) {
-                            auto outputAddrVal = output->getMemAddress().value;
-                            if (auto outputAddrVar = std::dynamic_pointer_cast<ircode::Variable>(outputAddrVal)) {
-                                if (auto addrNode = m_dataFlowRepo->getOrCreateNode(outputAddrVar)) {
-                                    if (auto writeNode = m_dataFlowRepo->createNode(DataFlowNode::Write, output)) {
-                                        m_dataFlowRepo->addSuccessor(addrNode, writeNode);
-                                        m_dataFlowRepo->addSuccessor(inputNode, writeNode);
-                                        ctx.markValueAsAffected(outputAddrVar);
-                                        ctx.markValueAsAffected(inputVar);
-                                    }
+                    if (auto inputNode = m_dataFlowRepo->getOrCreateNode(input)) {
+                        auto outputAddrVal = output->getMemAddress().value;
+                        if (auto outputAddrVar = std::dynamic_pointer_cast<ircode::Variable>(outputAddrVal)) {
+                            if (auto addrNode = m_dataFlowRepo->getOrCreateNode(outputAddrVar)) {
+                                if (auto writeNode = m_dataFlowRepo->createNode(DataFlowNode::Write, output)) {
+                                    m_dataFlowRepo->addSuccessor(addrNode, writeNode);
+                                    m_dataFlowRepo->addSuccessor(inputNode, writeNode);
+                                    ctx.markValueAsAffected(outputAddrVar);
+                                    ctx.markValueAsAffected(input);
                                 }
-                            } else {
-                                if (auto copyNode = m_dataFlowRepo->createNode(DataFlowNode::Copy, output)) {
-                                    m_dataFlowRepo->addSuccessor(inputNode, copyNode);
-                                    ctx.markValueAsAffected(inputVar);
-                                }
+                            }
+                        } else {
+                            if (auto copyNode = m_dataFlowRepo->createNode(DataFlowNode::Copy, output)) {
+                                m_dataFlowRepo->addSuccessor(inputNode, copyNode);
+                                ctx.markValueAsAffected(input);
                             }
                         }
                     }
@@ -291,17 +311,13 @@ namespace sda::semantics
                     }
                 }
                 else if (binaryOp->getId() == ircode::OperationId::PHI) {
-                    if (auto inputVar1 = std::dynamic_pointer_cast<ircode::Variable>(binaryOp->getInput1())) {
-                        if (auto inputNode1 = m_dataFlowRepo->getOrCreateNode(inputVar1)) {
-                            if (auto inputVar2 = std::dynamic_pointer_cast<ircode::Variable>(binaryOp->getInput2())) {
-                                if (auto inputNode2 = m_dataFlowRepo->getOrCreateNode(inputVar2)) {
-                                    if (auto copyNode = m_dataFlowRepo->createNode(DataFlowNode::Copy, output)) {
-                                        m_dataFlowRepo->addSuccessor(inputNode1, copyNode);
-                                        m_dataFlowRepo->addSuccessor(inputNode2, copyNode);
-                                        ctx.markValueAsAffected(inputVar1);
-                                        ctx.markValueAsAffected(inputVar2);
-                                    }
-                                }
+                    if (auto inputNode1 = m_dataFlowRepo->getOrCreateNode(binaryOp->getInput1())) {
+                        if (auto inputNode2 = m_dataFlowRepo->getOrCreateNode(binaryOp->getInput2())) {
+                            if (auto copyNode = m_dataFlowRepo->createNode(DataFlowNode::Copy, output)) {
+                                m_dataFlowRepo->addSuccessor(inputNode1, copyNode);
+                                m_dataFlowRepo->addSuccessor(inputNode2, copyNode);
+                                ctx.markValueAsAffected(binaryOp->getInput1());
+                                ctx.markValueAsAffected(binaryOp->getInput2());
                             }
                         }
                     }
@@ -323,20 +339,16 @@ namespace sda::semantics
             for (size_t i = 0; i < argValues.size(); ++i) {
                 auto argValue = argValues[i];
                 auto paramVar = paramsVars[i];
-                if (auto argVar = std::dynamic_pointer_cast<ircode::Variable>(argValue)) {
-                    if (auto argNode = m_dataFlowRepo->getOrCreateNode(argVar)) {
-                        if (auto paramNode = m_dataFlowRepo->getOrCreateNode(paramVar)) {
-                            m_dataFlowRepo->addSuccessor(argNode, paramNode);
-                        }
+                if (auto argNode = m_dataFlowRepo->getOrCreateNode(argValue)) {
+                    if (auto paramNode = m_dataFlowRepo->getOrCreateNode(paramVar)) {
+                        m_dataFlowRepo->addSuccessor(argNode, paramNode);
                     }
                 }
             }
             if (auto returnVar = function->getReturnVariable()) {
-                if (auto outputVar = std::dynamic_pointer_cast<ircode::Variable>(callOp->getOutput())) {
-                    if (auto outputNode = m_dataFlowRepo->getOrCreateNode(outputVar)) {
-                        if (auto returnNode = m_dataFlowRepo->getOrCreateNode(returnVar)) {
-                            m_dataFlowRepo->addSuccessor(returnNode, outputNode);
-                        }
+                if (auto outputNode = m_dataFlowRepo->getOrCreateNode(callOp->getOutput())) {
+                    if (auto returnNode = m_dataFlowRepo->getOrCreateNode(returnVar)) {
+                        m_dataFlowRepo->addSuccessor(returnNode, outputNode);
                     }
                 }
             }

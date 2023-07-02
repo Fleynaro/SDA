@@ -18,9 +18,12 @@ void DataFlowSemanticsFixture::SetUp() {
     return CmpDataFlow(dataFlowRepo.get(), function, expectedCode);
 }
 
-std::string DataFlowSemanticsFixture::GetVariableName(std::shared_ptr<ircode::Variable> var, ircode::Function* function) {
-    auto varFunction = var->getSourceOperation()->getBlock()->getFunction();
-    return var->getName(varFunction != function);
+std::string DataFlowSemanticsFixture::GetNodeName(semantics::DataFlowNode* node, ircode::Function* function) {
+    if (auto var = node->getVariable()) {
+        auto varFunction = var->getSourceOperation()->getBlock()->getFunction();
+        return node->getName(varFunction != function);
+    }
+    return node->getName();
 }
 
 ::testing::AssertionResult DataFlowSemanticsFixture::CmpDataFlow(semantics::DataFlowRepository* dataFlowRepo, ircode::Function* function, const std::string& expectedCode) {
@@ -36,9 +39,11 @@ std::string DataFlowSemanticsFixture::GetVariableName(std::shared_ptr<ircode::Va
     for (auto var : variables) {
         if (auto node = dataFlowRepo->getNode(var)) {
             for (auto succNode : node->successors) {
-                if (std::find(variables.begin(), variables.end(), succNode->variable) != variables.end())
-                    continue;
-                extVariables.push_back(succNode->variable);
+                if (auto variable = succNode->getVariable()) {
+                    if (std::find(variables.begin(), variables.end(), variable) != variables.end())
+                        continue;
+                    extVariables.push_back(variable);
+                }
             }
         }
     }
@@ -56,23 +61,18 @@ std::string DataFlowSemanticsFixture::GetVariableName(std::shared_ptr<ircode::Va
     for (auto var : variables) {
         if (auto node = dataFlowRepo->getNode(var)) {
             if (node->predecessors.empty()) {
-                ss << GetVariableName(var, function) << " <- Unknown";
+                ss << GetNodeName(node, function) << " <- Unknown";
                 printer.newLine();
             } else {
                 for (auto predNode : node->predecessors) {
-                    ss << GetVariableName(var, function) << " <- ";
+                    ss << GetNodeName(node, function) << " <- ";
                     if (node->type == semantics::DataFlowNode::Copy)
                         ss << "Copy ";
                     else if (node->type == semantics::DataFlowNode::Write)
                         ss << "Write ";
                     else if (node->type == semantics::DataFlowNode::Read)
                         ss << "Read ";
-                    if (predNode->variable) {
-                        ss << GetVariableName(predNode->variable, function);
-                    } else {
-                        if (predNode->type == semantics::DataFlowNode::Start)
-                            ss << "<- Start";
-                    }
+                    ss << GetNodeName(predNode, function);
                     if (node->offset > 0) {
                         ss << " + 0x" << utils::to_hex() << node->offset;
                     }

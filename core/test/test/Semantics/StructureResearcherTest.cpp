@@ -135,7 +135,7 @@ TEST_F(StructureResearcherTest, GlobalVarAssignment) {
             var6[rax]:8 = COPY var5 \
     ";
     auto expectedDataFlow = "\
-        var1 <- Copy <- Start \n\
+        var1 <- Copy Start \n\
         var2 <- Copy var1 + 0x10 \n\
         var3 <- Unknown \n\
         var4 <- Write var2 \n\
@@ -182,7 +182,7 @@ TEST_F(StructureResearcherTest, GlobalVarAssignmentDouble) {
             var9[rax]:8 = COPY var8 \
     ";
     auto expectedDataFlow = "\
-        var1 <- Copy <- Start \n\
+        var1 <- Copy Start \n\
         var2 <- Copy var1 + 0x10 \n\
         var3 <- Unknown \n\
         var4 <- Write var2 \n\
@@ -235,7 +235,7 @@ TEST_F(StructureResearcherTest, GlobalVarAssignmentObject) {
         var3 <- Unknown \n\
         var4 <- Write var2 \n\
         var4 <- Write var3 \n\
-        var5 <- Copy <- Start \n\
+        var5 <- Copy Start \n\
         var6 <- Copy var5 + 0x200 \n\
         var7 <- Write var6 \n\
         var7 <- Write var1 \
@@ -307,9 +307,13 @@ TEST_F(StructureResearcherTest, If) {
         var3 <- Copy var2 \n\
         var5 <- Copy var1 \n\
         var6 <- Copy var5 + 0x10 \n\
+        var7 <- Write var6 \n\
+        var7 <- Write 0x64 \n\
         var8 <- Copy var3 \n\
         var10 <- Copy var1 \n\
-        var11 <- Copy var10 + 0x18 \
+        var11 <- Copy var10 + 0x18 \n\
+        var12 <- Write var11 \n\
+        var12 <- Write 0xc8 \
     ";
     auto expectedStructures = "\
         \n\

@@ -17,7 +17,7 @@ protected:
 
     ::testing::AssertionResult cmpDataFlow(ircode::Function* function, const std::string& expectedCode) const;
 
-    static std::string GetVariableName(std::shared_ptr<ircode::Variable> var, ircode::Function* function = nullptr);
+    static std::string GetNodeName(semantics::DataFlowNode* node, ircode::Function* function = nullptr);
 
 public:
     static ::testing::AssertionResult CmpDataFlow(semantics::DataFlowRepository* dataFlowRepo, ircode::Function* function, const std::string& expectedCode);
