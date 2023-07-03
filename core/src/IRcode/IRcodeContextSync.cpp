@@ -60,13 +60,16 @@ void ContextSync::SignatureToVariableMappingUpdater::updateForValue(
             if (term.factor != 1 || term.value->getSize() != platform->getPointerSize())
                 continue;
             if (auto baseRegister = ExtractRegister(term.value)) {
-                auto storageInfo = m_signatureDt->findStorageInfo({
-                    type,
-                    baseRegister->getRegId(),
-                    offset
-                });
-                if (storageInfo) {
-                    updateForStorageInfo(storageInfo);
+                auto regId = baseRegister->getRegId();
+                if (regId == sda::Register::InstructionPointerId || regId == sda::Register::StackPointerId) {
+                    auto storageInfo = m_signatureDt->findStorageInfo({
+                        type,
+                        regId,
+                        offset
+                    });
+                    if (storageInfo) {
+                        updateForStorageInfo(storageInfo);
+                    }
                 }
                 break;
             }

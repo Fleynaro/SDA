@@ -42,6 +42,8 @@ std::string DataFlowSemanticsFixture::GetNodeName(semantics::DataFlowNode* node,
                 if (auto variable = succNode->getVariable()) {
                     if (std::find(variables.begin(), variables.end(), variable) != variables.end())
                         continue;
+                    if (std::find(extVariables.begin(), extVariables.end(), variable) != extVariables.end())
+                        continue;
                     extVariables.push_back(variable);
                 }
             }
@@ -65,6 +67,10 @@ std::string DataFlowSemanticsFixture::GetNodeName(semantics::DataFlowNode* node,
                 printer.newLine();
             } else {
                 for (auto predNode : node->predecessors) {
+                    if (auto predVar = predNode->getVariable()) {
+                        if (var->getSourceOperation()->getBlock()->getFunction() != function && 
+                            predVar->getSourceOperation()->getBlock()->getFunction() != function) continue;
+                    }
                     ss << GetNodeName(node, function) << " <- ";
                     if (node->type == semantics::DataFlowNode::Copy)
                         ss << "Copy ";
