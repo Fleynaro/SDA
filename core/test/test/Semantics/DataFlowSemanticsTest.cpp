@@ -257,8 +257,8 @@ TEST_F(DataFlowSemanticsTest, Functions) {
     ";
     auto expectedDataFlowOfMainFunc = "\
         var1 <- Copy 0x0 \n\
-        var2 <- B3:var5 \n\
-        B3:var3 <- var1 \
+        var2 <- Copy B3:var5 \n\
+        B3:var3 <- Copy var1 \
     ";
     auto expectedIRCodeOfFunc2 = "\
         Block B3(level: 1): \n\
@@ -271,11 +271,11 @@ TEST_F(DataFlowSemanticsTest, Functions) {
     auto expectedDataFlowOfFunc2 = "\
         var1 <- Copy Start \n\
         var2 <- Copy var1 + 0x10 \n\
-        var3 <- B0:var1 \n\
+        var3 <- Copy B0:var1 \n\
         var4 <- Write var2 \n\
         var4 <- Write var3 \n\
         var5 <- Copy 0x1 \n\
-        B0:var2 <- var5 \
+        B0:var2 <- Copy var5 \
     ";
     auto mainFunction = parsePcode(sourcePCode, program);
     auto setGlobalFloatValueSigDt = dynamic_cast<SignatureDataType*>(

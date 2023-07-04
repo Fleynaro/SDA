@@ -137,26 +137,21 @@ namespace sda::semantics
             return &it->second;
         }
 
-        DataFlowNode* getOrCreateNode(std::shared_ptr<ircode::Value> value) {
+        DataFlowNode* getOrCreateNode(std::shared_ptr<ircode::Value> value, DataFlowNode::Type type = DataFlowNode::Unknown, Offset offset = 0) {
             auto node = getNode(value);
             if (!node) {
-                m_nodes[value] = { DataFlowNode::Unknown, value };
+                m_nodes[value] = { type, value, offset };
                 auto newNode = &m_nodes[value];
                 m_eventPipe->send(DataFlowNodeCreatedEvent(newNode));
                 return newNode;
+            } else {
+                if (node->type == DataFlowNode::Unknown) {
+                    node->type = type;
+                    node->offset = offset;
+                    m_eventPipe->send(DataFlowNodeUpdatedEvent(node));
+                }
             }
             return node;
-        }
-
-        DataFlowNode* createNode(DataFlowNode::Type type, std::shared_ptr<ircode::Value> value, Offset offset = 0) {
-            auto node = getOrCreateNode(value);
-            if (node->type == DataFlowNode::Unknown) {
-                node->type = type;
-                node->offset = offset;
-                m_eventPipe->send(DataFlowNodeUpdatedEvent(node));
-                return node;
-            }
-            return nullptr;
         }
 
         void removeNode(DataFlowNode* node) {
@@ -170,15 +165,16 @@ namespace sda::semantics
             m_nodes.erase(node->value);
         }
 
-        void addSuccessor(DataFlowNode* node, DataFlowNode* successor) {
+        bool addSuccessor(DataFlowNode* node, DataFlowNode* successor) {
             auto& successors = node->successors;
             auto it = std::find(successors.begin(), successors.end(), successor);
             if (it != successors.end()) {
-                return;
+                return false;
             }
             successors.push_back(successor);
             successor->predecessors.push_back(node);
             m_eventPipe->send(DataFlowNodeUpdatedEvent(successor));
+            return true;
         }
     };
 
@@ -253,16 +249,15 @@ namespace sda::semantics
                         auto regId = inputReg->getRegister().getRegId();
                         if (regId == Register::InstructionPointerId) {
                             auto startNode = m_dataFlowRepo->getGlobalStartNode();
-                            if (auto copyNode = m_dataFlowRepo->createNode(DataFlowNode::Copy, output)) {
+                            if (auto copyNode = m_dataFlowRepo->getOrCreateNode(output, DataFlowNode::Copy)) {
                                 m_dataFlowRepo->addSuccessor(startNode, copyNode);
                             }
                         }
                     } else {
                         // variable or constant
                         if (auto inputNode = m_dataFlowRepo->getOrCreateNode(input)) {
-                            if (auto readNode = m_dataFlowRepo->createNode(DataFlowNode::Read, output)) {
+                            if (auto readNode = m_dataFlowRepo->getOrCreateNode(output, DataFlowNode::Read)) {
                                 m_dataFlowRepo->addSuccessor(inputNode, readNode);
-                                ctx.markValueAsAffected(input);
                             }
                         }
                     }
@@ -272,17 +267,17 @@ namespace sda::semantics
                         auto outputAddrVal = output->getMemAddress().value;
                         if (auto outputAddrVar = std::dynamic_pointer_cast<ircode::Variable>(outputAddrVal)) {
                             if (auto addrNode = m_dataFlowRepo->getOrCreateNode(outputAddrVar)) {
-                                if (auto writeNode = m_dataFlowRepo->createNode(DataFlowNode::Write, output)) {
-                                    m_dataFlowRepo->addSuccessor(addrNode, writeNode);
+                                if (auto writeNode = m_dataFlowRepo->getOrCreateNode(output, DataFlowNode::Write)) {
+                                    if (m_dataFlowRepo->addSuccessor(addrNode, writeNode)) {
+                                        // revise outputAddrVar because it's already known its type is address
+                                        ctx.markValueAsAffected(outputAddrVar);
+                                    }
                                     m_dataFlowRepo->addSuccessor(inputNode, writeNode);
-                                    ctx.markValueAsAffected(outputAddrVar);
-                                    ctx.markValueAsAffected(input);
                                 }
                             }
                         } else {
-                            if (auto copyNode = m_dataFlowRepo->createNode(DataFlowNode::Copy, output)) {
+                            if (auto copyNode = m_dataFlowRepo->getOrCreateNode(output, DataFlowNode::Copy)) {
                                 m_dataFlowRepo->addSuccessor(inputNode, copyNode);
-                                ctx.markValueAsAffected(input);
                             }
                         }
                     }
@@ -298,11 +293,11 @@ namespace sda::semantics
                         if (term.factor != 1 || term.value->getSize() != m_platform->getPointerSize())
                             continue;
                         if (auto termVar = std::dynamic_pointer_cast<ircode::Variable>(term.value)) {
+                            // if one of the nodes is already created, then it is address, not just another linear expression
                             if (m_dataFlowRepo->getNode(output) || m_dataFlowRepo->getNode(termVar)) {
                                 if (auto inputNode = m_dataFlowRepo->getOrCreateNode(termVar)) {
-                                    if (auto copyNode = m_dataFlowRepo->createNode(DataFlowNode::Copy, output, offset)) {
+                                    if (auto copyNode = m_dataFlowRepo->getOrCreateNode(output, DataFlowNode::Copy, offset)) {
                                         m_dataFlowRepo->addSuccessor(inputNode, copyNode);
-                                        ctx.markValueAsAffected(termVar);
                                     }
                                 }
                             }
@@ -313,11 +308,9 @@ namespace sda::semantics
                 else if (binaryOp->getId() == ircode::OperationId::PHI) {
                     if (auto inputNode1 = m_dataFlowRepo->getOrCreateNode(binaryOp->getInput1())) {
                         if (auto inputNode2 = m_dataFlowRepo->getOrCreateNode(binaryOp->getInput2())) {
-                            if (auto copyNode = m_dataFlowRepo->createNode(DataFlowNode::Copy, output)) {
+                            if (auto copyNode = m_dataFlowRepo->getOrCreateNode(output, DataFlowNode::Copy)) {
                                 m_dataFlowRepo->addSuccessor(inputNode1, copyNode);
                                 m_dataFlowRepo->addSuccessor(inputNode2, copyNode);
-                                ctx.markValueAsAffected(binaryOp->getInput1());
-                                ctx.markValueAsAffected(binaryOp->getInput2());
                             }
                         }
                     }
@@ -340,13 +333,13 @@ namespace sda::semantics
                 auto argValue = argValues[i];
                 auto paramVar = paramsVars[i];
                 if (auto argNode = m_dataFlowRepo->getOrCreateNode(argValue)) {
-                    if (auto paramNode = m_dataFlowRepo->getOrCreateNode(paramVar)) {
+                    if (auto paramNode = m_dataFlowRepo->getOrCreateNode(paramVar, DataFlowNode::Copy)) {
                         m_dataFlowRepo->addSuccessor(argNode, paramNode);
                     }
                 }
             }
             if (auto returnVar = function->getReturnVariable()) {
-                if (auto outputNode = m_dataFlowRepo->getOrCreateNode(callOp->getOutput())) {
+                if (auto outputNode = m_dataFlowRepo->getOrCreateNode(callOp->getOutput(), DataFlowNode::Copy)) {
                     if (auto returnNode = m_dataFlowRepo->getOrCreateNode(returnVar)) {
                         m_dataFlowRepo->addSuccessor(returnNode, outputNode);
                     }

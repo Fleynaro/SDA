@@ -570,12 +570,12 @@ TEST_F(StructureResearcherTest, Functions) {
         var11 <- Copy var6 \n\
         var13 <- Copy var4 \n\
         var14 <- Copy var13 \n\
-        Bd:var1 <- var9 \n\
-        Bd:var1 <- var14 \
+        Bd:var1 <- Copy var9 \n\
+        Bd:var1 <- Copy var14 \
     ";
     auto expectedDataFlowOfFunc = "\
-        var1 <- B0:var9 \n\
-        var1 <- B0:var14 \n\
+        var1 <- Copy B0:var9 \n\
+        var1 <- Copy B0:var14 \n\
         var2 <- Read var1 \n\
         var3 <- Copy var2 \n\
         var4 <- Copy var1 + 0x4 \n\
