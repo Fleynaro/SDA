@@ -588,8 +588,16 @@ TEST_F(StructureResearcherTest, Functions) {
     ";
     auto expectedStructures = "\
         struct Bd:var1 { \n\
-            0x0: Bd:var2 \n\
+            0x0: Bd:var2, 0x1, 0x2 \n\
             0x4: 0x1 \n\
+        } \n\
+        \n\
+        struct B0:var13 : B0:var3, Bd:var1 { \n\
+            0x0: 0x2 \n\
+        } \n\
+        \n\
+        struct B0:var8 : B0:var3, Bd:var1 { \n\
+            0x0: 0x1 \n\
         } \n\
         \n\
         struct Bd:var7 : Bd:var1 { \n\
@@ -604,14 +612,6 @@ TEST_F(StructureResearcherTest, Functions) {
         \n\
         struct B0:var3 : root_0x100 { \n\
             0x0: B0:var5 \n\
-        } \n\
-        \n\
-        struct B0:var13 : B0:var3 { \n\
-            0x0: 0x2 \n\
-        } \n\
-        \n\
-        struct B0:var8 : B0:var3 { \n\
-            0x0: 0x1 \n\
         } \
     ";
     auto mainFunction = parsePcode(sourcePCode, program);
