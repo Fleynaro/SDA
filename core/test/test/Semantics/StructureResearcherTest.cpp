@@ -278,6 +278,60 @@ TEST_F(StructureResearcherTest, GlobalVarAssignmentObject) {
     ASSERT_TRUE(cmpStructures(expectedStructures));
 }
 
+TEST_F(StructureResearcherTest, DoubleRead) {
+    /*
+        void func() {
+            globalVar_0x10 = globalVar_0x100->field_0x10;
+        }
+    */
+    auto sourcePCode = "\
+        $1:8 = INT_ADD rip:8, 0x100:8 \n\
+        $2:8 = LOAD $1:8, 8:8 \n\
+        $3:8 = INT_ADD $2:8, 0x10:8 \n\
+        $4:4 = LOAD $3:8, 4:8 \n\
+        $5:8 = INT_ADD rip:8, 0x10:8 \n\
+        STORE $5:8, $4:4 \
+    ";
+    auto expectedIRCode = "\
+        Block B0(level: 1): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U1]:8 = INT_ADD var1, 0x100:8 \n\
+            var3:8 = LOAD var2 \n\
+            var4[$U2]:8 = COPY var3 \n\
+            var5[$U3]:8 = INT_ADD var4, 0x10:8 \n\
+            var6:4 = LOAD var5 \n\
+            var7[$U4]:4 = COPY var6 \n\
+            var8[$U5]:8 = INT_ADD var1, 0x10:8 \n\
+            var9[var8]:4 = COPY var7 \
+    ";
+    auto expectedDataFlow = "\
+        var1 <- Copy Start \n\
+        var2 <- Copy var1 + 0x100 \n\
+        var3 <- Read var2 \n\
+        var4 <- Copy var3 \n\
+        var5 <- Copy var3 + 0x10 \n\
+        var6 <- Read var5 \n\
+        var7 <- Copy var6 \n\
+        var8 <- Copy var1 + 0x10 \n\
+        var9 <- Write var8 \n\
+        var9 <- Write var7 \
+    ";
+    auto expectedStructures = "\
+        struct root { \n\
+            0x10: B0:var6 \n\
+            0x100: B0:var3 \n\
+        } \n\
+        \n\
+        struct B0:var3 : root_0x100 { \n\
+            0x10: B0:var6 \n\
+        } \
+    ";
+    auto function = parsePcode(sourcePCode, program);
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+    ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
+    ASSERT_TRUE(cmpStructures(expectedStructures));
+}
+
 TEST_F(StructureResearcherTest, If) {
     /*
         void func(Object* param1) {
