@@ -67,6 +67,16 @@ namespace sda::semantics
         std::list<DataFlowNode*> predecessors;
         std::list<DataFlowNode*> successors;
 
+        size_t getVarPredecessorCount() {
+            size_t count = 0;
+            for (auto& pred : predecessors) {
+                if (pred->getVariable()) {
+                    ++count;
+                }
+            }
+            return count;
+        }
+
         std::shared_ptr<ircode::Variable> getVariable() {
             if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
                 return var;
@@ -94,12 +104,14 @@ namespace sda::semantics
             throw std::runtime_error("Unknown value type");
         }
 
-        static void PassSuccessors(const std::list<DataFlowNode*>& startNodes, std::function<void(DataFlowNode* node, bool& goNextNodes)> callback) {
+        static void PassSuccessors(
+            DataFlowNode* startNode,
+            std::function<void(DataFlowNode* node, bool& goNextNodes)> callback,
+            std::shared_ptr<EventPipe> eventPipe = nullptr)
+        {
             std::map<DataFlowNode*, size_t> nodeKnocks;
             std::list<DataFlowNode*> nodesToVisit;
-            for (auto startNode : startNodes) {
-                nodesToVisit.push_back(startNode);
-            }
+            nodesToVisit.push_back(startNode);
             do {
                 while (!nodesToVisit.empty()) {
                     auto node = nodesToVisit.front();
@@ -109,17 +121,19 @@ namespace sda::semantics
                         it = nodeKnocks.insert({ node, 0 }).first;
                     }
                     auto knocks = ++it->second;
-                    if (knocks < node->predecessors.size()) {
+                    if (knocks < node->getVarPredecessorCount()) {
                         continue;
                     }
                     nodeKnocks.erase(it);
                     bool goNextNodes = false;
                     callback(node, goNextNodes);
                     if (goNextNodes) {
-                        for (auto nextNode : node->successors) {
-                            nodesToVisit.push_back(nextNode);
+                        auto& nextNodes = node->successors;
+                        for (auto it = nextNodes.rbegin(); it != nextNodes.rend(); ++it) {
+                            nodesToVisit.push_front(*it);
                         }
                     }
+                    eventPipe->send(DataFlowNodePassedEvent(node, nodesToVisit));
                 }
                 if (!nodeKnocks.empty()) {
                     auto node = nodeKnocks.begin()->first;
