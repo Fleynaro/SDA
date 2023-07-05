@@ -24,6 +24,18 @@ namespace sda::semantics
         {}
     };
 
+    // When a child is added to a structure
+    struct ChildAddedEvent : Event {
+        Structure* structure;
+        Structure* child;
+
+        ChildAddedEvent(Structure* structure, Structure* child)
+            : Event(StructureResearchTopic)
+            , structure(structure)
+            , child(child)
+        {}
+    };
+
     // When a link is created
     struct LinkCreatedEvent : Event {
         DataFlowNode* node;

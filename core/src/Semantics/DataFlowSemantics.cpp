@@ -17,5 +17,14 @@ DataFlowRepository::DataFlowRepository(std::shared_ptr<sda::EventPipe> eventPipe
         m_eventPipe->subscribe(std::function([&](const DataFlowNodeRemovedEvent& event) {
             PLOG_DEBUG << "DataFlowNodeRemovedEvent: " << event.node->getName();
         }));
+        m_eventPipe->subscribe(std::function([&](const DataFlowNodePassedEvent& event) {
+            std::stringstream ss;
+            std::string sep;
+            for (auto node : event.nextNodes) {
+                ss << sep << node->getName();
+                sep = ",";
+            }
+            PLOG_DEBUG << "DataFlowNodePassedEvent: " << event.node->getName() << "(next = " << ss.str() << ")";
+        }));
     }
 }

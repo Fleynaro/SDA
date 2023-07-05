@@ -10,6 +10,9 @@ StructureRepository::StructureRepository(std::shared_ptr<sda::EventPipe> eventPi
         m_eventPipe->subscribe(std::function([&](const StructureCreatedEvent& event) {
             PLOG_DEBUG << "StructureCreatedEvent: " << event.structure->name;
         }));
+        m_eventPipe->subscribe(std::function([&](const ChildAddedEvent& event) {
+            PLOG_DEBUG << "ChildAddedEvent: " << event.structure->name << " -> child " << event.child->name;
+        }));
         m_eventPipe->subscribe(std::function([&](const LinkCreatedEvent& event) {
             std::string offsetStr;
             if (event.offset) {

@@ -41,6 +41,18 @@ namespace sda::semantics
         {}
     };
 
+    // When a node is researched
+    struct DataFlowNodePassedEvent : Event {
+        DataFlowNode* node;
+        std::list<DataFlowNode*> nextNodes;
+
+        DataFlowNodePassedEvent(DataFlowNode* node, const std::list<DataFlowNode*>& nextNodes)
+            : Event(DataFlowEventTopic)
+            , node(node)
+            , nextNodes(nextNodes)
+        {}
+    };
+
     struct DataFlowNode {
         enum Type {
             Unknown,
