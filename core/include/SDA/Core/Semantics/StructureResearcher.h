@@ -187,6 +187,8 @@ namespace sda::semantics
         }
 
         void addChild(Structure* structure, Structure* child) {
+            if (std::find(structure->childs.begin(), structure->childs.end(), child) != structure->childs.end())
+                return;
             structure->childs.push_back(child);
             child->parents.push_back(structure);
             m_eventPipe->send(ChildAddedEvent(structure, child));

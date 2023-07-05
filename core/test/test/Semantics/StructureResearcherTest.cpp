@@ -628,3 +628,125 @@ TEST_F(StructureResearcherTest, Functions) {
     ASSERT_TRUE(cmpDataFlow(func, expectedDataFlowOfFunc));
     ASSERT_TRUE(cmpStructures(expectedStructures));
 }
+
+TEST_F(StructureResearcherTest, TwoSameFunctionsCall) {
+    /*
+        void main(int param1) {
+            if (param1 == 1) {
+                object = func();
+                object->field_0x10 = 1;
+            }
+            else {
+                object = func();
+            }
+            object->field_0x20 = 2;
+        }
+
+        void func() {
+            return globalVar_0x100;
+        }
+    */
+   auto sourcePCode = "\
+        // main(int param1) \n\
+        $1:1 = INT_NOTEQUAL rcx:4, 1:4 \n\
+        CBRANCH <else>, $1:1 \n\
+        CALL <func> \n\
+        $2:8 = INT_ADD rax:8, 0x10:8 \n\
+        STORE $2:8, 1:4 \n\
+        BRANCH <main_end> \n\
+        <else>: \n\
+        CALL <func> \n\
+        <main_end>: \n\
+        $3:8 = INT_ADD rax:8, 0x20:8 \n\
+        STORE $3:8, 2:4 \n\
+        RETURN \n\
+        \n\
+        \n\
+        // void* func() \n\
+        <func>: \n\
+        $1:8 = INT_ADD rip:8, 0x100:8 \n\
+        rax:8 = LOAD $1:8 \n\
+        RETURN \
+    ";
+    auto funcSig = "\
+        funcSig = signature fastcall void*() \
+    ";
+    auto expectedIRCodeOfMainFunc = "\
+        Block B0(level: 1, near: B2, far: B6, cond: var2): \n\
+            var1:4 = LOAD rcx \n\
+            var2[$U1]:1 = INT_NOTEQUAL var1, 0x1:4 \n\
+        Block B2(level: 2, far: B7): \n\
+            var3[rax]:8 = CALL 0xa00:8 \n\
+            var4[$U2]:8 = INT_ADD var3, 0x10:8 \n\
+            var5[var4]:8 = COPY 0x1:4 \n\
+        Block B6(level: 2, near: B7): \n\
+            var6[rax]:8 = CALL 0xa00:8 \n\
+        Block B7(level: 3): \n\
+            var7:8 = REF var3 \n\
+            var8:8 = REF var6 \n\
+            var9:8 = PHI var7, var8 \n\
+            var10[$U3]:8 = INT_ADD var9, 0x20:8 \n\
+            var11[var10]:8 = COPY 0x2:4 \
+    ";
+    auto expectedIRCodeOfFunc = "\
+        Block Ba(level: 1): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U1]:8 = INT_ADD var1, 0x100:8 \n\
+            var3:8 = LOAD var2 \n\
+            var4[rax]:8 = COPY var3 // return \
+    ";
+    auto expectedConditionsOfMainFunc = "\
+        Block B2: \n\
+            var1 == 1 \n\
+        Block B6: \n\
+            var1 != 1 \
+    ";
+    auto expectedDataFlowOfMainFunc = "\
+        var3 <- Copy Ba:var4 \n\
+        var4 <- Copy var3 + 0x10 \n\
+        var5 <- Write var4 \n\
+        var5 <- Write 0x1 \n\
+        var6 <- Copy Ba:var4 \n\
+        var7 <- Copy var3 \n\
+        var8 <- Copy var6 \n\
+        var9 <- Copy var7 \n\
+        var9 <- Copy var8 \n\
+        var10 <- Copy var9 + 0x20 \n\
+        var11 <- Write var10 \n\
+        var11 <- Write 0x2 \
+    ";
+    auto expectedDataFlowOfFunc = "\
+        var1 <- Copy Start \n\
+        var2 <- Copy var1 + 0x100 \n\
+        var3 <- Read var2 \n\
+        var4 <- Copy var3 \n\
+        B0:var3 <- Copy var4 \n\
+        B0:var6 <- Copy var4 \
+    ";
+    auto expectedStructures = "\
+        struct B0:var9 { \n\
+            0x10: 0x1 \n\
+            0x20: 0x2 \n\
+        } \n\
+        \n\
+        struct Ba:var3 : B0:var9, root_0x100 { \n\
+            0x10: 0x1 \n\
+        } \n\
+        \n\
+        struct root { \n\
+            0x100: Ba:var3 \n\
+        } \
+    ";
+    auto mainFunction = parsePcode(sourcePCode, program);
+    auto funcSigDt = dynamic_cast<SignatureDataType*>(
+        parseDataType(funcSig));
+    auto func = program->toFunction(
+        graph->getFunctionGraphAt(pcode::InstructionOffset(10, 0)));
+    func->getFunctionSymbol()->getSignature()->copyFrom(funcSigDt);
+    ASSERT_TRUE(cmp(mainFunction, expectedIRCodeOfMainFunc));
+    ASSERT_TRUE(cmp(func, expectedIRCodeOfFunc));
+    ASSERT_TRUE(cmpConditions(mainFunction, expectedConditionsOfMainFunc));
+    ASSERT_TRUE(cmpDataFlow(mainFunction, expectedDataFlowOfMainFunc));
+    ASSERT_TRUE(cmpDataFlow(func, expectedDataFlowOfFunc));
+    ASSERT_TRUE(cmpStructures(expectedStructures));
+}
