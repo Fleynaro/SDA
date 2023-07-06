@@ -804,3 +804,169 @@ TEST_F(StructureResearcherTest, TwoSameFunctionsCall) {
     ASSERT_TRUE(cmpDataFlow(func, expectedDataFlowOfFunc));
     ASSERT_TRUE(cmpStructures(expectedStructures));
 }
+
+TEST_F(StructureResearcherTest, NewFunctionAdded) {
+    /*
+        void func1() {
+            globalVar_0x100->field_0x0 = 0x1;
+            func3(globalVar_0x100);
+        }
+
+        void func2() {
+            globalVar_0x200->field_0x0 = 0x2;
+            func3(globalVar_0x200);
+        }
+
+        void func3(Object* param1) {
+            param1->field_0x10 = globalVar_0x20;
+            param1->field_0x20 = 0x5;
+        }
+    */
+   auto sourcePCode = "\
+        // func1() \n\
+        $1:8 = INT_ADD rip:8, 0x100:8 \n\
+        rcx:8 = LOAD $1:8 \n\
+        STORE rcx:8, 0x1:4 \n\
+        CALL <func3> \n\
+        RETURN \n\
+        \n\
+        \n\
+        // func2() \n\
+        $1:8 = INT_ADD rip:8, 0x200:8 \n\
+        rcx:8 = LOAD $1:8 \n\
+        STORE rcx:8, 0x2:4 \n\
+        CALL <func3> \n\
+        RETURN \n\
+        \n\
+        \n\
+        // func3(Object* param1) \n\
+        <func3>: \n\
+        $1:8 = INT_ADD rip:8, 0x20:8 \n\
+        $2:4 = LOAD $1:8, 4:8 \n\
+        $3:8 = INT_ADD rcx:8, 0x10:8 \n\
+        STORE $3:8, $2:4 \n\
+        $4:8 = INT_ADD rcx:8, 0x20:8 \n\
+        STORE $4:8, 0x5:4 \n\
+        RETURN \
+    ";
+    auto funcSig = "\
+        funcSig = signature fastcall void(void* param1) \
+    ";
+    auto expectedIRCodeOfFunc1 = "\
+        Block B0(level: 1): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U1]:8 = INT_ADD var1, 0x100:8 \n\
+            var3:8 = LOAD var2 \n\
+            var4[rcx]:8 = COPY var3 \n\
+            var5[var4]:8 = COPY 0x1:4 \n\
+            var6:1 = CALL 0xa00:8, var4 \
+    ";
+    auto expectedIRCodeOfFunc2 = "\
+        Block B5(level: 1): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U1]:8 = INT_ADD var1, 0x200:8 \n\
+            var3:8 = LOAD var2 \n\
+            var4[rcx]:8 = COPY var3 \n\
+            var5[var4]:8 = COPY 0x2:4 \n\
+            var6:1 = CALL 0xa00:8, var4 \
+    ";
+    auto expectedIRCodeOfFunc3 = "\
+        Block Ba(level: 1): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U1]:8 = INT_ADD var1, 0x20:8 \n\
+            var3:4 = LOAD var2 \n\
+            var4[$U2]:4 = COPY var3 \n\
+            var5:8 = LOAD rcx // param1 \n\
+            var6[$U3]:8 = INT_ADD var5, 0x10:8 \n\
+            var7[var6]:4 = COPY var4 \n\
+            var8[$U4]:8 = INT_ADD var5, 0x20:8 \n\
+            var9[var8]:8 = COPY 0x5:4 \
+    ";
+    auto expectedDataFlowOfFunc1 = "\
+        var1 <- Copy Start \n\
+        var2 <- Copy var1 + 0x100 \n\
+        var3 <- Read var2 \n\
+        var4 <- Copy var3 \n\
+        var5 <- Write var4 \n\
+        var5 <- Write 0x1 \n\
+        Ba:var5 <- Copy var4 \
+    ";
+    auto expectedDataFlowOfFunc2 = "\
+        var1 <- Copy Start \n\
+        var2 <- Copy var1 + 0x200 \n\
+        var3 <- Read var2 \n\
+        var4 <- Copy var3 \n\
+        var5 <- Write var4 \n\
+        var5 <- Write 0x2 \n\
+        Ba:var5 <- Copy var4 \
+    ";
+    auto expectedDataFlowOfFunc3 = "\
+        var1 <- Copy Start \n\
+        var2 <- Copy var1 + 0x20 \n\
+        var3 <- Read var2 \n\
+        var4 <- Copy var3 \n\
+        var5 <- Copy B0:var4 \n\
+        var5 <- Copy B5:var4 \n\
+        var6 <- Copy var5 + 0x10 \n\
+        var7 <- Write var6 \n\
+        var7 <- Write var4 \n\
+        var8 <- Copy var5 + 0x20 \n\
+        var9 <- Write var8 \n\
+        var9 <- Write 0x5 \
+    ";
+    auto expectedStructuresBefore = "\
+        struct root { \n\
+            0x20: Ba:var3 \n\
+            0x100: B0:var3 \n\
+        } \n\
+        \n\
+        struct B0:var3 : root_0x100 { \n\
+            0x0: 0x1 \n\
+            0x10: Ba:var3 \n\
+            0x20: 0x5 \n\
+        } \
+    ";
+    auto expectedStructuresAfter = "\
+        struct Ba:var5 { \n\
+            0x0: 0x1, 0x2 \n\
+            0x10: Ba:var3 \n\
+            0x20: 0x5 \n\
+        } \n\
+        \n\
+        struct B0:var3 : Ba:var5, root_0x100 { \n\
+            0x0: 0x1 \n\
+        } \n\
+        \n\
+        struct B5:var3 : Ba:var5, root_0x200 { \n\
+            0x0: 0x2 \n\
+        } \n\
+        \n\
+        struct root { \n\
+            0x20: Ba:var3 \n\
+            0x100: B0:var3 \n\
+            0x200: B5:var3 \n\
+        } \
+    ";
+    auto instructions = PcodeFixture::parsePcode(sourcePCode);
+    pcode::ListInstructionProvider provider(instructions);
+    graph->explore(pcode::InstructionOffset(0, 0), &provider);
+    auto func1 = program->toFunction(
+        graph->getFunctionGraphAt(pcode::InstructionOffset(0, 0)));
+    auto func3 = program->toFunction(
+        graph->getFunctionGraphAt(pcode::InstructionOffset(10, 0)));
+    auto funcSigDt = dynamic_cast<SignatureDataType*>(
+        parseDataType(funcSig));
+    func3->getFunctionSymbol()->getSignature()->copyFrom(funcSigDt);
+    ASSERT_TRUE(cmp(func1, expectedIRCodeOfFunc1));
+    ASSERT_TRUE(cmp(func3, expectedIRCodeOfFunc3));
+    ASSERT_TRUE(cmpStructures(expectedStructuresBefore));
+
+    graph->explore(pcode::InstructionOffset(5, 0), &provider);
+    auto func2 = program->toFunction(
+        graph->getFunctionGraphAt(pcode::InstructionOffset(5, 0)));
+    ASSERT_TRUE(cmp(func2, expectedIRCodeOfFunc2));
+    ASSERT_TRUE(cmpDataFlow(func1, expectedDataFlowOfFunc1));
+    ASSERT_TRUE(cmpDataFlow(func2, expectedDataFlowOfFunc2));
+    ASSERT_TRUE(cmpDataFlow(func3, expectedDataFlowOfFunc3));
+    ASSERT_TRUE(cmpStructures(expectedStructuresAfter));
+}

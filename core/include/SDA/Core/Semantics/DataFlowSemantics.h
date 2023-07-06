@@ -106,7 +106,7 @@ namespace sda::semantics
 
         static void PassSuccessors(
             DataFlowNode* startNode,
-            std::function<void(DataFlowNode* node, bool& goNextNodes)> callback,
+            std::function<void(DataFlowNode* node, bool& goNextNodes, const std::function<void(DataFlowNode* node)>& next)> callback,
             std::shared_ptr<EventPipe> eventPipe = nullptr)
         {
             std::map<DataFlowNode*, size_t> nodeKnocks;
@@ -126,9 +126,12 @@ namespace sda::semantics
                     }
                     nodeKnocks.erase(it);
                     bool goNextNodes = false;
-                    callback(node, goNextNodes);
+                    auto nextNodes = node->successors;
+                    auto next = [&](DataFlowNode* node) {
+                        nextNodes.push_front(node);
+                    };
+                    callback(node, goNextNodes, next);
                     if (goNextNodes) {
-                        auto& nextNodes = node->successors;
                         for (auto it = nextNodes.rbegin(); it != nextNodes.rend(); ++it) {
                             nodesToVisit.push_front(*it);
                         }

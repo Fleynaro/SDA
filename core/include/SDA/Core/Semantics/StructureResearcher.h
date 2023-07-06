@@ -75,6 +75,13 @@ namespace sda::semantics
             m_conditions[offset].insert(value);
         }
 
+        void remove(size_t offset, size_t value) {
+            auto it = m_conditions.find(offset);
+            if (it != m_conditions.end()) {
+                it->second.erase(value);
+            }
+        }
+
         void merge(const ConditionSet& other, bool clear = false) {
             for (auto& [offset, values] : other.m_conditions) {
                 if (clear) {
@@ -106,6 +113,8 @@ namespace sda::semantics
         std::list<Structure*> childs;
         std::map<size_t, Structure*> fields;
         ConditionSet conditions;
+        DataFlowNode* sourceNode;
+        std::set<DataFlowNode*> linkedNodes;
     };
 
     class StructureRepository
@@ -113,7 +122,7 @@ namespace sda::semantics
         struct Link {
             Structure* structure;
             size_t offset;
-            bool own;
+            bool own; // the node has its own structure
         };
         std::list<Structure> m_structures;
         std::map<DataFlowNode*, Link> m_nodeToStructure;
@@ -151,15 +160,13 @@ namespace sda::semantics
             return structure;
         }
 
-        // <own> - create structure for <node> itself if it doesn't exist
-        Structure* getOrCreateStructure(DataFlowNode* node, bool own = false) {
+        Structure* getOrCreateStructure(DataFlowNode* node) {
             auto link = getLink(node);
-            if (link == nullptr || own && !link->own) {
+            if (link == nullptr || !link->own) {
                 auto variable = node->getVariable();
                 auto structure = createStructure(variable ? variable->getName(true) : "root");
-                // add link
-                m_nodeToStructure[node] = { structure, 0, true };
-                m_eventPipe->send(LinkCreatedEvent(node, structure));
+                structure->sourceNode = node;
+                addLink(node, structure, 0, true);
                 return structure;
             }
             return link->structure;
@@ -168,9 +175,18 @@ namespace sda::semantics
         void removeStructure(Structure* structure) {
             clearParents(structure);
             clearChilds(structure);
+            for (auto node : structure->linkedNodes) {
+                m_nodeToStructure.erase(node);
+            }
             m_structures.remove_if([structure](const Structure& s) {
                 return &s == structure;
             });
+        }
+
+        void clearStructure(Structure* structure) {
+            clearParents(structure);
+            clearChilds(structure);
+            structure->conditions.clear();
         }
 
         void addField(Structure* structure, size_t offset, Structure* varStructure) {
@@ -208,8 +224,18 @@ namespace sda::semantics
             structure->childs.clear();
         }
 
-        void addLink(DataFlowNode* node, Structure* structure, size_t offset = 0) {
-            m_nodeToStructure[node] = { structure, offset, false };
+        // <own> - create structure for <node> itself if it doesn't exist
+        void addLink(DataFlowNode* node, Structure* structure, size_t offset = 0, bool own = false) {
+            auto it = m_nodeToStructure.find(node);
+            if (it != m_nodeToStructure.end()) {
+                auto link = &it->second;
+                if (link->structure != structure) {
+                    // remove the current node from the old structure that is replaced
+                    link->structure->linkedNodes.erase(node);
+                }
+            }
+            structure->linkedNodes.insert(node);
+            m_nodeToStructure[node] = { structure, offset, own };
             m_eventPipe->send(LinkCreatedEvent(node, structure, offset));
         }
 
@@ -337,16 +363,16 @@ namespace sda::semantics
         }
 
         void research(DataFlowNode* node) {
-            DataFlowNode::PassSuccessors(node, std::function([this](DataFlowNode* node, bool& goNextNodes) {
-                research(node, goNextNodes);
+            DataFlowNode::PassSuccessors(node, std::function([this](DataFlowNode* node, bool& goNextNodes, const std::function<void(DataFlowNode* node)>& next) {
+                research(node, goNextNodes, next);
             }), m_program->getEventPipe());
         }
 
     private:
-        void research(DataFlowNode* node, bool& goNextNodes) {
+        void research(DataFlowNode* node, bool& goNextNodes, const std::function<void(DataFlowNode* node)>& next) {
             auto hash = m_structureRepo->getHash(node);
             researchConstants(node);
-            researchStructures(node);
+            researchStructures(node, next);
             // go next if there are changes (for copy nodes go next always, see test StructureResearcherTest.Functions)
             goNextNodes = node->type == DataFlowNode::Copy || hash != m_structureRepo->getHash(node);
         }
@@ -368,7 +394,7 @@ namespace sda::semantics
             }
         }
 
-        void researchStructures(DataFlowNode* node) {
+        void researchStructures(DataFlowNode* node, const std::function<void(DataFlowNode* node)>& next) {
             if (node->type == DataFlowNode::Copy) {
                 for (auto pred : node->predecessors) {
                     if (!m_structureRepo->getLink(pred)) return;
@@ -390,7 +416,7 @@ namespace sda::semantics
                             auto& newConditions = it->second;
                             conditions.merge(newConditions, true);
                             if (conditions.hash() != predLink->structure->conditions.hash()) {
-                                auto structure = m_structureRepo->getOrCreateStructure(node, true);
+                                auto structure = m_structureRepo->getOrCreateStructure(node);
                                 m_structureRepo->clearParents(structure);
                                 m_structureRepo->addChild(predLink->structure, structure);
                                 structure->conditions = conditions;
@@ -401,23 +427,31 @@ namespace sda::semantics
 
                     if (!isNewStructure) {
                         if (auto link = m_structureRepo->getLink(node)) {
-                            if (link->structure != predLink->structure) {
+                            if (link->own) {
                                 m_structureRepo->removeStructure(link->structure);
                             }
                         }
                         m_structureRepo->addLink(node, predLink->structure, predLink->offset + node->offset);
                     }
                 } else {
+                    if (auto link = m_structureRepo->getLink(node)) {
+                        if (!link->own) {
+                            // reinit structure by removing it and going to source node to recreate it
+                            next(link->structure->sourceNode);
+                            m_structureRepo->removeStructure(link->structure);
+                            m_structureRepo->getOrCreateStructure(node);
+                            return;
+                        }
+                    }
                     // see test StructureResearcherTest::Functions
-                    auto structure = m_structureRepo->getOrCreateStructure(node, true);
-                    m_structureRepo->clearChilds(structure);
-                    structure->conditions.clear();
+                    auto structure = m_structureRepo->getOrCreateStructure(node);
+                    m_structureRepo->clearStructure(structure);
                     for (auto pred : node->predecessors) {
                         auto predLink = m_structureRepo->getLink(pred);
                         m_structureRepo->addChild(structure, predLink->structure);
                         structure->conditions.merge(predLink->structure->conditions);
                     }
-                    // since it is a copy node, we go next to gather all childs and conditions that were cleared here
+                    // since it is a copy node, we go next to gather all childs/parents and conditions that were cleared here
                 }
             }
             else if (node->type == DataFlowNode::Read) {
@@ -425,7 +459,7 @@ namespace sda::semantics
                 auto addrNode = node->predecessors.front();
                 auto addrLink = m_structureRepo->getLink(addrNode);
                 if (!addrLink) return;
-                auto structure = m_structureRepo->getOrCreateStructure(node, true);
+                auto structure = m_structureRepo->getOrCreateStructure(node);
                 m_structureRepo->addField(addrLink->structure, addrLink->offset, structure);
             }
             else if (node->type == DataFlowNode::Write) {
