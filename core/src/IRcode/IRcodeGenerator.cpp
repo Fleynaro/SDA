@@ -2,7 +2,9 @@
 #include "SDA/Core/IRcode/IRcodeFunction.h"
 #include "SDA/Core/IRcode/IRcodeProgram.h"
 #include "SDA/Core/IRcode/IRcodeEvents.h"
+#include "SDA/Core/IRcode/IRcodePrinter.h"
 #include "SDA/Core/Platform/RegisterRepository.h"
+#include "SDA/Core/Utils/Logger.h"
 
 using namespace sda;
 using namespace sda::ircode;
@@ -307,6 +309,7 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(
 }
 
 std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(Block* block, utils::BitMask& readMask, BlockReadContext& ctx) {
+    PLOG_DEBUG << "block=" << block->getName() << ", readMask=" << std::hex << readMask << std::dec;
     Hash cacheHash;
     boost::hash_combine(cacheHash, block);
     boost::hash_combine(cacheHash, (size_t)readMask);
@@ -390,6 +393,16 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(
     size_t readSize,
     utils::BitMask& readMask
 ) {
+    {
+        auto platform = m_block->getFunction()->getProgram()->getGlobalSymbolTable()->getContext()->getPlatform();
+        pcode::Printer pcodePrinter(platform->getRegisterRepository().get());
+        ircode::Printer ircodePrinter(&pcodePrinter);
+        std::stringstream ss;
+        ircodePrinter.setOutput(ss);
+        ircodePrinter.printValue(memAddr.value.get());
+        PLOG_DEBUG << "memAddr=" << ss.str() << " (offset=" << memAddr.offset << "), readSize="
+                    << readSize << ", readMask=" << std::hex << readMask << std::dec;
+    }
     BlockReadContext ctx = {
         memAddr,
         readSize,
