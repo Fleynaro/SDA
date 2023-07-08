@@ -5,7 +5,6 @@ namespace sda::ircode
 {
     struct MemorySubspace {
         std::list<std::shared_ptr<Variable>> variables;
-        std::set<std::shared_ptr<Variable>> blockScopedVars;
     };
 
     class MemorySpace

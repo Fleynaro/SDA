@@ -76,6 +76,7 @@ namespace sda::ircode
         std::shared_ptr<Value> value = nullptr;
         Hash baseAddrHash = 0; // this hash can be different from the hash of the value!
         Offset offset = 0;
+        bool isVirtual = false;
     };
     
     class Variable : public Value

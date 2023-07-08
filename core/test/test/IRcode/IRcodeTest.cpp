@@ -218,6 +218,56 @@ TEST_F(IRcodeTest, IfElseConditionXmm) {
     ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
+TEST_F(IRcodeTest, ReuseSameRef) {
+    auto sourcePCode = "\
+        rax:8 = COPY 0x1:8 \n\
+        BRANCH <label> \n\
+        <label>: \n\
+        $0:8 = COPY rax:8 \n\
+        $1:8 = COPY rax:8 \
+    ";
+    auto expectedIRCode = "\
+        Block B0(level: 1, far: B2): \n\
+            var1[rax]:8 = COPY 0x1:8 \n\
+        Block B2(level: 2): \n\
+            var2:8 = REF var1 \n\
+            var3[$U0]:8 = COPY var2 \n\
+            var4[$U1]:8 = COPY var2 \
+    ";
+    auto function = parsePcode(sourcePCode, program);
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+}
+
+TEST_F(IRcodeTest, ReuseSamePhi) {
+    auto sourcePCode = "\
+        rax:8 = COPY 0:8 \n\
+        CBRANCH <labelElse>, 0:1 // if-else condition \n\
+        rax:8 = COPY 1:8 // then block \n\
+        BRANCH <labelEnd> \n\
+        <labelElse>: \n\
+        NOP // else block \n\
+        <labelEnd>: \n\
+        $1:8 = COPY rax:8 \n\
+        $2:8 = COPY rax:8 \
+    ";
+    auto expectedIRCode = "\
+        Block B0(level: 1, near: B2, far: B4, cond: 0x0:1): \n\
+            var1[rax]:8 = COPY 0x0:8 \n\
+        Block B2(level: 2, far: B5): \n\
+            var2[rax]:8 = COPY 0x1:8 \n\
+        Block B4(level: 2, near: B5): \n\
+            empty \n\
+        Block B5(level: 3): \n\
+            var3:8 = REF var2 \n\
+            var4:8 = REF var1 \n\
+            var5:8 = PHI var3, var4 \n\
+            var6[$U1]:8 = COPY var5 \n\
+            var7[$U2]:8 = COPY var5 \
+    ";
+    auto function = parsePcode(sourcePCode, program);
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+}
+
 TEST_F(IRcodeTest, MultipleParentBlocksNoPhi) {
     // Graph: https://photos.app.goo.gl/UsYTBTCBcx4hm5jT8
     auto sourcePCode = "\

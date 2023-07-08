@@ -24,7 +24,7 @@ namespace sda::ircode
         const std::list<ircode::Operation*>& getGeneratedOperations() const;
 
     private:
-        void genWriteMemory(MemorySubspace* memSpace, std::shared_ptr<ircode::Variable> variable, bool blockScope = false);
+        void genWriteMemory(MemorySubspace* memSpace, std::shared_ptr<ircode::Variable> variable);
 
         struct VariableReadInfo {
             std::shared_ptr<ircode::Variable> variable;

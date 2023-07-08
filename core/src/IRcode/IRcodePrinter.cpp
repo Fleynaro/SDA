@@ -108,11 +108,13 @@ void Printer::printValue(const Value* value, bool extended) const {
     else if (auto varValue = dynamic_cast<const Variable*>(value)) {
         printToken(varValue->getName(), VARIABLE);
         if (extended) {
-            auto memAddressValue = varValue->getMemAddress().value;
-            if (memAddressValue) {
-                printToken("[", SYMBOL);
-                printValue(memAddressValue.get());
-                printToken("]", SYMBOL);
+            if (!varValue->getMemAddress().isVirtual) {
+                auto memAddressValue = varValue->getMemAddress().value;
+                if (memAddressValue) {
+                    printToken("[", SYMBOL);
+                    printValue(memAddressValue.get());
+                    printToken("]", SYMBOL);
+                }
             }
             printToken(":", SYMBOL);
             printToken(std::to_string(varValue->getSize()), SYMBOL);
