@@ -19,6 +19,8 @@ namespace sda::semantics
             std::shared_ptr<ircode::Variable> var;
             size_t value = 0;
             ircode::Block* block = nullptr;
+            utils::BitSet thenBlocks;
+            utils::BitSet elseBlocks;
             bool inverted = false;
         };
         struct FunctionInfo {
@@ -31,28 +33,7 @@ namespace sda::semantics
             ConstConditionRepository* m_repo;
 
             void handleFunctionDecompiled(const ircode::FunctionDecompiledEvent& event) {
-                auto functionInfo = m_repo->getFunctionInfo(event.function);
-                for (auto block : event.blocks) {
-                    m_repo->removeConditions(functionInfo, block);
-                    if (auto condVar = std::dynamic_pointer_cast<ircode::Variable>(block->getCondition())) {
-                        auto op = condVar->getSourceOperation();
-                        if (op->getId() == ircode::OperationId::INT_EQUAL || op->getId() == ircode::OperationId::INT_NOTEQUAL) {
-                            if (auto binaryOp = dynamic_cast<const ircode::BinaryOperation*>(op)) {
-                                if (auto inputVar1 = std::dynamic_pointer_cast<ircode::Variable>(binaryOp->getInput1())) {
-                                    if (auto inputVar2 = std::dynamic_pointer_cast<ircode::Constant>(binaryOp->getInput2())) {
-                                        auto value = inputVar2->getConstVarnode()->getValue();
-                                        m_repo->addCondition(functionInfo, {
-                                            inputVar1,
-                                            value,
-                                            block,
-                                            op->getId() == ircode::OperationId::INT_NOTEQUAL
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                m_repo->research(event.function, event.blocks);
             }
 
             void handleBlockRemovedEvent(const ircode::BlockRemovedEvent& event) {
@@ -81,14 +62,13 @@ namespace sda::semantics
 
         std::list<ConstantCondition> findConditions(ircode::Block* block) {
             std::list<ConstantCondition> conditions;
-            auto dominants = block->getPcodeBlock()->getDominantBlocksSet();
             if(auto funcInfo = getFunctionInfo(block->getFunction())) {
                 for (auto cond : funcInfo->conditions) {
-                    bool isFar = dominants.get(cond.block->getFarNextBlock()->getIndex());
-                    bool isNear = dominants.get(cond.block->getNearNextBlock()->getIndex());
-                    if (isFar ^ isNear) {
+                    bool isInThenScope = cond.thenBlocks.get(block->getIndex());
+                    bool isInElseScope = cond.elseBlocks.get(block->getIndex());
+                    if (isInThenScope ^ isInElseScope) {
                         conditions.push_back({
-                            (isFar ^ cond.inverted) ? ConstantCondition::EQUAL : ConstantCondition::NOT_EQUAL,
+                            (isInThenScope ^ cond.inverted) ? ConstantCondition::EQUAL : ConstantCondition::NOT_EQUAL,
                             cond.var,
                             cond.value
                         });
@@ -99,6 +79,45 @@ namespace sda::semantics
         }
 
     private:
+        void research(ircode::Function* function, const std::list<ircode::Block*>& blocks) {
+            auto functionInfo = getFunctionInfo(function);
+            for (auto block : blocks) {
+                removeConditions(functionInfo, block);
+                if (auto condVar = std::dynamic_pointer_cast<ircode::Variable>(block->getCondition())) {
+                    auto op = condVar->getSourceOperation();
+                    if (op->getId() == ircode::OperationId::INT_EQUAL || op->getId() == ircode::OperationId::INT_NOTEQUAL) {
+                        if (auto binaryOp = dynamic_cast<const ircode::BinaryOperation*>(op)) {
+                            if (auto inputVar1 = std::dynamic_pointer_cast<ircode::Variable>(binaryOp->getInput1())) {
+                                if (auto inputVar2 = std::dynamic_pointer_cast<ircode::Constant>(binaryOp->getInput2())) {
+                                    auto value = inputVar2->getConstVarnode()->getValue();
+                                    auto thenBlocks = passBlocks(block, block->getFarNextBlock());
+                                    auto elseBlocks = passBlocks(block, block->getNearNextBlock());
+                                    addCondition(functionInfo, {
+                                        inputVar1,
+                                        value,
+                                        block,
+                                        thenBlocks,
+                                        elseBlocks,
+                                        op->getId() == ircode::OperationId::INT_NOTEQUAL
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        utils::BitSet passBlocks(ircode::Block* condBlock, ircode::Block* block) {
+            utils::BitSet result;
+            block->passDescendants([&result, condBlock](ircode::Block* block, bool& goNextBlocks) {
+                if (block == condBlock) return;
+                result.set(block->getIndex(), true);
+                goNextBlocks = true;
+            });
+            return result;
+        }
+
         FunctionInfo* getFunctionInfo(ircode::Function* function) {
             auto it = m_functionInfos.find(function);
             if (it == m_functionInfos.end()) {

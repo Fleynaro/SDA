@@ -82,3 +82,49 @@ TEST_F(ConstConditionSemanticsTest, NestedIf) {
     ASSERT_TRUE(cmp(function, expectedIRCode));
     ASSERT_TRUE(cmpConditions(function, expectedConditions));
 }
+
+TEST_F(ConstConditionSemanticsTest, Loop) {
+    /*
+        void func(Object* param1) {
+            int i = 0;
+            while (i != 3) {
+                i++;
+            }
+        }
+    */
+    auto sourcePCode = "\
+        $1:4 = COPY 0x0:4 \n\
+        <loop_cond>: \n\
+        $2:1 = INT_EQUAL $1:4, 0x3:4 \n\
+        CBRANCH <loop_end>, $2:1 \n\
+        $1:4 = INT_ADD $1:4, 0x1:4 \n\
+        BRANCH <loop_cond> \n\
+        <loop_end>: \n\
+        RETURN \
+    ";
+    auto expectedIRCode = "\
+        Block B0(level: 1, near: B1): \n\
+            var1[$U1]:4 = COPY 0x0:4 \n\
+        Block B1(level: 2, near: B3, far: B5, cond: var9): \n\
+            var2:4 = REF var1 \n\
+            var3:4 = REF var7 \n\
+            var8:4 = PHI var2, var3 \n\
+            var9[$U2]:1 = INT_EQUAL var8, 0x3:4 \n\
+        Block B3(level: 3, far: B1): \n\
+            var4:4 = REF var1 \n\
+            var5:4 = REF var7 \n\
+            var6:4 = PHI var4, var5 \n\
+            var7[$U1]:4 = INT_ADD var6, 0x1:4 \n\
+        Block B5(level: 3): \n\
+            empty \
+    ";
+    auto expectedConditions = "\
+        Block B3: \n\
+            var8 != 3 \n\
+        Block B5: \n\
+            var8 == 3 \
+    ";
+    auto function = parsePcode(sourcePCode, program);
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+    ASSERT_TRUE(cmpConditions(function, expectedConditions));
+}
