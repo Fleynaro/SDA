@@ -498,8 +498,6 @@ void IRcodeGenerator::genOperation(std::unique_ptr<ircode::Operation> operation)
     operation->addPcodeInstruction(m_curInstr);
     operation->setOverwrittenVariables(m_overwrittenVariables);
     m_block->getOperations().push_back(std::move(operation));
-    m_block->getFunction()->getProgram()->getEventPipe()->send(
-        OperationAddedEvent(op));
     m_overwrittenVariables.clear();
 }
 

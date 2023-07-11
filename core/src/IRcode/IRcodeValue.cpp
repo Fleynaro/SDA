@@ -36,14 +36,16 @@ LinearExpression Value::GetLinearExpr(std::shared_ptr<Value> value, bool goThrou
             }
         }
         else if (auto binaryOp = dynamic_cast<const ircode::BinaryOperation*>(srcOp)) {
-            auto linearExprInp1 = GetLinearExpr(binaryOp->getInput1(), goThroughRef);
-            auto linearExprInp2 = GetLinearExpr(binaryOp->getInput2(), goThroughRef);
-            if (binaryOp->getId() == ircode::OperationId::INT_ADD) {
-                return linearExprInp1 + linearExprInp2;
-            }
-            else if (binaryOp->getId() == ircode::OperationId::INT_MULT) {
-                if (linearExprInp1.getTerms().empty() || linearExprInp2.getTerms().empty()) {
-                    return linearExprInp1 * linearExprInp2;
+            if (binaryOp->getId() == ircode::OperationId::INT_ADD || binaryOp->getId() == ircode::OperationId::INT_MULT) {
+                auto linearExprInp1 = GetLinearExpr(binaryOp->getInput1(), goThroughRef);
+                auto linearExprInp2 = GetLinearExpr(binaryOp->getInput2(), goThroughRef);
+                if (binaryOp->getId() == ircode::OperationId::INT_ADD) {
+                    return linearExprInp1 + linearExprInp2;
+                }
+                else {
+                    if (linearExprInp1.getTerms().empty() || linearExprInp2.getTerms().empty()) {
+                        return linearExprInp1 * linearExprInp2;
+                    }
                 }
             }
         }

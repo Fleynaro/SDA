@@ -203,6 +203,8 @@ void Block::replaceWith(Block* block) {
                 refOperations.push_back(refOp);
             }
         }
+        m_function->getProgram()->getEventPipe()->send(
+            OperationRemovedEvent(oldOp.get()));
     }
     // replace data
     m_memSpace = std::move(block->m_memSpace);
@@ -210,6 +212,8 @@ void Block::replaceWith(Block* block) {
     m_operations = std::move(block->m_operations);
     for (auto& op : m_operations) {
         op->setBlock(this);
+        m_function->getProgram()->getEventPipe()->send(
+            OperationAddedEvent(op.get()));
     }
     m_hash = calcHash();
     // update ref operations
