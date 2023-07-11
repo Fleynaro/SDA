@@ -426,6 +426,62 @@ TEST_F(StructureResearcherTest, If) {
     ASSERT_TRUE(cmpStructures(expectedStructures));
 }
 
+TEST_F(StructureResearcherTest, IfRewrite) {
+    /*
+        void func(Object* param1) {
+            if (param1->field_0x0 == 1) {
+                param1->field_0x0 = 2; // rewrite
+            }
+        }
+    */
+    auto sourcePCode = "\
+        $1:4 = LOAD rcx:8, 4:8 \n\
+        $2:1 = INT_NOTEQUAL $1:4, 1:4 \n\
+        CBRANCH <label>, $2:1 \n\
+        STORE rcx:8, 2:4 \n\
+        <label>: \n\
+        RETURN \
+    ";
+    auto expectedIRCode = "\
+        Block B0(level: 1, near: B3, far: B4, cond: var4): \n\
+            var1:8 = LOAD rcx \n\
+            var2:4 = LOAD var1 \n\
+            var3[$U1]:4 = COPY var2 \n\
+            var4[$U2]:1 = INT_NOTEQUAL var3, 0x1:4 \n\
+        Block B3(level: 2, near: B4): \n\
+            var5:8 = REF var1 \n\
+            var6[var5]:8 = COPY 0x2:4 \n\
+        Block B4(level: 3): \n\
+            empty \
+    ";
+    auto expectedConditions = "\
+        Block B3: \n\
+            var3 == 1 \
+    ";
+    auto expectedDataFlow = "\
+        var1 <- Unknown \n\
+        var2 <- Read var1 \n\
+        var3 <- Copy var2 \n\
+        var5 <- Copy var1 \n\
+        var6 <- Write var5 \n\
+        var6 <- Write 0x2 \
+    ";
+    auto expectedStructures = "\
+        struct B0:var1 { \n\
+            0x0: B0:var2 \n\
+        } \n\
+        \n\
+        struct B0:var5 : B0:var1 { \n\
+            0x0: 0x2 \n\
+        } \
+    ";
+    auto function = parsePcode(sourcePCode, program);
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+    ASSERT_TRUE(cmpConditions(function, expectedConditions));
+    ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
+    ASSERT_TRUE(cmpStructures(expectedStructures));
+}
+
 TEST_F(StructureResearcherTest, IfNested) {
     /*
         void func(Object* param1) {
