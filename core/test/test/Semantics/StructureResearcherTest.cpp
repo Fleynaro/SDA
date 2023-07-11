@@ -37,10 +37,16 @@ protected:
     }
 
     ::testing::AssertionResult cmpStructures(const std::string& expectedCode) const {
-        auto rootStructures = structureRepo->getRootStructures();
         std::list<semantics::Structure*> allStructures;
+        auto rootStructures = structureRepo->getRootStructures();
         for (auto rootStructure : sortByName(rootStructures)) {
             gatherAllChildStructures(rootStructure, allStructures);
+        }
+        for (auto structure : sortByName(structureRepo->getAllStructures())) {
+            if (std::find(allStructures.begin(), allStructures.end(), structure) != allStructures.end()) {
+                continue;
+            }
+            allStructures.push_back(structure);
         }
         std::stringstream ss;
         bool isFirstPrinted = false;
@@ -425,6 +431,7 @@ TEST_F(StructureResearcherTest, IfNested) {
         void func(Object* param1) {
             if (param1->field_0x0 == 1) {
                 player = static_cast<Player*>(param1);
+                player->field_0x20 = 0x5;
                 if (player->field_0x40 == 2) {
                     player->field_0x10 = 0x64;
                 }
@@ -435,60 +442,67 @@ TEST_F(StructureResearcherTest, IfNested) {
         $1:4 = LOAD rcx:8, 4:8 \n\
         $2:1 = INT_NOTEQUAL $1:4, 1:4 \n\
         CBRANCH <label>, $2:1 \n\
-        $3:4 = INT_ADD rcx:8, 0x40:8 \n\
-        $4:4 = LOAD $3:4, 4:4 \n\
-        $5:1 = INT_NOTEQUAL $4:4, 2:4 \n\
-        CBRANCH <label>, $5:1 \n\
-        $6:4 = INT_ADD rcx:8, 0x10:8 \n\
-        STORE $6:4, 100:4 \n\
+        $3:8 = INT_ADD rcx:8, 0x20:8 \n\
+        STORE $3:8, 5:4 \n\
+        $4:4 = INT_ADD rcx:8, 0x40:8 \n\
+        $5:4 = LOAD $4:4, 4:4 \n\
+        $6:1 = INT_NOTEQUAL $5:4, 2:4 \n\
+        CBRANCH <label>, $6:1 \n\
+        $7:4 = INT_ADD rcx:8, 0x10:8 \n\
+        STORE $7:4, 100:4 \n\
         <label>: \n\
         RETURN \
     ";
     auto expectedIRCode = "\
-        Block B0(level: 1, near: B3, far: B9, cond: var4): \n\
+        Block B0(level: 1, near: B3, far: Bb, cond: var4): \n\
             var1:8 = LOAD rcx \n\
             var2:4 = LOAD var1 \n\
             var3[$U1]:4 = COPY var2 \n\
             var4[$U2]:1 = INT_NOTEQUAL var3, 0x1:4 \n\
-        Block B3(level: 2, near: B7, far: B9, cond: var9): \n\
+        Block B3(level: 2, near: B9, far: Bb, cond: var11): \n\
             var5:8 = REF var1 \n\
-            var6[$U3]:4 = INT_ADD var5, 0x40:8 \n\
-            var7:4 = LOAD var6 \n\
-            var8[$U4]:4 = COPY var7 \n\
-            var9[$U5]:1 = INT_NOTEQUAL var8, 0x2:4 \n\
-        Block B7(level: 3, near: B9): \n\
-            var10:8 = REF var1 \n\
-            var11[$U6]:4 = INT_ADD var10, 0x10:8 \n\
-            var12[var11]:4 = COPY 0x64:4 \n\
-        Block B9(level: 4): \n\
+            var6[$U3]:8 = INT_ADD var5, 0x20:8 \n\
+            var7[var6]:8 = COPY 0x5:4 \n\
+            var8[$U4]:4 = INT_ADD var5, 0x40:8 \n\
+            var9:4 = LOAD var8 \n\
+            var10[$U5]:4 = COPY var9 \n\
+            var11[$U6]:1 = INT_NOTEQUAL var10, 0x2:4 \n\
+        Block B9(level: 3, near: Bb): \n\
+            var12:8 = REF var1 \n\
+            var13[$U7]:4 = INT_ADD var12, 0x10:8 \n\
+            var14[var13]:4 = COPY 0x64:4 \n\
+        Block Bb(level: 4): \n\
             empty \
     ";
     auto expectedConditions = "\
         Block B3: \n\
             var3 == 1 \n\
-        Block B7: \n\
+        Block B9: \n\
             var3 == 1 \n\
-            var8 == 2 \
+            var10 == 2 \
     ";
     auto expectedDataFlow = "\
         var1 <- Unknown \n\
         var2 <- Read var1 \n\
         var3 <- Copy var2 \n\
         var5 <- Copy var1 \n\
-        var6 <- Copy var5 + 0x40 \n\
-        var7 <- Read var6 \n\
-        var8 <- Copy var7 \n\
-        var10 <- Copy var1 \n\
-        var11 <- Copy var10 + 0x10 \n\
-        var12 <- Write var11 \n\
-        var12 <- Write 0x64 \
+        var6 <- Copy var5 + 0x20 \n\
+        var7 <- Write var6 \n\
+        var7 <- Write 0x5 \n\
+        var8 <- Copy var5 + 0x40 \n\
+        var9 <- Read var8 \n\
+        var10 <- Copy var9 \n\
+        var12 <- Copy var1\n\
+        var13 <- Copy var12 + 0x10 \n\
+        var14 <- Write var13 \n\
+        var14 <- Write 0x64 \
     ";
     auto expectedStructures = "\
         struct B0:var1 { \n\
             0x0: B0:var2 \n\
         } \n\
         \n\
-        struct B0:var10 : B0:var1 { \n\
+        struct B0:var12 : B0:var1 { \n\
             0x0: 0x1 \n\
             0x10: 0x64 \n\
             0x40: 0x2 \n\
@@ -496,7 +510,105 @@ TEST_F(StructureResearcherTest, IfNested) {
         \n\
         struct B0:var5 : B0:var1 { \n\
             0x0: 0x1 \n\
-            0x40: B0:var7 \n\
+            0x20: 0x5 \n\
+            0x40: B0:var9 \n\
+        } \
+    ";
+    auto function = parsePcode(sourcePCode, program);
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+    ASSERT_TRUE(cmpConditions(function, expectedConditions));
+    ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
+    ASSERT_TRUE(cmpStructures(expectedStructures));
+}
+
+TEST_F(StructureResearcherTest, LoopObjectArray) {
+    /*
+        void func(Object* param1) {
+            int i = 0;
+            while (i != 3) {
+                param1->field_0x10 = 0x64;
+                param1 += 0x1; // sizeof(Object) = 0x20
+                i++;
+            }
+        }
+    */
+    auto sourcePCode = "\
+        $1:8 = COPY rcx:8 \n\
+        STORE $1:8, 1:4 \n\
+        $2:4 = COPY 0x0:4 \n\
+        <loop_cond>: \n\
+        $3:1 = INT_EQUAL $2:4, 0x3:4 \n\
+        CBRANCH <loop_end>, $3:1 \n\
+        $4:8 = INT_ADD $1:8, 0x10:8 \n\
+        STORE $4:8, 0x64:8 \n\
+        $1:8 = INT_ADD $1:8, 0x20:8 \n\
+        $2:4 = INT_ADD $2:4, 0x1:4 \n\
+        BRANCH <loop_cond> \n\
+        <loop_end>: \n\
+        RETURN \
+    ";
+    auto expectedIRCode = "\
+        Block B0(level: 1, near: B3): \n\
+            var1:8 = LOAD rcx \n\
+            var2[$U1]:8 = COPY var1 \n\
+            var3[var2]:8 = COPY 0x1:4 \n\
+            var4[$U2]:4 = COPY 0x0:4 \n\
+        Block B3(level: 2, near: B5, far: Ba, cond: var18): \n\
+            var5:4 = REF var4 \n\
+            var6:4 = REF var16 \n\
+            var17:4 = PHI var5, var6 \n\
+            var18[$U3]:1 = INT_EQUAL var17, 0x3:4 \n\
+        Block B5(level: 3, far: B3): \n\
+            var7:8 = REF var2 \n\
+            var8:8 = REF var12 \n\
+            var9:8 = PHI var7, var8 \n\
+            var10[$U4]:8 = INT_ADD var9, 0x10:8 \n\
+            var11[var10]:8 = COPY 0x64:8 \n\
+            var12[$U1]:8 = INT_ADD var9, 0x20:8 \n\
+            var13:4 = REF var4 \n\
+            var14:4 = REF var16 \n\
+            var15:4 = PHI var13, var14 \n\
+            var16[$U2]:4 = INT_ADD var15, 0x1:4 \n\
+        Block Ba(level: 3): \n\
+            empty \
+    ";
+    auto expectedConditions = "\
+        Block B5: \n\
+            var17 != 3 \n\
+        Block Ba: \n\
+            var17 == 3 \
+    ";
+    auto expectedDataFlow = "\
+        var1 <- Unknown \n\
+        var2 <- Copy var1 \n\
+        var3 <- Write var2 \n\
+        var3 <- Write 0x1 \n\
+        var4 <- Copy 0x0 \n\
+        var5 <- Copy var4 \n\
+        var6 <- Copy var16 \n\
+        var7 <- Copy var2 \n\
+        var8 <- Copy var12 \n\
+        var9 <- Copy var7 \n\
+        var9 <- Copy var8 \n\
+        var10 <- Copy var9 + 0x10 \n\
+        var11 <- Write var10 \n\
+        var11 <- Write 0x64 \n\
+        var12 <- Copy var9 + 0x20 \n\
+        var13 <- Copy var4 \n\
+        var14 <- Copy var16 \n\
+        var15 <- Copy var13 \n\
+        var15 <- Copy var14 \n\
+        var16 <- Unknown \n\
+        var17 <- Copy var5 \n\
+        var17 <- Copy var6 \
+    ";
+    auto expectedStructures = "\
+        struct B0:var1 : B0:var9 { \n\
+            0x0: 0x1 \n\
+        } \n\
+        \n\
+        struct B0:var9 : B0:var9 { \n\
+            0x10: 0x64 \n\
         } \
     ";
     auto function = parsePcode(sourcePCode, program);
@@ -642,7 +754,7 @@ TEST_F(StructureResearcherTest, Functions) {
     ";
     auto expectedStructures = "\
         struct Bd:var1 { \n\
-            0x0: Bd:var2, 0x1, 0x2 \n\
+            0x0: Bd:var2 \n\
             0x4: 0x1 \n\
         } \n\
         \n\
@@ -656,7 +768,6 @@ TEST_F(StructureResearcherTest, Functions) {
         \n\
         struct Bd:var7 : Bd:var1 { \n\
             0x0: 0x1 \n\
-            0x4: 0x1 \n\
             0x10: 0x64 \n\
         } \n\
         \n\
@@ -779,7 +890,6 @@ TEST_F(StructureResearcherTest, TwoSameFunctionsCall) {
     ";
     auto expectedStructures = "\
         struct B0:var9 { \n\
-            0x10: 0x1 \n\
             0x20: 0x2 \n\
         } \n\
         \n\
@@ -928,7 +1038,6 @@ TEST_F(StructureResearcherTest, NewFunctionAdded) {
     ";
     auto expectedStructuresAfter = "\
         struct Ba:var5 { \n\
-            0x0: 0x1, 0x2 \n\
             0x10: Ba:var3 \n\
             0x20: 0x5 \n\
         } \n\

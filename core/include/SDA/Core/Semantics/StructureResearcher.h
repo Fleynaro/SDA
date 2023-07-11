@@ -24,6 +24,16 @@ namespace sda::semantics
         {}
     };
 
+    // When a structure is removed
+    struct StructureRemovedEvent : Event {
+        Structure* structure;
+
+        StructureRemovedEvent(Structure* structure)
+            : Event(StructureResearchTopic)
+            , structure(structure)
+        {}
+    };
+
     // When a child is added to a structure
     struct ChildAddedEvent : Event {
         Structure* structure;
@@ -75,10 +85,10 @@ namespace sda::semantics
             m_conditions[offset].insert(value);
         }
 
-        void remove(size_t offset, size_t value) {
+        void remove(size_t offset) {
             auto it = m_conditions.find(offset);
             if (it != m_conditions.end()) {
-                it->second.erase(value);
+                m_conditions.erase(it);
             }
         }
 
@@ -108,12 +118,14 @@ namespace sda::semantics
     };
 
     struct Structure {
+        size_t id;
         std::string name;
+        size_t version = 0;
+        DataFlowNode* sourceNode = nullptr;
         std::list<Structure*> parents;
         std::list<Structure*> childs;
         std::map<size_t, Structure*> fields;
         ConditionSet conditions;
-        DataFlowNode* sourceNode;
         std::set<DataFlowNode*> linkedNodes;
     };
 
@@ -122,11 +134,14 @@ namespace sda::semantics
         struct Link {
             Structure* structure;
             size_t offset;
+            size_t version;
             bool own; // the node has its own structure
         };
         std::list<Structure> m_structures;
         std::map<DataFlowNode*, Link> m_nodeToStructure;
         std::map<DataFlowNode*, size_t> m_nodeToConstant;
+        std::map<DataFlowNode*, size_t> m_nodeToHash;
+        size_t m_idCounter = 0;
         std::shared_ptr<EventPipe> m_eventPipe;
     public:
         StructureRepository(std::shared_ptr<EventPipe> eventPipe);
@@ -143,6 +158,14 @@ namespace sda::semantics
             return &it->second;
         }
 
+        std::list<Structure*> getAllStructures() {
+            std::list<Structure*> result;
+            for (auto& structure : m_structures) {
+                result.push_back(&structure);
+            }
+            return result;
+        }
+
         std::list<Structure*> getRootStructures() {
             std::list<Structure*> result;
             for (auto& structure : m_structures) {
@@ -154,39 +177,69 @@ namespace sda::semantics
         }
 
         Structure* createStructure(const std::string& name) {
-            m_structures.emplace_back(Structure { name });
+            m_structures.emplace_back(Structure { m_idCounter++, name });
             auto structure = &m_structures.back();
             m_eventPipe->send(StructureCreatedEvent(structure));
+            return structure;
+        }
+
+        Structure* createStructure(DataFlowNode* node) {
+            auto variable = node->getVariable();
+            auto structure = createStructure(variable ? variable->getName(true) : "root");
+            structure->sourceNode = node;
+            addLink(node, structure, 0, true);
             return structure;
         }
 
         Structure* getOrCreateStructure(DataFlowNode* node) {
             auto link = getLink(node);
             if (link == nullptr || !link->own) {
-                auto variable = node->getVariable();
-                auto structure = createStructure(variable ? variable->getName(true) : "root");
-                structure->sourceNode = node;
-                addLink(node, structure, 0, true);
-                return structure;
+                return createStructure(node);
             }
             return link->structure;
         }
 
         void removeStructure(Structure* structure) {
-            clearParents(structure);
-            clearChilds(structure);
+            m_eventPipe->send(StructureRemovedEvent(structure));
+            clearStructure(structure);
+            // remove links
             for (auto node : structure->linkedNodes) {
                 m_nodeToStructure.erase(node);
             }
+            // remove structure
             m_structures.remove_if([structure](const Structure& s) {
                 return &s == structure;
             });
         }
 
         void clearStructure(Structure* structure) {
-            clearParents(structure);
-            clearChilds(structure);
+            // clear parents
+            for (auto parent : structure->parents) {
+                parent->childs.remove(structure);
+                m_eventPipe->send(ChildRemovedEvent(parent, structure));
+            }
+            structure->parents.clear();
+
+            // clear childs
+            for (auto child : structure->childs) {
+                child->parents.remove(structure);
+                m_eventPipe->send(ChildRemovedEvent(structure, child));
+            }
+            structure->childs.clear();
+
+            // remove fields
+            for (auto& [offset, field] : structure->fields) {
+                removeStructure(field);
+            }
+            structure->fields.clear();
+            
+            // remove conditions
             structure->conditions.clear();
+        }
+
+        void markAsUpdated(Structure* structure) {
+            structure->version++;
+            addLink(structure->sourceNode, structure, 0, true);
         }
 
         void addField(Structure* structure, size_t offset, Structure* varStructure) {
@@ -208,45 +261,11 @@ namespace sda::semantics
             m_eventPipe->send(ChildAddedEvent(structure, child));
         }
 
-        void clearParents(Structure* structure) {
-            for (auto parent : structure->parents) {
-                parent->childs.remove(structure);
-                m_eventPipe->send(ChildRemovedEvent(parent, structure));
-            }
-            structure->parents.clear();
-        }
-
-        void clearChilds(Structure* structure) {
-            for (auto child : structure->childs) {
-                child->parents.remove(structure);
-                m_eventPipe->send(ChildRemovedEvent(structure, child));
-            }
-            structure->childs.clear();
-        }
-
         // <own> - create structure for <node> itself if it doesn't exist
         void addLink(DataFlowNode* node, Structure* structure, size_t offset = 0, bool own = false) {
-            auto it = m_nodeToStructure.find(node);
-            if (it != m_nodeToStructure.end()) {
-                auto link = &it->second;
-                if (link->structure != structure) {
-                    // remove the current node from the old structure that is replaced
-                    link->structure->linkedNodes.erase(node);
-                }
-            }
             structure->linkedNodes.insert(node);
-            m_nodeToStructure[node] = { structure, offset, own };
+            m_nodeToStructure[node] = { structure, offset, structure->version, own };
             m_eventPipe->send(LinkCreatedEvent(node, structure, offset));
-        }
-
-        void removeLink(DataFlowNode* node) {
-            auto link = getLink(node);
-            if (link) {
-                if (link->own) {
-                    removeStructure(link->structure);
-                }
-                m_nodeToStructure.erase(node);
-            }
         }
 
         const Link* getLink(DataFlowNode* node) const {
@@ -257,9 +276,31 @@ namespace sda::semantics
             return &it->second;
         }
 
+        void removeNode(DataFlowNode* node) {
+            auto link = getLink(node);
+            if (link) {
+                if (link->own) {
+                    removeStructure(link->structure);
+                }
+                m_nodeToStructure.erase(node);
+            }
+            if (auto it = m_nodeToConstant.find(node); it != m_nodeToConstant.end()) {
+                m_nodeToConstant.erase(it);
+            }
+            if (auto it = m_nodeToHash.find(node); it != m_nodeToHash.end()) {
+                m_nodeToHash.erase(it);
+            }
+        }
+        
+        size_t* getHashPtr(DataFlowNode* node) {
+            auto it = m_nodeToHash.find(node);
+            if (it == m_nodeToHash.end()) {
+                it = m_nodeToHash.emplace(node, 0).first;
+            }
+            return &it->second;
+        }
+
         size_t getHash(DataFlowNode* node) const {
-            if (node->type == DataFlowNode::Copy)
-                return 0;
             auto link = getLink(node);
             if (!link) {
                 if (auto constant = getConstant(node)) {
@@ -267,8 +308,9 @@ namespace sda::semantics
                 }
                 return 0;
             }
-            size_t result = reinterpret_cast<size_t>(link->structure);
-            boost::hash_combine(result, link->structure->conditions.hash());
+            size_t result = 0;
+            boost::hash_combine(result, link->structure->id);
+            boost::hash_combine(result, link->version);
             return result;
         }
     };
@@ -286,7 +328,7 @@ namespace sda::semantics
             StructureResearcher* m_researcher;
 
             void handleDataFlowNodeRemovedEvent(const DataFlowNodeRemovedEvent& event) {
-                m_researcher->m_structureRepo->removeLink(event.node);
+                m_researcher->m_structureRepo->removeNode(event.node);
             }
 
             void handleDataFlowNodeUpdatedEvent(const DataFlowNodeUpdatedEvent& event) {
@@ -362,164 +404,17 @@ namespace sda::semantics
             return m_ircodeEventHandler.getEventPipe();
         }
 
-        void research(DataFlowNode* node) {
-            DataFlowNode::PassSuccessors(node, std::function([this](DataFlowNode* node, bool& goNextNodes, const std::function<void(DataFlowNode* node)>& next) {
-                research(node, goNextNodes, next);
-            }), m_program->getEventPipe());
-        }
+        void research(DataFlowNode* node);
 
     private:
-        void research(DataFlowNode* node, bool& goNextNodes, const std::function<void(DataFlowNode* node)>& next) {
-            auto hash = m_structureRepo->getHash(node);
-            researchConstants(node);
-            researchStructures(node, next);
-            // go next if there are changes (for copy nodes go next always, see test StructureResearcherTest.Functions)
-            goNextNodes = node->type == DataFlowNode::Copy || hash != m_structureRepo->getHash(node);
-        }
+        void research(DataFlowNode* node, bool& goNextNodes, const std::function<void(DataFlowNode* node)>& next);
 
-        void researchConstants(DataFlowNode* node) {
-            if (node->type == DataFlowNode::Copy) {
-                if (node->predecessors.size() == 1) {
-                    auto pred = node->predecessors.front();
-                    if (auto predConstant = m_structureRepo->getConstant(pred)) {
-                        m_structureRepo->setConstant(node, *predConstant);
-                    }
-                }
-            }
-            else if (node->type == DataFlowNode::Unknown) {
-                if (auto constant = node->getConstant()) {
-                    // see test StructureResearcherTest.If
-                    m_structureRepo->setConstant(node, constant->getConstVarnode()->getValue());
-                }
-            }
-        }
+        void researchConstants(DataFlowNode* node);
 
-        void researchStructures(DataFlowNode* node, const std::function<void(DataFlowNode* node)>& next) {
-            if (node->type == DataFlowNode::Copy) {
-                for (auto pred : node->predecessors) {
-                    if (!m_structureRepo->getLink(pred)) return;
-                }
-                if (node->predecessors.size() == 1) {
-                    auto pred = node->predecessors.front();
-                    auto predLink = m_structureRepo->getLink(pred);
-                    
-                    bool isNewStructure = false;
-                    if (node->offset == 0) {
-                        // gather conditions (see test StructureResearcherTest.If)
-                        auto variable = node->getVariable();
-                        assert(variable);
-                        auto block = variable->getSourceOperation()->getBlock();
-                        auto structToConditions = findConditions(block);
-                        auto it = structToConditions.find(predLink->structure);
-                        if (it != structToConditions.end()) {
-                            auto conditions = predLink->structure->conditions;
-                            auto& newConditions = it->second;
-                            conditions.merge(newConditions, true);
-                            if (conditions.hash() != predLink->structure->conditions.hash()) {
-                                auto structure = m_structureRepo->getOrCreateStructure(node);
-                                m_structureRepo->clearParents(structure);
-                                m_structureRepo->addChild(predLink->structure, structure);
-                                structure->conditions = conditions;
-                                isNewStructure = true;
-                            }
-                        }
-                    }
+        void researchStructures(DataFlowNode* node, const std::function<void(DataFlowNode* node)>& next);
 
-                    if (!isNewStructure) {
-                        if (auto link = m_structureRepo->getLink(node)) {
-                            if (link->own) {
-                                m_structureRepo->removeStructure(link->structure);
-                            }
-                        }
-                        m_structureRepo->addLink(node, predLink->structure, predLink->offset + node->offset);
-                    }
-                } else {
-                    if (auto link = m_structureRepo->getLink(node)) {
-                        if (!link->own) {
-                            // reinit structure by removing it and going to source node to recreate it
-                            next(link->structure->sourceNode);
-                            m_structureRepo->removeStructure(link->structure);
-                            m_structureRepo->getOrCreateStructure(node);
-                            return;
-                        }
-                    }
-                    // see test StructureResearcherTest::Functions
-                    auto structure = m_structureRepo->getOrCreateStructure(node);
-                    m_structureRepo->clearStructure(structure);
-                    for (auto pred : node->predecessors) {
-                        auto predLink = m_structureRepo->getLink(pred);
-                        m_structureRepo->addChild(structure, predLink->structure);
-                        structure->conditions.merge(predLink->structure->conditions);
-                    }
-                    // since it is a copy node, we go next to gather all childs/parents and conditions that were cleared here
-                }
-            }
-            else if (node->type == DataFlowNode::Read) {
-                assert(node->predecessors.size() == 1);
-                auto addrNode = node->predecessors.front();
-                auto addrLink = m_structureRepo->getLink(addrNode);
-                if (!addrLink) return;
-                auto structure = m_structureRepo->getOrCreateStructure(node);
-                m_structureRepo->addField(addrLink->structure, addrLink->offset, structure);
-            }
-            else if (node->type == DataFlowNode::Write) {
-                assert(node->predecessors.size() == 2);
-                auto addrNode = node->predecessors.front();
-                auto valueNode = node->predecessors.back();
-                auto addrLink = m_structureRepo->getLink(addrNode);
-                if (!addrLink) return;
-                if (auto valueLink = m_structureRepo->getLink(valueNode)) {
-                    m_structureRepo->addField(addrLink->structure, addrLink->offset, valueLink->structure);
-                }
-                else if (auto constValue = m_structureRepo->getConstant(valueNode)) {
-                    // see test StructureResearcherTest.If
-                    addrLink->structure->conditions.insert(addrLink->offset, *constValue);
-                }
-            }
-            else if (node->type == DataFlowNode::Unknown) {
-                if (node->getVariable()) {
-                    m_structureRepo->getOrCreateStructure(node);
-                }
-            }      
-        }
+        std::map<Structure*, ConditionSet> findConditions(ircode::Block* block);
 
-        std::map<Structure*, ConditionSet> findConditions(ircode::Block* block) {
-            std::map<Structure*, ConditionSet> result;
-            auto conditions = m_constCondRepo->findConditions(block);
-            for (auto& [type, variable, value] : conditions) {
-                if (type != ConstantCondition::EQUAL)
-                    continue;
-                if (auto loadOp = goToLoadOperation(variable->getSourceOperation())) {
-                    auto linearExpr = ircode::Value::GetLinearExpr(loadOp->getInput(), true);
-                    Offset offset = linearExpr.getConstTermValue();
-                    for (auto& term : linearExpr.getTerms()) {
-                        if (term.factor != 1 || term.value->getSize() != m_platform->getPointerSize())
-                            continue;
-                        if (auto ptrVar = std::dynamic_pointer_cast<ircode::Variable>(term.value)) {
-                            if (auto ptrVarNode = m_dataFlowRepo->getNode(ptrVar)) {
-                                if (auto link = m_structureRepo->getLink(ptrVarNode)) {
-                                    result[link->structure].insert(offset, value);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            return result;
-        }
-
-        const ircode::UnaryOperation* goToLoadOperation(const ircode::Operation* operation) {
-            if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(operation)) {
-                if (unaryOp->getId() == ircode::OperationId::COPY || unaryOp->getId() == ircode::OperationId::REF) {
-                    if (auto var = std::dynamic_pointer_cast<ircode::Variable>(unaryOp->getInput())) {
-                        return goToLoadOperation(var->getSourceOperation());
-                    }
-                }
-                else if (unaryOp->getId() == ircode::OperationId::LOAD) {
-                    return unaryOp;
-                }
-            }
-            return nullptr;
-        }
+        const ircode::UnaryOperation* goToLoadOperation(const ircode::Operation* operation);
     };
 };
