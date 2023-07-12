@@ -567,11 +567,16 @@ void IRcodeGenerator::genGenericOperation(const pcode::Instruction* instr, ircod
     if (!inputVal1)
         throw std::runtime_error("Invalid instruction");
 
+    size_t outputSize = 0;
+
     // exception for STORE instruction
     if (instr->getId() == pcode::InstructionId::STORE) {
+        outputSize = inputVal2->getSize();
         outputMemAddr = getMemoryAddress(inputVal1);
         inputVal1 = inputVal2;
         inputVal2 = nullptr;
+    } else {
+        outputSize = instr->getOutput()->getSize();
     }
     
     // calculate hash
@@ -595,7 +600,7 @@ void IRcodeGenerator::genGenericOperation(const pcode::Instruction* instr, ircod
     }
     // create variable and save it to the memory space
     auto outputMemSpace = getCurMemSpace()->getSubspace(outputMemAddr.baseAddrHash);
-    auto outputVar = createVariable(outputMemAddr, hash, outputMemAddr.value->getSize());
+    auto outputVar = createVariable(outputMemAddr, hash, outputSize);
     genWriteMemory(outputMemSpace, outputVar);
 
     // generate operation

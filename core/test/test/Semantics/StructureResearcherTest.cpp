@@ -452,7 +452,7 @@ TEST_F(StructureResearcherTest, IfRewrite) {
             var4[$U2]:1 = INT_NOTEQUAL var3, 0x1:4 \n\
         Block B3(level: 2, near: B4): \n\
             var5:8 = REF var1 \n\
-            var6[var5]:8 = COPY 0x2:4 \n\
+            var6[var5]:4 = COPY 0x2:4 \n\
         Block B4(level: 3): \n\
             empty \
     ";
@@ -520,7 +520,7 @@ TEST_F(StructureResearcherTest, IfNested) {
         Block B3(level: 2, near: B9, far: Bb, cond: var11): \n\
             var5:8 = REF var1 \n\
             var6[$U3]:8 = INT_ADD var5, 0x20:8 \n\
-            var7[var6]:8 = COPY 0x5:4 \n\
+            var7[var6]:4 = COPY 0x5:4 \n\
             var8[$U4]:4 = INT_ADD var5, 0x40:8 \n\
             var9:4 = LOAD var8 \n\
             var10[$U5]:4 = COPY var9 \n\
@@ -608,7 +608,7 @@ TEST_F(StructureResearcherTest, LoopObjectArray) {
         Block B0(level: 1, near: B3): \n\
             var1:8 = LOAD rcx \n\
             var2[$U1]:8 = COPY var1 \n\
-            var3[var2]:8 = COPY 0x1:4 \n\
+            var3[var2]:4 = COPY 0x1:4 \n\
             var4[$U2]:4 = COPY 0x0:4 \n\
         Block B3(level: 2, near: B5, far: Ba, cond: var16): \n\
             var5:4 = REF var4 \n\
@@ -754,12 +754,12 @@ TEST_F(StructureResearcherTest, Functions) {
             var2:4 = LOAD var1 \n\
             var3[$U1]:4 = COPY var2 \n\
             var4[$U2]:8 = INT_ADD var1, 0x4:8 \n\
-            var5[var4]:8 = COPY 0x1:4 \n\
+            var5[var4]:4 = COPY 0x1:4 \n\
             var6[$U3]:1 = INT_NOTEQUAL var3, 0x1:4 \n\
         Block B12(level: 2, near: B14): \n\
             var7:8 = REF var1 \n\
             var8[$U4]:8 = INT_ADD var7, 0x10:8 \n\
-            var9[var8]:8 = COPY 0x64:4 \n\
+            var9[var8]:4 = COPY 0x64:4 \n\
         Block B14(level: 3): \n\
             empty \
     ";
@@ -895,7 +895,7 @@ TEST_F(StructureResearcherTest, TwoSameFunctionsCall) {
         Block B2(level: 2, far: B7): \n\
             var3[rax]:8 = CALL 0xa00:8 \n\
             var4[$U2]:8 = INT_ADD var3, 0x10:8 \n\
-            var5[var4]:8 = COPY 0x1:4 \n\
+            var5[var4]:4 = COPY 0x1:4 \n\
         Block B6(level: 2, near: B7): \n\
             var6[rax]:8 = CALL 0xa00:8 \n\
         Block B7(level: 3): \n\
@@ -903,7 +903,7 @@ TEST_F(StructureResearcherTest, TwoSameFunctionsCall) {
             var8:8 = REF var6 \n\
             var9:8 = PHI var7, var8 \n\
             var10[$U3]:8 = INT_ADD var9, 0x20:8 \n\
-            var11[var10]:8 = COPY 0x2:4 \
+            var11[var10]:4 = COPY 0x2:4 \
     ";
     auto expectedIRCodeOfFunc = "\
         Block Ba(level: 1): \n\
@@ -1020,7 +1020,7 @@ TEST_F(StructureResearcherTest, NewFunctionAdded) {
             var2[$U1]:8 = INT_ADD var1, 0x100:8 \n\
             var3:8 = LOAD var2 \n\
             var4[rcx]:8 = COPY var3 \n\
-            var5[var4]:8 = COPY 0x1:4 \n\
+            var5[var4]:4 = COPY 0x1:4 \n\
             var6:1 = CALL 0xa00:8, var4 \
     ";
     auto expectedIRCodeOfFunc2 = "\
@@ -1029,7 +1029,7 @@ TEST_F(StructureResearcherTest, NewFunctionAdded) {
             var2[$U1]:8 = INT_ADD var1, 0x200:8 \n\
             var3:8 = LOAD var2 \n\
             var4[rcx]:8 = COPY var3 \n\
-            var5[var4]:8 = COPY 0x2:4 \n\
+            var5[var4]:4 = COPY 0x2:4 \n\
             var6:1 = CALL 0xa00:8, var4 \
     ";
     auto expectedIRCodeOfFunc3 = "\
@@ -1042,7 +1042,7 @@ TEST_F(StructureResearcherTest, NewFunctionAdded) {
             var6[$U3]:8 = INT_ADD var5, 0x10:8 \n\
             var7[var6]:4 = COPY var4 \n\
             var8[$U4]:8 = INT_ADD var5, 0x20:8 \n\
-            var9[var8]:8 = COPY 0x5:4 \
+            var9[var8]:4 = COPY 0x5:4 \
     ";
     auto expectedDataFlowOfFunc1 = "\
         var1 <- Copy Start \n\
