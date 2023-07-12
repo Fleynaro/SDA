@@ -189,7 +189,7 @@ std::map<Structure*, ConditionSet> StructureResearcher::findConditions(ircode::B
         if (type != ConstantCondition::EQUAL)
             continue;
         if (auto loadOp = goToLoadOperation(variable->getSourceOperation())) {
-            auto linearExpr = ircode::Value::GetLinearExpr(loadOp->getInput(), true);
+            auto linearExpr = ircode::Value::GetLinearExpr(loadOp->getInput());
             Offset offset = linearExpr.getConstTermValue();
             for (auto& term : linearExpr.getTerms()) {
                 if (term.factor != 1 || term.value->getSize() != m_platform->getPointerSize())

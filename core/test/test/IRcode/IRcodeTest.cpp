@@ -97,11 +97,12 @@ TEST_F(IRcodeTest, IfElseConditionMem) {
         Block B5(level: 2, near: B6): \n\
             empty \n\
         Block B6(level: 3): \n\
-            var6:8 = REF var2 \n\
-            var7:8 = REF var5 \n\
-            var8:8 = REF var3 \n\
-            var9:8 = PHI var7, var8 \n\
-            var10[r10]:8 = COPY var9 \
+            var6:8 = REF var4 \n\
+            var7:8 = REF var2 \n\
+            var8:8 = REF var5 \n\
+            var9:8 = REF var3 \n\
+            var10:8 = PHI var8, var9 \n\
+            var11[r10]:8 = COPY var10 \
     ";
     auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
@@ -383,17 +384,15 @@ TEST_F(IRcodeTest, LoopTwoVariable) {
             var2[rcx]:4 = COPY 0x1:4 \n\
         Block B2(level: 2, far: B4): \n\
             var3:4 = REF var1 \n\
-            var4:4 = REF var13 \n\
+            var4:4 = REF var11 \n\
             var5:4 = PHI var3, var4 \n\
-            var10:4 = REF var2 \n\
-            var11:4 = REF var9 \n\
-            var12:4 = PHI var10, var11 \n\
-            var13[rax]:4 = INT_ADD var5, var12 \n\
+            var8:4 = REF var2 \n\
+            var9:4 = REF var7 \n\
+            var10:4 = PHI var8, var9 \n\
+            var11[rax]:4 = INT_ADD var5, var10 \n\
         Block B4(level: 3, far: B2): \n\
-            var6:4 = REF var2 \n\
-            var7:4 = REF var9 \n\
-            var8:4 = PHI var6, var7 \n\
-            var9[rcx]:4 = INT_ADD var8, 0x1:4 \
+            var6:4 = REF var10 \n\
+            var7[rcx]:4 = INT_ADD var6, 0x1:4 \
     ";
     auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));

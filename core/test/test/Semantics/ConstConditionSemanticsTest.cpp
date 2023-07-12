@@ -105,24 +105,22 @@ TEST_F(ConstConditionSemanticsTest, Loop) {
     auto expectedIRCode = "\
         Block B0(level: 1, near: B1): \n\
             var1[$U1]:4 = COPY 0x0:4 \n\
-        Block B1(level: 2, near: B3, far: B5, cond: var9): \n\
+        Block B1(level: 2, near: B3, far: B5, cond: var7): \n\
             var2:4 = REF var1 \n\
-            var3:4 = REF var7 \n\
-            var8:4 = PHI var2, var3 \n\
-            var9[$U2]:1 = INT_EQUAL var8, 0x3:4 \n\
+            var3:4 = REF var5 \n\
+            var6:4 = PHI var2, var3 \n\
+            var7[$U2]:1 = INT_EQUAL var6, 0x3:4 \n\
         Block B3(level: 3, far: B1): \n\
-            var4:4 = REF var1 \n\
-            var5:4 = REF var7 \n\
-            var6:4 = PHI var4, var5 \n\
-            var7[$U1]:4 = INT_ADD var6, 0x1:4 \n\
+            var4:4 = REF var6 \n\
+            var5[$U1]:4 = INT_ADD var4, 0x1:4 \n\
         Block B5(level: 3): \n\
             empty \
     ";
     auto expectedConditions = "\
         Block B3: \n\
-            var8 != 3 \n\
+            var6 != 3 \n\
         Block B5: \n\
-            var8 == 3 \
+            var6 == 3 \
     ";
     auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));

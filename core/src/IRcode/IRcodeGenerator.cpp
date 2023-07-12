@@ -220,9 +220,6 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(
 
     for (auto variable : memSpace->variables) {
         auto varMemAddr = variable->getMemAddress();
-        //  if variable is locate in virtual memory and we are not in the same block, skip
-        if (!isCurrentBlock && varMemAddr.isVirtual)
-            continue;
         auto varOffset = varMemAddr.offset;
         auto varSize = variable->getSize();
         // if not intersecting, skip
@@ -309,8 +306,33 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(
     return varReadInfos;
 }
 
+// get chain of variables in which one variable references another
+void GetVariableChain(
+    std::shared_ptr<ircode::Variable> variable,
+    std::list<std::shared_ptr<ircode::Variable>>& chain)
+{
+    chain.push_back(variable);
+    auto srcOp = variable->getSourceOperation();
+    if (auto refOp = dynamic_cast<ircode::RefOperation*>(srcOp)) {
+        GetVariableChain(refOp->getTargetVariable(), chain);
+    }
+}
+
+std::shared_ptr<ircode::Variable> FindMutualVariableInChains(
+    const std::list<std::shared_ptr<ircode::Variable>>& chain1,
+    const std::list<std::shared_ptr<ircode::Variable>>& chain2)
+{
+    for (auto var1 : chain1) {
+        for (auto var2 : chain2) {
+            if (var1 == var2)
+                return var1;
+        }
+    }
+    return nullptr;
+}
+
 std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(Block* block, utils::BitMask& readMask, BlockReadContext& ctx) {
-    PLOG_DEBUG << "block=" << block->getName() << ", readMask=" << std::hex << readMask << std::dec;
+    PLOG_DEBUG << "block=" << block->getName();
     Hash cacheHash;
     boost::hash_combine(cacheHash, block);
     boost::hash_combine(cacheHash, (size_t)readMask);
@@ -354,20 +376,53 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(Bloc
                     auto var1 = joinVariables(remainVarReadInfos, ctx.readSize);
                     auto var2 = joinVariables(refVarReadInfos, ctx.readSize);
 
-                    ircode::Hash hash = 0;
-                    boost::hash_combine(hash, ircode::OperationId::PHI);
-                    boost::hash_combine(hash, var1->getHash());
-                    boost::hash_combine(hash, var2->getHash());
+                    std::list<std::shared_ptr<ircode::Variable>> chain1;
+                    std::list<std::shared_ptr<ircode::Variable>> chain2;
+                    GetVariableChain(var1, chain1);
+                    GetVariableChain(var2, chain2);
+
                     auto memAddr = ctx.memAddr;
                     memAddr.isVirtual = true;
-                    auto phiVariable = createVariable(memAddr, hash, ctx.readSize);
-                    auto curMemSpace = getCurMemSpace()->getSubspace(memAddr.baseAddrHash);
-                    genWriteMemory(curMemSpace, phiVariable);
-                    genOperation(std::make_unique<ircode::PhiOperation>(
-                        var1,
-                        var2,
-                        phiVariable));
-                    remainVarReadInfos = { { phiVariable, 0, m_block } };
+                    auto curMemSpace = getCurMemSpace()->getSubspace(ctx.memAddr.baseAddrHash);
+                    auto mutualVar = FindMutualVariableInChains(chain1, chain2);
+                    if (mutualVar) {
+                        // see test IRcodeTest.IfElseConditionMem
+                        std::shared_ptr<ircode::Variable> refVar;
+                        // try find existing reference variable
+                        for (auto var : { chain1.front(), chain2.front() }) {
+                            auto refOp = dynamic_cast<ircode::RefOperation*>(var->getSourceOperation());
+                            assert(refOp && "var is always a reference");
+                            if (refOp->getTargetVariable() == mutualVar) {
+                                refVar = var;
+                                break;
+                            }
+                        }
+                        // if not found, create a new one
+                        if (!refVar) {
+                            RefOperation::Reference ref = {
+                                mutualVar->getSourceOperation()->getBlock(),
+                                ctx.memAddr.baseAddrHash,
+                                ctx.memAddr.offset,
+                                ctx.readSize
+                            };
+                            refVar = createVariable(memAddr, ref.getHash(), ctx.readSize);
+                            genWriteMemory(curMemSpace, refVar);
+                            genOperation(std::make_unique<ircode::RefOperation>(ref, mutualVar, refVar));
+                        }
+                        remainVarReadInfos = { { refVar, 0, m_block } };
+                    } else {
+                        ircode::Hash hash = 0;
+                        boost::hash_combine(hash, ircode::OperationId::PHI);
+                        boost::hash_combine(hash, var1->getHash());
+                        boost::hash_combine(hash, var2->getHash());
+                        auto phiVariable = createVariable(memAddr, hash, ctx.readSize);
+                        genWriteMemory(curMemSpace, phiVariable);
+                        genOperation(std::make_unique<ircode::PhiOperation>(
+                            var1,
+                            var2,
+                            phiVariable));
+                        remainVarReadInfos = { { phiVariable, 0, m_block } };
+                    }
                     remainReadMask = 0;
                 }
             }

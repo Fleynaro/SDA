@@ -379,8 +379,9 @@ TEST_F(StructureResearcherTest, If) {
             var9[$U2]:1 = INT_NOTEQUAL var8, 0x2:4 \n\
         Block B7(level: 4, near: B9): \n\
             var10:8 = REF var1 \n\
-            var11[$U3]:8 = INT_ADD var10, 0x18:8 \n\
-            var12[var11]:8 = COPY 0xc8:8 \n\
+            var11:8 = REF var5 \n\
+            var12[$U3]:8 = INT_ADD var10, 0x18:8 \n\
+            var13[var12]:8 = COPY 0xc8:8 \n\
         Block B9(level: 5): \n\
             empty \
     ";
@@ -400,9 +401,10 @@ TEST_F(StructureResearcherTest, If) {
         var7 <- Write 0x64 \n\
         var8 <- Copy var3 \n\
         var10 <- Copy var1 \n\
-        var11 <- Copy var10 + 0x18 \n\
-        var12 <- Write var11 \n\
-        var12 <- Write 0xc8 \
+        var11 <- Copy var5 \n\
+        var12 <- Copy var10 + 0x18 \n\
+        var13 <- Write var12 \n\
+        var13 <- Write 0xc8 \
     ";
     auto expectedStructures = "\
         struct B0:var1 { \n\
@@ -524,7 +526,7 @@ TEST_F(StructureResearcherTest, IfNested) {
             var10[$U5]:4 = COPY var9 \n\
             var11[$U6]:1 = INT_NOTEQUAL var10, 0x2:4 \n\
         Block B9(level: 3, near: Bb): \n\
-            var12:8 = REF var1 \n\
+            var12:8 = REF var5 \n\
             var13[$U7]:4 = INT_ADD var12, 0x10:8 \n\
             var14[var13]:4 = COPY 0x64:4 \n\
         Block Bb(level: 4): \n\
@@ -548,7 +550,7 @@ TEST_F(StructureResearcherTest, IfNested) {
         var8 <- Copy var5 + 0x40 \n\
         var9 <- Read var8 \n\
         var10 <- Copy var9 \n\
-        var12 <- Copy var1\n\
+        var12 <- Copy var5\n\
         var13 <- Copy var12 + 0x10 \n\
         var14 <- Write var13 \n\
         var14 <- Write 0x64 \
@@ -558,16 +560,15 @@ TEST_F(StructureResearcherTest, IfNested) {
             0x0: B0:var2 \n\
         } \n\
         \n\
-        struct B0:var12 : B0:var1 { \n\
-            0x0: 0x1 \n\
-            0x10: 0x64 \n\
-            0x40: 0x2 \n\
-        } \n\
-        \n\
         struct B0:var5 : B0:var1 { \n\
             0x0: 0x1 \n\
             0x20: 0x5 \n\
             0x40: B0:var9 \n\
+        } \n\
+        \n\
+        struct B0:var12 : B0:var5 { \n\
+            0x10: 0x64 \n\
+            0x40: 0x2 \n\
         } \
     ";
     auto function = parsePcode(sourcePCode, program);
@@ -609,11 +610,11 @@ TEST_F(StructureResearcherTest, LoopObjectArray) {
             var2[$U1]:8 = COPY var1 \n\
             var3[var2]:8 = COPY 0x1:4 \n\
             var4[$U2]:4 = COPY 0x0:4 \n\
-        Block B3(level: 2, near: B5, far: Ba, cond: var18): \n\
+        Block B3(level: 2, near: B5, far: Ba, cond: var16): \n\
             var5:4 = REF var4 \n\
-            var6:4 = REF var16 \n\
-            var17:4 = PHI var5, var6 \n\
-            var18[$U3]:1 = INT_EQUAL var17, 0x3:4 \n\
+            var6:4 = REF var14 \n\
+            var15:4 = PHI var5, var6 \n\
+            var16[$U3]:1 = INT_EQUAL var15, 0x3:4 \n\
         Block B5(level: 3, far: B3): \n\
             var7:8 = REF var2 \n\
             var8:8 = REF var12 \n\
@@ -621,18 +622,16 @@ TEST_F(StructureResearcherTest, LoopObjectArray) {
             var10[$U4]:8 = INT_ADD var9, 0x10:8 \n\
             var11[var10]:8 = COPY 0x64:8 \n\
             var12[$U1]:8 = INT_ADD var9, 0x20:8 \n\
-            var13:4 = REF var4 \n\
-            var14:4 = REF var16 \n\
-            var15:4 = PHI var13, var14 \n\
-            var16[$U2]:4 = INT_ADD var15, 0x1:4 \n\
+            var13:4 = REF var15 \n\
+            var14[$U2]:4 = INT_ADD var13, 0x1:4 \n\
         Block Ba(level: 3): \n\
             empty \
     ";
     auto expectedConditions = "\
         Block B5: \n\
-            var17 != 3 \n\
+            var15 != 3 \n\
         Block Ba: \n\
-            var17 == 3 \
+            var15 == 3 \
     ";
     auto expectedDataFlow = "\
         var1 <- Unknown \n\
@@ -641,7 +640,7 @@ TEST_F(StructureResearcherTest, LoopObjectArray) {
         var3 <- Write 0x1 \n\
         var4 <- Copy 0x0 \n\
         var5 <- Copy var4 \n\
-        var6 <- Copy var16 \n\
+        var6 <- Copy var14 \n\
         var7 <- Copy var2 \n\
         var8 <- Copy var12 \n\
         var9 <- Copy var7 \n\
@@ -650,13 +649,10 @@ TEST_F(StructureResearcherTest, LoopObjectArray) {
         var11 <- Write var10 \n\
         var11 <- Write 0x64 \n\
         var12 <- Copy var9 + 0x20 \n\
-        var13 <- Copy var4 \n\
-        var14 <- Copy var16 \n\
-        var15 <- Copy var13 \n\
-        var15 <- Copy var14 \n\
-        var16 <- Unknown \n\
-        var17 <- Copy var5 \n\
-        var17 <- Copy var6 \
+        var13 <- Copy var15 \n\
+        var14 <- Unknown \n\
+        var15 <- Copy var5 \n\
+        var15 <- Copy var6 \
     ";
     auto expectedStructures = "\
         struct B0:var1 : B0:var9 { \n\
