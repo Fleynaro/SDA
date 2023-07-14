@@ -846,6 +846,113 @@ TEST_F(StructureResearcherTest, Functions) {
     ASSERT_TRUE(cmpStructures(expectedStructures));
 }
 
+TEST_F(StructureResearcherTest, ReturnedObjectAsArgument) {
+    /*
+        void main() {
+            func2(func1())
+        }
+
+        Object* func1() {
+            return globalVar_0x100;
+        }
+
+        void func2(Object* param1) {
+            param1->field_0x4 = 1;
+        }
+    */
+   auto sourcePCode = "\
+        // main() \n\
+        CALL <func1> \n\
+        rcx:8 = COPY rax:8 \n\
+        CALL <func2> \n\
+        RETURN \n\
+        \n\
+        \n\
+        // Object* func1() \n\
+        <func1>: \n\
+        $1:8 = INT_ADD rip:8, 0x100:8 \n\
+        rax:8 = LOAD $1:8, 0x8:8 \n\
+        RETURN \n\
+        \n\
+        \n\
+        // void func2(Object* param1) \n\
+        <func2>: \n\
+        $1:8 = INT_ADD rcx:8, 0x4:8 \n\
+        STORE $1:8, 0x1:4 \n\
+        RETURN \
+    ";
+    auto func1Sig = "\
+        func1Sig = signature fastcall void*() \
+    ";
+    auto func2Sig = "\
+        func2Sig = signature fastcall void(void* param1) \
+    ";
+    auto expectedIRCodeOfMainFunc = "\
+        Block B0(level: 1): \n\
+            var1[rax]:8 = CALL 0x400:8 \n\
+            var2[rcx]:8 = COPY var1 \n\
+            var3:1 = CALL 0x700:8, var2 \
+    ";
+    auto expectedIRCodeOfFunc1 = "\
+        Block B4(level: 1): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U1]:8 = INT_ADD var1, 0x100:8 \n\
+            var3:8 = LOAD var2 \n\
+            var4[rax]:8 = COPY var3 // return \
+    ";
+    auto expectedIRCodeOfFunc2 = "\
+        Block B7(level: 1): \n\
+            var1:8 = LOAD rcx // param1 \n\
+            var2[$U1]:8 = INT_ADD var1, 0x4:8 \n\
+            var3[var2]:4 = COPY 0x1:4 \
+    ";
+    auto expectedDataFlowOfMainFunc = "\
+        var1 <- Copy B4:var4 \n\
+        var2 <- Copy var1 \n\
+        B7:var1 <- Copy var2 \
+    ";
+    auto expectedDataFlowOfFunc1 = "\
+        var1 <- Copy Start \n\
+        var2 <- Copy var1 + 0x100 \n\
+        var3 <- Read var2 \n\
+        var4 <- Copy var3 \n\
+        B0:var1 <- Copy var4 \
+    ";
+    auto expectedDataFlowOfFunc2 = "\
+        var1 <- Copy B0:var2 \n\
+        var2 <- Copy var1 + 0x4 \n\
+        var3 <- Write var2 \n\
+        var3 <- Write 0x1 \
+    ";
+    auto expectedStructures = "\
+        struct root { \n\
+            0x100: B4:var3 \n\
+        } \n\
+        \n\
+        struct B4:var3 : root_0x100 { \n\
+            0x4: 0x1 \n\
+        } \
+    ";
+    auto mainFunction = parsePcode(sourcePCode, program);
+    auto func1SigDt = dynamic_cast<SignatureDataType*>(
+        parseDataType(func1Sig));
+    auto func2SigDt = dynamic_cast<SignatureDataType*>(
+        parseDataType(func2Sig));
+    auto func1 = program->toFunction(
+        graph->getFunctionGraphAt(pcode::InstructionOffset(4, 0)));
+    auto func2 = program->toFunction(
+        graph->getFunctionGraphAt(pcode::InstructionOffset(7, 0)));
+    func1->getFunctionSymbol()->getSignature()->copyFrom(func1SigDt);
+    func2->getFunctionSymbol()->getSignature()->copyFrom(func2SigDt);
+    ASSERT_TRUE(cmp(mainFunction, expectedIRCodeOfMainFunc));
+    ASSERT_TRUE(cmp(func1, expectedIRCodeOfFunc1));
+    ASSERT_TRUE(cmp(func2, expectedIRCodeOfFunc2));
+    ASSERT_TRUE(cmpDataFlow(mainFunction, expectedDataFlowOfMainFunc));
+    ASSERT_TRUE(cmpDataFlow(func1, expectedDataFlowOfFunc1));
+    ASSERT_TRUE(cmpDataFlow(func2, expectedDataFlowOfFunc2));
+    ASSERT_TRUE(cmpStructures(expectedStructures));
+}
+
 TEST_F(StructureResearcherTest, TwoSameFunctionsCall) {
     /*
         void main(int param1) {

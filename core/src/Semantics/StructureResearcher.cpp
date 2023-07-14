@@ -125,6 +125,7 @@ void StructureResearcher::researchStructures(DataFlowNode* node, const std::func
             // see test StructureResearcherTest::Functions
             if (auto link = m_structureRepo->getLink(node)) {
                 if (!link->own) {
+                    // see test StructureResearcherTest.NewFunctionAdded
                     next(link->structure->sourceNode);
                     m_structureRepo->removeStructure(link->structure);
                     return;
@@ -168,7 +169,9 @@ void StructureResearcher::researchStructures(DataFlowNode* node, const std::func
         if (!addrLink) return;
         addrLink->structure->conditions.remove(addrLink->offset);
         if (auto valueLink = m_structureRepo->getLink(valueNode)) {
-            m_structureRepo->addField(addrLink->structure, addrLink->offset, valueLink->structure);
+            if (valueLink->offset == 0) {
+                m_structureRepo->addField(addrLink->structure, addrLink->offset, valueLink->structure);
+            }
         }
         else if (auto constValue = m_structureRepo->getConstant(valueNode)) {
             // see test StructureResearcherTest.If
