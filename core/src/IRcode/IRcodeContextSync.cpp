@@ -2,7 +2,7 @@
 #include "SDA/Core/IRcode/IRcodeHelper.h"
 #include "SDA/Core/Researchers/ResearcherHelper.h"
 #include "SDA/Core/SymbolTable/StandartSymbolTable.h"
-#include "SDA/Core/Utils/IOManip.h"
+#include "SDA/Core/Utils/String.h"
 #include "SDA/Core/Commit.h"
 
 using namespace sda;
@@ -100,7 +100,7 @@ void ContextSync::handleFunctionCreated(const FunctionCreatedEvent& event) {
     auto ctx = m_globalSymbolTable->getContext();
     auto offset = event.function->getEntryOffset();
     std::stringstream name;
-    name << "function_" << utils::to_hex() << offset;
+    name << "function_" << utils::ToHex(offset);
 
     auto signatureDt = new SignatureDataType(ctx, m_callingConvention, nullptr, name.str() + "-sig");
     auto stackSymbolTable = new StandartSymbolTable(ctx, nullptr, name.str() + "-stack-table");

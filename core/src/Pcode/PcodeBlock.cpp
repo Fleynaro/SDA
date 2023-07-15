@@ -1,7 +1,7 @@
 #include "SDA/Core/Pcode/PcodeBlock.h"
 #include "SDA/Core/Pcode/PcodeGraph.h"
 #include "SDA/Core/Pcode/PcodeEvents.h"
-#include "SDA/Core/Utils/IOManip.h"
+#include "SDA/Core/Utils/String.h"
 
 using namespace sda::pcode;
 
@@ -10,7 +10,7 @@ Block::Block(Graph* graph, InstructionOffset minOffset)
 {}
 
 std::string Block::getName() const {
-    auto name = std::stringstream() << "B" << utils::to_hex() << (m_minOffset.byteOffset & 0xFFFF);
+    auto name = std::stringstream() << "B" << utils::ToHex(m_minOffset.byteOffset & 0xFFFF);
     return name.str();
 }
 

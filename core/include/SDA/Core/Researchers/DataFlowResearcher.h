@@ -3,7 +3,7 @@
 #include "SDA/Core/IRcode/IRcodeBlock.h"
 #include "SDA/Core/IRcode/IRcodeEvents.h"
 #include "SDA/Core/Utils/Logger.h"
-#include "SDA/Core/Utils/IOManip.h"
+#include "SDA/Core/Utils/String.h"
 
 namespace sda::researcher
 {
@@ -96,7 +96,7 @@ namespace sda::researcher
                 return "Start";
             }
             else if (auto constant = std::dynamic_pointer_cast<ircode::Constant>(value)) {
-                return (std::stringstream() << "0x" << utils::to_hex() << constant->getConstVarnode()->getValue()).str();
+                return "0x" + utils::ToHex(constant->getConstVarnode()->getValue());
             }
             else if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
                 return var->getName(full);

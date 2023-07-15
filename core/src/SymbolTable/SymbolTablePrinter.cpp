@@ -1,6 +1,6 @@
 #include "SDA/Core/SymbolTable/SymbolTablePrinter.h"
 #include "SDA/Core/Symbol/Symbol.h"
-#include "SDA/Core/Utils/IOManip.h"
+#include "SDA/Core/Utils/String.h"
 #include "rang.hpp"
 
 using namespace sda;
@@ -39,9 +39,7 @@ void SymbolTablePrinter::printDef(SymbolTable* symbolTable, bool withName) {
         printToken(symbol->getName(), IDENTIFIER);
         if (symbolInfo.symbolOffset != offset) {
             printToken(" = ", SYMBOL);
-            auto offsetStr = (
-                std::stringstream() << "0x" << utils::to_hex() << symbolInfo.symbolOffset).str();
-            printToken(offsetStr, NUMBER);
+            printToken("0x" + utils::ToHex(symbolInfo.symbolOffset), NUMBER);
             offset = symbolInfo.symbolOffset;
         }
         if (symbol != symbols.back().symbol)

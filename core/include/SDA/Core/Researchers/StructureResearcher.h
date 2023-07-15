@@ -6,7 +6,7 @@
 #include "SDA/Core/IRcode/IRcodeBlock.h"
 #include "SDA/Core/IRcode/IRcodeEvents.h"
 #include "SDA/Core/IRcode/IRcodeHelper.h"
-#include "SDA/Core/Utils/IOManip.h"
+#include "SDA/Core/Utils/String.h"
 
 namespace sda::researcher
 {
@@ -245,8 +245,7 @@ namespace sda::researcher
         void addField(Structure* structure, size_t offset, Structure* varStructure) {
             auto it = structure->fields.find(offset);
             if (it == structure->fields.end()) {
-                auto offsetStr = (std::stringstream() << "0x" << utils::to_hex() << offset).str();
-                auto fieldStructure = createStructure(structure->name + "_" + offsetStr);
+                auto fieldStructure = createStructure(structure->name + "_0x" + utils::ToHex(offset));
                 it = structure->fields.emplace(offset, fieldStructure).first;
             }
             auto fieldStructure = it->second;

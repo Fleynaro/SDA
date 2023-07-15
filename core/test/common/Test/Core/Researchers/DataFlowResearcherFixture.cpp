@@ -80,7 +80,7 @@ std::string DataFlowResearcherFixture::GetNodeName(researcher::DataFlowNode* nod
                         ss << "Read ";
                     ss << GetNodeName(predNode, function);
                     if (node->offset > 0) {
-                        ss << " + 0x" << utils::to_hex() << node->offset;
+                        ss << " + 0x" << utils::ToHex(node->offset);
                     }
                     printer.newLine();
                 }

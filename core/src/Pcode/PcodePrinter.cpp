@@ -1,6 +1,6 @@
 #include "SDA/Core/Pcode/PcodePrinter.h"
 #include "SDA/Core/Pcode/PcodeGraph.h"
-#include "SDA/Core/Utils/IOManip.h"
+#include "SDA/Core/Utils/String.h"
 #include <sstream>
 #include "rang.hpp"
 
@@ -94,7 +94,7 @@ void Printer::printVarnode(std::shared_ptr<Varnode> varnode, bool printSizeAndOf
             }
         }
         std::stringstream ss;
-        ss << "0x" << utils::to_hex() << constVarnode->getValue();
+        ss << "0x" << utils::ToHex(constVarnode->getValue());
         if (printSizeAndOffset) 
             ss << ":" << constVarnode->getSize();
         printToken(ss.str(), NUMBER);

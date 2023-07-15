@@ -116,12 +116,11 @@ protected:
             auto it2 = structure->conditions.values().find(offset);
             if (it2 != structure->conditions.values().end()) {
                 for (auto value : it2->second) {
-                    fieldValues << sep << "0x" << utils::to_hex() << value;
+                    fieldValues << sep << "0x" << utils::ToHex(value);
                     sep = ", ";
                 }
             }
-            auto offsetStr = (std::stringstream() << "0x" << utils::to_hex() << offset).str();
-            ss << "    " << offsetStr << ": " << fieldValues.str() << std::endl;
+            ss << "    " << "0x" << utils::ToHex(offset) << ": " << fieldValues.str() << std::endl;
         }
         ss << "}";
     }

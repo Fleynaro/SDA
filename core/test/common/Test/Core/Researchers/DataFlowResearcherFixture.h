@@ -1,7 +1,7 @@
 #pragma once
 #include "ResearcherFixture.h"
 #include "SDA/Core/Researchers/DataFlowResearcher.h"
-#include "SDA/Core/Utils/IOManip.h"
+#include "SDA/Core/Utils/String.h"
 
 using namespace sda;
 using namespace sda::test;

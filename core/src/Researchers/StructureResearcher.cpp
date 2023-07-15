@@ -22,7 +22,7 @@ StructureRepository::StructureRepository(std::shared_ptr<sda::EventPipe> eventPi
         m_eventPipe->subscribe(std::function([&](const LinkCreatedEvent& event) {
             std::string offsetStr;
             if (event.offset) {
-                offsetStr = (std::stringstream() << " + 0x" << utils::to_hex() << event.offset).str();
+                offsetStr = " + 0x" + utils::ToHex(event.offset);
             }
             PLOG_DEBUG << "LinkCreatedEvent: node " << event.node->getName()
                         << " -> struct " << event.structure->name << offsetStr;

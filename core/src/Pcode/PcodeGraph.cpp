@@ -2,7 +2,7 @@
 #include "SDA/Core/Pcode/PcodeEvents.h"
 #include "SDA/Core/Pcode/PcodePrinter.h"
 #include "SDA/Core/Utils/Logger.h"
-#include "SDA/Core/Utils/IOManip.h"
+#include "SDA/Core/Utils/String.h"
 #include "SDA/Core/Commit.h"
 #include <set>
 #include <stdexcept>
@@ -96,7 +96,7 @@ Graph::Graph(std::shared_ptr<EventPipe> eventPipe, Platform* platform)
             PLOG_DEBUG << "FunctionGraphRemovedEvent: " << event.functionGraph->getName();
         }));
         m_eventPipe->subscribe(std::function([&](const pcode::UnvisitedOffsetFoundEvent& event) {
-            PLOG_DEBUG << "UnvisitedOffsetFoundEvent: 0x" << (std::stringstream() << utils::to_hex() << event.offset).str();
+            PLOG_DEBUG << "UnvisitedOffsetFoundEvent: 0x" << utils::ToHex(event.offset);
         })); 
     }
 }
@@ -106,7 +106,7 @@ std::shared_ptr<sda::EventPipe> Graph::getEventPipe() {
 }
 
 void Graph::explore(InstructionOffset startOffset, InstructionProvider* instrProvider) {
-    PLOG_DEBUG << "Explore at offset 0x" << (std::stringstream() << utils::to_hex() << startOffset).str();
+    PLOG_DEBUG << "Explore at offset 0x" << utils::ToHex(startOffset);
     CommitScope commit(m_eventPipe);
     std::list<InstructionOffset> unvisitedOffsets = { startOffset };
     std::set<InstructionOffset> visitedOffsets;
