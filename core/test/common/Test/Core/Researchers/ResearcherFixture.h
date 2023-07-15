@@ -11,8 +11,6 @@ using namespace ::testing;
 class SemanticsFixture : public IRcodeFixture
 {
 protected:
-    semantics::SemanticsManager* semManager = nullptr;
-
     void SetUp() override;
 
     void TearDown() override;

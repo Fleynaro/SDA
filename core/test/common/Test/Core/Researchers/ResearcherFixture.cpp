@@ -6,10 +6,8 @@ using namespace ::testing;
 
 void SemanticsFixture::SetUp() {
     IRcodeFixture::SetUp();
-    semManager = new semantics::SemanticsManager(program);
 }
 
 void SemanticsFixture::TearDown() {
-    delete semManager;
     IRcodeFixture::TearDown();
 }
