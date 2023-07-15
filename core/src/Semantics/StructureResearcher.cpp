@@ -171,6 +171,8 @@ void StructureResearcher::researchStructures(DataFlowNode* node, const std::func
         if (auto valueLink = m_structureRepo->getLink(valueNode)) {
             if (valueLink->offset == 0) {
                 m_structureRepo->addField(addrLink->structure, addrLink->offset, valueLink->structure);
+            } else {
+                // see test StructureResearcherTest.GlobalVarPointerAssignment (when offset != 0)
             }
         }
         else if (auto constValue = m_structureRepo->getConstant(valueNode)) {

@@ -284,6 +284,48 @@ TEST_F(StructureResearcherTest, GlobalVarAssignmentObject) {
     ASSERT_TRUE(cmpStructures(expectedStructures));
 }
 
+TEST_F(StructureResearcherTest, GlobalVarPointerAssignment) {
+    /*
+        float func(float param1) {
+            globalVar_0x10 = &globalVar_0x20;
+            return globalVar_0x10;
+        }
+    */
+    auto sourcePCode = "\
+        $1:8 = INT_ADD rip:8, 0x10:8 \n\
+        $2:8 = INT_ADD rip:8, 0x20:8 \n\
+        STORE $1:8, $2:8 \n\
+        rax:8 = LOAD $1:8, 8:8 \
+    ";
+    auto expectedIRCode = "\
+        Block B0(level: 1): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U1]:8 = INT_ADD var1, 0x10:8 \n\
+            var3[$U2]:8 = INT_ADD var1, 0x20:8 \n\
+            var4[var2]:8 = COPY var3 \n\
+            var5:8 = LOAD var2 \n\
+            var6[rax]:8 = COPY var5 \
+    ";
+    auto expectedDataFlow = "\
+        var1 <- Copy Start \n\
+        var2 <- Copy var1 + 0x10 \n\
+        var3 <- Copy var1 + 0x20 \n\
+        var4 <- Write var2 \n\
+        var4 <- Write var3 \n\
+        var5 <- Read var2 \n\
+        var6 <- Copy var5 \
+    ";
+    auto expectedStructures = "\
+        struct root { \n\
+            0x10: B0:var5 \n\
+        } \
+    ";
+    auto function = parsePcode(sourcePCode, program);
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+    ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
+    ASSERT_TRUE(cmpStructures(expectedStructures));
+}
+
 TEST_F(StructureResearcherTest, DoubleRead) {
     /*
         void func() {
