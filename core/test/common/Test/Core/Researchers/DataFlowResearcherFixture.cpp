@@ -4,21 +4,21 @@ using namespace sda;
 using namespace sda::test;
 using namespace ::testing;
 
-void DataFlowSemanticsFixture::SetUp() {
-    SemanticsFixture::SetUp();
-    dataFlowRepo = std::make_unique<semantics::DataFlowRepository>(context->getEventPipe());
-    dataFlowCollector = std::make_unique<semantics::DataFlowCollector>(
+void DataFlowResearcherFixture::SetUp() {
+    ResearcherFixture::SetUp();
+    dataFlowRepo = std::make_unique<researcher::DataFlowRepository>(context->getEventPipe());
+    dataFlowCollector = std::make_unique<researcher::DataFlowCollector>(
         program,
         context->getPlatform(),
         dataFlowRepo.get());
     eventPipe->connect(dataFlowCollector->getEventPipe());
 }
 
-::testing::AssertionResult DataFlowSemanticsFixture::cmpDataFlow(ircode::Function* function, const std::string& expectedCode) const {
+::testing::AssertionResult DataFlowResearcherFixture::cmpDataFlow(ircode::Function* function, const std::string& expectedCode) const {
     return CmpDataFlow(dataFlowRepo.get(), function, expectedCode);
 }
 
-std::string DataFlowSemanticsFixture::GetNodeName(semantics::DataFlowNode* node, ircode::Function* function) {
+std::string DataFlowResearcherFixture::GetNodeName(researcher::DataFlowNode* node, ircode::Function* function) {
     if (auto var = node->getVariable()) {
         auto varFunction = var->getSourceOperation()->getBlock()->getFunction();
         return node->getName(varFunction != function);
@@ -26,7 +26,7 @@ std::string DataFlowSemanticsFixture::GetNodeName(semantics::DataFlowNode* node,
     return node->getName();
 }
 
-::testing::AssertionResult DataFlowSemanticsFixture::CmpDataFlow(semantics::DataFlowRepository* dataFlowRepo, ircode::Function* function, const std::string& expectedCode) {
+::testing::AssertionResult DataFlowResearcherFixture::CmpDataFlow(researcher::DataFlowRepository* dataFlowRepo, ircode::Function* function, const std::string& expectedCode) {
     std::stringstream ss;
     utils::AbstractPrinter printer;
     printer.setOutput(ss);
@@ -72,11 +72,11 @@ std::string DataFlowSemanticsFixture::GetNodeName(semantics::DataFlowNode* node,
                             predVar->getSourceOperation()->getBlock()->getFunction() != function) continue;
                     }
                     ss << GetNodeName(node, function) << " <- ";
-                    if (node->type == semantics::DataFlowNode::Copy)
+                    if (node->type == researcher::DataFlowNode::Copy)
                         ss << "Copy ";
-                    else if (node->type == semantics::DataFlowNode::Write)
+                    else if (node->type == researcher::DataFlowNode::Write)
                         ss << "Write ";
-                    else if (node->type == semantics::DataFlowNode::Read)
+                    else if (node->type == researcher::DataFlowNode::Read)
                         ss << "Read ";
                     ss << GetNodeName(predNode, function);
                     if (node->offset > 0) {

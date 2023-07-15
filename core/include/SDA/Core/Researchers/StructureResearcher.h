@@ -8,7 +8,7 @@
 #include "SDA/Core/IRcode/IRcodeHelper.h"
 #include "SDA/Core/Utils/IOManip.h"
 
-namespace sda::semantics
+namespace sda::researcher
 {
     static const size_t StructureResearchTopic = TopicName("StructureResearchTopic");
 
@@ -321,7 +321,7 @@ namespace sda::semantics
         Platform* m_platform;
         StructureRepository* m_structureRepo;
         DataFlowRepository* m_dataFlowRepo;
-        semantics::ConstConditionRepository* m_constCondRepo;
+        researcher::ConstConditionRepository* m_constCondRepo;
 
         class EventHandler
         {
@@ -388,7 +388,7 @@ namespace sda::semantics
             Platform* platform,
             StructureRepository* structureRepo,
             DataFlowRepository* dataFlowRepo,
-            semantics::ConstConditionRepository* constCondRepo
+            researcher::ConstConditionRepository* constCondRepo
         )
             : m_program(program)
             , m_platform(platform)

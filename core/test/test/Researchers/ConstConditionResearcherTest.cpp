@@ -4,9 +4,9 @@ using namespace sda;
 using namespace sda::test;
 using namespace ::testing;
 
-class ConstConditionSemanticsTest : public ConstConditionSemanticsFixture {};
+class ConstConditionResearcherTest : public ConstConditionResearcherFixture {};
 
-TEST_F(ConstConditionSemanticsTest, IfElse) {
+TEST_F(ConstConditionResearcherTest, IfElse) {
     auto sourcePCode = "\
         rax:8 = COPY 0:8 \n\
         $1:1 = INT_EQUAL rcx:4, 5:4 \n\
@@ -44,7 +44,7 @@ TEST_F(ConstConditionSemanticsTest, IfElse) {
     ASSERT_TRUE(cmpConditions(function, expectedConditions));
 }
 
-TEST_F(ConstConditionSemanticsTest, NestedIf) {
+TEST_F(ConstConditionResearcherTest, NestedIf) {
     auto sourcePCode = "\
         rax:8 = COPY 0:8 \n\
         $1:1 = INT_NOTEQUAL rcx:4, 5:4 \n\
@@ -83,7 +83,7 @@ TEST_F(ConstConditionSemanticsTest, NestedIf) {
     ASSERT_TRUE(cmpConditions(function, expectedConditions));
 }
 
-TEST_F(ConstConditionSemanticsTest, Loop) {
+TEST_F(ConstConditionResearcherTest, Loop) {
     /*
         void func(Object* param1) {
             int i = 0;

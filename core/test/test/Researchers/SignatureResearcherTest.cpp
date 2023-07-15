@@ -6,17 +6,17 @@ using namespace sda;
 using namespace sda::test;
 using namespace ::testing;
 
-class SignatureResearcherTest : public SemanticsFixture
+class SignatureResearcherTest : public ResearcherFixture
 {
 protected:
-    std::unique_ptr<semantics::SignatureRepository> signatureRepo;
-    std::unique_ptr<semantics::SignatureResearcher> signatureResearcher;
+    std::unique_ptr<researcher::SignatureRepository> signatureRepo;
+    std::unique_ptr<researcher::SignatureResearcher> signatureResearcher;
 
     void SetUp() override {
-        SemanticsFixture::SetUp();
+        ResearcherFixture::SetUp();
         auto callConv = std::make_shared<platform::FastcallCallingConvention>();
-        signatureRepo = std::make_unique<semantics::SignatureRepository>();
-        signatureResearcher = std::make_unique<semantics::SignatureResearcher>(
+        signatureRepo = std::make_unique<researcher::SignatureRepository>();
+        signatureResearcher = std::make_unique<researcher::SignatureResearcher>(
             program,
             context->getPlatform(),
             callConv,

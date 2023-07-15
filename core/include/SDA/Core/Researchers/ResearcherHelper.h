@@ -1,14 +1,9 @@
 #pragma once
 #include "SDA/Core/IRcode/IRcodeProgram.h"
-#include "SDA/Core/Symbol/FunctionSymbol.h"
-#include "SDA/Core/DataType/ScalarDataType.h"
-#include "SDA/Core/DataType/PointerDataType.h"
-#include "SDA/Core/DataType/ArrayDataType.h"
-#include "SDA/Core/DataType/StructureDataType.h"
 
-namespace sda::semantics
+namespace sda::researcher
 {
-    struct SemanticsPropagationContext {
+    struct ResearcherPropagationContext {
         const ircode::Operation* operation = nullptr;
         std::map<ircode::Function*, std::list<const ircode::Operation*>> nextOperations;
 

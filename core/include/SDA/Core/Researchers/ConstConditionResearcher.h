@@ -2,7 +2,7 @@
 #include "SDA/Core/IRcode/IRcodeProgram.h"
 #include "SDA/Core/IRcode/IRcodeEvents.h"
 
-namespace sda::semantics
+namespace sda::researcher
 {
     struct ConstantCondition {
         enum {

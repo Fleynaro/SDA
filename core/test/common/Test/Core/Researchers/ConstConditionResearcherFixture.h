@@ -6,14 +6,14 @@ using namespace sda;
 using namespace sda::test;
 using namespace ::testing;
 
-class ConstConditionSemanticsFixture : public SemanticsFixture
+class ConstConditionResearcherFixture : public ResearcherFixture
 {
 protected:
-    std::unique_ptr<semantics::ConstConditionRepository> constCondRepo;
+    std::unique_ptr<researcher::ConstConditionRepository> constCondRepo;
 
     void SetUp() override {
         IRcodeFixture::SetUp();
-        constCondRepo = std::make_unique<semantics::ConstConditionRepository>(program);
+        constCondRepo = std::make_unique<researcher::ConstConditionRepository>(program);
         eventPipe->connect(constCondRepo->getEventPipe());
     }
 
@@ -22,7 +22,7 @@ protected:
     }
 
 public:
-    static ::testing::AssertionResult CmpConditions(semantics::ConstConditionRepository* constCondRepo, ircode::Function* function, const std::string& expectedCode) {
+    static ::testing::AssertionResult CmpConditions(researcher::ConstConditionRepository* constCondRepo, ircode::Function* function, const std::string& expectedCode) {
         std::stringstream ss;
         utils::AbstractPrinter printer;
         printer.setOutput(ss);
@@ -39,7 +39,7 @@ public:
                 for (auto& cond : conditions) {
                     printer.newLine();
                     ss << cond.var->getName();
-                    ss << (cond.type == semantics::ConstantCondition::EQUAL ? " == " : " != ");
+                    ss << (cond.type == researcher::ConstantCondition::EQUAL ? " == " : " != ");
                     ss << cond.value;
                 }
                 printer.endBlock();

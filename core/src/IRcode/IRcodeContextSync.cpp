@@ -1,6 +1,6 @@
 #include "SDA/Core/IRcode/IRcodeContextSync.h"
 #include "SDA/Core/IRcode/IRcodeHelper.h"
-#include "SDA/Core/Researchers/Researcher.h"
+#include "SDA/Core/Researchers/ResearcherHelper.h"
 #include "SDA/Core/SymbolTable/StandartSymbolTable.h"
 #include "SDA/Core/Utils/IOManip.h"
 #include "SDA/Core/Commit.h"
@@ -10,7 +10,7 @@ using namespace sda::ircode;
 
 ContextSync::SignatureToVariableMappingUpdater::SignatureToVariableMappingUpdater(
     Function* function,
-    semantics::SemanticsPropagationContext* ctx,
+    researcher::ResearcherPropagationContext* ctx,
     SignatureDataType* signatureDt
 )
     : m_function(function)
@@ -119,7 +119,7 @@ void ContextSync::handleFunctionRemoved(const FunctionRemovedEvent& event) {
 }
 
 void ContextSync::handleFunctionDecompiled(const ircode::FunctionDecompiledEvent& event) {
-    semantics::SemanticsPropagationContext ctx;
+    researcher::ResearcherPropagationContext ctx;
     for (auto block : event.blocks) { 
         for (auto& op : block->getOperations()) {
             ctx.addNextOperation(op.get());
@@ -158,7 +158,7 @@ void ContextSync::handleObjectModified(const ObjectModifiedEvent& event) {
                         // update 'signature->variable' mapping
                         function->m_paramVars.clear();
                         function->m_paramVars.resize(signatureDt->getParameters().size());
-                        semantics::SemanticsPropagationContext ctx;
+                        researcher::ResearcherPropagationContext ctx;
                         for (auto& [_, block] : function->getBlocks()) { 
                             for (auto& op : block.getOperations()) {
                                 ctx.addNextOperation(op.get());

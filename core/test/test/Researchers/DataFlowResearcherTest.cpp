@@ -4,9 +4,9 @@ using namespace sda;
 using namespace sda::test;
 using namespace ::testing;
 
-class DataFlowSemanticsTest : public DataFlowSemanticsFixture {};
+class DataFlowResearcherTest : public DataFlowResearcherFixture {};
 
-TEST_F(DataFlowSemanticsTest, GlobalVarAssignment) {
+TEST_F(DataFlowResearcherTest, GlobalVarAssignment) {
     /*
         float func(float param1) {
             globalVar_0x10 = param1;
@@ -41,7 +41,7 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignment) {
     ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
 }
 
-TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentDouble) {
+TEST_F(DataFlowResearcherTest, GlobalVarAssignmentDouble) {
     /*
         float func(float param1, float param2) {
             globalVar_0x10 = param1;
@@ -86,7 +86,7 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentDouble) {
     ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
 }
 
-TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentObject) {
+TEST_F(DataFlowResearcherTest, GlobalVarAssignmentObject) {
     /*
         void func(Object* param1, float param2) {
             param1->field_0x10 = param2;
@@ -125,7 +125,7 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentObject) {
     ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
 }
 
-TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentObjectDouble) {
+TEST_F(DataFlowResearcherTest, GlobalVarAssignmentObjectDouble) {
     /*
         void func(Object* param1, float param2) {
             param1->field_0x10 = param2;
@@ -172,7 +172,7 @@ TEST_F(DataFlowSemanticsTest, GlobalVarAssignmentObjectDouble) {
     ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
 }
 
-TEST_F(DataFlowSemanticsTest, If) {
+TEST_F(DataFlowResearcherTest, If) {
     /*
         void func() {
             ...
@@ -220,7 +220,7 @@ TEST_F(DataFlowSemanticsTest, If) {
     ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
 }
 
-TEST_F(DataFlowSemanticsTest, Functions) {
+TEST_F(DataFlowResearcherTest, Functions) {
     /*
         void main() {
             setGlobalFloatValue(0.5);

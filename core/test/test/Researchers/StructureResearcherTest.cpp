@@ -7,25 +7,25 @@ using namespace sda;
 using namespace sda::test;
 using namespace ::testing;
 
-class StructureResearcherTest : public SemanticsFixture
+class StructureResearcherTest : public ResearcherFixture
 {
 protected:
-    std::unique_ptr<semantics::ConstConditionRepository> constCondRepo;
-    std::unique_ptr<semantics::DataFlowRepository> dataFlowRepo;
-    std::unique_ptr<semantics::DataFlowCollector> dataFlowCollector;
-    std::unique_ptr<semantics::StructureRepository> structureRepo;
-    std::unique_ptr<semantics::StructureResearcher> structureResearcher;
+    std::unique_ptr<researcher::ConstConditionRepository> constCondRepo;
+    std::unique_ptr<researcher::DataFlowRepository> dataFlowRepo;
+    std::unique_ptr<researcher::DataFlowCollector> dataFlowCollector;
+    std::unique_ptr<researcher::StructureRepository> structureRepo;
+    std::unique_ptr<researcher::StructureResearcher> structureResearcher;
 
     void SetUp() override {
-        SemanticsFixture::SetUp();
-        constCondRepo = std::make_unique<semantics::ConstConditionRepository>(program);
-        structureRepo = std::make_unique<semantics::StructureRepository>(eventPipe);
-        dataFlowRepo = std::make_unique<semantics::DataFlowRepository>(eventPipe);
-        dataFlowCollector = std::make_unique<semantics::DataFlowCollector>(
+        ResearcherFixture::SetUp();
+        constCondRepo = std::make_unique<researcher::ConstConditionRepository>(program);
+        structureRepo = std::make_unique<researcher::StructureRepository>(eventPipe);
+        dataFlowRepo = std::make_unique<researcher::DataFlowRepository>(eventPipe);
+        dataFlowCollector = std::make_unique<researcher::DataFlowCollector>(
             program,
             context->getPlatform(),
             dataFlowRepo.get());
-        structureResearcher = std::make_unique<semantics::StructureResearcher>(
+        structureResearcher = std::make_unique<researcher::StructureResearcher>(
             program,
             context->getPlatform(),
             structureRepo.get(),
@@ -37,7 +37,7 @@ protected:
     }
 
     ::testing::AssertionResult cmpStructures(const std::string& expectedCode) const {
-        std::list<semantics::Structure*> allStructures;
+        std::list<researcher::Structure*> allStructures;
         auto rootStructures = structureRepo->getRootStructures();
         for (auto rootStructure : sortByName(rootStructures)) {
             gatherAllChildStructures(rootStructure, allStructures);
@@ -63,8 +63,8 @@ protected:
         return Compare(ss.str(), expectedCode);
     }
 
-    void gatherAllChildStructures(semantics::Structure* rootStructure, std::list<semantics::Structure*>& result) const {
-        std::list<semantics::Structure*> structuresToVisit;
+    void gatherAllChildStructures(researcher::Structure* rootStructure, std::list<researcher::Structure*>& result) const {
+        std::list<researcher::Structure*> structuresToVisit;
         structuresToVisit.push_back(rootStructure);
         while (!structuresToVisit.empty()) {
             auto structure = structuresToVisit.front();
@@ -79,7 +79,7 @@ protected:
         }
     }
 
-    void printStructure(std::stringstream& ss, semantics::Structure* structure) const {
+    void printStructure(std::stringstream& ss, researcher::Structure* structure) const {
         ss << "struct " << structure->name << " ";
         if (!structure->parents.empty()) {
             ss << ": ";
@@ -126,19 +126,19 @@ protected:
         ss << "}";
     }
 
-    std::list<semantics::Structure*> sortByName(std::list<semantics::Structure*> structures) const {
-        structures.sort([](semantics::Structure* a, semantics::Structure* b) {
+    std::list<researcher::Structure*> sortByName(std::list<researcher::Structure*> structures) const {
+        structures.sort([](researcher::Structure* a, researcher::Structure* b) {
             return a->name < b->name;
         });
         return structures;
     }
 
     ::testing::AssertionResult cmpConditions(ircode::Function* function, const std::string& expectedCode) const {
-        return ConstConditionSemanticsFixture::CmpConditions(constCondRepo.get(), function, expectedCode);
+        return ConstConditionResearcherFixture::CmpConditions(constCondRepo.get(), function, expectedCode);
     }
 
     ::testing::AssertionResult cmpDataFlow(ircode::Function* function, const std::string& expectedCode) const {
-       return DataFlowSemanticsFixture::CmpDataFlow(dataFlowRepo.get(), function, expectedCode);
+       return DataFlowResearcherFixture::CmpDataFlow(dataFlowRepo.get(), function, expectedCode);
     }
 };
 

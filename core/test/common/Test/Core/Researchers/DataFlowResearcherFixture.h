@@ -7,18 +7,18 @@ using namespace sda;
 using namespace sda::test;
 using namespace ::testing;
 
-class DataFlowSemanticsFixture : public SemanticsFixture
+class DataFlowResearcherFixture : public ResearcherFixture
 {
 protected:
-    std::unique_ptr<semantics::DataFlowRepository> dataFlowRepo;
-    std::unique_ptr<semantics::DataFlowCollector> dataFlowCollector;
+    std::unique_ptr<researcher::DataFlowRepository> dataFlowRepo;
+    std::unique_ptr<researcher::DataFlowCollector> dataFlowCollector;
 
     void SetUp() override;
 
     ::testing::AssertionResult cmpDataFlow(ircode::Function* function, const std::string& expectedCode) const;
 
-    static std::string GetNodeName(semantics::DataFlowNode* node, ircode::Function* function = nullptr);
+    static std::string GetNodeName(researcher::DataFlowNode* node, ircode::Function* function = nullptr);
 
 public:
-    static ::testing::AssertionResult CmpDataFlow(semantics::DataFlowRepository* dataFlowRepo, ircode::Function* function, const std::string& expectedCode);
+    static ::testing::AssertionResult CmpDataFlow(researcher::DataFlowRepository* dataFlowRepo, ircode::Function* function, const std::string& expectedCode);
 };

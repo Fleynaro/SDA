@@ -1,12 +1,13 @@
 #pragma once
-#include "Researcher.h"
+#include "ResearcherHelper.h"
 #include "SDA/Core/Commit.h"
 #include "SDA/Core/DataType/SignatureDataType.h"
+#include "SDA/Core/DataType/ScalarDataType.h"
 #include "SDA/Core/IRcode/IRcodeBlock.h"
 #include "SDA/Core/IRcode/IRcodeEvents.h"
 #include "SDA/Core/IRcode/IRcodeHelper.h"
 
-namespace sda::semantics
+namespace sda::researcher
 {
     struct Signature {
         struct StorageInfo : CallingConvention::StorageInfo {
@@ -128,7 +129,7 @@ namespace sda::semantics
             SignatureResearcher* m_researcher;
 
             void handleFunctionDecompiled(const ircode::FunctionDecompiledEvent& event) {
-                SemanticsPropagationContext ctx;
+                ResearcherPropagationContext ctx;
                 for (auto block : event.blocks) { 
                     for (auto& op : block->getOperations()) {
                         ctx.addNextOperation(op.get());
@@ -179,7 +180,7 @@ namespace sda::semantics
             return m_ircodeEventHandler.getEventPipe();
         }
 
-        void research(SemanticsPropagationContext& ctx)
+        void research(ResearcherPropagationContext& ctx)
         {
             auto function = ctx.operation->getBlock()->getFunction();
             auto output = ctx.operation->getOutput();
@@ -196,7 +197,7 @@ namespace sda::semantics
         }
     private:
         void researchValue(
-            SemanticsPropagationContext& ctx,
+            ResearcherPropagationContext& ctx,
             std::shared_ptr<ircode::Value> value,
             CallingConvention::Storage::UseType type)
         {

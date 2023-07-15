@@ -1,7 +1,7 @@
 #include "SDA/Core/Researchers/StructureResearcher.h"
 
 using namespace sda;
-using namespace sda::semantics;
+using namespace sda::researcher;
 
 StructureRepository::StructureRepository(std::shared_ptr<sda::EventPipe> eventPipe)
     : m_eventPipe(eventPipe)

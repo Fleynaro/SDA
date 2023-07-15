@@ -1,11 +1,11 @@
 #pragma once
-#include "Researcher.h"
+#include "ResearcherHelper.h"
 #include "SDA/Core/IRcode/IRcodeBlock.h"
 #include "SDA/Core/IRcode/IRcodeEvents.h"
 #include "SDA/Core/Utils/Logger.h"
 #include "SDA/Core/Utils/IOManip.h"
 
-namespace sda::semantics
+namespace sda::researcher
 {
     static const size_t DataFlowEventTopic = TopicName("DataFlowEventTopic");
 
@@ -218,7 +218,7 @@ namespace sda::semantics
             DataFlowCollector* m_collector;
 
             void handleFunctionDecompiled(const ircode::FunctionDecompiledEvent& event) {
-                SemanticsPropagationContext ctx;
+                ResearcherPropagationContext ctx;
                 for (auto block : event.blocks) { 
                     for (auto& op : block->getOperations()) {
                         ctx.addNextOperation(op.get());
@@ -267,7 +267,7 @@ namespace sda::semantics
             return m_ircodeEventHandler.getEventPipe();
         }
 
-        void research(SemanticsPropagationContext& ctx)
+        void research(ResearcherPropagationContext& ctx)
         {
             auto output = ctx.operation->getOutput();
             if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(ctx.operation)) {

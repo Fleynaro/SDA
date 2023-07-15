@@ -2,7 +2,7 @@
 #include "IRcodeProgram.h"
 #include "IRcodeEvents.h"
 #include "SDA/Core/Platform/CallingConvention.h"
-#include "SDA/Core/Researchers/Researcher.h"
+#include "SDA/Core/Researchers/ResearcherHelper.h"
 
 namespace sda::ircode
 {
@@ -10,12 +10,12 @@ namespace sda::ircode
     {
         class SignatureToVariableMappingUpdater {
             Function* m_function;
-            semantics::SemanticsPropagationContext* m_ctx;
+            researcher::ResearcherPropagationContext* m_ctx;
             SignatureDataType* m_signatureDt;
         public:
             SignatureToVariableMappingUpdater(
                 Function* function,
-                semantics::SemanticsPropagationContext* ctx,
+                researcher::ResearcherPropagationContext* ctx,
                 SignatureDataType* signatureDt
             );
 

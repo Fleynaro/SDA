@@ -1,7 +1,7 @@
 #include "SDA/Core/Researchers/DataFlowResearcher.h"
 
 using namespace sda;
-using namespace sda::semantics;
+using namespace sda::researcher;
 
 DataFlowRepository::DataFlowRepository(std::shared_ptr<sda::EventPipe> eventPipe)
     : m_eventPipe(eventPipe)
