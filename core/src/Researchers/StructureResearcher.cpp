@@ -3,6 +3,50 @@
 using namespace sda;
 using namespace sda::researcher;
 
+void Structure::passDescendants(std::function<void(Structure* structure, bool& goNext)> callback)
+{
+    std::map<Structure*, size_t> structKnocks;
+    std::list<Structure*> structToVisit;
+    structToVisit.push_back(this);
+    do {
+        while (!structToVisit.empty()) {
+            auto structure = structToVisit.front();
+            structToVisit.pop_front();
+            auto it = structKnocks.find(structure);
+            if (it == structKnocks.end()) {
+                it = structKnocks.insert({ structure, 0 }).first;
+            }
+            auto knocks = ++it->second;
+            if (knocks < structure->inputs.size()) {
+                continue;
+            }
+            structKnocks.erase(it);
+            bool goNext = false;
+            callback(structure, goNext);
+            if (goNext) {
+                for (auto it = structure->outputs.rbegin(); it != structure->outputs.rend(); ++it) {
+                    structToVisit.push_front(*it);
+                }
+            }
+
+            // debug
+            {
+                std::stringstream ss;
+                std::string sep;
+                for (auto structure : structToVisit) {
+                    ss << sep << structure->name;
+                    sep = ",";
+                }
+                PLOG_DEBUG << "structure=" << structure->name << ", structToVisit=" << ss.str();
+            }
+        }
+        if (!structKnocks.empty()) {
+            auto structure = structKnocks.begin()->first;
+            structToVisit.push_back(structure);
+        }
+    } while (!structToVisit.empty());
+}
+
 StructureRepository::StructureRepository(std::shared_ptr<sda::EventPipe> eventPipe)
     : m_eventPipe(eventPipe)
 {

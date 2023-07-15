@@ -24,6 +24,16 @@ namespace sda::researcher
         {}
     };
 
+    // When a structure is updated
+    struct StructureUpdatedEvent : Event {
+        Structure* structure;
+
+        StructureUpdatedEvent(Structure* structure)
+            : Event(StructureResearchTopic)
+            , structure(structure)
+        {}
+    };
+
     // When a structure is removed
     struct StructureRemovedEvent : Event {
         Structure* structure;
@@ -129,6 +139,8 @@ namespace sda::researcher
         std::map<size_t, Structure*> fields;
         ConditionSet conditions;
         std::set<DataFlowNode*> linkedNodes;
+
+        void passDescendants(std::function<void(Structure* structure, bool& goNext)> callback);
     };
 
     class StructureRepository
@@ -202,8 +214,8 @@ namespace sda::researcher
         }
 
         void removeStructure(Structure* structure) {
-            m_eventPipe->send(StructureRemovedEvent(structure));
             clearStructure(structure);
+            m_eventPipe->send(StructureRemovedEvent(structure));
             // remove links
             for (auto node : structure->linkedNodes) {
                 m_nodeToStructure.erase(node);
