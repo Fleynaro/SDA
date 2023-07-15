@@ -124,6 +124,8 @@ namespace sda::researcher
         DataFlowNode* sourceNode = nullptr;
         std::list<Structure*> parents;
         std::list<Structure*> childs;
+        std::list<Structure*> inputs;
+        std::list<Structure*> outputs;
         std::map<size_t, Structure*> fields;
         ConditionSet conditions;
         std::set<DataFlowNode*> linkedNodes;
@@ -227,6 +229,18 @@ namespace sda::researcher
             }
             structure->childs.clear();
 
+            // clear inputs
+            for (auto input : structure->inputs) {
+                input->outputs.remove(structure);
+            }
+            structure->inputs.clear();
+
+            // clear outputs
+            for (auto output : structure->outputs) {
+                output->inputs.remove(structure);
+            }
+            structure->outputs.clear();
+
             // remove fields
             for (auto& [offset, field] : structure->fields) {
                 removeStructure(field);
@@ -242,7 +256,7 @@ namespace sda::researcher
             addLink(structure->sourceNode, structure, 0, true);
         }
 
-        void addField(Structure* structure, size_t offset, Structure* varStructure) {
+        void addField(Structure* structure, size_t offset, Structure* varStructure, bool write) {
             auto it = structure->fields.find(offset);
             if (it == structure->fields.end()) {
                 auto fieldStructure = createStructure(structure->name + "_0x" + utils::ToHex(offset));
@@ -250,6 +264,13 @@ namespace sda::researcher
             }
             auto fieldStructure = it->second;
             addChild(fieldStructure, varStructure);
+            if (write) {
+                // if writing to the field
+                addOutput(varStructure, fieldStructure);
+            } else {
+                // if reading from the field
+                addOutput(fieldStructure, varStructure);
+            }
         }
 
         void addChild(Structure* structure, Structure* child) {
@@ -258,6 +279,13 @@ namespace sda::researcher
             structure->childs.push_back(child);
             child->parents.push_back(structure);
             m_eventPipe->send(ChildAddedEvent(structure, child));
+        }
+
+        void addOutput(Structure* structure, Structure* output) {
+            if (std::find(structure->outputs.begin(), structure->outputs.end(), output) != structure->outputs.end())
+                return;
+            structure->outputs.push_back(output);
+            output->inputs.push_back(structure);
         }
 
         // <own> - create structure for <node> itself if it doesn't exist

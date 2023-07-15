@@ -108,6 +108,7 @@ void StructureResearcher::researchStructures(DataFlowNode* node, const std::func
 
                         structure->conditions = newConditions;
                         m_structureRepo->addChild(predLink->structure, structure);
+                        m_structureRepo->addOutput(predLink->structure, structure);
                         isNewStructure = true;
                     }
                 }
@@ -150,6 +151,7 @@ void StructureResearcher::researchStructures(DataFlowNode* node, const std::func
             for (auto pred : node->predecessors) {
                 auto predLink = m_structureRepo->getLink(pred);
                 m_structureRepo->addChild(structure, predLink->structure);
+                m_structureRepo->addOutput(predLink->structure, structure);
             }
         }
     }
@@ -159,7 +161,7 @@ void StructureResearcher::researchStructures(DataFlowNode* node, const std::func
         auto addrLink = m_structureRepo->getLink(addrNode);
         if (!addrLink) return;
         auto structure = m_structureRepo->getOrCreateStructure(node);
-        m_structureRepo->addField(addrLink->structure, addrLink->offset, structure);
+        m_structureRepo->addField(addrLink->structure, addrLink->offset, structure, false);
     }
     else if (node->type == DataFlowNode::Write) {
         assert(node->predecessors.size() == 2);
@@ -170,7 +172,7 @@ void StructureResearcher::researchStructures(DataFlowNode* node, const std::func
         addrLink->structure->conditions.remove(addrLink->offset);
         if (auto valueLink = m_structureRepo->getLink(valueNode)) {
             if (valueLink->offset == 0) {
-                m_structureRepo->addField(addrLink->structure, addrLink->offset, valueLink->structure);
+                m_structureRepo->addField(addrLink->structure, addrLink->offset, valueLink->structure, true);
             } else {
                 // see test StructureResearcherTest.GlobalVarPointerAssignment (when offset != 0)
             }
