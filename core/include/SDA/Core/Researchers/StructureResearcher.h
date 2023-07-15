@@ -339,14 +339,7 @@ namespace sda::researcher
                     std::list<DataFlowNode*> updatedNodes;
                 };
                 auto data = std::make_shared<Data>();
-                auto filter = EventPipe::FilterOr(
-                    EventPipe::Filter(std::function([](const DataFlowNodeCreatedEvent& event) {
-                        return true;
-                    })),
-                    EventPipe::Filter(std::function([](const DataFlowNodeUpdatedEvent& event) {
-                        return true;
-                    }))
-                );
+                auto filter = EventPipe::FilterTopic(DataFlowEventTopic);
                 auto commitEmitter = std::function([data](const EventNext& next) {
                     while (!data->updatedNodes.empty()) {
                         auto node = data->updatedNodes.front();
@@ -359,6 +352,9 @@ namespace sda::researcher
                 commitPipeIn->subscribe(std::function([data](const DataFlowNodeCreatedEvent& event) {
                     // creating event is treated as updating event
                     data->updatedNodes.push_back(event.node);
+                }));
+                commitPipeIn->subscribe(std::function([data](const DataFlowNodeRemovedEvent& event) {
+                    data->updatedNodes.remove(event.node);
                 }));
                 commitPipeIn->subscribe(std::function([data](const DataFlowNodeUpdatedEvent& event) {
                     auto it = std::find(data->updatedNodes.begin(), data->updatedNodes.end(), event.node);
