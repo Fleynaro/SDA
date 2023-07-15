@@ -1,6 +1,6 @@
 #pragma once
-#include "DataFlowSemantics.h"
-#include "ConstConditionSemantics.h"
+#include "DataFlowResearcher.h"
+#include "ConstConditionResearcher.h"
 #include "SDA/Core/Commit.h"
 #include "SDA/Core/DataType/StructureDataType.h"
 #include "SDA/Core/IRcode/IRcodeBlock.h"

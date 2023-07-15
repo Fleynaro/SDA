@@ -1,6 +1,6 @@
 #pragma once
-#include "SemanticsFixture.h"
-#include "SDA/Core/Semantics/DataFlowSemantics.h"
+#include "ResearcherFixture.h"
+#include "SDA/Core/Researchers/DataFlowResearcher.h"
 #include "SDA/Core/Utils/IOManip.h"
 
 using namespace sda;

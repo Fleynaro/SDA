@@ -2,7 +2,7 @@
 #include "IRcodeProgram.h"
 #include "IRcodeEvents.h"
 #include "SDA/Core/Platform/CallingConvention.h"
-#include "SDA/Core/Semantics/Semantics.h"
+#include "SDA/Core/Researchers/Researcher.h"
 
 namespace sda::ircode
 {

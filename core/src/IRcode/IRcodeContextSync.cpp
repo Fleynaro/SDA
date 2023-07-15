@@ -1,6 +1,6 @@
 #include "SDA/Core/IRcode/IRcodeContextSync.h"
 #include "SDA/Core/IRcode/IRcodeHelper.h"
-#include "SDA/Core/Semantics/Semantics.h"
+#include "SDA/Core/Researchers/Researcher.h"
 #include "SDA/Core/SymbolTable/StandartSymbolTable.h"
 #include "SDA/Core/Utils/IOManip.h"
 #include "SDA/Core/Commit.h"

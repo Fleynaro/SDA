@@ -1,5 +1,5 @@
-#include "Test/Core/Semantics/SemanticsFixture.h"
-#include "SDA/Core/Semantics/DataTypeSemantics.h"
+#include "Test/Core/Researchers/ResearcherFixture.h"
+#include "SDA/Core/Researchers/DataTypeResearcher.h"
 
 using namespace sda;
 using namespace sda::test;

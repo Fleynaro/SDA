@@ -1,5 +1,5 @@
 #pragma once
-#include "Semantics.h"
+#include "Researcher.h"
 
 namespace sda::semantics
 {

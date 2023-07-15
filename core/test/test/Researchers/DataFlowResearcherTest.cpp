@@ -1,4 +1,4 @@
-#include "Test/Core/Semantics/DataFlowSemanticsFixture.h"
+#include "Test/Core/Researchers/DataFlowResearcherFixture.h"
 
 using namespace sda;
 using namespace sda::test;

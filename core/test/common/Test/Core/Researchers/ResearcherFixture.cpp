@@ -1,4 +1,4 @@
-#include "SemanticsFixture.h"
+#include "ResearcherFixture.h"
 
 using namespace sda;
 using namespace sda::test;

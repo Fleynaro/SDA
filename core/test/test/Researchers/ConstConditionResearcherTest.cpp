@@ -1,4 +1,4 @@
-#include "Test/Core/Semantics/ConstConditionSemanticsFixture.h"
+#include "Test/Core/Researchers/ConstConditionResearcherFixture.h"
 
 using namespace sda;
 using namespace sda::test;

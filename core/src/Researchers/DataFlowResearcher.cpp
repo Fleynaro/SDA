@@ -1,4 +1,4 @@
-#include "SDA/Core/Semantics/DataFlowSemantics.h"
+#include "SDA/Core/Researchers/DataFlowResearcher.h"
 
 using namespace sda;
 using namespace sda::semantics;

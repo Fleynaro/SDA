@@ -1,7 +1,7 @@
 #pragma once
 #include "Test/Core/IRcode/IRcodeFixture.h"
 #include "Test/Core/Utils/TestAssertion.h"
-#include "SDA/Core/Semantics/Semantics.h"
+#include "SDA/Core/Researchers/Researcher.h"
 #include "SDA/Core/Utils/AbstractPrinter.h"
 
 using namespace sda;

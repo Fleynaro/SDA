@@ -1,5 +1,5 @@
 #pragma once
-#include "Semantics.h"
+#include "Researcher.h"
 #include "SDA/Core/Commit.h"
 #include "SDA/Core/DataType/SignatureDataType.h"
 #include "SDA/Core/IRcode/IRcodeBlock.h"

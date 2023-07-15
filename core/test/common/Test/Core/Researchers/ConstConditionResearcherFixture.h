@@ -1,6 +1,6 @@
 #pragma once
-#include "SemanticsFixture.h"
-#include "SDA/Core/Semantics/ConstConditionSemantics.h"
+#include "ResearcherFixture.h"
+#include "SDA/Core/Researchers/ConstConditionResearcher.h"
 
 using namespace sda;
 using namespace sda::test;

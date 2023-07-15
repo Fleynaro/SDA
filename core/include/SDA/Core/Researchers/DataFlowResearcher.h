@@ -1,5 +1,5 @@
 #pragma once
-#include "Semantics.h"
+#include "Researcher.h"
 #include "SDA/Core/IRcode/IRcodeBlock.h"
 #include "SDA/Core/IRcode/IRcodeEvents.h"
 #include "SDA/Core/Utils/Logger.h"

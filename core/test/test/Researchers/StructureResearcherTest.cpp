@@ -1,7 +1,7 @@
-#include "Test/Core/Semantics/SemanticsFixture.h"
-#include "Test/Core/Semantics/DataFlowSemanticsFixture.h"
-#include "Test/Core/Semantics/ConstConditionSemanticsFixture.h"
-#include "SDA/Core/Semantics/StructureResearcher.h"
+#include "Test/Core/Researchers/ResearcherFixture.h"
+#include "Test/Core/Researchers/DataFlowResearcherFixture.h"
+#include "Test/Core/Researchers/ConstConditionResearcherFixture.h"
+#include "SDA/Core/Researchers/StructureResearcher.h"
 
 using namespace sda;
 using namespace sda::test;

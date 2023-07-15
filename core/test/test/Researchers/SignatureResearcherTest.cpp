@@ -1,5 +1,5 @@
-#include "Test/Core/Semantics/SemanticsFixture.h"
-#include "SDA/Core/Semantics/SignatureResearcher.h"
+#include "Test/Core/Researchers/ResearcherFixture.h"
+#include "SDA/Core/Researchers/SignatureResearcher.h"
 #include "SDA/Platform/X86/CallingConvention.h"
 
 using namespace sda;

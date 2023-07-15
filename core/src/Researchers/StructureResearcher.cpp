@@ -1,4 +1,4 @@
-#include "SDA/Core/Semantics/StructureResearcher.h"
+#include "SDA/Core/Researchers/StructureResearcher.h"
 
 using namespace sda;
 using namespace sda::semantics;
