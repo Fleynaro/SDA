@@ -3,6 +3,50 @@
 
 namespace sda::researcher
 {
+    class ClassFieldRangeSet {
+        using LabelType = size_t;
+        struct Range {
+            std::set<LabelType> labels;
+            size_t maxOffset = 0;
+
+            bool intersect(const Range& range) {
+                for (auto label : range.labels) {
+                    if (labels.find(label) != labels.end())
+                        return true;
+                }
+                return false;
+            }
+
+            void merge(const Range& range) {
+                for (auto label : range.labels) {
+                    labels.insert(label);
+                }
+                //maxOffset = std::max(maxOffset, range.maxOffset);
+            }
+        };
+        std::list<Range> m_ranges;
+    public:
+        ClassFieldRangeSet() = default;
+
+        const std::list<Range>& getRanges() const {
+            return m_ranges;
+        }
+
+        void addRange(const std::set<LabelType>& labels, size_t maxOffset) {
+            auto newRange = Range { labels, maxOffset };
+            for (auto& range : m_ranges) {
+                if (range.intersect(newRange)) {
+                    if (range.maxOffset < newRange.maxOffset) {
+                        range.merge(newRange);
+                    } else {
+                        newRange.merge(range);
+                    }
+                }
+            }
+            m_ranges.emplace_back(newRange);
+        }
+    };
+
     class ClassRepository
     {
         struct StructureInfo {

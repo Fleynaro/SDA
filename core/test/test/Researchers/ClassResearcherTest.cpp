@@ -43,6 +43,70 @@ protected:
     }
 };
 
+::testing::AssertionResult CmpClassFieldRangeSet(const researcher::ClassFieldRangeSet& set, const std::string& expectedCode) {
+    auto ranges = set.getRanges();
+    ranges.sort([](const auto& a, const auto& b) {
+        if (a.labels.size() == b.labels.size())
+            return a.maxOffset < b.maxOffset;
+        return a.labels.size() < b.labels.size();
+    });
+    std::stringstream ss;
+    for (auto& [labels, maxOffset] : ranges) {
+        ss << "0x0 - 0x" << utils::ToHex(maxOffset);
+        std::string sep;
+        std::stringstream labelsStr;
+        for (auto label : labels) {
+            labelsStr << sep << "0x" << utils::ToHex(label);
+            sep = ", ";
+        }
+        ss << ": " << labelsStr.str() << std::endl;
+    }
+    return Compare(ss.str(), expectedCode);
+}
+
+TEST(ClassFieldRangeSet, test1) {
+    researcher::ClassFieldRangeSet set;
+    set.addRange({ 1 }, 0x1000);
+    set.addRange({ 2 }, 0x1000);
+    set.addRange({ 3 }, 0x1000);
+    set.addRange({ 4 }, 0x1000);
+    set.addRange({ 1, 2 }, 0x18);
+    set.addRange({ 2, 3 }, 0x8); // order 1
+    set.addRange({ 3, 4 }, 0x20); // order 1
+    auto expectedCode = "\
+        0x0 - 0x1000: 0x1 \n\
+        0x0 - 0x1000: 0x2 \n\
+        0x0 - 0x1000: 0x3 \n\
+        0x0 - 0x1000: 0x4 \n\
+        0x0 - 0x18: 0x1, 0x2 \n\
+        0x0 - 0x20: 0x3, 0x4 \n\
+        0x0 - 0x8: 0x1, 0x2, 0x3, 0x4 \
+    ";
+    ASSERT_TRUE(CmpClassFieldRangeSet(set, expectedCode));
+}
+
+TEST(ClassFieldRangeSet, test2) {
+    // the same as test1 but with different order
+    researcher::ClassFieldRangeSet set;
+    set.addRange({ 1 }, 0x1000);
+    set.addRange({ 2 }, 0x1000);
+    set.addRange({ 3 }, 0x1000);
+    set.addRange({ 4 }, 0x1000);
+    set.addRange({ 1, 2 }, 0x18);
+    set.addRange({ 3, 4 }, 0x20); // order 2
+    set.addRange({ 2, 3 }, 0x8); // order 2
+    auto expectedCode = "\
+        0x0 - 0x1000: 0x1 \n\
+        0x0 - 0x1000: 0x2 \n\
+        0x0 - 0x1000: 0x3 \n\
+        0x0 - 0x1000: 0x4 \n\
+        0x0 - 0x18: 0x1, 0x2 \n\
+        0x0 - 0x20: 0x3, 0x4 \n\
+        0x0 - 0x8: 0x1, 0x2, 0x3, 0x4 \
+    ";
+    ASSERT_TRUE(CmpClassFieldRangeSet(set, expectedCode));
+}
+
 TEST_F(ClassResearcherTest, Functions) {
     /*
         void main() {
