@@ -130,4 +130,12 @@ protected:
         });
         return structures;
     }
+
+    std::list<researcher::Structure*> sortByName(std::set<researcher::Structure*> structures) const {
+        std::list<researcher::Structure*> result;
+        for (auto structure : structures) {
+            result.push_back(structure);
+        }
+        return sortByName(result);
+    }
 };

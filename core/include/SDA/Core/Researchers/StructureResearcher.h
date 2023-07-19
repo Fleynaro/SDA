@@ -132,15 +132,15 @@ namespace sda::researcher
         std::string name;
         size_t version = 0;
         DataFlowNode* sourceNode = nullptr;
-        std::list<Structure*> parents;
-        std::list<Structure*> childs;
-        std::list<Structure*> inputs;
-        std::list<Structure*> outputs;
+        std::set<Structure*> parents;
+        std::set<Structure*> childs;
+        std::set<Structure*> inputs;
+        std::set<Structure*> outputs;
         std::map<size_t, Structure*> fields;
         ConditionSet conditions;
         std::set<DataFlowNode*> linkedNodes;
 
-        void passDescendants(std::function<void(Structure* structure, bool& goNext)> callback);
+        void passDescendants(std::function<void(Structure* structure, const std::function<void(Structure* structure)>& next)> callback);
     };
 
     class StructureRepository
@@ -229,27 +229,27 @@ namespace sda::researcher
         void clearStructure(Structure* structure) {
             // clear parents
             for (auto parent : structure->parents) {
-                parent->childs.remove(structure);
+                parent->childs.erase(structure);
                 m_eventPipe->send(ChildRemovedEvent(parent, structure));
             }
             structure->parents.clear();
 
             // clear childs
             for (auto child : structure->childs) {
-                child->parents.remove(structure);
+                child->parents.erase(structure);
                 m_eventPipe->send(ChildRemovedEvent(structure, child));
             }
             structure->childs.clear();
 
             // clear inputs
             for (auto input : structure->inputs) {
-                input->outputs.remove(structure);
+                input->outputs.erase(structure);
             }
             structure->inputs.clear();
 
             // clear outputs
             for (auto output : structure->outputs) {
-                output->inputs.remove(structure);
+                output->inputs.erase(structure);
             }
             structure->outputs.clear();
 
@@ -286,18 +286,18 @@ namespace sda::researcher
         }
 
         void addChild(Structure* structure, Structure* child) {
-            if (std::find(structure->childs.begin(), structure->childs.end(), child) != structure->childs.end())
+            if (structure->childs.find(child) != structure->childs.end())
                 return;
-            structure->childs.push_back(child);
-            child->parents.push_back(structure);
+            structure->childs.insert(child);
+            child->parents.insert(structure);
             m_eventPipe->send(ChildAddedEvent(structure, child));
         }
 
         void addOutput(Structure* structure, Structure* output) {
-            if (std::find(structure->outputs.begin(), structure->outputs.end(), output) != structure->outputs.end())
+            if (structure->outputs.find(output) != structure->outputs.end())
                 return;
-            structure->outputs.push_back(output);
-            output->inputs.push_back(structure);
+            structure->outputs.insert(output);
+            output->inputs.insert(structure);
         }
 
         // <own> - create structure for <node> itself if it doesn't exist
