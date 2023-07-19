@@ -3,7 +3,7 @@
 using namespace sda;
 using namespace sda::researcher;
 
-void Structure::passDescendants(std::function<void(Structure* structure, bool& goNext)> callback)
+void Structure::passDescendants(std::function<void(Structure* structure, const std::function<void(Structure* structure)>& next)> callback)
 {
     std::map<Structure*, size_t> structKnocks;
     std::list<Structure*> structToVisit;
@@ -21,13 +21,10 @@ void Structure::passDescendants(std::function<void(Structure* structure, bool& g
                 continue;
             }
             structKnocks.erase(it);
-            bool goNext = false;
-            callback(structure, goNext);
-            if (goNext) {
-                for (auto it = structure->outputs.rbegin(); it != structure->outputs.rend(); ++it) {
-                    structToVisit.push_front(*it);
-                }
-            }
+            auto next = [&](Structure* structure) {
+                structToVisit.push_front(structure);
+            };
+            callback(structure, next);
 
             // debug
             {
