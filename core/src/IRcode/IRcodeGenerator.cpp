@@ -164,7 +164,7 @@ void IRcodeGenerator::ingestPcode(const pcode::Instruction* instr) {
                 auto srcVar = varReadInfo.variable;
 
                 auto dstMemAddr = outputMemAddr;
-                dstMemAddr.offset = varReadInfo.offset;
+                dstMemAddr.offset += varReadInfo.offset;
                 auto dstMemSpace = getCurMemSpace()->getSubspace(dstMemAddr.baseAddrHash);
                 auto dstVar = createVariable(dstMemAddr, srcVar->getHash(), srcVar->getSize());
                 genWriteMemory(dstMemSpace, dstVar);
