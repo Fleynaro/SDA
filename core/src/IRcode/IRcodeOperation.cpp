@@ -42,12 +42,12 @@ void Operation::setBlock(Block* block) {
     m_block = block;
 }
 
-const std::set<const pcode::Instruction*>& Operation::getPcodeInstructions() const {
-    return m_pcodeInstructions;
+const pcode::Instruction* Operation::getPcodeInstruction() const {
+    return m_pcodeInstruction;
 }
 
-void Operation::addPcodeInstruction(const pcode::Instruction* instruction) {
-    m_pcodeInstructions.insert(instruction);
+void Operation::setPcodeInstruction(const pcode::Instruction* instruction) {
+    m_pcodeInstruction = instruction;
 }
 
 const std::set<std::shared_ptr<Variable>>& Operation::getOverwrittenVariables() const {
@@ -154,10 +154,6 @@ std::shared_ptr<Value> CallOperation::getDestination() const {
 
 const std::vector<std::shared_ptr<Value>>& CallOperation::getArguments() const {
     return m_args;
-}
-
-const pcode::Instruction* CallOperation::getPcodeInstruction() const {
-    return *getPcodeInstructions().begin();
 }
 
 Hash RefOperation::Reference::getHash() const {

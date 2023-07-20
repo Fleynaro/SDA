@@ -553,7 +553,7 @@ void IRcodeGenerator::genOperation(std::unique_ptr<ircode::Operation> operation)
     auto op = operation.get();
     m_genOperations.push_back(op);
     operation->setBlock(m_block);
-    operation->addPcodeInstruction(m_curInstr);
+    operation->setPcodeInstruction(m_curInstr);
     operation->setOverwrittenVariables(m_overwrittenVariables);
     m_block->getOperations().push_back(std::move(operation));
     m_overwrittenVariables.clear();

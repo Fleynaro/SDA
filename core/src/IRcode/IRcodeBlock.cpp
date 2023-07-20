@@ -38,7 +38,7 @@ std::list<std::unique_ptr<Operation>>& Block::getOperations() {
 
 Operation* Block::getOperationAt(pcode::InstructionOffset offset) const {
     for (auto& op : m_operations) {
-        for (auto pcodeOp : op->getPcodeInstructions()) {
+        if (auto pcodeOp = op->getPcodeInstruction()) {
             if (pcodeOp->getOffset() == offset) {
                 return op.get();
             }
