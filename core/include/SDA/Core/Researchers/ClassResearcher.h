@@ -8,6 +8,8 @@ namespace sda::researcher
         std::set<Structure*> structures;
         std::set<Structure*> inputs;
         std::set<Structure*> outputs;
+        std::set<Structure*> parents;
+        std::set<Structure*> childs;
 
         void add(Structure* structure) {
             structures.insert(structure);
@@ -23,6 +25,12 @@ namespace sda::researcher
             for (auto structure : structures) {
                 inputs.insert(structure->inputs.begin(), structure->inputs.end());
                 outputs.insert(structure->outputs.begin(), structure->outputs.end());
+            }
+            parents.clear();
+            childs.clear();
+            for (auto structure : structures) {
+                parents.insert(structure->parents.begin(), structure->parents.end());
+                childs.insert(structure->childs.begin(), structure->childs.end());
             }
         }
 
@@ -135,12 +143,27 @@ namespace sda::researcher
             ConstantSet constants;
             FieldStructureGroup* group = nullptr;
 
+            ConstantSet getLabelSet() const {
+                ConstantSet set;
+                set.merge(conditions);
+                set.merge(constants);
+                return set;
+            }
+
             const std::set<Structure*>& getInputs() {
                 return group ? group->inputs : structure->inputs;
             }
 
             const std::set<Structure*>& getOutputs() {
                 return group ? group->outputs : structure->outputs;
+            }
+
+            const std::set<Structure*>& getParents() {
+                return group ? group->parents : structure->parents;
+            }
+
+            const std::set<Structure*>& getChilds() {
+                return group ? group->childs : structure->childs;
             }
         };
         std::map<Structure*, StructureInfo> m_structureToInfo;
@@ -301,7 +324,10 @@ namespace sda::researcher
                     if (it != structuresToProcess.end()) {
                         // propagate conditions & constants
                         structure->passDescendants(std::function([this](Structure* structure, const std::function<void(Structure* structure)>& next) {
-                            research(structure, next);
+                            propagateConditions(structure, next);
+                        }));
+                        structure->passDescendants(std::function([this](Structure* structure, const std::function<void(Structure* structure)>& next) {
+                            propagateConstants(structure, next);
                         }));
                         // remove
                         structuresToProcess.erase(it);
@@ -312,7 +338,7 @@ namespace sda::researcher
                 std::map<size_t, std::map<size_t, std::list<Structure*>>> structuresByFieldAndLabel;
                 for (auto structure : structuresInGroup) {
                     auto info = m_classRepo->getStructureInfo(structure);
-                    auto labels = getLabels(info->conditions, structure);
+                    auto labels = getLabels(info->getLabelSet(), structure);
 
                     // fill labelsToMaxOffset
                     size_t lastOffset = -1;
@@ -355,7 +381,7 @@ namespace sda::researcher
         }
 
     private:
-        void research(Structure* structure, const std::function<void(Structure* structure)>& next) {
+        void propagateConditions(Structure* structure, const std::function<void(Structure* structure)>& next) {
             auto info = m_classRepo->getStructureInfo(structure);
 
             // create new conditions by merging inputs and current conditions
@@ -363,6 +389,10 @@ namespace sda::researcher
             for (auto input : info->getInputs()) {
                 auto inputInfo = m_classRepo->getStructureInfo(input);
                 newConditions.merge(inputInfo->conditions);
+            }
+            for (auto child : info->getChilds()) {
+                auto childInfo = m_classRepo->getStructureInfo(child);
+                newConditions.merge(childInfo->conditions);
             }
             newConditions.merge(structure->conditions, true);
             auto newConditionsHash = newConditions.hash();
@@ -376,6 +406,38 @@ namespace sda::researcher
             } else {
                 goNext = goNext || info->conditions.hash() != newConditionsHash;
                 info->conditions = newConditions;
+            }
+
+            if (goNext) {
+                for (auto output : info->getOutputs())
+                    next(output);
+                for (auto parent : info->getParents())
+                    next(parent);
+            }
+        }
+
+        void propagateConstants(Structure* structure, const std::function<void(Structure* structure)>& next) {
+            auto info = m_classRepo->getStructureInfo(structure);
+
+            // create new constants by merging inputs and current constants
+            ConstantSet newConstants;
+            for (auto input : info->getInputs()) {
+                auto inputInfo = m_classRepo->getStructureInfo(input);
+                newConstants.merge(inputInfo->constants);
+            }
+            newConstants.merge(structure->conditions, true);
+            newConstants.merge(structure->constants, true);
+            auto newConstantsHash = newConstants.hash();
+
+            bool goNext = false;
+            if (info->group) {
+                for (auto groupStruct : info->group->structures) {
+                    goNext = goNext || groupStruct->constants.hash() != newConstantsHash;
+                    groupStruct->constants = info->constants;
+                }
+            } else {
+                goNext = goNext || info->constants.hash() != newConstantsHash;
+                info->constants = newConstants;
             }
 
             if (goNext) {

@@ -26,7 +26,7 @@ protected:
         std::stringstream ss;
         for (auto structure : sortByName(structureRepo->getAllStructures())) {
             auto info = classRepo->getStructureInfo(structure);
-            auto& values = info->conditions.values();
+            auto values = info->getLabelSet().values();
             if (values.empty()) continue;
             ss << structure->name << std::endl;
             for (auto& [offset, valuesAtOffset] : values) {
@@ -318,7 +318,7 @@ TEST_F(ClassResearcherTest, Test1) {
             0x0: 0x1, 0x2 \
     ";
     auto expectedFieldStructureGroups = "\
-        { B0:var15_0x8, B0:var5_0x8 } \n\
+        { B0:var15_0x8, B0:var5_0x8 } \
     ";
     auto mainFunction = parsePcode(sourcePCode, program);
     auto create1 = program->toFunction(
@@ -328,6 +328,139 @@ TEST_F(ClassResearcherTest, Test1) {
     ASSERT_TRUE(cmp(mainFunction, expectedIRCodeOfMainFunc));
     ASSERT_TRUE(cmp(create1, expectedIRCodeOfCreate1));
     ASSERT_TRUE(cmp(create2, expectedIRCodeOfCreate2));
+    ASSERT_TRUE(cmpStructures(expectedStructures));
+    ASSERT_TRUE(cmpStructureInfos(expectedStructureInfos));
+    ASSERT_TRUE(cmpFieldStructureGroups(expectedFieldStructureGroups));
+}
+
+TEST_F(ClassResearcherTest, MutualFieldInTwoClasses) {
+    /*
+        void main() {
+            globalVar_0x100->field_0x8 = globalVar_0x20;
+            if (globalVar_0x100->field_0x0 == 1) {
+                player = static_cast<Player*>(globalVar_0x100);
+                player->field_0x8 = globalVar_0x30;
+                player->field_0x10 = 5;
+            }
+            else if (globalVar_0x100->field_0x0 == 2) {
+                vehicle = static_cast<Vehicle*>(globalVar_0x100);
+                vehicle->field_0x8 = globalVar_0x40;
+                vehicle->field_0x14 = 6;
+            }
+        }
+    */
+   auto sourcePCode = "\
+        // main() \n\
+        $1:8 = INT_ADD rip:8, 0x100:8 \n\
+        $2:8 = LOAD $1:8, 8:8 \n\
+        $3:8 = INT_ADD rip:8, 0x20:8 \n\
+        $4:8 = LOAD $3:8, 8:8 \n\
+        $5:8 = INT_ADD $2:8, 0x8:8 \n\
+        STORE $5:8, $4:8 \n\
+        $6:4 = LOAD $2:8, 4:8 \n\
+        $7:1 = INT_NOTEQUAL $6:4, 1:4 \n\
+        CBRANCH <vehicle_check>, $7:1 \n\
+        $8:8 = INT_ADD $2:8, 0x8:8 \n\
+        $9:8 = INT_ADD rip:8, 0x30:8 \n\
+        $10:4 = LOAD $9:8, 4:8 \n\
+        STORE $8:8, $10:4 \n\
+        $11:8 = INT_ADD $2:8, 0x10:8 \n\
+        STORE $11:8, 5:4 \n\
+        BRANCH <end> \n\
+        <vehicle_check>: \n\
+        $12:1 = INT_NOTEQUAL $6:4, 2:4 \n\
+        CBRANCH <end>, $12:1 \n\
+        $13:8 = INT_ADD $2:8, 0x8:8 \n\
+        $14:8 = INT_ADD rip:8, 0x40:8 \n\
+        $15:4 = LOAD $14:8, 4:8 \n\
+        STORE $13:8, $15:4 \n\
+        $16:8 = INT_ADD $2:8, 0x14:8 \n\
+        STORE $16:8, 6:4 \n\
+        <end>: \n\
+        RETURN \n\
+    ";
+    auto expectedIRCodeOfMainFunc = "\
+        Block B0(level: 1, near: B9, far: B10, cond: var12): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U1]:8 = INT_ADD var1, 0x100:8 \n\
+            var3:8 = LOAD var2 \n\
+            var4[$U2]:8 = COPY var3 \n\
+            var5[$U3]:8 = INT_ADD var1, 0x20:8 \n\
+            var6:8 = LOAD var5 \n\
+            var7[$U4]:8 = COPY var6 \n\
+            var8[$U5]:8 = INT_ADD var4, 0x8:8 \n\
+            var9[var8]:8 = COPY var7 \n\
+            var10:4 = LOAD var4 \n\
+            var11[$U6]:4 = COPY var10 \n\
+            var12[$U7]:1 = INT_NOTEQUAL var11, 0x1:4 \n\
+        Block B9(level: 2, far: B18): \n\
+            var13:8 = REF var4 \n\
+            var14[$U8]:8 = INT_ADD var13, 0x8:8 \n\
+            var15:8 = REF var1 \n\
+            var16[$U9]:8 = INT_ADD var15, 0x30:8 \n\
+            var17:4 = LOAD var16 \n\
+            var18[$U10]:4 = COPY var17 \n\
+            var19[var14]:4 = COPY var18 \n\
+            var20[$U11]:8 = INT_ADD var13, 0x10:8 \n\
+            var21[var20]:4 = COPY 0x5:4 \n\
+        Block B10(level: 2, near: B12, far: B18, cond: var23): \n\
+            var22:4 = REF var11 \n\
+            var23[$U12]:1 = INT_NOTEQUAL var22, 0x2:4 \n\
+        Block B12(level: 3, near: B18): \n\
+            var24:8 = REF var4 \n\
+            var25[$U13]:8 = INT_ADD var24, 0x8:8 \n\
+            var26:8 = REF var1 \n\
+            var27[$U14]:8 = INT_ADD var26, 0x40:8 \n\
+            var28:4 = LOAD var27 \n\
+            var29[$U15]:4 = COPY var28 \n\
+            var30[var25]:4 = COPY var29 \n\
+            var31[$U16]:8 = INT_ADD var24, 0x14:8 \n\
+            var32[var31]:4 = COPY 0x6:4 \n\
+        Block B18(level: 4): \n\
+            empty \
+    ";
+    auto expectedStructures = "\
+        struct root { \n\
+            0x20: B0:var6 \n\
+            0x30: B0:var17 \n\
+            0x40: B0:var28 \n\
+            0x100: B0:var3 \n\
+        } \n\
+        \n\
+        struct B0:var3 : root_0x100 { \n\
+            0x0: B0:var10 \n\
+            0x8: B0:var6 \n\
+        } \n\
+        \n\
+        struct B0:var13 : B0:var3 { \n\
+            0x0: 0x1 \n\
+            0x8: B0:var17 \n\
+            0x10: 0x5 \n\
+        } \n\
+        \n\
+        struct B0:var24 : B0:var3 { \n\
+            0x0: 0x2 \n\
+            0x8: B0:var28 \n\
+            0x14: 0x6 \n\
+        } \
+    ";
+    auto expectedStructureInfos = "\
+        B0:var13 \n\
+            0x0: 0x1 \n\
+            0x10: 0x5 \n\
+        B0:var24 \n\
+            0x0: 0x2 \n\
+            0x14: 0x6 \n\
+        B0:var3 \n\
+            0x0: 0x1, 0x2 \n\
+        root_0x100 \n\
+            0x0: 0x1, 0x2 \
+    ";
+    auto expectedFieldStructureGroups = "\
+        { B0:var13_0x8, B0:var24_0x8, B0:var3_0x8 } \
+    ";
+    auto mainFunction = parsePcode(sourcePCode, program);
+    ASSERT_TRUE(cmp(mainFunction, expectedIRCodeOfMainFunc));
     ASSERT_TRUE(cmpStructures(expectedStructures));
     ASSERT_TRUE(cmpStructureInfos(expectedStructureInfos));
     ASSERT_TRUE(cmpFieldStructureGroups(expectedFieldStructureGroups));
