@@ -28,7 +28,7 @@ TEST_F(StructureResearcherTest, GlobalVarAssignment) {
     auto sourcePCode = "\
         r10:8 = INT_ADD rip:8, 0x10:8 \n\
         STORE r10:8, xmm0:Da \n\
-        rax:8 = LOAD r10:8, 4:8 \
+        rax:4 = LOAD r10:8, 4:8 \
     ";
     auto expectedIRCode = "\
         Block B0(level: 1): \n\
@@ -36,8 +36,7 @@ TEST_F(StructureResearcherTest, GlobalVarAssignment) {
             var2[r10]:8 = INT_ADD var1, 0x10:8 \n\
             var3:4 = LOAD xmm0 \n\
             var4[var2]:4 = COPY var3 \n\
-            var5:8 = LOAD var2 \n\
-            var6[rax]:8 = COPY var5 \
+            var5[rax]:4 = COPY var4 \
     ";
     auto expectedDataFlow = "\
         var1 <- Copy Start \n\
@@ -45,12 +44,11 @@ TEST_F(StructureResearcherTest, GlobalVarAssignment) {
         var3 <- Unknown \n\
         var4 <- Write var2 \n\
         var4 <- Write var3 \n\
-        var5 <- Read var2 \n\
-        var6 <- Copy var5 \
+        var5 <- Copy var4 \
     ";
     auto expectedStructures = "\
         struct root { \n\
-            0x10: B0:var3, B0:var5 \n\
+            0x10: B0:var3 \n\
         } \
     ";
     auto function = parsePcode(sourcePCode, program);
@@ -72,7 +70,7 @@ TEST_F(StructureResearcherTest, GlobalVarAssignmentDouble) {
         STORE r10:8, xmm0:Da \n\
         r10:8 = INT_ADD rip:8, 0x18:8 \n\
         STORE r10:8, xmm1:Da \n\
-        rax:8 = LOAD r10:8, 4:8 \
+        rax:4 = LOAD r10:8, 4:8 \
     ";
     auto expectedIRCode = "\
         Block B0(level: 1): \n\
@@ -83,8 +81,7 @@ TEST_F(StructureResearcherTest, GlobalVarAssignmentDouble) {
             var5[r10]:8 = INT_ADD var1, 0x18:8 \n\
             var6:4 = LOAD xmm1 \n\
             var7[var5]:4 = COPY var6 \n\
-            var8:8 = LOAD var5 \n\
-            var9[rax]:8 = COPY var8 \
+            var8[rax]:4 = COPY var7 \
     ";
     auto expectedDataFlow = "\
         var1 <- Copy Start \n\
@@ -96,13 +93,12 @@ TEST_F(StructureResearcherTest, GlobalVarAssignmentDouble) {
         var6 <- Unknown \n\
         var7 <- Write var5 \n\
         var7 <- Write var6 \n\
-        var8 <- Read var5 \n\
-        var9 <- Copy var8 \
+        var8 <- Copy var7 \
     ";
     auto expectedStructures = "\
         struct root { \n\
             0x10: B0:var3 \n\
-            0x18: B0:var6, B0:var8 \n\
+            0x18: B0:var6 \n\
         } \
     ";
     auto function = parsePcode(sourcePCode, program);
@@ -179,8 +175,7 @@ TEST_F(StructureResearcherTest, GlobalVarPointerAssignment) {
             var2[$U1]:8 = INT_ADD var1, 0x10:8 \n\
             var3[$U2]:8 = INT_ADD var1, 0x20:8 \n\
             var4[var2]:8 = COPY var3 \n\
-            var5:8 = LOAD var2 \n\
-            var6[rax]:8 = COPY var5 \
+            var5[rax]:8 = COPY var4 \
     ";
     auto expectedDataFlow = "\
         var1 <- Copy Start \n\
@@ -188,14 +183,9 @@ TEST_F(StructureResearcherTest, GlobalVarPointerAssignment) {
         var3 <- Copy var1 + 0x20 \n\
         var4 <- Write var2 \n\
         var4 <- Write var3 \n\
-        var5 <- Read var2 \n\
-        var6 <- Copy var5 \
+        var5 <- Copy var4 \
     ";
-    auto expectedStructures = "\
-        struct root { \n\
-            0x10: B0:var5 \n\
-        } \
-    ";
+    auto expectedStructures = "";
     auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
     ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));

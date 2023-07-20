@@ -145,6 +145,9 @@ void IRcodeGenerator::ingestPcode(const pcode::Instruction* instr) {
 
                 // get memory space and load size
                 auto loadSize = instr->getOutput()->getSize();
+                if (auto sizeVarnode = std::dynamic_pointer_cast<pcode::ConstantVarnode>(instr->getInput1())) {
+                    loadSize = sizeVarnode->getValue();
+                }
                 auto memSpace = getCurMemSpace()->getSubspace(memAddr.baseAddrHash);
 
                 // check if it is an array
