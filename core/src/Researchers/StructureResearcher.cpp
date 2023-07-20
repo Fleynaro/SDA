@@ -210,7 +210,7 @@ void StructureResearcher::researchStructures(DataFlowNode* node, const std::func
         auto valueNode = node->predecessors.back();
         auto addrLink = m_structureRepo->getLink(addrNode);
         if (!addrLink) return;
-        addrLink->structure->conditions.remove(addrLink->offset);
+        addrLink->structure->constants.remove(addrLink->offset);
         if (auto valueLink = m_structureRepo->getLink(valueNode)) {
             if (valueLink->offset == 0) {
                 m_structureRepo->addField(addrLink->structure, addrLink->offset, valueLink->structure, true);
@@ -220,7 +220,7 @@ void StructureResearcher::researchStructures(DataFlowNode* node, const std::func
         }
         else if (auto constValue = m_structureRepo->getConstant(valueNode)) {
             // see test StructureResearcherTest.If
-            addrLink->structure->conditions.insert(addrLink->offset, *constValue);
+            addrLink->structure->constants.insert(addrLink->offset, *constValue);
         }
     }
     else if (node->type == DataFlowNode::Unknown) {
@@ -230,8 +230,8 @@ void StructureResearcher::researchStructures(DataFlowNode* node, const std::func
     }      
 }
 
-std::map<Structure*, ConditionSet> StructureResearcher::findConditions(ircode::Block* block) {
-    std::map<Structure*, ConditionSet> result;
+std::map<Structure*, ConstantSet> StructureResearcher::findConditions(ircode::Block* block) {
+    std::map<Structure*, ConstantSet> result;
     auto conditions = m_constCondRepo->findConditions(block);
     for (auto& [type, variable, value] : conditions) {
         if (type != ConstantCondition::EQUAL)

@@ -50,7 +50,7 @@ protected:
         std::stringstream ss;
         bool isFirstPrinted = false;
         for (auto structure : allStructures) {
-            if (structure->fields.empty() && structure->conditions.values().empty())
+            if (structure->fields.empty() && structure->conditions.values().empty() && structure->constants.values().empty())
                 continue;
             if (isFirstPrinted) {
                 ss << std::endl << std::endl;
@@ -96,7 +96,10 @@ protected:
         for (auto& [offset, _] : structure->fields) {
             fieldOffsets.insert(offset);
         }
-        for (auto& [offset, _] : structure->conditions.values()) {
+        researcher::ConstantSet labelSet;
+        labelSet.merge(structure->conditions);
+        labelSet.merge(structure->constants, true);
+        for (auto& [offset, _] : labelSet.values()) {
             fieldOffsets.insert(offset);
         }
         for (auto offset : fieldOffsets) {
@@ -111,9 +114,9 @@ protected:
                     sep = ", ";
                 }
             }
-            // constants
-            auto it2 = structure->conditions.values().find(offset);
-            if (it2 != structure->conditions.values().end()) {
+            // labels
+            auto it2 = labelSet.values().find(offset);
+            if (it2 != labelSet.values().end()) {
                 for (auto value : it2->second) {
                     fieldValues << sep << "0x" << utils::ToHex(value);
                     sep = ", ";

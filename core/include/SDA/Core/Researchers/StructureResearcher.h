@@ -82,10 +82,10 @@ namespace sda::researcher
         {}
     };
 
-    class ConditionSet {
+    class ConstantSet {
         std::map<size_t, std::set<size_t>> m_conditions;
     public:
-        ConditionSet() = default;
+        ConstantSet() = default;
 
         const std::map<size_t, std::set<size_t>>& values() const {
             return m_conditions;
@@ -102,7 +102,7 @@ namespace sda::researcher
             }
         }
 
-        void merge(const ConditionSet& other, bool clear = false) {
+        void merge(const ConstantSet& other, bool clear = false) {
             for (auto& [offset, values] : other.m_conditions) {
                 if (clear) {
                     m_conditions[offset].clear();
@@ -137,7 +137,8 @@ namespace sda::researcher
         std::set<Structure*> inputs;
         std::set<Structure*> outputs;
         std::map<size_t, Structure*> fields;
-        ConditionSet conditions;
+        ConstantSet conditions;
+        ConstantSet constants;
         std::set<DataFlowNode*> linkedNodes;
 
         void passDescendants(std::function<void(Structure* structure, const std::function<void(Structure* structure)>& next)> callback);
@@ -448,7 +449,7 @@ namespace sda::researcher
 
         void researchStructures(DataFlowNode* node, const std::function<void(DataFlowNode* node)>& next);
 
-        std::map<Structure*, ConditionSet> findConditions(ircode::Block* block);
+        std::map<Structure*, ConstantSet> findConditions(ircode::Block* block);
 
         const ircode::UnaryOperation* goToLoadOperation(const ircode::Operation* operation);
     };

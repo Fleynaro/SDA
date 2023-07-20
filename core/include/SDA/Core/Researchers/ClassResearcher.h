@@ -131,7 +131,8 @@ namespace sda::researcher
     {
         struct StructureInfo {
             Structure* structure;
-            ConditionSet conditions;
+            ConstantSet conditions;
+            ConstantSet constants;
             FieldStructureGroup* group = nullptr;
 
             const std::set<Structure*>& getInputs() {
@@ -298,7 +299,7 @@ namespace sda::researcher
                 for (auto structure : structuresInGroup) {
                     auto it = std::find(structuresToProcess.begin(), structuresToProcess.end(), structure);
                     if (it != structuresToProcess.end()) {
-                        // propagate conditions
+                        // propagate conditions & constants
                         structure->passDescendants(std::function([this](Structure* structure, const std::function<void(Structure* structure)>& next) {
                             research(structure, next);
                         }));
@@ -358,7 +359,7 @@ namespace sda::researcher
             auto info = m_classRepo->getStructureInfo(structure);
 
             // create new conditions by merging inputs and current conditions
-            ConditionSet newConditions;
+            ConstantSet newConditions;
             for (auto input : info->getInputs()) {
                 auto inputInfo = m_classRepo->getStructureInfo(input);
                 newConditions.merge(inputInfo->conditions);
@@ -396,7 +397,7 @@ namespace sda::researcher
             }
         }
 
-        std::set<size_t> getLabels(const ConditionSet& set, Structure* structure) {
+        std::set<size_t> getLabels(const ConstantSet& set, Structure* structure) {
             std::set<size_t> labels;
             auto it = set.values().find(0x0); // label (type) field at offset 0x0
             if (it != set.values().end()) {
