@@ -400,8 +400,9 @@ namespace sda::researcher
             bool goNext = false;
             if (info->group) {
                 for (auto groupStruct : info->group->structures) {
+                    auto groupStructInfo = m_classRepo->getStructureInfo(groupStruct);
                     goNext = goNext || groupStruct->conditions.hash() != newConditionsHash;
-                    groupStruct->conditions = info->conditions;
+                    groupStructInfo->conditions = newConditions;
                 }
             } else {
                 goNext = goNext || info->conditions.hash() != newConditionsHash;
@@ -432,8 +433,9 @@ namespace sda::researcher
             bool goNext = false;
             if (info->group) {
                 for (auto groupStruct : info->group->structures) {
+                    auto groupStructInfo = m_classRepo->getStructureInfo(groupStruct);
                     goNext = goNext || groupStruct->constants.hash() != newConstantsHash;
-                    groupStruct->constants = info->constants;
+                    groupStructInfo->constants = newConstants;
                 }
             } else {
                 goNext = goNext || info->constants.hash() != newConstantsHash;

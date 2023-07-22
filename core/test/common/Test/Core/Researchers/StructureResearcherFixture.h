@@ -14,6 +14,7 @@ protected:
     std::unique_ptr<researcher::DataFlowCollector> dataFlowCollector;
     std::unique_ptr<researcher::StructureRepository> structureRepo;
     std::unique_ptr<researcher::StructureResearcher> structureResearcher;
+    std::set<std::string> showStructures;
 
     void SetUp() override {
         ResearcherFixture::SetUp();
@@ -50,12 +51,18 @@ protected:
         std::stringstream ss;
         bool isFirstPrinted = false;
         for (auto structure : allStructures) {
-            if (structure->fields.empty() && structure->conditions.values().empty() && structure->constants.values().empty())
+            auto forciblyShown = showStructures.find(structure->name) != showStructures.end();
+            if (structure->fields.empty() &&
+                structure->conditions.values().empty() && structure->constants.values().empty() &&
+                !forciblyShown)
                 continue;
             if (isFirstPrinted) {
                 ss << std::endl << std::endl;
             } else {
                 isFirstPrinted = true;
+            }
+            if (forciblyShown) {
+                ss << "// forcibly shown" << std::endl;
             }
             printStructure(ss, structure);
         }
