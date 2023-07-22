@@ -6,6 +6,7 @@ add_executable(
 
 target_link_libraries(
     platform-x86-test PUBLIC
-    platform-x86-test-common)
+    core-test-common
+    platform-x86)
 
 gtest_discover_tests(platform-x86-test)

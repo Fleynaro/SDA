@@ -21,3 +21,7 @@ target_link_libraries(
     platform-x86 PUBLIC
     core
     Zydis)
+
+if(BUILD_TESTING)
+	add_subdirectory(test)
+endif()
