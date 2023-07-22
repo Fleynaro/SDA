@@ -78,6 +78,11 @@ void IRcodeGenerator::ingestPcode(const pcode::Instruction* instr) {
     if (instr->getId() == pcode::InstructionId::NONE || instr->getId() == pcode::InstructionId::UNKNOWN)
         return;
 
+    {
+        auto platform = m_block->getFunction()->getProgram()->getGlobalSymbolTable()->getContext()->getPlatform();
+        PLOG_DEBUG << pcode::Printer::Print(instr, platform->getRegisterRepository().get());
+    }
+
     // get output address (this is always a register)
     ircode::MemoryAddress outputMemAddr;
     if (auto output = instr->getOutput()) {
@@ -529,6 +534,15 @@ std::shared_ptr<ircode::Value> IRcodeGenerator::genReadVarnode(std::shared_ptr<p
 }
 
 void IRcodeGenerator::genOperation(std::unique_ptr<ircode::Operation> operation) {
+    {
+        auto platform = m_block->getFunction()->getProgram()->getGlobalSymbolTable()->getContext()->getPlatform();
+        pcode::Printer pcodePrinter(platform->getRegisterRepository().get());
+        ircode::Printer ircodePrinter(&pcodePrinter);
+        std::stringstream ss;
+        ircodePrinter.setOutput(ss);
+        ircodePrinter.printOperation(operation.get());
+        PLOG_DEBUG << ss.str();
+    }
     auto op = operation.get();
     m_genOperations.push_back(op);
     operation->setBlock(m_block);
