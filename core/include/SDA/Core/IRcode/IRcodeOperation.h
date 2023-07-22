@@ -83,6 +83,7 @@ namespace sda::ircode
 		Block* m_block = nullptr;
         const pcode::Instruction* m_pcodeInstruction;
 		std::set<std::shared_ptr<Variable>> m_overwrittenVariables;
+		friend class Variable;
     public:
         Operation(
 			OperationId id,
@@ -91,6 +92,8 @@ namespace sda::ircode
 		virtual ~Operation();
 
 		virtual Hash getHash() const = 0;
+
+		virtual bool isVirtual() const;
 
         OperationId getId() const;
 
@@ -188,6 +191,8 @@ namespace sda::ircode
 
 		Hash getHash() const override;
 
+		bool isVirtual() const override;
+
 		const Reference& getReference() const;
 
         void setTargetVariable(std::shared_ptr<Variable> variable);
@@ -206,6 +211,8 @@ namespace sda::ircode
 			size_t offset,
 			std::shared_ptr<Variable> output);
 
+		bool isVirtual() const override;
+
 		size_t getOffset() const;
 	};
 
@@ -219,6 +226,8 @@ namespace sda::ircode
 			size_t offset,
 			std::shared_ptr<Variable> output);
 
+		bool isVirtual() const override;
+
 		size_t getOffset() const;
 	};
 
@@ -229,5 +238,7 @@ namespace sda::ircode
 			std::shared_ptr<Value> input1,
 			std::shared_ptr<Value> input2,
 			std::shared_ptr<Variable> output);
+
+		bool isVirtual() const override;
 	};
 };

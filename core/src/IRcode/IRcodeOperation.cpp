@@ -22,6 +22,10 @@ Operation::~Operation() {
     }
 }
 
+bool Operation::isVirtual() const {
+    return false;
+}
+
 OperationId Operation::getId() const {
     return m_id;
 }
@@ -55,7 +59,13 @@ const std::set<std::shared_ptr<Variable>>& Operation::getOverwrittenVariables() 
 }
 
 void Operation::setOverwrittenVariables(const std::set<std::shared_ptr<Variable>>& variables) {
+    for (auto var : m_overwrittenVariables) {
+        var->m_rewriteOperations.remove(this);
+    }
     m_overwrittenVariables = variables;
+    for (auto var : m_overwrittenVariables) {
+        var->m_rewriteOperations.push_back(this);
+    }
 }
 
 UnaryOperation::UnaryOperation(
@@ -165,6 +175,10 @@ Hash RefOperation::Reference::getHash() const {
     return hash;
 }
 
+bool RefOperation::isVirtual() const {
+    return true;
+}
+
 RefOperation::RefOperation(
     const RefOperation::Reference& reference,
     std::shared_ptr<Variable> input,
@@ -203,6 +217,10 @@ ExtractOperation::ExtractOperation(
     , m_offset(offset)
 {}
 
+bool ExtractOperation::isVirtual() const {
+    return true;
+}
+
 size_t ExtractOperation::getOffset() const {
     return m_offset;
 }
@@ -216,6 +234,10 @@ ConcatOperation::ConcatOperation(
     , m_offset(offset)
 {}
 
+bool ConcatOperation::isVirtual() const {
+    return true;
+}
+
 size_t ConcatOperation::getOffset() const {
     return m_offset;
 }
@@ -226,3 +248,7 @@ PhiOperation::PhiOperation(
     std::shared_ptr<Variable> output)
     : BinaryOperation(OperationId::PHI, input1, input2, output)
 {}
+
+bool PhiOperation::isVirtual() const {
+    return true;
+}

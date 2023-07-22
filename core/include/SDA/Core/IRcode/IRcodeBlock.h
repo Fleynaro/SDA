@@ -18,6 +18,7 @@ namespace sda::ircode
         Hash m_hash = 0;
         Hash m_dominantHash = 0;
         std::shared_ptr<Value> m_condition;
+        friend class Variable;
     public:
         Block(pcode::Block* pcodeBlock, Function* function);
 

@@ -15,6 +15,8 @@ namespace sda::ircode
 
         std::shared_ptr<Variable> findVariable(const RefOperation::Reference& reference);
 
+        void removeVariable(std::shared_ptr<Variable> variable);
+
         void clear();
     };
 };

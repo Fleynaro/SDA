@@ -108,7 +108,7 @@ void Printer::printValue(const Value* value, bool extended) const {
     else if (auto varValue = dynamic_cast<const Variable*>(value)) {
         printToken(varValue->getName(), VARIABLE);
         if (extended) {
-            if (!varValue->getMemAddress().isVirtual) {
+            if (!varValue->getMemAddress().isVirtual || m_printVarAddressAlways) {
                 auto memAddressValue = varValue->getMemAddress().value;
                 if (memAddressValue) {
                     printToken("[", SYMBOL);

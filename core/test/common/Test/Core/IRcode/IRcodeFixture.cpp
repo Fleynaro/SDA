@@ -25,6 +25,7 @@ void IRcodeFixture::TearDown() {
 void IRcodeFixture::printIRcode(ircode::Function* function, std::ostream& out, size_t tabs) const {
     pcode::Printer pcodePrinter(context->getPlatform()->getRegisterRepository().get());
     ircode::Printer ircodePrinter(&pcodePrinter);
+    ircodePrinter.m_printVarAddressAlways = printVarAddressAlways;
     ircodePrinter.setOutput(out);
     ircodePrinter.setOperationCommentProvider([](const ircode::Operation* operation) -> std::string {
         auto function = operation->getBlock()->getFunction();

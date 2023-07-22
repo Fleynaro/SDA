@@ -12,6 +12,7 @@ namespace sda::test
         ircode::Program* program = nullptr;
         std::unique_ptr<ircode::ContextSync> ctxSync;
         std::unique_ptr<ircode::PcodeSync> pcodeSync;
+        bool printVarAddressAlways = false;
 
         void SetUp() override;
 

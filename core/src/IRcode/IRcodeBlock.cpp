@@ -130,6 +130,26 @@ void Block::update() {
         FunctionDecompiledEvent(m_function, std::move(decompiledBlocks)));
 }
 
+void RemoveRedundantVirtualOperations(Block* block) {
+    bool isRemoved = true;
+    while (isRemoved) {
+        isRemoved = false;
+        auto it = block->getOperations().begin();
+        while (it != block->getOperations().end()) {
+            auto& operation = *it;
+            auto output = operation->getOutput();
+            if (operation->isVirtual() && !output->isUsed()) {
+                Variable::Remove(output);
+                it = block->getOperations().erase(it);
+                isRemoved = true;
+            }
+            else {
+                ++it;
+            }
+        }
+    }
+}
+
 void Block::decompile(bool& goNextBlocks) {
     // if parent blocks have been changed, decompile this block again
     // "changes" can be checked by dominant hash
@@ -138,16 +158,20 @@ void Block::decompile(bool& goNextBlocks) {
         return;
     }
     Block tempBlock(m_pcodeBlock, m_function);
-    auto nextVarIdProvider = [this]() {
-        return getNextVarId();
-    };
-    IRcodeGenerator ircodeGen(&tempBlock, nullptr, nextVarIdProvider);
-    auto& instructions = m_pcodeBlock->getInstructions();
-    clearVarIds();
-    for (auto& [offset, instruction] : instructions) {
-        ircodeGen.ingestPcode(instruction);
+    {
+        auto nextVarIdProvider = [this]() {
+            return getNextVarId();
+        };
+        IRcodeGenerator ircodeGen(&tempBlock, nullptr, nextVarIdProvider);
+        auto& instructions = m_pcodeBlock->getInstructions();
+        clearVarIds();
+        for (auto& [offset, instruction] : instructions) {
+            ircodeGen.ingestPcode(instruction);
+        }
     }
     replaceWith(&tempBlock);
+    RemoveRedundantVirtualOperations(this);
+    m_hash = calcHash();
     m_dominantHash = actualDominantHash;
     goNextBlocks = true;
 }
@@ -215,7 +239,6 @@ void Block::replaceWith(Block* block) {
         m_function->getProgram()->getEventPipe()->send(
             OperationAddedEvent(op.get()));
     }
-    m_hash = calcHash();
     // update ref operations
     for (auto refOp : refOperations) {
         auto& reference = refOp->getReference();

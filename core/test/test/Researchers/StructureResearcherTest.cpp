@@ -286,10 +286,9 @@ TEST_F(StructureResearcherTest, If) {
             var8:4 = REF var3 \n\
             var9[$U2]:1 = INT_NOTEQUAL var8, 0x2:4 \n\
         Block B7(level: 4, near: B9): \n\
-            var10:8 = REF var1 \n\
-            var11:8 = REF var5 \n\
-            var12[$U3]:8 = INT_ADD var10, 0x18:8 \n\
-            var13[var12]:8 = COPY 0xc8:8 \n\
+            var12:8 = REF var1 \n\
+            var13[$U3]:8 = INT_ADD var12, 0x18:8 \n\
+            var14[var13]:8 = COPY 0xc8:8 \n\
         Block B9(level: 5): \n\
             empty \
     ";
@@ -308,18 +307,17 @@ TEST_F(StructureResearcherTest, If) {
         var7 <- Write var6 \n\
         var7 <- Write 0x64 \n\
         var8 <- Copy var3 \n\
-        var10 <- Copy var1 \n\
-        var11 <- Copy var5 \n\
-        var12 <- Copy var10 + 0x18 \n\
-        var13 <- Write var12 \n\
-        var13 <- Write 0xc8 \
+        var12 <- Copy var1 \n\
+        var13 <- Copy var12 + 0x18 \n\
+        var14 <- Write var13 \n\
+        var14 <- Write 0xc8 \
     ";
     auto expectedStructures = "\
         struct B0:var1 { \n\
             0x0: B0:var2 \n\
         } \n\
         \n\
-        struct B0:var10 : B0:var1 { \n\
+        struct B0:var12 : B0:var1 { \n\
             0x0: 0x2 \n\
             0x18: 0xc8 \n\
         } \n\

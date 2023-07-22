@@ -92,18 +92,18 @@ TEST_F(IRcodeTest, IfElseConditionMem) {
             var2[rax]:8 = INT_ADD var1, 0x10:8 \n\
             var3[var2]:8 = COPY 0x0:8 \n\
         Block B3(level: 2, far: B6): \n\
-            var4:8 = REF var2 \n\
+            var4[rax]:8 = REF var2 \n\
             var5[var4]:8 = COPY 0x1:8 \n\
         Block B5(level: 2, near: B6): \n\
             empty \n\
         Block B6(level: 3): \n\
-            var6:8 = REF var4 \n\
-            var7:8 = REF var2 \n\
-            var8:8 = REF var5 \n\
-            var9:8 = REF var3 \n\
-            var10:8 = PHI var8, var9 \n\
-            var11[r10]:8 = COPY var10 \
+            var8[rax]:8 = REF var2 \n\
+            var9[var8]:8 = REF var5 \n\
+            var10[var8]:8 = REF var3 \n\
+            var11[var8]:8 = PHI var9, var10 \n\
+            var12[r10]:8 = COPY var11 \
     ";
+    printVarAddressAlways = true;
     auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));
 }

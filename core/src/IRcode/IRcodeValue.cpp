@@ -150,3 +150,13 @@ const MemoryAddress& Variable::getMemAddress() const {
 size_t Variable::getSize() const {
     return m_size;
 }
+
+void Variable::Remove(const std::shared_ptr<Variable>& variable) {
+    for (auto op : variable->m_rewriteOperations) {
+        op->m_overwrittenVariables.erase(variable);
+    }
+    auto block = variable->getSourceOperation()->getBlock();
+    block->getMemorySpace()->removeVariable(variable);
+    block->m_varIds.set(variable->getId(), false);
+    block->getFunction()->m_varIds.set(variable->getId(), false);
+}

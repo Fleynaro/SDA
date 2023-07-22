@@ -11,6 +11,7 @@ namespace sda::ircode
     class Function
     {
         friend class Block;
+        friend class Variable;
         friend class ContextSync;
         Program* m_program = nullptr;
         pcode::FunctionGraph* m_functionGraph = nullptr;

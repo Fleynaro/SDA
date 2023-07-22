@@ -389,29 +389,15 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(Bloc
                     auto curMemSpace = getCurMemSpace()->getSubspace(ctx.memAddr.baseAddrHash);
                     auto mutualVar = FindMutualVariableInChains(chain1, chain2);
                     if (mutualVar) {
-                        // see test IRcodeTest.IfElseConditionMem
-                        std::shared_ptr<ircode::Variable> refVar;
-                        // try find existing reference variable
-                        for (auto var : { chain1.front(), chain2.front() }) {
-                            auto refOp = dynamic_cast<ircode::RefOperation*>(var->getSourceOperation());
-                            assert(refOp && "var is always a reference");
-                            if (refOp->getTargetVariable() == mutualVar) {
-                                refVar = var;
-                                break;
-                            }
-                        }
-                        // if not found, create a new one
-                        if (!refVar) {
-                            RefOperation::Reference ref = {
-                                mutualVar->getSourceOperation()->getBlock(),
-                                ctx.memAddr.baseAddrHash,
-                                ctx.memAddr.offset,
-                                ctx.readSize
-                            };
-                            refVar = createVariable(memAddr, ref.getHash(), ctx.readSize);
-                            genWriteMemory(curMemSpace, refVar);
-                            genOperation(std::make_unique<ircode::RefOperation>(ref, mutualVar, refVar));
-                        }
+                        RefOperation::Reference ref = {
+                            mutualVar->getSourceOperation()->getBlock(),
+                            ctx.memAddr.baseAddrHash,
+                            ctx.memAddr.offset,
+                            ctx.readSize
+                        };
+                        auto refVar = createVariable(memAddr, ref.getHash(), ctx.readSize);
+                        genWriteMemory(curMemSpace, refVar);
+                        genOperation(std::make_unique<ircode::RefOperation>(ref, mutualVar, refVar));
                         remainVarReadInfos = { { refVar, 0, m_block } };
                     } else {
                         ircode::Hash hash = 0;

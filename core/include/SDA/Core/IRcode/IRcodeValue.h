@@ -83,6 +83,8 @@ namespace sda::ircode
     {
         MemoryAddress m_memAddress;
         size_t m_size;
+        std::list<Operation*> m_rewriteOperations;
+        friend class Operation;
     protected:
         size_t m_id;
     public:
@@ -103,5 +105,7 @@ namespace sda::ircode
         const MemoryAddress& getMemAddress() const;
 
         size_t getSize() const override;
+
+        static void Remove(const std::shared_ptr<Variable>& variable);
     };
 };

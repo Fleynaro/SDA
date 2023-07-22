@@ -27,6 +27,14 @@ std::shared_ptr<Variable> MemorySpace::findVariable(const RefOperation::Referenc
     return nullptr;
 }
 
+void MemorySpace::removeVariable(std::shared_ptr<Variable> variable) {
+    auto it = m_subspaces.find(variable->getMemAddress().baseAddrHash);
+    if (it == m_subspaces.end()) {
+        return;
+    }
+    it->second.variables.remove(variable);
+}
+
 void MemorySpace::clear() {
     m_subspaces.clear();
 }
