@@ -1,22 +1,10 @@
 #include "Test/Core/Researchers/StructureResearcherFixture.h"
-#include "Test/Core/Researchers/DataFlowResearcherFixture.h"
-#include "Test/Core/Researchers/ConstConditionResearcherFixture.h"
 
 using namespace sda;
 using namespace sda::test;
 using namespace ::testing;
 
-class StructureResearcherTest : public StructureResearcherFixture
-{
-protected:
-    ::testing::AssertionResult cmpConditions(ircode::Function* function, const std::string& expectedCode) const {
-        return ConstConditionResearcherFixture::CmpConditions(constCondRepo.get(), function, expectedCode);
-    }
-
-    ::testing::AssertionResult cmpDataFlow(ircode::Function* function, const std::string& expectedCode) const {
-       return DataFlowResearcherFixture::CmpDataFlow(dataFlowRepo.get(), function, expectedCode);
-    }
-};
+class StructureResearcherTest : public StructureResearcherFixture {};
 
 TEST_F(StructureResearcherTest, GlobalVarAssignment) {
     /*

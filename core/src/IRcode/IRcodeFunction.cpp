@@ -66,7 +66,7 @@ std::shared_ptr<Variable> Function::getReturnVariable() {
 }
 
 std::shared_ptr<Variable> Function::findVariableById(size_t id) {
-    if (m_varIds.get(id)) {
+    if (m_varIds.get(id - 1)) {
         for (auto var : getVariables()) {
             if (var->getId() == id) {
                 return var;

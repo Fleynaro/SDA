@@ -1,5 +1,6 @@
 #pragma once
-#include "ResearcherFixture.h"
+#include "DataFlowResearcherFixture.h"
+#include "ConstConditionResearcherFixture.h"
 #include "SDA/Core/Researchers/StructureResearcher.h"
 
 using namespace sda;
@@ -147,5 +148,13 @@ protected:
             result.push_back(structure);
         }
         return sortByName(result);
+    }
+
+    ::testing::AssertionResult cmpConditions(ircode::Function* function, const std::string& expectedCode) const {
+        return ConstConditionResearcherFixture::CmpConditions(constCondRepo.get(), function, expectedCode);
+    }
+
+    ::testing::AssertionResult cmpDataFlow(ircode::Function* function, const std::string& expectedCode) const {
+       return DataFlowResearcherFixture::CmpDataFlow(dataFlowRepo.get(), function, expectedCode);
     }
 };

@@ -215,6 +215,19 @@ namespace sda::researcher
             for (auto group : changedGroups)
                 group->finalize();
         }
+
+        void gatherStructuresInGroup(Structure* structure, std::set<Structure*>& result) {
+            if (result.find(structure) != result.end())
+                return;
+            result.insert(structure);
+            auto info = getStructureInfo(structure);
+            for (auto output : info->getOutputs()) {
+                gatherStructuresInGroup(output, result);
+            }
+            for (auto input : info->getInputs()) {
+                gatherStructuresInGroup(input, result);
+            }
+        }
     };
 
     class ClassResearcher
@@ -318,7 +331,7 @@ namespace sda::researcher
                 auto structureToProcess = structuresToProcess.front();
                 // get all structures in the group
                 std::set<Structure*> structuresInGroup;
-                gatherStructuresInGroup(structureToProcess, structuresInGroup);
+                m_classRepo->gatherStructuresInGroup(structureToProcess, structuresInGroup);
                 for (auto structure : structuresInGroup) {
                     auto it = std::find(structuresToProcess.begin(), structuresToProcess.end(), structure);
                     if (it != structuresToProcess.end()) {
@@ -445,19 +458,6 @@ namespace sda::researcher
             if (goNext) {
                 for (auto output : info->getOutputs())
                     next(output);
-            }
-        }
-
-        void gatherStructuresInGroup(Structure* structure, std::set<Structure*>& result) {
-            if (result.find(structure) != result.end())
-                return;
-            result.insert(structure);
-            auto info = m_classRepo->getStructureInfo(structure);
-            for (auto output : info->getOutputs()) {
-                gatherStructuresInGroup(output, result);
-            }
-            for (auto input : info->getInputs()) {
-                gatherStructuresInGroup(input, result);
             }
         }
 
