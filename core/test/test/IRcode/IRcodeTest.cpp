@@ -129,10 +129,10 @@ TEST_F(IRcodeTest, IfElseConditionAlAh) {
             var2[rax]:1 = COPY 0x2:1 \n\
         Block B5(level: 3): \n\
             var3:1 = REF var1 \n\
-            var4:1 = REF var2 \n\
-            var5:2 = LOAD rax \n\
-            var6:2 = CONCAT var5, var3, 0 \n\
-            var7:2 = CONCAT var5, var4, 1 \n\
+            var4:2 = LOAD rax \n\
+            var5:1 = REF var2 \n\
+            var6:2 = CONCAT var4, var3, 0 \n\
+            var7:2 = CONCAT var4, var5, 1 \n\
             var8:2 = PHI var6, var7 \n\
             var9[r10]:2 = INT_2COMP var8 \
     ";
@@ -214,6 +214,108 @@ TEST_F(IRcodeTest, IfElseConditionXmm) {
             var39:4 = REF var20 \n\
             var40:4 = PHI var38, var39 \n\
             var41[var37]:4 = COPY var40 \
+    ";
+    auto function = parsePcode(sourcePCode, program);
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+}
+
+TEST_F(IRcodeTest, PartialRegisterDefinition) {
+    /*
+        if (true) {
+            rax = 1;
+        }
+        rax = ?;
+    */
+    auto sourcePCode = "\
+        CBRANCH <labelElse>, 0:1 // if-else condition \n\
+        rax:8 = COPY 1:8 // then block \n\
+        BRANCH <labelEnd> \n\
+        <labelElse>: \n\
+        NOP // else block \n\
+        <labelEnd>: \n\
+        r10:8 = INT_2COMP rax:8 \
+    ";
+    auto expectedIRCode = "\
+        Block B0(level: 1, near: B1, far: B3, cond: 0x0:1): \n\
+            empty \n\
+        Block B1(level: 2, far: B4): \n\
+            var1[rax]:8 = COPY 0x1:8 \n\
+        Block B3(level: 2, near: B4): \n\
+            empty \n\
+        Block B4(level: 3): \n\
+            var2:8 = REF var1 \n\
+            var3:8 = LOAD rax \n\
+            var4:8 = PHI var2, var3 \n\
+            var5[r10]:8 = INT_2COMP var4 \
+    ";
+    auto function = parsePcode(sourcePCode, program);
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+}
+
+TEST_F(IRcodeTest, TwoSequenceConditions) {
+    /*
+        void main(int param1) {
+            if (param1) {
+                globalVar_0x100->field_0x8 = globalVar_0x1000;
+            }
+            if (globalVar_0x100->field_0x0 == 1) {
+                player = static_cast<Player*>(globalVar_0x100);
+                player->field_0x8 = globalVar_0x2000;
+            }
+        }
+    */
+   auto sourcePCode = "\
+        // main() \n\
+        $1:8 = INT_ADD rip:8, 0x100:8 \n\
+        $2:8 = LOAD $1:8, 8:8 \n\
+        $100:1 = INT_EQUAL rcx:4, 0x0:4 \n\
+        CBRANCH <label>, $100:1 \n\
+            $3:8 = INT_ADD rip:8, 0x1000:8 \n\
+            $4:8 = LOAD $3:8, 8:8 \n\
+            $5:8 = INT_ADD $2:8, 0x8:8 \n\
+            STORE $5:8, $4:8 \n\
+        <label>: \n\
+        $6:4 = LOAD $2:8, 4:8 \n\
+        $7:1 = INT_NOTEQUAL $6:4, 1:4 \n\
+        CBRANCH <end>, $7:1 \n\
+            $8:8 = INT_ADD $2:8, 0x8:8 \n\
+            $9:8 = INT_ADD rip:8, 0x2000:8 \n\
+            $10:4 = LOAD $9:8, 8:8 \n\
+            STORE $8:8, $10:8 \n\
+        <end>: \n\
+        RETURN \n\
+    ";
+    auto expectedIRCode = "\
+        Block B0(level: 1, near: B4, far: B8, cond: var6): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U1]:8 = INT_ADD var1, 0x100:8 \n\
+            var3:8 = LOAD var2 \n\
+            var4[$U2]:8 = COPY var3 \n\
+            var5:4 = LOAD rcx \n\
+            var6[$U100]:1 = INT_EQUAL var5, 0x0:4 \n\
+        Block B4(level: 2, near: B8): \n\
+            var7:8 = REF var1 \n\
+            var8[$U3]:8 = INT_ADD var7, 0x1000:8 \n\
+            var9:8 = LOAD var8 \n\
+            var10[$U4]:8 = COPY var9 \n\
+            var11:8 = REF var4 \n\
+            var12[$U5]:8 = INT_ADD var11, 0x8:8 \n\
+            var13[var12]:8 = COPY var10 \n\
+        Block B8(level: 3, near: Bb, far: Bf, cond: var19): \n\
+            var16:8 = REF var4 \n\
+            var17:4 = LOAD var16 \n\
+            var18[$U6]:4 = COPY var17 \n\
+            var19[$U7]:1 = INT_NOTEQUAL var18, 0x1:4 \n\
+        Block Bb(level: 4, near: Bf): \n\
+            var15:8 = REF var16 \n\
+            var16[$U8]:8 = INT_ADD var15, 0x8:8 \n\
+            var22:8 = REF var1 \n\
+            var23[$U9]:8 = INT_ADD var22, 0x2000:8 \n\
+            var24:8 = LOAD var23 \n\
+            var25[$U10]:8 = COPY var24 \n\
+            var26[var16]:8 = COPY var25 \n\
+        Block Bf(level: 5): \n\
+            empty \
     ";
     auto function = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(function, expectedIRCode));

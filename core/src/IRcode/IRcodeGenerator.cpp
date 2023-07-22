@@ -368,14 +368,6 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(Bloc
                 remainVarReadInfos = refVarReadInfos;
             } else {
                 if (refVarReadInfos != remainVarReadInfos) {
-                    if (remainReadMask != 0) {
-                        auto var = genLoadBackgroundValue(ctx);
-                        remainVarReadInfos.push_front({ var, 0 });
-                    }
-                    if (refReadMask != 0) {
-                        auto var = genLoadBackgroundValue(ctx);
-                        refVarReadInfos.push_front({ var, 0 });
-                    }
                     auto var1 = joinVariables(remainVarReadInfos, ctx.readSize);
                     auto var2 = joinVariables(refVarReadInfos, ctx.readSize);
 
@@ -417,8 +409,15 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(Bloc
             }
         }
         if (!remainVarReadInfos.empty()) {
-            readMask = readMask & remainReadMask;
             varReadInfos.splice(varReadInfos.begin(), remainVarReadInfos);
+            readMask = readMask & remainReadMask;
+        }
+        if (readMask != 0) {
+            // TODO: see case when request eax, then rax
+            // TODO: readMask can be 0xFF00FF00, which is not a valid mask
+            auto var = genLoadBackgroundValue(ctx);
+            varReadInfos.push_front({ var, 0 });
+            readMask = 0;
         }
     }
     ctx.cache[cacheHash] = { varReadInfos, prevReadMask ^ readMask };
@@ -456,12 +455,6 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(
         readSize,
     };
     auto varReadInfos = genReadMemory(m_block, readMask, ctx);
-    // TODO: see case when request eax, then rax
-    // TODO: readMask can be 0xFF00FF00, which is not a valid mask
-    if (readMask != 0) {
-        auto var = genLoadBackgroundValue(ctx);
-        varReadInfos.push_front({ var, 0 });
-    }
     return varReadInfos;
 }
 
