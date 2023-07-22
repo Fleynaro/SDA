@@ -219,6 +219,46 @@ TEST_F(IRcodeTest, IfElseConditionXmm) {
     ASSERT_TRUE(cmp(function, expectedIRCode));
 }
 
+TEST_F(IRcodeTest, ReturnConstant) {
+    /*
+        void main() {
+            globalVar_0x2000->field_0x0 = 1;
+            globalVar_0x100->field_0x8 = globalVar_0x2000;
+            return globalVar_0x100->field_0x8->field_0x0; // 1
+        }
+    */
+    auto sourcePCode = "\
+        // main() \n\
+        $1:8 = INT_ADD rip:8, 0x100:8 \n\
+        $2:8 = LOAD $1:8, 8:8 \n\
+        $3:8 = INT_ADD rip:8, 0x2000:8 \n\
+        $4:8 = LOAD $3:8, 8:8 \n\
+        STORE $4:8, 1:4 \n\
+        $5:8 = INT_ADD $2:8, 0x8:8 \n\
+        STORE $5:8, $4:8 \n\
+        $6:8 = LOAD $5:8, 8:8 \n\
+        rax:4 = LOAD $6:8, 4:8 \n\
+        RETURN \n\
+    ";
+    auto expectedIRCode = "\
+        Block B0(level: 1): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U1]:8 = INT_ADD var1, 0x100:8 \n\
+            var3:8 = LOAD var2 \n\
+            var4[$U2]:8 = COPY var3 \n\
+            var5[$U3]:8 = INT_ADD var1, 0x2000:8 \n\
+            var6:8 = LOAD var5 \n\
+            var7[$U4]:8 = COPY var6 \n\
+            var8[var7]:4 = COPY 0x1:4 \n\
+            var9[$U5]:8 = INT_ADD var4, 0x8:8 \n\
+            var10[var9]:8 = COPY var7 \n\
+            var11[$U6]:8 = COPY var10 \n\
+            var12[rax]:4 = COPY var8 \
+    ";
+    auto function = parsePcode(sourcePCode, program);
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+}
+
 TEST_F(IRcodeTest, ReuseSameRef) {
     auto sourcePCode = "\
         rax:8 = COPY 0x1:8 \n\
