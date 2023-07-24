@@ -29,6 +29,8 @@ size_t Register::getSize() const {
 }
 
 size_t Register::getBitOffset() const {
+    if (m_type == Register::Virtual)
+        return m_mask.getOffset();
     return m_mask.getOffset() + m_index * 64;
 }
 
@@ -44,8 +46,9 @@ std::string Register::toString(const RegisterRepository* regRepo, bool printSize
         }
     }
     if (printSizeAndOffset) {
-        if (m_type == Register::Vector) {
+        if (m_type == Register::Vector || m_type == Register::Flag) {
             if (m_size == 4 || m_size == 8) {
+                ss << ":";
                 ss << (m_size == 4 ? "D" : "Q");
                 ss << static_cast<char>('a' + static_cast<char>(getBitOffset() / (m_size * utils::BitsInBytes)));
             }

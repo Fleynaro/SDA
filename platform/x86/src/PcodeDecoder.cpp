@@ -959,7 +959,7 @@ void PcodeDecoderX86::generatePcodeInstructions() {
 	{
 		auto varnodeReg = getOperandVarnode(m_curOperands[0], size);
 		auto varnodeRsp = getRegisterVarnode(ZYDIS_REGISTER_RSP, 0x8);
-		generateInstruction(InstructionId::INT_SUB, varnodeRsp, getConstantVarnode(size, 0x8), varnodeRsp);
+		generateInstruction(InstructionId::INT_SUB, varnodeRsp, getConstantVarnode(varnodeReg->getSize(), 0x8), varnodeRsp);
 		generateInstruction(InstructionId::STORE, varnodeRsp, varnodeReg);
 		break;
 	}
@@ -969,7 +969,7 @@ void PcodeDecoderX86::generatePcodeInstructions() {
 		auto varnodeReg = getOperandVarnode(m_curOperands[0], size);
 		auto varnodeRsp = getRegisterVarnode(ZYDIS_REGISTER_RSP, 0x8);
 		generateInstruction(InstructionId::LOAD, varnodeRsp, nullptr, varnodeReg);
-		generateInstruction(InstructionId::INT_ADD, varnodeRsp, getConstantVarnode(size, 0x8), varnodeRsp);
+		generateInstruction(InstructionId::INT_ADD, varnodeRsp, getConstantVarnode(varnodeReg->getSize(), 0x8), varnodeRsp);
 		break;
 	}
 
@@ -985,7 +985,7 @@ void PcodeDecoderX86::generatePcodeInstructions() {
 		auto varnodeRip = getRegisterVarnode(ZYDIS_REGISTER_RIP, 0x8);
 		auto varnodeRsp = getRegisterVarnode(ZYDIS_REGISTER_RSP, 0x8);
 		generateInstruction(InstructionId::LOAD, varnodeRsp, nullptr, varnodeRip);
-		generateInstruction(InstructionId::INT_ADD, varnodeRsp, getConstantVarnode(size, 0x8), varnodeRsp);
+		generateInstruction(InstructionId::INT_ADD, varnodeRsp, getConstantVarnode(varnodeRip->getSize(), 0x8), varnodeRsp);
 		generateInstruction(InstructionId::RETURN, varnodeRip, nullptr);
 		break;
 	}
@@ -1353,10 +1353,11 @@ pcode::Instruction* PcodeDecoderX86::generateInstruction(
     std::shared_ptr<Varnode> output,
     bool zext)
 {
-	// that is the feature of x86: setting value to EAX cleans fully RAX
+	// that is the feature of x86: setting value to EAX cleans fully RAX (see test PcodeDecoderX86Test.toEax)
 	if (auto regOutVarnode = std::dynamic_pointer_cast<RegisterVarnode>(output)) {
 		auto reg = regOutVarnode->getRegister();
-		if (reg.getRegType() != Register::Virtual && reg.getSize() == 0x4) {
+		auto type = reg.getRegType();
+		if (type != Register::Vector && type != Register::Virtual && reg.getSize() == 0x4) {
 			output = getRegisterVarnode(static_cast<ZydisRegister>(reg.getRegId()), 0x8, 0);
 			// or we could generate "RAX:8 = COPY 0:8" before
 		}
