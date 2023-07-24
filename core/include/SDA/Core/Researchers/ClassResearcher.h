@@ -462,14 +462,11 @@ namespace sda::researcher
         }
 
         std::set<size_t> getLabels(const ConstantSet& set, Structure* structure) {
-            std::set<size_t> labels;
             auto it = set.values().find(0x0); // label (type) field at offset 0x0
             if (it != set.values().end()) {
-                labels = it->second;
-            } else {
-                labels.insert(-1);
+                return it->second;
             }
-            return labels;
+            return {};
         }
     };
 };

@@ -188,7 +188,7 @@ void StructureResearcher::researchStructures(DataFlowNode* node, const std::func
                 m_structureRepo->clearStructure(structure);
                 prevHash = newHash;
             }
-
+            // this loop should be executed anyway (not only when predecessors are changed), see test StructureResearcherTest::Functions
             for (auto pred : node->predecessors) {
                 auto predLink = m_structureRepo->getLink(pred);
                 m_structureRepo->addChild(structure, predLink->structure);
