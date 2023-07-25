@@ -20,7 +20,6 @@ endif()
 
 add_subdirectory(core)
 add_subdirectory(platform)
-add_subdirectory(decompiler)
 add_subdirectory(sda)
 if (DEFINED CMAKE_JS_VERSION)
     message(STATUS "Building for node.js (cmake.js ${CMAKE_JS_VERSION})")

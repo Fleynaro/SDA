@@ -14,7 +14,6 @@ target_include_directories(
 target_link_libraries(
     sda PUBLIC
     core
-    decompiler
     unofficial::sqlite3::sqlite3)
 
 if(BUILD_TESTING)

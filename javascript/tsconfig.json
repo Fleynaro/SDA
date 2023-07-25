@@ -7,9 +7,6 @@
       "path": "./packages/sda-core"
     },
     {
-      "path": "./packages/sda-decompiler"
-    },
-    {
       "path": "./packages/sda-platform-x86"
     },
     {
