@@ -31,6 +31,4 @@ if (NOT SDA_PLUGIN_DEV)
     add_subdirectory(sda/my-plugin)
     set_target_properties(myplugin PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY $<TARGET_FILE_DIR:sda>/plugins)
-        
-    # add_subdirectory(launcher)
 endif()
