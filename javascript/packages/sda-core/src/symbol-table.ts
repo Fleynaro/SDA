@@ -1,18 +1,19 @@
 import m from './module';
 import { Context } from './context';
 import { ContextObject } from './object';
+import { SdaSymbol } from './symbol';
 import { Offset } from './utils';
 
 export type SymbolInfo = {
   symbolTable: SymbolTable;
   symbolOffset: Offset;
-  symbol: symbol;
+  symbol: SdaSymbol;
 };
 
 export declare abstract class SymbolTable extends ContextObject {
   readonly usedSize: number;
 
-  addSymbol(offset: Offset, symbol: symbol): void;
+  addSymbol(offset: Offset, symbol: SdaSymbol): void;
 
   removeSymbol(offset: Offset): void;
 

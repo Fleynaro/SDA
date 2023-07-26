@@ -14,8 +14,8 @@ namespace sda::bind
             cl
                 .inherit<ContextObject>()
                 .property("dataType", &Symbol::getDataType, &Symbol::setDataType);
-            RegisterClassName(cl, "Symbol");
-            module.class_("Symbol", cl);
+            RegisterClassName(cl, "SdaSymbol");
+            module.class_("SdaSymbol", cl);
         }
     };
 
