@@ -36,10 +36,10 @@ namespace sda
     };
 
     // When context is destroyed
-    struct ContextDestroyedEvent : Event {
+    struct ContextRemovedEvent : Event {
         Context* context;
 
-        ContextDestroyedEvent(Context* context)
+        ContextRemovedEvent(Context* context)
             : Event(ContextEventTopic)
             , context(context)
         {}

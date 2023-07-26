@@ -45,7 +45,7 @@ Context::Context(std::shared_ptr<EventPipe> eventPipe, Platform* platform)
 }
 
 Context::~Context() {
-    m_eventPipe->send(ContextDestroyedEvent(this));
+    m_eventPipe->send(ContextRemovedEvent(this));
 }
 
 void Context::initDefault() {
