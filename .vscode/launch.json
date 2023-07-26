@@ -45,7 +45,7 @@
             // "Tasks Shell Input" extension required
             "command": "shellCommand.execute",
             "args": {
-                "command": "powershell -Command \"(Get-CimInstance Win32_Process -Filter \\\"Name = 'electron.exe' AND CommandLine like '%localhost:9229%'\\\").ProcessId\"",
+                "command": "powershell -Command \"(Get-CimInstance Win32_Process -Filter \\\"Name = 'electron.exe' AND (CommandLine like '%localhost:9229%' OR CommandLine like '%@kayahr%')\\\").ProcessId\"",
                 //"command": "wmic process where \"commandLine like '%javascript%packages%electron%index.js'\" get processid",
                 "useFirstResult": true,
             }

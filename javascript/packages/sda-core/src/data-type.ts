@@ -36,7 +36,7 @@ export declare class ArrayDataType extends DataType {
   static New(context: Context, elementType: DataType, dimensions: number[]): ArrayDataType;
 }
 
-enum ScalarType {
+export enum ScalarType {
   UnsignedInt,
   SignedInt,
   FloatingPoint,
@@ -83,6 +83,7 @@ export declare class SignatureDataType extends DataType {
 
 module.exports = {
   ...module.exports,
+  DataType: m.DataType,
   VoidDataType: m.VoidDataType,
   PointerDataType: m.PointerDataType,
   ArrayDataType: m.ArrayDataType,
