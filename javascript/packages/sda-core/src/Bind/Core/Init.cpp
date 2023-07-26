@@ -33,6 +33,7 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
         PcodePrinterBind::Init,
         // platform
         PlatformBind::Init,
+        PlatformMockBind::Init,
         RegisterRepositoryBind::Init,
         PcodeDecoderBind::Init,
         InstructionDecoderBind::Init,

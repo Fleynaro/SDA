@@ -26,6 +26,51 @@ namespace sda::bind
         }
     };
 
+    class PlatformMockBind
+    {
+        class PlatformMock : public Platform
+        {
+            std::list<std::shared_ptr<CallingConvention>> m_callingConventions;
+        public:
+            std::string getName() const override {
+                return "mock";
+            }
+
+            size_t getPointerSize() const override {
+                return 8;
+            }
+
+            std::shared_ptr<RegisterRepository> getRegisterRepository() const override {
+                return nullptr;
+            }
+
+            const std::list<std::shared_ptr<CallingConvention>>& getCallingConventions() const override {
+                return m_callingConventions;
+            }
+
+            std::shared_ptr<PcodeDecoder> getPcodeDecoder() const override {
+                return nullptr;
+            }
+
+            std::shared_ptr<InstructionDecoder> getInstructionDecoder() const override {
+                return nullptr;
+            }
+        };
+
+        static auto New() {
+            auto platform = new PlatformMock();
+            return ExportObject(platform);
+        }
+    public:
+        static void Init(v8pp::module& module) {
+            auto cl = NewClass<PlatformMock>(module);
+            cl
+                .inherit<Platform>()
+                .static_method("New", &New);
+            module.class_("PlatformMock", cl);
+        }
+    };
+
     class RegisterRepositoryBind
     {
     public:

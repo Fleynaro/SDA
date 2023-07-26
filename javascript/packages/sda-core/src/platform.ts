@@ -17,6 +17,10 @@ export declare abstract class Platform implements IIdentifiable {
   static Get(hashId: Hash): Platform;
 }
 
+export declare class PlatformMock extends Platform {
+  static New(): PlatformMock;
+}
+
 export namespace Register {
   export enum Type {
     Virtual,
@@ -130,5 +134,6 @@ export declare class CustomCallingConvention extends CallingConvention {
 
 module.exports = {
   ...module.exports,
+  PlatformMock: m.PlatformMock,
   CustomCallingConvention: m.CustomCallingConvention,
 };
