@@ -18,6 +18,8 @@ namespace sda
         std::list<std::shared_ptr<EventPipe>> m_nextPipes;
     public:
         EventPipe(const std::string& name, const EventProcessor& processor);
+
+        const std::string& getName() const;
         
         void send(const Event& event);
 

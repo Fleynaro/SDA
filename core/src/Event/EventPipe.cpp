@@ -7,6 +7,10 @@ EventPipe::EventPipe(const std::string& name, const EventProcessor& processor)
     : m_name(name), m_processor(processor)
 {}
 
+const std::string& EventPipe::getName() const {
+    return m_name;
+}
+
 void EventPipe::send(const Event& event) {
     m_processor(event, [this](const Event& event) {
         for (auto& handler : m_handlers)
