@@ -7,9 +7,9 @@ namespace sda
     static const size_t ContextEventTopic = TopicName("ContextEventTopic");
 
     struct ObjectActionEvent : Event {
-        Object* object;
+        ContextObject* object;
 
-        ObjectActionEvent(Object* object)
+        ObjectActionEvent(ContextObject* object)
             : Event(ContextEventTopic)
             , object(object)
         {}
@@ -24,7 +24,7 @@ namespace sda
     struct ObjectModifiedEvent : ObjectActionEvent {
         Object::ModState state;
         
-        ObjectModifiedEvent(Object* object, Object::ModState state)
+        ObjectModifiedEvent(ContextObject* object, Object::ModState state)
             : ObjectActionEvent(object)
             , state(state)
         {}

@@ -23,11 +23,7 @@ Context::Context(std::shared_ptr<EventPipe> eventPipe, Platform* platform)
 
     IF_PLOG(plog::debug) {
         m_eventPipe->subscribe(std::function([&](const ObjectAddedEvent& event) {
-            if (auto ctxObj = dynamic_cast<ContextObject*>(event.object)) {
-                PLOG_DEBUG << "ObjectAddedEvent: " << ctxObj->getName();
-            } else {
-                PLOG_DEBUG << "ObjectAddedEvent: " << event.object->serializeId();
-            }
+            PLOG_DEBUG << "ObjectAddedEvent: " << event.object->getName();
         }));
         m_eventPipe->subscribe(std::function([&](const ObjectModifiedEvent& event) {
             if (event.state == Object::ModState::Before)
