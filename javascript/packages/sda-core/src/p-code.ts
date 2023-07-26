@@ -42,25 +42,7 @@ export declare class PcodeFunctionGraph {
   removeReferencedGraphFrom(fromOffset: InstructionOffset): void;
 }
 
-export declare abstract class PcodeGraphCallbacks {
-  onFunctionGraphCreated(graph: PcodeFunctionGraph): void;
-
-  onFunctionGraphRemoved(graph: PcodeFunctionGraph): void;
-}
-
-export declare class PcodeGraphCallbacksImpl extends PcodeGraphCallbacks {
-  prevCallbacks: PcodeGraphCallbacks;
-
-  onFunctionGraphCreated: (graph: PcodeFunctionGraph) => void;
-
-  onFunctionGraphRemoved: (graph: PcodeFunctionGraph) => void;
-
-  static New(): PcodeGraphCallbacksImpl;
-}
-
 export declare class PcodeGraph {
-  callbacks: PcodeGraphCallbacks;
-
   addInstruction(instruction: PcodeInstruction): void;
 
   removeInstruction(instruction: PcodeInstruction): void;
@@ -110,8 +92,6 @@ module.exports = {
   PcodeInstruction: m.PcodeInstruction,
   PcodeBlock: m.PcodeBlock,
   PcodeFunctionGraph: m.PcodeFunctionGraph,
-  PcodeGraphCallbacks: m.PcodeGraphCallbacks,
-  PcodeGraphCallbacksImpl: m.PcodeGraphCallbacksImpl,
   PcodeGraph: m.PcodeGraph,
   PcodeParser: m.PcodeParser,
   PcodePrinter: m.PcodePrinter,

@@ -27,7 +27,6 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
         PcodeInstructionBind::Init,
         PcodeBlockBind::Init,
         PcodeFunctionGraphBind::Init,
-        PcodeGraphCallbacksBind::Init,
         PcodeGraphBind::Init,
         PcodeParserBind::Init,
         PcodePrinterBind::Init,
