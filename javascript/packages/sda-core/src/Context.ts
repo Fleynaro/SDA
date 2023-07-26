@@ -1,50 +1,41 @@
 import m from './module';
-import { SdaObject } from './object';
+import { Event, EventPipe } from './event';
 import { Platform } from './platform';
+import { SdaObject } from './object';
 import { AddressSpace } from './address-space';
 import { Hash, IIdentifiable } from './utils';
 
-export declare abstract class ContextCallbacks {
-  readonly name: string;
-
-  setPrevCallbacks(prevCallbacks: ContextCallbacks): void;
-
-  setEnabled(enabled: boolean): void;
-
-  onObjectAdded(object: SdaObject): void;
-
-  onObjectModified(object: SdaObject): void;
-
-  onObjectRemoved(object: SdaObject): void;
-
-  static Find(name: string, callbacks: ContextCallbacks): ContextCallbacks | null;
+export declare abstract class ObjectActionEvent extends Event {
+  object: SdaObject;
 }
 
-export declare class ContextCallbacksImpl extends ContextCallbacks {
-  onObjectAddedImpl: (object: SdaObject) => void;
+export declare class ObjectAddedEvent extends ObjectActionEvent {}
 
-  onObjectModifiedImpl: (object: SdaObject) => void;
+export declare class ObjectModifiedEvent extends ObjectActionEvent {}
 
-  onObjectRemovedImpl: (object: SdaObject) => void;
+export declare class ObjectRemovedEvent extends ObjectActionEvent {}
 
-  static New(): ContextCallbacksImpl;
+export declare class ContextRemovedEvent extends Event {
+  context: Context;
 }
 
 export declare class Context implements IIdentifiable {
   readonly hashId: Hash;
   readonly className: string;
   readonly platform: Platform;
-  callbacks: ContextCallbacks;
   addressSpaces: AddressSpace[];
 
-  static New(platform: Platform): Context;
+  static New(pipe: EventPipe, platform: Platform): Context;
 
   static Get(hashId: Hash): Context;
 }
 
 module.exports = {
   ...module.exports,
-  ContextCallbacks: m.ContextCallbacks,
-  ContextCallbacksImpl: m.ContextCallbacksImpl,
+  ObjectActionEvent: m.ObjectActionEvent,
+  ObjectAddedEvent: m.ObjectAddedEvent,
+  ObjectModifiedEvent: m.ObjectModifiedEvent,
+  ObjectRemovedEvent: m.ObjectRemovedEvent,
+  ContextRemovedEvent: m.ContextRemovedEvent,
   Context: m.Context,
 };

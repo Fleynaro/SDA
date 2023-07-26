@@ -1,98 +1,91 @@
 #pragma once
 #include "SDA/Core/ContextInclude.h"
+#include "SDA/Core/ContextEvents.h"
+#include "Event.h"
 
 namespace sda::bind
 {
-    class ContextCallbacksBind
+    class ContextEventBind : public EventBind
     {
-        using Callbacks = Context::Callbacks;
-        class CallbacksJsImpl : public Callbacks
-        {
-        public:
-            Callback m_onObjectAddedImpl;
-            Callback m_onObjectModifiedImpl;
-            Callback m_onObjectRemovedImpl;
-
-            std::string getName() const override {
-                return "CustomJs";
-            }
-            
-            void onObjectAddedImpl(Object* obj) override {
-                if (m_onObjectAddedImpl.isDefined()) {
-                    m_onObjectAddedImpl.call(obj);
-                }
-            }
-
-            void onObjectModifiedImpl(Object* obj) override {
-                if (m_onObjectModifiedImpl.isDefined()) {
-                    m_onObjectModifiedImpl.call(obj);
-                }
-            }
-
-            void onObjectRemovedImpl(Object* obj) override {
-                if (m_onObjectRemovedImpl.isDefined()) {
-                    m_onObjectRemovedImpl.call(obj);
-                }
-            }
-        };
-        
-        static auto New() {
-            return std::make_shared<CallbacksJsImpl>();
+        static void ObjectActionEventInit(v8pp::module& module) {
+            auto cl = NewClass<ObjectActionEvent>(module);
+            cl
+                .auto_wrap_objects(true)
+                .inherit<Event>()
+                .property("object", [](ObjectActionEvent& self) { return self.object; });
+            module.class_("ObjectActionEvent", cl);
         }
 
+        static void ObjectAddedEventInit(v8pp::module& module) {
+            auto cl = NewClass<ObjectAddedEvent>(module);
+            cl
+                .auto_wrap_objects(true)
+                .inherit<ObjectActionEvent>();
+            module.class_("ObjectAddedEvent", cl);
+            RegisterEvent<ObjectAddedEvent>();
+        }
+
+        static void ObjectModifiedEventInit(v8pp::module& module) {
+            auto cl = NewClass<ObjectModifiedEvent>(module);
+            cl
+                .auto_wrap_objects(true)
+                .inherit<ObjectActionEvent>()
+                .property("state", [](ObjectModifiedEvent& self) { return self.state; });
+            module.class_("ObjectModifiedEvent", cl);
+            RegisterEvent<ObjectModifiedEvent>();
+        }
+
+        static void ObjectRemovedEventInit(v8pp::module& module) {
+            auto cl = NewClass<ObjectRemovedEvent>(module);
+            cl
+                .auto_wrap_objects(true)
+                .inherit<ObjectActionEvent>();
+            module.class_("ObjectRemovedEvent", cl);
+            RegisterEvent<ObjectRemovedEvent>();
+        }
+
+        static void ContextRemovedEventInit(v8pp::module& module) {
+            auto cl = NewClass<ContextRemovedEvent>(module);
+            cl
+                .auto_wrap_objects(true)
+                .inherit<Event>();
+            module.class_("ContextRemovedEvent", cl);
+            RegisterEvent<ContextRemovedEvent>();
+        }
     public:
         static void Init(v8pp::module& module) {
-            {
-                auto cl = NewClass<Callbacks, v8pp::shared_ptr_traits>(module);
-                cl
-                    .auto_wrap_object_ptrs(true)
-                    .property("name", &Callbacks::getName)
-                    .method("setPrevCallbacks", &Callbacks::setPrevCallbacks)
-                    .method("setEnabled", &Callbacks::setEnabled)
-                    .method("onObjectAdded", &Callbacks::onObjectAdded)
-                    .method("onObjectModified", &Callbacks::onObjectModified)
-                    .method("onObjectRemoved", &Callbacks::onObjectRemoved)
-                    .static_method("Find", &Callbacks::Find);
-                module.class_("ContextCallbacks", cl);
-            }
-            
-            {
-                auto cl = NewClass<CallbacksJsImpl, v8pp::shared_ptr_traits>(module);
-                cl
-                    .inherit<Callbacks>()
-                    .static_method("New", &New);
-                Callback::Register(cl, "onObjectAddedImpl", &CallbacksJsImpl::m_onObjectAddedImpl);
-                Callback::Register(cl, "onObjectModifiedImpl", &CallbacksJsImpl::m_onObjectModifiedImpl);
-                Callback::Register(cl, "onObjectRemovedImpl", &CallbacksJsImpl::m_onObjectRemovedImpl);
-                module.class_("ContextCallbacksImpl", cl);
-            }
+            ObjectActionEventInit(module);
+            ObjectAddedEventInit(module);
+            ObjectModifiedEventInit(module);
+            ObjectRemovedEventInit(module);
+            ContextRemovedEventInit(module);
         }
     };
 
     class ContextBind
     {
-        class RefCallbacks : public Context::Callbacks {
-            std::string getName() const override {
-                return "Ref";
-            }
+        static auto MakeSyncWithLookupTable(Context* context) {
+            auto ctxPipe = context->getEventPipe();
+            auto pipe = ctxPipe->connect(EventPipe::New());
+            pipe->subscribe(std::function([context](const ObjectAddedEvent& event) {
+                if (event.object->getContext() != context) return;
+                ObjectLookupTableRaw::AddObject(event.object);
+            }));
+            pipe->subscribe(std::function([context](const ObjectRemovedEvent& event) {
+                if (event.object->getContext() != context) return;
+                ObjectLookupTableRaw::RemoveObject(event.object);
+                RemoveObjectRef(event.object);
+            }));
+            pipe->subscribe(std::function([context, ctxPipe, pipe](const ContextRemovedEvent& event) {
+                if (event.context != context) return;
+                ObjectLookupTableRaw::RemoveObject(event.context);
+                ctxPipe->disconnect(pipe);
+            }));
+        }
 
-            void onObjectAddedImpl(Object* obj) override {
-                ObjectLookupTableRaw::AddObject(obj);
-            }
-
-            void onObjectRemovedImpl(Object* obj) override {
-                ObjectLookupTableRaw::RemoveObject(obj);
-                RemoveObjectRef(obj);
-            }
-
-            void onContextDestroyedImpl(Context* context) override {
-                ObjectLookupTableRaw::RemoveObject(context);
-            }
-        };
-
-        static auto New(Platform* platform) {
-            auto context = new Context(platform);
-            context->setCallbacks(std::make_shared<RefCallbacks>());
+        static auto New(std::shared_ptr<EventPipe> pipe, Platform* platform) {
+            auto context = new Context(pipe, platform);
+            MakeSyncWithLookupTable(context);
             ObjectLookupTableRaw::AddObject(context);
             return ExportObject(context);
         }
@@ -103,7 +96,6 @@ namespace sda::bind
             cl
                 .auto_wrap_object_ptrs(true)
                 .property("platform", &Context::getPlatform)
-                .property("callbacks", &Context::getCallbacks, &Context::setCallbacks)
                 .property("addressSpaces", [](Context& self) {
                     std::list<AddressSpace*> list;
                     for (auto addressSpace : *self.getAddressSpaces())

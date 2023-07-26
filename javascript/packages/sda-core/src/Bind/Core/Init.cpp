@@ -39,7 +39,7 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
         CallingConventionBind::Init,
         CustomCallingConventionBind::Init,
         // context
-        ContextCallbacksBind::Init,
+        ContextEventBind::Init,
         ContextBind::Init,
         // object
         ObjectBind::Init,
