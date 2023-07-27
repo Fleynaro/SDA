@@ -1,12 +1,12 @@
 import m from './module';
-import { Event, EventPipe } from './event';
+import { SdaEvent, EventPipe } from './event';
 import { Platform } from './platform';
-import { SdaObject } from './object';
+import { ContextObject } from './object';
 import { AddressSpace } from './address-space';
 import { Hash, IIdentifiable } from './utils';
 
-export declare abstract class ObjectActionEvent extends Event {
-  object: SdaObject;
+export declare abstract class ObjectActionEvent extends SdaEvent {
+  object: ContextObject;
 }
 
 export declare class ObjectAddedEvent extends ObjectActionEvent {}
@@ -15,7 +15,7 @@ export declare class ObjectModifiedEvent extends ObjectActionEvent {}
 
 export declare class ObjectRemovedEvent extends ObjectActionEvent {}
 
-export declare class ContextRemovedEvent extends Event {
+export declare class ContextRemovedEvent extends SdaEvent {
   context: Context;
 }
 
