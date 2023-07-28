@@ -9,7 +9,7 @@ namespace sda
     class SymbolTable : public ContextObject
     {
     public:
-        static inline const std::string Collection = "symbol_tables";
+        static inline const std::string Class = "symbol_table";
 
         SymbolTable(Context* context, Object::Id* id = nullptr, const std::string& name = "");
 

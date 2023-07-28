@@ -10,7 +10,7 @@ namespace sda
     {
         std::list<Image*> m_images;
     public:
-        static inline const std::string Collection = "address_spaces";
+        static inline const std::string Class = "address_space";
 
         AddressSpace(Context* context, Object::Id* id = nullptr, const std::string& name = "");
 

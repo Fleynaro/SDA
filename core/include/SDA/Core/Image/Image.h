@@ -16,7 +16,7 @@ namespace sda
         std::unique_ptr<pcode::Graph> m_pcodeGraph;
 
     public:
-        static inline const std::string Collection = "images";
+        static inline const std::string Class = "image";
 
         Image(
             Context* context,

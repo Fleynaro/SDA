@@ -127,7 +127,7 @@ Image* Image::clone(std::unique_ptr<IImageRW> rw) const {
 
 void Image::serialize(boost::json::object& data) const {
     ContextObject::serialize(data);
-    data["collection"] = Collection;
+    data["collection"] = Class;
 
     if(auto serRW = dynamic_cast<utils::ISerializable*>(m_rw.get())) {
         boost::json::object rwData;

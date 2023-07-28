@@ -49,7 +49,7 @@ bool DataType::isScalar(ScalarType type) const {
 
 void DataType::serialize(boost::json::object& data) const {
     ContextObject::serialize(data);
-    data["collection"] = Collection;
+    data["class"] = Class;
 }
 
 void DataType::destroy() {

@@ -19,7 +19,7 @@ namespace sda
             DataType* dataType = nullptr);
             
     public:
-        static inline const std::string Collection = "symbols";
+        static inline const std::string Class = "symbol";
 
         ~Symbol();
 

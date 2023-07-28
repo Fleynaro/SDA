@@ -21,7 +21,7 @@ namespace sda
         void notifyModified(Object::ModState state) override;
 
     public:
-        static inline const std::string Collection = "data_types";
+        static inline const std::string Class = "data_type";
 
         PointerDataType* getPointerTo();
 
