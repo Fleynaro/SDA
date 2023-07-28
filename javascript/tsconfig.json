@@ -10,9 +10,6 @@
       "path": "./packages/sda-platform-x86"
     },
     {
-      "path": "./packages/sda"
-    },
-    {
       "path": "./packages/sda-electron"
     },
   ],

@@ -1,6 +1,7 @@
 export * from './address-space';
 export * from './context';
 export * from './data-type';
+export * from './event';
 export * from './image';
 export * from './helpers';
 export * from './ir-code';

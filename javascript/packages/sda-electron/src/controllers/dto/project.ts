@@ -1,4 +1,3 @@
-import { Project } from 'sda';
 import {
   Project as ProjectDTO,
   RecentProject as RecentProjectDTO,
@@ -7,6 +6,8 @@ import {
 import { ObjectId } from 'api/common';
 import { toContextId } from './context';
 import { basename as pathBasename } from 'path';
+import app from 'app';
+import { Project } from 'project';
 import { toHash, toId } from 'utils/common';
 
 export const toProjectDTO = (project: Project): ProjectDTO => {
@@ -18,7 +19,7 @@ export const toProjectDTO = (project: Project): ProjectDTO => {
 };
 
 export const toProject = (id: ObjectId): Project => {
-  const project = Project.Get(toHash(id));
+  const project = app.projects.find((p) => toHash(id) === p.hashId);
   if (!project) {
     throw new Error(`Project ${id.key} does not exist`);
   }

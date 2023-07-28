@@ -1,16 +1,22 @@
+import { instance_of } from 'sda-bindings';
 import BaseController from './base-controller';
 import { toProject, toProjectDTO, toRecentProjectDTO } from './dto/project';
-import { objectChangeEmitter, ObjectChangeType } from '../eventEmitter';
+import { objectChangeEmitter, ObjectChangeType } from 'eventEmitter';
 import {
   ProjectController,
   RecentProject as RecentProjectDTO,
   Project as ProjectDTO,
 } from 'api/project';
 import { ObjectId } from 'api/common';
-import { program, getUserPath } from '../app';
+import app from 'app';
 import { loadJSON, saveJSON, doesFileExist, deleteFile } from 'utils/file';
-import { Project } from 'sda';
-import { Context, ContextCallbacksImpl } from 'sda-core';
+import {
+  Context,
+  EventPipe,
+  ObjectAddedEvent,
+  ObjectModifiedEvent,
+  ObjectRemovedEvent,
+} from 'sda-core';
 import { findPlatform } from 'repo/platform';
 import { join as pathJoin } from 'path';
 import { toId } from 'utils/common';
@@ -21,7 +27,7 @@ interface ProjectConfig {
   platformName: string;
 }
 
-const projectListFilePath = () => getUserPath('projects.json');
+const projectListFilePath = () => app.getUserPath('projects.json');
 const projectConfigFilePath = (path: string) => pathJoin(path, 'project.json');
 
 class ProjectControllerImpl extends BaseController implements ProjectController {
@@ -71,7 +77,7 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
   }
 
   public async getActiveProjects(): Promise<ProjectDTO[]> {
-    return program.projects.map(toProjectDTO);
+    return app.projects.map(toProjectDTO);
   }
 
   public async getActiveProject(id: ObjectId): Promise<ProjectDTO> {
@@ -82,36 +88,34 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
   public async openProject(path: string): Promise<ProjectDTO> {
     const config = await loadJSON<ProjectConfig>(projectConfigFilePath(path));
     const platform = findPlatform(config.platformName);
-    const context = Context.New(platform);
-    const loadCallbacks = context.callbacks;
-    {
-      const callbacks = ContextCallbacksImpl.New();
-      callbacks.setPrevCallbacks(context.callbacks);
-      callbacks.onObjectAddedImpl = (obj) =>
-        objectChangeEmitter()(toId(obj), ObjectChangeType.Create);
-      callbacks.onObjectModifiedImpl = (obj) =>
-        objectChangeEmitter()(toId(obj), ObjectChangeType.Update);
-      callbacks.onObjectRemovedImpl = (obj) =>
-        objectChangeEmitter()(toId(obj), ObjectChangeType.Delete);
-      context.callbacks = callbacks;
-    }
-    const project = Project.New(program, path, context);
-    {
-      // Not all callbacks can be used during load!
-      const prevCallbacks = project.context.callbacks;
-      project.context.callbacks = loadCallbacks;
-      project.load();
-      project.context.callbacks = prevCallbacks;
-    }
+    const pipe = EventPipe.New('global');
+    const context = Context.New(pipe, platform);
+    pipe.subscribe((event) => {
+      if (instance_of(event, ObjectAddedEvent)) {
+        const e = event as ObjectAddedEvent;
+        objectChangeEmitter()(toId(e.object), ObjectChangeType.Create);
+      } else if (instance_of(event, ObjectModifiedEvent)) {
+        const e = event as ObjectModifiedEvent;
+        objectChangeEmitter()(toId(e.object), ObjectChangeType.Update);
+      } else if (instance_of(event, ObjectRemovedEvent)) {
+        const e = event as ObjectRemovedEvent;
+        objectChangeEmitter()(toId(e.object), ObjectChangeType.Delete);
+      }
+    });
     if (isElectronDev) {
-      createTestObjects(project.context);
+      createTestObjects(context);
     }
+    const project = app.newProject(path, context);
+    project.load();
     const projectDTO = toProjectDTO(project);
     await this.updateRecentProjectsWithPath(path, ObjectChangeType.Create);
     return projectDTO;
   }
 
   public async createProject(path: string, platformName: string): Promise<void> {
+    if (!(await doesFileExist(path))) {
+      throw new Error(`Path ${path} does not exist`);
+    }
     const config: ProjectConfig = {
       platformName,
     };
@@ -134,7 +138,7 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
 
   public async canProjectBeSaved(id: ObjectId): Promise<boolean> {
     const project = toProject(id);
-    return project.canBeSaved;
+    return project.canBeSaved();
   }
 }
 

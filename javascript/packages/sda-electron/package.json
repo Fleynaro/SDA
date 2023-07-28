@@ -23,9 +23,9 @@
   "license": "ISC",
   "dependencies": {
     "rimraf": "^3.0.2",
-    "sda": "file:../sda",
     "sda-core": "file:../sda-core",
-    "sda-platform-x86": "file:../sda-platform-x86"
+    "sda-platform-x86": "file:../sda-platform-x86",
+    "sqlite3": "^5.1.6"
   },
   "devDependencies": {
     "electron": "^20.2.0",

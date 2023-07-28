@@ -1,9 +1,9 @@
 import { app } from 'electron';
 import { windowController } from './controllers';
-import { initApp } from './app';
+import sdaApp from './app';
 
 app.whenReady().then(async () => {
-  initApp();
+  sdaApp.init();
   windowController.openProjectManagerWindow();
 
   // app.on('activate', () => {

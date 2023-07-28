@@ -2,45 +2,56 @@ import { app } from 'electron';
 import path from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { initControllers } from './controllers';
-import { Program, ProgramCallbacksImpl, CleanUpSharedObjectLookupTable } from 'sda';
 import { initDefaultPlatforms } from 'repo/platform';
 import { initDefaultImageAnalysers } from 'repo/image-analyser';
 import { objectChangeEmitter, ObjectChangeType } from './eventEmitter';
 import { toId } from 'utils/common';
+import { CleanUpSharedObjectLookupTable, Context } from 'sda-core';
+import { Project } from 'project';
 
-export let program: Program;
+class App {
+  readonly projects: Project[] = [];
 
-export const getUserDir = () => {
-  return path.join(app.getPath('documents'), 'SDA');
-};
+  init() {
+    initDefaultPlatforms();
+    initDefaultImageAnalysers();
+    initControllers();
 
-export const getUserPath = (file: string) => {
-  return path.join(getUserDir(), file);
-};
+    // create user directory if not exists
+    const userDir = this.getUserDir();
+    if (!existsSync(userDir)) {
+      mkdirSync(userDir);
+    }
 
-export const initApp = () => {
-  program = Program.New();
-  {
-    const callbacks = ProgramCallbacksImpl.New();
-    callbacks.prevCallbacks = program.callbacks;
-    callbacks.onProjectAdded = (project) =>
-      objectChangeEmitter()(toId(project), ObjectChangeType.Create);
-    callbacks.onProjectRemoved = (project) =>
+    setInterval(() => {
+      // TODO: remove when app exit
+      CleanUpSharedObjectLookupTable();
+    }, 10000);
+  }
+
+  newProject(path: string, context: Context) {
+    const project = new Project(path, context);
+    this.projects.push(project);
+    objectChangeEmitter()(toId(project), ObjectChangeType.Create);
+    return project;
+  }
+
+  deleteProject(project: Project) {
+    const index = this.projects.indexOf(project);
+    if (index >= 0) {
       objectChangeEmitter()(toId(project), ObjectChangeType.Delete);
-    program.callbacks = callbacks;
-  }
-  initDefaultPlatforms();
-  initDefaultImageAnalysers();
-  initControllers();
-
-  // create user directory if not exists
-  const userDir = getUserDir();
-  if (!existsSync(userDir)) {
-    mkdirSync(userDir);
+      this.projects.splice(index, 1);
+      project.destroy();
+    }
   }
 
-  setInterval(() => {
-    // TODO: remove when app exit
-    CleanUpSharedObjectLookupTable();
-  }, 10000);
-};
+  getUserDir() {
+    return path.join(app.getPath('documents'), 'SDA');
+  }
+
+  getUserPath(file: string) {
+    return path.join(this.getUserDir(), file);
+  }
+}
+
+export default new App();

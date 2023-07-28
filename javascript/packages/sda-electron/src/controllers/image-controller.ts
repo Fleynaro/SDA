@@ -14,9 +14,9 @@ import {
   StandartSymbolTable,
   Instruction,
   toInstructionOffset,
+  GetOriginalInstructionInDetail,
+  GetOriginalInstructions,
 } from 'sda-core';
-import { GetOriginalInstructionInDetail, GetOriginalInstructions } from 'sda';
-import { PcodeGraphBuilder } from 'sda-decompiler';
 import { ObjectId, Offset } from 'api/common';
 import { ImageLoadRowOptions } from 'api/image';
 import { toImageDTO, toImage, changeImage } from './dto/image';
@@ -119,8 +119,8 @@ class ImageControllerImpl extends BaseController implements ImageController {
     const startInstructionOffsets = startOffsets.map(toInstructionOffset);
     const platform = image.context.platform;
     const decoder = platform.getPcodeDecoder();
-    const builder = PcodeGraphBuilder.New(image.pcodeGraph, image, decoder);
-    builder.start(startInstructionOffsets, true);
+    // const builder = PcodeGraphBuilder.New(image.pcodeGraph, image, decoder);
+    // builder.start(startInstructionOffsets, true);
   }
 
   private getImageContent(image: Image): ImageContent {
