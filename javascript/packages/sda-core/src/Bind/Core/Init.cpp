@@ -1,6 +1,7 @@
 #include "Bind/Init.h"
 #include "Bind/Core/Shared/Converter.h"
 #include "Bind/Core/Utils.h"
+#include "Bind/Core/Helpers.h"
 #include "Bind/Core/Event.h"
 #include "Bind/Core/Pcode.h"
 #include "Bind/Core/Platform.h"
@@ -19,6 +20,9 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
         // utils
         SerializationBind::Init,
         AbstractPrinterBind::Init,
+        // helpers
+        HelpersBind::Init,
+        ObjectLookupTableShared::Init,
         // event
         EventBind::Init,
         EventPipeBind::Init,

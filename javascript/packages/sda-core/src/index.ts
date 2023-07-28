@@ -2,6 +2,7 @@ export * from './address-space';
 export * from './context';
 export * from './data-type';
 export * from './image';
+export * from './helpers';
 export * from './ir-code';
 export * from './object';
 export * from './p-code';
