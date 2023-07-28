@@ -22,6 +22,7 @@ export declare class ContextRemovedEvent extends SdaEvent {
 export declare class Context implements IIdentifiable {
   readonly hashId: Hash;
   readonly className: string;
+  readonly eventPipe: EventPipe;
   readonly platform: Platform;
   addressSpaces: AddressSpace[];
 
