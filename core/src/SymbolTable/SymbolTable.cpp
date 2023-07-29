@@ -26,7 +26,7 @@ std::list<SymbolTable::SymbolInfo> SymbolTable::getAllSymbolsRecursivelyAt(Offse
 
 void SymbolTable::serialize(boost::json::object& data) const {
     ContextObject::serialize(data);
-    data["collection"] = Class;
+    data["class"] = Class;
 }
 
 void SymbolTable::destroy() {

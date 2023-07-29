@@ -66,7 +66,7 @@ void Symbol::setDataType(DataType* dataType) {
 
 void Symbol::serialize(boost::json::object& data) const {
     ContextObject::serialize(data);
-    data["collection"] = Class;
+    data["class"] = Class;
     data["data_type"] = m_dataType->serializeId();
 }
 
