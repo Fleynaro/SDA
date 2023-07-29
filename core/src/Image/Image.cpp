@@ -70,10 +70,6 @@ SymbolTable* Image::getGlobalSymbolTable() const {
     return m_globalSymbolTable;
 }
 
-pcode::Graph* Image::getPcodeGraph() const {
-    return m_pcodeGraph.get();
-}
-
 void Image::compare(Image* otherImage, std::list<std::pair<Offset, Offset>>& regions) const {
     if (getSize() != otherImage->getSize())
         throw std::runtime_error("Images have different sizes");

@@ -3,7 +3,6 @@ import { Context } from './context';
 import { ContextObject } from './object';
 import { SymbolTable } from './symbol-table';
 import { Offset, ISerializable } from './utils';
-import { PcodeGraph } from './p-code';
 
 export declare abstract class ImageRW {
   read(offset: Offset, size: number): Uint8Array;
@@ -82,7 +81,6 @@ export declare class Image extends ContextObject {
   readonly imageSections: ImageSection[];
   readonly size: number;
   readonly globalSymbolTable: SymbolTable;
-  readonly pcodeGraph: PcodeGraph;
 
   contains(offset: Offset): boolean;
 

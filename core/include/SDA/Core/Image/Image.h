@@ -2,7 +2,6 @@
 #include "SDA/Core/Object/ObjectList.h"
 #include "ImageRW.h"
 #include "ImageAnalyser.h"
-#include "SDA/Core/Pcode/PcodeGraph.h"
 
 namespace sda
 {
@@ -13,7 +12,6 @@ namespace sda
         std::unique_ptr<IImageRW> m_rw;
         std::shared_ptr<ImageAnalyser> m_analyser;
         SymbolTable* m_globalSymbolTable;
-        std::unique_ptr<pcode::Graph> m_pcodeGraph;
 
     public:
         static inline const std::string Class = "image";
@@ -47,8 +45,6 @@ namespace sda
         size_t toImageFileOffset(Offset offset) const;
 
         SymbolTable* getGlobalSymbolTable() const;
-
-        pcode::Graph* getPcodeGraph() const;
 
         // compare this image with another image on code sections
         void compare(Image* otherImage, std::list<std::pair<Offset, Offset>>& regions) const;
