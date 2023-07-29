@@ -48,13 +48,13 @@ export class Transaction {
     this.changes[obj.id] = { type: ChangeType.Removed, obj };
   }
 
-  commit() {
+  async commit() {
     for (const [_, change] of Object.entries(this.changes)) {
       const data = change.obj.serialize() as DatabaseObject;
       if (change.type === ChangeType.New || change.type === ChangeType.Modified) {
-        this.db.upsert(data);
+        await this.db.upsert(data);
       } else if (change.type === ChangeType.Removed) {
-        this.db.delete(data);
+        await this.db.delete(data);
       }
     }
     this.changes = {};

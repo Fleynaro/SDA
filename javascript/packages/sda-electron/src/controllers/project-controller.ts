@@ -106,7 +106,8 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
       createTestObjects(context);
     }
     const project = app.newProject(path, context);
-    project.load();
+    await project.init();
+    await project.load();
     const projectDTO = toProjectDTO(project);
     await this.updateRecentProjectsWithPath(path, ObjectChangeType.Create);
     return projectDTO;
@@ -133,7 +134,7 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
 
   public async saveProject(id: ObjectId): Promise<void> {
     const project = toProject(id);
-    project.save();
+    await project.save();
   }
 
   public async canProjectBeSaved(id: ObjectId): Promise<boolean> {

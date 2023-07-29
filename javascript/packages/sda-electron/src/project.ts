@@ -30,7 +30,11 @@ export class Project implements IIdentifiable {
     this.eventPipe = EventPipe.New('project');
     this.database = new Database(path + '/database.sqlite');
     this.transaction = new Transaction(this.database);
+  }
+
+  async init() {
     this.initEventPipe();
+    await this.database.connect();
     this.initDatabase();
   }
 
@@ -58,9 +62,9 @@ export class Project implements IIdentifiable {
     this.database.addTable('symbol_table');
   }
 
-  load() {
+  async load() {
     this.context.eventPipe.disconnect(this.eventPipe);
-    const objects = this.database.loadAll().map((data) => ({
+    const objects = (await this.database.loadAll()).map((data) => ({
       data,
       ctxObj: CreateContextObject(this.context, data),
     }));
@@ -70,8 +74,8 @@ export class Project implements IIdentifiable {
     this.context.eventPipe.connect(this.eventPipe);
   }
 
-  save() {
-    this.transaction.commit();
+  async save() {
+    await this.transaction.commit();
   }
 
   canBeSaved() {

@@ -25,6 +25,7 @@
     "rimraf": "^3.0.2",
     "sda-core": "file:../sda-core",
     "sda-platform-x86": "file:../sda-platform-x86",
+    "sqlite": "^5.0.1",
     "sqlite3": "^5.1.6"
   },
   "devDependencies": {

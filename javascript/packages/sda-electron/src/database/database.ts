@@ -1,4 +1,6 @@
 import sqlite3 from 'sqlite3';
+import sqlite, { open } from 'sqlite';
+import assert from 'assert';
 
 export interface DatabaseObject {
   class: string;
@@ -7,12 +9,18 @@ export interface DatabaseObject {
 
 export class Database {
   private readonly path: string;
-  private readonly db: sqlite3.Database;
+  private db?: sqlite.Database<sqlite3.Database, sqlite3.Statement>;
   private tables: string[] = [];
 
   constructor(path: string) {
     this.path = path;
-    this.db = new sqlite3.Database(path);
+  }
+
+  async connect() {
+    this.db = await open({
+      filename: this.path,
+      driver: sqlite3.Database,
+    });
   }
 
   addTable(name: string) {
@@ -20,40 +28,34 @@ export class Database {
     this.createTableIfNotExists(name);
   }
 
-  private createTableIfNotExists(name: string) {
-    this.db.serialize(() => {
-      this.db.run(
-        `CREATE TABLE IF NOT EXISTS ${name} (uuid TEXT PRIMARY KEY NOT NULL, data TEXT NOT NULL)`,
-      );
-    });
+  private async createTableIfNotExists(name: string) {
+    assert(this.db);
+    return this.db.run(
+      `CREATE TABLE IF NOT EXISTS ${name} (uuid TEXT PRIMARY KEY NOT NULL, data TEXT NOT NULL)`,
+    );
   }
 
-  loadAll() {
+  async loadAll() {
+    assert(this.db);
     const objects: DatabaseObject[] = [];
-    this.db.serialize(() => {
-      for (const table of this.tables) {
-        this.db.each(`SELECT * FROM ${table}`, (err, row) => {
-          if (err) {
-            throw err;
-          }
-          const { data } = row as { data: string };
-          objects.push(JSON.parse(data));
-        });
+    for (const table of this.tables) {
+      const objectsInTable = await this.db.all(`SELECT * FROM ${table}`);
+      for (const obj of objectsInTable) {
+        const { data } = obj as { data: string };
+        objects.push(JSON.parse(data));
       }
-    });
+    }
     return objects;
   }
 
-  upsert(obj: DatabaseObject) {
+  async upsert(obj: DatabaseObject) {
+    assert(this.db);
     const data = JSON.stringify(obj);
-    this.db.serialize(() => {
-      this.db.run(`REPLACE INTO ${obj.class} (uuid, data) VALUES (?, ?)`, [obj.uuid, data]);
-    });
+    return this.db.run(`REPLACE INTO ${obj.class} (uuid, data) VALUES (?, ?)`, obj.uuid, data);
   }
 
-  delete(obj: DatabaseObject) {
-    this.db.serialize(() => {
-      this.db.run(`DELETE FROM ${obj.class} WHERE uuid = ?`, [obj.uuid]);
-    });
+  async delete(obj: DatabaseObject) {
+    assert(this.db);
+    return this.db.run(`DELETE FROM ${obj.class} WHERE uuid = ?`, obj.uuid);
   }
 }
