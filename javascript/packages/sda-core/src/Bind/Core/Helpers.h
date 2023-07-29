@@ -52,7 +52,7 @@ namespace sda::bind
             return InstructionToV8(origInstr, offset);
         }
 
-        static auto CreateObject(Context* context, boost::json::object& data) {
+        static auto CreateContextObject(Context* context, boost::json::object& data) {
             return Factory(context).create(data);
         }
         
@@ -60,7 +60,7 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             module.function("GetOriginalInstructions", &GetOriginalInstructions);
             module.function("GetOriginalInstructionInDetail", &GetOriginalInstructionInDetail);
-            module.function("CreateObject", &CreateObject);
+            module.function("CreateContextObject", &CreateContextObject);
         }
     };
 };

@@ -32,5 +32,5 @@ module.exports = {
   CleanUpSharedObjectLookupTable: m.CleanUpSharedObjectLookupTable,
   GetOriginalInstructions: m.GetOriginalInstructions,
   GetOriginalInstructionInDetail: m.GetOriginalInstructionInDetail,
-  CreateObject: m.CreateObject,
+  CreateContextObject: m.CreateContextObject,
 };
