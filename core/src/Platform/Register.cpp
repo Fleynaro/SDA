@@ -39,6 +39,8 @@ std::string Register::toString(const RegisterRepository* regRepo, bool printSize
     if (m_type == Register::Virtual) {
         ss << "$U" << (m_index + 1);
     } else {
+        if (!regRepo)
+            return "unknown";
         if (m_type == Register::Flag) {
             ss << regRepo->getRegisterFlagName(m_mask);
         } else {

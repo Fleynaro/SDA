@@ -13,9 +13,9 @@ namespace sda::pcode
         static inline const Token REGISTER = IDENTIFIER;
         static inline const Token VIRT_REGISTER = IDENTIFIER;
 
-        Printer(const RegisterRepository* regRepo, Graph* graph = nullptr);
+        Printer(const RegisterRepository* regRepo = nullptr, Graph* graph = nullptr);
 
-        static std::string Print(const Instruction* instruction, const RegisterRepository* regRepo);
+        static std::string Print(const Instruction* instruction, const RegisterRepository* regRepo = nullptr);
 
         virtual void printFunctionGraph(FunctionGraph* functionGraph);
 

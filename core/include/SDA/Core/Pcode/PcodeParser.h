@@ -16,7 +16,7 @@ namespace sda::pcode
         std::map<std::string, Jump> m_labelToJump;
         const RegisterRepository* m_regRepo;
     public:
-        Parser(utils::lexer::Lexer* lexer, const RegisterRepository* regRepo);
+        Parser(utils::lexer::Lexer* lexer, const RegisterRepository* regRepo = nullptr);
 
         static std::list<Instruction> Parse(const std::string& text, const RegisterRepository* regRepo);
 

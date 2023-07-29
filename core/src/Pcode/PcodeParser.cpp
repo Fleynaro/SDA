@@ -134,6 +134,8 @@ std::shared_ptr<RegisterVarnode> Parser::parseRegisterVarnode() {
         nextToken();
         boost::algorithm::to_lower(name);
         try {
+            if (!m_regRepo)
+                throw error(404, "Register repository is not set");
             auto regId = m_regRepo->getRegisterId(name);
             auto type = m_regRepo->getRegisterType(regId);
             size_t size = 0;

@@ -63,7 +63,7 @@ export declare class PcodeGraph {
 }
 
 export declare class PcodeParser {
-  static Parse(text: string, regRepo: RegisterRepository): PcodeInstruction[];
+  static Parse(text: string, regRepo: RegisterRepository | null): PcodeInstruction[];
 }
 
 export enum PcodePrinterToken {
@@ -81,9 +81,9 @@ export declare class PcodePrinter extends AbstractPrinter {
 
   printVarnodeImpl: (varnode: PcodeVarnode, printSizeAndOffset: boolean) => void;
 
-  static New(regRepo: RegisterRepository): PcodePrinter;
+  static New(regRepo: RegisterRepository | null): PcodePrinter;
 
-  static Print(instruction: PcodeInstruction, regRepo: RegisterRepository): string;
+  static Print(instruction: PcodeInstruction, regRepo: RegisterRepository | null): string;
 }
 
 module.exports = {
