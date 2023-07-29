@@ -47,12 +47,16 @@ namespace sda::bind
             auto cl = NewClass<pcode::Block>(module);
             cl
                 .auto_wrap_object_ptrs(true)
+                .property("name", &pcode::Block::getName)
+                .property("index", &pcode::Block::getIndex)
+                .property("graph", &pcode::Block::getGraph)
                 .property("minOffset", &pcode::Block::getMinOffset)
                 .property("maxOffset", &pcode::Block::getMaxOffset, &pcode::Block::setMaxOffset)
                 .property("nearNextBlock", &pcode::Block::getNearNextBlock, &pcode::Block::setNearNextBlock)
                 .property("farNextBlock", &pcode::Block::getFarNextBlock, &pcode::Block::setFarNextBlock)
                 .property("referencedBlocks", &pcode::Block::getReferencedBlocks)
                 .property("instructions", &pcode::Block::getInstructions)
+                .property("lastInstruction", &pcode::Block::getLastInstruction)
                 .method("contains", &pcode::Block::contains);
             module.class_("PcodeBlock", cl);
         }
@@ -65,7 +69,10 @@ namespace sda::bind
             auto cl = NewClass<pcode::FunctionGraph>(module);
             cl
                 .auto_wrap_object_ptrs(true)
+                .property("name", &pcode::FunctionGraph::getName)
                 .property("entryBlock", &pcode::FunctionGraph::getEntryBlock)
+                .property("entryOffset", &pcode::FunctionGraph::getEntryOffset)
+                .property("graph", &pcode::FunctionGraph::getGraph)
                 .property("referencedGraphsTo", &pcode::FunctionGraph::getReferencesTo)
                 .property("referencedGraphsFrom", &pcode::FunctionGraph::getReferencesFrom);
             module.class_("PcodeFunctionGraph", cl);
@@ -74,11 +81,26 @@ namespace sda::bind
 
     class PcodeGraphBind
     {
+        static void ExploreImage(pcode::Graph* graph, pcode::InstructionOffset startOffset, Image* image) {
+            pcode::ImageInstructionProvider provider(image);
+            graph->explore(startOffset, &provider);
+        }
+
+        static void ExploreInstructions(pcode::Graph* graph, pcode::InstructionOffset startOffset, const std::list<pcode::Instruction>& instructions) {
+            pcode::ListInstructionProvider provider(instructions);
+            graph->explore(startOffset, &provider);
+        }
+
+        static auto New(std::shared_ptr<EventPipe> eventPipe, Platform* platform) {
+            return ExportObject(new pcode::Graph(eventPipe, platform));
+        }
     public:
         static void Init(v8pp::module& module) {
             auto cl = NewClass<pcode::Graph>(module);
             cl
                 .auto_wrap_object_ptrs(true)
+                .method("exploreImage", &ExploreImage)
+                .method("exploreInstructions", &ExploreInstructions)
                 .method("addInstruction", &pcode::Graph::addInstruction)
                 .method("removeInstruction", &pcode::Graph::removeInstruction)
                 .method("getInstructionAt", &pcode::Graph::getInstructionAt)
@@ -87,7 +109,9 @@ namespace sda::bind
                 .method("removeBlock", &pcode::Graph::removeBlock)
                 .method("getBlockAt", &pcode::Graph::getBlockAt)
                 .method("createFunctionGraph", &pcode::Graph::createFunctionGraph)
-                .method("removeFunctionGraph", &pcode::Graph::removeFunctionGraph);
+                .method("removeFunctionGraph", &pcode::Graph::removeFunctionGraph)
+                .method("getFunctionGraphAt", &pcode::Graph::getFunctionGraphAt)
+                .static_method("New", &New);
             module.class_("PcodeGraph", cl);
         }
     };
