@@ -6,10 +6,15 @@ import { VariableSymbol } from '../symbol';
 import { ScalarDataType, ScalarType } from '../data-type';
 
 describe('SymbolTable', () => {
-  const pipe = EventPipe.New('test');
-  const platform = PlatformMock.New();
-  const context = Context.New(pipe, platform);
-  const dt = ScalarDataType.New(context, 'test', ScalarType.SignedInt, 4);
+  let context: Context;
+  let dt: ScalarDataType;
+
+  beforeEach(() => {
+    const pipe = EventPipe.New('test');
+    const platform = PlatformMock.New();
+    context = Context.New(pipe, platform);
+    dt = ScalarDataType.New(context, 'test', ScalarType.SignedInt, 1);
+  });
 
   describe('Standart', () => {
     it('New', () => {
@@ -18,7 +23,10 @@ describe('SymbolTable', () => {
     });
 
     describe('methods', () => {
-      const symbolTable = StandartSymbolTable.New(context, 'test');
+      let symbolTable: StandartSymbolTable;
+      beforeEach(() => {
+        symbolTable = StandartSymbolTable.New(context, 'test');
+      });
 
       it('addSymbol', () => {
         symbolTable.addSymbol(0, VariableSymbol.New(context, 'var1', dt));

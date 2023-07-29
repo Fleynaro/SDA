@@ -6,9 +6,13 @@ import { Image, TestAnalyser, VectorImageRW } from '../image';
 import { StandartSymbolTable } from '../symbol-table';
 
 describe('AddressSpace', () => {
-  const pipe = EventPipe.New('test');
-  const platform = PlatformMock.New();
-  const context = Context.New(pipe, platform);
+  let context: Context;
+
+  beforeEach(() => {
+    const pipe = EventPipe.New('test');
+    const platform = PlatformMock.New();
+    context = Context.New(pipe, platform);
+  });
 
   it('New', () => {
     const addrSpace = AddressSpace.New(context, 'test');
@@ -16,7 +20,11 @@ describe('AddressSpace', () => {
   });
 
   describe('methods', () => {
-    const addrSpace = AddressSpace.New(context, 'test');
+    let addrSpace: AddressSpace;
+
+    beforeEach(() => {
+      addrSpace = AddressSpace.New(context, 'test');
+    });
 
     it('images', () => {
       const analyser = TestAnalyser.New();

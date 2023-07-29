@@ -5,11 +5,17 @@ import { Image, TestAnalyser, VectorImageRW } from '../image';
 import { StandartSymbolTable } from '../symbol-table';
 
 describe('Image', () => {
-  const pipe = EventPipe.New('test');
-  const platform = PlatformMock.New();
-  const context = Context.New(pipe, platform);
-  const analyser = TestAnalyser.New();
-  const symbolTable = StandartSymbolTable.New(context, '');
+  let context: Context;
+  let analyser: TestAnalyser;
+  let symbolTable: StandartSymbolTable;
+
+  beforeEach(() => {
+    const pipe = EventPipe.New('test');
+    const platform = PlatformMock.New();
+    context = Context.New(pipe, platform);
+    analyser = TestAnalyser.New();
+    symbolTable = StandartSymbolTable.New(context, '');
+  });
 
   it.skip('VectorImageRW', () => {
     const rw = VectorImageRW.New([0x100, 0x200]);

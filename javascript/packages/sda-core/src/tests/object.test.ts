@@ -5,15 +5,19 @@ import { ScalarDataType, ScalarType } from '../data-type';
 import { CreateContextObject } from '../helpers';
 
 describe('Object', () => {
-  const pipe = EventPipe.New('test');
-  const platform = PlatformMock.New();
-  const context = Context.New(pipe, platform);
+  let context: Context;
+
+  beforeEach(() => {
+    const pipe = EventPipe.New('test');
+    const platform = PlatformMock.New();
+    context = Context.New(pipe, platform);
+  });
 
   it('serialize/deserialize', () => {
     const dt1 = ScalarDataType.New(context, 'test', ScalarType.SignedInt, 1);
     const data1 = dt1.serialize();
 
-    const context2 = Context.New(pipe, platform);
+    const context2 = Context.New(context.eventPipe, context.platform);
     const dt2 = CreateContextObject(context2, data1);
     // after creation, it also should be deserialized
     dt2.deserialize(data1);

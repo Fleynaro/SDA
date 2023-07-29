@@ -4,9 +4,13 @@ import { EventPipe } from '../event';
 import { ScalarDataType, ScalarType } from '../data-type';
 
 describe('DataType', () => {
-  const pipe = EventPipe.New('test');
-  const platform = PlatformMock.New();
-  const context = Context.New(pipe, platform);
+  let context: Context;
+
+  beforeEach(() => {
+    const pipe = EventPipe.New('test');
+    const platform = PlatformMock.New();
+    context = Context.New(pipe, platform);
+  });
 
   it('ScalarDataType', () => {
     const dt = ScalarDataType.New(context, 'test', ScalarType.SignedInt, 1);
