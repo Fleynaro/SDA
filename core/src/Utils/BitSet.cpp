@@ -10,6 +10,10 @@ bool BitSet::get(size_t index) const {
 }
 
 void BitSet::set(size_t index, bool value) {
+    if (get(index) != value) {
+        if (value) m_size++;
+        else m_size--;
+    }
     auto blockIdx = toBlockIdx(index);
     auto offset = toBlockOffset(index);
     if (blockIdx >= m_blocks.size()) {
@@ -26,6 +30,10 @@ void BitSet::clear() {
     m_blocks.clear();
 }
 
+size_t BitSet::size() const {
+    return m_size;
+}
+
 BitSet BitSet::operator|(const BitSet& other) const {
     BitSet result;
     auto size = std::max(m_blocks.size(), other.m_blocks.size());
@@ -36,6 +44,7 @@ BitSet BitSet::operator|(const BitSet& other) const {
         auto block2 = other.getBlock(i);
         result.m_blocks[i] = block1 | block2;
     }
+    result.calculateSize();
     return result;
 }
 
@@ -49,6 +58,7 @@ BitSet BitSet::operator&(const BitSet& other) const {
         auto block2 = other.getBlock(i);
         result.m_blocks[i] = block1 & block2;
     }
+    result.calculateSize();
     return result;
 }
 
@@ -60,6 +70,7 @@ BitSet BitSet::operator~() const {
         auto block = getBlock(i);
         result.m_blocks[i] = ~block;
     }
+    result.calculateSize();
     return result;
 }
 
@@ -88,4 +99,21 @@ size_t BitSet::toBlockIdx(size_t index) const {
 
 size_t BitSet::toBlockOffset(size_t index) const {
     return index % (sizeof(Block) * 8);
+}
+
+void BitSet::calculateSize() {
+    m_size = 0;
+    for (auto block : m_blocks) {
+        if (block) {
+            for (size_t i = 0; i < sizeof(Block) * 8; ++i) {
+                if ((block & (Block(1) << i)) != 0) {
+                    m_size++;
+                }
+            }
+        } else {
+            if (m_inverted) {
+                m_size += sizeof(Block) * 8;
+            }
+        }
+    }
 }

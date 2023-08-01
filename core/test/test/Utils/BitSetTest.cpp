@@ -10,6 +10,7 @@ TEST(BitSetTest, testGetSet) {
     EXPECT_TRUE(bitSet.get(1000));
     bitSet.set(1000, false);
     EXPECT_FALSE(bitSet.get(1000));
+    EXPECT_EQ(bitSet.size(), 0);
 }
 
 TEST(BitSetTest, testOr) {
@@ -28,6 +29,7 @@ TEST(BitSetTest, testOr) {
     EXPECT_FALSE(result.get(2));
     EXPECT_FALSE(result.get(11));
     EXPECT_FALSE(result.get(101));
+    EXPECT_EQ(result.size(), 4);
 }
 
 TEST(BitSetTest, testAnd) {
@@ -43,6 +45,7 @@ TEST(BitSetTest, testAnd) {
     EXPECT_FALSE(result.get(1));
     EXPECT_FALSE(result.get(10));
     EXPECT_FALSE(result.get(100));
+    EXPECT_EQ(result.size(), 1);
 }
 
 TEST(BitSetTest, testNot) {
@@ -57,6 +60,7 @@ TEST(BitSetTest, testNot) {
     EXPECT_TRUE(result.get(1));
     EXPECT_TRUE(result.get(11));
     EXPECT_TRUE(result.get(1001));
+    EXPECT_EQ((~result).size(), 3);
 }
 
 TEST(BitSetTest, testEqual) {
