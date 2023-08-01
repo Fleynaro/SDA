@@ -41,12 +41,12 @@ namespace utils
 
         void newTabs() const;
         
+        void printToken(const std::string& text, Token token) const;
+
     protected:
         std::ostream& out() const;
 
         void printComment(const std::string& text) const;
-
-        void printToken(const std::string& text, Token token) const;
 
         virtual void printTokenImpl(const std::string& text, Token token) const;
     };
