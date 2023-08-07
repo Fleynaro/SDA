@@ -113,7 +113,8 @@
 
     "cmake.environment": {
         "GTEST_FILTER": "*", // Select tests to run
-        "GTEST_CATCH_EXCEPTIONS": "0" // Disable when debug tests
+        "GTEST_CATCH_EXCEPTIONS": "0", // Disable when debug tests
+        "DISABLE_SDA_LOGS": "0" // Disable if you don't want to collect logs
     },
 
     "search.exclude": {
@@ -138,6 +139,7 @@
         "SBORROW",
         "SLESS",
         "SLESSEQUAL",
+        "Structurer",
         "SUBPIECE",
         "varnode",
         "ZEXT"
