@@ -27,14 +27,18 @@ void CalculateLevels(Block* entryBlock, Block* block, std::list<Block*>& path, s
         }
     }
     path.push_back(block);
-    for (auto nextBlock : block->getNextBlocks()) {
-        CalculateLevels(entryBlock, nextBlock, path, blockToLevel);
-    }
+    bool goNext = true;
     auto it = blockToLevel.find(block);
     if (it != blockToLevel.end()) {
         it->second = std::max(it->second, path.size());
+        goNext = it->second == path.size();
     } else {
         blockToLevel[block] = path.size();
+    }
+    if (goNext) {
+        for (auto nextBlock : block->getNextBlocks()) {
+            CalculateLevels(entryBlock, nextBlock, path, blockToLevel);
+        }
     }
     path.pop_back();
 }

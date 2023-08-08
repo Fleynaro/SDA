@@ -1,5 +1,6 @@
 #pragma once
 #include "SDA/Core/Pcode/PcodeParser.h"
+#include "SDA/Core/Pcode/PcodeGraph.h"
 #include "Test/Core/ContextFixture.h"
 
 namespace sda::test
