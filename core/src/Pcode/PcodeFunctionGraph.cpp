@@ -19,37 +19,43 @@ sda::Offset FunctionGraph::getEntryOffset() const {
     return m_entryBlock->getMinOffset();
 }
 
-std::list<FunctionGraph::BlockInfo> FunctionGraph::getBlocks(bool sort) const {
-    std::map<Block*, BlockInfo> blocks;
-    // pass blocks and calculate level
-    m_entryBlock->passDescendants([&](Block* block, bool& goNextBlocks) {
-        if (blocks.find(block) != blocks.end() || block->getEntryBlock() != m_entryBlock) {
+void CalculateLevels(Block* entryBlock, Block* block, std::list<Block*>& path, std::map<Block*, size_t>& blockToLevel) {
+    if (block->getEntryBlock() != entryBlock) return;
+    for (auto it = path.rbegin(); it != path.rend(); ++it) {
+        if (*it == block) {
             return;
         }
-        size_t level = 1;
-        for (auto refBlock : block->getReferencedBlocks()) {
-            auto it = blocks.find(refBlock);
-            if (it != blocks.end()) {
-                level = std::max(level, it->second.level + 1);
-            }
-        }
-        blocks[block] = { block, level };
-        goNextBlocks = true;
-    });
-    // convert to list
-    std::list<BlockInfo> result;
-    for (auto& block : blocks) {
-        result.push_back(block.second);
+    }
+    path.push_back(block);
+    for (auto nextBlock : block->getNextBlocks()) {
+        CalculateLevels(entryBlock, nextBlock, path, blockToLevel);
+    }
+    auto it = blockToLevel.find(block);
+    if (it != blockToLevel.end()) {
+        it->second = std::max(it->second, path.size());
+    } else {
+        blockToLevel[block] = path.size();
+    }
+    path.pop_back();
+}
+
+std::list<FunctionGraph::BlockInfo> FunctionGraph::getBlocks(bool sort) const {
+    std::map<Block*, size_t> blockToLevel;
+    std::list<Block*> path;
+    CalculateLevels(m_entryBlock, m_entryBlock, path, blockToLevel);
+    std::list<BlockInfo> blocks;
+    for (auto& it : blockToLevel) {
+        blocks.push_back({ it.first, it.second });
     }
     // sort blocks by level and offset
     if (sort) {
-        result.sort([](const FunctionGraph::BlockInfo& a, const FunctionGraph::BlockInfo& b) {
+        blocks.sort([](const FunctionGraph::BlockInfo& a, const FunctionGraph::BlockInfo& b) {
             if (a.level != b.level)
                 return a.level < b.level;
             return a.block->getMinOffset() < b.block->getMinOffset();
         });
     }
-    return result;
+    return blocks;
 }
 
 Graph* FunctionGraph::getGraph() {
