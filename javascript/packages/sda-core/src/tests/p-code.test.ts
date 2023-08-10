@@ -2,12 +2,19 @@ import { PlatformMock } from '../platform';
 import { Context } from '../context';
 import { EventPipe } from '../event';
 import {
+  GotoType,
   PcodeGraph,
   PcodeInstructionId,
   PcodeParser,
   PcodePrinter,
+  PcodeStructBlock,
+  PcodeStructBlockIf,
+  PcodeStructBlockSequence,
+  PcodeStructBlockWhile,
+  PcodeStructTree,
   toInstructionOffset,
 } from '../p-code';
+import { instance_of } from 'sda-bindings';
 
 describe('P-code', () => {
   let context: Context;
@@ -61,5 +68,43 @@ describe('P-code', () => {
     expect(pcodeGraph.getInstructionAt(toInstructionOffset(0x5)).id).toBe(
       PcodeInstructionId.INT_2COMP,
     );
+  });
+
+  it('structurer', () => {
+    const source = `
+      <loop>:
+      NOP
+      CBRANCH <loop>, 0x0:1
+      RETURN
+    `;
+    /*
+      Expected:
+      while (true) {
+          // Block B0
+          NOP
+          if (!0x0:1) {
+              break;
+          }
+      }
+      // Block B2
+      RETURN
+    */
+    const instructions = PcodeParser.Parse(source, null);
+    const pcodeGraph = PcodeGraph.New(context.eventPipe, context.platform);
+    pcodeGraph.exploreInstructions(0, instructions);
+    const funcGraph = pcodeGraph.getFunctionGraphAt(toInstructionOffset(0x0));
+    const structTree = PcodeStructTree.New();
+    structTree.init(funcGraph);
+    expect(instance_of(structTree.entryBlock, PcodeStructBlockSequence)).toBe(true);
+    const seq = structTree.entryBlock as PcodeStructBlockSequence;
+    expect(seq.blocks.length).toBe(2);
+    expect(instance_of(seq.blocks[0], PcodeStructBlockWhile)).toBe(true);
+    expect(instance_of(seq.blocks[1], PcodeStructBlock)).toBe(true);
+    const whileBlock = seq.blocks[0] as PcodeStructBlockWhile;
+    expect(instance_of(whileBlock.bodyBlock, PcodeStructBlockIf)).toBe(true);
+    const ifBlock = whileBlock.bodyBlock as PcodeStructBlockIf;
+    expect(instance_of(ifBlock.conditionBlock, PcodeStructBlock)).toBe(true);
+    expect(ifBlock.conditionBlock.name).toBe('B0');
+    expect(ifBlock.thenBlock.gotoType).toBe(GotoType.Break);
   });
 });

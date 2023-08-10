@@ -171,6 +171,50 @@ export declare class PcodeGraph {
   static New(eventPipe: EventPipe, platform: Platform): PcodeGraph;
 }
 
+export enum GotoType {
+  Default,
+  Continue,
+  Break,
+}
+
+export declare class PcodeStructBlock {
+  readonly name: string;
+  readonly pcodeBlock: PcodeBlock;
+  readonly nearNextBlock: PcodeStructBlock;
+  readonly farNextBlock: PcodeStructBlock;
+  readonly referencedBlocks: PcodeStructBlock[];
+  readonly goto: PcodeStructBlock;
+  readonly gotoType: GotoType;
+  readonly gotoRefBlocks: PcodeStructBlock[];
+  readonly parent: PcodeStructBlock;
+  readonly top: PcodeStructBlock;
+  readonly bottom: PcodeStructBlock;
+  readonly leafs: PcodeStructBlock[];
+}
+
+export declare class PcodeStructBlockSequence extends PcodeStructBlock {
+  readonly blocks: PcodeStructBlock[];
+}
+
+export declare class PcodeStructBlockIf extends PcodeStructBlock {
+  readonly conditionBlock: PcodeStructBlock;
+  readonly thenBlock: PcodeStructBlock;
+  readonly elseBlock: PcodeStructBlock;
+  readonly inverted: boolean;
+}
+
+export declare class PcodeStructBlockWhile extends PcodeStructBlock {
+  readonly bodyBlock: PcodeStructBlock;
+}
+
+export declare class PcodeStructTree {
+  readonly entryBlock: PcodeStructBlock;
+
+  init(funcGraph: PcodeFunctionGraph): void;
+
+  static New(): PcodeStructTree;
+}
+
 export declare class PcodeParser {
   static Parse(text: string, regRepo: RegisterRepository | null): PcodeInstruction[];
 }
@@ -202,6 +246,11 @@ module.exports = {
   PcodeBlock: m.PcodeBlock,
   PcodeFunctionGraph: m.PcodeFunctionGraph,
   PcodeGraph: m.PcodeGraph,
+  PcodeStructBlock: m.PcodeStructBlock,
+  PcodeStructBlockSequence: m.PcodeStructBlockSequence,
+  PcodeStructBlockIf: m.PcodeStructBlockIf,
+  PcodeStructBlockWhile: m.PcodeStructBlockWhile,
+  PcodeStructTree: m.PcodeStructTree,
   PcodeParser: m.PcodeParser,
   PcodePrinter: m.PcodePrinter,
 };

@@ -3,6 +3,7 @@
 #include "SDA/Core/Pcode/PcodeBlock.h"
 #include "SDA/Core/Pcode/PcodeFunctionGraph.h"
 #include "SDA/Core/Pcode/PcodeGraph.h"
+#include "SDA/Core/Pcode/PcodeStructurer.h"
 #include "SDA/Core/Pcode/PcodeParser.h"
 #include "SDA/Core/Pcode/PcodePrinter.h"
 
@@ -113,6 +114,87 @@ namespace sda::bind
                 .method("getFunctionGraphAt", &pcode::Graph::getFunctionGraphAt)
                 .static_method("New", &New);
             module.class_("PcodeGraph", cl);
+        }
+    };
+
+    class PcodeStructurer
+    {
+        static void InitStructBlock(v8pp::module& module) {
+            auto cl = NewClass<pcode::StructBlock>(module);
+            cl
+                .auto_wrap_object_ptrs(true)
+                .property("name", &pcode::StructBlock::getName)
+                .property("pcodeBlock", &pcode::StructBlock::getPcodeBlock)
+                .property("nearNextBlock", &pcode::StructBlock::getNearNextBlock)
+                .property("farNextBlock", &pcode::StructBlock::getFarNextBlock)
+                .property("referencedBlocks", &pcode::StructBlock::getReferencedBlocks)
+                .property("goto", &pcode::StructBlock::getGoto)
+                .property("gotoType", &pcode::StructBlock::getGotoType)
+                .property("gotoRefBlocks", &pcode::StructBlock::getGotoReferencedBlocks)
+                .property("parent", &pcode::StructBlock::getParent)
+                .property("top", &pcode::StructBlock::getTop)
+                .property("bottom", &pcode::StructBlock::getBottom)
+                .property("leafs", [](pcode::StructBlock& self) {
+                    std::list<pcode::StructBlock*> leafs;
+                    self.getLeafs(leafs);
+                    return leafs;
+                });
+            module.class_("PcodeStructBlock", cl);
+        }
+
+        static void InitStructBlockSequence(v8pp::module& module) {
+            auto cl = NewClass<pcode::StructBlockSequence>(module);
+            cl
+                .auto_wrap_object_ptrs(true)
+                .inherit<pcode::StructBlock>()
+                .property("blocks", &pcode::StructBlockSequence::getBlocks);
+            module.class_("PcodeStructBlockSequence", cl);
+        }
+
+        static void InitStructBlockIf(v8pp::module& module) {
+            auto cl = NewClass<pcode::StructBlockIf>(module);
+            cl
+                .auto_wrap_object_ptrs(true)
+                .inherit<pcode::StructBlock>()
+                .property("conditionBlock", &pcode::StructBlockIf::getCondBlock)
+                .property("thenBlock", &pcode::StructBlockIf::getThenBlock)
+                .property("elseBlock", &pcode::StructBlockIf::getElseBlock)
+                .property("inverted", &pcode::StructBlockIf::isInverted);
+            module.class_("PcodeStructBlockIf", cl);
+        }
+
+        static void InitStructBlockWhile(v8pp::module& module) {
+            auto cl = NewClass<pcode::StructBlockWhile>(module);
+            cl
+                .auto_wrap_object_ptrs(true)
+                .inherit<pcode::StructBlock>()
+                .property("bodyBlock", &pcode::StructBlockWhile::getBodyBlock);
+            module.class_("PcodeStructBlockWhile", cl);
+        }
+
+        static auto New() {
+            return ExportObject(new pcode::StructTree());
+        }
+
+        static void InitStructTree(v8pp::module& module) {
+            auto cl = NewClass<pcode::StructTree>(module);
+            cl
+                .auto_wrap_object_ptrs(true)
+                .property("entryBlock", &pcode::StructTree::getEntryBlock)
+                .method("init", std::function([](pcode::StructTree* structTree, pcode::FunctionGraph* funcGraph) {
+                    pcode::Structurer structurer(funcGraph, structTree);
+                    structurer.start();
+                }))
+                .static_method("New", &New);
+            module.class_("PcodeStructTree", cl);
+        }
+    public:
+        static void Init(v8pp::module& module) {
+            InitStructBlock(module);
+            InitStructBlockSequence(module);
+            InitStructBlockIf(module);
+            InitStructBlockWhile(module);
+            InitStructTree(module);
         }
     };
 
