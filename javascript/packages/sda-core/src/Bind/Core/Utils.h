@@ -62,7 +62,7 @@ namespace sda::bind
             template<typename R, typename Traits>
             static void ClassInit(v8pp::class_<R, Traits>& cl) {
                 cl
-                    .inherit<utils::AbstractPrinter>()
+                    .inherit<T>()
                     .property("output", [](R& self) { return self.ss.str(); })
                     .method("flush", std::function([](R* self) { self->ss.str(""); }));
                 Callback::Register<R, Traits>(cl, "printTokenImpl", &R::m_printTokenImpl);

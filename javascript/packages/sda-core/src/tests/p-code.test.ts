@@ -6,7 +6,7 @@ import {
   PcodeGraph,
   PcodeInstructionId,
   PcodeParser,
-  PcodePrinter,
+  PcodePrinterJs,
   PcodeStructBlock,
   PcodeStructBlockIf,
   PcodeStructBlockSequence,
@@ -15,6 +15,7 @@ import {
   toInstructionOffset,
 } from '../p-code';
 import { instance_of } from 'sda-bindings';
+import { AbstractPrinterToken } from '../utils';
 
 describe('P-code', () => {
   let context: Context;
@@ -37,16 +38,25 @@ describe('P-code', () => {
       $2:8 = INT_2COMP $1:8
     `;
     const expected = `
-      $U1:8 = COPY 0x0:8
-      CBRANCH 0x400:8, 0x0:1
-      $U1:8 = COPY 0x1:8
-      BRANCH 0x500:8
+      $U1(8) = COPY 0x0(8)
+      CBRANCH 0x400(8), 0x0(1)
+      $U1(8) = COPY 0x1(8)
+      BRANCH 0x500(8)
       NOP
-      $U2:8 = INT_2COMP $U1:8
+      $U2(8) = INT_2COMP $U1(8)
     `;
     const instructions = PcodeParser.Parse(source, null);
-    const printed = instructions.map((instr) => PcodePrinter.Print(instr, null)).join('\n');
-    expect(printed.replace(/\s/g, '')).toBe(expected.replace(/\s/g, ''));
+    const printer = PcodePrinterJs.New(null);
+    printer.printVarnodeImpl = (varnode) => {
+      // replace :size with (size)
+      printer.printVarnode(varnode, false);
+      printer.printToken(`(${varnode.size})`, AbstractPrinterToken.Number);
+    };
+    for (const instr of instructions) {
+      printer.printInstruction(instr);
+      printer.newLine();
+    }
+    expect(printer.output.replace(/\s/g, '')).toBe(expected.replace(/\s/g, ''));
   });
 
   it('explore', () => {

@@ -228,15 +228,17 @@ export enum PcodePrinterToken {
 export declare class PcodePrinter extends AbstractPrinter {
   printInstruction(pcode: PcodeInstruction): void;
 
-  printInstructionImpl: (pcode: PcodeInstruction) => void;
-
   printVarnode(varnode: PcodeVarnode, printSizeAndOffset: boolean): void;
+
+  static Print(instruction: PcodeInstruction, regRepo: RegisterRepository | null): string;
+}
+
+export declare class PcodePrinterJs extends PcodePrinter {
+  printInstructionImpl: (pcode: PcodeInstruction) => void;
 
   printVarnodeImpl: (varnode: PcodeVarnode, printSizeAndOffset: boolean) => void;
 
-  static New(regRepo: RegisterRepository | null): PcodePrinter;
-
-  static Print(instruction: PcodeInstruction, regRepo: RegisterRepository | null): string;
+  static New(regRepo: RegisterRepository | null): PcodePrinterJs;
 }
 
 module.exports = {
@@ -253,4 +255,5 @@ module.exports = {
   PcodeStructTree: m.PcodeStructTree,
   PcodeParser: m.PcodeParser,
   PcodePrinter: m.PcodePrinter,
+  PcodePrinterJs: m.PcodePrinterJs,
 };

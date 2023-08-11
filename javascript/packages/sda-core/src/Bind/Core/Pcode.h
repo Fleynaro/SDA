@@ -236,29 +236,37 @@ namespace sda::bind
                     AbstractPrinterJs::printVarnode(varnode, printSizeAndOffset);
                 }
             }
-        };
 
-        static auto New(std::shared_ptr<RegisterRepository> regRepo) {
-            auto printer = new PrinterJs(regRepo.get());
-            PrinterJs::ObjectInit(printer);
-            return ExportObject(printer);
-        }
+            static auto New(std::shared_ptr<RegisterRepository> regRepo) {
+                auto printer = new PrinterJs(regRepo.get());
+                ObjectInit(printer);
+                return ExportObject(printer);
+            }
+
+            static void Init(v8pp::module& module) {
+                auto cl = NewClass<PrinterJs>(module);
+                ClassInit(cl);
+                cl
+                    .static_method("New", &New);
+                Callback::Register(cl, "printInstructionImpl", &PrinterJs::m_printInstructionImpl);
+                Callback::Register(cl, "printVarnodeImpl", &PrinterJs::m_printVarnodeImpl);
+                module.class_("PcodePrinterJs", cl);
+            }
+        };
     public:
         static void Init(v8pp::module& module) {
-            auto cl = NewClass<PrinterJs>(module);
-            PrinterJs::ClassInit(cl);
+            auto cl = NewClass<pcode::Printer>(module);
             cl
-                .method("printInstruction", std::function([](PrinterJs* printer, const pcode::Instruction* instruction) {
+                .inherit<utils::AbstractPrinter>()
+                .method("printInstruction", std::function([](pcode::Printer* printer, const pcode::Instruction* instruction) {
                     printer->pcode::Printer::printInstruction(instruction);
                 }))
-                .method("printVarnode", std::function([](PrinterJs* printer, std::shared_ptr<pcode::Varnode> varnode, bool printSizeAndOffset) {
+                .method("printVarnode", std::function([](pcode::Printer* printer, std::shared_ptr<pcode::Varnode> varnode, bool printSizeAndOffset) {
                     printer->pcode::Printer::printVarnode(varnode, printSizeAndOffset);
                 }))
-                .static_method("Print", &PrinterJs::Print)
-                .static_method("New", &New);
-            Callback::Register(cl, "printInstructionImpl", &PrinterJs::m_printInstructionImpl);
-            Callback::Register(cl, "printVarnodeImpl", &PrinterJs::m_printVarnodeImpl);
+                .static_method("Print", &pcode::Printer::Print);
             module.class_("PcodePrinter", cl);
+            PrinterJs::Init(module);
         }
     };
 };
