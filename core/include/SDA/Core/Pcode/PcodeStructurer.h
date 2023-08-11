@@ -226,9 +226,15 @@ namespace sda::pcode
 
         void setConditionPrinter(PrinterFunction conditionPrinter);
 
-        void printStructBlock(StructBlock* block);
+        virtual void printStructTree(StructTree* tree);
 
-        void printStructBlockSequence(StructBlockSequence* block);
+        virtual void printStructBlock(StructBlock* block);
+
+        virtual void printStructBlockSequence(StructBlockSequence* block);
+
+        virtual void printStructBlockIf(StructBlockIf* block);
+
+        virtual void printStructBlockWhile(StructBlockWhile* block);
 
         static PrinterFunction CodePrinter(pcode::Printer* pcodePrinter);
 
