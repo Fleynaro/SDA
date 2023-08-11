@@ -198,6 +198,58 @@ namespace sda::bind
         }
     };
 
+    class PcodeStructTreePrinterBind : public AbstractPrinterBind
+    {
+        class PrinterJs : public AbstractPrinterJs<pcode::StructTreePrinter> {
+        public:
+            Callback m_printStructBlockImpl;
+
+            using AbstractPrinterJs::AbstractPrinterJs;
+
+            void printStructBlock(pcode::StructBlock* block) override {
+                if (m_printStructBlockImpl.isDefined()) {
+                    m_printStructBlockImpl.call(block);
+                } else {
+                    AbstractPrinterJs::printStructBlock(block);
+                }
+            }
+
+            static auto New() {
+                auto printer = new PrinterJs();
+                ObjectInit(printer);
+                return ExportObject(printer);
+            }
+
+            static void Init(v8pp::module& module) {
+                auto cl = NewClass<PrinterJs>(module);
+                ClassInit(cl);
+                cl
+                    .static_method("New", &New);
+                Callback::Register(cl, "printStructBlockImpl", &PrinterJs::m_printStructBlockImpl);
+                module.class_("PcodeStructTreePrinterJs", cl);
+            }
+        };
+    public:
+        static void Init(v8pp::module& module) {
+            auto cl = NewClass<pcode::StructTreePrinter>(module);
+            cl
+                .inherit<utils::AbstractPrinter>()
+                .method("setPcodePrinter", std::function([](pcode::StructTreePrinter* printer, pcode::Printer* pcodePrinter) {
+                    pcodePrinter->setParentPrinter(printer);
+                    printer->setCodePrinter(pcode::StructTreePrinter::CodePrinter(pcodePrinter));
+                    printer->setConditionPrinter(pcode::StructTreePrinter::ConditionPrinter(pcodePrinter));
+                }))
+                .method("printStructBlock", std::function([](pcode::StructTreePrinter* printer, pcode::StructBlock* block) {
+                    printer->pcode::StructTreePrinter::printStructBlock(block);
+                }))
+                .method("printStructTree", std::function([](pcode::StructTreePrinter* printer, pcode::StructTree* tree) {
+                    printer->pcode::StructTreePrinter::printStructTree(tree);
+                }));
+            module.class_("PcodeStructTreePrinter", cl);
+            PrinterJs::Init(module);
+        }
+    };
+
     class PcodeParserBind
     {
         static auto Parse(const std::string& text, std::shared_ptr<RegisterRepository> regRepo) {

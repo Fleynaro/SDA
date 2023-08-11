@@ -215,6 +215,20 @@ export declare class PcodeStructTree {
   static New(): PcodeStructTree;
 }
 
+export declare class PcodeStructTreePrinter extends AbstractPrinter {
+  setPcodePrinter(pcodePrinter: PcodePrinter): void;
+
+  printStructBlock(block: PcodeStructBlock): void;
+
+  printStructTree(tree: PcodeStructTree): void;
+}
+
+export declare class PcodeStructTreePrinterJs extends PcodeStructTreePrinter {
+  printStructBlockImpl: (block: PcodeStructBlock) => void;
+
+  static New(): PcodeStructTreePrinterJs;
+}
+
 export declare class PcodeParser {
   static Parse(text: string, regRepo: RegisterRepository | null): PcodeInstruction[];
 }
@@ -253,6 +267,8 @@ module.exports = {
   PcodeStructBlockIf: m.PcodeStructBlockIf,
   PcodeStructBlockWhile: m.PcodeStructBlockWhile,
   PcodeStructTree: m.PcodeStructTree,
+  PcodeStructTreePrinter: m.PcodeStructTreePrinter,
+  PcodeStructTreePrinterJs: m.PcodeStructTreePrinterJs,
   PcodeParser: m.PcodeParser,
   PcodePrinter: m.PcodePrinter,
   PcodePrinterJs: m.PcodePrinterJs,

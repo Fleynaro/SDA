@@ -12,6 +12,7 @@ import {
   PcodeStructBlockSequence,
   PcodeStructBlockWhile,
   PcodeStructTree,
+  PcodeStructTreePrinterJs,
   toInstructionOffset,
 } from '../p-code';
 import { instance_of } from 'sda-bindings';
@@ -87,22 +88,23 @@ describe('P-code', () => {
       CBRANCH <loop>, 0x0:1
       RETURN
     `;
-    /*
-      Expected:
+    const expected = `
+      // this is a while
       while (true) {
-          // Block B0
-          NOP
-          if (!0x0:1) {
-              break;
-          }
+        // Block B0
+        NOP
+        if (!0x0:1) {
+            break;
+        }
       }
       // Block B2
       RETURN
-    */
+    `;
     const instructions = PcodeParser.Parse(source, null);
     const pcodeGraph = PcodeGraph.New(context.eventPipe, context.platform);
     pcodeGraph.exploreInstructions(0, instructions);
     const funcGraph = pcodeGraph.getFunctionGraphAt(toInstructionOffset(0x0));
+
     const structTree = PcodeStructTree.New();
     structTree.init(funcGraph);
     expect(instance_of(structTree.entryBlock, PcodeStructBlockSequence)).toBe(true);
@@ -116,5 +118,19 @@ describe('P-code', () => {
     expect(instance_of(ifBlock.conditionBlock, PcodeStructBlock)).toBe(true);
     expect(ifBlock.conditionBlock.name).toBe('B0');
     expect(ifBlock.thenBlock.gotoType).toBe(GotoType.Break);
+
+    // check printer
+    const printer = PcodeStructTreePrinterJs.New();
+    const pcodePrinter = PcodePrinterJs.New(null);
+    printer.setPcodePrinter(pcodePrinter);
+    printer.printStructBlockImpl = (block: PcodeStructBlock) => {
+      if (instance_of(block, PcodeStructBlockWhile)) {
+        printer.printToken('// this is a while', AbstractPrinterToken.Comment);
+        printer.newLine();
+      }
+      printer.printStructBlock(block);
+    };
+    printer.printStructTree(structTree);
+    expect(printer.output.replace(/\s/g, '')).toBe(expected.replace(/\s/g, ''));
   });
 });

@@ -33,6 +33,7 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
         PcodeFunctionGraphBind::Init,
         PcodeGraphBind::Init,
         PcodeStructurer::Init,
+        PcodeStructTreePrinterBind::Init,
         PcodeParserBind::Init,
         PcodePrinterBind::Init,
         // platform
