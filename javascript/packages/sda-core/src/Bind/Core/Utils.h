@@ -78,7 +78,8 @@ namespace sda::bind
                 .method("endBlock", &utils::AbstractPrinter::endBlock)
                 .method("startCommenting", &utils::AbstractPrinter::startCommenting)
                 .method("endCommenting", &utils::AbstractPrinter::endCommenting)
-                .method("newLine", &utils::AbstractPrinter::newLine);
+                .method("newLine", &utils::AbstractPrinter::newLine)
+                .method("printToken", &utils::AbstractPrinter::printToken);
             module.class_("AbstractPrinter", cl);
         }
     };

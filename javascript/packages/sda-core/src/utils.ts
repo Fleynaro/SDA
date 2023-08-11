@@ -43,6 +43,9 @@ export declare abstract class AbstractPrinter {
 
   newLine(): void;
 
+  printToken(text: string, token: AbstractPrinterToken): void;
+
+  // only for js printers
   printTokenImpl: (text: string, token: AbstractPrinterToken) => void;
 }
 
