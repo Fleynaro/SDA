@@ -858,10 +858,16 @@ std::list<StructBlock*> Structurer::getNextBlocks(StructBlock* block, bool ignor
     return blocks;
 }
 
-StructTreePrinter::StructTreePrinter(PrinterFunction codePrinter, PrinterFunction conditionPrinter)
-    : m_codePrinter(codePrinter)
-    , m_conditionPrinter(conditionPrinter)
+StructTreePrinter::StructTreePrinter()
 {}
+
+void StructTreePrinter::setCodePrinter(PrinterFunction codePrinter) {
+    m_codePrinter = codePrinter;
+}
+
+void StructTreePrinter::setConditionPrinter(PrinterFunction conditionPrinter) {
+    m_conditionPrinter = conditionPrinter;
+}
 
 void StructTreePrinter::printStructTree(StructTree* tree) {
     printStructBlock(tree->getEntryBlock());
@@ -891,7 +897,7 @@ void StructTreePrinter::printStructBlock(StructBlock* block) {
         printStructBlockWhile(whileBlock);
     } else {
         if (block->getPcodeBlock()) {
-            m_codePrinter(block->getPcodeBlock(), this);
+            m_codePrinter(block->getPcodeBlock());
         } else {
             isEmptyBlock = true;
         }
@@ -928,7 +934,7 @@ void StructTreePrinter::printStructBlockIf(StructBlockIf* block) {
     printToken("if (", KEYWORD);
     if (block->isInverted())
         printToken("!", KEYWORD);
-    m_conditionPrinter(block->getCondBlock()->getPcodeBlock(), this);
+    m_conditionPrinter(block->getCondBlock()->getPcodeBlock());
     printToken(") {", KEYWORD);
     startBlock();
     newLine();
@@ -957,4 +963,32 @@ void StructTreePrinter::printStructBlockWhile(StructBlockWhile* block) {
     endBlock();
     newLine();
     printToken("}", KEYWORD);
+}
+
+StructTreePrinter::PrinterFunction StructTreePrinter::CodePrinter(pcode::Printer* pcodePrinter) {
+    return std::function([pcodePrinter](pcode::Block* block) {
+        pcodePrinter->printToken("// Block ", pcode::Printer::COMMENT);
+        pcodePrinter->printToken(block->getName(), pcode::Printer::COMMENT);
+
+        auto instructions = block->getInstructions();
+        if (block->getLastInstruction()->isBranching()) {
+            // remove any jump
+            instructions.erase(std::prev(instructions.end()));
+        }
+        if (!instructions.empty())
+            pcodePrinter->newLine();
+        for (const auto& [offset, instruction] : instructions) {
+            pcodePrinter->printInstruction(instruction);
+            if (instruction != instructions.rbegin()->second)
+                pcodePrinter->newLine();
+        }
+    });
+}
+
+StructTreePrinter::PrinterFunction StructTreePrinter::ConditionPrinter(pcode::Printer* pcodePrinter) {
+    return std::function([pcodePrinter](pcode::Block* block) {
+        auto instr = block->getLastInstruction();
+        assert(instr->isBranching());
+        pcodePrinter->printVarnode(instr->getInput1());
+    });
 }

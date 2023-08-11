@@ -1,6 +1,6 @@
 #pragma once
 #include "PcodeFunctionGraph.h"
-#include "SDA/Core/Utils/AbstractPrinter.h"
+#include "SDA/Core/Pcode/PcodePrinter.h"
 
 namespace sda::pcode
 {
@@ -216,20 +216,22 @@ namespace sda::pcode
 
     class StructTreePrinter : public utils::AbstractPrinter
     {
-        using PrinterFunction = std::function<void(Block* block, StructTreePrinter* printer)>;
+        using PrinterFunction = std::function<void(Block* block)>;
         PrinterFunction m_codePrinter;
         PrinterFunction m_conditionPrinter;
     public:
-        StructTreePrinter(PrinterFunction codePrinter, PrinterFunction conditionPrinter);
+        StructTreePrinter();
 
-        void printStructTree(StructTree* tree);
+        void setCodePrinter(PrinterFunction codePrinter);
+
+        void setConditionPrinter(PrinterFunction conditionPrinter);
 
         void printStructBlock(StructBlock* block);
 
         void printStructBlockSequence(StructBlockSequence* block);
 
-        void printStructBlockIf(StructBlockIf* block);
+        static PrinterFunction CodePrinter(pcode::Printer* pcodePrinter);
 
-        void printStructBlockWhile(StructBlockWhile* block);
+        static PrinterFunction ConditionPrinter(pcode::Printer* pcodePrinter);
     };
 };

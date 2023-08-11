@@ -1,5 +1,4 @@
 #include "SDA/Core/Pcode/PcodeStructurer.h"
-#include "SDA/Core/Pcode/PcodePrinter.h"
 #include "Test/Core/Pcode/PcodeFixture.h"
 #include "Test/Core/Utils/TestAssertion.h"
 
@@ -19,35 +18,12 @@ protected:
 
     ::testing::AssertionResult cmpStructTree(pcode::StructTree* structTree, const std::string& expectedCode) const {
         std::stringstream ss;
-        auto codePrinter = std::function([&](pcode::Block* block, pcode::StructTreePrinter* printer) {
-            pcode::Printer pcodePrinter(context->getPlatform()->getRegisterRepository().get());
-            pcodePrinter.setParentPrinter(printer);
-
-            pcodePrinter.printToken("// Block ", pcode::Printer::COMMENT);
-            pcodePrinter.printToken(block->getName(), pcode::Printer::COMMENT);
-
-            auto instructions = block->getInstructions();
-            if (block->getLastInstruction()->isBranching()) {
-                // remove any jump
-                instructions.erase(std::prev(instructions.end()));
-            }
-            if (!instructions.empty())
-                pcodePrinter.newLine();
-            for (const auto& [offset, instruction] : instructions) {
-                pcodePrinter.printInstruction(instruction);
-                if (instruction != instructions.rbegin()->second)
-                    pcodePrinter.newLine();
-            }
-        });
-        auto conditionPrinter = std::function([&](pcode::Block* block, pcode::StructTreePrinter* printer) {
-            pcode::Printer pcodePrinter(context->getPlatform()->getRegisterRepository().get());
-            pcodePrinter.setParentPrinter(printer);
-            auto instr = block->getLastInstruction();
-            assert(instr->isBranching());
-            pcodePrinter.printVarnode(instr->getInput1());
-        });
-        pcode::StructTreePrinter printer(codePrinter, conditionPrinter);
+        pcode::StructTreePrinter printer;
         printer.setOutput(ss);
+        pcode::Printer pcodePrinter(context->getPlatform()->getRegisterRepository().get());
+        pcodePrinter.setParentPrinter(&printer);
+        printer.setCodePrinter(pcode::StructTreePrinter::CodePrinter(&pcodePrinter));
+        printer.setConditionPrinter(pcode::StructTreePrinter::ConditionPrinter(&pcodePrinter));
         printer.printStructTree(structTree);
         return Compare(ss.str(), expectedCode);
     }
