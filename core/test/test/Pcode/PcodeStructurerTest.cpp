@@ -842,3 +842,64 @@ TEST_F(PcodeStructurerTest, ComplexGoto) {
     auto structTree = toStructTree(funcGraph);
     ASSERT_TRUE(cmpStructTree(&structTree, expectedStructCode));
 }
+
+TEST_F(PcodeStructurerTest, ComplexGoto2) {
+    // Graph: https://photos.app.goo.gl/JFPNjAj9DmTFzo3p6
+    // TODO: this graph can be collapsed into a tree with 1 goto instead of 2
+    auto sourcePCode = "\
+        NOP \n\
+        CBRANCH <label1>, 0x0:1 \n\
+        NOP \n\
+        CBRANCH <label2>, 0x1:1 \n\
+        <label1>: \n\
+        NOP \n\
+        BRANCH <end> \n\
+        <label2>: \n\
+        NOP \n\
+        <end>: \n\
+        NOP \n\
+        RETURN \
+    ";
+    auto expectedPCode = "\
+        Block B0(level: 1, near: B2, far: B4): \n\
+            NOP \n\
+            CBRANCH <B4>:8, 0x0:1 \n\
+        Block B2(level: 2, near: B4, far: B6): \n\
+            NOP \n\
+            CBRANCH <B6>:8, 0x1:1 \n\
+        Block B4(level: 3, far: B7): \n\
+            NOP \n\
+            BRANCH <B7>:8 \n\
+        Block B6(level: 3, near: B7): \n\
+            NOP \n\
+        Block B7(level: 4): \n\
+            NOP \n\
+            RETURN \
+    ";
+    auto expectedStructCode = "\
+        // Block B0 \n\
+        NOP \n\
+        if (!0x0:1) { \n\
+            // Block B2 \n\
+            NOP \n\
+            if (0x1:1) { \n\
+                goto label_B6; \n\
+            } \n\
+        } \n\
+        // Block B4 \n\
+        NOP \n\
+        label_B7: \n\
+        // Block B7 \n\
+        NOP \n\
+        RETURN \n\
+        label_B6: \n\
+        // Block B6 \n\
+        NOP \n\
+        goto label_B7; \
+    ";
+    
+    auto funcGraph = parsePcode(sourcePCode, graph);
+    ASSERT_TRUE(cmp(funcGraph, expectedPCode));
+    auto structTree = toStructTree(funcGraph);
+    ASSERT_TRUE(cmpStructTree(&structTree, expectedStructCode));
+}
