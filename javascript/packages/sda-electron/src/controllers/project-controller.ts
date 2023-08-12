@@ -12,6 +12,7 @@ import app from 'app';
 import { loadJSON, saveJSON, doesFileExist, deleteFile } from 'utils/file';
 import {
   Context,
+  ContextRemovedEvent,
   EventPipe,
   ObjectAddedEvent,
   ObjectModifiedEvent,
@@ -88,7 +89,8 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
   public async openProject(path: string): Promise<ProjectDTO> {
     const config = await loadJSON<ProjectConfig>(projectConfigFilePath(path));
     const platform = findPlatform(config.platformName);
-    const pipe = EventPipe.New('global');
+    const pipe = EventPipe.New('context');
+    pipe.connect(app.eventPipe);
     const context = Context.New(pipe, platform);
     pipe.subscribe((event) => {
       if (instance_of(event, ObjectAddedEvent)) {
@@ -100,6 +102,8 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
       } else if (instance_of(event, ObjectRemovedEvent)) {
         const e = event as ObjectRemovedEvent;
         objectChangeEmitter()(toId(e.object), ObjectChangeType.Delete);
+      } else if (instance_of(event, ContextRemovedEvent)) {
+        pipe.disconnect(app.eventPipe);
       }
     });
     if (isElectronDev) {

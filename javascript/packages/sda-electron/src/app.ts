@@ -6,11 +6,16 @@ import { initDefaultPlatforms } from 'repo/platform';
 import { initDefaultImageAnalysers } from 'repo/image-analyser';
 import { objectChangeEmitter, ObjectChangeType } from './eventEmitter';
 import { toId } from 'utils/common';
-import { CleanUpSharedObjectLookupTable, Context } from 'sda-core';
+import { CleanUpSharedObjectLookupTable, Context, EventPipe } from 'sda-core';
 import { Project } from 'project';
 
 class App {
   readonly projects: Project[] = [];
+  readonly eventPipe: EventPipe;
+
+  constructor() {
+    this.eventPipe = EventPipe.New('app');
+  }
 
   init() {
     initDefaultPlatforms();
