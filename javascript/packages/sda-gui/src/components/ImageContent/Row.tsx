@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Token, TokenGroup, TokenizedText } from 'sda-electron/api/common';
 import { ImageRowType, ImageBaseRow, ImageInstructionRow } from 'sda-electron/api/image';
+import { PcodeInstructionTokenGroupAction, PcodeTokenGroupAction } from 'sda-electron/api/p-code';
 import { Group, Rect } from 'react-konva';
 import {
   Block,
@@ -15,16 +17,16 @@ import { useImageContent } from './context';
 import Konva from 'konva';
 import { RenderProps } from 'components/Konva';
 import { usePopperFromContext } from 'components/Popper';
-import { PcodeToken, PcodeGroup, PcodeText } from 'sda-electron/api/p-code';
 import { Paper, Button } from '@mui/material';
 
-const PcodePopper = ({ action }: { action: PcodeGroup['action'] }) => {
-  if (action.name !== 'instruction') {
+const PcodePopper = ({ action }: { action: TokenGroup['action'] }) => {
+  if (action.name !== PcodeTokenGroupAction.Instruction) {
     return null;
   }
+  const { offset } = action as PcodeInstructionTokenGroupAction;
   return (
     <Paper sx={{ p: 5 }}>
-      Offset = 0x{action.offset.toString(16)} <br />
+      Offset = 0x{offset.toString(16)} <br />
       <Button variant="contained" onClick={() => console.log('action', action)}>
         Some button
       </Button>
@@ -33,7 +35,7 @@ const PcodePopper = ({ action }: { action: PcodeGroup['action'] }) => {
 };
 
 interface PcodeTextViewProps {
-  pcode: PcodeText;
+  pcode: TokenizedText;
   styles: StylesType;
   ctx?: {
     textSelection: TextSelectionType;
@@ -41,7 +43,7 @@ interface PcodeTextViewProps {
 }
 
 const PcodeTextView = ({ pcode, styles, ctx }: PcodeTextViewProps) => {
-  const linesOfTokens: PcodeToken[][] = [[]];
+  const linesOfTokens: Token[][] = [[]];
   for (const token of pcode.tokens) {
     linesOfTokens[linesOfTokens.length - 1].push(token);
     if (token.text === '\n') {
@@ -59,7 +61,7 @@ const PcodeTextView = ({ pcode, styles, ctx }: PcodeTextViewProps) => {
     );
   };
 
-  const TokenRender = (props: RenderProps & { group: PcodeGroup }) => {
+  const TokenRender = (props: RenderProps & { group: TokenGroup }) => {
     const action = props.group.action;
     const popper = usePopperFromContext();
     const { addObjectToSelection, selectionContains } = useTextSelection();
@@ -69,14 +71,14 @@ const PcodeTextView = ({ pcode, styles, ctx }: PcodeTextViewProps) => {
 
     useEffect(() => {
       if (isSelected) {
-        if (action.name === 'instruction') {
+        if (action.name === PcodeTokenGroupAction.Instruction) {
           addObjectToSelection(selIndex, props.group, props.group.idx);
         }
       }
     }, [isSelected]);
 
     const onMouseEnter = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
-      if (action.name === 'instruction') {
+      if (action.name === PcodeTokenGroupAction.Instruction) {
         popper.withTimer(() => {
           popper.openAtPos(e.evt.clientX, e.evt.clientY + 10);
           popper.setContent(<PcodePopper action={action} />);

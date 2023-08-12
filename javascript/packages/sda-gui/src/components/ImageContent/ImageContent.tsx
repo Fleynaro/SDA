@@ -1,5 +1,7 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
+import { TokenGroup } from 'sda-electron/api/common';
 import { getImageApi } from 'sda-electron/api/image';
+import { PcodeInstructionTokenGroupAction, PcodeTokenGroupAction } from 'sda-electron/api/p-code';
 import { Group, Layer, Rect, Text } from 'react-konva';
 import Konva from 'konva';
 import { useStage, useTextSelection, Block } from 'components/Konva';
@@ -11,7 +13,6 @@ import { buildJump } from './Jump';
 import { useImageContent } from './context';
 import { withCrash, withCrash_ } from 'providers/CrashProvider';
 import { RenderBlockProps } from 'components/Konva/Block/RenderBlock';
-import { PcodeGroup } from 'sda-electron/api/p-code';
 
 export const ImageContentContextMenu = () => {
   const {
@@ -343,9 +344,10 @@ export function ImageContent() {
           <Text
             text={selectedObjects
               .map((obj) => {
-                const action = (obj as PcodeGroup).action;
-                if (action.name !== 'instruction') return '';
-                return `0x${action.offset.toString(16)}`;
+                const action = (obj as TokenGroup).action;
+                if (action.name !== PcodeTokenGroupAction.Instruction) return '';
+                const { offset } = action as PcodeInstructionTokenGroupAction;
+                return `0x${offset.toString(16)}`;
               })
               .join('\n')}
             x={1000}

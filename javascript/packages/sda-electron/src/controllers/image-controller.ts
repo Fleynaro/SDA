@@ -22,7 +22,7 @@ import { ObjectId, Offset } from 'api/common';
 import { ImageLoadRowOptions } from 'api/image';
 import { toImageDTO, toImage, changeImage } from './dto/image';
 import { toContext } from './dto/context';
-import { toPcodeText } from './dto/p-code';
+import { instructionsToTokenizedText } from './dto/p-code';
 import { findImageAnalyser } from 'repo/image-analyser';
 import { binSearch, toId } from 'utils/common';
 import { Interval, Jump, JumpManager } from 'utils/instruction-jump';
@@ -179,7 +179,7 @@ class ImageControllerImpl extends BaseController implements ImageController {
         const imageInfo = this.getImageInfo(image);
         const pcodeInstructions = imageInfo.pcodeGraph.getInstructionsAt(offset);
         if (pcodeInstructions.length > 0) {
-          row.pcode = toPcodeText(regRepo, pcodeInstructions);
+          row.pcode = instructionsToTokenizedText(pcodeInstructions, regRepo);
         }
       }
       return row;

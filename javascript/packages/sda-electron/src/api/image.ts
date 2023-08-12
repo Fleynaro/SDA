@@ -1,6 +1,5 @@
-import { ObjectId, Offset, window_ } from './common';
+import { ObjectId, Offset, TokenizedText, window_ } from './common';
 import { ContextObject } from './context';
-import { PcodeText } from './p-code';
 
 export const ImageClassName = 'Image';
 
@@ -35,7 +34,7 @@ export interface ImageInstructionRow extends ImageBaseRow {
     type: string;
     text: string;
   }[];
-  pcode?: PcodeText;
+  pcode?: TokenizedText;
 }
 
 export interface ImageLoadRowOptions {

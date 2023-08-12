@@ -1,76 +1,80 @@
 import {
   PcodeInstruction,
-  PcodePrinter,
   PcodePrinterToken,
   RegisterRepository,
   AbstractPrinterToken,
+  PcodePrinterJs,
+  PcodeStructTreePrinterJs,
+  PcodeStructTree,
 } from 'sda-core';
-import { PcodeGroup, PcodeText } from 'api/p-code';
+import { PcodeInstructionTokenGroupAction, PcodeTokenGroupAction } from 'api/p-code';
+import { TokenGroupAction, TokenizedText } from 'api/common';
+import { TokenWriter } from './common';
 
-export const toPcodeText = (
-  regRepo: RegisterRepository,
-  instructions: PcodeInstruction[],
-): PcodeText => {
-  const result: PcodeText = {
-    tokens: [],
-    groups: [
-      {
-        idx: 0,
-        action: {
-          name: 'root',
-        },
-      },
-    ],
-  };
-
-  const printerCtx = {
-    curGroupIdx: 1,
-    curGroup: result.groups[0],
-  };
-  const newToken = (type: string, text: string): void => {
-    result.tokens.push({
-      groupIdx: printerCtx.curGroup.idx,
-      type,
-      text,
-    });
-  };
-  const newGroup = (action: PcodeGroup['action'], body?: () => void): void => {
-    const prevGroup = printerCtx.curGroup;
-    const newGroup: PcodeGroup = {
-      idx: printerCtx.curGroupIdx++,
-      action,
-    };
-    result.groups.push(newGroup);
-    printerCtx.curGroup = newGroup;
-    body?.();
-    printerCtx.curGroup = prevGroup;
-  };
-
-  const printer = PcodePrinter.New(regRepo);
+export const addPcodeStructTreePrinterToWriter = (
+  printer: PcodeStructTreePrinterJs,
+  writer: TokenWriter,
+): void => {
   printer.printTokenImpl = (text, tokenType) => {
-    newToken(PcodePrinterToken[tokenType] || AbstractPrinterToken[tokenType], text);
+    writer.newToken(AbstractPrinterToken[tokenType], text);
+  };
+  printer.printStructBlockImpl = (block) => {
+    writer.newGroup(
+      {
+        name: 'struct_block',
+      } as TokenGroupAction,
+      () => printer.printStructBlock(block),
+    );
+  };
+};
+
+export const addPcodePrinterToWriter = (printer: PcodePrinterJs, writer: TokenWriter): void => {
+  printer.printTokenImpl = (text, tokenType) => {
+    writer.newToken(PcodePrinterToken[tokenType] || AbstractPrinterToken[tokenType], text);
   };
   printer.printInstructionImpl = (instr) => {
-    newGroup(
+    writer.newGroup(
       {
-        name: 'instruction',
+        name: PcodeTokenGroupAction.Instruction,
         offset: instr.offset,
-      },
+      } as PcodeInstructionTokenGroupAction,
       () => printer.printInstruction(instr),
     );
   };
   printer.printVarnodeImpl = (varnode, printSizeAndOffset) => {
-    newGroup(
+    writer.newGroup(
       {
-        name: 'varnode',
-      },
+        name: PcodeTokenGroupAction.Varnode,
+      } as TokenGroupAction,
       () => printer.printVarnode(varnode, printSizeAndOffset),
     );
   };
+};
+
+export const pcodeStructTreeToTokenizedText = (
+  tree: PcodeStructTree,
+  regRepo: RegisterRepository | null,
+): TokenizedText => {
+  const writer = new TokenWriter();
+  const printer = PcodeStructTreePrinterJs.New();
+  const pcodePrinter = PcodePrinterJs.New(regRepo);
+  printer.setPcodePrinter(pcodePrinter);
+  addPcodeStructTreePrinterToWriter(printer, writer);
+  addPcodePrinterToWriter(pcodePrinter, writer);
+  printer.printStructTree(tree);
+  return writer.result;
+};
+
+export const instructionsToTokenizedText = (
+  instructions: PcodeInstruction[],
+  regRepo: RegisterRepository | null,
+): TokenizedText => {
+  const writer = new TokenWriter();
+  const printer = PcodePrinterJs.New(regRepo);
+  addPcodePrinterToWriter(printer, writer);
   for (const instr of instructions) {
     printer.printInstructionImpl(instr);
     printer.newLine();
   }
-
-  return result;
+  return writer.result;
 };

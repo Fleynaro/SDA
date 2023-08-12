@@ -18,6 +18,26 @@ export enum ObjectChangeType {
 
 export type Offset = number;
 
+export type Token = {
+  groupIdx: number;
+  type: string;
+  text: string;
+};
+
+export interface TokenGroupAction {
+  name: string;
+}
+
+export type TokenGroup = {
+  idx: number;
+  action: TokenGroupAction;
+};
+
+export type TokenizedText = {
+  tokens: Token[];
+  groups: TokenGroup[];
+};
+
 export let window_: any = null;
 
 export const setWindow = (win: any) => {
