@@ -1,9 +1,8 @@
 import { app } from 'electron';
 import path from 'path';
 import { existsSync, mkdirSync } from 'fs';
+import { initRepo } from './repo';
 import { initControllers } from './controllers';
-import { initDefaultPlatforms } from 'repo/platform';
-import { initDefaultImageAnalysers } from 'repo/image-analyser';
 import { objectChangeEmitter, ObjectChangeType } from './eventEmitter';
 import { toId } from 'utils/common';
 import { CleanUpSharedObjectLookupTable, Context, EventPipe } from 'sda-core';
@@ -18,8 +17,7 @@ class App {
   }
 
   init() {
-    initDefaultPlatforms();
-    initDefaultImageAnalysers();
+    initRepo(this.eventPipe);
     initControllers();
 
     // create user directory if not exists
