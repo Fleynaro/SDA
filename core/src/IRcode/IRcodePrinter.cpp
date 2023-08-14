@@ -96,7 +96,7 @@ void Printer::printOperation(const Operation* operation) {
     }
 }
 
-void Printer::printValue(const Value* value, bool extended) const {
+void Printer::printValue(const Value* value, bool extended) {
     if (auto constValue = dynamic_cast<const Constant*>(value)) {
         m_pcodePrinter->setParentPrinter(this);
         m_pcodePrinter->printVarnode(constValue->getConstVarnode());
@@ -122,7 +122,7 @@ void Printer::printValue(const Value* value, bool extended) const {
     }
 }
 
-void Printer::printLinearExpr(const LinearExpression* linearExpr) const {
+void Printer::printLinearExpr(const LinearExpression* linearExpr) {
     const auto& terms = linearExpr->getTerms();
     for (auto it = terms.begin(); it != terms.end(); ++it) {
         if (it != terms.begin()) {

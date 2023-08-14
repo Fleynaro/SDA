@@ -10,6 +10,7 @@ namespace utils
         size_t m_tabSize = 4;
         size_t m_blockCounter = 0;
         size_t m_commentingCounter = 0;
+        AbstractPrinter* m_parentPrinter = nullptr;
     public:
         using Token = size_t;
         static inline const Token SYMBOL = 1;
@@ -27,7 +28,7 @@ namespace utils
 
         void setTabSize(size_t tabSize);
 
-        void setParentPrinter(const AbstractPrinter* parent);
+        void setParentPrinter(AbstractPrinter* parent);
 
         virtual void startBlock();
 

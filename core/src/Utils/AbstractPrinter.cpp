@@ -11,30 +11,46 @@ void AbstractPrinter::setTabSize(size_t tabSize) {
     m_tabSize = tabSize;
 }
 
-void AbstractPrinter::setParentPrinter(const AbstractPrinter* parent) {
-    m_output = parent->m_output;
-    m_tabSize = parent->m_tabSize;
-    m_blockCounter = parent->m_blockCounter;
-    m_commentingCounter = parent->m_commentingCounter;
+void AbstractPrinter::setParentPrinter(AbstractPrinter* parent) {
+    m_parentPrinter = parent;
 }
 
 void AbstractPrinter::startBlock() {
+    if (m_parentPrinter) {
+        m_parentPrinter->startBlock();
+        return;
+    }
     m_blockCounter++;
 }
 
 void AbstractPrinter::endBlock() {
+    if (m_parentPrinter) {
+        m_parentPrinter->endBlock();
+        return;
+    }
     m_blockCounter--;
 }
 
 void AbstractPrinter::startCommenting() {
+    if (m_parentPrinter) {
+        m_parentPrinter->startCommenting();
+        return;
+    }
     m_commentingCounter ++;
 }
 
 void AbstractPrinter::endCommenting() {
+    if (m_parentPrinter) {
+        m_parentPrinter->endCommenting();
+        return;
+    }
     m_commentingCounter --;
 }
 
 std::ostream& AbstractPrinter::out() const {
+    if (m_parentPrinter) {
+        return m_parentPrinter->out();
+    }
     if (!m_output)
         throw std::runtime_error("Output stream is not set");
     return *m_output;
@@ -46,7 +62,9 @@ void AbstractPrinter::newLine() const {
 }
 
 void AbstractPrinter::newTabs() const {
-    for (size_t i = 0; i < m_blockCounter * m_tabSize; i++)
+    auto blockCounter = m_parentPrinter ? m_parentPrinter->m_blockCounter : m_blockCounter;
+    auto tabSize = m_parentPrinter ? m_parentPrinter->m_tabSize : m_tabSize;
+    for (size_t i = 0; i < blockCounter * tabSize; i++)
         printToken(" ", SYMBOL);
 }
 

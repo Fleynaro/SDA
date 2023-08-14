@@ -26,8 +26,8 @@ namespace sda::ircode
 
         virtual void printOperation(const Operation* operation);
 
-        virtual void printValue(const Value* value, bool extended = false) const;
+        virtual void printValue(const Value* value, bool extended = false);
 
-        virtual void printLinearExpr(const LinearExpression* linearExpr) const;
+        virtual void printLinearExpr(const LinearExpression* linearExpr);
     };
 };
