@@ -6,10 +6,50 @@ import {
   PcodePrinterJs,
   PcodeStructTreePrinterJs,
   PcodeStructTree,
+  PcodeGraph,
+  PcodeBlock,
+  PcodeFunctionGraph,
 } from 'sda-core';
-import { PcodeInstructionTokenGroupAction, PcodeTokenGroupAction } from 'api/p-code';
-import { TokenGroupAction, TokenizedText } from 'api/common';
+import {
+  PcodeInstructionTokenGroupAction,
+  PcodeObjectId,
+  PcodeTokenGroupAction,
+  PcodeBlock as PcodeBlockDto,
+  PcodeFunctionGraph as PcodeFunctionGraphDto,
+} from 'api/p-code';
+import { ObjectId, TokenGroupAction, TokenizedText } from 'api/common';
 import { TokenWriter } from './common';
+import { toHash, toId } from 'utils/common';
+
+export const toPcodeGraph = (id: ObjectId): PcodeGraph => {
+  const graph = PcodeGraph.Get(toHash(id));
+  if (!graph) {
+    throw new Error(`Pcode graph ${id.key} does not exist`);
+  }
+  return graph;
+};
+
+export const toPcodeObjectId = (graphId: ObjectId, offset: number): PcodeObjectId => {
+  return {
+    graphId,
+    offset,
+  };
+};
+
+export const toFunctionGraphDto = (functionGraph: PcodeFunctionGraph): PcodeFunctionGraphDto => {
+  const graphId = toId(functionGraph.graph);
+  return {
+    id: toPcodeObjectId(graphId, functionGraph.entryOffset),
+  };
+};
+
+export const toPcodeBlockDto = (block: PcodeBlock): PcodeBlockDto => {
+  const graphId = toId(block.graph);
+  return {
+    id: toPcodeObjectId(graphId, block.minOffset),
+    functionGraph: toFunctionGraphDto(block.functionGraph),
+  };
+};
 
 export const addPcodeStructTreePrinterToWriter = (
   printer: PcodeStructTreePrinterJs,
