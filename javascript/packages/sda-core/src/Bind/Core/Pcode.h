@@ -51,6 +51,7 @@ namespace sda::bind
                 .property("name", &pcode::Block::getName)
                 .property("index", &pcode::Block::getIndex)
                 .property("graph", &pcode::Block::getGraph)
+                .property("functionGraph", &pcode::Block::getFunctionGraph)
                 .property("minOffset", &pcode::Block::getMinOffset)
                 .property("maxOffset", &pcode::Block::getMaxOffset, &pcode::Block::setMaxOffset)
                 .property("nearNextBlock", &pcode::Block::getNearNextBlock, &pcode::Block::setNearNextBlock)
@@ -93,7 +94,10 @@ namespace sda::bind
         }
 
         static auto New(std::shared_ptr<EventPipe> eventPipe, Platform* platform) {
-            return ExportObject(new pcode::Graph(eventPipe, platform));
+            auto graph = new pcode::Graph(eventPipe, platform);
+            ObjectLookupTableRaw::AddObject(graph);
+            // TODO: ObjectLookupTableRaw::RemoveObject(graph); (handle event PcodeGraphRemoved)
+            return ExportObject(graph);
         }
     public:
         static void Init(v8pp::module& module) {
@@ -113,6 +117,8 @@ namespace sda::bind
                 .method("removeFunctionGraph", &pcode::Graph::removeFunctionGraph)
                 .method("getFunctionGraphAt", &pcode::Graph::getFunctionGraphAt)
                 .static_method("New", &New);
+            ObjectLookupTableRaw::Register(cl);
+            RegisterClassName(cl, "PcodeGraph");
             module.class_("PcodeGraph", cl);
         }
     };

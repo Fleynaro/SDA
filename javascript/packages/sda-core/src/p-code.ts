@@ -1,7 +1,7 @@
 import m from './module';
 import { EventPipe } from './event';
 import { Platform, RegisterRepository } from './platform';
-import { Offset, AbstractPrinter, AbstractPrinterToken } from './utils';
+import { Offset, AbstractPrinter, AbstractPrinterToken, Hash, IIdentifiable } from './utils';
 import { Image } from './image';
 
 export declare abstract class PcodeVarnode {
@@ -119,6 +119,7 @@ export declare class PcodeBlock {
   readonly name: string;
   readonly index: number;
   readonly graph: PcodeGraph;
+  readonly functionGraph: PcodeFunctionGraph;
   readonly minOffset: InstructionOffset;
   readonly maxOffset: InstructionOffset;
   readonly nearNextBlock: PcodeBlock;
@@ -143,7 +144,10 @@ export declare class PcodeFunctionGraph {
   removeReferencedGraphFrom(fromOffset: InstructionOffset): void;
 }
 
-export declare class PcodeGraph {
+export declare class PcodeGraph implements IIdentifiable {
+  readonly hashId: Hash;
+  readonly className: string;
+
   exploreImage(startOffset: InstructionOffset, image: Image): void;
 
   exploreInstructions(startOffset: InstructionOffset, instructions: PcodeInstruction[]): void;
@@ -169,6 +173,8 @@ export declare class PcodeGraph {
   getFunctionGraphAt(offset: InstructionOffset): PcodeFunctionGraph;
 
   static New(eventPipe: EventPipe, platform: Platform): PcodeGraph;
+
+  static Get(hashId: Hash): PcodeGraph;
 }
 
 export enum GotoType {
