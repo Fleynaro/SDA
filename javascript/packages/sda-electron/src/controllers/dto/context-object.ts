@@ -7,6 +7,7 @@ export const toContextObjectDTO = (obj: ContextObject): ContextObjectDTO => {
     id: toId(obj),
     name: obj.name,
     comment: obj.comment,
+    contextId: toId(obj.context),
   };
 };
 
