@@ -1,7 +1,8 @@
-import { Box, emphasize, useTheme } from '@mui/material';
+import { Box, Grid, emphasize, useTheme } from '@mui/material';
 import { Resizable } from 're-resizable';
-import { ObjectId } from 'sda-electron/api/common';
+import { ObjectId, TokenizedText } from 'sda-electron/api/common';
 import { getImageApi } from 'sda-electron/api/image';
+import { PcodeFunctionGraph, getPcodeApi } from 'sda-electron/api/p-code';
 import {
   ImageContent,
   ImageContentContextMenu,
@@ -27,6 +28,9 @@ import {
   ImageContentBridgeProvider,
 } from 'components/ImageContent/context';
 import { Test2 } from 'components/Konva/Block/Test';
+import { useEffect, useState } from 'react';
+import { withCrash_ } from 'providers/CrashProvider';
+import { TokenizedTextView } from 'components/TokenizedTextView';
 
 const DecompilerComponent = () => {
   const {
@@ -35,15 +39,52 @@ const DecompilerComponent = () => {
     functions: { goToOffset },
   } = useImageContent();
   const image = useObject(() => getImageApi().getImage(imageId), [imageId]);
+  const selectedFirstRow = selectedRows.length > 0 ? selectedRows[0] : null;
+  const [curFuncGraph, setCurFuncGraph] = useState<PcodeFunctionGraph | null>(null);
+  const [text, setText] = useState<TokenizedText | null>(null);
+  useEffect(
+    withCrash_(async () => {
+      if (!image || !selectedFirstRow) return;
+      const offset = selectedFirstRow;
+      const graphId = await getPcodeApi().getGraphIdByImage(image.id);
+      const block = await getPcodeApi().getBlockAt(graphId, offset, false);
+      if (!block) return;
+      setCurFuncGraph(block.functionGraph);
+    }),
+    [image, selectedFirstRow],
+  );
+  useEffect(
+    withCrash_(async () => {
+      if (!image || !curFuncGraph) return;
+      const tokenizedText = await getPcodeApi().getPcodeTokenizedText(
+        image.contextId,
+        curFuncGraph.id,
+      );
+      setText(tokenizedText);
+    }),
+    [image, curFuncGraph?.id.offset],
+  );
   if (!image) return null;
   return (
-    <Box>
-      {imageId.key} <br />
-      Decompiler ({selectedRows.length} rows selected) <br />
-      <Button variant="contained" onClick={() => goToOffset(image.entryPointOffset)}>
-        Go to begining
-      </Button>
-    </Box>
+    <Grid container direction="column" height="100%">
+      <Grid item>
+        {imageId.key} <br />
+        Decompiler ({selectedRows.length} rows selected) <br />
+        <Button variant="contained" onClick={() => goToOffset(image.entryPointOffset)}>
+          Go to begining
+        </Button>
+        <Button variant="contained" onClick={() => setText(null)}>
+          Clear
+        </Button>
+      </Grid>
+      <Grid item flexGrow={1}>
+        {text && (
+          <Stage sx={{ width: '100%', height: '100%' }}>
+            <TokenizedTextView text={text} />
+          </Stage>
+        )}
+      </Grid>
+    </Grid>
   );
 };
 

@@ -20,6 +20,7 @@ export interface ImageContentContextValue {
   selectedJump?: Jump;
   setSelectedJump?: (jump?: Jump) => void;
   rowSelection: {
+    // row = offset
     selectedRows: number[];
     setSelectedRows: (rows: number[]) => void;
     firstSelectedRow?: number;
