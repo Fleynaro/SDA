@@ -16,7 +16,6 @@ import {
   toInstructionOffset,
   GetOriginalInstructionInDetail,
   GetOriginalInstructions,
-  PcodeGraph,
 } from 'sda-core';
 import { ObjectId, Offset } from 'api/common';
 import { ImageLoadRowOptions } from 'api/image';
@@ -24,17 +23,17 @@ import { toImageDTO, toImage, changeImage } from './dto/image';
 import { toContext } from './dto/context';
 import { instructionsToTokenizedText } from './dto/p-code';
 import { findImageAnalyser } from 'repo/image-analyser';
+import { getImageInfo } from 'repo/image';
 import { binSearch, toId } from 'utils/common';
 import { Interval, Jump, JumpManager } from 'utils/instruction-jump';
 
-interface ImageInfo {
+interface ImageContent {
   baseRows: ImageBaseRow[];
   jumps: JumpManager;
-  pcodeGraph: PcodeGraph;
 }
 
 class ImageControllerImpl extends BaseController implements ImageController {
-  private imageInfos: Map<string, ImageInfo>;
+  private imageContent: Map<string, ImageContent>;
 
   constructor() {
     super('Image');
@@ -46,7 +45,7 @@ class ImageControllerImpl extends BaseController implements ImageController {
     this.register('offsetToRowIdx', this.offsetToRowIdx);
     this.register('getJumpsAt', this.getJumpsAt);
     this.register('analyzePcode', this.analyzePcode);
-    this.imageInfos = new Map();
+    this.imageContent = new Map();
   }
 
   public async getImage(id: ObjectId): Promise<ImageDTO> {
@@ -80,21 +79,20 @@ class ImageControllerImpl extends BaseController implements ImageController {
     opts?: ImageLoadRowOptions,
   ): Promise<ImageBaseRow[]> {
     const image = toImage(id);
-    const info = this.getImageInfo(image);
-    const slicedRows = info.baseRows.slice(rowIdx, rowIdx + count);
+    const { baseRows } = this.getImageContent(image);
+    const slicedRows = baseRows.slice(rowIdx, rowIdx + count);
     return slicedRows.map((r) => this.loadRow(image, r, opts));
   }
 
   public async getImageTotalRowsCount(id: ObjectId): Promise<number> {
     const image = toImage(id);
-    const info = this.getImageInfo(image);
-    return info.baseRows.length;
+    const { baseRows } = this.getImageContent(image);
+    return baseRows.length;
   }
 
   public async offsetToRowIdx(id: ObjectId, offset: number): Promise<number> {
     const image = toImage(id);
-    const info = this.getImageInfo(image);
-    const rows = info.baseRows;
+    const { baseRows: rows } = this.getImageContent(image);
     const foundRowIndex = binSearch(rows, (mid) => {
       const midRow = rows[mid];
       if (midRow.offset <= offset && offset < midRow.offset + midRow.length) return 0;
@@ -109,8 +107,8 @@ class ImageControllerImpl extends BaseController implements ImageController {
     endOffset: Offset,
   ): Promise<JumpDTO[][]> {
     const image = toImage(id);
-    const info = this.getImageInfo(image);
-    const foundJumps = info.jumps.findJumpsInInterval(new Interval(startOffset, endOffset));
+    const { jumps } = this.getImageContent(image);
+    const foundJumps = jumps.findJumpsInInterval(new Interval(startOffset, endOffset));
     return foundJumps.map((jumpsOnLayer) =>
       jumpsOnLayer.map((jump) => ({ from: jump.offset, to: jump.targetOffset })),
     );
@@ -118,19 +116,19 @@ class ImageControllerImpl extends BaseController implements ImageController {
 
   public async analyzePcode(id: ObjectId, startOffsets: Offset[]): Promise<void> {
     const image = toImage(id);
-    const info = this.getImageInfo(image);
+    const { pcodeGraph } = getImageInfo(image);
     const startInstructionOffsets = startOffsets.map(toInstructionOffset);
     for (const offset of startInstructionOffsets) {
-      if (info.pcodeGraph.getInstructionAt(offset))
+      if (pcodeGraph.getInstructionAt(offset))
         throw new Error(`Instruction at ${offset} is already analyzed`);
-      info.pcodeGraph.exploreImage(offset, image);
+      pcodeGraph.exploreImage(offset, image);
     }
   }
 
-  private getImageInfo(image: Image): ImageInfo {
+  private getImageContent(image: Image): ImageContent {
     const imageId = toId(image);
-    let info = this.imageInfos.get(imageId.key);
-    if (info) return info;
+    let content = this.imageContent.get(imageId.key);
+    if (content) return content;
     const imageSections = image.imageSections;
     const codeSection = imageSections.find((s) => s.type === SectionType.Code);
     if (!codeSection) {
@@ -151,13 +149,12 @@ class ImageControllerImpl extends BaseController implements ImageController {
         jumps.addJump(new Jump(instr.offset, instr.targetOffset));
       }
     }
-    info = {
+    content = {
       baseRows,
       jumps,
-      pcodeGraph: PcodeGraph.New(image.context.eventPipe, image.context.platform),
     };
-    this.imageInfos.set(imageId.key, info);
-    return info;
+    this.imageContent.set(imageId.key, content);
+    return content;
   }
 
   private loadRow(image: Image, baseRow: ImageBaseRow, opts?: ImageLoadRowOptions): ImageBaseRow {
@@ -176,8 +173,8 @@ class ImageControllerImpl extends BaseController implements ImageController {
       }
       if (opts?.pcode) {
         const regRepo = image.context.platform.registerRepository;
-        const imageInfo = this.getImageInfo(image);
-        const pcodeInstructions = imageInfo.pcodeGraph.getInstructionsAt(offset);
+        const { pcodeGraph } = getImageInfo(image);
+        const pcodeInstructions = pcodeGraph.getInstructionsAt(offset);
         if (pcodeInstructions.length > 0) {
           row.pcode = instructionsToTokenizedText(pcodeInstructions, regRepo);
         }

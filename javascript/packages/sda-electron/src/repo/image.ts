@@ -8,10 +8,10 @@ interface ImageInfo {
 
 const images: { [id: number]: ImageInfo } = {};
 
-export const getImagePcodeGraph = (image: Image): PcodeGraph => {
+export const getImageInfo = (image: Image): ImageInfo => {
   const info = images[image.hashId];
   if (info) {
-    return info.pcodeGraph;
+    return info;
   }
   throw new Error(`Image ${image.name} not found`);
 };
