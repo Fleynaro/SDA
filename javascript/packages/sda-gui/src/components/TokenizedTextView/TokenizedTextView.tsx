@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
-import { Block, StaticTextBlock, useStage } from 'components/Konva';
-import { Layer, Rect } from 'react-konva';
+import { Grid } from '@mui/material';
 import { Token, TokenizedText } from 'sda-electron/api/common';
 
 interface TokenizedTextViewProps {
@@ -8,7 +7,6 @@ interface TokenizedTextViewProps {
 }
 
 export const TokenizedTextView = ({ text }: TokenizedTextViewProps) => {
-  const stage = useStage();
   const linesOfTokens = useMemo(() => {
     const linesOfTokens: Token[][] = [[]];
     for (const token of text.tokens) {
@@ -22,26 +20,17 @@ export const TokenizedTextView = ({ text }: TokenizedTextViewProps) => {
 
   const content = useMemo(() => {
     return (
-      <Block flexDir="col" width={stage.size.width}>
+      <Grid container direction="column">
         {linesOfTokens.map((tokens, i) => (
-          <Block key={i} padding={{ bottom: 1, top: 1 }} width="100%">
+          <Grid item key={i}>
             {tokens.map((token, j) => (
-              <Block key={j}>
-                <StaticTextBlock text={token.text} fill={'white'} />
-              </Block>
+              <span key={j}>{token.text}</span>
             ))}
-          </Block>
+          </Grid>
         ))}
-      </Block>
+      </Grid>
     );
-  }, [linesOfTokens, stage.size.width]);
+  }, [linesOfTokens]);
 
-  return (
-    <>
-      <Layer>
-        <Rect width={stage.size.width} height={stage.size.height} fill="black" />
-      </Layer>
-      <Layer>{content}</Layer>
-    </>
-  );
+  return content;
 };
