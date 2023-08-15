@@ -6,15 +6,10 @@ const BoxSwitchContext = createContext<string | undefined>(undefined);
 export interface BoxSwitchProps {
   value?: string;
   children?: React.ReactNode;
-  sx?: SxProps<Theme>;
 }
 
-export function BoxSwitch({ value, children, sx }: BoxSwitchProps) {
-  return (
-    <BoxSwitchContext.Provider value={value}>
-      <Box sx={sx}>{children}</Box>
-    </BoxSwitchContext.Provider>
-  );
+export function BoxSwitch({ value, children }: BoxSwitchProps) {
+  return <BoxSwitchContext.Provider value={value}>{children}</BoxSwitchContext.Provider>;
 }
 
 export interface BoxSwitchCaseProps {
@@ -26,7 +21,10 @@ export interface BoxSwitchCaseProps {
 export function BoxSwitchCase({ value, children, sx }: BoxSwitchCaseProps) {
   const context = useContext(BoxSwitchContext);
   return (
-    <Box sx={{ height: '100%', ...sx, ...(context !== value ? { display: 'none' } : {}) }}>
+    <Box
+      sx={{ height: '100%', ...sx, ...(context !== value ? { display: 'none' } : {}) }}
+      aria-label="box-switch-case"
+    >
       {children}
     </Box>
   );
