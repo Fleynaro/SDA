@@ -66,7 +66,7 @@ const DecompilerComponent = () => {
   );
   if (!image) return null;
   return (
-    <Grid container direction="column" height="100%">
+    <Grid container direction="column" wrap="nowrap" height="100%">
       <Grid item>
         {imageId.key} <br />
         Decompiler ({selectedRows.length} rows selected) <br />
@@ -77,12 +77,8 @@ const DecompilerComponent = () => {
           Clear
         </Button>
       </Grid>
-      <Grid item flexGrow={1}>
-        {text && (
-          <Stage sx={{ width: '100%', height: '100%' }}>
-            <TokenizedTextView text={text} />
-          </Stage>
-        )}
+      <Grid item container flex={1} overflow="auto">
+        {text && <TokenizedTextView text={text} />}
       </Grid>
     </Grid>
   );
@@ -113,57 +109,63 @@ export const TabContent = ({ imageId }: TabContentProps) => {
   // There's a trouble with context exposing into konva. Solve: https://github.com/konvajs/react-konva/issues/188#issuecomment-478302062
   return (
     <ImageContentProvider imageId={imageId}>
-      <TextSelectionBridgeConsumer>
-        {(value1) => (
-          <ImageContentStyleBridgeConsumer>
-            {(value2) => (
-              <ImageContentBridgeConsumer>
-                {(value3) => (
-                  <Stage
-                    sx={{ width: '100%', height: '100%', flexGrow: 1 }}
-                    onContextMenu={onContextMenu}
-                  >
-                    <TextSelectionBridgeProvider value={value1}>
-                      <ImageContentStyleBridgeProvider value={value2}>
-                        <ImageContentBridgeProvider value={value3}>
-                          <PopperContextProvider value={popper}>
-                            {/* <Layer>
-                              <TestComponent />
-                            </Layer> */}
-                            <ImageContent />
-                            {/* <Layer>
-                              <Test />
-                            </Layer> */}
-                          </PopperContextProvider>
-                        </ImageContentBridgeProvider>
-                      </ImageContentStyleBridgeProvider>
-                    </TextSelectionBridgeProvider>
-                  </Stage>
+      <Grid container height="100%" direction="row" wrap="nowrap">
+        <Grid item container flex={1}>
+          <TextSelectionBridgeConsumer>
+            {(value1) => (
+              <ImageContentStyleBridgeConsumer>
+                {(value2) => (
+                  <ImageContentBridgeConsumer>
+                    {(value3) => (
+                      <Stage
+                        sx={{ width: '100%', height: '100%', flexGrow: 1 }}
+                        onContextMenu={onContextMenu}
+                      >
+                        <TextSelectionBridgeProvider value={value1}>
+                          <ImageContentStyleBridgeProvider value={value2}>
+                            <ImageContentBridgeProvider value={value3}>
+                              <PopperContextProvider value={popper}>
+                                {/* <Layer>
+                                <TestComponent />
+                              </Layer> */}
+                                <ImageContent />
+                                {/* <Layer>
+                                <Test />
+                              </Layer> */}
+                              </PopperContextProvider>
+                            </ImageContentBridgeProvider>
+                          </ImageContentStyleBridgeProvider>
+                        </TextSelectionBridgeProvider>
+                      </Stage>
+                    )}
+                  </ImageContentBridgeConsumer>
                 )}
-              </ImageContentBridgeConsumer>
+              </ImageContentStyleBridgeConsumer>
             )}
-          </ImageContentStyleBridgeConsumer>
-        )}
-      </TextSelectionBridgeConsumer>
-      <Resizable
-        defaultSize={{
-          width: 200,
-          height: 'auto',
-        }}
-        enable={{ left: true }}
-        handleClasses={{
-          left: classes.resizable,
-        }}
-      >
-        <Box
-          sx={{
-            backgroundColor: emphasize(theme.palette.background.default, 0.05),
-            height: '100%',
+          </TextSelectionBridgeConsumer>
+        </Grid>
+        <Resizable
+          defaultSize={{
+            width: 200,
+            height: 'auto',
+          }}
+          enable={{ left: true }}
+          handleClasses={{
+            left: classes.resizable,
           }}
         >
-          <DecompilerComponent />
-        </Box>
-      </Resizable>
+          <Grid
+            item
+            container
+            height="100%"
+            sx={{
+              backgroundColor: emphasize(theme.palette.background.default, 0.05),
+            }}
+          >
+            <DecompilerComponent />
+          </Grid>
+        </Resizable>
+      </Grid>
       <ContextMenu {...contextMenu.props} />
       <Popper {...popper.props} closeOnMouseLeave />
     </ImageContentProvider>

@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { ProjectWindowPayload } from 'sda-electron/api/window';
 import { getProjectApi, Project } from 'sda-electron/api/project';
 import { useWindowTitle, useObject } from 'hooks';
-import { Box, useTheme, emphasize } from '@mui/material';
+import { Box, useTheme, emphasize, Grid } from '@mui/material';
 import SegmentIcon from '@mui/icons-material/Segment';
 import SearchIcon from '@mui/icons-material/Search';
 import { Resizable } from 're-resizable';
@@ -38,15 +38,27 @@ function ProjectPanel({ project }: { project: Project }) {
   }, [textSelection]);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }} onMouseUp={onMouseUp}>
-      <ProjectMenuBar />
-      <Box sx={{ display: 'flex', flexGrow: 1 }}>
-        <Box sx={{ display: 'flex' }}>
-          <Box
+    <Grid container direction="column" height="100vh" wrap="nowrap" onMouseUp={onMouseUp}>
+      <Grid item aria-label="project-menu-bar">
+        <ProjectMenuBar />
+      </Grid>
+      <Grid
+        item
+        container
+        flex={1}
+        minHeight={0}
+        direction="row"
+        wrap="nowrap"
+        aria-label="project-content"
+      >
+        <Grid item container width="auto" wrap="nowrap" aria-label="project-content-left">
+          <Grid
+            item
+            width={40}
             sx={{
-              width: 40,
               backgroundColor: emphasize(theme.palette.background.default, 0.1),
             }}
+            aria-label="left-nav-bar"
           >
             <LeftNavBar
               items={[
@@ -56,7 +68,7 @@ function ProjectPanel({ project }: { project: Project }) {
               selected={leftNavItem}
               onSelect={(key) => setLeftNavItem(key)}
             />
-          </Box>
+          </Grid>
           <Resizable
             defaultSize={{
               width: 170,
@@ -67,11 +79,13 @@ function ProjectPanel({ project }: { project: Project }) {
               right: classes.resizable,
             }}
           >
-            <Box
+            <Grid
+              item
+              height="100%"
               sx={{
                 backgroundColor: emphasize(theme.palette.background.default, 0.05),
-                height: '100%',
               }}
+              aria-label="left-nav-content"
             >
               <BoxSwitch value={leftNavItem}>
                 <BoxSwitchCase value="images">
@@ -89,23 +103,30 @@ function ProjectPanel({ project }: { project: Project }) {
                   <Box sx={{ p: 2 }}>Search</Box>
                 </BoxSwitchCase>
               </BoxSwitch>
-            </Box>
+            </Grid>
           </Resizable>
-        </Box>
-        <Box sx={{ display: 'flex', flexGrow: 1 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+        </Grid>
+        <Grid item container direction="column" wrap="nowrap" aria-label="project-content-right">
+          <Grid item aria-label="project-tab-bar">
             <Tabs {...tabs.props} />
-            <BoxSwitch value={tabs.activeTab?.key} sx={{ flexGrow: 1 }}>
-              {tabs.tabs.map((tab) => (
-                <BoxSwitchCase key={tab.key} value={tab.key} sx={{ display: 'flex' }}>
-                  <TabContent imageId={tab.value.imageId} />
-                </BoxSwitchCase>
-              ))}
-            </BoxSwitch>
-          </Box>
-        </Box>
-      </Box>
-    </Box>
+          </Grid>
+          <Grid item container flex={1} minHeight={0} aria-label="project-tabs">
+            {tabs.tabs.map((tab) => (
+              <Grid
+                item
+                container
+                height="100%"
+                key={tab.key}
+                sx={tab.key !== tabs.activeTab?.key ? { display: 'none' } : {}}
+                aria-label="project-tab"
+              >
+                <TabContent imageId={tab.value.imageId} />
+              </Grid>
+            ))}
+          </Grid>
+        </Grid>
+      </Grid>
+    </Grid>
   );
 }
 
