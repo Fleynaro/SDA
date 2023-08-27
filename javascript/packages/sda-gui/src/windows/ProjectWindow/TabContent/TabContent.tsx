@@ -1,6 +1,6 @@
-import { Box, Grid, emphasize, useTheme } from '@mui/material';
+import { Grid, emphasize, useTheme } from '@mui/material';
 import { Resizable } from 're-resizable';
-import { ObjectId, TokenizedText } from 'sda-electron/api/common';
+import { ObjectId } from 'sda-electron/api/common';
 import { getImageApi } from 'sda-electron/api/image';
 import { PcodeFunctionGraph, getPcodeApi } from 'sda-electron/api/p-code';
 import {
@@ -31,6 +31,7 @@ import { Test2 } from 'components/Konva/Block/Test';
 import { useEffect, useState } from 'react';
 import { withCrash_ } from 'providers/CrashProvider';
 import { HtmlTextSelectionBridgeConsumer, HtmlTextSelectionBridgeProvider } from 'components/Text';
+import { PcodeView } from './PcodeView';
 
 const DecompilerComponent = () => {
   const {
@@ -41,7 +42,6 @@ const DecompilerComponent = () => {
   const image = useObject(() => getImageApi().getImage(imageId), [imageId]);
   const selectedFirstRow = selectedRows.length > 0 ? selectedRows[0] : null;
   const [curFuncGraph, setCurFuncGraph] = useState<PcodeFunctionGraph | null>(null);
-  const [text, setText] = useState<TokenizedText | null>(null);
   useEffect(
     withCrash_(async () => {
       if (!image || !selectedFirstRow) return;
@@ -53,17 +53,6 @@ const DecompilerComponent = () => {
     }),
     [image, selectedFirstRow],
   );
-  useEffect(
-    withCrash_(async () => {
-      if (!image || !curFuncGraph) return;
-      const tokenizedText = await getPcodeApi().getPcodeTokenizedText(
-        image.contextId,
-        curFuncGraph.id,
-      );
-      setText(tokenizedText);
-    }),
-    [image, curFuncGraph?.id.offset],
-  );
   if (!image) return null;
   return (
     <Grid container direction="column" wrap="nowrap" height="100%">
@@ -71,14 +60,11 @@ const DecompilerComponent = () => {
         {imageId.key} <br />
         Decompiler ({selectedRows.length} rows selected) <br />
         <Button variant="contained" onClick={() => goToOffset(image.entryPointOffset)}>
-          Go to begining
-        </Button>
-        <Button variant="contained" onClick={() => setText(null)}>
-          Clear
+          Go to beginning
         </Button>
       </Grid>
       <Grid item container flex={1} overflow="auto">
-        {text && <TokenizedTextView text={text} />}
+        {curFuncGraph && <PcodeView image={image} funcGraph={curFuncGraph} />}
       </Grid>
     </Grid>
   );
