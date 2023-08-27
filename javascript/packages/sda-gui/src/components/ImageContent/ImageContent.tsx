@@ -5,44 +5,14 @@ import { PcodeInstructionTokenGroupAction, PcodeTokenGroupAction } from 'sda-ele
 import { Group, Layer, Rect, Text } from 'react-konva';
 import Konva from 'konva';
 import { useStage, Block } from 'components/Konva';
-import { MenuNode } from 'components/Menu';
 import { animate } from 'utils';
 import { useImageContentStyle } from './style';
 import { Row } from './Row';
 import { buildJump } from './Jump';
 import { useImageContent } from './context';
-import { withCrash, withCrash_ } from 'providers/CrashProvider';
+import { withCrash_ } from 'providers/CrashProvider';
 import { RenderBlockProps } from 'components/Konva/Block/RenderBlock';
 import { useSelectedObjects, useSelectedText } from 'components/Text';
-
-export const ImageContentContextMenu = () => {
-  const {
-    imageId,
-    view,
-    setView,
-    rowSelection: { selectedRows },
-  } = useImageContent();
-
-  const onPCodeAnalysis = useCallback(
-    withCrash(async () => {
-      if (selectedRows.length === 0) return;
-      const startOffset = selectedRows[0];
-      await getImageApi().analyzePcode(imageId, [startOffset]);
-    }),
-    [imageId, selectedRows],
-  );
-
-  const onShowPCode = useCallback(() => {
-    setView({ ...view, showPcode: !view.showPcode });
-  }, [view]);
-
-  return (
-    <>
-      <MenuNode label="P-Code Analysis" onClick={onPCodeAnalysis} />
-      <MenuNode label={view.showPcode ? 'Hide P-Code' : 'Show P-Code'} onClick={onShowPCode} />
-    </>
-  );
-};
 
 type RowInfo = {
   idx: number;
