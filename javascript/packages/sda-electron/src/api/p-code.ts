@@ -1,13 +1,26 @@
 import { ObjectId, Offset, TokenGroupAction, TokenizedText, window_ } from './common';
 
+export type ComplexOffset = number;
+
+export const ParseComplexOffset = (offset: ComplexOffset) => ({
+  byte: (offset >> 8) as Offset,
+  index: offset & 0xff,
+});
+
 export enum PcodeTokenGroupAction {
   Instruction = 'instruction',
   Varnode = 'varnode',
+  StructBlock = 'struct_block',
 }
 
 export interface PcodeInstructionTokenGroupAction extends TokenGroupAction {
   name: PcodeTokenGroupAction.Instruction;
-  offset: Offset;
+  offset: ComplexOffset;
+}
+
+export interface PcodeStructBlockTokenGroupAction extends TokenGroupAction {
+  name: PcodeTokenGroupAction.StructBlock;
+  id: string;
 }
 
 export type PcodeObjectId = {

@@ -16,6 +16,7 @@ import {
   PcodeTokenGroupAction,
   PcodeBlock as PcodeBlockDto,
   PcodeFunctionGraph as PcodeFunctionGraphDto,
+  PcodeStructBlockTokenGroupAction,
 } from 'api/p-code';
 import { ObjectId, TokenGroupAction, TokenizedText } from 'api/common';
 import { TokenWriter } from './common';
@@ -61,8 +62,9 @@ export const addPcodeStructTreePrinterToWriter = (
   printer.printStructBlockImpl = (block) => {
     writer.newGroup(
       {
-        name: 'struct_block',
-      } as TokenGroupAction,
+        name: PcodeTokenGroupAction.StructBlock,
+        id: block.name,
+      } as PcodeStructBlockTokenGroupAction,
       () => printer.printStructBlock(block),
     );
   };

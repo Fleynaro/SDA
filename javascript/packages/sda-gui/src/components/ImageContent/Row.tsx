@@ -1,7 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Token, TokenGroup, TokenizedText } from 'sda-electron/api/common';
 import { ImageRowType, ImageBaseRow, ImageInstructionRow } from 'sda-electron/api/image';
-import { PcodeInstructionTokenGroupAction, PcodeTokenGroupAction } from 'sda-electron/api/p-code';
+import {
+  ComplexOffset,
+  ParseComplexOffset,
+  PcodeInstructionTokenGroupAction,
+  PcodeTokenGroupAction,
+} from 'sda-electron/api/p-code';
 import { Group, Rect } from 'react-konva';
 import {
   Block,
@@ -18,6 +23,7 @@ import Konva from 'konva';
 import { RenderProps } from 'components/Konva';
 import { usePopperFromContext } from 'components/Popper';
 import { Paper, Button } from '@mui/material';
+import { useSelectedObjects } from 'components/Text';
 
 const PcodePopper = ({ action }: { action: TokenGroup['action'] }) => {
   if (action.name !== PcodeTokenGroupAction.Instruction) {
@@ -51,11 +57,33 @@ const PcodeTextView = ({ pcode, styles, ctx }: PcodeTextViewProps) => {
     }
   }
 
-  const LineRender = (props: RenderProps) => {
-    const isDebugging = false; // useDebugging();
+  const toInstrOffset = (tokens: Token[]) => {
+    const token = tokens.find(
+      (t) => pcode.groups[t.groupIdx].action.name === PcodeTokenGroupAction.Instruction,
+    );
+    if (!token) return undefined;
+    const { offset } = pcode.groups[token.groupIdx].action as PcodeInstructionTokenGroupAction;
+    return offset;
+  };
+
+  const LineRender = (props: RenderProps & { instrOffset?: ComplexOffset }) => {
+    const selectedObjects = useSelectedObjects();
+    const isHighlightedByTextSel = useMemo(() => {
+      return Boolean(
+        (selectedObjects as TokenGroup[]).find((g) => {
+          if (g.action.name !== PcodeTokenGroupAction.Instruction) return false;
+          const { offset } = g.action as PcodeInstructionTokenGroupAction;
+          return offset === props.instrOffset;
+        }),
+      );
+    }, [selectedObjects, props.instrOffset]);
+    const isHighlightedByDebug = false; // useDebugging();
     return (
       <Group {...props}>
-        {isDebugging && <Rect width={props.width} height={props.height} fill="#db5a5a" />}
+        {isHighlightedByTextSel && (
+          <Rect width={props.width} height={props.height} fill="#304559" />
+        )}
+        {isHighlightedByDebug && <Rect width={props.width} height={props.height} fill="#db5a5a" />}
         {props.children}
       </Group>
     );
@@ -116,7 +144,7 @@ const PcodeTextView = ({ pcode, styles, ctx }: PcodeTextViewProps) => {
   return (
     <Block flexDir="col">
       {linesOfTokens.map((tokens, i) => (
-        <Block key={i} render={<LineRender />}>
+        <Block key={i} render={<LineRender instrOffset={toInstrOffset(tokens)} />}>
           {tokens.map((token, j) => (
             <Block key={j} render={<TokenRender group={pcode.groups[token.groupIdx]} />}>
               <StaticTextBlock
@@ -170,7 +198,22 @@ export const Row = ({ rowIdx, row, styles }: RowProps) => {
       rowSelection: { selectedRows, firstSelectedRow, setFirstSelectedRow, setLastSelectedRow },
     } = useImageContent();
     const { selecting: isTextSelecting, setLastSelectedIdx } = useKonvaTextSelection();
-    const isSelected = selectedRows.includes(row.offset);
+    const selectedObjects = useSelectedObjects();
+    const isHighlightedByRowSel = useMemo(() => {
+      return selectedRows.includes(row.offset);
+    }, [selectedRows, row.offset]);
+    const isHighlightedByTextSel = useMemo(() => {
+      if (row.type === ImageRowType.Instruction) {
+        if ((row as ImageInstructionRow).pcode) return false;
+      }
+      return Boolean(
+        (selectedObjects as TokenGroup[]).find((g) => {
+          if (g.action.name !== PcodeTokenGroupAction.Instruction) return false;
+          const { offset } = g.action as PcodeInstructionTokenGroupAction;
+          return ParseComplexOffset(offset).byte === row.offset;
+        }),
+      );
+    }, [selectedObjects, row.offset]);
 
     const onMouseDown = useCallback(() => {
       setFirstSelectedRow?.(row.offset);
@@ -216,7 +259,9 @@ export const Row = ({ rowIdx, row, styles }: RowProps) => {
         <Rect
           width={width}
           height={height}
-          fill={isSelected ? '#360b0b' : '#00000000'}
+          fill={
+            isHighlightedByRowSel ? '#360b0b' : isHighlightedByTextSel ? '#19242e' : '#00000000'
+          }
           onMouseMove={onMouseMoveForBackground}
         />
         {children}
