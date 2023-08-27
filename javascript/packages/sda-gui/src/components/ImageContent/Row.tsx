@@ -77,26 +77,33 @@ const PcodeTextView = ({ pcode, styles, ctx }: PcodeTextViewProps) => {
       }
     }, [isSelected]);
 
-    const onMouseEnter = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
-      if (action.name === PcodeTokenGroupAction.Instruction) {
-        popper.withTimer(() => {
-          popper.openAtPos(e.evt.clientX, e.evt.clientY + 10);
-          popper.setContent(<PcodePopper action={action} />);
-          popper.setCloseCallback(() => {
-            setSelectedByPopper(false);
-          });
-          setSelectedByPopper(true);
-        }, 500);
-      }
-    }, []);
+    const onMouseEnter = useCallback(
+      (e: Konva.KonvaEventObject<MouseEvent>) => {
+        if (selecting) return;
+        if (action.name === PcodeTokenGroupAction.Instruction) {
+          popper.withTimer(() => {
+            popper.openAtPos(e.evt.clientX, e.evt.clientY + 10);
+            popper.setContent(<PcodePopper action={action} />);
+            popper.setCloseCallback(() => {
+              setSelectedByPopper(false);
+            });
+            setSelectedByPopper(true);
+          }, 500);
+        }
+      },
+      [selecting],
+    );
 
     const onMouseLeave = useCallback(() => {
-      popper.withTimer(() => {
-        if (!popper.props.hovered.current) {
-          popper.close();
-        }
-      }, 500);
-    }, []);
+      popper.withTimer(
+        () => {
+          if (!popper.props.hovered.current) {
+            popper.close();
+          }
+        },
+        selecting ? 0 : 500,
+      );
+    }, [selecting]);
 
     return (
       <Group {...props} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
@@ -162,7 +169,7 @@ export const Row = ({ rowIdx, row, styles }: RowProps) => {
     const {
       rowSelection: { selectedRows, firstSelectedRow, setFirstSelectedRow, setLastSelectedRow },
     } = useImageContent();
-    const { selecting, setLastSelectedIdx } = useTextSelection();
+    const { selecting: isTextSelecting, setLastSelectedIdx } = useKonvaTextSelection();
     const isSelected = selectedRows.includes(row.offset);
 
     const onMouseDown = useCallback(() => {
@@ -170,14 +177,15 @@ export const Row = ({ rowIdx, row, styles }: RowProps) => {
     }, [setFirstSelectedRow, row.offset]);
 
     const onMouseMove = useCallback(() => {
+      if (isTextSelecting) return;
       if (firstSelectedRow !== undefined) {
         setLastSelectedRow?.(row.offset);
       }
-    }, [firstSelectedRow, setLastSelectedIdx, row.offset]);
+    }, [firstSelectedRow, setLastSelectedIdx, row.offset, isTextSelecting]);
 
     const onMouseMoveForBackground = useCallback(
       (e: Konva.KonvaEventObject<MouseEvent>) => {
-        if (selecting) {
+        if (isTextSelecting) {
           const pos = e.target.getStage()?.getPointerPosition();
           if (pos && absX !== undefined && absY !== undefined) {
             setLastSelectedIdx?.(toSelIndex(rowIdx, pos.x - absX, pos.y - absY));
@@ -187,7 +195,7 @@ export const Row = ({ rowIdx, row, styles }: RowProps) => {
         // for jump hover event (onMouseLeave not always working there)
         setCursor(e, 'default');
       },
-      [absX, absY, selecting, setLastSelectedIdx],
+      [absX, absY, isTextSelecting, setLastSelectedIdx],
     );
 
     const onMouseUp = useCallback(() => {
