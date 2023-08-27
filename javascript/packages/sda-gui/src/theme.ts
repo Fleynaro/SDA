@@ -12,6 +12,27 @@ export default createTheme({
   },
 
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          userSelect: 'none',
+          '*::-webkit-scrollbar': {
+            width: '8px',
+            height: '8px',
+          },
+          '*::-webkit-scrollbar-track': {
+            backgroundColor: 'transparent',
+          },
+          '*::-webkit-scrollbar-thumb': {
+            backgroundColor: '#3d3d3d',
+            borderRadius: '4px',
+          },
+          '*::-webkit-scrollbar-thumb:hover': {
+            backgroundColor: '#424242',
+          },
+        },
+      },
+    },
     MuiInputBase: {
       styleOverrides: {
         root: {
