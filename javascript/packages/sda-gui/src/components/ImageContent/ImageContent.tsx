@@ -4,7 +4,7 @@ import { getImageApi } from 'sda-electron/api/image';
 import { PcodeInstructionTokenGroupAction, PcodeTokenGroupAction } from 'sda-electron/api/p-code';
 import { Group, Layer, Rect, Text } from 'react-konva';
 import Konva from 'konva';
-import { useStage, useTextSelection, Block } from 'components/Konva';
+import { useStage, Block } from 'components/Konva';
 import { MenuNode } from 'components/Menu';
 import { animate } from 'utils';
 import { useImageContentStyle } from './style';
@@ -13,6 +13,7 @@ import { buildJump } from './Jump';
 import { useImageContent } from './context';
 import { withCrash, withCrash_ } from 'providers/CrashProvider';
 import { RenderBlockProps } from 'components/Konva/Block/RenderBlock';
+import { useSelectedObjects, useSelectedText } from 'components/Text';
 
 export const ImageContentContextMenu = () => {
   const {
@@ -59,7 +60,8 @@ export function ImageContent() {
     view,
     rowSelection: { firstSelectedRow, lastSelectedRow, setSelectedRows },
   } = useImageContent();
-  const { selectedAreaType, selectedText, selectedObjects } = useTextSelection();
+  const selectedText = useSelectedText();
+  const selectedObjects = useSelectedObjects();
   const [totalRowsCount, setTotalRowsCount] = useState(0);
   const [scrollY, setScrollY] = useState(0); // [0, 1]
   const [rowsToRender, setRowsToRender] = useState<{
@@ -340,21 +342,18 @@ export function ImageContent() {
         {rowsToRender.elem}
         {jumpsToRender}
         <Text text={selectedText} x={700} y={10} fill="green" />
-        {selectedAreaType === 'pcode' && (
-          <Text
-            text={selectedObjects
-              .map((obj) => {
-                const action = (obj as TokenGroup).action;
-                if (action.name !== PcodeTokenGroupAction.Instruction) return '';
-                const { offset } = action as PcodeInstructionTokenGroupAction;
-                return `0x${offset.toString(16)}`;
-              })
-              .join('\n')}
-            x={1000}
-            y={10}
-            fill="red"
-          />
-        )}
+        <Text
+          text={(selectedObjects as TokenGroup[])
+            .filter((g) => g.action.name === PcodeTokenGroupAction.Instruction)
+            .map((g) => {
+              const { offset } = g.action as PcodeInstructionTokenGroupAction;
+              return `0x${offset.toString(16)}`;
+            })
+            .join('\n')}
+          x={1000}
+          y={10}
+          fill="red"
+        />
       </Layer>
       <Layer onWheel={onWheel}>
         <Rect width={stage.size.width} height={10} onMouseMove={onScrollAreaHoverUp} />

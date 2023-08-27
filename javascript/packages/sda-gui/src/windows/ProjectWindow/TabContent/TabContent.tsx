@@ -13,8 +13,8 @@ import {
 } from 'components/ImageContent';
 import {
   Block,
-  TextSelectionBridgeConsumer,
-  TextSelectionBridgeProvider,
+  KonvaTextSelectionBridgeConsumer,
+  KonvaTextSelectionBridgeProvider,
   Stage,
 } from 'components/Konva';
 import { ContextMenu, useContextMenu } from 'components/Menu';
@@ -30,7 +30,7 @@ import {
 import { Test2 } from 'components/Konva/Block/Test';
 import { useEffect, useState } from 'react';
 import { withCrash_ } from 'providers/CrashProvider';
-import { TokenizedTextView } from 'components/TokenizedTextView';
+import { HtmlTextSelectionBridgeConsumer, HtmlTextSelectionBridgeProvider } from 'components/Text';
 
 const DecompilerComponent = () => {
   const {
@@ -111,38 +111,44 @@ export const TabContent = ({ imageId }: TabContentProps) => {
     <ImageContentProvider imageId={imageId}>
       <Grid container height="100%" direction="row" wrap="nowrap">
         <Grid item container flex={1}>
-          <TextSelectionBridgeConsumer>
+          <HtmlTextSelectionBridgeConsumer>
             {(value1) => (
-              <ImageContentStyleBridgeConsumer>
+              <KonvaTextSelectionBridgeConsumer>
                 {(value2) => (
-                  <ImageContentBridgeConsumer>
+                  <ImageContentStyleBridgeConsumer>
                     {(value3) => (
-                      <Stage
-                        sx={{ width: '100%', height: '100%', flexGrow: 1 }}
-                        onContextMenu={onContextMenu}
-                      >
-                        <TextSelectionBridgeProvider value={value1}>
-                          <ImageContentStyleBridgeProvider value={value2}>
-                            <ImageContentBridgeProvider value={value3}>
-                              <PopperContextProvider value={popper}>
-                                {/* <Layer>
-                                <TestComponent />
-                              </Layer> */}
-                                <ImageContent />
-                                {/* <Layer>
-                                <Test />
-                              </Layer> */}
-                              </PopperContextProvider>
-                            </ImageContentBridgeProvider>
-                          </ImageContentStyleBridgeProvider>
-                        </TextSelectionBridgeProvider>
-                      </Stage>
+                      <ImageContentBridgeConsumer>
+                        {(value4) => (
+                          <Stage
+                            sx={{ width: '100%', height: '100%', flexGrow: 1 }}
+                            onContextMenu={onContextMenu}
+                          >
+                            <HtmlTextSelectionBridgeProvider value={value1}>
+                              <KonvaTextSelectionBridgeProvider value={value2}>
+                                <ImageContentStyleBridgeProvider value={value3}>
+                                  <ImageContentBridgeProvider value={value4}>
+                                    <PopperContextProvider value={popper}>
+                                      {/* <Layer>
+                                    <TestComponent />
+                                  </Layer> */}
+                                      <ImageContent />
+                                      {/* <Layer>
+                                    <Test />
+                                  </Layer> */}
+                                    </PopperContextProvider>
+                                  </ImageContentBridgeProvider>
+                                </ImageContentStyleBridgeProvider>
+                              </KonvaTextSelectionBridgeProvider>
+                            </HtmlTextSelectionBridgeProvider>
+                          </Stage>
+                        )}
+                      </ImageContentBridgeConsumer>
                     )}
-                  </ImageContentBridgeConsumer>
+                  </ImageContentStyleBridgeConsumer>
                 )}
-              </ImageContentStyleBridgeConsumer>
+              </KonvaTextSelectionBridgeConsumer>
             )}
-          </TextSelectionBridgeConsumer>
+          </HtmlTextSelectionBridgeConsumer>
         </Grid>
         <Resizable
           defaultSize={{

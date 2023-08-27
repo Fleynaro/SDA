@@ -1,6 +1,7 @@
 import React from 'react';
 import { RenderBlock, RenderBlockProps } from './RenderBlock';
-import { TextSelectionType, TextStyleType } from './StaticTextBlock';
+import { TextStyleType } from './StaticTextBlock';
+import { KonvaTextSelectionType } from './KonvaTextSelection';
 
 export type BlockProps = {
   key?: string | number;
@@ -28,7 +29,7 @@ export type BlockProps = {
   inline?: boolean;
   fill?: string;
   textStyle?: TextStyleType;
-  textSelection?: TextSelectionType;
+  textSelection?: KonvaTextSelectionType;
   setStartSelectionPointHere?: boolean;
   ctx?: any;
   render?: React.ReactNode;

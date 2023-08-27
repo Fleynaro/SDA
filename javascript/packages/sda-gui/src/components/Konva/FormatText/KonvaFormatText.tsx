@@ -47,13 +47,13 @@ const KonvaFormatTextSelectionContext = createContext<KonvaFormatTextSelectionCo
   null,
 );
 
-export interface KonvaFormatTextSelectionProviderProps {
+export interface KonvaFormatKonvaTextSelectionProviderProps {
   children: React.ReactNode;
 }
 
-export const KonvaFormatTextSelectionProvider = ({
+export const KonvaFormatKonvaTextSelectionProvider = ({
   children,
-}: KonvaFormatTextSelectionProviderProps) => {
+}: KonvaFormatKonvaTextSelectionProviderProps) => {
   const selectedTextRef = useRef<string>('');
   const [firstSelectedTokenPos, setFirstSelectedTokenPos] = useState<TokenPos | undefined>();
   const [lastSelectedTokenPos, setLastSelectedTokenPos] = useState<TokenPos | undefined>();
@@ -101,8 +101,8 @@ export function useKonvaFormatTextSelection() {
   return context;
 }
 
-export const KonvaFormatTextSelectionBridgeProvider = KonvaFormatTextSelectionContext.Provider;
-export const KonvaFormatTextSelectionBridgeConsumer = KonvaFormatTextSelectionContext.Consumer;
+export const KonvaFormatKonvaTextSelectionBridgeProvider = KonvaFormatTextSelectionContext.Provider;
+export const KonvaFormatKonvaTextSelectionBridgeConsumer = KonvaFormatTextSelectionContext.Consumer;
 
 type TokenProps = {
   tokenPos: TokenPos;

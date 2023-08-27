@@ -7,10 +7,10 @@ import {
   Block,
   setCursor,
   StaticTextBlock,
-  TextSelectionType,
+  KonvaTextSelectionType,
   toSelIndex,
   toSelIndexFromRenderProps,
-  useTextSelection,
+  useKonvaTextSelection,
 } from 'components/Konva';
 import { StylesType } from './style';
 import { useImageContent } from './context';
@@ -38,7 +38,7 @@ interface PcodeTextViewProps {
   pcode: TokenizedText;
   styles: StylesType;
   ctx?: {
-    textSelection: TextSelectionType;
+    textSelection: KonvaTextSelectionType;
   };
 }
 
@@ -64,7 +64,7 @@ const PcodeTextView = ({ pcode, styles, ctx }: PcodeTextViewProps) => {
   const TokenRender = (props: RenderProps & { group: TokenGroup }) => {
     const action = props.group.action;
     const popper = usePopperFromContext();
-    const { addObjectToSelection, selectionContains } = useTextSelection();
+    const { selecting, addObjectToSelection, selectionContains } = useKonvaTextSelection();
     const selIndex = toSelIndexFromRenderProps(props, ctx);
     const isSelected = selectionContains(selIndex, ctx?.textSelection.area);
     const [selectedByPopper, setSelectedByPopper] = useState(false);
@@ -72,7 +72,7 @@ const PcodeTextView = ({ pcode, styles, ctx }: PcodeTextViewProps) => {
     useEffect(() => {
       if (isSelected) {
         if (action.name === PcodeTokenGroupAction.Instruction) {
-          addObjectToSelection(selIndex, props.group, props.group.idx);
+          addObjectToSelection(selIndex, props.group);
         }
       }
     }, [isSelected]);
