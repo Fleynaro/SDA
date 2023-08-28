@@ -14,25 +14,6 @@ namespace sda::ircode
         pcode::Graph* m_graph;
         SymbolTable* m_globalSymbolTable;
         std::map<pcode::FunctionGraph*, Function> m_functions;
-
-        class PcodeEventHandler
-        {
-            Program* m_program;
-
-            void handleBlockUpdatedEvent(const pcode::BlockUpdatedEvent& event);
-
-            void handleBlockFunctionGraphChanged(const pcode::BlockFunctionGraphChangedEvent& event);
-
-            void handleFunctionGraphCreated(const pcode::FunctionGraphCreatedEvent& event);
-
-            void handleFunctionGraphRemoved(const pcode::FunctionGraphRemovedEvent& event);
-
-        public:
-            PcodeEventHandler(Program* program) : m_program(program) {}
-
-            std::shared_ptr<EventPipe> getEventPipe();
-        };
-
     public:
         Program(pcode::Graph* graph, SymbolTable* globalSymbolTable);
 
