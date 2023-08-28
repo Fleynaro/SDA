@@ -451,7 +451,7 @@ std::list<IRcodeGenerator::VariableReadInfo> IRcodeGenerator::genReadMemory(
         ircode::Printer ircodePrinter(&pcodePrinter);
         std::stringstream ss;
         ircodePrinter.setOutput(ss);
-        ircodePrinter.printValue(memAddr.value.get());
+        ircodePrinter.printValue(memAddr.value);
         PLOG_DEBUG << "memAddr=" << ss.str() << " (offset=" << memAddr.offset << "), readSize="
                     << readSize << ", readMask=" << std::hex << readMask << std::dec;
     }

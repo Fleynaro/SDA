@@ -26,7 +26,7 @@ namespace sda::ircode
 
         virtual void printOperation(const Operation* operation);
 
-        virtual void printValue(const Value* value, bool extended = false);
+        virtual void printValue(std::shared_ptr<Value> value, bool extended = false);
 
         virtual void printLinearExpr(const LinearExpression* linearExpr);
     };

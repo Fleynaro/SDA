@@ -37,7 +37,7 @@ void Printer::printBlock(Block* block, size_t level) {
     }
     if (block->getCondition()) {
         printToken(", cond: ", SYMBOL);
-        printValue(block->getCondition().get());
+        printValue(block->getCondition());
     }
     printToken("):", SYMBOL);
     startBlock();
@@ -56,32 +56,32 @@ void Printer::printBlock(Block* block, size_t level) {
 
 void Printer::printOperation(const Operation* operation) {
     auto output = operation->getOutput();
-    printValue(output.get(), true);
+    printValue(output, true);
     printToken(" = ", SYMBOL);
     printToken(magic_enum::enum_name(operation->getId()).data(), OPERATION);
     printToken(" ", SYMBOL);
 
     if (auto unaryOp = dynamic_cast<const UnaryOperation*>(operation)) {
-        printValue(unaryOp->getInput().get());
+        printValue(unaryOp->getInput());
         if (auto extractOp = dynamic_cast<const ExtractOperation*>(operation)) {
             printToken(", ", SYMBOL);
             printToken(std::to_string(extractOp->getOffset()), SYMBOL);
         }
     }
     else if (auto binaryOp = dynamic_cast<const BinaryOperation*>(operation)) {
-        printValue(binaryOp->getInput1().get());
+        printValue(binaryOp->getInput1());
         printToken(", ", SYMBOL);
-        printValue(binaryOp->getInput2().get());
+        printValue(binaryOp->getInput2());
         if (auto concatOp = dynamic_cast<const ConcatOperation*>(operation)) {
             printToken(", ", SYMBOL);
             printToken(std::to_string(concatOp->getOffset()), SYMBOL);
         }
     }
     else if (auto callOp = dynamic_cast<const CallOperation*>(operation)) {
-        printValue(callOp->getDestination().get());
+        printValue(callOp->getDestination());
         for (auto input : callOp->getArguments()) {
             printToken(", ", SYMBOL);
-            printValue(input.get());
+            printValue(input);
         }
     }
 
@@ -96,23 +96,23 @@ void Printer::printOperation(const Operation* operation) {
     }
 }
 
-void Printer::printValue(const Value* value, bool extended) {
-    if (auto constValue = dynamic_cast<const Constant*>(value)) {
+void Printer::printValue(std::shared_ptr<Value> value, bool extended) {
+    if (auto constValue = dynamic_cast<const Constant*>(value.get())) {
         m_pcodePrinter->setParentPrinter(this);
         m_pcodePrinter->printVarnode(constValue->getConstVarnode());
     }
-    else if (auto regValue = dynamic_cast<const Register*>(value)) {
+    else if (auto regValue = dynamic_cast<const Register*>(value.get())) {
         m_pcodePrinter->setParentPrinter(this);
         m_pcodePrinter->printVarnode(regValue->getRegVarnode(), false);
     }
-    else if (auto varValue = dynamic_cast<const Variable*>(value)) {
+    else if (auto varValue = dynamic_cast<const Variable*>(value.get())) {
         printToken(varValue->getName(), VARIABLE);
         if (extended) {
             if (!varValue->getMemAddress().isVirtual || m_printVarAddressAlways) {
                 auto memAddressValue = varValue->getMemAddress().value;
                 if (memAddressValue) {
                     printToken("[", SYMBOL);
-                    printValue(memAddressValue.get());
+                    printValue(memAddressValue);
                     printToken("]", SYMBOL);
                 }
             }
@@ -128,7 +128,7 @@ void Printer::printLinearExpr(const LinearExpression* linearExpr) {
         if (it != terms.begin()) {
             printToken(" + ", OPERATION);
         }
-        printValue(it->value.get());
+        printValue(it->value);
         if (it->factor != 1) {
             printToken(" * ", SYMBOL);
             printToken(std::to_string(it->factor), SYMBOL);
