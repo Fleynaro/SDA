@@ -14,7 +14,7 @@ import {
 import { CallingConvention } from './platform';
 import { SymbolTable } from './symbol-table';
 import { FunctionSymbol } from './symbol';
-import { AbstractPrinter, AbstractPrinterToken, Hash } from './utils';
+import { AbstractPrinter, AbstractPrinterToken, Hash, IIdentifiable } from './utils';
 
 export enum IRcodeValueType {
   Constant,
@@ -153,7 +153,9 @@ export declare class IRcodeFunction {
   findVariableById(id: number): IRcodeVariable;
 }
 
-export declare class IRcodeProgram {
+export declare class IRcodeProgram implements IIdentifiable {
+  readonly hashId: Hash;
+  readonly className: string;
   readonly eventPipe: EventPipe;
   readonly graph: PcodeGraph;
   readonly globalSymbolTable: SymbolTable;
@@ -165,6 +167,8 @@ export declare class IRcodeProgram {
   getCallsRefToFunction(func: IRcodeFunction): IRcodeOperation[];
 
   static New(graph: PcodeGraph, globalSymbolTable: SymbolTable): IRcodeProgram;
+
+  static Get(hashId: Hash): IRcodeProgram;
 }
 
 export declare class IRcodeContextSync {

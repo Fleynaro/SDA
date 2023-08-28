@@ -6,6 +6,7 @@ import PlatformController from './platform-controller';
 import AddressSpaceController from './address-space-controller';
 import ImageController from './image-controller';
 import PcodeController from './p-code-controller';
+import IRcodeController from './ir-code-controller';
 
 const initControllers = () => {
   contextBridge.exposeInMainWorld('eventApi', EventController);
@@ -15,6 +16,7 @@ const initControllers = () => {
   contextBridge.exposeInMainWorld('addressSpaceApi', AddressSpaceController);
   contextBridge.exposeInMainWorld('imageApi', ImageController);
   contextBridge.exposeInMainWorld('pcodeApi', PcodeController);
+  contextBridge.exposeInMainWorld('ircodeApi', IRcodeController);
 };
 
 export default initControllers;
