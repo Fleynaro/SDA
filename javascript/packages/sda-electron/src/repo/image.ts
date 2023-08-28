@@ -1,9 +1,23 @@
 import { instance_of } from 'sda-bindings';
-import { EventPipe, Image, ObjectAddedEvent, ObjectRemovedEvent, PcodeGraph } from 'sda-core';
+import {
+  EventPipe,
+  IRcodeContextSync,
+  IRcodePcodeSync,
+  IRcodeProgram,
+  Image,
+  ObjectAddedEvent,
+  ObjectRemovedEvent,
+  PcodeGraph,
+  StandartSymbolTable,
+} from 'sda-core';
+import { findPlatform } from './platform';
 
 interface ImageInfo {
   image: Image;
   pcodeGraph: PcodeGraph;
+  ircodeProgram: IRcodeProgram;
+  ctxSync: IRcodeContextSync;
+  pcodeSync: IRcodePcodeSync;
 }
 
 const images: { [id: number]: ImageInfo } = {};
@@ -22,9 +36,18 @@ export const initImageRepo = (eventPipe: EventPipe) => {
       const e = event as ObjectAddedEvent;
       if (instance_of(e.object, Image)) {
         const image = e.object as Image;
+        const symbolTable = StandartSymbolTable.New(image.context, `${image.id}-table`);
+        const pcodeGraph = PcodeGraph.New(image.context.eventPipe, image.context.platform);
+        const ircodeProgram = IRcodeProgram.New(pcodeGraph, symbolTable);
+        const callingConv = findPlatform('x86-64').callingConventions[0];
+        const ctxSync = IRcodeContextSync.New(ircodeProgram, symbolTable, callingConv);
+        const pcodeSync = IRcodePcodeSync.New(ircodeProgram);
         images[image.hashId] = {
           image: image,
-          pcodeGraph: PcodeGraph.New(image.context.eventPipe, image.context.platform),
+          pcodeGraph: pcodeGraph,
+          ircodeProgram,
+          ctxSync,
+          pcodeSync,
         };
       }
     } else if (instance_of(event, ObjectRemovedEvent)) {
