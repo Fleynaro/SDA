@@ -100,7 +100,7 @@ export const pcodeStructTreeToTokenizedText = (
   const writer = new TokenWriter();
   const printer = PcodeStructTreePrinterJs.New();
   const pcodePrinter = PcodePrinterJs.New(regRepo);
-  printer.setPcodePrinter(pcodePrinter);
+  pcodePrinter.combineWithStructPrinter(printer);
   addPcodeStructTreePrinterToWriter(printer, writer);
   addPcodePrinterToWriter(pcodePrinter, writer);
   printer.printStructTree(tree);

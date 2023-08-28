@@ -9,6 +9,7 @@ import {
   PcodeInstruction,
   PcodePrinter,
   PcodeRegisterVarnode,
+  PcodeStructTreePrinter,
 } from './p-code';
 import { CallingConvention } from './platform';
 import { SymbolTable } from './symbol-table';
@@ -188,6 +189,8 @@ export enum IRcodePrinterToken {
 }
 
 export declare class IRcodePrinter extends AbstractPrinter {
+  combineWithStructPrinter(structPrinter: PcodeStructTreePrinter, func: IRcodeFunction): void;
+
   printOperation(operation: IRcodeOperation): void;
 
   printValue(value: IRcodeValue, extended: boolean): void;

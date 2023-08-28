@@ -122,7 +122,7 @@ describe('P-code', () => {
     // check printer
     const printer = PcodeStructTreePrinterJs.New();
     const pcodePrinter = PcodePrinterJs.New(null);
-    printer.setPcodePrinter(pcodePrinter);
+    pcodePrinter.combineWithStructPrinter(printer);
     printer.printStructBlockImpl = (block: PcodeStructBlock) => {
       if (instance_of(block, PcodeStructBlockWhile)) {
         printer.printToken('// this is a while', AbstractPrinterToken.Comment);

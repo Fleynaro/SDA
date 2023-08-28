@@ -140,3 +140,29 @@ void Printer::printLinearExpr(const LinearExpression* linearExpr) {
         printToken(std::to_string(constValue), SYMBOL);
     }
 }
+
+pcode::StructTreePrinter::PrinterFunction Printer::getCodePrinter(Function* function) {
+    return std::function([this, function](pcode::Block* pcodeBlock) {
+        auto block = function->toBlock(pcodeBlock);
+        if (!block) return;
+        printToken("// Block ", Printer::COMMENT);
+        printToken(block->getName(), Printer::COMMENT);
+
+        auto& operations = block->getOperations();
+        for (auto it = operations.begin(); it != operations.end(); ++it) {
+            printOperation(it->get());
+            if (it != operations.end())
+                newLine();
+        }
+    });
+}
+
+pcode::StructTreePrinter::PrinterFunction Printer::getConditionPrinter(Function* function) {
+    return std::function([this, function](pcode::Block* pcodeBlock) {
+        auto block = function->toBlock(pcodeBlock);
+        if (!block) return;
+        if (block->getCondition()) {
+            printValue(block->getCondition());
+        }
+    });
+}

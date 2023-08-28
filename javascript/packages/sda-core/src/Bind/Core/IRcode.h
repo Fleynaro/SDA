@@ -267,6 +267,11 @@ namespace sda::bind
             auto cl = NewClass<ircode::Printer>(module);
             cl
                 .inherit<utils::AbstractPrinter>()
+                .method("combineWithStructPrinter", std::function([](ircode::Printer* printer, pcode::StructTreePrinter* structPrinter, ircode::Function* function) {
+                    printer->setParentPrinter(structPrinter);
+                    structPrinter->setCodePrinter(printer->getCodePrinter(function));
+                    structPrinter->setConditionPrinter(printer->getConditionPrinter(function));
+                }))
                 .method("printOperation", std::function([](ircode::Printer* printer, const ircode::Operation* operation) {
                     printer->ircode::Printer::printOperation(operation);
                 }))

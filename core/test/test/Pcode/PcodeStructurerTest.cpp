@@ -1,4 +1,4 @@
-#include "SDA/Core/Pcode/PcodeStructurer.h"
+#include "SDA/Core/Pcode/PcodePrinter.h"
 #include "Test/Core/Pcode/PcodeFixture.h"
 #include "Test/Core/Utils/TestAssertion.h"
 
@@ -22,8 +22,8 @@ protected:
         printer.setOutput(ss);
         pcode::Printer pcodePrinter(context->getPlatform()->getRegisterRepository().get());
         pcodePrinter.setParentPrinter(&printer);
-        printer.setCodePrinter(pcode::StructTreePrinter::CodePrinter(&pcodePrinter));
-        printer.setConditionPrinter(pcode::StructTreePrinter::ConditionPrinter(&pcodePrinter));
+        printer.setCodePrinter(pcodePrinter.getCodePrinter());
+        printer.setConditionPrinter(pcodePrinter.getConditionPrinter());
         printer.printStructTree(structTree);
         return Compare(ss.str(), expectedCode);
     }

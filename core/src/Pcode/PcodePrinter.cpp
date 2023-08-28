@@ -100,3 +100,31 @@ void Printer::printVarnode(std::shared_ptr<Varnode> varnode, bool printSizeAndOf
         printToken(ss.str(), NUMBER);
     }
 }
+
+StructTreePrinter::PrinterFunction Printer::getCodePrinter() {
+    return std::function([this](Block* block) {
+        printToken("// Block ", Printer::COMMENT);
+        printToken(block->getName(), Printer::COMMENT);
+
+        auto instructions = block->getInstructions();
+        if (block->getLastInstruction()->isBranching()) {
+            // remove any jump
+            instructions.erase(std::prev(instructions.end()));
+        }
+        if (!instructions.empty())
+            newLine();
+        for (const auto& [offset, instruction] : instructions) {
+            printInstruction(instruction);
+            if (instruction != instructions.rbegin()->second)
+                newLine();
+        }
+    });
+}
+
+StructTreePrinter::PrinterFunction Printer::getConditionPrinter() {
+    return std::function([this](Block* block) {
+        auto instr = block->getLastInstruction();
+        assert(instr->isBranching());
+        printVarnode(instr->getInput1());
+    });
+}

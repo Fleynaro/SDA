@@ -6,6 +6,7 @@
 #include "SDA/Core/Pcode/PcodeStructurer.h"
 #include "SDA/Core/Pcode/PcodeParser.h"
 #include "SDA/Core/Pcode/PcodePrinter.h"
+#include "SDA/Core/IRcode/IRcodePrinter.h"
 
 namespace sda::bind
 {
@@ -260,11 +261,6 @@ namespace sda::bind
             auto cl = NewClass<pcode::StructTreePrinter>(module);
             cl
                 .inherit<utils::AbstractPrinter>()
-                .method("setPcodePrinter", std::function([](pcode::StructTreePrinter* printer, pcode::Printer* pcodePrinter) {
-                    pcodePrinter->setParentPrinter(printer);
-                    printer->setCodePrinter(pcode::StructTreePrinter::CodePrinter(pcodePrinter));
-                    printer->setConditionPrinter(pcode::StructTreePrinter::ConditionPrinter(pcodePrinter));
-                }))
                 .method("printStructBlock", std::function([](pcode::StructTreePrinter* printer, pcode::StructBlock* block) {
                     printer->pcode::StructTreePrinter::printStructBlock(block);
                 }))
@@ -336,6 +332,11 @@ namespace sda::bind
             auto cl = NewClass<pcode::Printer>(module);
             cl
                 .inherit<utils::AbstractPrinter>()
+                .method("combineWithStructPrinter", std::function([](pcode::Printer* printer, pcode::StructTreePrinter* structPrinter) {
+                    printer->setParentPrinter(structPrinter);
+                    structPrinter->setCodePrinter(printer->getCodePrinter());
+                    structPrinter->setConditionPrinter(printer->getConditionPrinter());
+                }))
                 .method("printInstruction", std::function([](pcode::Printer* printer, const pcode::Instruction* instruction) {
                     printer->pcode::Printer::printInstruction(instruction);
                 }))

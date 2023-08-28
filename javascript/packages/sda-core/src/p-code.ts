@@ -228,8 +228,6 @@ export declare class PcodeStructTree {
 }
 
 export declare class PcodeStructTreePrinter extends AbstractPrinter {
-  setPcodePrinter(pcodePrinter: PcodePrinter): void;
-
   printStructBlock(block: PcodeStructBlock): void;
 
   printStructTree(tree: PcodeStructTree): void;
@@ -252,6 +250,8 @@ export enum PcodePrinterToken {
 }
 
 export declare class PcodePrinter extends AbstractPrinter {
+  combineWithStructPrinter(structPrinter: PcodeStructTreePrinter): void;
+
   printInstruction(pcode: PcodeInstruction): void;
 
   printVarnode(varnode: PcodeVarnode, printSizeAndOffset: boolean): void;

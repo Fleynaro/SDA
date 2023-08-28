@@ -964,31 +964,3 @@ void StructTreePrinter::printStructBlockWhile(StructBlockWhile* block) {
     newLine();
     printToken("}", KEYWORD);
 }
-
-StructTreePrinter::PrinterFunction StructTreePrinter::CodePrinter(pcode::Printer* pcodePrinter) {
-    return std::function([pcodePrinter](pcode::Block* block) {
-        pcodePrinter->printToken("// Block ", pcode::Printer::COMMENT);
-        pcodePrinter->printToken(block->getName(), pcode::Printer::COMMENT);
-
-        auto instructions = block->getInstructions();
-        if (block->getLastInstruction()->isBranching()) {
-            // remove any jump
-            instructions.erase(std::prev(instructions.end()));
-        }
-        if (!instructions.empty())
-            pcodePrinter->newLine();
-        for (const auto& [offset, instruction] : instructions) {
-            pcodePrinter->printInstruction(instruction);
-            if (instruction != instructions.rbegin()->second)
-                pcodePrinter->newLine();
-        }
-    });
-}
-
-StructTreePrinter::PrinterFunction StructTreePrinter::ConditionPrinter(pcode::Printer* pcodePrinter) {
-    return std::function([pcodePrinter](pcode::Block* block) {
-        auto instr = block->getLastInstruction();
-        assert(instr->isBranching());
-        pcodePrinter->printVarnode(instr->getInput1());
-    });
-}

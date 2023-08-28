@@ -1,5 +1,6 @@
 #pragma once
 #include "PcodeFunctionGraph.h"
+#include "PcodeStructurer.h"
 #include "SDA/Core/Utils/AbstractPrinter.h"
 
 namespace sda::pcode
@@ -24,5 +25,9 @@ namespace sda::pcode
         virtual void printInstruction(const Instruction* instruction) const;
 
         virtual void printVarnode(std::shared_ptr<Varnode> varnode, bool printSizeAndOffset = true) const;
+
+        StructTreePrinter::PrinterFunction getCodePrinter();
+
+        StructTreePrinter::PrinterFunction getConditionPrinter();
     };
 };

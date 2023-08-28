@@ -29,5 +29,9 @@ namespace sda::ircode
         virtual void printValue(std::shared_ptr<Value> value, bool extended = false);
 
         virtual void printLinearExpr(const LinearExpression* linearExpr);
+
+        pcode::StructTreePrinter::PrinterFunction getCodePrinter(Function* function);
+
+        pcode::StructTreePrinter::PrinterFunction getConditionPrinter(Function* function);
     };
 };
