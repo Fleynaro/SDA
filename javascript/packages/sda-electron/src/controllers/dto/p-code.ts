@@ -18,7 +18,7 @@ import {
   PcodeFunctionGraph as PcodeFunctionGraphDto,
   PcodeStructBlockTokenGroupAction,
 } from 'api/p-code';
-import { ObjectId, TokenGroupAction, TokenizedText } from 'api/common';
+import { ObjectId, Offset, TokenGroupAction, TokenizedText } from 'api/common';
 import { TokenWriter } from './common';
 import { toHash, toId } from 'utils/common';
 
@@ -30,7 +30,7 @@ export const toPcodeGraph = (id: ObjectId): PcodeGraph => {
   return graph;
 };
 
-export const toPcodeObjectId = (graphId: ObjectId, offset: number): PcodeObjectId => {
+export const toPcodeObjectId = (graphId: ObjectId, offset: Offset): PcodeObjectId => {
   return {
     graphId,
     offset,
