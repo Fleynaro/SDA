@@ -9,6 +9,12 @@ export declare abstract class PcodeVarnode {
   readonly isRegister: boolean;
 }
 
+export declare class PcodeConstantVarnode extends PcodeVarnode {
+  readonly value: number;
+}
+
+export declare class PcodeRegisterVarnode extends PcodeVarnode {}
+
 export type InstructionOffset = number;
 
 export const toInstructionOffset = (byteOffset: Offset, index = 0): InstructionOffset =>
@@ -264,6 +270,8 @@ export declare class PcodePrinterJs extends PcodePrinter {
 module.exports = {
   ...module.exports,
   PcodeVarnode: m.PcodeVarnode,
+  PcodeConstantVarnode: m.PcodeConstantVarnode,
+  PcodeRegisterVarnode: m.PcodeRegisterVarnode,
   PcodeInstruction: m.PcodeInstruction,
   PcodeBlock: m.PcodeBlock,
   PcodeFunctionGraph: m.PcodeFunctionGraph,

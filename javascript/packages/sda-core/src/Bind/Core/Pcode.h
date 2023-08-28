@@ -11,16 +11,36 @@ namespace sda::bind
 {
     class PcodeVarnodeBind
     {
-    public:
-        static void Init(v8pp::module& module) {
+        static void InitVarnode(v8pp::module& module) {
             auto cl = NewClass<pcode::Varnode, v8pp::shared_ptr_traits>(module);
             cl
                 .auto_wrap_object_ptrs(true)
                 .property("size", &pcode::Varnode::getSize)
                 .property("isRegister", &pcode::Varnode::isRegister);
-            ObjectLookupTableShared::Register(cl);
-            RegisterClassName(cl, "DataType");
             module.class_("PcodeVarnode", cl);
+        }
+
+        static void InitConstantVarnode(v8pp::module& module) {
+            auto cl = NewClass<pcode::ConstantVarnode, v8pp::shared_ptr_traits>(module);
+            cl
+                .inherit<pcode::Varnode>()
+                .auto_wrap_object_ptrs(true)
+                .property("value", &pcode::ConstantVarnode::getValue);
+            module.class_("PcodeConstantVarnode", cl);
+        }
+
+        static void InitRegisterVarnode(v8pp::module& module) {
+            auto cl = NewClass<pcode::RegisterVarnode, v8pp::shared_ptr_traits>(module);
+            cl
+                .inherit<pcode::Varnode>()
+                .auto_wrap_object_ptrs(true);
+            module.class_("PcodeRegisterVarnode", cl);
+        }
+    public:
+        static void Init(v8pp::module& module) {
+            InitVarnode(module);
+            InitConstantVarnode(module);
+            InitRegisterVarnode(module);
         }
     };
 
