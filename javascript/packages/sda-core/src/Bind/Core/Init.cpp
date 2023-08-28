@@ -4,6 +4,7 @@
 #include "Bind/Core/Helpers.h"
 #include "Bind/Core/Event.h"
 #include "Bind/Core/Pcode.h"
+#include "Bind/Core/IRcode.h"
 #include "Bind/Core/Platform.h"
 #include "Bind/Core/Context.h"
 #include "Bind/Core/Object.h"
@@ -36,6 +37,15 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
         PcodeStructTreePrinterBind::Init,
         PcodeParserBind::Init,
         PcodePrinterBind::Init,
+        // ir-code
+        IRcodeValueBind::Init,
+        IRcodeOperationBind::Init,
+        IRcodeBlockBind::Init,
+        IRcodeFunctionBind::Init,
+        IRcodeProgramBind::Init,
+        IRcodeContextSyncBind::Init,
+        IRcodePcodeSyncBind::Init,
+        IRcodePrinterBind::Init,
         // platform
         PlatformBind::Init,
         PlatformMockBind::Init,
