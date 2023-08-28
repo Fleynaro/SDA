@@ -13,7 +13,7 @@ namespace sda::bind
                 .inherit<utils::ISerializable>()
                 .property("id", [](const Object& self) { return std::string(self.serializeId()); });
             ObjectLookupTableRaw::Register(cl);
-            RegisterClassName(cl, "Object");
+            RegisterClassName(cl, "SdaObject");
             module.class_("SdaObject", cl);
         }
     };

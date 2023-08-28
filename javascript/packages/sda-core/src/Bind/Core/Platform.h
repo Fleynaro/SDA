@@ -166,7 +166,7 @@ namespace sda::bind
             auto cl = NewClass<CustomCallingConvention, v8pp::shared_ptr_traits>(module);
             cl
                 .inherit<CallingConvention>()
-                .static_method("new", &New);
+                .static_method("New", &New);
             module.class_("CustomCallingConvention", cl);
         }
     };
