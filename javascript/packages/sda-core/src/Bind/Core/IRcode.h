@@ -163,6 +163,8 @@ namespace sda::bind
                 .method("getFunctionsByCallInstruction", &ircode::Program::getFunctionsByCallInstruction)
                 .method("getCallsRefToFunction", &ircode::Program::getCallsRefToFunction)
                 .static_method("New", &New);
+            ObjectLookupTableRaw::Register(cl);
+            RegisterClassName(cl, "IRcodeProgram");
             module.class_("IRcodeProgram", cl);
         }
     };

@@ -149,9 +149,11 @@ pcode::StructTreePrinter::PrinterFunction Printer::getCodePrinter(Function* func
         printToken(block->getName(), Printer::COMMENT);
 
         auto& operations = block->getOperations();
+        if (!operations.empty())
+            newLine();
         for (auto it = operations.begin(); it != operations.end(); ++it) {
             printOperation(it->get());
-            if (it != operations.end())
+            if (it != std::prev(operations.end()))
                 newLine();
         }
     });

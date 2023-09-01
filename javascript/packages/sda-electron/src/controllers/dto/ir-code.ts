@@ -18,6 +18,7 @@ import {
 } from 'sda-core';
 import { toHash, toId } from 'utils/common';
 import { TokenWriter } from './common';
+import { addPcodePrinterToWriter, addPcodeStructTreePrinterToWriter } from './p-code';
 
 export const toIRcodeProgram = (id: ObjectId): IRcodeProgram => {
   const program = IRcodeProgram.Get(toHash(id));
@@ -73,6 +74,8 @@ export const ircodeStructTreeToTokenizedText = (
   const pcodePrinter = PcodePrinterJs.New(regRepo);
   const ircodePrinter = IRcodePrinterJs.New(pcodePrinter);
   ircodePrinter.combineWithStructPrinter(printer, func);
+  addPcodeStructTreePrinterToWriter(printer, writer);
+  addPcodePrinterToWriter(pcodePrinter, writer);
   addIRcodePrinterToWriter(ircodePrinter, writer);
   printer.printStructTree(tree);
   return writer.result;

@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import { TokenGroup, TokenizedText } from 'sda-electron/api/common';
 import { Image } from 'sda-electron/api/image';
 import {
@@ -6,7 +7,6 @@ import {
   PcodeTokenGroupAction,
   getPcodeApi,
 } from 'sda-electron/api/p-code';
-import { useEffect, useMemo, useState } from 'react';
 import { withCrash_ } from 'providers/CrashProvider';
 import { TokenizedTextView } from 'components/TokenizedTextView';
 import { useSelectedObjects } from 'components/Text';
