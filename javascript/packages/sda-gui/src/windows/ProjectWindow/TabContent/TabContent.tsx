@@ -3,6 +3,7 @@ import { Resizable } from 're-resizable';
 import { ObjectId } from 'sda-electron/api/common';
 import { getImageApi } from 'sda-electron/api/image';
 import { PcodeFunctionGraph, getPcodeApi } from 'sda-electron/api/p-code';
+import { IRcodeFunction, getIRcodeApi } from 'sda-electron/api/ir-code';
 import {
   ImageContent,
   ImageContentContextMenu,
@@ -32,6 +33,7 @@ import { useEffect, useState } from 'react';
 import { withCrash_ } from 'providers/CrashProvider';
 import { HtmlTextSelectionBridgeConsumer, HtmlTextSelectionBridgeProvider } from 'components/Text';
 import { PcodeView } from './PcodeView';
+import { IRcodeView } from './IRcodeView';
 
 const DecompilerComponent = () => {
   const {
@@ -42,6 +44,8 @@ const DecompilerComponent = () => {
   const image = useObject(() => getImageApi().getImage(imageId), [imageId]);
   const selectedFirstRow = selectedRows.length > 0 ? selectedRows[0] : null;
   const [curFuncGraph, setCurFuncGraph] = useState<PcodeFunctionGraph | null>(null);
+  const [curFunction, setCurFunction] = useState<IRcodeFunction | null>(null);
+  const [showIRcode, setShowIRcode] = useState<boolean>(false);
   useEffect(
     withCrash_(async () => {
       if (!image || !selectedFirstRow) return;
@@ -53,6 +57,15 @@ const DecompilerComponent = () => {
     }),
     [image, selectedFirstRow],
   );
+  useEffect(
+    withCrash_(async () => {
+      if (!image || !curFuncGraph) return;
+      const programId = await getIRcodeApi().getProgramIdByImage(image.id);
+      const func = await getIRcodeApi().getFunctionAt(programId, curFuncGraph.id.offset);
+      setCurFunction(func);
+    }),
+    [image, curFuncGraph],
+  );
   if (!image) return null;
   return (
     <Grid container direction="column" wrap="nowrap" height="100%">
@@ -62,9 +75,18 @@ const DecompilerComponent = () => {
         <Button variant="contained" onClick={() => goToOffset(image.entryPointOffset)}>
           Go to beginning
         </Button>
+        <Button
+          variant="contained"
+          onClick={() => setShowIRcode(!showIRcode)}
+          disabled={!curFunction}
+        >
+          {showIRcode ? 'Show Pcode' : 'Show IRcode'}
+        </Button>
       </Grid>
       <Grid item container flex={1} overflow="auto">
-        {curFuncGraph && <PcodeView image={image} funcGraph={curFuncGraph} />}
+        {showIRcode
+          ? curFunction && <IRcodeView image={image} func={curFunction} />
+          : curFuncGraph && <PcodeView image={image} funcGraph={curFuncGraph} />}
       </Grid>
     </Grid>
   );
