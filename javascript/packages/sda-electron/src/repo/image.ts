@@ -36,12 +36,15 @@ export const initImageRepo = (eventPipe: EventPipe) => {
       const e = event as ObjectAddedEvent;
       if (instance_of(e.object, Image)) {
         const image = e.object as Image;
+        const ctxPipe = image.context.eventPipe;
         const symbolTable = StandartSymbolTable.New(image.context, `${image.id}-table`);
-        const pcodeGraph = PcodeGraph.New(image.context.eventPipe, image.context.platform);
+        const pcodeGraph = PcodeGraph.New(ctxPipe, image.context.platform);
         const ircodeProgram = IRcodeProgram.New(pcodeGraph, symbolTable);
         const callingConv = findPlatform('x86-64').callingConventions[0];
         const ctxSync = IRcodeContextSync.New(ircodeProgram, symbolTable, callingConv);
         const pcodeSync = IRcodePcodeSync.New(ircodeProgram);
+        ctxPipe.connect(ctxSync.eventPipe);
+        ctxPipe.connect(pcodeSync.eventPipe);
         images[image.hashId] = {
           image: image,
           pcodeGraph: pcodeGraph,
