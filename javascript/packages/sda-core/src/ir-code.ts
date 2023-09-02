@@ -188,8 +188,8 @@ export declare class IRcodePcodeSync {
 }
 
 export enum IRcodePrinterToken {
-  Operation = AbstractPrinterToken.Keyword,
-  Variable = AbstractPrinterToken.Identifier,
+  Operation = AbstractPrinterToken.Parent,
+  Variable = AbstractPrinterToken.Parent + 1,
 }
 
 export declare class IRcodePrinter extends AbstractPrinter {

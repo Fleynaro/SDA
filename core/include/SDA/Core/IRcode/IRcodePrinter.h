@@ -13,8 +13,8 @@ namespace sda::ircode
         OperationCommentProvider m_operationCommentProvider;
     public:
         bool m_printVarAddressAlways = false;
-        static inline const Token OPERATION = KEYWORD;
-        static inline const Token VARIABLE = IDENTIFIER;
+        static inline const Token OPERATION = PARENT;
+        static inline const Token VARIABLE = PARENT + 1;
 
         Printer(pcode::Printer* pcodePrinter);
 

@@ -10,9 +10,9 @@ namespace sda::pcode
         const RegisterRepository* m_regRepo;
         Graph* m_graph;
     public:
-        static inline const Token MNEMONIC = KEYWORD;
-        static inline const Token REGISTER = IDENTIFIER;
-        static inline const Token VIRT_REGISTER = IDENTIFIER;
+        static inline const Token MNEMONIC = PARENT;
+        static inline const Token REGISTER = PARENT + 1;
+        static inline const Token VIRT_REGISTER = PARENT + 2;
 
         Printer(const RegisterRepository* regRepo = nullptr, Graph* graph = nullptr);
 

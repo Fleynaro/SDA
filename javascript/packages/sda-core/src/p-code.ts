@@ -244,9 +244,9 @@ export declare class PcodeParser {
 }
 
 export enum PcodePrinterToken {
-  Mneumonic = AbstractPrinterToken.Keyword,
-  Register = AbstractPrinterToken.Identifier,
-  VirtRegister = AbstractPrinterToken.Identifier,
+  Mneumonic = AbstractPrinterToken.Parent,
+  Register = AbstractPrinterToken.Parent + 1,
+  VirtRegister = AbstractPrinterToken.Parent + 2,
 }
 
 export declare class PcodePrinter extends AbstractPrinter {
