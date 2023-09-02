@@ -15,6 +15,7 @@ const TokenTypeToColor = {
   ['Mneumonic']: '#eddaa4',
   ['Register']: '#93c5db',
   ['VirtRegister']: '#93c5db',
+  ['Symbol']: '#bfbfbf',
   ['Number']: '#e8e8e8',
   ['Keyword']: '#4287f5',
   ['Comment']: 'green',

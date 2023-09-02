@@ -8,9 +8,11 @@ import { TokenizedTextView } from 'components/TokenizedTextView';
 import { useSelectedObjects } from 'components/Text';
 
 const TokenTypeToColor = {
-  ['Mneumonic']: '#eddaa4',
+  ['Operation']: '#eddaa4',
+  ['Variable']: '#6c83b8',
   ['Register']: '#93c5db',
   ['VirtRegister']: '#93c5db',
+  ['Symbol']: '#bfbfbf',
   ['Number']: '#e8e8e8',
   ['Keyword']: '#4287f5',
   ['Comment']: 'green',
