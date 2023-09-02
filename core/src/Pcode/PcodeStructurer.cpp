@@ -884,7 +884,7 @@ void StructTreePrinter::printStructBlock(StructBlock* block) {
         }
         if (hasDefaultGoto) {
             printToken(std::string("label_") + block->getName(), IDENTIFIER);
-            printToken(":", KEYWORD);
+            printToken(":", SYMBOL);
             newLine();
         }
     }
@@ -908,13 +908,15 @@ void StructTreePrinter::printStructBlock(StructBlock* block) {
         case GotoType::Default:
             printToken("goto ", KEYWORD);
             printToken(std::string("label_") + block->getGoto()->getName(), IDENTIFIER);
-            printToken(";", KEYWORD);
+            printToken(";", SYMBOL);
             break;
         case GotoType::Break:
-            printToken("break;", KEYWORD);
+            printToken("break", KEYWORD);
+            printToken(";", SYMBOL);
             break;
         case GotoType::Continue:
-            printToken("continue;", KEYWORD);
+            printToken("continue", KEYWORD);
+            printToken(";", SYMBOL);
             break;
         }
     }
@@ -931,36 +933,39 @@ void StructTreePrinter::printStructBlockSequence(StructBlockSequence* blockSeq) 
 void StructTreePrinter::printStructBlockIf(StructBlockIf* block) {
     printStructBlock(block->getCondBlock());
     newLine();
-    printToken("if (", KEYWORD);
+    printToken("if", KEYWORD);
+    printToken(" (", SYMBOL);
     if (block->isInverted())
-        printToken("!", KEYWORD);
+        printToken("!", SYMBOL);
     m_conditionPrinter(block->getCondBlock()->getPcodeBlock());
-    printToken(") {", KEYWORD);
+    printToken(") {", SYMBOL);
     startBlock();
     newLine();
     printStructBlock(block->getThenBlock());
     endBlock();
     newLine();
-    printToken("}", KEYWORD);
+    printToken("}", SYMBOL);
     if (block->getElseBlock()) {
-        printToken(" else {", KEYWORD);
+        printToken(" else", KEYWORD);
+        printToken(" {", SYMBOL);
         startBlock();
         newLine();
         printStructBlock(block->getElseBlock());
         endBlock();
         newLine();
-        printToken("}", KEYWORD);
+        printToken("}", SYMBOL);
     }
 }
 
 void StructTreePrinter::printStructBlockWhile(StructBlockWhile* block) {
-    printToken("while (", KEYWORD);
+    printToken("while", KEYWORD);
+    printToken(" (", SYMBOL);
     printToken("true", KEYWORD);
-    printToken(") {", KEYWORD);
+    printToken(") {", SYMBOL);
     startBlock();
     newLine();
     printStructBlock(block->getBodyBlock());
     endBlock();
     newLine();
-    printToken("}", KEYWORD);
+    printToken("}", SYMBOL);
 }

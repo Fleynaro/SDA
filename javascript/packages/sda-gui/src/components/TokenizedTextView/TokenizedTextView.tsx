@@ -104,7 +104,7 @@ export const TokenizedTextView = ({
         const endLine = lines.find(
           (l) =>
             l.index > line.index + 1 &&
-            l.tokens.find((t) => t.type === 'Keyword' && t.groupIdx === token.groupIdx),
+            l.tokens.find((t) => t.type === 'Symbol' && t.groupIdx === token.groupIdx),
         );
         if (endLine) {
           const { id } = text.groups[token.groupIdx].action as PcodeStructBlockTokenGroupAction;
@@ -195,6 +195,7 @@ export const TokenizedTextView = ({
                 <span
                   key={j}
                   style={{ color: tokenTypeToColor[token.type] }}
+                  aria-label={token.type}
                   data-group-idx={token.groupIdx}
                   data-area={name}
                 >

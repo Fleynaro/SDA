@@ -126,7 +126,7 @@ void Printer::printLinearExpr(const LinearExpression* linearExpr) {
     const auto& terms = linearExpr->getTerms();
     for (auto it = terms.begin(); it != terms.end(); ++it) {
         if (it != terms.begin()) {
-            printToken(" + ", OPERATION);
+            printToken(" + ", SYMBOL);
         }
         printValue(it->value);
         if (it->factor != 1) {
@@ -136,7 +136,7 @@ void Printer::printLinearExpr(const LinearExpression* linearExpr) {
     }
     auto constValue = linearExpr->getConstTermValue();
     if (constValue != 0) {
-        printToken(" + ", OPERATION);
+        printToken(" + ", SYMBOL);
         printToken(std::to_string(constValue), SYMBOL);
     }
 }
