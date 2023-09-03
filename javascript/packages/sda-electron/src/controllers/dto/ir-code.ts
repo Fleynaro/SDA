@@ -62,29 +62,28 @@ export const addIRcodePrinterToWriter = (printer: IRcodePrinterJs, writer: Token
       () => printer.printOperation(op),
     );
   };
-  printer.printValueImpl = (val, extended) => {
-    let value: IRcodeValueDto | undefined;
-    if (instance_of(val, IRcodeVariable)) {
-      value = {
+  printer.printValueImpl = (value, extended) => {
+    let dto: IRcodeValueDto | undefined;
+    if (instance_of(value, IRcodeVariable)) {
+      dto = {
         type: 'variable',
-        name: (val as IRcodeVariable).name,
+        name: (value as IRcodeVariable).name,
       };
-    } else if (instance_of(val, IRcodeConstant)) {
-      value = {
+    } else if (instance_of(value, IRcodeConstant)) {
+      dto = {
         type: 'constant',
-        value: (val as IRcodeConstant).constVarnode.value,
       };
-    } else if (instance_of(val, IRcodeRegister)) {
-      value = {
+    } else if (instance_of(value, IRcodeRegister)) {
+      dto = {
         type: 'register',
       };
     }
     writer.newGroup(
       {
         name: IRcodeTokenGroupAction.Value,
-        value,
+        value: dto,
       } as IRcodeValueTokenGroupAction,
-      () => printer.printValue(val, extended),
+      () => printer.printValue(value, extended),
     );
   };
 };

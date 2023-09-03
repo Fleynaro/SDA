@@ -26,10 +26,11 @@ export type IRcodeValueDto =
       name: string;
     }
   | {
+      // it's overlapped by PcodeVarnodeDto
       type: 'constant';
-      value: number;
     }
   | {
+      // it's overlapped by PcodeVarnodeDto
       type: 'register';
     };
 
