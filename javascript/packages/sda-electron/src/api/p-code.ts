@@ -23,6 +23,11 @@ export interface PcodeInstructionTokenGroupAction extends TokenGroupAction, Pcod
   offset: ComplexOffset;
 }
 
+export interface PcodeVarnodeTokenGroupAction extends TokenGroupAction {
+  name: PcodeTokenGroupAction.Varnode;
+  varnode: PcodeVarnodeDto;
+}
+
 export interface PcodeStructBlockTokenGroupAction extends TokenGroupAction {
   name: PcodeTokenGroupAction.StructBlock;
   id: string;
@@ -32,6 +37,15 @@ export type PcodeObjectId = {
   graphId: ObjectId;
   offset: Offset;
 };
+
+export type PcodeVarnodeDto =
+  | {
+      type: 'constant';
+      value: number;
+    }
+  | {
+      type: 'register';
+    };
 
 export type PcodeBlock = {
   id: PcodeObjectId;

@@ -9,6 +9,8 @@ import {
   PcodeGraph,
   PcodeBlock,
   PcodeFunctionGraph,
+  PcodeRegisterVarnode,
+  PcodeConstantVarnode,
 } from 'sda-core';
 import {
   PcodeInstructionTokenGroupAction,
@@ -17,10 +19,13 @@ import {
   PcodeBlock as PcodeBlockDto,
   PcodeFunctionGraph as PcodeFunctionGraphDto,
   PcodeStructBlockTokenGroupAction,
+  PcodeVarnodeDto,
+  PcodeVarnodeTokenGroupAction,
 } from 'api/p-code';
-import { ObjectId, Offset, TokenGroupAction, TokenizedText } from 'api/common';
+import { ObjectId, Offset, TokenizedText } from 'api/common';
 import { TokenWriter } from './common';
 import { toHash, toId } from 'utils/common';
+import { instance_of } from 'sda-bindings';
 
 export const toPcodeGraph = (id: ObjectId): PcodeGraph => {
   const graph = PcodeGraph.Get(toHash(id));
@@ -85,10 +90,22 @@ export const addPcodePrinterToWriter = (printer: PcodePrinterJs, writer: TokenWr
     );
   };
   printer.printVarnodeImpl = (varnode, printSizeAndOffset) => {
+    let dto: PcodeVarnodeDto | undefined;
+    if (instance_of(varnode, PcodeRegisterVarnode)) {
+      dto = {
+        type: 'register',
+      };
+    } else if (instance_of(varnode, PcodeConstantVarnode)) {
+      dto = {
+        type: 'constant',
+        value: (varnode as PcodeConstantVarnode).value,
+      };
+    }
     writer.newGroup(
       {
         name: PcodeTokenGroupAction.Varnode,
-      } as TokenGroupAction,
+        varnode: dto,
+      } as PcodeVarnodeTokenGroupAction,
       () => printer.printVarnode(varnode, printSizeAndOffset),
     );
   };
