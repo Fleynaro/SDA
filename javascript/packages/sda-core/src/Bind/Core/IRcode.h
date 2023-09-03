@@ -41,9 +41,11 @@ namespace sda::bind
             cl
                 .inherit<ircode::Value>()
                 .auto_wrap_object_ptrs(true)
-                .property("name", &ircode::Variable::getName)
-                .property("fullName", std::function([](ircode::Variable* variable) {
-                    return variable->getName(true);
+                .property("name", std::function([](ircode::Variable& self) {
+                    return self.getName(false);
+                }))
+                .property("fullName", std::function([](ircode::Variable& self) {
+                    return self.getName(true);
                 }))
                 .property("isUsed", &ircode::Variable::isUsed)
                 .property("sourceOperation", &ircode::Variable::getSourceOperation);
