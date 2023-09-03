@@ -9,10 +9,28 @@ export interface IRcodeOperationTokenGroupAction extends TokenGroupAction {
   name: IRcodeTokenGroupAction.Operation;
 }
 
+export interface IRcodeValueTokenGroupAction extends TokenGroupAction {
+  name: IRcodeTokenGroupAction.Value;
+  value: IRcodeValueDto;
+}
+
 export type IRcodeObjectId = {
   programId: ObjectId;
   offset: Offset;
 };
+
+export type IRcodeValueDto =
+  | {
+      type: 'variable';
+      name: string;
+    }
+  | {
+      type: 'constant';
+      value: number;
+    }
+  | {
+      type: 'register';
+    };
 
 export type IRcodeFunction = {
   id: IRcodeObjectId;

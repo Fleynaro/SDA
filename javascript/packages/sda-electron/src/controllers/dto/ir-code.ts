@@ -1,9 +1,12 @@
-import { ObjectId, Offset, TokenGroupAction, TokenizedText } from 'api/common';
+import { instance_of } from 'sda-bindings';
+import { ObjectId, Offset, TokenizedText } from 'api/common';
 import {
   IRcodeOperationTokenGroupAction,
   IRcodeTokenGroupAction,
   IRcodeFunction as IRcodeFunctionDto,
   IRcodeObjectId,
+  IRcodeValueTokenGroupAction,
+  IRcodeValueDto,
 } from 'api/ir-code';
 import {
   IRcodePrinterJs,
@@ -15,6 +18,9 @@ import {
   IRcodeFunction,
   PcodeStructTreePrinterJs,
   PcodePrinterJs,
+  IRcodeVariable,
+  IRcodeConstant,
+  IRcodeRegister,
 } from 'sda-core';
 import { toHash, toId } from 'utils/common';
 import { TokenWriter } from './common';
@@ -50,16 +56,34 @@ export const addIRcodePrinterToWriter = (printer: IRcodePrinterJs, writer: Token
     writer.newGroup(
       {
         name: IRcodeTokenGroupAction.Operation,
+        offset: op.pcodeInstruction?.offset,
       } as IRcodeOperationTokenGroupAction,
       () => printer.printOperation(op),
     );
   };
-  printer.printValueImpl = (value, extended) => {
+  printer.printValueImpl = (val, extended) => {
+    let value: IRcodeValueDto | undefined;
+    if (instance_of(val, IRcodeVariable)) {
+      value = {
+        type: 'variable',
+        name: (val as IRcodeVariable).name,
+      };
+    } else if (instance_of(val, IRcodeConstant)) {
+      value = {
+        type: 'constant',
+        value: (val as IRcodeConstant).constVarnode.value,
+      };
+    } else if (instance_of(val, IRcodeRegister)) {
+      value = {
+        type: 'register',
+      };
+    }
     writer.newGroup(
       {
         name: IRcodeTokenGroupAction.Value,
-      } as TokenGroupAction,
-      () => printer.printValue(value, extended),
+        value,
+      } as IRcodeValueTokenGroupAction,
+      () => printer.printValue(val, extended),
     );
   };
 };
