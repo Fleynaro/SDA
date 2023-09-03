@@ -79,6 +79,7 @@ export const addPcodePrinterToWriter = (printer: PcodePrinterJs, writer: TokenWr
       {
         name: PcodeTokenGroupAction.Instruction,
         offset: instr.offset,
+        locatableByOffset: true,
       } as PcodeInstructionTokenGroupAction,
       () => printer.printInstruction(instr),
     );

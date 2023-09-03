@@ -13,7 +13,12 @@ export enum PcodeTokenGroupAction {
   StructBlock = 'struct_block',
 }
 
-export interface PcodeInstructionTokenGroupAction extends TokenGroupAction {
+export interface PcodeLocatableByOffset {
+  offset?: ComplexOffset;
+  locatableByOffset: true;
+}
+
+export interface PcodeInstructionTokenGroupAction extends TokenGroupAction, PcodeLocatableByOffset {
   name: PcodeTokenGroupAction.Instruction;
   offset: ComplexOffset;
 }

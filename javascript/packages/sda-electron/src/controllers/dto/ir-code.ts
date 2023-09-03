@@ -57,6 +57,7 @@ export const addIRcodePrinterToWriter = (printer: IRcodePrinterJs, writer: Token
       {
         name: IRcodeTokenGroupAction.Operation,
         offset: op.pcodeInstruction?.offset,
+        locatableByOffset: true,
       } as IRcodeOperationTokenGroupAction,
       () => printer.printOperation(op),
     );

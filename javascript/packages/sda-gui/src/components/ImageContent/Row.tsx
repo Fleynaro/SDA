@@ -5,6 +5,7 @@ import {
   ComplexOffset,
   ParseComplexOffset,
   PcodeInstructionTokenGroupAction,
+  PcodeLocatableByOffset,
   PcodeTokenGroupAction,
 } from 'sda-electron/api/p-code';
 import { Group, Rect } from 'react-konva';
@@ -71,8 +72,9 @@ const PcodeTextView = ({ pcode, styles, ctx }: PcodeTextViewProps) => {
     const isHighlightedByTextSel = useMemo(() => {
       return Boolean(
         (selectedObjects as TokenGroup[]).find((g) => {
-          if (g.action.name !== PcodeTokenGroupAction.Instruction) return false;
-          const { offset } = g.action as PcodeInstructionTokenGroupAction;
+          if (!('locatableByOffset' in g.action)) return false;
+          const { offset } = g.action as PcodeLocatableByOffset;
+          if (offset === undefined) return false;
           return offset === props.instrOffset;
         }),
       );
@@ -208,8 +210,9 @@ export const Row = ({ rowIdx, row, styles }: RowProps) => {
       }
       return Boolean(
         (selectedObjects as TokenGroup[]).find((g) => {
-          if (g.action.name !== PcodeTokenGroupAction.Instruction) return false;
-          const { offset } = g.action as PcodeInstructionTokenGroupAction;
+          if (!('locatableByOffset' in g.action)) return false;
+          const { offset } = g.action as PcodeLocatableByOffset;
+          if (offset === undefined) return false;
           return ParseComplexOffset(offset).byte === row.offset;
         }),
       );

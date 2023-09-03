@@ -1,11 +1,12 @@
 import { ObjectId, Offset, TokenGroupAction, TokenizedText, window_ } from './common';
+import { PcodeLocatableByOffset } from './p-code';
 
 export enum IRcodeTokenGroupAction {
   Operation = 'ircode-operation',
   Value = 'ircode-value',
 }
 
-export interface IRcodeOperationTokenGroupAction extends TokenGroupAction {
+export interface IRcodeOperationTokenGroupAction extends TokenGroupAction, PcodeLocatableByOffset {
   name: IRcodeTokenGroupAction.Operation;
 }
 

@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
-import { TokenGroup, TokenizedText } from 'sda-electron/api/common';
+import { useEffect, useState } from 'react';
+import { TokenizedText } from 'sda-electron/api/common';
 import { Image } from 'sda-electron/api/image';
-import { PcodeInstructionTokenGroupAction, PcodeTokenGroupAction } from 'sda-electron/api/p-code';
-import { IRcodeFunction, IRcodeTokenGroupAction, getIRcodeApi } from 'sda-electron/api/ir-code';
+import { IRcodeFunction, getIRcodeApi } from 'sda-electron/api/ir-code';
 import { withCrash_ } from 'providers/CrashProvider';
 import { TokenizedTextView } from 'components/TokenizedTextView';
-import { useSelectedObjects } from 'components/Text';
+import { useHighlightedGroupIndexes } from './helpers';
 
 const TokenTypeToColor = {
   ['Operation']: '#eddaa4',
@@ -24,8 +23,8 @@ export interface IRcodeViewProps {
 }
 
 export const IRcodeView = ({ image, func }: IRcodeViewProps) => {
-  const selectedObjects = useSelectedObjects();
   const [text, setText] = useState<TokenizedText | null>(null);
+  const highlightedGroupIdxs = useHighlightedGroupIndexes(text);
 
   useEffect(
     withCrash_(async () => {
@@ -35,21 +34,6 @@ export const IRcodeView = ({ image, func }: IRcodeViewProps) => {
     }),
     [image, func],
   );
-
-  const highlightedGroupIdxs = useMemo(() => {
-    if (!text) return [];
-    const result: number[] = [];
-    for (const selObject of selectedObjects) {
-      const selGroup = selObject as TokenGroup;
-      if (selGroup.action.name !== PcodeTokenGroupAction.Instruction) continue;
-      const { offset: selOffset } = selGroup.action as PcodeInstructionTokenGroupAction;
-      for (const group of text.groups) {
-        if (group.action.name !== IRcodeTokenGroupAction.Operation) continue;
-        //const { offset } = group.action as IRcodeOperationTokenGroupAction;
-      }
-    }
-    return result;
-  }, [selectedObjects, text]);
 
   if (!text) return null;
   return (

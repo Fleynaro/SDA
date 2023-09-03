@@ -1,15 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
-import { TokenGroup, TokenizedText } from 'sda-electron/api/common';
+import { useEffect, useState } from 'react';
+import { TokenizedText } from 'sda-electron/api/common';
 import { Image } from 'sda-electron/api/image';
-import {
-  PcodeFunctionGraph,
-  PcodeInstructionTokenGroupAction,
-  PcodeTokenGroupAction,
-  getPcodeApi,
-} from 'sda-electron/api/p-code';
+import { PcodeFunctionGraph, getPcodeApi } from 'sda-electron/api/p-code';
 import { withCrash_ } from 'providers/CrashProvider';
 import { TokenizedTextView } from 'components/TokenizedTextView';
-import { useSelectedObjects } from 'components/Text';
+import { useHighlightedGroupIndexes } from './helpers';
 
 const TokenTypeToColor = {
   ['Mneumonic']: '#eddaa4',
@@ -27,8 +22,8 @@ export interface PcodeViewProps {
 }
 
 export const PcodeView = ({ image, funcGraph }: PcodeViewProps) => {
-  const selectedObjects = useSelectedObjects();
   const [text, setText] = useState<TokenizedText | null>(null);
+  const highlightedGroupIdxs = useHighlightedGroupIndexes(text);
 
   useEffect(
     withCrash_(async () => {
@@ -41,24 +36,6 @@ export const PcodeView = ({ image, funcGraph }: PcodeViewProps) => {
     }),
     [image, funcGraph],
   );
-
-  const highlightedGroupIdxs = useMemo(() => {
-    if (!text) return [];
-    const result: number[] = [];
-    for (const selObject of selectedObjects) {
-      const selGroup = selObject as TokenGroup;
-      if (selGroup.action.name !== PcodeTokenGroupAction.Instruction) continue;
-      const { offset: selOffset } = selGroup.action as PcodeInstructionTokenGroupAction;
-      for (const group of text.groups) {
-        if (group.action.name !== PcodeTokenGroupAction.Instruction) continue;
-        const { offset } = group.action as PcodeInstructionTokenGroupAction;
-        if (offset === selOffset) {
-          result.push(group.idx);
-        }
-      }
-    }
-    return result;
-  }, [selectedObjects, text]);
 
   if (!text) return null;
   return (
