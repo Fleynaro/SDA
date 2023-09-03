@@ -127,9 +127,7 @@ const PcodeTextView = ({ pcode, styles, ctx }: PcodeTextViewProps) => {
     const onMouseLeave = useCallback(() => {
       popper.withTimer(
         () => {
-          if (!popper.props.hovered.current) {
-            popper.close();
-          }
+          popper.close();
         },
         selecting ? 0 : 500,
       );

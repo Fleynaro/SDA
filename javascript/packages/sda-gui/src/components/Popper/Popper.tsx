@@ -101,6 +101,7 @@ export const usePopper = (): PopperHook => {
   );
 
   const close = useCallback(() => {
+    if (hovered.current) return;
     setOpened(false);
     callCloseCallback();
   }, [callCloseCallback]);
