@@ -70,6 +70,7 @@ export const TokenizedTextView = ({
   highlightedGroupIdxs = [],
 }: TokenizedTextViewProps) => {
   const classes = useStyles();
+  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const [collapsedLineIds, setCollapsedLineIds] = useState<string[]>([]);
   const { addExtractor } = useHtmlTextSelection();
 
@@ -161,7 +162,13 @@ export const TokenizedTextView = ({
 
   const content = useMemo(() => {
     return (
-      <Grid container direction="row" wrap="nowrap" className={classes.root}>
+      <Grid
+        container
+        onMouseDown={() => setSelectedToken(null)}
+        direction="row"
+        wrap="nowrap"
+        className={classes.root}
+      >
         <Grid item container direction="row" wrap="nowrap" className={classes.leftColumn}>
           <Grid item container direction="column" className={classes.lineIndexColumn}>
             {lines.map((line) => (
@@ -194,7 +201,11 @@ export const TokenizedTextView = ({
               {line.tokens.map((token, j) => (
                 <span
                   key={j}
-                  style={{ color: tokenTypeToColor[token.type] }}
+                  onMouseUp={() => setSelectedToken(token)}
+                  style={{
+                    color: tokenTypeToColor[token.type],
+                    backgroundColor: selectedToken?.text === token.text ? '#304559' : undefined,
+                  }}
                   aria-label={token.type}
                   data-group-idx={token.groupIdx}
                   data-area={name}
@@ -215,7 +226,7 @@ export const TokenizedTextView = ({
         </Grid>
       </Grid>
     );
-  }, [lines, lineHighlightColor, isLineCollapsed]);
+  }, [lines, lineHighlightColor, selectedToken, setSelectedToken, isLineCollapsed]);
 
   return content;
 };
