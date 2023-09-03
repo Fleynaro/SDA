@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
-import { TokenizedText } from 'sda-electron/api/common';
+import { useCallback, useEffect, useState } from 'react';
+import { Token, TokenizedText } from 'sda-electron/api/common';
 import { Image } from 'sda-electron/api/image';
 import { IRcodeFunction, getIRcodeApi } from 'sda-electron/api/ir-code';
 import { withCrash_ } from 'providers/CrashProvider';
 import { TokenizedTextView } from 'components/TokenizedTextView';
 import { useHighlightedGroupIndexes } from './helpers';
+import { usePopperFromContext } from 'components/Popper';
+import { ConstantValuePopper } from './ConstantValuePopper';
+import { PcodeTokenGroupAction, PcodeVarnodeTokenGroupAction } from 'sda-electron/api/p-code';
 
 const TokenTypeToColor = {
   ['Operation']: '#eddaa4',
@@ -24,7 +27,9 @@ export interface IRcodeViewProps {
 
 export const IRcodeView = ({ image, func }: IRcodeViewProps) => {
   const [text, setText] = useState<TokenizedText | null>(null);
+  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const highlightedGroupIdxs = useHighlightedGroupIndexes(text);
+  const popper = usePopperFromContext();
 
   useEffect(
     withCrash_(async () => {
@@ -35,6 +40,33 @@ export const IRcodeView = ({ image, func }: IRcodeViewProps) => {
     [image, func],
   );
 
+  const onTokenMouseEnter = useCallback(
+    (e: React.MouseEvent<HTMLSpanElement, MouseEvent>, token: Token) => {
+      if (!text) return;
+      const { action } = text.groups[token.groupIdx];
+      if (action.name === PcodeTokenGroupAction.Varnode) {
+        const { varnode } = action as PcodeVarnodeTokenGroupAction;
+        if (varnode.type === 'constant') {
+          popper.withTimer(() => {
+            popper.openAtPos(e.clientX, e.clientY + 10);
+            popper.setContent(<ConstantValuePopper value={varnode.value} />);
+            popper.setCloseCallback(() => {
+              setSelectedToken(null);
+            });
+            setSelectedToken(token);
+          }, 500);
+        }
+      }
+    },
+    [text, popper, setSelectedToken],
+  );
+
+  const onTokenMouseLeave = useCallback(() => {
+    popper.withTimer(() => {
+      popper.close();
+    }, 500);
+  }, [popper]);
+
   if (!text) return null;
   return (
     <TokenizedTextView
@@ -42,6 +74,9 @@ export const IRcodeView = ({ image, func }: IRcodeViewProps) => {
       text={text}
       tokenTypeToColor={TokenTypeToColor}
       highlightedGroupIdxs={highlightedGroupIdxs}
+      highlightedToken={selectedToken}
+      onTokenMouseEnter={onTokenMouseEnter}
+      onTokenMouseLeave={onTokenMouseLeave}
     />
   );
 };

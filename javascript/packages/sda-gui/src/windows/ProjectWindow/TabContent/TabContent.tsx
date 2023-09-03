@@ -176,7 +176,9 @@ export const TabContent = ({ imageId }: TabContentProps) => {
               backgroundColor: emphasize(theme.palette.background.default, 0.05),
             }}
           >
-            <DecompilerComponent />
+            <PopperContextProvider value={popper}>
+              <DecompilerComponent />
+            </PopperContextProvider>
           </Grid>
         </Resizable>
       </Grid>

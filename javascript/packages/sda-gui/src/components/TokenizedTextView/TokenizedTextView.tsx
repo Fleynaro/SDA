@@ -52,6 +52,9 @@ interface TokenizedTextViewProps {
   text: TokenizedText;
   tokenTypeToColor?: { [type: string]: string };
   highlightedGroupIdxs?: number[];
+  highlightedToken?: Token | null;
+  onTokenMouseEnter?: (e: React.MouseEvent<HTMLSpanElement, MouseEvent>, token: Token) => void;
+  onTokenMouseLeave?: (e: React.MouseEvent<HTMLSpanElement, MouseEvent>, token: Token) => void;
 }
 
 interface Line {
@@ -68,9 +71,12 @@ export const TokenizedTextView = ({
   text,
   tokenTypeToColor = {},
   highlightedGroupIdxs = [],
+  highlightedToken,
+  onTokenMouseEnter,
+  onTokenMouseLeave,
 }: TokenizedTextViewProps) => {
   const classes = useStyles();
-  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [selectedTokenText, setSelectedTokenText] = useState<string | null>(null);
   const [collapsedLineIds, setCollapsedLineIds] = useState<string[]>([]);
   const { addExtractor } = useHtmlTextSelection();
 
@@ -164,7 +170,7 @@ export const TokenizedTextView = ({
     return (
       <Grid
         container
-        onMouseDown={() => setSelectedToken(null)}
+        onMouseDown={() => setSelectedTokenText(null)}
         direction="row"
         wrap="nowrap"
         className={classes.root}
@@ -201,10 +207,15 @@ export const TokenizedTextView = ({
               {line.tokens.map((token, j) => (
                 <span
                   key={j}
-                  onMouseUp={() => setSelectedToken(token)}
+                  onMouseUp={() => setSelectedTokenText(token.text !== ' ' ? token.text : null)}
+                  onMouseEnter={(e) => onTokenMouseEnter?.(e, token)}
+                  onMouseLeave={(e) => onTokenMouseLeave?.(e, token)}
                   style={{
                     color: tokenTypeToColor[token.type],
-                    backgroundColor: selectedToken?.text === token.text ? '#304559' : undefined,
+                    backgroundColor:
+                      highlightedToken === token || selectedTokenText === token.text
+                        ? '#304559'
+                        : undefined,
                   }}
                   aria-label={token.type}
                   data-group-idx={token.groupIdx}
@@ -223,10 +234,20 @@ export const TokenizedTextView = ({
               )}
             </Grid>
           ))}
+          <Grid item direction="row" style={{ height: 100 }} aria-label="empty-space"></Grid>
         </Grid>
       </Grid>
     );
-  }, [lines, lineHighlightColor, selectedToken, setSelectedToken, isLineCollapsed]);
+  }, [
+    lines,
+    lineHighlightColor,
+    highlightedToken,
+    selectedTokenText,
+    setSelectedTokenText,
+    isLineCollapsed,
+    onTokenMouseEnter,
+    onTokenMouseLeave,
+  ]);
 
   return content;
 };
