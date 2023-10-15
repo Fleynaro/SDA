@@ -602,7 +602,7 @@ TEST_F(ClassResearcherTest, TwoClassHierarchies) {
     auto expectedFieldStructureGroups = "\
         { B0:var16_0x8, B0:var29_0x8, B0:var3_0x8 } \
     ";
-    showStructures = { "B0:var31", "B0:var32" };
+    showHiddenStructures = { "B0:var31", "B0:var32" };
     auto mainFunction = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(mainFunction, expectedIRCodeOfMainFunc));
     ASSERT_TRUE(cmpStructures(expectedStructures));
