@@ -105,6 +105,111 @@ TEST(ClassFieldRangeSet, test3) {
     ASSERT_TRUE(CmpClassFieldRangeSet(set.getAllRanges(), expectedAllRanges));
 }
 
+TEST_F(ClassResearcherTest, Simple1) {
+    /*
+        void main() {
+            create1(1);
+            create2(2);
+        }
+
+        void create1(int param1) {
+            globalVar_0x1000->field_0x0 = param1;
+            globalVar_0x100 = globalVar_0x1000;
+        }
+
+        void create2(int param1) {
+            globalVar_0x2000->field_0x0 = param1;
+            globalVar_0x100 = globalVar_0x2000;
+        }
+    */
+   auto sourcePCode = "\
+        // main() \n\
+        rcx:4 = COPY 0x1:4 \n\
+        CALL <create1> \n\
+        rcx:4 = COPY 0x2:4 \n\
+        CALL <create2> \n\
+        RETURN \n\
+        \n\
+        \n\
+        // create1(int param1) \n\
+        <create1>: \n\
+        $1:8 = INT_ADD rip:8, 0x1000:8 \n\
+        $2:8 = LOAD $1:8, 8:8 \n\
+        STORE $2:8, rcx:4 \n\
+        $3:8 = INT_ADD rip:8, 0x100:8 \n\
+        STORE $3:8, $2:8 \n\
+        RETURN \n\
+        \n\
+        \n\
+        // create2(int param1) \n\
+        <create2>: \n\
+        $1:8 = INT_ADD rip:8, 0x2000:8 \n\
+        $2:8 = LOAD $1:8, 8:8 \n\
+        STORE $2:8, rcx:4 \n\
+        $3:8 = INT_ADD rip:8, 0x100:8 \n\
+        STORE $3:8, $2:8 \n\
+        RETURN \
+    ";
+
+    auto expectedIRCodeOfMainFunc = "\
+        Block B0(level: 1): \n\
+            var1[rcx]:4 = COPY 0x1:4 \n\
+            var2:1 = CALL 0x500:8 \n\
+            var3[rcx]:4 = COPY 0x2:4 \n\
+            var4:1 = CALL 0xb00:8 \
+    ";
+    auto expectedIRCodeOfCreate1 = "\
+        Block B5(level: 1): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U1]:8 = INT_ADD var1, 0x1000:8 \n\
+            var3:8 = LOAD var2 \n\
+            var4[$U2]:8 = COPY var3 \n\
+            var5:4 = LOAD rcx \n\
+            var6[var4]:4 = COPY var5 \n\
+            var7[$U3]:8 = INT_ADD var1, 0x100:8 \n\
+            var8[var7]:8 = COPY var4 \
+    ";
+    auto expectedIRCodeOfCreate2 = "\
+        Block Bb(level: 1): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U1]:8 = INT_ADD var1, 0x2000:8 \n\
+            var3:8 = LOAD var2 \n\
+            var4[$U2]:8 = COPY var3 \n\
+            var5:4 = LOAD rcx \n\
+            var6[var4]:4 = COPY var5 \n\
+            var7[$U3]:8 = INT_ADD var1, 0x100:8 \n\
+            var8[var7]:8 = COPY var4 \
+    ";
+    auto expectedStructures = "\
+        struct root { \n\
+            0x100: B5:var3, Bb:var3 \n\
+            0x1000: B5:var3 \n\
+            0x2000: Bb:var3 \n\
+        } \n\
+        \n\
+        struct B5:var3 : root_0x100, root_0x1000 { \n\
+            0x0: B5:var5 \n\
+        } \n\
+        \n\
+        struct Bb:var3 : root_0x100, root_0x2000 { \n\
+            0x0: Bb:var5 \n\
+        } \
+    ";
+    auto expectedFieldStructureGroups = "\
+        { B5:var3_0x0, Bb:var3_0x0 } \
+    ";
+    auto mainFunction = parsePcode(sourcePCode, program);
+    auto create1 = program->toFunction(
+        graph->getFunctionGraphAt(pcode::InstructionOffset(0x5, 0)));
+    auto create2 = program->toFunction(
+        graph->getFunctionGraphAt(pcode::InstructionOffset(0xb, 0)));
+    ASSERT_TRUE(cmp(mainFunction, expectedIRCodeOfMainFunc));
+    ASSERT_TRUE(cmp(create1, expectedIRCodeOfCreate1));
+    ASSERT_TRUE(cmp(create2, expectedIRCodeOfCreate2));
+    ASSERT_TRUE(cmpStructures(expectedStructures));
+    ASSERT_TRUE(cmpFieldStructureGroups(expectedFieldStructureGroups));
+}
+
 TEST_F(ClassResearcherTest, Test1) {
     /*
         void main() {

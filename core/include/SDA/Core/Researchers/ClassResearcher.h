@@ -466,7 +466,7 @@ namespace sda::researcher
             if (it != set.values().end()) {
                 return it->second;
             }
-            return {};
+            return { size_t(-1) };
         }
     };
 };
