@@ -79,8 +79,9 @@ void ContextSync::SignatureToVariableMappingUpdater::updateForValue(
 
 void ContextSync::SignatureToVariableMappingUpdater::updateForStorageInfo(const CallingConvention::StorageInfo* storageInfo) {
     auto output = m_ctx->operation->getOutput();
+    auto function = m_ctx->operation->getBlock()->getFunction();
     if (storageInfo->type == CallingConvention::StorageInfo::Return) {
-        m_function->m_returnVar = output;
+        function->m_returnVar = output;
     }
     else {
         m_function->m_paramVars[storageInfo->paramIdx] = output;
@@ -156,6 +157,8 @@ void ContextSync::handleObjectModified(const ObjectModifiedEvent& event) {
                     auto function = m_program->getFunctionAt(funcSymbol->getOffset());
                     {
                         // update 'signature->variable' mapping
+                        auto oldParamVars = function->getParamVariables();
+                        auto oldReturnVar = function->getReturnVariable();
                         function->m_paramVars.clear();
                         function->m_paramVars.resize(signatureDt->getParameters().size());
                         researcher::ResearcherPropagationContext ctx;
@@ -166,6 +169,8 @@ void ContextSync::handleObjectModified(const ObjectModifiedEvent& event) {
                         }
                         SignatureToVariableMappingUpdater updater(function, &ctx, signatureDt);
                         updater.start();
+                        function->getProgram()->getEventPipe()->send(
+                            FunctionSignatureChangedEvent(function, oldParamVars, oldReturnVar));
                     }
                     {
                         // update blocks

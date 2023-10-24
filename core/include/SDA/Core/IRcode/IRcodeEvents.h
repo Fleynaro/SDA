@@ -38,6 +38,24 @@ namespace sda::ircode
         {}
     };
 
+    // When a function signature is changed
+    struct FunctionSignatureChangedEvent : Event {
+        Function* function;
+        std::vector<std::shared_ptr<Variable>> m_oldParamVars;
+        std::shared_ptr<Variable> m_oldReturnVar;
+
+        FunctionSignatureChangedEvent(
+            Function* function,
+            const std::vector<std::shared_ptr<Variable>>& oldParamVars,
+            const std::shared_ptr<Variable>& oldReturnVar
+        )
+            : Event(IRcodeEventTopic)
+            , function(function)
+            , m_oldParamVars(oldParamVars)
+            , m_oldReturnVar(oldReturnVar)
+        {}
+    };
+
     // When a block is created
     struct BlockCreatedEvent : Event {
         Block* block;
