@@ -1,6 +1,7 @@
 #pragma once
 #include "ResearcherHelper.h"
 #include "DataFlowResearcher.h"
+#include "ClassResearcher.h"
 #include "SDA/Core/IRcode/IRcodeBlock.h"
 #include "SDA/Core/IRcode/IRcodeEvents.h"
 #include "SDA/Core/Utils/Logger.h"
@@ -92,13 +93,10 @@ namespace sda::researcher
 
     class SemanticsObject {
         friend class SemanticsRepository;
-        size_t m_hash;
         std::list<Semantics*> m_semantics;
         std::list<std::shared_ptr<ircode::Variable>> m_variables;
     public:
-        SemanticsObject(size_t hash)
-            : m_hash(hash)
-        {}
+        SemanticsObject() {}
 
         const std::list<Semantics*>& getSemantics() const {
             return m_semantics;
@@ -115,7 +113,6 @@ namespace sda::researcher
         std::list<SemanticsObject> m_objects;
         std::map<size_t, std::unique_ptr<Semantics>> m_semantics;
         std::map<ircode::Variable*, SemanticsObject*> m_variableToObject;
-        std::map<size_t, SemanticsObject*> m_hashToObject;
     public:
         SemanticsRepository(std::shared_ptr<EventPipe> eventPipe)
             : m_eventPipe(eventPipe)
@@ -125,20 +122,15 @@ namespace sda::researcher
             return m_objects;
         }
 
-        SemanticsObject* createObject(size_t hash = 0) {
-            m_objects.push_back({ hash });
-            if (hash != 0) {
-                m_hashToObject[hash] = &m_objects.back();
-            }
+        SemanticsObject* createObject() {
+            m_objects.emplace_back();
             return &m_objects.back();
         }
 
         void removeObject(SemanticsObject* object) {
+            removeSemantics(object->m_semantics);
             for (auto variable : object->m_variables) {
                 m_variableToObject.erase(variable.get());
-            }
-            if (object->m_hash != 0) {
-                m_hashToObject.erase(object->m_hash);
             }
             m_objects.remove_if([&](const SemanticsObject& obj) {
                 return &obj == object;
@@ -160,14 +152,6 @@ namespace sda::researcher
                 bindVariableWithObject(variable, object);
             }
             return object;
-        }
-
-        SemanticsObject* getObjectByHash(size_t hash) {
-            auto it = m_hashToObject.find(hash);
-            if (it != m_hashToObject.end()) {
-                return it->second;
-            }
-            return nullptr;
         }
 
         void bindVariableWithObject(std::shared_ptr<ircode::Variable> variable, SemanticsObject* object) {
@@ -293,9 +277,10 @@ namespace sda::researcher
         ircode::Program* m_program;
         SemanticsRepository* m_semanticsRepo;
         DataFlowRepository* m_dataFlowRepo;
+        ClassRepository* m_classRepo;
         std::list<std::unique_ptr<SemanticsPropagator>> m_propagators;
 
-        class IRcodeEventHandler
+        class EventHandler
         {
             SemanticsResearcher* m_researcher;
 
@@ -348,33 +333,133 @@ namespace sda::researcher
                     }
                 }
             }
+
+            void handleStructureUpdatedEventBatch(const EventBatch<StructureUpdatedEvent>& event) {
+                std::list<Structure*> updatedStructures;
+                for (auto& e : event.events) {
+                    updatedStructures.push_back(e.structure);
+                }
+                std::set<SemanticsObject*> objectsToRemove;
+                // found groups of identical variables constitute semantic objects
+                std::list<std::list<std::shared_ptr<ircode::Variable>>> groupsOfIdenticVariables;
+                while (!updatedStructures.empty()) {
+                    auto structure = updatedStructures.front();
+                    // get all structures in the group
+                    std::set<Structure*> structuresInGroup;
+                    m_researcher->m_classRepo->gatherStructuresInGroup(structure, structuresInGroup);
+                    // find objects to remove
+                    for (auto structure : structuresInGroup) {
+                        if (structure->sourceNode) {
+                            if (auto sourceVar = structure->sourceNode->getVariable()) {
+                                if (auto object = m_researcher->m_semanticsRepo->getObject(sourceVar)) {
+                                    objectsToRemove.insert(object);
+                                }
+                            }
+                        }
+                    }
+                    // find new variables for each label
+                    auto& group = groupsOfIdenticVariables.emplace_back();
+                    for (auto structure : structuresInGroup) {
+                        for (auto node : structure->linkedNodes) {
+                            if (auto var = node->getVariable()) {
+                                // TODO: define label
+                                group.push_back(var);
+                            }
+                        }
+                    }
+                    // remove from updated structures
+                    for (auto structure : structuresInGroup) {
+                        auto it = std::find(updatedStructures.begin(), updatedStructures.end(), structure);
+                        if (it != updatedStructures.end()) {
+                            updatedStructures.erase(it);
+                        }
+                    }
+                }
+
+                ResearcherPropagationContext ctx;
+                // remove all the related semantic objects
+                for (auto object : objectsToRemove) {
+                    for (auto var : object->getVariables()) {
+                        ctx.addNextOperation(var->getSourceOperation());
+                    }
+                    m_researcher->m_semanticsRepo->removeObject(object);
+                }
+                // create new semantic objects based on the groups
+                for (auto group : groupsOfIdenticVariables) {
+                    auto newObject = m_researcher->m_semanticsRepo->createObject();
+                    for (auto var : group) {
+                        m_researcher->m_semanticsRepo->bindVariableWithObject(var, newObject);
+                        ctx.addNextOperation(var->getSourceOperation());
+                    }
+                }
+
+                ctx.collect([&]() {
+                    m_researcher->propagate(ctx);
+                });
+            }
+
+            void handleStructureRemovedEvent(const StructureRemovedEvent& event) {
+                // find related semantic object (always single), remove structure's variables from it and clean it from all semantic
+                ResearcherPropagationContext ctx;
+                ResearcherPropagationContext ctx2;
+                if (event.structure->sourceNode) {
+                    if (auto sourceVar = event.structure->sourceNode->getVariable()) {
+                        if (auto object = m_researcher->m_semanticsRepo->getObject(sourceVar)) {
+                            for (auto var : object->getVariables()) {
+                                ctx.addNextOperation(var->getSourceOperation());
+                            }
+                            for (auto node : event.structure->linkedNodes) {
+                                if (auto var = node->getVariable()) {
+                                    // remove structure's variables
+                                    m_researcher->m_semanticsRepo->unbindVariableWithObject(var, object);
+                                    ctx2.addNextOperation(var->getSourceOperation());
+                                }
+                            }
+                            // clean semantic object
+                            m_researcher->m_semanticsRepo->removeSemantics(object->getSemantics());
+                        }
+                    }
+                }
+                ctx2.collect([&]() {
+                    // variables which are now free of structure are to be reassigned to new semantic objects
+                    m_researcher->createSemanticsObject(ctx2);
+                });
+                ctx.collect([&]() {
+                    m_researcher->propagate(ctx);
+                });
+            }
         public:
-            IRcodeEventHandler(SemanticsResearcher* researcher) : m_researcher(researcher) {}
+            EventHandler(SemanticsResearcher* researcher) : m_researcher(researcher) {}
 
             std::shared_ptr<EventPipe> getEventPipe() {
                 auto pipe = EventPipe::New();
-                pipe->subscribeMethod(this, &IRcodeEventHandler::handleFunctionDecompiled);
-                pipe->subscribeMethod(this, &IRcodeEventHandler::handleFunctionSignatureChangedEvent);
-                pipe->subscribeMethod(this, &IRcodeEventHandler::handleOperationRemoved);
+                pipe
+                    ->connect(StructureRepository::GetOptimizedEventPipe())
+                    ->subscribeMethod(this, &EventHandler::handleStructureUpdatedEventBatch);
+                pipe->subscribeMethod(this, &EventHandler::handleStructureRemovedEvent);
+                pipe->subscribeMethod(this, &EventHandler::handleFunctionDecompiled);
+                pipe->subscribeMethod(this, &EventHandler::handleFunctionSignatureChangedEvent);
+                pipe->subscribeMethod(this, &EventHandler::handleOperationRemoved);
                 return pipe;
             }
         };
-        IRcodeEventHandler m_ircodeEventHandler;
-        // TODO: context event handlerr (for signature, symbol table changes and etc)
+        EventHandler m_eventHandler;
     public:
         SemanticsResearcher(
             ircode::Program* program,
             SemanticsRepository* semanticsRepo,
-            DataFlowRepository* dataFlowRepo
+            DataFlowRepository* dataFlowRepo,
+            ClassRepository* classRepo
         )
             : m_program(program)
             , m_semanticsRepo(semanticsRepo)
             , m_dataFlowRepo(dataFlowRepo)
-            , m_ircodeEventHandler(this)
+            , m_classRepo(classRepo)
+            , m_eventHandler(this)
         {}
 
         std::shared_ptr<EventPipe> getEventPipe() {
-            return m_ircodeEventHandler.getEventPipe();
+            return m_eventHandler.getEventPipe();
         }
 
         void addPropagator(std::unique_ptr<SemanticsPropagator> propagator) {

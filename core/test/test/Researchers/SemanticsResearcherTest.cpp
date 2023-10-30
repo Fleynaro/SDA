@@ -18,7 +18,8 @@ protected:
         semResearcher = std::make_unique<researcher::SemanticsResearcher>(
             program,
             semRepo.get(),
-            dataFlowRepo.get());
+            dataFlowRepo.get(),
+            classRepo.get());
         semResearcher->addPropagator(
             std::make_unique<researcher::BaseSemanticsPropagator>(semRepo.get()));
         eventPipe->connect(semResearcher->getEventPipe());
@@ -86,5 +87,88 @@ TEST_F(SemanticsResearcherTest, Simple1) {
     func->getFunctionSymbol()->getSignature()->copyFrom(funcSigDt);
     ASSERT_TRUE(cmp(func, expectedIRCodeOfFunc));
     ASSERT_TRUE(cmpDataFlow(func, expectedDataFlowOfFunc));
+    ASSERT_TRUE(cmpSemantics(expectedSemantics));
+}
+
+TEST_F(SemanticsResearcherTest, Simple2) {
+    /*
+        int func1() {
+            return globalVar_0x200;
+        }
+
+        void func2(int param1) {
+            globalVar_0x200 = param1 + 1;
+        }
+    */
+   auto sourcePCode = "\
+        // int func1() \n\
+        $0:8 = INT_ADD rip:8, 0x200:8 \n\
+        rax:4 = LOAD $0:8, 4:8 \n\
+        RETURN \n\
+        \n\
+        \n\
+        // void func2(int param1) \n\
+        $0:4 = COPY rcx:4 \n\
+        $1:4 = INT_ADD $0:4, 0x1:4 \n\
+        $2:8 = INT_ADD rip:8, 0x200:8 \n\
+        STORE $2:8, $1:4 \n\
+        RETURN \n\
+    ";
+    auto func1Sig = "\
+        func1Sig = signature fastcall int32_t() \
+    ";
+    auto func2Sig = "\
+        func2Sig = signature fastcall void(int32_t param1) \
+    ";
+    auto expectedIRCodeOfFunc1 = "\
+        Block B0(level: 1): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U0]:8 = INT_ADD var1, 0x200:8 \n\
+            var3:4 = LOAD var2 \n\
+            var4[rax]:4 = COPY var3 // return \
+    ";
+    auto expectedIRCodeOfFunc2 = "\
+        Block B3(level: 1): \n\
+            var1:4 = LOAD rcx // param1 \n\
+            var2[$U0]:4 = COPY var1 \n\
+            var3[$U1]:4 = INT_ADD var2, 0x1:4 \n\
+            var4:8 = LOAD rip \n\
+            var5[$U2]:8 = INT_ADD var4, 0x200:8 \n\
+            var6[var5]:4 = COPY var3 \
+    ";
+    auto expectedDataFlowOfFunc1 = "\
+        var1 <- Copy Start \n\
+        var2 <- Copy var1 + 0x200 \n\
+        var3 <- Read var2 \n\
+        var4 <- Copy var3 \
+    ";
+    auto expectedDataFlowOfFunc2 = "\
+        var1 <- Unknown \n\
+        var2 <- Copy var1 \n\
+        var3 <- Unknown \n\
+        var4 <- Copy Start \n\
+        var5 <- Copy var4 + 0x200 \n\
+        var6 <- Write var5 \n\
+        var6 <- Write var3 \
+    ";
+    auto expectedSemantics = "";
+    auto instructions = PcodeFixture::parsePcode(sourcePCode);
+    pcode::ListInstructionProvider provider(instructions);
+    graph->explore(pcode::InstructionOffset(0, 0), &provider);
+    graph->explore(pcode::InstructionOffset(3, 0), &provider);
+    auto func1SigDt = dynamic_cast<SignatureDataType*>(
+        parseDataType(func1Sig));
+    auto func2SigDt = dynamic_cast<SignatureDataType*>(
+        parseDataType(func2Sig));
+    auto func1 = program->toFunction(
+        graph->getFunctionGraphAt(pcode::InstructionOffset(0, 0)));
+    auto func2 = program->toFunction(
+        graph->getFunctionGraphAt(pcode::InstructionOffset(3, 0)));
+    func1->getFunctionSymbol()->getSignature()->copyFrom(func1SigDt);
+    func2->getFunctionSymbol()->getSignature()->copyFrom(func2SigDt);
+    ASSERT_TRUE(cmp(func1, expectedIRCodeOfFunc1));
+    ASSERT_TRUE(cmp(func2, expectedIRCodeOfFunc2));
+    ASSERT_TRUE(cmpDataFlow(func1, expectedDataFlowOfFunc1));
+    ASSERT_TRUE(cmpDataFlow(func2, expectedDataFlowOfFunc2));
     ASSERT_TRUE(cmpSemantics(expectedSemantics));
 }

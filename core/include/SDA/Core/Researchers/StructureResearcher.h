@@ -7,6 +7,7 @@
 #include "SDA/Core/IRcode/IRcodeEvents.h"
 #include "SDA/Core/IRcode/IRcodeHelper.h"
 #include "SDA/Core/Utils/String.h"
+#include "SDA/Core/Event/EventBatch.h"
 
 namespace sda::researcher
 {
@@ -352,6 +353,48 @@ namespace sda::researcher
             boost::hash_combine(result, link->structure->id);
             boost::hash_combine(result, link->version);
             return result;
+        }
+
+        static std::shared_ptr<EventPipe> GetOptimizedEventPipe() {
+            struct Data {
+                std::list<Structure*> updatedStructures;
+
+                void add(Structure* structure) {
+                    auto it = std::find(updatedStructures.begin(), updatedStructures.end(), structure);
+                    if (it == updatedStructures.end()) {
+                        updatedStructures.push_back(structure);
+                    }
+                }
+            };
+            auto data = std::make_shared<Data>();
+            auto filter = EventPipe::FilterTopic(StructureResearchTopic);
+            auto commitEmitter = std::function([data](const EventNext& next) {
+                if (data->updatedStructures.empty()) return;
+                EventBatch<StructureUpdatedEvent> batch(StructureResearchTopic);
+                for (auto structure : data->updatedStructures) {
+                    batch.events.push_back(StructureUpdatedEvent(structure));
+                }
+                data->updatedStructures.clear();
+                next(batch);
+            });
+            std::shared_ptr<EventPipe> commitPipeIn;
+            auto pipe = OptimizedCommitPipe(filter, commitPipeIn, commitEmitter);
+            commitPipeIn->subscribe(std::function([data](const StructureCreatedEvent& event) {
+                // creating event is treated as updating event
+                data->add(event.structure);
+            }));
+            commitPipeIn->subscribe(std::function([data](const StructureRemovedEvent& event) {
+                data->updatedStructures.remove(event.structure);
+            }));
+            commitPipeIn->subscribe(std::function([data](const ChildAddedEvent& event) {
+                data->add(event.structure);
+                data->add(event.child);
+            }));
+            commitPipeIn->subscribe(std::function([data](const ChildRemovedEvent& event) {
+                data->add(event.structure);
+                data->add(event.child);
+            }));
+            return pipe;
         }
     };
 
