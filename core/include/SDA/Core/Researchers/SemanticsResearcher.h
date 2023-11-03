@@ -2,6 +2,7 @@
 #include "ResearcherHelper.h"
 #include "DataFlowResearcher.h"
 #include "ClassResearcher.h"
+#include "SDA/Core/DataType/ScalarDataType.h"
 #include "SDA/Core/IRcode/IRcodeBlock.h"
 #include "SDA/Core/IRcode/IRcodeEvents.h"
 #include "SDA/Core/Utils/Logger.h"
@@ -171,12 +172,15 @@ namespace sda::researcher
             if (it == m_semantics.end()) {
                 it = m_semantics.insert({ sem->getHash(), std::move(sem) }).first;
             }
-            auto semPtr = it->second.get();
-            if (std::find(object->m_semantics.begin(), object->m_semantics.end(), semPtr) != object->m_semantics.end()) {
+            return addSemantics(it->second.get(), object);
+        }
+
+        bool addSemantics(Semantics* sem, SemanticsObject* object) {
+            if (std::find(object->m_semantics.begin(), object->m_semantics.end(), sem) != object->m_semantics.end()) {
                 return false;
             }
-            object->m_semantics.push_back(semPtr);
-            semPtr->m_holders.push_back(object);
+            object->m_semantics.push_back(sem);
+            sem->m_holders.push_back(object);
             return true;
         }
 
@@ -228,28 +232,120 @@ namespace sda::researcher
 
     class BaseSemanticsPropagator : public SemanticsPropagator
     {
+        ircode::Program* m_program;
     public:
-        BaseSemanticsPropagator(SemanticsRepository* repository)
+        BaseSemanticsPropagator(ircode::Program* program, SemanticsRepository* repository)
             : SemanticsPropagator(repository)
+            , m_program(program)
         {}
 
         void propagate(ResearcherPropagationContext& ctx) override {
             auto op = ctx.operation;
+            auto opId = op->getId();
             auto output = op->getOutput();
+            auto outputSize = output->getSize();
             auto function = op->getBlock()->getFunction();
-            if (op->getId() == ircode::OperationId::COPY ||
-                op->getId() == ircode::OperationId::REF ||
-                op->getId() == ircode::OperationId::LOAD)
+            if (opId == ircode::OperationId::COPY ||
+                opId == ircode::OperationId::REF ||
+                opId == ircode::OperationId::LOAD)
             {
-                size_t sourceHash = 0;
-                if (auto dataType = findDataTypeFromFuncSignature(output, function, sourceHash)) {
-                    auto object = m_repository->getOrCreateObject(output);
-                    if (m_repository->addSemantics(std::make_unique<DataTypeSemantics>(dataType, sourceHash), object)) {
-                        ctx.markValueAsAffected(output);
+                if (auto object = m_repository->getObject(output)) {
+                    size_t sourceHash = 0;
+                    if (auto dataType = findDataTypeFromFuncSignature(output, function, sourceHash)) {
+                        if (m_repository->addSemantics(std::make_unique<DataTypeSemantics>(dataType, sourceHash), object)) {
+                            markObjectAsAffected(ctx, object);
+                        }
                     }
                 }
             }
-            // TODO: copy, ref, load...
+
+            if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(op)) {
+                auto input = unaryOp->getInput();
+
+                if (opId == ircode::OperationId::INT_2COMP) {
+                    auto dataType = getScalarDataType(ScalarType::SignedInt, outputSize);
+                    setDataTypeFor(ctx, output, dataType);
+                } else if (opId == ircode::OperationId::BOOL_NEGATE) {
+                    auto dataType = findDataType("bool");
+                    setDataTypeFor(ctx, input, dataType);
+                    setDataTypeFor(ctx, output, dataType);
+                }
+                else if (
+                    opId == ircode::OperationId::FLOAT_NEG ||
+                    opId == ircode::OperationId::FLOAT_ABS ||
+                    opId == ircode::OperationId::FLOAT_SQRT
+                ) {
+                    auto dataType = getScalarDataType(ScalarType::FloatingPoint, outputSize);
+                    setDataTypeFor(ctx, input, dataType);
+                    setDataTypeFor(ctx, output, dataType);
+                }
+            } else if (auto binaryOp = dynamic_cast<const ircode::BinaryOperation*>(op)) {
+                auto input1 = binaryOp->getInput1();
+                auto input2 = binaryOp->getInput2();
+
+                if (
+                    opId == ircode::OperationId::INT_ADD ||
+                    opId == ircode::OperationId::INT_SUB ||
+                    opId == ircode::OperationId::INT_MULT ||
+                    opId == ircode::OperationId::INT_DIV ||
+                    opId == ircode::OperationId::INT_REM
+                ) {
+                    if (auto object = m_repository->getObject(output)) {
+                        for (auto& input : {input1, input2}) {
+                            if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
+                                if (auto inputObject = m_repository->getObject(inputVar)) {
+                                    for (auto inputSem : inputObject->getSemantics()) {
+                                        if (auto dtInputSem = dynamic_cast<DataTypeSemantics*>(inputSem)) {
+                                            if (dtInputSem->getDataType()->isScalar(ScalarType::SignedInt)) {
+                                                if (m_repository->addSemantics(dtInputSem, object)) {
+                                                    markObjectAsAffected(ctx, object);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if (
+                    opId == ircode::OperationId::INT_SDIV ||
+                    opId == ircode::OperationId::INT_SREM
+                ) {
+                    auto dataType = getScalarDataType(ScalarType::SignedInt, outputSize);
+                    setDataTypeFor(ctx, output, dataType);
+                } else if (
+                    opId >= ircode::OperationId::INT_EQUAL &&
+                    opId <= ircode::OperationId::INT_LESSEQUAL ||
+                    opId >= ircode::OperationId::FLOAT_EQUAL &&
+                    opId <= ircode::OperationId::FLOAT_LESSEQUAL
+                ) {
+                    auto booleanDt = findDataType("bool");
+                    setDataTypeFor(ctx, output, booleanDt);
+                    if (binaryOp->getId() >= ircode::OperationId::FLOAT_EQUAL &&
+                        binaryOp->getId() <= ircode::OperationId::FLOAT_LESSEQUAL)
+                        {
+                            auto floatScalarDt = getScalarDataType(ScalarType::FloatingPoint, outputSize);
+                            setDataTypeFor(ctx, input1, floatScalarDt);
+                            setDataTypeFor(ctx, input2, floatScalarDt);
+                }
+                } else if (
+                    opId >= ircode::OperationId::BOOL_NEGATE &&
+                    opId <= ircode::OperationId::BOOL_OR
+                ) {
+                    auto dataType = findDataType("bool");
+                    setDataTypeFor(ctx, input1, dataType);
+                    setDataTypeFor(ctx, input2, dataType);
+                    setDataTypeFor(ctx, output, dataType);
+                } else if (
+                    opId >= ircode::OperationId::FLOAT_ADD &&
+                    opId <= ircode::OperationId::FLOAT_SQRT
+                ) {
+                    auto dataType = getScalarDataType(ScalarType::FloatingPoint, outputSize);
+                    setDataTypeFor(ctx, input1, dataType);
+                    setDataTypeFor(ctx, input2, dataType);
+                    setDataTypeFor(ctx, output, dataType);
+                }
+            }
         }
 
     private:
@@ -269,6 +365,38 @@ namespace sda::researcher
                 return signatureDt->getReturnType();
             }
             return nullptr;
+        }
+
+        ScalarDataType* getScalarDataType(ScalarType scalarType, size_t size) const {
+            return getContext()->getDataTypes()->getScalar(scalarType, size);
+        }
+
+        DataType* findDataType(const std::string& name) const {
+            auto dataType = getContext()->getDataTypes()->getByName(name);
+            assert(dataType);
+            return dataType;
+        }
+
+        void setDataTypeFor(ResearcherPropagationContext& ctx, std::shared_ptr<ircode::Value> value, DataType* dataType) {
+            if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
+                if (auto object = m_repository->getObject(var)) {
+                    size_t sourceHash = 0;
+                    boost::hash_combine(sourceHash, ctx.operation);
+                    if (m_repository->addSemantics(std::make_unique<DataTypeSemantics>(dataType, sourceHash), object)) {
+                        markObjectAsAffected(ctx, object);
+                    }
+                }
+            }
+        }
+
+        void markObjectAsAffected(ResearcherPropagationContext& ctx, SemanticsObject* object) {
+            for (auto& var : object->getVariables()) {
+                ctx.markValueAsAffected(var);
+            }
+        }
+
+        Context* getContext() const {
+            return m_program->getGlobalSymbolTable()->getContext();
         }
     };
 

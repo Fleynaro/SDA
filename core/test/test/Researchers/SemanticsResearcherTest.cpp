@@ -21,7 +21,7 @@ protected:
             dataFlowRepo.get(),
             classRepo.get());
         semResearcher->addPropagator(
-            std::make_unique<researcher::BaseSemanticsPropagator>(semRepo.get()));
+            std::make_unique<researcher::BaseSemanticsPropagator>(program, semRepo.get()));
         eventPipe->connect(semResearcher->getEventPipe());
     }
 
@@ -80,7 +80,10 @@ TEST_F(SemanticsResearcherTest, Simple1) {
         var3 <- Unknown \n\
         var4 <- Copy var3 \
     ";
-    auto expectedSemantics = "";
+    auto expectedSemantics = "\
+        B0:var1, B0:var2 -> int32_t \n\
+        B0:var3, B0:var4 -> int32_t, int32_t \n\
+    ";
     auto func = parsePcode(sourcePCode, program);
     auto funcSigDt = dynamic_cast<SignatureDataType*>(
         parseDataType(funcSig));
@@ -151,7 +154,14 @@ TEST_F(SemanticsResearcherTest, Simple2) {
         var6 <- Write var5 \n\
         var6 <- Write var3 \
     ";
-    auto expectedSemantics = "";
+    auto expectedSemantics = "\
+        B0:var1 -> empty \n\
+        B0:var2 -> empty \n\
+        B0:var3, B0:var4, B3:var3 -> int32_t, int32_t \n\
+        B3:var1, B3:var2 -> int32_t \n\
+        B3:var4 -> empty \n\
+        B3:var5 -> empty \
+    ";
     auto instructions = PcodeFixture::parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
     graph->explore(pcode::InstructionOffset(0, 0), &provider);
