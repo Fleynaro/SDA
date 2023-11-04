@@ -216,6 +216,61 @@ TEST_F(DataFlowResearcherTest, If) {
     ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
 }
 
+TEST_F(DataFlowResearcherTest, IfConditionMem) {
+    /*
+        float func() {
+            localVar_0x10 = 0;
+            if (!0) {
+                localVar_0x10 = 1;
+            }
+            return localVar_0x10;
+        }
+    */
+    auto sourcePCode = "\
+        $0:8 = INT_ADD rsp:8, 0x10:8 \n\
+        STORE $0:8, 0x0:8 \n\
+        CBRANCH <labelEnd>, 0:1 // if-else condition \n\
+        STORE $0:8, 1:8 // then block \n\
+        <labelEnd>: \n\
+        rax:8 = LOAD $0:8, 8:8 \
+    ";
+    // [var8] is virtual address memory here and ignored by data flow research
+    auto expectedIRCode = "\
+        Block B0(level: 1, near: B3, far: B4, cond: 0x0:1): \n\
+            var1:8 = LOAD rsp \n\
+            var2[$U0]:8 = INT_ADD var1, 0x10:8 \n\
+            var3[var2]:8 = COPY 0x0:8 \n\
+        Block B3(level: 2, near: B4): \n\
+            var4[$U0]:8 = REF var2 \n\
+            var5[var4]:8 = COPY 0x1:8 \n\
+        Block B4(level: 3): \n\
+            var8[$U0]:8 = REF var2 \n\
+            var9[var8]:8 = REF var3 \n\
+            var10[var8]:8 = REF var5 \n\
+            var11[var8]:8 = PHI var9, var10 \n\
+            var12[rax]:8 = COPY var11 \
+    ";
+    auto expectedDataFlow = "\
+        var1 <- Unknown \n\
+        var2 <- Copy var1 + 0x10 \n\
+        var3 <- Write var2 \n\
+        var3 <- Write 0x0 \n\
+        var4 <- Copy var2 \n\
+        var5 <- Write var4 \n\
+        var5 <- Write 0x1 \n\
+        var8 <- Copy var2 \n\
+        var9 <- Copy var3 \n\
+        var10 <- Copy var5 \n\
+        var11 <- Copy var9 \n\
+        var11 <- Copy var10 \n\
+        var12 <- Copy var11 \
+    ";
+    printVarAddressAlways = true;
+    auto function = parsePcode(sourcePCode, program);
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+    ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
+}
+
 TEST_F(DataFlowResearcherTest, Functions) {
     /*
         void main() {

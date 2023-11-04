@@ -294,7 +294,8 @@ namespace sda::researcher
                 else if (unaryOp->getId() == ircode::OperationId::COPY || unaryOp->getId() == ircode::OperationId::REF) {
                     if (auto inputNode = m_dataFlowRepo->getOrCreateNode(input)) {
                         auto outputAddrVal = output->getMemAddress().value;
-                        if (auto outputAddrVar = std::dynamic_pointer_cast<ircode::Variable>(outputAddrVal)) {
+                        auto outputAddrVar = std::dynamic_pointer_cast<ircode::Variable>(outputAddrVal);
+                        if (outputAddrVar && !output->getMemAddress().isVirtual) {
                             if (auto addrNode = m_dataFlowRepo->getOrCreateNode(outputAddrVar)) {
                                 if (auto writeNode = m_dataFlowRepo->getOrCreateNode(output, DataFlowNode::Write)) {
                                     if (m_dataFlowRepo->addSuccessor(addrNode, writeNode)) {
