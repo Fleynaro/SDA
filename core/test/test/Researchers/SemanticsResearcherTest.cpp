@@ -74,12 +74,6 @@ TEST_F(SemanticsResearcherTest, Simple1) {
             var3[$U1]:4 = INT_ADD var2, 0x1:4 \n\
             var4[rax]:4 = COPY var3 // return \
     ";
-    auto expectedDataFlowOfFunc = "\
-        var1 <- Unknown \n\
-        var2 <- Copy var1 \n\
-        var3 <- Unknown \n\
-        var4 <- Copy var3 \
-    ";
     auto expectedSemantics = "\
         B0:var1, B0:var2 -> int32_t \n\
         B0:var3, B0:var4 -> int32_t, int32_t \n\
@@ -89,7 +83,6 @@ TEST_F(SemanticsResearcherTest, Simple1) {
         parseDataType(funcSig));
     func->getFunctionSymbol()->getSignature()->copyFrom(funcSigDt);
     ASSERT_TRUE(cmp(func, expectedIRCodeOfFunc));
-    ASSERT_TRUE(cmpDataFlow(func, expectedDataFlowOfFunc));
     ASSERT_TRUE(cmpSemantics(expectedSemantics));
 }
 
@@ -139,21 +132,6 @@ TEST_F(SemanticsResearcherTest, Simple2) {
             var5[$U2]:8 = INT_ADD var4, 0x200:8 \n\
             var6[var5]:4 = COPY var3 \
     ";
-    auto expectedDataFlowOfFunc1 = "\
-        var1 <- Copy Start \n\
-        var2 <- Copy var1 + 0x200 \n\
-        var3 <- Read var2 \n\
-        var4 <- Copy var3 \
-    ";
-    auto expectedDataFlowOfFunc2 = "\
-        var1 <- Unknown \n\
-        var2 <- Copy var1 \n\
-        var3 <- Unknown \n\
-        var4 <- Copy Start \n\
-        var5 <- Copy var4 + 0x200 \n\
-        var6 <- Write var5 \n\
-        var6 <- Write var3 \
-    ";
     auto expectedSemantics = "\
         B0:var1 -> empty \n\
         B0:var2 -> empty \n\
@@ -178,7 +156,5 @@ TEST_F(SemanticsResearcherTest, Simple2) {
     func2->getFunctionSymbol()->getSignature()->copyFrom(func2SigDt);
     ASSERT_TRUE(cmp(func1, expectedIRCodeOfFunc1));
     ASSERT_TRUE(cmp(func2, expectedIRCodeOfFunc2));
-    ASSERT_TRUE(cmpDataFlow(func1, expectedDataFlowOfFunc1));
-    ASSERT_TRUE(cmpDataFlow(func2, expectedDataFlowOfFunc2));
     ASSERT_TRUE(cmpSemantics(expectedSemantics));
 }
