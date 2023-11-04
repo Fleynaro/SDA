@@ -641,16 +641,12 @@ TEST_F(ClassResearcherTest, TwoClassHierarchies) {
             0x10: 0x5 \n\
         } \n\
         \n\
-        // forcibly shown \n\
-        struct B0:var32 : B0:var33 { \n\
-        } \n\
-        \n\
         struct B0:var40 : B0:var33 { \n\
             0x0: 0x1 \n\
             0x14: 0x6 \n\
         } \n\
         \n\
-        struct B0:var9 : B0:var3_0x8, root_0x1000 { \n\
+        struct B0:var9 : B0:var33, B0:var3_0x8, root_0x1000 { \n\
             0x0: 0x1 \n\
         } \n\
         \n\
@@ -707,7 +703,7 @@ TEST_F(ClassResearcherTest, TwoClassHierarchies) {
     auto expectedFieldStructureGroups = "\
         { B0:var16_0x8, B0:var29_0x8, B0:var3_0x8 } \
     ";
-    showHiddenStructures = { "B0:var31", "B0:var32" };
+    showHiddenStructures = { "B0:var31" };
     auto mainFunction = parsePcode(sourcePCode, program);
     ASSERT_TRUE(cmp(mainFunction, expectedIRCodeOfMainFunc));
     ASSERT_TRUE(cmpStructures(expectedStructures));

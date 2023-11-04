@@ -165,8 +165,10 @@ TEST_F(SimilarityResearcherTest, Test) {
         B0:var3 \n\
         B0:var4 \n\
         B0:var6 \n\
+        B0:var8 \n\
         B7:var3 \n\
         B7:var4 \n\
+        B7:var5 \n\
         Bb:var3 \n\
         Bb:var4 \n\
         Bb:var5 \

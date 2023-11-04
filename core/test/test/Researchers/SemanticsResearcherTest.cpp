@@ -157,7 +157,7 @@ TEST_F(SemanticsResearcherTest, Simple2) {
     auto expectedSemantics = "\
         B0:var1 -> empty \n\
         B0:var2 -> empty \n\
-        B0:var3, B0:var4, B3:var3 -> int32_t, int32_t \n\
+        B0:var3, B0:var4, B3:var3, B3:var6 -> int32_t, int32_t \n\
         B3:var1, B3:var2 -> int32_t \n\
         B3:var4 -> empty \n\
         B3:var5 -> empty \
