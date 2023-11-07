@@ -15,18 +15,21 @@ SymbolTable* SymbolTableParser::Parse(
     const std::string& text,
     Context* context,
     bool isStruct,
-    bool withName)
+    bool withName,
+    SymbolTable* symbolTable)
 {
     std::stringstream ss(text);
     IO io(ss, std::cout);
     Lexer lexer(&io);
     SymbolTableParser parser(&lexer, context, isStruct);
     parser.init();
-    return parser.parse(withName);
+    return parser.parse(withName, symbolTable);
 }
 
-SymbolTable* SymbolTableParser::parse(bool withName) {
-    SymbolTable* symbolTable = new StandartSymbolTable(m_context);
+SymbolTable* SymbolTableParser::parse(bool withName, SymbolTable* symbolTable) {
+    if (!symbolTable) {
+        symbolTable = new StandartSymbolTable(m_context);
+    }
     Offset offset = 0;
 
     if (withName && !m_isStruct) {

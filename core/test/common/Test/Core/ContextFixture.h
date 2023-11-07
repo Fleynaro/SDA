@@ -28,7 +28,7 @@ namespace sda::test
 
         DataType* newTestStruct() const;
 
-        SymbolTable* parseSymbolTable(const std::string& text, bool withName = true) const;
+        SymbolTable* parseSymbolTable(const std::string& text, bool withName = true, SymbolTable* symbolTable = nullptr) const;
 
         FunctionSymbol* newFunction(
             Offset offset,

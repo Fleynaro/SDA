@@ -15,9 +15,10 @@ namespace sda
             const std::string& text,
             Context* context,
             bool isStruct = false,
-            bool withName = true);
+            bool withName = true,
+            SymbolTable* symbolTable = nullptr);
 
-        SymbolTable* parse(bool withName = true);
+        SymbolTable* parse(bool withName = true, SymbolTable* symbolTable = nullptr);
 
     private:
         Symbol* parseSymbolDef();
