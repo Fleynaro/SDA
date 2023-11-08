@@ -48,12 +48,10 @@ void Symbol::unsetSymbolTable() {
     if (!getSymbolTable()) {
         throw std::runtime_error("Symbol doesn't have a symbol table");
     }
-    auto event = SymbolTableUnsetEvent(this, getSymbolTable(), m_offset);
     notifyModified(Object::ModState::Before);
     removeParent(getSymbolTable());
     m_offset = 0;
     notifyModified(Object::ModState::After);
-    getContext()->getEventPipe()->send(event);
 }
 
 DataType* Symbol::getDataType() const {

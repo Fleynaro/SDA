@@ -832,7 +832,7 @@ namespace sda::researcher
                 }
             }
 
-            void handleSymbolTableUnsetEvent(const SymbolTableUnsetEvent& event) {
+            void handleSymbolTableSymbolRemovedEvent(const SymbolTableSymbolRemovedEvent& event) {
                 handleSymbolPointerUpdatedEvent(event.symbolTable, event.offset);
             }
         public:
@@ -848,7 +848,7 @@ namespace sda::researcher
                 pipe->subscribeMethod(this, &EventHandler::handleFunctionSignatureChangedEvent);
                 pipe->subscribeMethod(this, &EventHandler::handleOperationRemoved);
                 pipe->subscribeMethod(this, &EventHandler::handleObjectModifiedEvent);
-                pipe->subscribeMethod(this, &EventHandler::handleSymbolTableUnsetEvent);
+                pipe->subscribeMethod(this, &EventHandler::handleSymbolTableSymbolRemovedEvent);
                 return pipe;
             }
         };

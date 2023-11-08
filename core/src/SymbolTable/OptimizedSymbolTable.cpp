@@ -74,6 +74,7 @@ void OptimizedSymbolTable::removeSymbol(Offset offset) {
     auto symbolInfo = getSymbolAt(offset);
     if (symbolInfo.symbol)
         symbolInfo.symbolTable->removeSymbol(offset);
+    getContext()->getEventPipe()->send(SymbolTableSymbolRemovedEvent(this, offset));
 }
 
 std::list<SymbolTable::SymbolInfo> OptimizedSymbolTable::getAllSymbols() {

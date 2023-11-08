@@ -34,6 +34,7 @@ void StandartSymbolTable::removeSymbol(Offset offset) {
         symbol->unsetSymbolTable();
     }
     notifyModified(Object::ModState::After);
+    getContext()->getEventPipe()->send(SymbolTableSymbolRemovedEvent(this, offset));
 }
 
 std::list<SymbolTable::SymbolInfo> StandartSymbolTable::getAllSymbols() {

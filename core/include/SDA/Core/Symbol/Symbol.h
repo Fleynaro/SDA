@@ -47,18 +47,4 @@ namespace sda
     public:
         using ObjectList<Symbol>::ObjectList;
     };
-
-    // When symbol table of symbol is unset
-    struct SymbolTableUnsetEvent : Event {
-        Symbol* symbol;
-        SymbolTable* symbolTable;
-        Offset offset;
-
-        SymbolTableUnsetEvent(Symbol* symbol, SymbolTable* symbolTable, Offset offset)
-            : Event(ContextEventTopic)
-            , symbol(symbol)
-            , symbolTable(symbolTable)
-            , offset(offset)
-        {}
-    };
 };

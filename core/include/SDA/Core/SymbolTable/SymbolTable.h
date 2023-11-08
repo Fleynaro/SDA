@@ -41,4 +41,16 @@ namespace sda
     public:
         using ObjectList<SymbolTable>::ObjectList;
     };
+
+    // When symbol is removed from symbol table
+    struct SymbolTableSymbolRemovedEvent : Event {
+        SymbolTable* symbolTable;
+        Offset offset;
+
+        SymbolTableSymbolRemovedEvent(SymbolTable* symbolTable, Offset offset)
+            : Event(ContextEventTopic)
+            , symbolTable(symbolTable)
+            , offset(offset)
+        {}
+    };
 };
