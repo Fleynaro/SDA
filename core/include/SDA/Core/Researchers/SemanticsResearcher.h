@@ -3,6 +3,7 @@
 #include "DataFlowResearcher.h"
 #include "ClassResearcher.h"
 #include "SDA/Core/DataType/ScalarDataType.h"
+#include "SDA/Core/DataType/PointerDataType.h"
 #include "SDA/Core/IRcode/IRcodeBlock.h"
 #include "SDA/Core/IRcode/IRcodeEvents.h"
 #include "SDA/Core/Utils/Logger.h"
@@ -82,6 +83,33 @@ namespace sda::researcher
 
         std::string toString() const override {
             return m_dataType->getName();
+        }
+    };
+
+    class SymbolPointerSemantics : public Semantics {
+        SymbolTable* m_symbolTable;
+        Offset m_offset;
+    public:
+        SymbolPointerSemantics(SymbolTable* symbolTable, Offset offset)
+            : Semantics({})
+            , m_symbolTable(symbolTable)
+            , m_offset(offset)
+        {
+            addToHash("symbol_pointer");
+            addToHash(symbolTable);
+            addToHash(offset);
+        }
+
+        SymbolTable* getSymbolTable() const {
+            return m_symbolTable;
+        }
+
+        Offset getOffset() const {
+            return m_offset;
+        }
+
+        std::string toString() const override {
+            return "symbol_pointer";
         }
     };
 
@@ -418,8 +446,28 @@ namespace sda::researcher
 
             if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(op)) {
                 auto input = unaryOp->getInput();
-
-                if (opId == ircode::OperationId::INT_2COMP) {
+                
+                if (opId == ircode::OperationId::LOAD) {
+                    auto loadSize = output->getSize();
+                    if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
+                        if (auto inputObject = m_repository->getObject(inputVar)) {
+                            for (auto inputSem : inputObject->getSemantics()) {
+                                if (auto symbolPtrSem = dynamic_cast<SymbolPointerSemantics*>(UnwrapSemantics(inputSem))) {
+                                    auto foundSymbols = symbolPtrSem->getSymbolTable()->getAllSymbolsRecursivelyAt(symbolPtrSem->getOffset());
+                                    for (auto [_, symbolOffset, symbol] : foundSymbols) {
+                                        auto dataType = symbol->getDataType();
+                                        if (dataType->getSize() == loadSize) {
+                                            if (m_repository->addSharedSemantics(DataTypeSemantics(dataType, { symbolPtrSem }), object)) {
+                                                MarkObjectAsAffected(ctx, object);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (opId == ircode::OperationId::INT_2COMP) {
                     auto dataType = getScalarDataType(ScalarType::SignedInt, outputSize);
                     setDataTypeFor(ctx, output, dataType);
                 }
@@ -460,6 +508,40 @@ namespace sda::researcher
                                         }
                                     }
                                 }
+                            }
+                        }
+                    }
+
+                    if (binaryOp->getId() == ircode::OperationId::INT_ADD ||
+                        binaryOp->getId() == ircode::OperationId::INT_MULT)
+                    {
+                        auto linearExpr = ircode::Value::GetLinearExpr(output, true);
+                        auto offset = linearExpr.getConstTermValue();
+                        auto platform = getContext()->getPlatform();
+                        for (auto& term : linearExpr.getTerms()) {
+                            if (term.factor != 1 || term.value->getSize() != platform->getPointerSize())
+                                continue;
+                            if (auto baseRegister = ExtractRegister(term.value)) {
+                                SymbolTable* symbolTable = nullptr;
+                                if (baseRegister->getRegId() == Register::InstructionPointerId) {
+                                    symbolTable = m_program->getGlobalSymbolTable();
+                                } else if (baseRegister->getRegId() == Register::StackPointerId) {
+                                    symbolTable = function->getFunctionSymbol()->getStackSymbolTable();
+                                }
+                                
+                                Semantics* symbolSemPtr;
+                                if (m_repository->addSharedSemantics(SymbolPointerSemantics(symbolTable, offset), object, &symbolSemPtr)) {
+                                    MarkObjectAsAffected(ctx, object);
+                                }
+
+                                auto foundSymbols = symbolTable->getAllSymbolsRecursivelyAt(offset);
+                                for (auto [_, symbolOffset, symbol] : foundSymbols) {
+                                    auto dataType = symbol->getDataType()->getPointerTo();
+                                    if (m_repository->addSharedSemantics(DataTypeSemantics(dataType, { symbolSemPtr }), object)) {
+                                        MarkObjectAsAffected(ctx, object);
+                                    }
+                                }
+                                break;
                             }
                         }
                     }
@@ -724,6 +806,35 @@ namespace sda::researcher
                     m_researcher->propagate(ctx);
                 });
             }
+
+            void handleSymbolPointerUpdatedEvent(SymbolTable* symbolTable, Offset offset) {
+                ResearcherPropagationContext ctx;
+                auto symbolSemHash = SymbolPointerSemantics(symbolTable, offset).getHash();
+                if (auto symbolSem = m_researcher->m_semanticsRepo->getSemantics(symbolSemHash)) {
+                    for (auto holder : GetSemanticsHolders(symbolSem)) {
+                        AddObjectVariablesToContext(ctx, holder);
+                    }
+                    m_researcher->m_semanticsRepo->removeSemanticsChain(symbolSemHash);
+                }
+                ctx.collect([&]() {
+                    m_researcher->propagate(ctx);
+                });
+            }
+            
+            void handleObjectModifiedEvent(const ObjectModifiedEvent& event) {
+                if (event.state == Object::ModState::Before) {
+                    return;
+                }
+                if (auto symbol = dynamic_cast<Symbol*>(event.object)) {
+                    if (auto symbolTable = symbol->getSymbolTable()) {
+                        handleSymbolPointerUpdatedEvent(symbolTable, symbol->getOffset());
+                    }
+                }
+            }
+
+            void handleSymbolTableUnsetEvent(const SymbolTableUnsetEvent& event) {
+                handleSymbolPointerUpdatedEvent(event.symbolTable, event.offset);
+            }
         public:
             EventHandler(SemanticsResearcher* researcher) : m_researcher(researcher) {}
 
@@ -736,6 +847,8 @@ namespace sda::researcher
                 pipe->subscribeMethod(this, &EventHandler::handleFunctionDecompiled);
                 pipe->subscribeMethod(this, &EventHandler::handleFunctionSignatureChangedEvent);
                 pipe->subscribeMethod(this, &EventHandler::handleOperationRemoved);
+                pipe->subscribeMethod(this, &EventHandler::handleObjectModifiedEvent);
+                pipe->subscribeMethod(this, &EventHandler::handleSymbolTableUnsetEvent);
                 return pipe;
             }
         };
