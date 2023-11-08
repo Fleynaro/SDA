@@ -30,8 +30,8 @@ void StandartSymbolTable::removeSymbol(Offset offset) {
     notifyModified(Object::ModState::Before);
     auto [_, symbolOffset, symbol] = getSymbolAt(offset);
     if (symbol) {
-        symbol->unsetSymbolTable();
         m_symbols.erase(symbolOffset);
+        symbol->unsetSymbolTable();
     }
     notifyModified(Object::ModState::After);
 }
