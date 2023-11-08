@@ -22,9 +22,9 @@ namespace sda::researcher
         std::list<Semantics*> m_successors;
     public:
         Semantics(const std::list<Semantics*>& predecessors)
+            : m_predecessors(predecessors)
         {
             for (auto predecessor : predecessors) {
-                addPredecessor(predecessor);
                 addToHash(predecessor->getHash());
             }
         }
@@ -54,12 +54,6 @@ namespace sda::researcher
         }
 
         virtual std::string toString() const = 0;
-
-    private:
-        void addPredecessor(Semantics* predecessor) {
-            m_predecessors.push_back(predecessor);
-            predecessor->m_successors.push_back(this);
-        }
 
     protected:
         template<typename T>
@@ -109,7 +103,7 @@ namespace sda::researcher
         }
 
         std::string toString() const override {
-            return std::string("param") + std::to_string(m_index);
+            return std::string("param") + std::to_string(m_index + 1);
         }
     };
 
@@ -157,7 +151,18 @@ namespace sda::researcher
                 m_refSemantics = predSemantics;
             }
             addToHash("copy");
-            addToHash(m_refSemantics->getHash());
+        }
+
+        CopySemantics(Semantics* predSemantics, const ircode::Operation* operation)
+            : CopySemantics(predSemantics)
+        {
+            addToHash(operation);
+        }
+
+        CopySemantics(Semantics* predSemantics, SemanticsObject* object)
+            : CopySemantics(predSemantics)
+        {
+            addToHash(object);
         }
 
         Semantics* getRefSemantics() const {
@@ -168,6 +173,28 @@ namespace sda::researcher
             return m_refSemantics->toString();
         }
     };
+
+    Semantics* UnwrapSemantics(Semantics* sem) {
+        if (auto copySem = dynamic_cast<CopySemantics*>(sem)) {
+            return copySem->getRefSemantics();
+        }
+        return sem;
+    }
+
+    std::list<SemanticsObject*> GetSemanticsHolders(Semantics* sem) {
+        if (auto holder = sem->getHolder()) {
+            return { holder };
+        }
+        std::list<SemanticsObject*> objects;
+        for (auto succ : sem->getSuccessors()) {
+            if (auto copySucc = dynamic_cast<CopySemantics*>(succ)) {
+                if (auto holder = copySucc->getHolder()) {
+                    objects.push_back(holder);
+                }
+            }
+        }
+        return objects;
+    }
 
     class SemanticsObject {
         friend class SemanticsRepository;
@@ -185,6 +212,17 @@ namespace sda::researcher
         }
     };
 
+    void MarkObjectAsAffected(ResearcherPropagationContext& ctx, SemanticsObject* object) {
+        for (auto& var : object->getVariables()) {
+            ctx.markValueAsAffected(var);
+        }
+    }
+
+    void AddObjectVariablesToContext(ResearcherPropagationContext& ctx, SemanticsObject* object) {
+        for (auto& var : object->getVariables()) {
+            ctx.addNextOperation(var->getSourceOperation());
+        }
+    }
     class SemanticsRepository
     {
         std::shared_ptr<EventPipe> m_eventPipe;
@@ -248,7 +286,7 @@ namespace sda::researcher
         }
 
         template<typename T>
-        Semantics* addSemantics(const T& sem, SemanticsObject* object = nullptr) {
+        Semantics* addSemantics(const T& sem, SemanticsObject* object) {
             auto semPtr = getSemantics(sem.getHash());
             if (semPtr) {
                 return nullptr;
@@ -256,23 +294,29 @@ namespace sda::researcher
             return addNewSemantics(std::make_unique<T>(sem), object);
         }
 
+        // Shared semantics can be shared by several objects (holders)
         template<typename T>
-        Semantics* addOrGetSemantics(const T& sem, SemanticsObject* object = nullptr) {
+        Semantics* addSharedSemantics(const T& sem, SemanticsObject* object, Semantics** sharedSem = nullptr) {
             auto semPtr = getSemantics(sem.getHash());
-            if (semPtr) {
-                return semPtr;
+            if (!semPtr) {
+                semPtr = addNewSemantics(std::make_unique<T>(sem));
             }
-            return addNewSemantics(std::make_unique<T>(sem), object);
+            if (sharedSem) {
+                *sharedSem = semPtr;
+            }
+            return addSemantics(CopySemantics(semPtr, object), object);
         }
 
         void removeSemanticsChain(std::list<Semantics*> startSemantics) {
-            std::list<Semantics*> allSemanticsToRemove;
+            std::set<Semantics*> allSemanticsToRemove;
             std::list<Semantics*> successors = startSemantics;
             while (!successors.empty()) {
                 auto semToRemove = successors.front();
                 successors.pop_front();
-                allSemanticsToRemove.push_back(semToRemove);
+                allSemanticsToRemove.insert(semToRemove);
                 for (auto successor : semToRemove->m_successors) {
+                    if (allSemanticsToRemove.find(successor) != allSemanticsToRemove.end())
+                        continue;
                     successors.push_back(successor);
                 }
             }
@@ -283,7 +327,7 @@ namespace sda::researcher
 
         void removeSemanticsChain(size_t hash) {
             if (auto semantics = getSemantics(hash)) {
-                removeSemantics({ semantics });
+                removeSemanticsChain({ semantics });
             }
         }
 
@@ -296,9 +340,12 @@ namespace sda::researcher
         }
 
     private:
-        Semantics* addNewSemantics(std::unique_ptr<Semantics> sem, SemanticsObject* object) {
+        Semantics* addNewSemantics(std::unique_ptr<Semantics> sem, SemanticsObject* object = nullptr) {
             auto semPtr = sem.get();
             m_semantics[sem->getHash()] = std::move(sem);
+            for (auto predecessor : semPtr->m_predecessors) {
+                predecessor->m_successors.push_back(semPtr);
+            }
             if (object) {
                 semPtr->m_holder = object;
                 object->m_semantics.push_back(semPtr);
@@ -309,6 +356,16 @@ namespace sda::researcher
         void removeSemantics(Semantics* sem) {
             if (sem->m_holder) {
                 sem->m_holder->m_semantics.remove_if([&](Semantics* s) {
+                    return s == sem;
+                });
+            }
+            for (auto pred : sem->m_predecessors) {
+                pred->m_successors.remove_if([&](Semantics* s) {
+                    return s == sem;
+                });
+            }
+            for (auto succ : sem->m_successors) {
+                succ->m_predecessors.remove_if([&](Semantics* s) {
                     return s == sem;
                 });
             }
@@ -341,17 +398,22 @@ namespace sda::researcher
             auto op = ctx.operation;
             auto opId = op->getId();
             auto output = op->getOutput();
+            auto object = m_repository->getObject(output);
+            if (!object) return;
             auto outputSize = output->getSize();
             auto function = op->getBlock()->getFunction();
+
             if (opId == ircode::OperationId::COPY ||
                 opId == ircode::OperationId::REF ||
                 opId == ircode::OperationId::LOAD)
             {
-                if (auto object = m_repository->getObject(output)) {
-                    if (addFuncSignatureSemantics(output, function)) {
-                        markObjectAsAffected(ctx, object);
-                    }
+                if (addFunctionParameterSemantics(output, function)) {
+                    MarkObjectAsAffected(ctx, object);
                 }
+            }
+
+            if (addFunctionReturnSemantics(output, function)) {
+                MarkObjectAsAffected(ctx, object);
             }
 
             if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(op)) {
@@ -360,7 +422,8 @@ namespace sda::researcher
                 if (opId == ircode::OperationId::INT_2COMP) {
                     auto dataType = getScalarDataType(ScalarType::SignedInt, outputSize);
                     setDataTypeFor(ctx, output, dataType);
-                } else if (opId == ircode::OperationId::BOOL_NEGATE) {
+                }
+                else if (opId == ircode::OperationId::BOOL_NEGATE) {
                     auto dataType = findDataType("bool");
                     setDataTypeFor(ctx, input, dataType);
                     setDataTypeFor(ctx, output, dataType);
@@ -385,16 +448,14 @@ namespace sda::researcher
                     opId == ircode::OperationId::INT_DIV ||
                     opId == ircode::OperationId::INT_REM
                 ) {
-                    if (auto object = m_repository->getObject(output)) {
-                        for (auto& input : {input1, input2}) {
-                            if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
-                                if (auto inputObject = m_repository->getObject(inputVar)) {
-                                    for (auto inputSem : inputObject->getSemantics()) {
-                                        if (auto dtInputSem = dynamic_cast<DataTypeSemantics*>(inputSem)) {
-                                            if (dtInputSem->getDataType()->isScalar(ScalarType::SignedInt)) {
-                                                if (m_repository->addSemantics(CopySemantics({ dtInputSem }), object)) {
-                                                    markObjectAsAffected(ctx, object);
-                                                }
+                    for (auto& input : {input1, input2}) {
+                        if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
+                            if (auto inputObject = m_repository->getObject(inputVar)) {
+                                for (auto inputSem : inputObject->getSemantics()) {
+                                    if (auto dtInputSem = dynamic_cast<DataTypeSemantics*>(UnwrapSemantics(inputSem))) {
+                                        if (dtInputSem->getDataType()->isScalar(ScalarType::SignedInt)) {
+                                            if (m_repository->addSemantics(CopySemantics(dtInputSem, op), object)) {
+                                                MarkObjectAsAffected(ctx, object);
                                             }
                                         }
                                     }
@@ -444,20 +505,27 @@ namespace sda::researcher
         }
 
     private:
-        Semantics* addFuncSignatureSemantics(std::shared_ptr<sda::ircode::Variable> variable, ircode::Function* function) {
+        Semantics* addFunctionParameterSemantics(std::shared_ptr<sda::ircode::Variable> variable, ircode::Function* function) {
             if (auto object = m_repository->getObject(variable)) {
                 auto signatureDt = function->getFunctionSymbol()->getSignature();
                 auto paramVars = function->getParamVariables();
                 for (size_t i = 0; i < paramVars.size(); ++i) {
                     if (variable == paramVars[i]) {
-                        if (auto paramSem = m_repository->addOrGetSemantics(FunctionParameterSemantics(function, i), object)) {
+                        if (auto paramSem = m_repository->addSemantics(FunctionParameterSemantics(function, i), object)) {
                             auto dataType = signatureDt->getParameters()[i]->getDataType();
                             return m_repository->addSemantics(DataTypeSemantics(dataType, { paramSem }), object);
                         }
                     }
                 }
+            }
+            return nullptr;
+        }
+
+        Semantics* addFunctionReturnSemantics(std::shared_ptr<sda::ircode::Variable> variable, ircode::Function* function) {
+            if (auto object = m_repository->getObject(variable)) {
+                auto signatureDt = function->getFunctionSymbol()->getSignature();
                 if (variable == function->getReturnVariable()) {
-                    if (auto returnSem = m_repository->addOrGetSemantics(FunctionReturnSemantics(function), object)) {
+                    if (auto returnSem = m_repository->addSemantics(FunctionReturnSemantics(function), object)) {
                         auto dataType = signatureDt->getReturnType();
                         return m_repository->addSemantics(DataTypeSemantics(dataType, { returnSem }), object);
                     }
@@ -481,16 +549,10 @@ namespace sda::researcher
                 if (auto object = m_repository->getObject(var)) {
                     if (auto opSem = m_repository->addSemantics(OperationSemantics(ctx.operation), object)) {
                         if (m_repository->addSemantics(DataTypeSemantics(dataType, { opSem }), object)) {
-                            markObjectAsAffected(ctx, object);
+                            MarkObjectAsAffected(ctx, object);
                         }
                     }
                 }
-            }
-        }
-
-        void markObjectAsAffected(ResearcherPropagationContext& ctx, SemanticsObject* object) {
-            for (auto& var : object->getVariables()) {
-                ctx.markValueAsAffected(var);
             }
         }
 
@@ -580,9 +642,11 @@ namespace sda::researcher
                     // find objects to remove
                     for (auto structure : structuresInGroup) {
                         if (structure->sourceNode) {
-                            if (auto sourceVar = structure->sourceNode->getVariable()) {
-                                if (auto object = m_researcher->m_semanticsRepo->getObject(sourceVar)) {
-                                    objectsToRemove.insert(object);
+                            for (auto node : structure->linkedNodes) {
+                                if (auto var = node->getVariable()) {
+                                    if (auto object = m_researcher->m_semanticsRepo->getObject(var)) {
+                                        objectsToRemove.insert(object);
+                                    }
                                 }
                             }
                         }
@@ -609,9 +673,7 @@ namespace sda::researcher
                 ResearcherPropagationContext ctx;
                 // remove all the related semantic objects
                 for (auto object : objectsToRemove) {
-                    for (auto var : object->getVariables()) {
-                        ctx.addNextOperation(var->getSourceOperation());
-                    }
+                    AddObjectVariablesToContext(ctx, object);
                     m_researcher->m_semanticsRepo->removeObject(object);
                 }
                 // create new semantic objects based on the groups
@@ -630,23 +692,27 @@ namespace sda::researcher
 
             void handleStructureRemovedEvent(const StructureRemovedEvent& event) {
                 // find related semantic object (always single), remove structure's variables from it and clean it from all semantic
+                // Notice: one semantics object can be shared by several structures
                 ResearcherPropagationContext ctx;
                 ResearcherPropagationContext ctx2;
                 if (event.structure->sourceNode) {
                     if (auto sourceVar = event.structure->sourceNode->getVariable()) {
                         if (auto object = m_researcher->m_semanticsRepo->getObject(sourceVar)) {
-                            for (auto var : object->getVariables()) {
-                                ctx.addNextOperation(var->getSourceOperation());
-                            }
+                            AddObjectVariablesToContext(ctx, object);
                             for (auto node : event.structure->linkedNodes) {
                                 if (auto var = node->getVariable()) {
-                                    // remove structure's variables
+                                    // remove structure's variables from object
                                     m_researcher->m_semanticsRepo->unbindVariableWithObject(var, object);
                                     ctx2.addNextOperation(var->getSourceOperation());
                                 }
                             }
-                            // clean semantic object
-                            m_researcher->m_semanticsRepo->removeSemanticsChain(object->getSemantics());
+                            // clean or remove semantic object
+                            if (object->getVariables().empty()) {
+                                // if objects belongs to single structure, remove it
+                                m_researcher->m_semanticsRepo->removeObject(object);
+                            } else {
+                                m_researcher->m_semanticsRepo->removeSemanticsChain(object->getSemantics());
+                            }
                         }
                     }
                 }

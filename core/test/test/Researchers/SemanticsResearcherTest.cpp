@@ -75,7 +75,7 @@ TEST_F(SemanticsResearcherTest, Simple1) {
             var4[rax]:4 = COPY var3 // return \
     ";
     auto expectedSemantics = "\
-        B0:var1, B0:var2 -> int32_t, param0 \n\
+        B0:var1, B0:var2 -> int32_t, param1 \n\
         B0:var3, B0:var4 -> int32_t, int32_t, return \n\
     ";
     auto func = parsePcode(sourcePCode, program);
@@ -136,7 +136,7 @@ TEST_F(SemanticsResearcherTest, Simple2) {
         B0:var1 -> empty \n\
         B0:var2 -> empty \n\
         B0:var3, B0:var4, B3:var3, B3:var6 -> int32_t, int32_t, return \n\
-        B3:var1, B3:var2 -> int32_t, param0 \n\
+        B3:var1, B3:var2 -> int32_t, param1 \n\
         B3:var4 -> empty \n\
         B3:var5 -> empty \
     ";
