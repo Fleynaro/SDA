@@ -22,6 +22,8 @@ void ContextSync::SignatureToVariableMappingUpdater::start() {
     m_ctx->collect([&]() {
         update();
     });
+    m_function->getProgram()->getEventPipe()->send(
+        FunctionSignatureChangedEvent(m_function));
 }
 
 void ContextSync::SignatureToVariableMappingUpdater::update() {
@@ -126,8 +128,9 @@ void ContextSync::handleFunctionDecompiled(const ircode::FunctionDecompiledEvent
             ctx.addNextOperation(op.get());
         }
     }
-    auto signatureDt = event.function->getFunctionSymbol()->getSignature();
-    SignatureToVariableMappingUpdater updater(event.function, &ctx, signatureDt);
+    auto function = event.function;
+    auto signatureDt = function->getFunctionSymbol()->getSignature();
+    SignatureToVariableMappingUpdater updater(function, &ctx, signatureDt);
     updater.start();
 }
 
@@ -169,8 +172,6 @@ void ContextSync::handleObjectModified(const ObjectModifiedEvent& event) {
                         }
                         SignatureToVariableMappingUpdater updater(function, &ctx, signatureDt);
                         updater.start();
-                        function->getProgram()->getEventPipe()->send(
-                            FunctionSignatureChangedEvent(function, oldParamVars, oldReturnVar));
                     }
                     {
                         // update blocks

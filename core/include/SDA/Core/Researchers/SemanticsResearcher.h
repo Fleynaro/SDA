@@ -430,18 +430,32 @@ namespace sda::researcher
             if (!object) return;
             auto outputSize = output->getSize();
             auto function = op->getBlock()->getFunction();
+            auto signatureDt = function->getFunctionSymbol()->getSignature();
 
             if (opId == ircode::OperationId::COPY ||
                 opId == ircode::OperationId::REF ||
                 opId == ircode::OperationId::LOAD)
             {
-                if (addFunctionParameterSemantics(output, function)) {
-                    MarkObjectAsAffected(ctx, object);
+                auto paramVars = function->getParamVariables();
+                for (size_t i = 0; i < paramVars.size(); ++i) {
+                    if (output == paramVars[i]) {
+                        if (auto paramSem = m_repository->addSharedSemantics(FunctionParameterSemantics(function, i), object)) {
+                            auto dataType = signatureDt->getParameters()[i]->getDataType();
+                            if (m_repository->addSemantics(DataTypeSemantics(dataType, { paramSem }), object)) {
+                                MarkObjectAsAffected(ctx, object);
+                            }
+                        }
+                    }
                 }
             }
 
-            if (addFunctionReturnSemantics(output, function)) {
-                MarkObjectAsAffected(ctx, object);
+            if (output == function->getReturnVariable()) {
+                if (auto returnSem = m_repository->addSharedSemantics(FunctionReturnSemantics(function), object)) {
+                    auto dataType = signatureDt->getReturnType();
+                    if (m_repository->addSemantics(DataTypeSemantics(dataType, { returnSem }), object)) {
+                        MarkObjectAsAffected(ctx, object);
+                    }
+                }
             }
 
             if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(op)) {
@@ -582,40 +596,53 @@ namespace sda::researcher
                     setDataTypeFor(ctx, input1, dataType);
                     setDataTypeFor(ctx, input2, dataType);
                     setDataTypeFor(ctx, output, dataType);
+                } else if (opId == ircode::OperationId::PHI) {
+                    for (auto& input : {input1, input2}) {
+                        if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
+                            if (auto inputObject = m_repository->getObject(inputVar)) {
+                                for (auto inputSem : inputObject->getSemantics()) {
+                                    if (m_repository->addSemantics(CopySemantics(inputSem, op), object)) {
+                                        MarkObjectAsAffected(ctx, object);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (auto callOp = dynamic_cast<const ircode::CallOperation*>(ctx.operation)) {
+                auto calledFunctions = m_program->getFunctionsByCallInstruction(callOp->getPcodeInstruction());
+                if (!calledFunctions.empty()) {
+                    auto calledFunction = calledFunctions.front();
+                    auto& argValues = callOp->getArguments();
+                    auto calledSignatureDt = calledFunction->getFunctionSymbol()->getSignature();
+                    auto& params = calledSignatureDt->getParameters();
+                    assert(argValues.size() == params.size());
+                    for (size_t i = 0; i < argValues.size(); ++i) {
+                        auto argValue = argValues[i];
+                        if (auto argVar = std::dynamic_pointer_cast<ircode::Variable>(argValue)) {
+                            if (auto argObject = m_repository->getObject(argVar)) {
+                                if (auto paramSem = m_repository->addSharedSemantics(FunctionParameterSemantics(calledFunction, i), argObject)) {
+                                    auto dataType = params[i]->getDataType();
+                                    if (m_repository->addSemantics(DataTypeSemantics(dataType, { paramSem }), argObject)) {
+                                        MarkObjectAsAffected(ctx, argObject);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    auto retDataType = signatureDt->getReturnType();
+                    if (!retDataType->isVoid()) {
+                        if (auto returnSem = m_repository->addSharedSemantics(FunctionReturnSemantics(function), object)) {
+                            if (m_repository->addSemantics(DataTypeSemantics(retDataType, { returnSem }), object)) {
+                                MarkObjectAsAffected(ctx, object);
+                            }
+                        }
+                    }
                 }
             }
         }
 
     private:
-        Semantics* addFunctionParameterSemantics(std::shared_ptr<sda::ircode::Variable> variable, ircode::Function* function) {
-            if (auto object = m_repository->getObject(variable)) {
-                auto signatureDt = function->getFunctionSymbol()->getSignature();
-                auto paramVars = function->getParamVariables();
-                for (size_t i = 0; i < paramVars.size(); ++i) {
-                    if (variable == paramVars[i]) {
-                        if (auto paramSem = m_repository->addSemantics(FunctionParameterSemantics(function, i), object)) {
-                            auto dataType = signatureDt->getParameters()[i]->getDataType();
-                            return m_repository->addSemantics(DataTypeSemantics(dataType, { paramSem }), object);
-                        }
-                    }
-                }
-            }
-            return nullptr;
-        }
-
-        Semantics* addFunctionReturnSemantics(std::shared_ptr<sda::ircode::Variable> variable, ircode::Function* function) {
-            if (auto object = m_repository->getObject(variable)) {
-                auto signatureDt = function->getFunctionSymbol()->getSignature();
-                if (variable == function->getReturnVariable()) {
-                    if (auto returnSem = m_repository->addSemantics(FunctionReturnSemantics(function), object)) {
-                        auto dataType = signatureDt->getReturnType();
-                        return m_repository->addSemantics(DataTypeSemantics(dataType, { returnSem }), object);
-                    }
-                }
-            }
-            return nullptr;
-        }
-
         ScalarDataType* getScalarDataType(ScalarType scalarType, size_t size) const {
             return getContext()->getDataTypes()->getScalar(scalarType, size);
         }
@@ -675,17 +702,27 @@ namespace sda::researcher
             }
 
             void handleFunctionSignatureChangedEvent(const ircode::FunctionSignatureChangedEvent& event) {
+                // Should be called when any change in function signature occurs (including change of data type of any parameter or return)
                 ResearcherPropagationContext ctx;
-                for (size_t i = 0; i < event.m_oldParamVars.size(); ++i) {
-                    auto paramVar = event.m_oldParamVars[i];
+                for (size_t i = 0; i < 100; ++i) {
                     auto hash = FunctionParameterSemantics(event.function, i).getHash();
-                    m_researcher->m_semanticsRepo->removeSemanticsChain(hash);
-                    ctx.addNextOperation(paramVar->getSourceOperation());
+                    if (auto sem = m_researcher->m_semanticsRepo->getSemantics(hash)) {
+                        for (auto holder : GetSemanticsHolders(sem)) {
+                            AddObjectVariablesToContext(ctx, holder);
+                        }
+                        m_researcher->m_semanticsRepo->removeSemanticsChain(hash);
+                    } else {
+                        break;
+                    }
                 }
-                if (event.m_oldReturnVar) {
+                {
                     auto hash = FunctionReturnSemantics(event.function).getHash();
-                    m_researcher->m_semanticsRepo->removeSemanticsChain(hash);
-                    ctx.addNextOperation(event.m_oldReturnVar->getSourceOperation());
+                    if (auto sem = m_researcher->m_semanticsRepo->getSemantics(hash)) {
+                        for (auto holder : GetSemanticsHolders(sem)) {
+                            AddObjectVariablesToContext(ctx, holder);
+                        }
+                        m_researcher->m_semanticsRepo->removeSemanticsChain(hash);
+                    }
                 }
                 for (auto paramVar : event.function->getParamVariables()) {
                     ctx.addNextOperation(paramVar->getSourceOperation());
