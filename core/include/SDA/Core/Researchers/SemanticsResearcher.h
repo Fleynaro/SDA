@@ -321,25 +321,28 @@ namespace sda::researcher
         }
 
         template<typename T>
-        Semantics* addSemantics(const T& sem, SemanticsObject* object) {
+        T* addSemantics(const T& sem, SemanticsObject* object) {
             auto semPtr = getSemantics(sem.getHash());
             if (semPtr) {
                 return nullptr;
             }
-            return addNewSemantics(std::make_unique<T>(sem), object);
+            return static_cast<T*>(addNewSemantics(std::make_unique<T>(sem), object));
         }
 
         // Shared semantics can be shared by several objects (holders)
         template<typename T>
-        Semantics* addSharedSemantics(const T& sem, SemanticsObject* object, Semantics** sharedSem = nullptr) {
-            auto semPtr = getSemantics(sem.getHash());
+        T* addSharedSemantics(const T& sem, SemanticsObject* object, CopySemantics** copySemOut = nullptr) {
+            auto semPtr = static_cast<T*>(getSemantics(sem.getHash()));
             if (!semPtr) {
-                semPtr = addNewSemantics(std::make_unique<T>(sem));
+                semPtr = static_cast<T*>(addNewSemantics(std::make_unique<T>(sem)));
             }
-            if (sharedSem) {
-                *sharedSem = semPtr;
+            if (auto copySem = addSemantics(CopySemantics(semPtr, object), object)) {
+                if (copySemOut) {
+                    *copySemOut = copySem;
+                }
+                return semPtr;
             }
-            return addSemantics(CopySemantics(semPtr, object), object);
+            return nullptr;
         }
 
         void removeSemanticsChain(std::list<Semantics*> startSemantics) {
