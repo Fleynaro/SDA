@@ -443,7 +443,6 @@ namespace sda::researcher
             auto signatureDt = function->getFunctionSymbol()->getSignature();
 
             if (opId == ircode::OperationId::COPY ||
-                opId == ircode::OperationId::REF ||
                 opId == ircode::OperationId::LOAD)
             {
                 auto paramVars = function->getParamVariables();
@@ -451,7 +450,7 @@ namespace sda::researcher
                     if (output == paramVars[i]) {
                         if (auto paramSem = m_repository->addSharedSemantics(FunctionParameterSemantics(function, i), object)) {
                             auto dataType = signatureDt->getParameters()[i]->getDataType();
-                            if (m_repository->addSemantics(DataTypeSemantics(dataType, { paramSem }), object)) {
+                            if (m_repository->addSharedSemantics(DataTypeSemantics(dataType, { paramSem }), object)) {
                                 MarkObjectAsAffected(ctx, object);
                             }
                         }
@@ -462,7 +461,7 @@ namespace sda::researcher
             if (output == function->getReturnVariable()) {
                 if (auto returnSem = m_repository->addSharedSemantics(FunctionReturnSemantics(function), object)) {
                     auto dataType = signatureDt->getReturnType();
-                    if (m_repository->addSemantics(DataTypeSemantics(dataType, { returnSem }), object)) {
+                    if (m_repository->addSharedSemantics(DataTypeSemantics(dataType, { returnSem }), object)) {
                         MarkObjectAsAffected(ctx, object);
                     }
                 }
@@ -633,7 +632,7 @@ namespace sda::researcher
                             if (auto argObject = m_repository->getObject(argVar)) {
                                 if (auto paramSem = m_repository->addSharedSemantics(FunctionParameterSemantics(calledFunction, i), argObject)) {
                                     auto dataType = params[i]->getDataType();
-                                    if (m_repository->addSemantics(DataTypeSemantics(dataType, { paramSem }), argObject)) {
+                                    if (m_repository->addSharedSemantics(DataTypeSemantics(dataType, { paramSem }), argObject)) {
                                         MarkObjectAsAffected(ctx, argObject);
                                     }
                                 }
@@ -643,7 +642,7 @@ namespace sda::researcher
                     auto retDataType = signatureDt->getReturnType();
                     if (!retDataType->isVoid()) {
                         if (auto returnSem = m_repository->addSharedSemantics(FunctionReturnSemantics(function), object)) {
-                            if (m_repository->addSemantics(DataTypeSemantics(retDataType, { returnSem }), object)) {
+                            if (m_repository->addSharedSemantics(DataTypeSemantics(retDataType, { returnSem }), object)) {
                                 MarkObjectAsAffected(ctx, object);
                             }
                         }
