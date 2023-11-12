@@ -240,17 +240,20 @@ namespace sda::researcher
         }
     };
 
+    // used where object get semantics or all object semantics removed (object cleaned)
     void MarkObjectAsAffected(ResearcherPropagationContext& ctx, SemanticsObject* object) {
         for (auto& var : object->getVariables()) {
             ctx.markValueAsAffected(var);
         }
     }
 
+    // used where specific source semantics of object removed by hash
     void AddObjectVariablesToContext(ResearcherPropagationContext& ctx, SemanticsObject* object) {
         for (auto& var : object->getVariables()) {
             ctx.addNextOperation(var->getSourceOperation());
         }
     }
+
     class SemanticsRepository
     {
         std::shared_ptr<EventPipe> m_eventPipe;
@@ -271,9 +274,13 @@ namespace sda::researcher
             return &m_objects.back();
         }
 
-        void removeObject(SemanticsObject* object) {
-            // remove semantics of object
+        // remove all semantics of object
+        void cleanObject(SemanticsObject* object) {
             removeSemanticsChain(object->m_semantics);
+        }
+
+        void removeObject(SemanticsObject* object) {
+            cleanObject(object);
             // remove variables from map
             for (auto variable : object->m_variables) {
                 m_variableToObject.erase(variable.get());
@@ -725,6 +732,7 @@ namespace sda::researcher
                     }
                 }
                 for (auto paramVar : event.function->getParamVariables()) {
+                    if (!paramVar) continue;
                     ctx.addNextOperation(paramVar->getSourceOperation());
                 }
                 if (auto returnVar = event.function->getReturnVariable()) {
@@ -736,13 +744,20 @@ namespace sda::researcher
             }
 
             void handleOperationRemoved(const ircode::OperationRemovedEvent& event) {
+                ResearcherPropagationContext ctx;
                 auto output = event.op->getOutput();
                 if (auto outputObject = m_researcher->m_semanticsRepo->getObject(output)) {
+                    MarkObjectAsAffected(ctx, outputObject);
                     m_researcher->m_semanticsRepo->unbindVariableWithObject(output, outputObject);
                     if (outputObject->getVariables().empty()) {
                         m_researcher->m_semanticsRepo->removeObject(outputObject);
+                    } else {
+                        m_researcher->m_semanticsRepo->cleanObject(outputObject);
                     }
                 }
+                ctx.collect([&]() {
+                    m_researcher->propagate(ctx);
+                });
             }
 
             void handleStructureUpdatedEventBatch(const EventBatch<StructureUpdatedEvent>& event) {
@@ -792,7 +807,7 @@ namespace sda::researcher
                 ResearcherPropagationContext ctx;
                 // remove all the related semantic objects
                 for (auto object : objectsToRemove) {
-                    AddObjectVariablesToContext(ctx, object);
+                    MarkObjectAsAffected(ctx, object);
                     m_researcher->m_semanticsRepo->removeObject(object);
                 }
                 // create new semantic objects based on the groups
@@ -817,7 +832,7 @@ namespace sda::researcher
                 if (event.structure->sourceNode) {
                     if (auto sourceVar = event.structure->sourceNode->getVariable()) {
                         if (auto object = m_researcher->m_semanticsRepo->getObject(sourceVar)) {
-                            AddObjectVariablesToContext(ctx, object);
+                            MarkObjectAsAffected(ctx, object);
                             for (auto node : event.structure->linkedNodes) {
                                 if (auto var = node->getVariable()) {
                                     // remove structure's variables from object
@@ -830,7 +845,7 @@ namespace sda::researcher
                                 // if objects belongs to single structure, remove it
                                 m_researcher->m_semanticsRepo->removeObject(object);
                             } else {
-                                m_researcher->m_semanticsRepo->removeSemanticsChain(object->getSemantics());
+                                m_researcher->m_semanticsRepo->cleanObject(object);
                             }
                         }
                     }
