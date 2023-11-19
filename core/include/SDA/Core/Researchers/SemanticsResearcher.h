@@ -1006,14 +1006,16 @@ namespace sda::researcher
                 });
             }
 
-            void handleSymbolPointerUpdatedEvent(SymbolTable* symbolTable, Offset offset) {
+            void handleSymbolPointerUpdatedEvent(SymbolTable* symbolTable, Offset startOffset, size_t size) {
                 ResearcherPropagationContext ctx;
-                auto symbolSemHash = SymbolPointerSemantics(symbolTable, offset).getHash();
-                if (auto symbolSem = m_researcher->m_semanticsRepo->getSemantics(symbolSemHash)) {
-                    for (auto holder : GetSemanticsHolders(symbolSem)) {
-                        AddObjectVariablesToContext(ctx, holder);
+                for (size_t offset = startOffset; offset < startOffset + size; ++offset) {
+                    auto symbolSemHash = SymbolPointerSemantics(symbolTable, offset).getHash();
+                    if (auto symbolSem = m_researcher->m_semanticsRepo->getSemantics(symbolSemHash)) {
+                        for (auto holder : GetSemanticsHolders(symbolSem)) {
+                            AddObjectVariablesToContext(ctx, holder);
+                        }
+                        m_researcher->m_semanticsRepo->removeSemanticsChain(symbolSemHash);
                     }
-                    m_researcher->m_semanticsRepo->removeSemanticsChain(symbolSemHash);
                 }
                 ctx.collect([&]() {
                     m_researcher->propagate(ctx);
@@ -1026,7 +1028,7 @@ namespace sda::researcher
                 }
                 if (auto symbol = dynamic_cast<Symbol*>(event.object)) {
                     if (auto symbolTable = symbol->getSymbolTable()) {
-                        handleSymbolPointerUpdatedEvent(symbolTable, symbol->getOffset());
+                        handleSymbolPointerUpdatedEvent(symbolTable, symbol->getOffset(), symbol->getDataType()->getSize());
                     }
                 }
             }
@@ -1049,7 +1051,7 @@ namespace sda::researcher
             }
 
             void handleSymbolTableSymbolRemovedEvent(const SymbolTableSymbolRemovedEvent& event) {
-                handleSymbolPointerUpdatedEvent(event.symbolTable, event.offset);
+                handleSymbolPointerUpdatedEvent(event.symbolTable, event.offset, event.symbol->getDataType()->getSize());
             }
         public:
             EventHandler(SemanticsResearcher* researcher) : m_researcher(researcher) {}

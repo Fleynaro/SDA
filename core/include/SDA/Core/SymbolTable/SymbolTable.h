@@ -46,11 +46,13 @@ namespace sda
     struct SymbolTableSymbolRemovedEvent : Event {
         SymbolTable* symbolTable;
         Offset offset;
+        Symbol* symbol;
 
-        SymbolTableSymbolRemovedEvent(SymbolTable* symbolTable, Offset offset)
+        SymbolTableSymbolRemovedEvent(SymbolTable* symbolTable, Offset offset, Symbol* symbol)
             : Event(ContextEventTopic)
             , symbolTable(symbolTable)
             , offset(offset)
+            , symbol(symbol)
         {}
     };
 };
