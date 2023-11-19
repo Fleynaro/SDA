@@ -394,6 +394,9 @@ namespace sda::researcher
                 data->add(event.structure);
                 data->add(event.child);
             }));
+            commitPipeIn->subscribe(std::function([data](const LinkCreatedEvent& event) {
+                data->add(event.structure);
+            }));
             return pipe;
         }
     };

@@ -787,15 +787,19 @@ namespace sda::researcher
                             }
                         }
                     }
-                    // find new variables for each label
-                    auto& group = groupsOfIdenticVariables.emplace_back();
+                    // find new variables for each offset and label
+                    std::map<std::pair<size_t, size_t>, std::list<std::shared_ptr<ircode::Variable>>> labelAndOffsetToVar;
                     for (auto structure : structuresInGroup) {
                         for (auto node : structure->linkedNodes) {
                             if (auto var = node->getVariable()) {
                                 // TODO: define label
-                                group.push_back(var);
+                                labelAndOffsetToVar[std::pair(0, node->offset)].push_back(var);
                             }
                         }
+                    }
+                    for (auto& [_, vars] : labelAndOffsetToVar) {
+                        auto& group = groupsOfIdenticVariables.emplace_back();
+                        group.insert(group.end(), vars.begin(), vars.end());
                     }
                     // remove from updated structures
                     for (auto structure : structuresInGroup) {
