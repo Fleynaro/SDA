@@ -320,6 +320,7 @@ namespace sda::researcher
         void removeNode(DataFlowNode* node) {
             auto link = getLink(node);
             if (link) {
+                link->structure->linkedNodes.erase(node);
                 if (link->own) {
                     removeStructure(link->structure);
                 }
