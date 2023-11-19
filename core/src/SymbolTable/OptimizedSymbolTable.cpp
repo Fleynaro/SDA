@@ -1,5 +1,6 @@
 #include "SDA/Core/SymbolTable/OptimizedSymbolTable.h"
 #include "SDA/Core/SymbolTable/StandartSymbolTable.h"
+#include "SDA/Core/Symbol/Symbol.h"
 #include "SDA/Core/Utils/String.h"
 
 using namespace sda;
@@ -63,7 +64,7 @@ size_t OptimizedSymbolTable::getUsedSize() const {
 void OptimizedSymbolTable::addSymbol(Offset offset, Symbol* symbol) {
     auto symbolInfo = getSymbolAt(offset);
     if (symbolInfo.symbol) {
-        auto message = "Symbol already exists at offset 0x" + utils::ToHex(symbolInfo.symbolOffset);
+        auto message = "Symbol already exists at offset 0x" + utils::ToHex(symbolInfo.symbol->getOffset());
         throw std::runtime_error(message);
     }
     auto symbolTable = selectSymbolTable(offset);
@@ -92,7 +93,7 @@ SymbolTable::SymbolInfo OptimizedSymbolTable::getSymbolAt(Offset offset) {
         if (symbolInfo.symbol)
             return symbolInfo;
     }
-    return SymbolInfo();
+    return { this, offset, nullptr };
 }
 
 void OptimizedSymbolTable::serialize(boost::json::object& data) const {

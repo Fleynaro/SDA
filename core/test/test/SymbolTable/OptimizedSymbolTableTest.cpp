@@ -46,17 +46,17 @@ TEST_F(OptimizedSymbolTableTest, GetSymbolAt) {
         symbolInfo = symbolTable->getSymbolAt(200);
         ASSERT_TRUE(Compare(symbolInfo.symbol, var1));
         ASSERT_TRUE(Compare(symbolInfo.symbolTable, fragmentTables[0]));
-        ASSERT_EQ(symbolInfo.symbolOffset, 200);
+        ASSERT_EQ(symbolInfo.symbol->getOffset(), 200);
 
         symbolInfo = symbolTable->getSymbolAt(201);
         ASSERT_TRUE(Compare(symbolInfo.symbol, var1));
         ASSERT_TRUE(Compare(symbolInfo.symbolTable, fragmentTables[0]));
-        ASSERT_EQ(symbolInfo.symbolOffset, 200);
+        ASSERT_EQ(symbolInfo.symbol->getOffset(), 200);
 
         symbolInfo = symbolTable->getSymbolAt(203);
         ASSERT_TRUE(Compare(symbolInfo.symbol, var1));
         ASSERT_TRUE(Compare(symbolInfo.symbolTable, fragmentTables[0]));
-        ASSERT_EQ(symbolInfo.symbolOffset, 200);
+        ASSERT_EQ(symbolInfo.symbol->getOffset(), 200);
     }
 
     // var 2
@@ -64,12 +64,12 @@ TEST_F(OptimizedSymbolTableTest, GetSymbolAt) {
         symbolInfo = symbolTable->getSymbolAt(255);
         ASSERT_TRUE(Compare(symbolInfo.symbol, var2));
         ASSERT_TRUE(Compare(symbolInfo.symbolTable, fragmentTables[0]));
-        ASSERT_EQ(symbolInfo.symbolOffset, 255);
+        ASSERT_EQ(symbolInfo.symbol->getOffset(), 255);
 
         symbolInfo = symbolTable->getSymbolAt(256);
         ASSERT_TRUE(Compare(symbolInfo.symbol, var2));
         ASSERT_TRUE(Compare(symbolInfo.symbolTable, fragmentTables[0]));
-        ASSERT_EQ(symbolInfo.symbolOffset, 255);
+        ASSERT_EQ(symbolInfo.symbol->getOffset(), 255);
     }
 
     // var 3
@@ -77,7 +77,7 @@ TEST_F(OptimizedSymbolTableTest, GetSymbolAt) {
         symbolInfo = symbolTable->getSymbolAt(514);
         ASSERT_TRUE(Compare(symbolInfo.symbol, var3));
         ASSERT_TRUE(Compare(symbolInfo.symbolTable, fragmentTables[2]));
-        ASSERT_EQ(symbolInfo.symbolOffset, 512);
+        ASSERT_EQ(symbolInfo.symbol->getOffset(), 512);
     }
 
     // empty
@@ -91,12 +91,12 @@ TEST_F(OptimizedSymbolTableTest, GetSymbolAt) {
         symbolInfo = symbolTable->getSymbolAt(1023);
         ASSERT_TRUE(Compare(symbolInfo.symbol, var4));
         ASSERT_TRUE(Compare(symbolInfo.symbolTable, fragmentTables[3]));
-        ASSERT_EQ(symbolInfo.symbolOffset, 1023);
+        ASSERT_EQ(symbolInfo.symbol->getOffset(), 1023);
 
         symbolInfo = symbolTable->getSymbolAt(1028);
         ASSERT_TRUE(Compare(symbolInfo.symbol, var4));
         ASSERT_TRUE(Compare(symbolInfo.symbolTable, fragmentTables[3]));
-        ASSERT_EQ(symbolInfo.symbolOffset, 1023);
+        ASSERT_EQ(symbolInfo.symbol->getOffset(), 1023);
     }
 }
 

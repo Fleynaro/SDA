@@ -53,13 +53,13 @@ SymbolTable::SymbolInfo StandartSymbolTable::getSymbolAt(Offset offset) {
             if (offset < symbolOffset + symbol->getDataType()->getSize()) {
                 return {
                     this,
-                    symbolOffset,
+                    offset,
                     symbol
                 };
             }
         }
     }
-    return SymbolInfo();
+    return { this, offset, nullptr };
 }
 
 const std::map<Offset, Symbol*>& StandartSymbolTable::getSymbolsMap() const {

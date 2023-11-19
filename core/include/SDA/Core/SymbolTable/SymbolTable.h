@@ -21,7 +21,7 @@ namespace sda
 
         struct SymbolInfo {
             SymbolTable* symbolTable = nullptr;
-            Offset symbolOffset = 0;
+            Offset requestedOffset = 0;
             Symbol* symbol = nullptr;
         };
 
@@ -29,7 +29,7 @@ namespace sda
 
         virtual SymbolInfo getSymbolAt(Offset offset) = 0;
 
-        std::list<SymbolInfo> getAllSymbolsRecursivelyAt(Offset offset);
+        std::list<SymbolInfo> getAllSymbolsRecursivelyAt(Offset offset, bool includeEmptySymbol = false);
 
         void serialize(boost::json::object& data) const override;
 

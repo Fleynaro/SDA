@@ -13,7 +13,7 @@ namespace sda::bind
                 cl
                     .auto_wrap_objects(true)
                     .var("symbolTable", &SymbolTable::SymbolInfo::symbolTable)
-                    .var("symbolOffset", &SymbolTable::SymbolInfo::symbolOffset)
+                    .var("requestedOffset", &SymbolTable::SymbolInfo::requestedOffset)
                     .var("symbol", &SymbolTable::SymbolInfo::symbol);
                 module.class_("SymbolTable_SymbolInfo", cl);
             }

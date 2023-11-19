@@ -6,7 +6,7 @@ import { Offset } from './utils';
 
 export type SymbolInfo = {
   symbolTable: SymbolTable;
-  symbolOffset: Offset;
+  requestedOffset: Offset;
   symbol: SdaSymbol;
 };
 

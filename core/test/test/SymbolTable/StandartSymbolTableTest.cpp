@@ -37,22 +37,22 @@ TEST_F(StandartSymbolTableTest, GetSymbolAt) {
     {
         symbolInfo = symbolTable->getSymbolAt(0x104);
         ASSERT_TRUE(Compare(symbolInfo.symbol, var1));
-        ASSERT_EQ(symbolInfo.symbolOffset, 0x104);
+        ASSERT_EQ(symbolInfo.symbol->getOffset(), 0x104);
 
         symbolInfo = symbolTable->getSymbolAt(0x105);
         ASSERT_TRUE(Compare(symbolInfo.symbol, var1)); 
-        ASSERT_EQ(symbolInfo.symbolOffset, 0x104);
+        ASSERT_EQ(symbolInfo.symbol->getOffset(), 0x104);
 
         symbolInfo = symbolTable->getSymbolAt(0x107);
         ASSERT_TRUE(Compare(symbolInfo.symbol, var1)); 
-        ASSERT_EQ(symbolInfo.symbolOffset, 0x104);
+        ASSERT_EQ(symbolInfo.symbol->getOffset(), 0x104);
     }
 
     // var 2
     {
         symbolInfo = symbolTable->getSymbolAt(0x108);
         ASSERT_TRUE(Compare(symbolInfo.symbol, var2));
-        ASSERT_EQ(symbolInfo.symbolOffset, 0x108);
+        ASSERT_EQ(symbolInfo.symbol->getOffset(), 0x108);
     }
 
     // empty
@@ -65,11 +65,60 @@ TEST_F(StandartSymbolTableTest, GetSymbolAt) {
     {
         symbolInfo = symbolTable->getSymbolAt(0x120);
         ASSERT_TRUE(Compare(symbolInfo.symbol, var3));
-        ASSERT_EQ(symbolInfo.symbolOffset, 0x120);
+        ASSERT_EQ(symbolInfo.symbol->getOffset(), 0x120);
 
         symbolInfo = symbolTable->getSymbolAt(0x130);
         ASSERT_TRUE(Compare(symbolInfo.symbol, var3));
-        ASSERT_EQ(symbolInfo.symbolOffset, 0x120);
+        ASSERT_EQ(symbolInfo.symbol->getOffset(), 0x120);
+    }
+}
+
+TEST_F(StandartSymbolTableTest, GetAllSymbolsRecursivelyAt) {
+    auto testStructureCode = "\
+        TestStruct = struct { \
+            float a = 0x10, \
+            uint32_t b = 0x20, \
+        } \
+    ";
+    auto globalSymbolTableCode = "\
+        { \
+            TestStruct globalVar_0x200 = 0x200 \
+        } \
+    ";
+    parseDataType(testStructureCode);
+    auto symbolTable = parseSymbolTable(globalSymbolTableCode, false);
+
+    // empty
+    {
+        auto symbols = symbolTable->getAllSymbolsRecursivelyAt(0x100);
+        ASSERT_EQ(symbols.size(), 0);
+    }
+
+    // get globalVar_0x200
+    {
+        auto symbols = symbolTable->getAllSymbolsRecursivelyAt(0x200);
+        ASSERT_EQ(symbols.size(), 1);
+        ASSERT_EQ(symbols.front().symbol->getName(), "globalVar_0x200");
+    }
+
+    // get globalVar_0x200->a
+    {
+        auto symbols = symbolTable->getAllSymbolsRecursivelyAt(0x200 + 0x10);
+        ASSERT_EQ(symbols.size(), 2);
+        ASSERT_EQ(symbols.front().symbol->getName(), "globalVar_0x200");
+        ASSERT_EQ(symbols.front().requestedOffset, 0x200 + 0x10);
+        ASSERT_EQ(symbols.back().symbol->getName(), "a");
+        ASSERT_EQ(symbols.back().requestedOffset, 0x10);
+    }
+
+    // get globalVar_0x200 with empty symbol
+    {
+        auto symbols = symbolTable->getAllSymbolsRecursivelyAt(0x200 + 0x5, true);
+        ASSERT_EQ(symbols.size(), 2);
+        ASSERT_EQ(symbols.front().symbol->getName(), "globalVar_0x200");
+        ASSERT_EQ(symbols.front().requestedOffset, 0x200 + 0x5);
+        ASSERT_EQ(symbols.back().symbol, nullptr);
+        ASSERT_EQ(symbols.back().requestedOffset, 0x5);
     }
 }
 

@@ -37,10 +37,10 @@ void SymbolTablePrinter::printDef(SymbolTable* symbolTable, bool withName) {
         printDataType(symbol->getDataType());
         printToken(" ", SYMBOL);
         printToken(symbol->getName(), IDENTIFIER);
-        if (symbolInfo.symbolOffset != offset) {
+        if (symbol->getOffset() != offset) {
             printToken(" = ", SYMBOL);
-            printToken("0x" + utils::ToHex(symbolInfo.symbolOffset), NUMBER);
-            offset = symbolInfo.symbolOffset;
+            printToken("0x" + utils::ToHex(symbol->getOffset()), NUMBER);
+            offset = symbol->getOffset();
         }
         if (symbol != symbols.back().symbol)
             printToken(", ", SYMBOL);
