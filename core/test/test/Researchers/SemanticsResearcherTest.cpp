@@ -159,6 +159,8 @@ TEST_F(SemanticsResearcherTest, Simple2) {
 
 TEST_F(SemanticsResearcherTest, Simple3) {
     /*
+        // Description: we set int32_t for globalVar_0x100 and should get int32_t for globalVar_0x300
+
         void main() {
             func1(globalVar_0x100);
             globalVar_0x300 = func2();
@@ -276,7 +278,9 @@ TEST_F(SemanticsResearcherTest, Simple3) {
 
 TEST_F(SemanticsResearcherTest, GlobalVarAssignmentObject) {
     /*
-        void func(Object* param1, float param2) {
+        // Description: we set TestStruct* for globalVar_0x200 and should get float for param2
+
+        void func(TestStruct* param1, float param2) {
             param1->field_0x10 = param2;
             globalVar_0x200 = param1;
         }
