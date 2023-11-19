@@ -1012,6 +1012,23 @@ namespace sda::researcher
                 }
             }
 
+            void handleObjectRemovedEvent(const ObjectRemovedEvent& event) {
+                ResearcherPropagationContext ctx;
+                if (auto dataType = dynamic_cast<DataType*>(event.object)) {
+                    auto hash = DataTypeSemantics(dataType).getHash();
+                    if (auto sem = m_researcher->m_semanticsRepo->getSemantics(hash)) {
+                        for (auto holder : GetSemanticsHolders(sem)) {
+                            AddObjectVariablesToContext(ctx, holder);
+                        }
+                        m_researcher->m_semanticsRepo->removeSemanticsChain(hash);
+                    }
+                }
+                ctx.collect([&]() {
+                    // TODO optimization: join it with other events (SymbolPointerUpdatedEvent, ...) that emitted most together
+                    m_researcher->propagate(ctx);
+                });
+            }
+
             void handleSymbolTableSymbolRemovedEvent(const SymbolTableSymbolRemovedEvent& event) {
                 handleSymbolPointerUpdatedEvent(event.symbolTable, event.offset);
             }
@@ -1028,6 +1045,7 @@ namespace sda::researcher
                 pipe->subscribeMethod(this, &EventHandler::handleFunctionSignatureChangedEvent);
                 pipe->subscribeMethod(this, &EventHandler::handleOperationRemoved);
                 pipe->subscribeMethod(this, &EventHandler::handleObjectModifiedEvent);
+                pipe->subscribeMethod(this, &EventHandler::handleObjectRemovedEvent);
                 pipe->subscribeMethod(this, &EventHandler::handleSymbolTableSymbolRemovedEvent);
                 return pipe;
             }
