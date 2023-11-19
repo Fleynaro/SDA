@@ -239,17 +239,14 @@ TEST_F(SemanticsResearcherTest, Simple3) {
             var5[rax]:4 = INT_ADD var4, 0xa:4 // return \
     ";
     auto expectedSemantics = "\
-        B0:var1 -> empty \n\
-        B0:var2 -> int32_t*, symbol_pointer \n\
-        B0:var3, B0:var4, B7:var3 -> int32_t, param1, uint32_t \n\
+        B0:var1, B7:var1, Bb:var1 -> symbol_pointer(0x0) \n\
+        B0:var2 -> symbol_pointer(0x100) \n\
+        B0:var3, B0:var4, B7:var3 -> int32_t, param1, symbol_load(0x100:4), uint32_t \n\
         B0:var5 -> empty \n\
-        B0:var6, B0:var8, Bb:var5 -> int32_t, return, uint32_t \n\
-        B0:var7 -> symbol_pointer \n\
-        B7:var1 -> empty \n\
-        B7:var2 -> symbol_pointer \n\
-        B7:var4, B7:var5, Bb:var3, Bb:var4 -> int32_t \n\
-        Bb:var1 -> empty \n\
-        Bb:var2 -> symbol_pointer \
+        B0:var6, B0:var8, Bb:var5 -> int32_t, return, symbol_load(0x300:4), uint32_t \n\
+        B0:var7 -> symbol_pointer(0x300) \n\
+        B7:var2, Bb:var2 -> symbol_pointer(0x200) \n\
+        B7:var4, B7:var5, Bb:var3, Bb:var4 -> int32_t, symbol_load(0x200:4) \
     ";
     auto mainFunction = parsePcode(sourcePCode, program);
     auto func1SigDt = dynamic_cast<SignatureDataType*>(

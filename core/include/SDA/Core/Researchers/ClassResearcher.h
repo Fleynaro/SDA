@@ -3,38 +3,62 @@
 
 namespace sda::researcher
 {
-    struct FieldStructureGroup {
-        std::set<Structure*> structures;
-        std::set<Structure*> inputs;
-        std::set<Structure*> outputs;
-        std::set<Structure*> parents;
-        std::set<Structure*> childs;
+    class FieldStructureGroup {
+        std::set<Structure*> m_structures;
+    public:
+        FieldStructureGroup() = default;
 
         void add(Structure* structure) {
-            structures.insert(structure);
+            m_structures.insert(structure);
         }
 
         void remove(Structure* structure) {
-            structures.erase(structure);
+            m_structures.erase(structure);
         }
 
-        void finalize() {
-            inputs.clear();
-            outputs.clear();
-            for (auto structure : structures) {
+        bool empty() const {
+            return m_structures.empty();
+        }
+
+        std::set<Structure*> getInputs() {
+            // TODO: optimize? (cache inputs)
+            std::set<Structure*> inputs;
+            for (auto structure : m_structures) {
                 inputs.insert(structure->inputs.begin(), structure->inputs.end());
+            }
+            return inputs;
+        }
+
+        std::set<Structure*> getOutputs() {
+            std::set<Structure*> outputs;
+            for (auto structure : m_structures) {
                 outputs.insert(structure->outputs.begin(), structure->outputs.end());
             }
-            parents.clear();
-            childs.clear();
-            for (auto structure : structures) {
+            return outputs;
+        }
+
+        std::set<Structure*> getParents() {
+            std::set<Structure*> parents;
+            for (auto structure : m_structures) {
                 parents.insert(structure->parents.begin(), structure->parents.end());
+            }
+            return parents;
+        }
+
+        std::set<Structure*> getChilds() {
+            std::set<Structure*> childs;
+            for (auto structure : m_structures) {
                 childs.insert(structure->childs.begin(), structure->childs.end());
             }
+            return childs;
+        }
+
+        const std::set<Structure*>& getStructures() const {
+            return m_structures;
         }
 
         Structure* getSomeStructure() const {
-            return *structures.begin();
+            return *m_structures.begin();
         }
     };
 
@@ -149,20 +173,20 @@ namespace sda::researcher
                 return set;
             }
 
-            const std::set<Structure*>& getInputs() {
-                return group ? group->inputs : structure->inputs;
+            std::set<Structure*> getInputs() {
+                return group ? group->getInputs() : structure->inputs;
             }
 
-            const std::set<Structure*>& getOutputs() {
-                return group ? group->outputs : structure->outputs;
+            std::set<Structure*> getOutputs() {
+                return group ? group->getOutputs() : structure->outputs;
             }
 
-            const std::set<Structure*>& getParents() {
-                return group ? group->parents : structure->parents;
+            std::set<Structure*> getParents() {
+                return group ? group->getParents() : structure->parents;
             }
 
-            const std::set<Structure*>& getChilds() {
-                return group ? group->childs : structure->childs;
+            std::set<Structure*> getChilds() {
+                return group ? group->getChilds() : structure->childs;
             }
         };
         std::map<Structure*, StructureInfo> m_structureToInfo;
@@ -186,33 +210,41 @@ namespace sda::researcher
         }
 
         void removeStructure(Structure* structure) {
+            auto info = getStructureInfo(structure);
+            if (info->group) {
+                removeStructureFromGroup(info);
+            }
             m_structureToInfo.erase(structure);
         }
 
         void addFieldStructureGroup(const FieldStructureGroup& group, std::set<FieldStructureGroup*>& changedGroups) {
             auto info = getStructureInfo(group.getSomeStructure());
-            if (info->group && group.structures == info->group->structures)
+            if (info->group && group.getStructures() == info->group->getStructures())
                 return;
             m_fieldStructureGroups.push_back(group);
             auto newGroup = &m_fieldStructureGroups.back();
             changedGroups.insert(newGroup);
-            for (auto structure : newGroup->structures) {
+            for (auto structure : newGroup->getStructures()) {
                 auto info = getStructureInfo(structure);
                 if (info->group) {
-                    info->group->remove(structure);
-                    if (info->group->structures.empty()) {
-                        // if group is empty, remove it
-                        m_fieldStructureGroups.remove_if([&](const auto& group) {
-                            return group.structures.empty();
-                        });
-                    } else {
-                        changedGroups.insert(info->group);
+                    if (auto changedGroup = removeStructureFromGroup(info)) {
+                        changedGroups.insert(changedGroup);
                     }
                 }
                 info->group = newGroup;
             }
-            for (auto group : changedGroups)
-                group->finalize();
+        }
+
+        FieldStructureGroup* removeStructureFromGroup(StructureInfo* info) {
+            info->group->remove(info->structure);
+            if (!info->group->empty()) {
+                return info->group;
+            }
+            // if group is empty, remove it
+            m_fieldStructureGroups.remove_if([&](const auto& group) {
+                return group.empty();
+            });
+            return nullptr;
         }
 
         void gatherStructuresInGroup(Structure* structure, std::set<Structure*>& result) {
@@ -370,7 +402,7 @@ namespace sda::researcher
 
             bool goNext = false;
             if (info->group) {
-                for (auto groupStruct : info->group->structures) {
+                for (auto groupStruct : info->group->getStructures()) {
                     auto groupStructInfo = m_classRepo->getStructureInfo(groupStruct);
                     goNext = goNext || groupStruct->conditions.hash() != newConditionsHash;
                     groupStructInfo->conditions = newConditions;
@@ -403,7 +435,7 @@ namespace sda::researcher
 
             bool goNext = false;
             if (info->group) {
-                for (auto groupStruct : info->group->structures) {
+                for (auto groupStruct : info->group->getStructures()) {
                     auto groupStructInfo = m_classRepo->getStructureInfo(groupStruct);
                     goNext = goNext || groupStruct->constants.hash() != newConstantsHash;
                     groupStructInfo->constants = newConstants;

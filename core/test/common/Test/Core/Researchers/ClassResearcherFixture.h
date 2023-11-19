@@ -46,10 +46,10 @@ protected:
     ::testing::AssertionResult cmpFieldStructureGroups(const std::string& expectedCode) const {
         std::list<std::string> strings;
         for (auto& group : classRepo->getAllFieldStructureGroups()) {
-            if (group.structures.size() == 1) continue;
+            if (group.getStructures().size() == 1) continue;
             std::string sep;
             std::stringstream ss;
-            for (auto structure : sortByName(group.structures)) {
+            for (auto structure : sortByName(group.getStructures())) {
                 ss << sep << structure->name;
                 sep = ", ";
             }
