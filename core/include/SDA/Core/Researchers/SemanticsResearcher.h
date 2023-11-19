@@ -18,36 +18,20 @@ namespace sda::researcher
     class Semantics {
         friend class SemanticsRepository;
         size_t m_hash = 0;
-        SemanticsObject* m_holder = nullptr;
-        std::list<Semantics*> m_predecessors;
         std::list<Semantics*> m_successors;
     public:
-        Semantics(const std::list<Semantics*>& predecessors)
-            : m_predecessors(predecessors)
-        {
-            for (auto predecessor : predecessors) {
-                addToHash(predecessor->getHash());
-            }
-        }
+        Semantics() = default;
 
         size_t getHash() const {
             return m_hash;
         }
 
-        bool isSource() const {
-            return m_predecessors.empty();
-        }
-
-        SemanticsObject* getHolder() const {
-            return m_holder;
-        }
-
-        const std::list<Semantics*>& getPredecessors() {
-            return m_predecessors;
-        }
-
-        const std::list<Semantics*>& getSuccessors() {
+        const std::list<Semantics*>& getSuccessors() const {
             return m_successors;
+        }
+
+        virtual std::list<Semantics*> getPredecessors() const {
+            return {};
         }
 
         bool isEqual(const Semantics* other) const {
@@ -66,12 +50,8 @@ namespace sda::researcher
     class DataTypeSemantics : public Semantics {
         DataType* m_dataType;
     public:
-        DataTypeSemantics(
-            DataType* dataType,
-            const std::list<Semantics*>& predecessors = {}
-        )
-            : Semantics(predecessors)
-            , m_dataType(dataType)
+        DataTypeSemantics(DataType* dataType)
+            : m_dataType(dataType)
         {
             addToHash("data_type");
             addToHash(dataType->getName());
@@ -91,8 +71,7 @@ namespace sda::researcher
         Offset m_offset;
     public:
         SymbolPointerSemantics(SymbolTable* symbolTable, Offset offset)
-            : Semantics({})
-            , m_symbolTable(symbolTable)
+            : m_symbolTable(symbolTable)
             , m_offset(offset)
         {
             addToHash("symbol_pointer");
@@ -109,7 +88,37 @@ namespace sda::researcher
         }
 
         std::string toString() const override {
-            return "symbol_pointer";
+            return "symbol_pointer(0x" + utils::ToHex(m_offset) + ")";
+        }
+    };
+
+    class SymbolLoadSemantics : public Semantics {
+        SymbolPointerSemantics* m_pointerSem;
+        size_t m_loadSize;
+    public:
+        SymbolLoadSemantics(SymbolPointerSemantics* pointerSem, size_t loadSize)
+            : m_pointerSem(pointerSem)
+            , m_loadSize(loadSize)
+        {
+            addToHash("symbol_load");
+            addToHash(pointerSem);
+            addToHash(loadSize);
+        }
+
+        SymbolPointerSemantics* getPointerSemantics() {
+            return m_pointerSem;
+        }
+
+        size_t getLoadSize() const {
+            return m_loadSize;
+        }
+
+        std::list<Semantics*> getPredecessors() const override {
+            return { m_pointerSem };
+        }
+
+        std::string toString() const override {
+            return "symbol_load(0x" + utils::ToHex(m_pointerSem->getOffset()) + ":" + std::to_string(m_loadSize) + ")";
         }
     };
 
@@ -121,8 +130,7 @@ namespace sda::researcher
             ircode::Function* function,
             size_t index
         )
-            : Semantics({})
-            , m_function(function)
+            : m_function(function)
             , m_index(index)
         {
             addToHash("func_param");
@@ -139,8 +147,7 @@ namespace sda::researcher
         ircode::Function* m_function;
     public:
         FunctionReturnSemantics(ircode::Function* function)
-            : Semantics({})
-            , m_function(function)
+            : m_function(function)
         {
             addToHash("func_return");
             addToHash(function->getEntryOffset());
@@ -155,8 +162,7 @@ namespace sda::researcher
         const ircode::Operation* m_operation;
     public:
         OperationSemantics(const ircode::Operation* operation)
-            : Semantics({})
-            , m_operation(operation)
+            : m_operation(operation)
         {
             addToHash("operation");
             addToHash(operation);
@@ -167,71 +173,62 @@ namespace sda::researcher
         }
     };
 
-    class CopySemantics : public Semantics {
-        Semantics* m_refSemantics;
+    class HolderSemantics : public Semantics {
+        std::list<Semantics*> m_predecessors;
+        Semantics* m_semantics;
+        SemanticsObject* m_holder = nullptr;
     public:
-        CopySemantics(Semantics* predSemantics)
-            : Semantics({ predSemantics })
+        HolderSemantics(Semantics* semantics, const std::list<Semantics*>& predecessors, SemanticsObject* holder)
+            : m_semantics(semantics)
+            , m_predecessors(predecessors)
+            , m_holder(holder)
         {
-            if (auto copyPredSem = dynamic_cast<CopySemantics*>(predSemantics)) {
-                m_refSemantics = copyPredSem->m_refSemantics;
-            } else {
-                m_refSemantics = predSemantics;
+            m_predecessors.push_back(semantics);
+            addToHash("holder");
+            for (auto pred : m_predecessors) {
+                addToHash(pred);
             }
-            addToHash("copy");
+            addToHash(holder);
         }
 
-        CopySemantics(Semantics* predSemantics, const ircode::Operation* operation)
-            : CopySemantics(predSemantics)
-        {
-            addToHash(operation);
+        Semantics* getSemantics() const {
+            return m_semantics;
         }
 
-        CopySemantics(Semantics* predSemantics, SemanticsObject* object)
-            : CopySemantics(predSemantics)
-        {
-            addToHash(object);
+        std::list<Semantics*> getPredecessors() const override {
+            return m_predecessors;
         }
 
-        Semantics* getRefSemantics() const {
-            return m_refSemantics;
+        SemanticsObject* getHolder() const {
+            return m_holder;
         }
 
         std::string toString() const override {
-            return m_refSemantics->toString();
+            return "holder";
         }
     };
 
-    Semantics* UnwrapSemantics(Semantics* sem) {
-        if (auto copySem = dynamic_cast<CopySemantics*>(sem)) {
-            return copySem->getRefSemantics();
-        }
-        return sem;
-    }
-
     std::list<SemanticsObject*> GetSemanticsHolders(Semantics* sem) {
-        if (auto holder = sem->getHolder()) {
-            return { holder };
+        if (auto holderSem = dynamic_cast<HolderSemantics*>(sem)) {
+            return { holderSem->getHolder() };
         }
+        // gather first holders of all successors
         std::list<SemanticsObject*> objects;
         for (auto succ : sem->getSuccessors()) {
-            if (auto copySucc = dynamic_cast<CopySemantics*>(succ)) {
-                if (auto holder = copySucc->getHolder()) {
-                    objects.push_back(holder);
-                }
-            }
+            auto holders = GetSemanticsHolders(succ);
+            objects.insert(objects.end(), holders.begin(), holders.end());
         }
         return objects;
     }
 
     class SemanticsObject {
         friend class SemanticsRepository;
-        std::list<Semantics*> m_semantics;
+        std::list<HolderSemantics*> m_semantics;
         std::list<std::shared_ptr<ircode::Variable>> m_variables;
     public:
         SemanticsObject() {}
 
-        const std::list<Semantics*>& getSemantics() const {
+        const std::list<HolderSemantics*>& getSemantics() const {
             return m_semantics;
         }
 
@@ -276,7 +273,11 @@ namespace sda::researcher
 
         // remove all semantics of object
         void cleanObject(SemanticsObject* object) {
-            removeSemanticsChain(object->m_semantics);
+            std::list<Semantics*> semanticsToRemove;
+            for (auto sem : object->m_semantics) {
+                semanticsToRemove.push_back(sem);
+            }
+            removeSemanticsChain(semanticsToRemove);
         }
 
         void removeObject(SemanticsObject* object) {
@@ -321,28 +322,73 @@ namespace sda::researcher
         }
 
         template<typename T>
-        T* addSemantics(const T& sem, SemanticsObject* object) {
+        T* addSemantics(const T& sem, bool alwaysReturn = true) {
             auto semPtr = getSemantics(sem.getHash());
             if (semPtr) {
+                if (alwaysReturn) {
+                    return static_cast<T*>(semPtr);
+                }
                 return nullptr;
             }
-            return static_cast<T*>(addNewSemantics(std::make_unique<T>(sem), object));
+            return static_cast<T*>(addNewSemantics(std::make_unique<T>(sem)));
         }
 
-        // Shared semantics can be shared by several objects (holders)
-        template<typename T>
-        T* addSharedSemantics(const T& sem, SemanticsObject* object, CopySemantics** copySemOut = nullptr) {
-            auto semPtr = static_cast<T*>(getSemantics(sem.getHash()));
-            if (!semPtr) {
-                semPtr = static_cast<T*>(addNewSemantics(std::make_unique<T>(sem)));
-            }
-            if (auto copySem = addSemantics(CopySemantics(semPtr, object), object)) {
-                if (copySemOut) {
-                    *copySemOut = copySem;
+        bool addSemanticsToObject(Semantics* sem, const std::list<Semantics*>& predecessors, SemanticsObject* object) {
+            if (auto holderSem = addSemantics(HolderSemantics(sem, predecessors, object), false)) {
+                if (object) {
+                    object->m_semantics.push_back(holderSem);
                 }
-                return semPtr;
+                return true;
             }
-            return nullptr;
+            return false;
+        }
+
+        class Adder {
+            SemanticsRepository* m_repository;
+            std::list<Semantics*> m_semantics;
+            Semantics* m_current = nullptr;
+            Semantics* m_result = nullptr;
+            std::list<Semantics*> m_predecessors;
+        public:
+            Adder(SemanticsRepository* repository)
+                : m_repository(repository)
+            {}
+
+            // Add already existing semantics
+            Adder& addPointer(Semantics* sem) {
+                assert(m_current == nullptr);
+                m_current = sem;
+                return *this;
+            }
+
+            // Add new semantics
+            template<typename T>
+            Adder& add(const T& sem) {
+                return addPointer(m_repository->addSemantics(sem));
+            }
+
+            // Add already existing dependency semantics
+            Adder& addDependencyPointer(Semantics* sem, SemanticsObject* object = nullptr) {
+                m_predecessors.push_back(sem);
+                if (object) {
+                    m_repository->addSemanticsToObject(sem, {}, object);
+                }
+                return *this;
+            }
+
+            // Add new dependency semantics
+            template<typename T>
+            Adder& addDependency(const T& sem, SemanticsObject* object = nullptr) {
+                return addDependencyPointer(m_repository->addSemantics(sem), object);
+            }
+
+            bool addTo(SemanticsObject* object) {
+                return m_repository->addSemanticsToObject(m_current, m_predecessors, object);
+            }
+        };
+
+        Adder getAdder() {
+            return Adder(this);
         }
 
         void removeSemanticsChain(std::list<Semantics*> startSemantics) {
@@ -357,6 +403,9 @@ namespace sda::researcher
                         continue;
                     successors.push_back(successor);
                 }
+            }
+            for (auto sem : allSemanticsToRemove) {
+                disconnectSemantics(sem);
             }
             for (auto sem : allSemanticsToRemove) {
                 removeSemantics(sem);
@@ -381,32 +430,26 @@ namespace sda::researcher
         Semantics* addNewSemantics(std::unique_ptr<Semantics> sem, SemanticsObject* object = nullptr) {
             auto semPtr = sem.get();
             m_semantics[sem->getHash()] = std::move(sem);
-            for (auto predecessor : semPtr->m_predecessors) {
+            for (auto predecessor : semPtr->getPredecessors()) {
                 predecessor->m_successors.push_back(semPtr);
-            }
-            if (object) {
-                semPtr->m_holder = object;
-                object->m_semantics.push_back(semPtr);
             }
             return semPtr;
         }
 
-        void removeSemantics(Semantics* sem) {
-            if (sem->m_holder) {
-                sem->m_holder->m_semantics.remove_if([&](Semantics* s) {
-                    return s == sem;
-                });
-            }
-            for (auto pred : sem->m_predecessors) {
+        void disconnectSemantics(Semantics* sem) {
+            for (auto pred : sem->getPredecessors()) {
                 pred->m_successors.remove_if([&](Semantics* s) {
                     return s == sem;
                 });
             }
-            for (auto succ : sem->m_successors) {
-                succ->m_predecessors.remove_if([&](Semantics* s) {
-                    return s == sem;
+            if (auto holderSem = dynamic_cast<HolderSemantics*>(sem)) {
+                holderSem->getHolder()->m_semantics.remove_if([&](HolderSemantics* s) {
+                    return s == holderSem;
                 });
             }
+        }
+
+        void removeSemantics(Semantics* sem) {
             m_semantics.erase(sem->getHash());
         }
     };
@@ -448,45 +491,47 @@ namespace sda::researcher
                 auto paramVars = function->getParamVariables();
                 for (size_t i = 0; i < paramVars.size(); ++i) {
                     if (output == paramVars[i]) {
-                        if (auto paramSem = m_repository->addSharedSemantics(FunctionParameterSemantics(function, i), object)) {
-                            auto dataType = signatureDt->getParameters()[i]->getDataType();
-                            if (m_repository->addSharedSemantics(DataTypeSemantics(dataType, { paramSem }), object)) {
-                                MarkObjectAsAffected(ctx, object);
-                            }
+                        auto dataType = signatureDt->getParameters()[i]->getDataType();
+                        if (m_repository->getAdder()
+                                .add(DataTypeSemantics(dataType))
+                                .addDependency(FunctionParameterSemantics(function, i), object)
+                                .addTo(object)
+                        ) {
+                            MarkObjectAsAffected(ctx, object);
                         }
                     }
                 }
             }
 
             if (output == function->getReturnVariable()) {
-                if (auto returnSem = m_repository->addSharedSemantics(FunctionReturnSemantics(function), object)) {
-                    auto dataType = signatureDt->getReturnType();
-                    if (m_repository->addSharedSemantics(DataTypeSemantics(dataType, { returnSem }), object)) {
-                        MarkObjectAsAffected(ctx, object);
-                    }
+                auto dataType = signatureDt->getReturnType();
+                if (m_repository->getAdder()
+                        .add(DataTypeSemantics(dataType))
+                        .addDependency(FunctionReturnSemantics(function), object)
+                        .addTo(object)
+                ) {
+                    MarkObjectAsAffected(ctx, object);
                 }
             }
 
             if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(op)) {
                 auto input = unaryOp->getInput();
                 
-                if (opId == ircode::OperationId::LOAD) {
-                    auto loadSize = output->getSize();
-                    if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
+                if (opId == ircode::OperationId::COPY) {
+                    auto outputAddrVal = output->getMemAddress().value;
+                    if (auto outputAddrVar = std::dynamic_pointer_cast<ircode::Variable>(outputAddrVal)) {
+                        if (auto addrObject = m_repository->getObject(outputAddrVar)) {
+                            handleAddress(ctx, addrObject);
+                        }
+                    }
+                }
+                else if (opId == ircode::OperationId::LOAD) {
+                    if (auto inputReg = std::dynamic_pointer_cast<ircode::Register>(input)) {
+                        auto symbolTables = getAllSymbolTables(ctx, output);
+                        handleSymbolTables(ctx, symbolTables, 0);
+                    } else if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
                         if (auto inputObject = m_repository->getObject(inputVar)) {
-                            for (auto inputSem : inputObject->getSemantics()) {
-                                if (auto symbolPtrSem = dynamic_cast<SymbolPointerSemantics*>(UnwrapSemantics(inputSem))) {
-                                    auto foundSymbols = symbolPtrSem->getSymbolTable()->getAllSymbolsRecursivelyAt(symbolPtrSem->getOffset());
-                                    for (auto [_, symbolOffset, symbol] : foundSymbols) {
-                                        auto dataType = symbol->getDataType();
-                                        if (dataType->getSize() == loadSize) {
-                                            if (m_repository->addSharedSemantics(DataTypeSemantics(dataType, { symbolPtrSem }), object)) {
-                                                MarkObjectAsAffected(ctx, object);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                            handleAddress(ctx, inputObject);
                         }
                     }
                 }
@@ -522,10 +567,14 @@ namespace sda::researcher
                     for (auto& input : {input1, input2}) {
                         if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
                             if (auto inputObject = m_repository->getObject(inputVar)) {
-                                for (auto inputSem : inputObject->getSemantics()) {
-                                    if (auto dtInputSem = dynamic_cast<DataTypeSemantics*>(UnwrapSemantics(inputSem))) {
+                                for (auto holderInputSem : inputObject->getSemantics()) {
+                                    if (auto dtInputSem = dynamic_cast<DataTypeSemantics*>(holderInputSem->getSemantics())) {
                                         if (dtInputSem->getDataType()->isScalar(ScalarType::SignedInt)) {
-                                            if (m_repository->addSemantics(CopySemantics(dtInputSem, op), object)) {
+                                            if (m_repository->getAdder()
+                                                    .addPointer(dtInputSem)
+                                                    .addDependencyPointer(holderInputSem)
+                                                    .addTo(object)
+                                            ) {
                                                 MarkObjectAsAffected(ctx, object);
                                             }
                                         }
@@ -544,28 +593,8 @@ namespace sda::researcher
                         for (auto& term : linearExpr.getTerms()) {
                             if (term.factor != 1 || term.value->getSize() != platform->getPointerSize())
                                 continue;
-                            if (auto baseRegister = ExtractRegister(term.value)) {
-                                SymbolTable* symbolTable = nullptr;
-                                if (baseRegister->getRegId() == Register::InstructionPointerId) {
-                                    symbolTable = m_program->getGlobalSymbolTable();
-                                } else if (baseRegister->getRegId() == Register::StackPointerId) {
-                                    symbolTable = function->getFunctionSymbol()->getStackSymbolTable();
-                                }
-                                
-                                Semantics* symbolSemPtr;
-                                if (m_repository->addSharedSemantics(SymbolPointerSemantics(symbolTable, offset), object, &symbolSemPtr)) {
-                                    MarkObjectAsAffected(ctx, object);
-                                }
-
-                                auto foundSymbols = symbolTable->getAllSymbolsRecursivelyAt(offset);
-                                for (auto [_, symbolOffset, symbol] : foundSymbols) {
-                                    auto dataType = symbol->getDataType()->getPointerTo();
-                                    if (m_repository->addSharedSemantics(DataTypeSemantics(dataType, { symbolSemPtr }), object)) {
-                                        MarkObjectAsAffected(ctx, object);
-                                    }
-                                }
-                                break;
-                            }
+                            auto symbolTables = getAllSymbolTables(ctx, term.value);
+                            handleSymbolTables(ctx, symbolTables, offset);
                         }
                     }
                 } else if (
@@ -609,8 +638,12 @@ namespace sda::researcher
                     for (auto& input : {input1, input2}) {
                         if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
                             if (auto inputObject = m_repository->getObject(inputVar)) {
-                                for (auto inputSem : inputObject->getSemantics()) {
-                                    if (m_repository->addSemantics(CopySemantics(inputSem, op), object)) {
+                                for (auto holderInputSem : inputObject->getSemantics()) {
+                                    if (m_repository->getAdder()
+                                            .addPointer(holderInputSem->getSemantics())
+                                            .addDependencyPointer(holderInputSem)
+                                            .addTo(object)
+                                    ) {
                                         MarkObjectAsAffected(ctx, object);
                                     }
                                 }
@@ -630,21 +663,25 @@ namespace sda::researcher
                         auto argValue = argValues[i];
                         if (auto argVar = std::dynamic_pointer_cast<ircode::Variable>(argValue)) {
                             if (auto argObject = m_repository->getObject(argVar)) {
-                                if (auto paramSem = m_repository->addSharedSemantics(FunctionParameterSemantics(calledFunction, i), argObject)) {
-                                    auto dataType = params[i]->getDataType();
-                                    if (m_repository->addSharedSemantics(DataTypeSemantics(dataType, { paramSem }), argObject)) {
-                                        MarkObjectAsAffected(ctx, argObject);
-                                    }
+                                auto dataType = params[i]->getDataType();
+                                if (m_repository->getAdder()
+                                        .add(DataTypeSemantics(dataType))
+                                        .addDependency(FunctionParameterSemantics(calledFunction, i), argObject)
+                                        .addTo(argObject)
+                                ) {
+                                    MarkObjectAsAffected(ctx, argObject);
                                 }
                             }
                         }
                     }
                     auto retDataType = signatureDt->getReturnType();
                     if (!retDataType->isVoid()) {
-                        if (auto returnSem = m_repository->addSharedSemantics(FunctionReturnSemantics(function), object)) {
-                            if (m_repository->addSharedSemantics(DataTypeSemantics(retDataType, { returnSem }), object)) {
-                                MarkObjectAsAffected(ctx, object);
-                            }
+                        if (m_repository->getAdder()
+                                .add(DataTypeSemantics(retDataType))
+                                .addDependency(FunctionReturnSemantics(function), object)
+                                .addTo(object)
+                        ) {
+                            MarkObjectAsAffected(ctx, object);
                         }
                     }
                 }
@@ -652,6 +689,89 @@ namespace sda::researcher
         }
 
     private:
+        void handleAddress(ResearcherPropagationContext& ctx, SemanticsObject* address) {
+            auto op = ctx.operation;
+            auto output = op->getOutput();
+            auto object = m_repository->getObject(output);
+            auto loadSize = output->getSize();
+            auto isObjectAffected = false;
+            for (auto holderAddrSem : address->getSemantics()) {
+                if (auto symbolSem = dynamic_cast<SymbolPointerSemantics*>(holderAddrSem->getSemantics())) {
+                    if (m_repository->getAdder()
+                            .add(SymbolLoadSemantics(symbolSem, loadSize))
+                            .addDependencyPointer(holderAddrSem)
+                            .addTo(object)
+                    ) {
+                        isObjectAffected = true;
+                    }
+                    auto symbolInfo = symbolSem->getSymbolTable()->getSymbolAt(symbolSem->getOffset());
+                    if (symbolInfo.symbol && symbolInfo.symbol->getOffset() == symbolInfo.requestedOffset) {
+                        auto dataType = symbolInfo.symbol->getDataType();
+                        if (dataType->getSize() == loadSize) {
+                            if (m_repository->getAdder()
+                                .add(DataTypeSemantics(dataType))
+                                .addDependencyPointer(holderAddrSem)
+                                .addTo(object)
+                            ) {
+                                isObjectAffected = true;
+                            }
+                        }
+                    }
+                }
+            }
+            if (isObjectAffected) {
+                MarkObjectAsAffected(ctx, object);
+            }
+        }
+
+        void handleSymbolTables(ResearcherPropagationContext& ctx, const std::list<SymbolTable*>& symbolTables, size_t offset) {
+            auto op = ctx.operation;
+            auto output = op->getOutput();
+            auto object = m_repository->getObject(output);
+            auto isObjectAffected = false;
+            for (auto symbolTable : symbolTables) {
+                auto foundSymbols = symbolTable->getAllSymbolsRecursivelyAt(offset, true);
+                for (auto [symbolTable, requestedOffset, symbol] : foundSymbols) {
+                    if (m_repository->getAdder()
+                        .add(SymbolPointerSemantics(symbolTable, requestedOffset))
+                        .addTo(object)
+                    ) {
+                        isObjectAffected = true;
+                    }
+                }
+            }
+            if (isObjectAffected) {
+                MarkObjectAsAffected(ctx, object);
+            }
+        }
+
+        std::list<SymbolTable*> getAllSymbolTables(ResearcherPropagationContext& ctx, std::shared_ptr<ircode::Value> value) const {
+            auto op = ctx.operation;
+            auto function = op->getBlock()->getFunction();
+            std::list<SymbolTable*> symbolTables;
+            if (auto baseRegister = ExtractRegister(value)) {
+                if (baseRegister->getRegId() == Register::InstructionPointerId) {
+                    symbolTables.push_back(m_program->getGlobalSymbolTable());
+                } else if (baseRegister->getRegId() == Register::StackPointerId) {
+                    symbolTables.push_back(function->getFunctionSymbol()->getStackSymbolTable());
+                }
+            }
+            if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
+                if (auto object = m_repository->getObject(var)) {
+                    for (auto holderSem : object->getSemantics()) {
+                        if (auto dtSem = dynamic_cast<DataTypeSemantics*>(holderSem->getSemantics())) {
+                            if (auto pointerDt = dynamic_cast<PointerDataType*>(dtSem->getDataType())) {
+                                if (auto structDt = dynamic_cast<StructureDataType*>(pointerDt->getPointedType())) {
+                                    symbolTables.push_back(structDt->getSymbolTable());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return symbolTables;
+        }
+
         ScalarDataType* getScalarDataType(ScalarType scalarType, size_t size) const {
             return getContext()->getDataTypes()->getScalar(scalarType, size);
         }
@@ -665,10 +785,12 @@ namespace sda::researcher
         void setDataTypeFor(ResearcherPropagationContext& ctx, std::shared_ptr<ircode::Value> value, DataType* dataType) {
             if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
                 if (auto object = m_repository->getObject(var)) {
-                    if (auto opSem = m_repository->addSemantics(OperationSemantics(ctx.operation), object)) {
-                        if (m_repository->addSemantics(DataTypeSemantics(dataType, { opSem }), object)) {
-                            MarkObjectAsAffected(ctx, object);
-                        }
+                    if (m_repository->getAdder()
+                            .add(DataTypeSemantics(dataType))
+                            .addDependency(OperationSemantics(ctx.operation), object)
+                            .addTo(object)
+                    ) {
+                        MarkObjectAsAffected(ctx, object);
                     }
                 }
             }

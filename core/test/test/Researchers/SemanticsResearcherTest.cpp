@@ -35,8 +35,8 @@ protected:
             varList.sort();
             auto varListStr = boost::algorithm::join(varList, ", ");
             std::list<std::string> semList;
-            for (auto& semantics : obj.getSemantics()) {
-                semList.push_back(semantics->toString());
+            for (auto semantics : obj.getSemantics()) {
+                semList.push_back(semantics->getSemantics()->toString());
             }
             semList.sort();
             auto semListStr = boost::algorithm::join(semList, ", ");
@@ -133,12 +133,10 @@ TEST_F(SemanticsResearcherTest, Simple2) {
             var6[var5]:4 = COPY var3 \
     ";
     auto expectedSemantics = "\
-        B0:var1 -> empty \n\
-        B0:var2 -> symbol_pointer \n\
-        B0:var3, B0:var4, B3:var3, B3:var6 -> int32_t, int32_t, return \n\
-        B3:var1, B3:var2 -> int32_t, param1 \n\
-        B3:var4 -> empty \n\
-        B3:var5 -> symbol_pointer \
+        B0:var1, B3:var4 -> symbol_pointer(0x0) \n\
+        B0:var2, B3:var5 -> symbol_pointer(0x200) \n\
+        B0:var3, B0:var4, B3:var3, B3:var6 -> int32_t, int32_t, return, symbol_load(0x200:4) \n\
+        B3:var1, B3:var2 -> int32_t, param1 \
     ";
     auto instructions = PcodeFixture::parsePcode(sourcePCode);
     pcode::ListInstructionProvider provider(instructions);
@@ -273,5 +271,52 @@ TEST_F(SemanticsResearcherTest, Simple3) {
     ASSERT_TRUE(cmp(mainFunction, expectedIRCodeOfMain));
     ASSERT_TRUE(cmp(func1, expectedIRCodeOfFunc1));
     ASSERT_TRUE(cmp(func2, expectedIRCodeOfFunc2));
+    ASSERT_TRUE(cmpSemantics(expectedSemantics));
+}
+
+TEST_F(SemanticsResearcherTest, GlobalVarAssignmentObject) {
+    /*
+        void func(Object* param1, float param2) {
+            param1->field_0x10 = param2;
+            globalVar_0x200 = param1;
+        }
+    */
+   auto sourcePCode = "\
+        r10:8 = INT_ADD rcx:8, 0x10:8 \n\
+        STORE r10:8, xmm1:Da \n\
+        r10:8 = INT_ADD rip:8, 0x200:8 \n\
+        STORE r10:8, rcx:8 \n\
+    ";
+    auto testStructureCode = "\
+        TestStruct = struct { \
+            float b = 0x10 \
+        } \
+    ";
+    auto globalSymbolTableCode = "\
+        { \
+            TestStruct* globalVar_0x200 = 0x200 \
+        } \
+    ";
+    auto expectedIRCodeOfFunc = "\
+        Block B0(level: 1): \n\
+            var1:8 = LOAD rcx \n\
+            var2[r10]:8 = INT_ADD var1, 0x10:8 \n\
+            var3:4 = LOAD xmm1 \n\
+            var4[var2]:4 = COPY var3 \n\
+            var5:8 = LOAD rip \n\
+            var6[r10]:8 = INT_ADD var5, 0x200:8 \n\
+            var7[var6]:8 = COPY var1 \
+    ";
+    auto expectedSemantics = "\
+        B0:var1, B0:var7 -> TestStruct*, symbol_load(0x200:8), symbol_pointer(0x0) \n\
+        B0:var2 -> symbol_pointer(0x10) \n\
+        B0:var3, B0:var4 -> float, symbol_load(0x10:4) \n\
+        B0:var5 -> symbol_pointer(0x0) \n\
+        B0:var6 -> symbol_pointer(0x200) \
+    ";
+    auto func = parsePcode(sourcePCode, program);
+    parseDataType(testStructureCode);
+    parseSymbolTable(globalSymbolTableCode, false, globalSymbolTable);
+    ASSERT_TRUE(cmp(func, expectedIRCodeOfFunc));
     ASSERT_TRUE(cmpSemantics(expectedSemantics));
 }
