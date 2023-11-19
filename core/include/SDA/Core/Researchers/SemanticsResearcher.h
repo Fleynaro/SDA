@@ -392,6 +392,7 @@ namespace sda::researcher
         }
 
         void removeSemanticsChain(std::list<Semantics*> startSemantics) {
+            // gather all semantics to remove
             std::set<Semantics*> allSemanticsToRemove;
             std::list<Semantics*> successors = startSemantics;
             while (!successors.empty()) {
@@ -404,9 +405,27 @@ namespace sda::researcher
                     successors.push_back(successor);
                 }
             }
-            for (auto sem : allSemanticsToRemove) {
-                disconnectSemantics(sem);
+
+            // disconnect all semantics from their predecessors including all predecessors without successors
+            auto allSemanticsToDisconnect = allSemanticsToRemove;
+            while (!allSemanticsToDisconnect.empty()) {
+                auto semToDisconnect = *allSemanticsToDisconnect.begin();
+                allSemanticsToDisconnect.erase(allSemanticsToDisconnect.begin());
+                disconnectSemantics(semToDisconnect);
+                for (auto predecessor : semToDisconnect->getPredecessors()) {
+                    if (allSemanticsToRemove.find(predecessor) != allSemanticsToRemove.end())
+                        continue;
+                    // if semantics without successors (by itself), add it to remove list
+                    if (predecessor->m_successors.empty()) {
+                        if (!dynamic_cast<HolderSemantics*>(predecessor)) {
+                            allSemanticsToDisconnect.insert(predecessor);
+                            allSemanticsToRemove.insert(predecessor);
+                        }
+                    }
+                }
             }
+
+            // remove them
             for (auto sem : allSemanticsToRemove) {
                 removeSemantics(sem);
             }
