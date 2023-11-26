@@ -238,9 +238,19 @@ namespace sda::researcher
     };
 
     // used where object get semantics or all object semantics removed (object cleaned)
-    void MarkObjectAsAffected(ResearcherPropagationContext& ctx, SemanticsObject* object) {
+    void MarkObjectAsAffected(ResearcherPropagationContext& ctx, SemanticsObject* object, DataFlowRepository* dataFlowRepo) {
         for (auto& var : object->getVariables()) {
             ctx.markValueAsAffected(var);
+            // see test SemanticsResearcherTest.MutualFunction
+            if (auto dataFlowNode = dataFlowRepo->getNode(var)) {
+                for (auto succ : dataFlowNode->successors) {
+                    if (succ->type == DataFlowNode::Copy) {
+                        if (auto succVar = succ->getVariable()) {
+                            ctx.markValueAsAffected(succVar);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -477,9 +487,15 @@ namespace sda::researcher
     {
     protected:
         SemanticsRepository* m_repository;
+        DataFlowRepository* m_dataFlowRepo;
+
+        void markValueAsAffected(ResearcherPropagationContext& ctx, SemanticsObject* object) {
+            MarkObjectAsAffected(ctx, object, m_dataFlowRepo);
+        }
     public:
-        SemanticsPropagator(SemanticsRepository* repository)
+        SemanticsPropagator(SemanticsRepository* repository, DataFlowRepository* dataFlowRepo)
             : m_repository(repository)
+            , m_dataFlowRepo(dataFlowRepo)
         {}
 
         virtual void propagate(ResearcherPropagationContext& ctx) = 0;
@@ -489,8 +505,8 @@ namespace sda::researcher
     {
         ircode::Program* m_program;
     public:
-        BaseSemanticsPropagator(ircode::Program* program, SemanticsRepository* repository)
-            : SemanticsPropagator(repository)
+        BaseSemanticsPropagator(ircode::Program* program, SemanticsRepository* repository, DataFlowRepository* dataFlowRepo)
+            : SemanticsPropagator(repository, dataFlowRepo)
             , m_program(program)
         {}
 
@@ -516,7 +532,35 @@ namespace sda::researcher
                                 .addDependency(FunctionParameterSemantics(function, i), object)
                                 .addTo(object)
                         ) {
-                            MarkObjectAsAffected(ctx, object);
+                            markValueAsAffected(ctx, object);
+                        }
+                    }
+                }
+
+                // get semantics from other functions through parameters (presented as data flow nodes)
+                // (see test SemanticsResearcherTest.MutualFunction)
+                if (auto dataFlowNode = m_dataFlowRepo->getNode(output)) {
+                    std::set<SemanticsObject*> predObjects;
+                    if (dataFlowNode->type == DataFlowNode::Copy) {
+                        for (auto pred : dataFlowNode->predecessors) {
+                            if (auto predVar = pred->getVariable()) {
+                                if (auto predObject = m_repository->getObject(predVar)) {
+                                    if (predObject != object) {
+                                        predObjects.insert(predObject);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    for (auto predObject : predObjects) {
+                        for (auto holderPredSem : predObject->getSemantics()) {
+                            if (m_repository->getAdder()
+                                    .addPointer(holderPredSem->getSemantics())
+                                    .addDependencyPointer(holderPredSem)
+                                    .addTo(object)
+                            ) {
+                                markValueAsAffected(ctx, object);
+                            }
                         }
                     }
                 }
@@ -529,7 +573,7 @@ namespace sda::researcher
                         .addDependency(FunctionReturnSemantics(function), object)
                         .addTo(object)
                 ) {
-                    MarkObjectAsAffected(ctx, object);
+                    markValueAsAffected(ctx, object);
                 }
             }
 
@@ -594,7 +638,7 @@ namespace sda::researcher
                                                     .addDependencyPointer(holderInputSem)
                                                     .addTo(object)
                                             ) {
-                                                MarkObjectAsAffected(ctx, object);
+                                                markValueAsAffected(ctx, object);
                                             }
                                         }
                                     }
@@ -663,7 +707,7 @@ namespace sda::researcher
                                             .addDependencyPointer(holderInputSem)
                                             .addTo(object)
                                     ) {
-                                        MarkObjectAsAffected(ctx, object);
+                                        markValueAsAffected(ctx, object);
                                     }
                                 }
                             }
@@ -688,7 +732,7 @@ namespace sda::researcher
                                         .addDependency(FunctionParameterSemantics(calledFunction, i), argObject)
                                         .addTo(argObject)
                                 ) {
-                                    MarkObjectAsAffected(ctx, argObject);
+                                    markValueAsAffected(ctx, object);
                                 }
                             }
                         }
@@ -700,7 +744,7 @@ namespace sda::researcher
                                 .addDependency(FunctionReturnSemantics(function), object)
                                 .addTo(object)
                         ) {
-                            MarkObjectAsAffected(ctx, object);
+                            markValueAsAffected(ctx, object);
                         }
                     }
                 }
@@ -739,7 +783,7 @@ namespace sda::researcher
                 }
             }
             if (isObjectAffected) {
-                MarkObjectAsAffected(ctx, object);
+                markValueAsAffected(ctx, object);
             }
         }
 
@@ -760,7 +804,7 @@ namespace sda::researcher
                 }
             }
             if (isObjectAffected) {
-                MarkObjectAsAffected(ctx, object);
+                markValueAsAffected(ctx, object);
             }
         }
 
@@ -809,7 +853,7 @@ namespace sda::researcher
                             .addDependency(OperationSemantics(ctx.operation), object)
                             .addTo(object)
                     ) {
-                        MarkObjectAsAffected(ctx, object);
+                        markValueAsAffected(ctx, object);
                     }
                 }
             }
@@ -824,8 +868,8 @@ namespace sda::researcher
     {
         ircode::Program* m_program;
         SemanticsRepository* m_semanticsRepo;
-        DataFlowRepository* m_dataFlowRepo;
         ClassRepository* m_classRepo;
+        DataFlowRepository* m_dataFlowRepo;
         std::list<std::unique_ptr<SemanticsPropagator>> m_propagators;
 
         class EventHandler
@@ -851,6 +895,7 @@ namespace sda::researcher
                 });
             }
 
+            // TODO: move such event handler (working with specific semantics) to propagator
             void handleFunctionSignatureChangedEvent(const ircode::FunctionSignatureChangedEvent& event) {
                 // Should be called when any change in function signature occurs (including change of data type of any parameter or return)
                 ResearcherPropagationContext ctx;
@@ -890,7 +935,7 @@ namespace sda::researcher
                 ResearcherPropagationContext ctx;
                 auto output = event.op->getOutput();
                 if (auto outputObject = m_researcher->m_semanticsRepo->getObject(output)) {
-                    MarkObjectAsAffected(ctx, outputObject);
+                    markValueAsAffected(ctx, outputObject);
                     m_researcher->m_semanticsRepo->unbindVariableWithObject(output, outputObject);
                     if (outputObject->getVariables().empty()) {
                         m_researcher->m_semanticsRepo->removeObject(outputObject);
@@ -931,10 +976,11 @@ namespace sda::researcher
                     // find new variables for each offset and label
                     std::map<std::pair<size_t, size_t>, std::list<std::shared_ptr<ircode::Variable>>> labelAndOffsetToVar;
                     for (auto structure : structuresInGroup) {
+                        auto info = m_researcher->m_classRepo->getStructureInfo(structure);
+                        auto labelHash = labelsToHash(info->labels);
                         for (auto node : structure->linkedNodes) {
                             if (auto var = node->getVariable()) {
-                                // TODO: define label
-                                labelAndOffsetToVar[std::pair(0, node->offset)].push_back(var);
+                                labelAndOffsetToVar[std::pair(labelHash, node->offset)].push_back(var);
                             }
                         }
                     }
@@ -954,7 +1000,7 @@ namespace sda::researcher
                 ResearcherPropagationContext ctx;
                 // remove all the related semantic objects
                 for (auto object : objectsToRemove) {
-                    MarkObjectAsAffected(ctx, object);
+                    markValueAsAffected(ctx, object);
                     m_researcher->m_semanticsRepo->removeObject(object);
                 }
                 // create new semantic objects based on the groups
@@ -979,7 +1025,7 @@ namespace sda::researcher
                 if (event.structure->sourceNode) {
                     if (auto sourceVar = event.structure->sourceNode->getVariable()) {
                         if (auto object = m_researcher->m_semanticsRepo->getObject(sourceVar)) {
-                            MarkObjectAsAffected(ctx, object);
+                            markValueAsAffected(ctx, object);
                             for (auto node : event.structure->linkedNodes) {
                                 if (auto var = node->getVariable()) {
                                     // remove structure's variables from object
@@ -1053,6 +1099,18 @@ namespace sda::researcher
             void handleSymbolTableSymbolRemovedEvent(const SymbolTableSymbolRemovedEvent& event) {
                 handleSymbolPointerUpdatedEvent(event.symbolTable, event.offset, event.symbol->getDataType()->getSize());
             }
+
+            size_t labelsToHash(const std::set<size_t>& labels) {
+                size_t hash = 0;
+                for (auto label : labels) {
+                    boost::hash_combine(hash, label);
+                }
+                return hash;
+            }
+
+            void markValueAsAffected(ResearcherPropagationContext& ctx, SemanticsObject* object) {
+                MarkObjectAsAffected(ctx, object, m_researcher->m_dataFlowRepo);
+            }
         public:
             EventHandler(SemanticsResearcher* researcher) : m_researcher(researcher) {}
 
@@ -1076,13 +1134,13 @@ namespace sda::researcher
         SemanticsResearcher(
             ircode::Program* program,
             SemanticsRepository* semanticsRepo,
-            DataFlowRepository* dataFlowRepo,
-            ClassRepository* classRepo
+            ClassRepository* classRepo,
+            DataFlowRepository* dataFlowRepo
         )
             : m_program(program)
             , m_semanticsRepo(semanticsRepo)
-            , m_dataFlowRepo(dataFlowRepo)
             , m_classRepo(classRepo)
+            , m_dataFlowRepo(dataFlowRepo)
             , m_eventHandler(this)
         {}
 
