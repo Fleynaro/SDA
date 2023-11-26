@@ -321,3 +321,67 @@ TEST_F(SemanticsResearcherTest, GlobalVarAssignmentObject) {
     ASSERT_TRUE(cmp(func, expectedIRCodeOfFunc));
     ASSERT_TRUE(cmpSemantics(expectedSemantics));
 }
+
+TEST_F(SemanticsResearcherTest, CopyObjectInParts) {
+    /*
+        // Description: we set TestStruct for globalVar_0x100 and should get TestStruct* for param1
+
+        void func(TestStruct* param1) {
+            *param1 = globalVar_0x100;
+        }
+    */
+   auto sourcePCode = "\
+        $0:8 = INT_ADD rip:8, 0x100:8 \n\
+        $1:8 = INT_ADD $0:8, 0x8:8 \n\
+        $2:8 = LOAD $0:8, 8:8 \n\
+        $3:8 = LOAD $1:8, 8:8 \n\
+        $4:8 = INT_ADD rcx:8, 0x10:8 \n\
+        $5:8 = INT_ADD $4:8, 0x8:8 \n\
+        STORE $4:8, $2:8 \n\
+        STORE $5:8, $3:8 \
+    ";
+    auto testStructureCode = "\
+        TestStruct = struct { \
+            float x, \
+            float y, \
+            float z, \
+            float w, \
+        } \
+    ";
+    auto globalSymbolTableCode = "\
+        { \
+            TestStruct globalVar_0x100 = 0x100 \
+        } \
+    ";
+    auto expectedIRCodeOfFunc = "\
+        Block B0(level: 1): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U0]:8 = INT_ADD var1, 0x100:8 \n\
+            var3[$U1]:8 = INT_ADD var2, 0x8:8 \n\
+            var4:8 = LOAD var2 \n\
+            var5[$U2]:8 = COPY var4 \n\
+            var6:8 = LOAD var3 \n\
+            var7[$U3]:8 = COPY var6 \n\
+            var8:8 = LOAD rcx \n\
+            var9[$U4]:8 = INT_ADD var8, 0x10:8 \n\
+            var10[$U5]:8 = INT_ADD var9, 0x8:8 \n\
+            var11[var9]:8 = COPY var5 \n\
+            var12[var10]:8 = COPY var7 \
+    ";
+    auto expectedSemantics = "\
+        B0:var1 -> symbol_pointer(0x0) \n\
+        B0:var10 -> empty \n\
+        B0:var11, B0:var4, B0:var5 -> symbol_load(0x0:8), symbol_load(0x100:8) \n\
+        B0:var12, B0:var6, B0:var7 -> symbol_load(0x108:8), symbol_load(0x8:8) \n\
+        B0:var2 -> symbol_pointer(0x0), symbol_pointer(0x100) \n\
+        B0:var3 -> symbol_pointer(0x108), symbol_pointer(0x8) \n\
+        B0:var8 -> empty \n\
+        B0:var9 -> empty \
+    ";
+    auto func = parsePcode(sourcePCode, program);
+    parseDataType(testStructureCode);
+    parseSymbolTable(globalSymbolTableCode, false, globalSymbolTable);
+    ASSERT_TRUE(cmp(func, expectedIRCodeOfFunc));
+    ASSERT_TRUE(cmpSemantics(expectedSemantics));
+}
+
