@@ -514,6 +514,128 @@ TEST_F(ClassResearcherTest, MutualFieldInTwoClasses) {
     ASSERT_TRUE(cmpFieldStructureGroups(expectedFieldStructureGroups));
 }
 
+TEST_F(ClassResearcherTest, UserDefinedLabelFieldOffset) {
+    /*
+        // NOTE: In this test the offset of the label field is defined by user as 0x4 (not 0x0 as usual).
+        // TEST CHECK: player->field_0x8 and vehicle->field_0x8 are not the same field (in contrast to MutualFieldInTwoClasses test).
+
+        void main() {
+            if (globalVar_0x100->field_0x4 == 1) {
+                player = static_cast<Player*>(globalVar_0x100);
+                player->field_0x8 = globalVar_0x30;
+            }
+            else if (globalVar_0x100->field_0x4 == 2) {
+                vehicle = static_cast<Vehicle*>(globalVar_0x100);
+                vehicle->field_0x8 = globalVar_0x40;
+            }
+        }
+    */
+   auto sourcePCode = "\
+        // main() \n\
+        $1:8 = INT_ADD rip:8, 0x100:8 \n\
+        $2:8 = LOAD $1:8, 8:8 \n\
+        $3:8 = INT_ADD $2:8, 0x4:8 \n\
+        $7:4 = LOAD $3:8, 4:8 \n\
+        $8:1 = INT_NOTEQUAL $7:4, 1:4 \n\
+        CBRANCH <vehicle_check>, $8:1 \n\
+        $9:8 = INT_ADD $2:8, 0x8:8 \n\
+        $10:8 = INT_ADD rip:8, 0x30:8 \n\
+        $11:4 = LOAD $10:8, 4:8 \n\
+        STORE $9:8, $11:4 \n\
+        BRANCH <end> \n\
+        <vehicle_check>: \n\
+        $13:1 = INT_NOTEQUAL $7:4, 2:4 \n\
+        CBRANCH <end>, $13:1 \n\
+        $14:8 = INT_ADD $2:8, 0x8:8 \n\
+        $15:8 = INT_ADD rip:8, 0x40:8 \n\
+        $16:4 = LOAD $15:8, 4:8 \n\
+        STORE $14:8, $16:4 \n\
+        <end>: \n\
+        RETURN \n\
+    ";
+    auto expectedIRCodeOfMainFunc = "\
+        Block B0(level: 1, near: B6, far: Bb, cond: var8): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U1]:8 = INT_ADD var1, 0x100:8 \n\
+            var3:8 = LOAD var2 \n\
+            var4[$U2]:8 = COPY var3 \n\
+            var5[$U3]:8 = INT_ADD var4, 0x4:8 \n\
+            var6:4 = LOAD var5 \n\
+            var7[$U7]:4 = COPY var6 \n\
+            var8[$U8]:1 = INT_NOTEQUAL var7, 0x1:4 \n\
+        Block B6(level: 2, far: B11): \n\
+            var9:8 = REF var4 \n\
+            var10[$U9]:8 = INT_ADD var9, 0x8:8 \n\
+            var11:8 = REF var1 \n\
+            var12[$U10]:8 = INT_ADD var11, 0x30:8 \n\
+            var13:4 = LOAD var12 \n\
+            var14[$U11]:4 = COPY var13 \n\
+            var15[var10]:4 = COPY var14 \n\
+        Block Bb(level: 2, near: Bd, far: B11, cond: var17): \n\
+            var16:4 = REF var7 \n\
+            var17[$U13]:1 = INT_NOTEQUAL var16, 0x2:4 \n\
+        Block Bd(level: 3, near: B11): \n\
+            var18:8 = REF var4 \n\
+            var19[$U14]:8 = INT_ADD var18, 0x8:8 \n\
+            var20:8 = REF var1 \n\
+            var21[$U15]:8 = INT_ADD var20, 0x40:8 \n\
+            var22:4 = LOAD var21 \n\
+            var23[$U16]:4 = COPY var22 \n\
+            var24[var19]:4 = COPY var23 \n\
+        Block B11(level: 4): \n\
+            empty \
+    ";
+    auto expectedStructures = "\
+        struct root { \n\
+            0x30: B0:var13 \n\
+            0x40: B0:var22 \n\
+            0x100: B0:var3 \n\
+        } \n\
+        \n\
+        struct B0:var3 : root_0x100 { \n\
+            0x4: B0:var6 \n\
+        } \n\
+        \n\
+        struct B0:var18 : B0:var3 { \n\
+            0x4: 0x2 \n\
+            0x8: B0:var22 \n\
+        } \n\
+        \n\
+        struct B0:var9 : B0:var3 { \n\
+            0x4: 0x1 \n\
+            0x8: B0:var13 \n\
+        } \
+    ";
+    auto expectedStructureInfos = "\
+        B0:var18 \n\
+            0x4: 0x2 \n\
+        B0:var3 \n\
+            0x4: 0x1, 0x2 \n\
+        B0:var9 \n\
+            0x4: 0x1 \n\
+        root_0x100 \n\
+            0x4: 0x1, 0x2 \
+    ";
+    auto expectedFieldStructureGroups = "";
+    auto mainFunction = parsePcode(sourcePCode, program);
+    {
+        // Set label offset at 0x4
+        auto var3 = mainFunction->findVariableById(3);
+        auto var8 = mainFunction->findVariableById(8);
+        auto link = structureRepo->getLink(dataFlowRepo->getNode(var3));
+        researcher::ClassLabelInfo info;
+        info.labelOffset = 0x4;
+        info.structureInstrOffset = var3->getSourceOperation()->getPcodeInstruction()->getOffset();
+        info.sourceInstrOffset = var8->getSourceOperation()->getPcodeInstruction()->getOffset();
+        // When we set label offset at 0x4, we should have {expectedFieldStructureGroups} empty (that is, player->field_0x8 and vehicle->field_0x8 are not the same)
+        classRepo->addUserDefinedLabelOffset(link->structure, info);
+    }
+    ASSERT_TRUE(cmp(mainFunction, expectedIRCodeOfMainFunc));
+    ASSERT_TRUE(cmpStructures(expectedStructures));
+    ASSERT_TRUE(cmpStructureInfos(expectedStructureInfos));
+    ASSERT_TRUE(cmpFieldStructureGroups(expectedFieldStructureGroups));
+}
+
 TEST_F(ClassResearcherTest, MutualFunction) {
     /*
         void main() {

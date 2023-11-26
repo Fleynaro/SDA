@@ -158,12 +158,32 @@ namespace sda::researcher
         }
     };
 
+    static const size_t ClassResearchTopic = TopicName("ClassResearchTopic");
+
+    // When class label info is added
+    struct ClassLabelInfoAddedEvent : Event {
+        Structure* structure;
+
+        ClassLabelInfoAddedEvent(Structure* structure)
+            : Event(ClassResearchTopic)
+            , structure(structure)
+        {}
+    };
+
+    struct ClassLabelInfo {
+        pcode::InstructionOffset structureInstrOffset;
+        pcode::InstructionOffset sourceInstrOffset;
+        size_t labelOffset;
+    };
+
     class ClassRepository
     {
         struct StructureInfo {
             Structure* structure;
             ConstantSet conditions;
             ConstantSet constants;
+            size_t labelOffset = size_t(-1);
+            std::set<size_t> labels;
             FieldStructureGroup* group = nullptr;
 
             ConstantSet getLabelSet() const {
@@ -190,12 +210,37 @@ namespace sda::researcher
             }
         };
         std::map<Structure*, StructureInfo> m_structureToInfo;
+        std::map<sda::Offset, ClassLabelInfo> m_classLabelInfos;
         std::list<FieldStructureGroup> m_fieldStructureGroups;
         std::shared_ptr<EventPipe> m_eventPipe;
     public:
         ClassRepository(std::shared_ptr<EventPipe> eventPipe)
             : m_eventPipe(eventPipe)
         {}
+
+        void addUserDefinedLabelOffset(Structure* structure, const ClassLabelInfo& info) {
+            m_classLabelInfos.emplace(info.structureInstrOffset, info);
+            m_eventPipe->send(ClassLabelInfoAddedEvent(structure));
+        }
+
+        size_t getUserDefinedLabelOffset(const std::set<Structure*>& structures) const {
+            size_t labelOffset = -1;
+            for (auto structure : structures) {
+                for (auto linkNode : structure->linkedNodes) {
+                    if (auto var = linkNode->getVariable()) {
+                        if (auto instr = var->getSourceOperation()->getPcodeInstruction()) {
+                            auto it = m_classLabelInfos.find(instr->getOffset());
+                            if (it != m_classLabelInfos.end()) {
+                                labelOffset = it->second.labelOffset;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (labelOffset != -1) break;
+            }
+            return labelOffset;
+        }
 
         const std::list<FieldStructureGroup>& getAllFieldStructureGroups() const {
             return m_fieldStructureGroups;
@@ -283,6 +328,10 @@ namespace sda::researcher
                 }
                 m_researcher->research(startStructures);
             }
+
+            void handleClassLabelInfoAddedEvent(const ClassLabelInfoAddedEvent& event) {
+                m_researcher->research({ event.structure });
+            }
         public:
             EventHandler(ClassResearcher* researcher) : m_researcher(researcher) {}
 
@@ -291,6 +340,7 @@ namespace sda::researcher
                 pipe
                     ->connect(StructureRepository::GetOptimizedEventPipe())
                     ->subscribeMethod(this, &EventHandler::handleStructureUpdatedEventBatch);
+                pipe->subscribeMethod(this, &EventHandler::handleClassLabelInfoAddedEvent);
                 pipe->subscribeMethod(this, &EventHandler::handleStructureRemovedEvent);
                 return pipe;
             }
@@ -337,11 +387,22 @@ namespace sda::researcher
                     }
                 }
 
+                // set label offsets and labels (see test ClassResearcherTest.UserDefinedLabelFieldOffset)
+                auto labelOffset = m_classRepo->getUserDefinedLabelOffset(structuresInGroup);
+                if (labelOffset == -1) {
+                    // if no user defined label offset, use 0
+                    labelOffset = 0;
+                }
+                for (auto structure : structuresInGroup) {
+                    auto info = m_classRepo->getStructureInfo(structure);
+                    info->labelOffset = labelOffset;
+                    info->labels = getLabels(info->getLabelSet(), labelOffset);
+                }
+
                 ClassFieldRangeSet classFieldRangeSet;
                 std::map<size_t, std::map<size_t, std::list<Structure*>>> structuresByFieldAndLabel;
                 for (auto structure : structuresInGroup) {
                     auto info = m_classRepo->getStructureInfo(structure);
-                    auto labels = getLabels(info->getLabelSet(), structure);
 
                     // fill labelsToMaxOffset
                     size_t lastOffset = -1;
@@ -352,12 +413,12 @@ namespace sda::researcher
                         lastOffset = std::max(lastOffset, structure->conditions.values().rbegin()->first);
                     }
                     if (lastOffset != -1) {
-                        classFieldRangeSet.addRange(labels, lastOffset);
+                        classFieldRangeSet.addRange(info->labels, lastOffset);
                     }
 
                     // fill structuresByFieldAndLabel (indexing structures by [field, label])
                     for (auto& [offset, field] : structure->fields) {
-                        for (auto label : labels) {
+                        for (auto label : info->labels) {
                             structuresByFieldAndLabel[offset][label].push_back(structure);
                         }
                     }
@@ -451,8 +512,8 @@ namespace sda::researcher
             }
         }
 
-        std::set<size_t> getLabels(const ConstantSet& set, Structure* structure) {
-            auto it = set.values().find(0x0); // label (type) field at offset 0x0
+        std::set<size_t> getLabels(const ConstantSet& set, size_t labelOffset) {
+            auto it = set.values().find(labelOffset);
             if (it != set.values().end()) {
                 return it->second;
             }
