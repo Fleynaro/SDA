@@ -514,6 +514,134 @@ TEST_F(ClassResearcherTest, MutualFieldInTwoClasses) {
     ASSERT_TRUE(cmpFieldStructureGroups(expectedFieldStructureGroups));
 }
 
+TEST_F(ClassResearcherTest, MutualFunction) {
+    /*
+        void main() {
+            if (globalVar_0x100->field_0x0 == 1) {
+                player = static_cast<Player*>(globalVar_0x100);
+                mutual(player, 1);
+            }
+            else if (globalVar_0x100->field_0x0 == 2) {
+                vehicle = static_cast<Vehicle*>(globalVar_0x100);
+                mutual(vehicle, 2);
+            }
+        }
+
+        void mutual(Entity* entity, int value) {
+            entity->field_0x8 = value;
+        }
+    */
+   auto sourcePCode = "\
+        // main() \n\
+        $1:8 = INT_ADD rip:8, 0x100:8 \n\
+        $2:8 = LOAD $1:8, 8:8 \n\
+        $3:4 = LOAD $2:8, 4:8 \n\
+        $4:1 = INT_NOTEQUAL $3:4, 1:4 \n\
+        CBRANCH <vehicle_check>, $4:1 \n\
+        rcx:8 = COPY $2:8 \n\
+        rdx:4 = COPY 0x1:4 \n\
+        CALL <mutual> \n\
+        BRANCH <end> \n\
+        <vehicle_check>: \n\
+        $5:4 = LOAD $2:8, 4:8 \n\
+        $6:1 = INT_NOTEQUAL $5:4, 2:4 \n\
+        CBRANCH <end>, $6:1 \n\
+        rcx:8 = COPY $2:8 \n\
+        rdx:4 = COPY 0x2:4 \n\
+        CALL <mutual> \n\
+        <end>: \n\
+        RETURN \n\
+        \n\
+        \n\
+        // mutual(Entity* entity, int value) \n\
+        <mutual>: \n\
+        $1:8 = INT_ADD rcx:8, 0x8:8 \n\
+        STORE $1:8, rdx:4 \n\
+        RETURN \
+    ";
+    auto mutualSig = "\
+        mutualSig = signature fastcall void(uint64_t param1, uint32_t param2) \
+    ";
+    auto expectedIRCodeOfMainFunc = "\
+        Block B0(level: 1, near: B5, far: B9, cond: var7): \n\
+            var1:8 = LOAD rip \n\
+            var2[$U1]:8 = INT_ADD var1, 0x100:8 \n\
+            var3:8 = LOAD var2 \n\
+            var4[$U2]:8 = COPY var3 \n\
+            var5:4 = LOAD var4 \n\
+            var6[$U3]:4 = COPY var5 \n\
+            var7[$U4]:1 = INT_NOTEQUAL var6, 0x1:4 \n\
+        Block B5(level: 2, far: Bf): \n\
+            var8:8 = REF var4 \n\
+            var9[rcx]:8 = COPY var8 \n\
+            var10[rdx]:4 = COPY 0x1:4 \n\
+            var11:1 = CALL 0x1000:8, var9, var10 \n\
+        Block B9(level: 2, near: Bc, far: Bf, cond: var15): \n\
+            var12:8 = REF var4 \n\
+            var13:4 = REF var5 \n\
+            var14[$U5]:4 = COPY var13 \n\
+            var15[$U6]:1 = INT_NOTEQUAL var14, 0x2:4 \n\
+        Block Bc(level: 3, near: Bf): \n\
+            var16:8 = REF var12 \n\
+            var17[rcx]:8 = COPY var16 \n\
+            var18[rdx]:4 = COPY 0x2:4 \n\
+            var19:1 = CALL 0x1000:8, var17, var18 \n\
+        Block Bf(level: 4): \n\
+            empty \
+    ";
+    auto expectedIRCodeOfMutualFunc = "\
+        Block B10(level: 1): \n\
+            var1:8 = LOAD rcx // param1 \n\
+            var2[$U1]:8 = INT_ADD var1, 0x8:8 \n\
+            var3:4 = LOAD rdx // param2 \n\
+            var4[var2]:4 = COPY var3 \
+    ";
+    auto expectedStructures = "\
+        struct B10:var1 { \n\
+            0x8: B10:var3 \n\
+        } \n\
+        \n\
+        struct B0:var16 : B0:var3, B10:var1 { \n\
+            0x0: 0x2 \n\
+        } \n\
+        \n\
+        struct B0:var8 : B0:var3, B10:var1 { \n\
+            0x0: 0x1 \n\
+        } \n\
+        \n\
+        struct root { \n\
+            0x100: B0:var3 \n\
+        } \n\
+        \n\
+        struct B0:var3 : root_0x100 { \n\
+            0x0: B0:var5 \n\
+        } \
+    ";
+    auto expectedStructureInfos = "\
+        B0:var16 \n\
+            0x0: 0x2 \n\
+        B0:var3 \n\
+            0x0: 0x1, 0x2 \n\
+        B0:var8 \n\
+            0x0: 0x1 \n\
+        B10:var1 \n\
+            0x0: 0x1, 0x2 \n\
+        root_0x100 \n\
+            0x0: 0x1, 0x2 \
+    ";
+    auto mainFunction = parsePcode(sourcePCode, program);
+    auto mutualSigDt = dynamic_cast<SignatureDataType*>(
+        parseDataType(mutualSig));
+    auto mutualFunc = program->toFunction(
+        graph->getFunctionGraphAt(pcode::InstructionOffset(0x10, 0)));
+    mutualFunc->getFunctionSymbol()->getSignature()->copyFrom(mutualSigDt);
+    ASSERT_TRUE(cmp(mainFunction, expectedIRCodeOfMainFunc));
+    ASSERT_TRUE(cmp(mutualFunc, expectedIRCodeOfMutualFunc));
+    ASSERT_TRUE(cmpStructures(expectedStructures));
+    ASSERT_TRUE(cmpStructureInfos(expectedStructureInfos));
+    ASSERT_TRUE(cmpFieldStructureGroups(""));
+}
+
 TEST_F(ClassResearcherTest, TwoClassHierarchies) {
     /*
         1 class hierarchy: Entity, Player, Vehicle
