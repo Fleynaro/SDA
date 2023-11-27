@@ -21,7 +21,10 @@ protected:
             classRepo.get(),
             dataFlowRepo.get());
         semResearcher->addPropagator(
-            std::make_unique<researcher::BaseSemanticsPropagator>(program, semRepo.get(), dataFlowRepo.get()));
+            std::make_unique<researcher::BaseSemanticsPropagator>(
+                program,
+                semRepo.get(),
+                dataFlowRepo.get()));
         eventPipe->connect(semResearcher->getEventPipe());
     }
 
@@ -483,7 +486,7 @@ TEST_F(SemanticsResearcherTest, MutualFunction) {
         B0:var1 -> symbol_pointer(0x0) \n\
         B0:var10 -> param2, uint32_t \n\
         B0:var11 -> empty \n\
-        B0:var12, B0:var3, B0:var4, B10:var1 -> param1 x 3, symbol_load(0x100:8), uint64_t x 3 \n\
+        B0:var12, B0:var3, B0:var4, B10:var1 -> class_label_field(0x0) x 2, param1 x 3, symbol_load(0x100:8), uint64_t x 3 \n\
         B0:var13, B0:var14, B0:var5, B0:var6 -> empty \n\
         B0:var15 -> bool, operation \n\
         B0:var16, B0:var17 -> param1, uint64_t \n\

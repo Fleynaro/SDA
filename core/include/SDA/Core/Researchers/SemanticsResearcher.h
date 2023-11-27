@@ -173,6 +173,27 @@ namespace sda::researcher
         }
     };
 
+    class ClassLabelFieldSemantics : public Semantics {
+        ClassLabelInfo m_info;
+    public:
+        ClassLabelFieldSemantics(const ClassLabelInfo& info)
+            : m_info(info)
+        {
+            addToHash("class_label_field");
+            addToHash(info.structureInstrOffset.fullOffset);
+            addToHash(info.sourceInstrOffset.fullOffset);
+            addToHash(info.labelOffset);
+        }
+
+        const ClassLabelInfo& getClassLabelInfo() const {
+            return m_info;
+        }
+
+        std::string toString() const override {
+            return "class_label_field(0x" + utils::ToHex(m_info.labelOffset) + ")";
+        }
+    };
+
     class HolderSemantics : public Semantics {
         std::list<Semantics*> m_predecessors;
         Semantics* m_semantics;
@@ -586,6 +607,10 @@ namespace sda::researcher
                         if (auto addrObject = m_repository->getObject(outputAddrVar)) {
                             handleAddress(ctx, addrObject);
                         }
+                        size_t constValue;
+                        if (ircode::ExtractConstant(input, constValue)) {
+                            handleClassLabelFieldOperation(ctx, outputAddrVar);
+                        }
                     }
                 }
                 else if (opId == ircode::OperationId::LOAD) {
@@ -647,8 +672,8 @@ namespace sda::researcher
                         }
                     }
 
-                    if (binaryOp->getId() == ircode::OperationId::INT_ADD ||
-                        binaryOp->getId() == ircode::OperationId::INT_MULT)
+                    if (opId == ircode::OperationId::INT_ADD ||
+                        opId == ircode::OperationId::INT_MULT)
                     {
                         auto linearExpr = ircode::GetLinearExpr(output, true);
                         auto offset = linearExpr.getConstTermValue();
@@ -672,13 +697,21 @@ namespace sda::researcher
                 ) {
                     auto booleanDt = findDataType("bool");
                     setDataTypeFor(ctx, output, booleanDt);
-                    if (binaryOp->getId() >= ircode::OperationId::FLOAT_EQUAL &&
-                        binaryOp->getId() <= ircode::OperationId::FLOAT_LESSEQUAL)
+                    if (opId >= ircode::OperationId::FLOAT_EQUAL &&
+                        opId <= ircode::OperationId::FLOAT_LESSEQUAL)
                         {
                             auto floatScalarDt = getScalarDataType(ScalarType::FloatingPoint, outputSize);
                             setDataTypeFor(ctx, input1, floatScalarDt);
                             setDataTypeFor(ctx, input2, floatScalarDt);
-                }
+                        }
+                    if (opId == ircode::OperationId::INT_EQUAL || opId == ircode::OperationId::INT_NOTEQUAL) {
+                        if (auto addrValue = ircode::ExtractAddressValue(input1)) {
+                            size_t constValue;
+                            if (ircode::ExtractConstant(input2, constValue)) {
+                                handleClassLabelFieldOperation(ctx, addrValue);
+                            }
+                        }
+                    }
                 } else if (
                     opId >= ircode::OperationId::BOOL_NEGATE &&
                     opId <= ircode::OperationId::BOOL_OR
@@ -750,6 +783,35 @@ namespace sda::researcher
         }
 
     private:
+        void handleClassLabelFieldOperation(ResearcherPropagationContext& ctx, std::shared_ptr<ircode::Value> addrValue) {
+            auto op = ctx.operation;
+            auto output = op->getOutput();
+            auto object = m_repository->getObject(output);
+            auto linearExpr = ircode::GetLinearExpr(addrValue, true);
+            auto offset = linearExpr.getConstTermValue();
+            auto baseTerms = ircode::ToBaseTerms(linearExpr, getContext()->getPlatform());
+            for (auto& term : baseTerms) {
+                if (auto termVar = std::dynamic_pointer_cast<ircode::Variable>(term)) {
+                    if (auto termObject = m_repository->getObject(termVar)) {
+                        if (auto termVarInstr = termVar->getSourceOperation()->getPcodeInstruction()) {
+                            ClassLabelInfo info;
+                            info.structureInstrOffset = termVarInstr->getOffset();
+                            info.sourceInstrOffset = op->getPcodeInstruction()->getOffset();
+                            info.labelOffset = offset;
+                            // TODO: if the semantic will be removed externally (by hash) we should go here
+                            if (m_repository->getAdder()
+                                    .add(ClassLabelFieldSemantics(info))
+                                    .addDependency(OperationSemantics(op), object)
+                                    .addTo(termObject)
+                            ) {
+                                markValueAsAffected(ctx, object);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         void handleAddress(ResearcherPropagationContext& ctx, SemanticsObject* address) {
             auto op = ctx.operation;
             auto output = op->getOutput();

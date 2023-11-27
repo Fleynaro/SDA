@@ -3,14 +3,42 @@
 using namespace sda;
 using namespace sda::ircode;
 
-const sda::Register* ircode::ExtractRegister(std::shared_ptr<ircode::Value> value)
-{
+std::shared_ptr<Value> GoThroughCopyRef(std::shared_ptr<Value> value, bool goThroughRef = true) {
+    if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
+        auto srcOp = var->getSourceOperation();
+        if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(srcOp)) {
+            if (unaryOp->getId() == ircode::OperationId::COPY || (goThroughRef && unaryOp->getId() == ircode::OperationId::REF)) {
+                return GoThroughCopyRef(unaryOp->getInput(), goThroughRef);
+            }
+        }
+    }
+    return value;
+}
+
+const sda::Register* ircode::ExtractRegister(std::shared_ptr<ircode::Value> value) {
+    if (auto addrValue = ircode::ExtractAddressValue(value)) {
+        if (auto reg = std::dynamic_pointer_cast<ircode::Register>(addrValue)) {
+            return &reg->getRegister();
+        }
+    }
+    return nullptr;
+}
+
+bool ircode::ExtractConstant(std::shared_ptr<ircode::Value> value, size_t& constValue) {
+    value = GoThroughCopyRef(value);
+    if (auto constant = std::dynamic_pointer_cast<ircode::Constant>(value)) {
+        constValue = constant->getConstVarnode()->getValue();
+        return true;
+    }
+    return false;
+}
+
+std::shared_ptr<Value> ircode::ExtractAddressValue(std::shared_ptr<ircode::Value> value) {
+    value = GoThroughCopyRef(value);
     if (auto variable = std::dynamic_pointer_cast<ircode::Variable>(value)) {
         if (auto unarySrcOp = dynamic_cast<const ircode::UnaryOperation*>(variable->getSourceOperation())) {
             if (unarySrcOp->getId() == ircode::OperationId::LOAD) {
-                if (auto reg = std::dynamic_pointer_cast<ircode::Register>(unarySrcOp->getInput())) {
-                    return &reg->getRegister();
-                }
+                return unarySrcOp->getInput();
             }
         }
     }
@@ -18,14 +46,10 @@ const sda::Register* ircode::ExtractRegister(std::shared_ptr<ircode::Value> valu
 }
 
 LinearExpression ircode::GetLinearExpr(std::shared_ptr<Value> value, bool goThroughRef) {
+    value = GoThroughCopyRef(value, goThroughRef);
     if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
         auto srcOp = var->getSourceOperation();
-        if (auto unaryOp = dynamic_cast<const ircode::UnaryOperation*>(srcOp)) {
-            if (unaryOp->getId() == ircode::OperationId::COPY || (goThroughRef && unaryOp->getId() == ircode::OperationId::REF)) {
-                return GetLinearExpr(unaryOp->getInput(), goThroughRef);
-            }
-        }
-        else if (auto binaryOp = dynamic_cast<const ircode::BinaryOperation*>(srcOp)) {
+        if (auto binaryOp = dynamic_cast<const ircode::BinaryOperation*>(srcOp)) {
             if (binaryOp->getId() == ircode::OperationId::INT_ADD || binaryOp->getId() == ircode::OperationId::INT_MULT) {
                 auto linearExprInp1 = GetLinearExpr(binaryOp->getInput1(), goThroughRef);
                 auto linearExprInp2 = GetLinearExpr(binaryOp->getInput2(), goThroughRef);
