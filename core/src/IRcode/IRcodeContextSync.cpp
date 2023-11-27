@@ -56,12 +56,11 @@ void ContextSync::SignatureToVariableMappingUpdater::updateForValue(
     }
     else if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
         auto linearExpr = Value::GetLinearExpr(var, true);
-        Offset offset = linearExpr.getConstTermValue();
+        auto offset = linearExpr.getConstTermValue();
         auto platform = m_signatureDt->getContext()->getPlatform();
-        for (auto& term : linearExpr.getTerms()) {
-            if (term.factor != 1 || term.value->getSize() != platform->getPointerSize())
-                continue;
-            if (auto baseRegister = ExtractRegister(term.value)) {
+        auto baseTerms = ircode::Value::ToBaseTerms(linearExpr, platform);
+        for (auto& term : baseTerms) {
+            if (auto baseRegister = ExtractRegister(term)) {
                 auto regId = baseRegister->getRegId();
                 if (regId == sda::Register::InstructionPointerId || regId == sda::Register::StackPointerId) {
                     auto storageInfo = m_signatureDt->findStorageInfo({

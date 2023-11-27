@@ -652,11 +652,9 @@ namespace sda::researcher
                     {
                         auto linearExpr = ircode::Value::GetLinearExpr(output, true);
                         auto offset = linearExpr.getConstTermValue();
-                        auto platform = getContext()->getPlatform();
-                        for (auto& term : linearExpr.getTerms()) {
-                            if (term.factor != 1 || term.value->getSize() != platform->getPointerSize())
-                                continue;
-                            auto symbolTables = getAllSymbolTables(ctx, term.value);
+                        auto baseTerms = ircode::Value::ToBaseTerms(linearExpr, getContext()->getPlatform());
+                        for (auto& term : baseTerms) {
+                            auto symbolTables = getAllSymbolTables(ctx, term);
                             handleSymbolTables(ctx, symbolTables, offset);
                         }
                     }

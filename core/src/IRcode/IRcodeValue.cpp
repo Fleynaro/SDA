@@ -60,6 +60,16 @@ LinearExpression Value::GetLinearExpr(std::shared_ptr<Value> value, bool goThrou
     return LinearExpression(value);
 }
 
+std::list<std::shared_ptr<Value>> Value::ToBaseTerms(const LinearExpression& linearExpr, Platform* platform) {
+    std::list<std::shared_ptr<Value>> baseTerms;
+    for (auto& term : linearExpr.getTerms()) {
+        if (term.factor != 1 || term.value->getSize() != platform->getPointerSize())
+            continue;
+        baseTerms.push_back(term.value);
+    }
+    return baseTerms;
+}
+
 Constant::Constant(std::shared_ptr<pcode::ConstantVarnode> constVarnode, Hash hash)
     : Value(hash), m_constVarnode(constVarnode)
 {}

@@ -318,11 +318,10 @@ namespace sda::researcher
                     binaryOp->getId() == ircode::OperationId::INT_MULT)
                 {
                     auto linearExpr = ircode::Value::GetLinearExpr(output);
-                    Offset offset = linearExpr.getConstTermValue();
-                    for (auto& term : linearExpr.getTerms()) {
-                        if (term.factor != 1 || term.value->getSize() != m_platform->getPointerSize())
-                            continue;
-                        if (auto termVar = std::dynamic_pointer_cast<ircode::Variable>(term.value)) {
+                    auto offset = linearExpr.getConstTermValue();
+                    auto baseTerms = ircode::Value::ToBaseTerms(linearExpr, m_platform);
+                    for (auto& term : baseTerms) {
+                        if (auto termVar = std::dynamic_pointer_cast<ircode::Variable>(term)) {
                             // if one of the nodes is already created, then it is address, not just another linear expression
                             if (m_dataFlowRepo->getNode(output) || m_dataFlowRepo->getNode(termVar)) {
                                 if (auto inputNode = m_dataFlowRepo->getOrCreateNode(termVar)) {

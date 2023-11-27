@@ -42,6 +42,8 @@ namespace sda::ircode
         void removeOperation(Operation* operation);
 
         static LinearExpression GetLinearExpr(std::shared_ptr<Value> value, bool goThroughRef = false);
+
+        static std::list<std::shared_ptr<Value>> ToBaseTerms(const LinearExpression& linearExpr, Platform* platform);
     };
 
     class Constant : public Value

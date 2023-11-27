@@ -215,11 +215,10 @@ namespace sda::researcher
             }
             else if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
                 auto linearExpr = ircode::Value::GetLinearExpr(var, true);
-                Offset offset = linearExpr.getConstTermValue();
-                for (auto& term : linearExpr.getTerms()) {
-                    if (term.factor != 1 || term.value->getSize() != m_platform->getPointerSize())
-                        continue;
-                    if (auto baseRegister = ExtractRegister(term.value)) {
+                auto offset = linearExpr.getConstTermValue();
+                auto baseTerms = ircode::Value::ToBaseTerms(linearExpr, m_platform);
+                for (auto& term : baseTerms) {
+                    if (auto baseRegister = ExtractRegister(term)) {
                         CallingConvention::Storage storage = {
                             type,
                             baseRegister->getRegId(),

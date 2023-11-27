@@ -239,11 +239,10 @@ std::map<Structure*, ConstantSet> StructureResearcher::findConditions(ircode::Bl
             continue;
         if (auto loadOp = goToLoadOperation(variable->getSourceOperation())) {
             auto linearExpr = ircode::Value::GetLinearExpr(loadOp->getInput());
-            Offset offset = linearExpr.getConstTermValue();
-            for (auto& term : linearExpr.getTerms()) {
-                if (term.factor != 1 || term.value->getSize() != m_platform->getPointerSize())
-                    continue;
-                if (auto ptrVar = std::dynamic_pointer_cast<ircode::Variable>(term.value)) {
+            auto offset = linearExpr.getConstTermValue();
+            auto baseTerms = ircode::Value::ToBaseTerms(linearExpr, m_platform);
+            for (auto& term : baseTerms) {
+                if (auto ptrVar = std::dynamic_pointer_cast<ircode::Variable>(term)) {
                     if (auto ptrVarNode = m_dataFlowRepo->getNode(ptrVar)) {
                         if (auto link = m_structureRepo->getLink(ptrVarNode)) {
                             result[link->structure].insert(offset, value);
