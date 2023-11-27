@@ -55,10 +55,10 @@ void ContextSync::SignatureToVariableMappingUpdater::updateForValue(
         }
     }
     else if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
-        auto linearExpr = Value::GetLinearExpr(var, true);
+        auto linearExpr = GetLinearExpr(var, true);
         auto offset = linearExpr.getConstTermValue();
         auto platform = m_signatureDt->getContext()->getPlatform();
-        auto baseTerms = ircode::Value::ToBaseTerms(linearExpr, platform);
+        auto baseTerms = ToBaseTerms(linearExpr, platform);
         for (auto& term : baseTerms) {
             if (auto baseRegister = ExtractRegister(term)) {
                 auto regId = baseRegister->getRegId();

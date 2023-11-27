@@ -2,6 +2,7 @@
 #include "ResearcherHelper.h"
 #include "SDA/Core/IRcode/IRcodeBlock.h"
 #include "SDA/Core/IRcode/IRcodeEvents.h"
+#include "SDA/Core/IRcode/IRcodeHelper.h"
 #include "SDA/Core/Utils/Logger.h"
 #include "SDA/Core/Utils/String.h"
 
@@ -317,9 +318,9 @@ namespace sda::researcher
                 if (binaryOp->getId() == ircode::OperationId::INT_ADD ||
                     binaryOp->getId() == ircode::OperationId::INT_MULT)
                 {
-                    auto linearExpr = ircode::Value::GetLinearExpr(output);
+                    auto linearExpr = ircode::GetLinearExpr(output);
                     auto offset = linearExpr.getConstTermValue();
-                    auto baseTerms = ircode::Value::ToBaseTerms(linearExpr, m_platform);
+                    auto baseTerms = ircode::ToBaseTerms(linearExpr, m_platform);
                     for (auto& term : baseTerms) {
                         if (auto termVar = std::dynamic_pointer_cast<ircode::Variable>(term)) {
                             // if one of the nodes is already created, then it is address, not just another linear expression

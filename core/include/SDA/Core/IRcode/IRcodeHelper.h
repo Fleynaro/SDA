@@ -4,4 +4,8 @@
 namespace sda::ircode
 {
     const sda::Register* ExtractRegister(std::shared_ptr<ircode::Value> value);
+
+    LinearExpression GetLinearExpr(std::shared_ptr<Value> value, bool goThroughRef = false);
+
+    std::list<std::shared_ptr<Value>> ToBaseTerms(const LinearExpression& linearExpr, Platform* platform);
 };

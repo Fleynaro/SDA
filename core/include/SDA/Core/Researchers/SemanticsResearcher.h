@@ -650,9 +650,9 @@ namespace sda::researcher
                     if (binaryOp->getId() == ircode::OperationId::INT_ADD ||
                         binaryOp->getId() == ircode::OperationId::INT_MULT)
                     {
-                        auto linearExpr = ircode::Value::GetLinearExpr(output, true);
+                        auto linearExpr = ircode::GetLinearExpr(output, true);
                         auto offset = linearExpr.getConstTermValue();
-                        auto baseTerms = ircode::Value::ToBaseTerms(linearExpr, getContext()->getPlatform());
+                        auto baseTerms = ircode::ToBaseTerms(linearExpr, getContext()->getPlatform());
                         for (auto& term : baseTerms) {
                             auto symbolTables = getAllSymbolTables(ctx, term);
                             handleSymbolTables(ctx, symbolTables, offset);

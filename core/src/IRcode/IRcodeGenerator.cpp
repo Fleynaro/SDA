@@ -3,6 +3,7 @@
 #include "SDA/Core/IRcode/IRcodeProgram.h"
 #include "SDA/Core/IRcode/IRcodeEvents.h"
 #include "SDA/Core/IRcode/IRcodePrinter.h"
+#include "SDA/Core/IRcode/IRcodeHelper.h"
 #include "SDA/Core/Platform/RegisterRepository.h"
 #include "SDA/Core/Utils/Logger.h"
 
@@ -499,7 +500,7 @@ ircode::MemoryAddress IRcodeGenerator::getRegisterMemoryAddress(std::shared_ptr<
 }
 
 ircode::MemoryAddress IRcodeGenerator::getMemoryAddress(std::shared_ptr<ircode::Value> addrValue, bool* isArrayType) const {
-    const auto addrExpr = Value::GetLinearExpr(addrValue, true);
+    const auto addrExpr = GetLinearExpr(addrValue, true);
     assert(!addrExpr.getTerms().empty());
     auto baseAddrValue = addrExpr.getTerms().front().value;
     assert(baseAddrValue->getSize() == 8 && "Invalid address size");
