@@ -2,11 +2,16 @@
 #include "SDA/Core/Image/Image.h"
 #include "SDA/Core/Platform/InstructionDecoder.h"
 #include "SDA/Core/Factory.h"
+#include "SDA/Core/Utils/Logger.h"
 
 namespace sda::bind
 {
     class HelpersBind
     {
+        static void InitLogger() {
+            utils::InitLogger();
+        }
+
         static auto InstructionToV8(const Instruction* origInstr, Offset offset) {
             auto isolate = v8::Isolate::GetCurrent();
             std::list<v8::Local<v8::Object>> tokenObjs;
@@ -58,6 +63,7 @@ namespace sda::bind
         
     public:
         static void Init(v8pp::module& module) {
+            module.function("InitLogger", &InitLogger);
             module.function("GetOriginalInstructions", &GetOriginalInstructions);
             module.function("GetOriginalInstructionInDetail", &GetOriginalInstructionInDetail);
             module.function("CreateContextObject", &CreateContextObject);

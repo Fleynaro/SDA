@@ -5,6 +5,8 @@ import { Instruction } from './platform';
 import { Image, ImageSection } from './image';
 import { Offset } from './utils';
 
+export declare function InitLogger(): void;
+
 export declare function CleanUpSharedObjectLookupTable(): void;
 
 export interface InstructionInfo {
@@ -29,6 +31,7 @@ export declare function CreateContextObject(context: Context, data: object): Con
 
 module.exports = {
   ...module.exports,
+  InitLogger: m.InitLogger,
   CleanUpSharedObjectLookupTable: m.CleanUpSharedObjectLookupTable,
   GetOriginalInstructions: m.GetOriginalInstructions,
   GetOriginalInstructionInDetail: m.GetOriginalInstructionInDetail,

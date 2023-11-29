@@ -1,11 +1,15 @@
-import { app } from 'electron';
 import path from 'path';
+import * as dotenv from 'dotenv';
+dotenv.config({
+  path: path.join(__dirname, '..', '.env'),
+});
+import { app } from 'electron';
 import { existsSync, mkdirSync } from 'fs';
 import { initRepo } from './repo';
 import { initControllers } from './controllers';
 import { objectChangeEmitter, ObjectChangeType } from './eventEmitter';
 import { toId } from 'utils/common';
-import { CleanUpSharedObjectLookupTable, Context, EventPipe } from 'sda-core';
+import { CleanUpSharedObjectLookupTable, Context, EventPipe, InitLogger } from 'sda-core';
 import { Project } from 'project';
 
 class App {
@@ -19,6 +23,7 @@ class App {
   init() {
     initRepo(this.eventPipe);
     initControllers();
+    InitLogger();
 
     // create user directory if not exists
     const userDir = this.getUserDir();

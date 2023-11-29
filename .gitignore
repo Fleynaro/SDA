@@ -1,9 +1,9 @@
-#folders
+# Folders
 build*/
 node_modules/
 dist/
 
-# typescript
+# Typescript
 *.tsbuildinfo
 
 # Precompiled Headers
@@ -12,3 +12,6 @@ dist/
 
 # Database
 *.db-journal
+
+# Other
+.env
