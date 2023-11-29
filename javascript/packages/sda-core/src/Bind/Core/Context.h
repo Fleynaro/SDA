@@ -85,6 +85,7 @@ namespace sda::bind
 
         static auto New(std::shared_ptr<EventPipe> pipe, Platform* platform) {
             auto context = new Context(pipe, platform);
+            context->initDefault();
             MakeSyncWithLookupTable(context);
             ObjectLookupTableRaw::AddObject(context);
             return ExportObject(context);
