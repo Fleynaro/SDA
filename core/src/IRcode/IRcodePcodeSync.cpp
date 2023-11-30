@@ -56,8 +56,22 @@ std::shared_ptr<EventPipe> CreateOptimizedUpdateBlocksEventPipe(Program* program
         if (!event.requested) return;
         data->pcodeBlocksToUpdate[event.block->getFunctionGraph()].insert(event.block);
     }));
+    commitPipeIn->subscribe(std::function([data](const pcode::BlockRemovedEvent& event) {
+        data->pcodeBlocksToUpdate[event.block->getFunctionGraph()].erase(event.block);
+    }));
     commitPipeIn->subscribe(std::function([data](const pcode::FunctionGraphRemovedEvent& event) {
         data->pcodeBlocksToUpdate.erase(event.functionGraph);
+    }));
+    commitPipeIn->subscribe(std::function([data](const pcode::BlockFunctionGraphChangedEvent& event) {
+        if (event.oldFunctionGraph) {
+            auto it = data->pcodeBlocksToUpdate.find(event.oldFunctionGraph);
+            if (it != data->pcodeBlocksToUpdate.end()) {
+                it->second.erase(event.block);
+                if (event.newFunctionGraph) {
+                    data->pcodeBlocksToUpdate[event.newFunctionGraph].insert(event.block);
+                }
+            }
+        }
     }));
     return optPipe;
 }
