@@ -76,6 +76,38 @@ std::shared_ptr<EventPipe> CreateOptimizedUpdateBlocksEventPipe(Program* program
     return optPipe;
 }
 
+std::shared_ptr<EventPipe> CreateOptimizedFunctionGraphPipe() {
+    struct Data {
+        std::list<pcode::FunctionGraph*> funcGraphs;
+    };
+    auto data = std::make_shared<Data>();
+    auto commitEndHandler = std::function([data](const EventNext& next) {
+        while (!data->funcGraphs.empty()) {
+            auto funcGraph = *data->funcGraphs.begin();
+            data->funcGraphs.pop_front();
+            next(pcode::FunctionGraphCreatedEvent(funcGraph));
+        }
+    });
+    auto [optPipe, commitPipeIn, pipeOut] = OptimizedCommitPipe(commitEndHandler);
+    commitPipeIn->subscribe(std::function([data](const pcode::FunctionGraphCreatedEvent& event) {
+        data->funcGraphs.push_back(event.functionGraph);
+    }));
+    commitPipeIn->subscribe(std::function([data, pipeOut](const pcode::FunctionGraphRemovedEvent& event) {
+        auto& funcGraphs = data->funcGraphs;
+        auto it = std::find(funcGraphs.begin(), funcGraphs.end(), event.functionGraph);
+        if (it != funcGraphs.end()) {
+            funcGraphs.erase(it);
+        } else {
+            // "remove event" must be handled immediately (object then will be removed)
+            pipeOut->send(event);
+        }
+    }));
+    commitPipeIn->subscribe(std::function([data](const pcode::BlockFunctionGraphChangedEvent& event) {
+        // TODO: make up how to handle this event (FunctionGraphCreatedEvent should be sent before BlockFunctionGraphChangedEvent)
+    }));
+    return optPipe;
+}
+
 PcodeSync::PcodeSync(Program* program)
     : m_program(program)
 {}
@@ -94,6 +126,7 @@ void PcodeSync::handleBlockFunctionGraphChanged(const pcode::BlockFunctionGraphC
         oldFunction->getBlocks().erase(event.block);
     }
     auto newFunction = m_program->toFunction(event.newFunctionGraph);
+    assert(newFunction != nullptr && "FunctionGraphCreatedEvent should be sent before BlockFunctionGraphChangedEvent");
     newFunction->getBlocks().emplace(event.block, Block(event.block, newFunction));
     m_program->getEventPipe()->send(BlockCreatedEvent(
         newFunction->toBlock(event.block)));
@@ -116,8 +149,9 @@ std::shared_ptr<EventPipe> PcodeSync::getEventPipe() {
     pipe
         ->connect(CreateOptimizedUpdateBlocksEventPipe(m_program))
         ->subscribeMethod(this, &PcodeSync::handleBlockUpdatedEvent);
-    pipe->subscribeMethod(this, &PcodeSync::handleBlockFunctionGraphChanged);
+    // TODO: auto optGraphPipe = pipe->connect(CreateOptimizedFunctionGraphPipe());
     pipe->subscribeMethod(this, &PcodeSync::handleFunctionGraphCreated);
     pipe->subscribeMethod(this, &PcodeSync::handleFunctionGraphRemoved);
+    pipe->subscribeMethod(this, &PcodeSync::handleBlockFunctionGraphChanged);
     return pipe;
 }
