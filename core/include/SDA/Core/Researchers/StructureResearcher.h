@@ -366,10 +366,13 @@ namespace sda::researcher
                         updatedStructures.push_back(structure);
                     }
                 }
+
+                void remove(Structure* structure) {
+                    updatedStructures.remove(structure);
+                }
             };
             auto data = std::make_shared<Data>();
-            auto filter = EventPipe::FilterTopic(StructureResearchTopic);
-            auto commitEmitter = std::function([data](const EventNext& next) {
+            auto commitEndHandler = std::function([data](const EventNext& next) {
                 if (data->updatedStructures.empty()) return;
                 EventBatch<StructureUpdatedEvent> batch(StructureResearchTopic);
                 for (auto structure : data->updatedStructures) {
@@ -378,14 +381,13 @@ namespace sda::researcher
                 data->updatedStructures.clear();
                 next(batch);
             });
-            std::shared_ptr<EventPipe> commitPipeIn;
-            auto pipe = OptimizedCommitPipe(filter, commitPipeIn, commitEmitter);
+            auto [optPipe, commitPipeIn, _] = OptimizedCommitPipe(commitEndHandler);
             commitPipeIn->subscribe(std::function([data](const StructureCreatedEvent& event) {
                 // creating event is treated as updating event
                 data->add(event.structure);
             }));
             commitPipeIn->subscribe(std::function([data](const StructureRemovedEvent& event) {
-                data->updatedStructures.remove(event.structure);
+                data->remove(event.structure);
             }));
             commitPipeIn->subscribe(std::function([data](const ChildAddedEvent& event) {
                 data->add(event.structure);
@@ -398,7 +400,7 @@ namespace sda::researcher
             commitPipeIn->subscribe(std::function([data](const LinkCreatedEvent& event) {
                 data->add(event.structure);
             }));
-            return pipe;
+            return optPipe;
         }
     };
 
@@ -427,16 +429,14 @@ namespace sda::researcher
                     std::list<DataFlowNode*> updatedNodes;
                 };
                 auto data = std::make_shared<Data>();
-                auto filter = EventPipe::FilterTopic(DataFlowEventTopic);
-                auto commitEmitter = std::function([data](const EventNext& next) {
+                auto commitEndHandler = std::function([data](const EventNext& next) {
                     while (!data->updatedNodes.empty()) {
                         auto node = data->updatedNodes.front();
                         data->updatedNodes.pop_front();
                         next(DataFlowNodeUpdatedEvent(node));
                     }
                 });
-                std::shared_ptr<EventPipe> commitPipeIn;
-                auto pipe = OptimizedCommitPipe(filter, commitPipeIn, commitEmitter);
+                auto [optPipe, commitPipeIn, _] = OptimizedCommitPipe(commitEndHandler);
                 commitPipeIn->subscribe(std::function([data](const DataFlowNodeCreatedEvent& event) {
                     // creating event is treated as updating event
                     data->updatedNodes.push_back(event.node);
@@ -450,7 +450,7 @@ namespace sda::researcher
                         data->updatedNodes.push_back(event.node);
                     }
                 }));
-                return pipe;
+                return optPipe;
             }
         public:
             EventHandler(StructureResearcher* researcher) : m_researcher(researcher) {}

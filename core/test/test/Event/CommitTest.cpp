@@ -122,7 +122,7 @@ std::shared_ptr<EventPipe> CreateOptimizedCommitPipe(const EventFilter& filter =
         std::list<size_t> values;
     };
     auto data = std::make_shared<Data>();
-    auto commitEmitter = std::function([data](const EventNext& next) {
+    auto commitEndHandler = std::function([data](const EventNext& next) {
         // called when commit is done (after CommitEndEvent)
         auto& values = data->values;
         while(!values.empty()) {
@@ -133,9 +133,14 @@ std::shared_ptr<EventPipe> CreateOptimizedCommitPipe(const EventFilter& filter =
             next(TestEvent(value));
         }
     });
-    std::shared_ptr<EventPipe> commitPipeIn;
-    auto pipe = OptimizedCommitPipe(filter, commitPipeIn, commitEmitter);
-    commitPipeIn->subscribe(std::function([data](const TestEvent& e) {
+    auto [optPipe, commitPipeIn, pipeOut] = OptimizedCommitPipe(commitEndHandler, filter);
+    commitPipeIn->subscribe(std::function([data, pipeOut](const TestEvent& e) {
+        if (e.value == 1000) {
+            // events with value = 1000 will be handled immediately (outside of a commit)
+            pipeOut->send(TestEvent(1000));
+            return;
+        }
+
         // called when TestEvent is sent within a commit
         auto& values = data->values;
         auto it = std::find(values.begin(), values.end(), e.value);
@@ -143,7 +148,7 @@ std::shared_ptr<EventPipe> CreateOptimizedCommitPipe(const EventFilter& filter =
             values.push_back(e.value);
         }
     }));
-    return pipe;
+    return optPipe;
 }
 
 TEST(CommitTest, aggregateEvents) {
@@ -176,6 +181,31 @@ TEST(CommitTest, aggregateEvents) {
     // TestEvent(1)
     // TestEvent(1)
     EXPECT_EQ(result, 32);
+}
+
+TEST(CommitTest, dontAggregateImmediateEvents) {
+    // By "immediate events" we mean events that must be handled immediately (e.g. "removed events")
+    auto pipe = CreateOptimizedCommitPipe();
+
+    // test the pipe
+    size_t result = 0;
+    pipe->subscribe(std::function([&](const TestEvent& e) {
+        result += e.value;
+    }));
+    {
+        // within a commit
+        CommitScope commit(pipe);
+        pipe->send(TestEvent(10));
+        pipe->send(TestEvent(10)); // ignored
+        pipe->send(TestEvent(1000)); // "immediate event" that will not be stored anywhere and will be handled immediately (outside of a commit)
+        pipe->send(TestEvent(1000)); // not ignored (because it is "immediate event")
+    }
+    // CommitBeginEvent
+    // TestEvent(1000)
+    // TestEvent(1000)
+    // CommitEndEvent
+    // TestEvent(10)
+    EXPECT_EQ(result, 2010);
 }
 
 TEST(CommitTest, aggregateEventsNestedNotIgnored) {

@@ -85,25 +85,21 @@ std::shared_ptr<EventPipe> Context::CreateOptimizedEventPipe() {
         std::list<std::unique_ptr<Event>> events;
     };
     auto data = std::make_shared<Data>();
-    auto filter = EventPipe::Filter(std::function([](const ObjectActionEvent& event) {
-        if (auto changeEvent = dynamic_cast<const ObjectModifiedEvent*>(&event)) {
-            return changeEvent->state == Object::ModState::After;
-        }
-        return true;
-    }));
-    auto commitEmitter = std::function([data](const EventNext& next) {
+    auto commitEndHandler = std::function([data](const EventNext& next) {
         while(!data->events.empty()) {
             auto e = std::move(data->events.front());
             data->events.pop_front();
             next(*e);
         }
     });
-    std::shared_ptr<EventPipe> commitPipeIn;
-    auto result = OptimizedCommitPipe(filter, commitPipeIn, commitEmitter);
+    auto [optPipe, commitPipeIn, pipeOut] = OptimizedCommitPipe(commitEndHandler);
     commitPipeIn->subscribe(std::function([data](const ObjectAddedEvent& event) {
         data->events.push_back(std::make_unique<ObjectAddedEvent>(event));
     }));
     commitPipeIn->subscribe(std::function([data](const ObjectModifiedEvent& event) {
+        if (event.state != Object::ModState::After) {
+            return;
+        }
         data->events.remove_if([&event](const std::unique_ptr<Event>& e) {
             if (auto e2 = dynamic_cast<ObjectModifiedEvent*>(e.get())) {
                 return e2->object == event.object;
@@ -112,7 +108,7 @@ std::shared_ptr<EventPipe> Context::CreateOptimizedEventPipe() {
         });
         data->events.push_back(std::make_unique<ObjectModifiedEvent>(event));
     }));
-    commitPipeIn->subscribe(std::function([data](const ObjectRemovedEvent& event) {
+    commitPipeIn->subscribe(std::function([data, pipeOut](const ObjectRemovedEvent& event) {
         bool found = false;
         for (auto it = data->events.rbegin(); it != data->events.rend(); ++it) {
             if (auto e = dynamic_cast<ObjectActionEvent*>(it->get())) {
@@ -137,10 +133,11 @@ std::shared_ptr<EventPipe> Context::CreateOptimizedEventPipe() {
                 }
             }
         } else {
-            data->events.push_back(std::make_unique<ObjectRemovedEvent>(event));
+            // "remove event" must be handled immediately (object then will be removed)
+            pipeOut->send(event);
         }
     }));
-    return result;
+    return optPipe;
 }
 
 std::shared_ptr<EventPipe> Context::CreatePropertyEventPipe(const std::function<size_t(Object*)>& propertyHasher) {

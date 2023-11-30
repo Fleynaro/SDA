@@ -24,9 +24,13 @@ namespace sda
     // Allows to properly subscribe to the CommitBeginEvent/CommitEndEvent events
     std::shared_ptr<EventPipe> CommitPipe();
 
-    // Joins multiple same events into one event within a commit to reduce the number of event handler calls
-    std::shared_ptr<EventPipe> OptimizedCommitPipe(
-        const EventFilter& filter,
-        std::shared_ptr<EventPipe>& commitPipeIn,
-        const std::function<void(const EventNext&)>& commitEmitter);
+    struct OptimizedCommitPipeInfo {
+        std::shared_ptr<EventPipe> optimizedPipe;
+        std::shared_ptr<EventPipe> commitPipeIn;
+        std::shared_ptr<EventPipe> pipeOut;
+    };
+    // Optimizes event stream by joining multiple same events into one event within a commit to reduce the number of event handler calls
+    OptimizedCommitPipeInfo OptimizedCommitPipe(
+        const std::function<void(const EventNext&)>& commitEndHandler,
+        const EventFilter& filter = EventPipe::FilterTrue);
 };

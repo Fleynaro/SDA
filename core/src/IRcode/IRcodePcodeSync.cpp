@@ -23,15 +23,7 @@ std::shared_ptr<EventPipe> CreateOptimizedUpdateBlocksEventPipe(Program* program
         }
     };
     auto data = std::make_shared<Data>();
-    auto filter = EventPipe::FilterOr(
-        EventPipe::Filter(std::function([](const pcode::BlockUpdatedEvent& event) {
-            return event.requested;
-        })),
-        EventPipe::Filter(std::function([](const pcode::FunctionGraphRemovedEvent& event) {
-            return true;
-        }))
-    );
-    auto commitEmitter = std::function([data, program](const EventNext& next) {
+    auto commitEndHandler = std::function([data, program](const EventNext& next) {
         while (!data->pcodeBlocksToUpdate.empty()) {
             auto it = data->selectLowestFunction();
             auto& [funcGraph, pcodeBlocks] = *it;
@@ -59,15 +51,15 @@ std::shared_ptr<EventPipe> CreateOptimizedUpdateBlocksEventPipe(Program* program
             next(pcode::BlockUpdatedEvent(mostDominatedBlock));
         }
     });
-    std::shared_ptr<EventPipe> commitPipeIn;
-    auto result = OptimizedCommitPipe(filter, commitPipeIn, commitEmitter);
+    auto [optPipe, commitPipeIn, _] = OptimizedCommitPipe(commitEndHandler);
     commitPipeIn->subscribe(std::function([data](const pcode::BlockUpdatedEvent& event) {
+        if (!event.requested) return;
         data->pcodeBlocksToUpdate[event.block->getFunctionGraph()].insert(event.block);
     }));
     commitPipeIn->subscribe(std::function([data](const pcode::FunctionGraphRemovedEvent& event) {
         data->pcodeBlocksToUpdate.erase(event.functionGraph);
     }));
-    return result;
+    return optPipe;
 }
 
 PcodeSync::PcodeSync(Program* program)
