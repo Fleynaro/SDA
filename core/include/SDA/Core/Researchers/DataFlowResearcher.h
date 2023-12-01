@@ -5,6 +5,7 @@
 #include "SDA/Core/IRcode/IRcodeHelper.h"
 #include "SDA/Core/Utils/Logger.h"
 #include "SDA/Core/Utils/String.h"
+#include "SDA/Core/Utils/AbstractPrinter.h"
 
 namespace sda::researcher
 {
@@ -78,6 +79,14 @@ namespace sda::researcher
             return count;
         }
 
+        const std::list<DataFlowNode*>& getPredecessors() {
+            return predecessors;
+        }
+
+        const std::list<DataFlowNode*>& getSuccessors() {
+            return successors;
+        }
+
         std::shared_ptr<ircode::Variable> getVariable() {
             if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
                 return var;
@@ -90,6 +99,10 @@ namespace sda::researcher
                 return constant;
             }
             return nullptr;
+        }
+
+        Type getType() {
+            return type;
         }
 
         std::string getName(bool full = true) {
@@ -377,4 +390,76 @@ namespace sda::researcher
             }
         }
     };
+
+    static std::string GetDataFlowNodeName(researcher::DataFlowNode* node, ircode::Function* function) {
+        if (auto var = node->getVariable()) {
+            auto varFunction = var->getSourceOperation()->getBlock()->getFunction();
+            return node->getName(varFunction != function);
+        }
+        return node->getName();
+    }
+
+    static std::string PrintDataFlowForFunction(researcher::DataFlowRepository* dataFlowRepo, ircode::Function* function) {
+        std::stringstream ss;
+        utils::AbstractPrinter printer;
+        printer.setOutput(ss);
+        for (size_t i = 0; i < 2; ++i)
+            printer.startBlock();
+        printer.newTabs();
+        // create list of current variables (of current function) and external variables (of referred functions)
+        auto variables = function->getVariables();
+        std::list<std::shared_ptr<sda::ircode::Variable>> extVariables;
+        for (auto var : variables) {
+            if (auto node = dataFlowRepo->getNode(var)) {
+                for (auto succNode : node->successors) {
+                    if (auto variable = succNode->getVariable()) {
+                        if (std::find(variables.begin(), variables.end(), variable) != variables.end())
+                            continue;
+                        if (std::find(extVariables.begin(), extVariables.end(), variable) != extVariables.end())
+                            continue;
+                        extVariables.push_back(variable);
+                    }
+                }
+            }
+        }
+        for (auto vars : { &variables, &extVariables }) {
+            vars->sort([](std::shared_ptr<ircode::Variable> var1, std::shared_ptr<ircode::Variable> var2) {
+                auto func1 = var1->getSourceOperation()->getBlock()->getFunction();
+                auto func2 = var2->getSourceOperation()->getBlock()->getFunction();
+                if (func1 != func2)
+                    return func1->getName() < func2->getName();
+                return var1->getId() < var2->getId();
+            });
+        }
+        variables.insert(variables.end(), extVariables.begin(), extVariables.end());
+        // output
+        for (auto var : variables) {
+            if (auto node = dataFlowRepo->getNode(var)) {
+                if (node->predecessors.empty()) {
+                    ss << GetDataFlowNodeName(node, function) << " <- Unknown";
+                    printer.newLine();
+                } else {
+                    for (auto predNode : node->predecessors) {
+                        if (auto predVar = predNode->getVariable()) {
+                            if (var->getSourceOperation()->getBlock()->getFunction() != function && 
+                                predVar->getSourceOperation()->getBlock()->getFunction() != function) continue;
+                        }
+                        ss << GetDataFlowNodeName(node, function) << " <- ";
+                        if (node->type == researcher::DataFlowNode::Copy)
+                            ss << "Copy ";
+                        else if (node->type == researcher::DataFlowNode::Write)
+                            ss << "Write ";
+                        else if (node->type == researcher::DataFlowNode::Read)
+                            ss << "Read ";
+                        ss << GetDataFlowNodeName(predNode, function);
+                        if (node->offset > 0) {
+                            ss << " + 0x" << utils::ToHex(node->offset);
+                        }
+                        printer.newLine();
+                    }
+                }
+            }
+        }
+        return ss.str();
+    }
 };

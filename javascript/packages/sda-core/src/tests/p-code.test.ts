@@ -17,6 +17,7 @@ import {
 } from '../p-code';
 import { instance_of } from 'sda-bindings';
 import { AbstractPrinterToken } from '../utils';
+import { stripSpaces } from './helpers';
 
 describe('P-code', () => {
   let context: Context;
@@ -57,7 +58,7 @@ describe('P-code', () => {
       printer.printInstruction(instr);
       printer.newLine();
     }
-    expect(printer.output.replace(/\s/g, '')).toBe(expected.replace(/\s/g, ''));
+    expect(stripSpaces(printer.output)).toBe(stripSpaces(expected));
   });
 
   it('explore', () => {
@@ -131,6 +132,6 @@ describe('P-code', () => {
       printer.printStructBlock(block);
     };
     printer.printStructTree(structTree);
-    expect(printer.output.replace(/\s/g, '')).toBe(expected.replace(/\s/g, ''));
+    expect(stripSpaces(printer.output)).toBe(stripSpaces(expected));
   });
 });

@@ -44,9 +44,9 @@ namespace utils
         
         void printToken(const std::string& text, Token token) const;
 
-    protected:
         std::ostream& out() const;
 
+    protected:
         void printComment(const std::string& text) const;
 
         virtual void printTokenImpl(const std::string& text, Token token) const;

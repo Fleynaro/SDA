@@ -17,8 +17,6 @@ protected:
 
     ::testing::AssertionResult cmpDataFlow(ircode::Function* function, const std::string& expectedCode) const;
 
-    static std::string GetNodeName(researcher::DataFlowNode* node, ircode::Function* function = nullptr);
-
 public:
     static ::testing::AssertionResult CmpDataFlow(researcher::DataFlowRepository* dataFlowRepo, ircode::Function* function, const std::string& expectedCode);
 };
