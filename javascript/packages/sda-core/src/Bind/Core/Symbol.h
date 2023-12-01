@@ -83,4 +83,12 @@ namespace sda::bind
             module.class_("StructureFieldSymbol", cl);
         }
     };
+
+    static void SymbolBindInit(v8pp::module& module) {
+        SymbolBind::Init(module);
+        VariableSymbolBind::Init(module);
+        FunctionSymbolBind::Init(module);
+        FunctionParameterSymbolBind::Init(module);
+        StructureFieldSymbolBind::Init(module);
+    }
 };

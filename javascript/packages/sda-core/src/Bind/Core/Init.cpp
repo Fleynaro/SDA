@@ -18,74 +18,19 @@ using namespace sda::bind;
 
 void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
     InitModule(module, {
-        // utils
-        SerializationBind::Init,
-        AbstractPrinterBind::Init,
-        // helpers
-        HelpersBind::Init,
-        ObjectLookupTableShared::Init,
-        // event
-        EventBind::Init,
-        EventPipeBind::Init,
-        // p-code
-        PcodeVarnodeBind::Init,
-        PcodeInstructionBind::Init,
-        PcodeBlockBind::Init,
-        PcodeFunctionGraphBind::Init,
-        PcodeGraphBind::Init,
-        PcodeStructurer::Init,
-        PcodeStructTreePrinterBind::Init,
-        PcodeParserBind::Init,
-        PcodePrinterBind::Init,
-        // ir-code
-        IRcodeValueBind::Init,
-        IRcodeOperationBind::Init,
-        IRcodeBlockBind::Init,
-        IRcodeFunctionBind::Init,
-        IRcodeProgramBind::Init,
-        IRcodeContextSyncBind::Init,
-        IRcodePcodeSyncBind::Init,
-        IRcodePrinterBind::Init,
-        // platform
-        PlatformBind::Init,
-        PlatformMockBind::Init,
-        RegisterRepositoryBind::Init,
-        PcodeDecoderBind::Init,
-        InstructionDecoderBind::Init,
-        CallingConventionBind::Init,
-        CustomCallingConventionBind::Init,
-        // context
-        ContextEventBind::Init,
-        ContextBind::Init,
-        // object
-        ObjectBind::Init,
-        ContextObjectBind::Init,
-        // image
-        AddressSpaceBind::Init,
-        ImageRWBind::Init,
-        ImageAnalyserBind::Init,
-        ImageSectionBind::Init,
-        ImageBind::Init,
-        // data types
-        DataTypeBind::Init,
-        VoidDataTypeBind::Init,
-        PointerDataTypeBind::Init,
-        ArrayDataTypeBind::Init,
-        ScalarDataTypeBind::Init,
-        TypedefDataTypeBind::Init,
-        EnumDataTypeBind::Init,
-        StructureDataTypeBind::Init,
-        SignatureDataTypeBind::Init,
-        // symbols
-        SymbolBind::Init,
-        VariableSymbolBind::Init,
-        FunctionSymbolBind::Init,
-        FunctionParameterSymbolBind::Init,
-        StructureFieldSymbolBind::Init,
-        // symbol tables
-        SymbolTableBind::Init,
-        StandartSymbolTableBind::Init,
-        OptimizedSymbolTableBind::Init,
+        UtilsBindInit,
+        HelpersBindInit,
+        EventBindInit,
+        PlatformBindInit,
+        ContextBindInit,
+        ObjectBindInit,
+        DataTypeBindInit,
+        SymbolBindInit,
+        SymbolTableBindInit,
+        AddressSpaceBindInit,
+        ImageBindInit,
+        PcodeBindInit,
+        IRcodeBindInit,
     });
 }
 

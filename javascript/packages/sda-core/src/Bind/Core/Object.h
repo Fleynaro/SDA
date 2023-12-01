@@ -31,4 +31,9 @@ namespace sda::bind
             module.class_("ContextObject", cl);
         }
     };
+
+    static void ObjectBindInit(v8pp::module& module) {
+        ObjectBind::Init(module);
+        ContextObjectBind::Init(module);
+    }
 };

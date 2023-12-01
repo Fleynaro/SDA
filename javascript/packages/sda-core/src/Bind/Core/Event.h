@@ -163,4 +163,9 @@ namespace sda::bind
             module.class_("EventPipe", cl);
         }
     };
+
+    static void EventBindInit(v8pp::module& module) {
+        EventBind::Init(module);
+        EventPipeBind::Init(module);
+    }
 };

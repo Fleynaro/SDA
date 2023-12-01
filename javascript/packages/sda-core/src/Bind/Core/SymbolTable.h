@@ -78,4 +78,10 @@ namespace sda::bind
             module.class_("OptimizedSymbolTable", cl);
         }
     };
+
+    static void SymbolTableBindInit(v8pp::module& module) {
+        SymbolTableBind::Init(module);
+        StandartSymbolTableBind::Init(module);
+        OptimizedSymbolTableBind::Init(module);
+    }
 };

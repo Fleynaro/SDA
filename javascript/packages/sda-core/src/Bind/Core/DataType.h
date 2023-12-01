@@ -167,4 +167,16 @@ namespace sda::bind
             module.class_("SignatureDataType", cl);
         }
     };
+
+    static void DataTypeBindInit(v8pp::module& module) {
+        DataTypeBind::Init(module);
+        VoidDataTypeBind::Init(module);
+        PointerDataTypeBind::Init(module);
+        ArrayDataTypeBind::Init(module);
+        ScalarDataTypeBind::Init(module);
+        TypedefDataTypeBind::Init(module);
+        EnumDataTypeBind::Init(module);
+        StructureDataTypeBind::Init(module);
+        SignatureDataTypeBind::Init(module);
+    }
 };

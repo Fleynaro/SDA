@@ -152,4 +152,11 @@ namespace sda::bind
             module.class_("Image", cl);
         }
     };
+
+    static void ImageBindInit(v8pp::module& module) {
+        ImageRWBind::Init(module);
+        ImageAnalyserBind::Init(module);
+        ImageSectionBind::Init(module);
+        ImageBind::Init(module);
+    }
 };

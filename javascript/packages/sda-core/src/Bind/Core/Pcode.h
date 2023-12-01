@@ -348,4 +348,16 @@ namespace sda::bind
             PrinterJs::Init(module);
         }
     };
+
+    static void PcodeBindInit(v8pp::module& module) {
+        PcodeVarnodeBind::Init(module);
+        PcodeInstructionBind::Init(module);
+        PcodeBlockBind::Init(module);
+        PcodeFunctionGraphBind::Init(module);
+        PcodeGraphBind::Init(module);
+        PcodeStructurer::Init(module);
+        PcodeStructTreePrinterBind::Init(module);
+        PcodeParserBind::Init(module);
+        PcodePrinterBind::Init(module);
+    }
 };

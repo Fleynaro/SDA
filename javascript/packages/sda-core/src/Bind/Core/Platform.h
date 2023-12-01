@@ -170,4 +170,14 @@ namespace sda::bind
             module.class_("CustomCallingConvention", cl);
         }
     };
+
+    static void PlatformBindInit(v8pp::module& module) {
+        PlatformBind::Init(module);
+        PlatformMockBind::Init(module);
+        RegisterRepositoryBind::Init(module);
+        PcodeDecoderBind::Init(module);
+        InstructionDecoderBind::Init(module);
+        CallingConventionBind::Init(module);
+        CustomCallingConventionBind::Init(module);
+    }
 };

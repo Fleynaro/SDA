@@ -286,4 +286,15 @@ namespace sda::bind
             PrinterJs::Init(module);
         }
     };
+
+    static void IRcodeBindInit(v8pp::module& module) {
+        IRcodeValueBind::Init(module);
+        IRcodeOperationBind::Init(module);
+        IRcodeBlockBind::Init(module);
+        IRcodeFunctionBind::Init(module);
+        IRcodeProgramBind::Init(module);
+        IRcodeContextSyncBind::Init(module);
+        IRcodePcodeSyncBind::Init(module);
+        IRcodePrinterBind::Init(module);
+    }
 };

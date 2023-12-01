@@ -83,4 +83,9 @@ namespace sda::bind
             module.class_("AbstractPrinter", cl);
         }
     };
+
+    static void UtilsBindInit(v8pp::module& module) {
+        SerializationBind::Init(module);
+        AbstractPrinterBind::Init(module);
+    }
 };

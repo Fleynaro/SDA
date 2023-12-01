@@ -18,4 +18,8 @@ namespace sda::bind
             module.class_("AddressSpace", cl);
         }
     };
+
+    static void AddressSpaceBindInit(v8pp::module& module) {
+        AddressSpaceBind::Init(module);
+    }
 };

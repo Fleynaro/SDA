@@ -69,4 +69,8 @@ namespace sda::bind
             module.function("CreateContextObject", &CreateContextObject);
         }
     };
+
+    static void HelpersBindInit(v8pp::module& module) {
+        HelpersBind::Init(module);
+    }
 };

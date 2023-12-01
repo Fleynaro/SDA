@@ -110,4 +110,9 @@ namespace sda::bind
             module.class_("Context", cl);
         }
     };
+
+    static void ContextBindInit(v8pp::module& module) {
+        ContextEventBind::Init(module);
+        ContextBind::Init(module);
+    }
 };
