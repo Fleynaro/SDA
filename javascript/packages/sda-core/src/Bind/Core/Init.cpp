@@ -16,6 +16,7 @@
 #include "Bind/Core/ConstConditionResearcher.h"
 #include "Bind/Core/SignatureResearcher.h"
 #include "Bind/Core/DataFlowResearcher.h"
+#include "Bind/Core/StructureResearcher.h"
 
 using namespace sda::bind;
 
@@ -37,6 +38,7 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
         ConstConditionBindInit,
         SignatureBindInit,
         DataFlowBindInit,
+        StructureBindInit,
     });
 }
 

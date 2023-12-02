@@ -29,12 +29,12 @@ namespace sda::bind
             std::shared_ptr<CallingConvention> callingConvention,
             SignatureRepository* signatureRepo
         ) {
-            auto repo = new SignatureResearcher(
+            auto researcher = new SignatureResearcher(
                 program,
                 callingConvention,
                 signatureRepo
             );
-            return ExportObject(repo);
+            return ExportObject(researcher);
         }
     public:
         static void Init(v8pp::module& module) {

@@ -133,6 +133,7 @@ namespace sda::researcher
         std::string name;
         size_t version = 0;
         DataFlowNode* sourceNode = nullptr;
+        std::set<DataFlowNode*> linkedNodes;
         std::set<Structure*> parents;
         std::set<Structure*> childs;
         std::set<Structure*> inputs;
@@ -140,7 +141,46 @@ namespace sda::researcher
         std::map<size_t, Structure*> fields;
         ConstantSet conditions;
         ConstantSet constants;
-        std::set<DataFlowNode*> linkedNodes;
+
+        const std::string& getName() const {
+            return name;
+        }
+
+        DataFlowNode* getSourceNode() const {
+            return sourceNode;
+        }
+
+        const std::set<DataFlowNode*>& getLinkedNodes() const {
+            return linkedNodes;
+        }
+
+        const std::set<Structure*>& getParents() const {
+            return parents;
+        }
+
+        const std::set<Structure*>& getChilds() const {
+            return childs;
+        }
+
+        const std::set<Structure*>& getInputs() const {
+            return inputs;
+        }
+
+        const std::set<Structure*>& getOutputs() const {
+            return outputs;
+        }
+
+        const std::map<size_t, Structure*>& getFields() const {
+            return fields;
+        }
+
+        const ConstantSet& getConditions() const {
+            return conditions;
+        }
+
+        const ConstantSet& getConstants() const {
+            return constants;
+        }
 
         void passDescendants(std::function<void(Structure* structure, const std::function<void(Structure* structure)>& next)> callback);
     };
@@ -497,4 +537,90 @@ namespace sda::researcher
 
         const ircode::UnaryOperation* goToLoadOperation(const ircode::Operation* operation);
     };
+
+    static std::list<researcher::Structure*> SortStructuresByName(std::list<researcher::Structure*> structures) {
+        structures.sort([](researcher::Structure* a, researcher::Structure* b) {
+            return a->name < b->name;
+        });
+        return structures;
+    }
+
+    static std::list<researcher::Structure*> SortStructuresByName(const std::set<researcher::Structure*>& structures) {
+        std::list<researcher::Structure*> result;
+        for (auto structure : structures) {
+            result.push_back(structure);
+        }
+        return SortStructuresByName(result);
+    }
+
+    static void GatherAllChildStructures(researcher::Structure* rootStructure, std::list<researcher::Structure*>& result) {
+        std::list<researcher::Structure*> structuresToVisit;
+        structuresToVisit.push_back(rootStructure);
+        while (!structuresToVisit.empty()) {
+            auto structure = structuresToVisit.front();
+            structuresToVisit.pop_front();
+            result.push_back(structure);
+            for (auto child : SortStructuresByName(structure->childs)) {
+                if (std::find(result.begin(), result.end(), child) != result.end()) {
+                    continue;
+                }
+                structuresToVisit.push_back(child);
+            }
+        }
+    }
+
+    static void PrintStructure(std::stringstream& ss, researcher::Structure* structure) {
+        ss << "struct " << structure->name << " ";
+        if (!structure->parents.empty()) {
+            ss << ": ";
+            auto parents = SortStructuresByName(structure->parents);
+            for (auto parent : parents) {
+                ss << parent->name;
+                if (parent != parents.back()) {
+                    ss << ", ";
+                }
+            }
+            ss << " ";
+        }
+        ss << "{" << std::endl;
+        std::set<size_t> fieldOffsets;
+        for (auto& [offset, _] : structure->fields) {
+            fieldOffsets.insert(offset);
+        }
+        researcher::ConstantSet labelSet;
+        labelSet.merge(structure->conditions);
+        labelSet.merge(structure->constants, true);
+        for (auto& [offset, _] : labelSet.values()) {
+            fieldOffsets.insert(offset);
+        }
+        for (auto offset : fieldOffsets) {
+            std::string sep;
+            std::stringstream fieldValues;
+            // structures
+            auto it = structure->fields.find(offset);
+            if (it != structure->fields.end()) {      
+                auto childs = SortStructuresByName(it->second->childs);
+                for (auto child : childs) {
+                    fieldValues << sep << child->name;
+                    sep = ", ";
+                }
+            }
+            // labels
+            auto it2 = labelSet.values().find(offset);
+            if (it2 != labelSet.values().end()) {
+                for (auto value : it2->second) {
+                    fieldValues << sep << "0x" << utils::ToHex(value);
+                    sep = ", ";
+                }
+            }
+            ss << "    " << "0x" << utils::ToHex(offset) << ": " << fieldValues.str() << std::endl;
+        }
+        ss << "}";
+    }
+
+    static std::string PrintStructureStr(researcher::Structure* structure) {
+        std::stringstream ss;
+        PrintStructure(ss, structure);
+        return ss.str();
+    }
 };
