@@ -7,7 +7,6 @@ import {
   IRcodeValue,
   IRcodeVariable,
 } from './ir-code';
-import { Platform } from './platform';
 
 export enum DataFlowNodeType {
   Unknown,
