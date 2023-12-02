@@ -37,11 +37,7 @@ export declare class DataFlowRepository {
 export declare class DataFlowCollector {
   readonly eventPipe: EventPipe;
 
-  static New(
-    program: IRcodeProgram,
-    platform: Platform,
-    dataFlowRepo: DataFlowRepository,
-  ): DataFlowCollector;
+  static New(program: IRcodeProgram, dataFlowRepo: DataFlowRepository): DataFlowCollector;
 }
 
 export declare function PrintDataFlowForFunction(

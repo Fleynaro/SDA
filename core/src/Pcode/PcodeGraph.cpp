@@ -101,6 +101,10 @@ Graph::Graph(std::shared_ptr<EventPipe> eventPipe, Platform* platform)
     }
 }
 
+sda::Platform* Graph::getPlatform() const {
+    return m_platform;
+}
+
 std::shared_ptr<sda::EventPipe> Graph::getEventPipe() {
     return m_eventPipe;
 }

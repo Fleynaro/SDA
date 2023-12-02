@@ -240,7 +240,7 @@ std::map<Structure*, ConstantSet> StructureResearcher::findConditions(ircode::Bl
         if (auto loadOp = goToLoadOperation(variable->getSourceOperation())) {
             auto linearExpr = ircode::GetLinearExpr(loadOp->getInput());
             auto offset = linearExpr.getConstTermValue();
-            auto baseTerms = ircode::ToBaseTerms(linearExpr, m_platform);
+            auto baseTerms = ircode::ToBaseTerms(linearExpr, m_program->getPlatform());
             for (auto& term : baseTerms) {
                 if (auto ptrVar = std::dynamic_pointer_cast<ircode::Variable>(term)) {
                     if (auto ptrVarNode = m_dataFlowRepo->getNode(ptrVar)) {

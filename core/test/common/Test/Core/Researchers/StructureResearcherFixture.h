@@ -24,11 +24,9 @@ protected:
         dataFlowRepo = std::make_unique<researcher::DataFlowRepository>(eventPipe);
         dataFlowCollector = std::make_unique<researcher::DataFlowCollector>(
             program,
-            context->getPlatform(),
             dataFlowRepo.get());
         structureResearcher = std::make_unique<researcher::StructureResearcher>(
             program,
-            context->getPlatform(),
             structureRepo.get(),
             dataFlowRepo.get(),
             constCondRepo.get());

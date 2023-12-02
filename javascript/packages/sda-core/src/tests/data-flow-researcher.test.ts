@@ -36,7 +36,7 @@ describe('IR-code', () => {
     pipe.connect(ctxSync.eventPipe);
     pipe.connect(pcodeSync.eventPipe);
     dataFlowRepo = DataFlowRepository.New(pipe);
-    dataFlowResearcher = DataFlowCollector.New(program, context.platform, dataFlowRepo);
+    dataFlowResearcher = DataFlowCollector.New(program, dataFlowRepo);
     pipe.connect(dataFlowResearcher.eventPipe);
 
     // analyze p-code

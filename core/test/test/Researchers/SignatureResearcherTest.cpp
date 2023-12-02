@@ -18,7 +18,6 @@ protected:
         signatureRepo = std::make_unique<researcher::SignatureRepository>();
         signatureResearcher = std::make_unique<researcher::SignatureResearcher>(
             program,
-            context->getPlatform(),
             callConv,
             signatureRepo.get());
         eventPipe->connect(signatureResearcher->getEventPipe());

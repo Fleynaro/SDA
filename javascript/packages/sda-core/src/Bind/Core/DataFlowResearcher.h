@@ -44,8 +44,8 @@ namespace sda::bind
 
     class DataFlowCollectorBind
     {
-        static auto New(ircode::Program* program, Platform* platform, DataFlowRepository* dataFlowRepo) {
-            auto repo = new DataFlowCollector(program, platform, dataFlowRepo);
+        static auto New(ircode::Program* program,DataFlowRepository* dataFlowRepo) {
+            auto repo = new DataFlowCollector(program, dataFlowRepo);
             return ExportObject(repo);
         }
     public:

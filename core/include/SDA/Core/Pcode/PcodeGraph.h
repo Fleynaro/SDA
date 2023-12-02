@@ -23,6 +23,8 @@ namespace sda::pcode
     public:
         Graph(std::shared_ptr<EventPipe> eventPipe, Platform* platform);
 
+        Platform* getPlatform() const;
+
         std::shared_ptr<EventPipe> getEventPipe();
 
         void explore(InstructionOffset startOffset, InstructionProvider* instrProvider);

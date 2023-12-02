@@ -309,7 +309,6 @@ namespace sda::researcher
     class ClassResearcher
     {
         ircode::Program* m_program;
-        Platform* m_platform;
         ClassRepository* m_classRepo;
         StructureRepository* m_structureRepo;
 
@@ -349,12 +348,10 @@ namespace sda::researcher
     public:
         ClassResearcher(
             ircode::Program* program,
-            Platform* platform,
             ClassRepository* classRepo,
             StructureRepository* structureRepo
         )
             : m_program(program)
-            , m_platform(platform)
             , m_classRepo(classRepo)
             , m_structureRepo(structureRepo)
             , m_ircodeEventHandler(this)

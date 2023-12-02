@@ -9,7 +9,6 @@ void DataFlowResearcherFixture::SetUp() {
     dataFlowRepo = std::make_unique<researcher::DataFlowRepository>(context->getEventPipe());
     dataFlowCollector = std::make_unique<researcher::DataFlowCollector>(
         program,
-        context->getPlatform(),
         dataFlowRepo.get());
     eventPipe->connect(dataFlowCollector->getEventPipe());
 }

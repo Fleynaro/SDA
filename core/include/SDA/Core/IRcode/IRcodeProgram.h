@@ -17,6 +17,8 @@ namespace sda::ircode
     public:
         Program(pcode::Graph* graph, SymbolTable* globalSymbolTable);
 
+        Platform* getPlatform() const;
+
         std::shared_ptr<EventPipe> getEventPipe();
 
         pcode::Graph* getGraph();

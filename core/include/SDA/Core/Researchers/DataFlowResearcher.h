@@ -224,7 +224,6 @@ namespace sda::researcher
     class DataFlowCollector
     {
         ircode::Program* m_program;
-        Platform* m_platform;
         DataFlowRepository* m_dataFlowRepo;
 
         class IRcodeEventHandler
@@ -268,11 +267,9 @@ namespace sda::researcher
     public:
         DataFlowCollector(
             ircode::Program* program,
-            Platform* platform,
             DataFlowRepository* dataFlowRepo
         )
             : m_program(program)
-            , m_platform(platform)
             , m_dataFlowRepo(dataFlowRepo)
             , m_ircodeEventHandler(this)
         {}
@@ -333,7 +330,7 @@ namespace sda::researcher
                 {
                     auto linearExpr = ircode::GetLinearExpr(output);
                     auto offset = linearExpr.getConstTermValue();
-                    auto baseTerms = ircode::ToBaseTerms(linearExpr, m_platform);
+                    auto baseTerms = ircode::ToBaseTerms(linearExpr, m_program->getPlatform());
                     for (auto& term : baseTerms) {
                         if (auto termVar = std::dynamic_pointer_cast<ircode::Variable>(term)) {
                             // if one of the nodes is already created, then it is address, not just another linear expression

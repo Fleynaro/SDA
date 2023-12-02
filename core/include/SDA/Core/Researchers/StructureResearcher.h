@@ -407,7 +407,6 @@ namespace sda::researcher
     class StructureResearcher
     {
         ircode::Program* m_program;
-        Platform* m_platform;
         StructureRepository* m_structureRepo;
         DataFlowRepository* m_dataFlowRepo;
         researcher::ConstConditionRepository* m_constCondRepo;
@@ -468,13 +467,11 @@ namespace sda::researcher
     public:
         StructureResearcher(
             ircode::Program* program,
-            Platform* platform,
             StructureRepository* structureRepo,
             DataFlowRepository* dataFlowRepo,
             researcher::ConstConditionRepository* constCondRepo
         )
             : m_program(program)
-            , m_platform(platform)
             , m_structureRepo(structureRepo)
             , m_dataFlowRepo(dataFlowRepo)
             , m_constCondRepo(constCondRepo)

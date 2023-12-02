@@ -120,7 +120,6 @@ namespace sda::researcher
     class SignatureResearcher
     {
         ircode::Program* m_program;
-        Platform* m_platform;
         SignatureRepository* m_signatureRepo;
         std::shared_ptr<CallingConvention> m_callingConvention;
 
@@ -165,12 +164,10 @@ namespace sda::researcher
     public:
         SignatureResearcher(
             ircode::Program* program,
-            Platform* platform,
             std::shared_ptr<CallingConvention> callingConvention,
             SignatureRepository* signatureRepo
         )
             : m_program(program)
-            , m_platform(platform)
             , m_signatureRepo(signatureRepo)
             , m_callingConvention(callingConvention)
             , m_ircodeEventHandler(this)
@@ -216,7 +213,7 @@ namespace sda::researcher
             else if (auto var = std::dynamic_pointer_cast<ircode::Variable>(value)) {
                 auto linearExpr = ircode::GetLinearExpr(var, true);
                 auto offset = linearExpr.getConstTermValue();
-                auto baseTerms = ircode::ToBaseTerms(linearExpr, m_platform);
+                auto baseTerms = ircode::ToBaseTerms(linearExpr, m_program->getPlatform());
                 for (auto& term : baseTerms) {
                     if (auto baseRegister = ExtractRegister(term)) {
                         CallingConvention::Storage storage = {

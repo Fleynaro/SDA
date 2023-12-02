@@ -17,7 +17,6 @@ protected:
         classRepo = std::make_unique<researcher::ClassRepository>(eventPipe);
         classResearcher = std::make_unique<researcher::ClassResearcher>(
             program,
-            context->getPlatform(),
             classRepo.get(),
             structureRepo.get());
         eventPipe->connect(classResearcher->getEventPipe());

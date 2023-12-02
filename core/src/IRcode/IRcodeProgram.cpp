@@ -28,8 +28,7 @@ Program::Program(pcode::Graph* graph, SymbolTable* globalSymbolTable)
             PLOG_DEBUG << "BlockRemovedEvent: " << event.block->getName();
         }));
         m_graph->getEventPipe()->subscribe(std::function([&](const OperationAddedEvent& event) {
-            auto platform = m_globalSymbolTable->getContext()->getPlatform();
-            pcode::Printer pcodePrinter(platform->getRegisterRepository().get());
+            pcode::Printer pcodePrinter(getPlatform()->getRegisterRepository().get());
             ircode::Printer ircodePrinter(&pcodePrinter);
             std::stringstream ss;
             ircodePrinter.setOutput(ss);
@@ -37,8 +36,7 @@ Program::Program(pcode::Graph* graph, SymbolTable* globalSymbolTable)
             PLOG_DEBUG << "OperationAddedEvent: " << ss.str();
         }));
         m_graph->getEventPipe()->subscribe(std::function([&](const OperationRemovedEvent& event) {
-            auto platform = m_globalSymbolTable->getContext()->getPlatform();
-            pcode::Printer pcodePrinter(platform->getRegisterRepository().get());
+            pcode::Printer pcodePrinter(getPlatform()->getRegisterRepository().get());
             ircode::Printer ircodePrinter(&pcodePrinter);
             std::stringstream ss;
             ircodePrinter.setOutput(ss);
@@ -53,6 +51,10 @@ Program::Program(pcode::Graph* graph, SymbolTable* globalSymbolTable)
             PLOG_DEBUG << "CommitEndEvent";
         }));
     }
+}
+
+sda::Platform* Program::getPlatform() const {
+    return m_graph->getPlatform();
 }
 
 std::shared_ptr<EventPipe> Program::getEventPipe() {
