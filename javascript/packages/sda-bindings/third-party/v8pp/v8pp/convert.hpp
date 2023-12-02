@@ -553,6 +553,50 @@ struct convert<Sequence, typename std::enable_if<detail::is_sequence<Sequence>::
 	}
 };
 
+// convert Set <-> std::set
+template<typename T>
+struct convert<std::set<T>>
+{
+	using from_type = std::set<T>;
+	using to_type = v8::Local<v8::Set>;
+
+	static bool is_valid(v8::Isolate*, v8::Local<v8::Value> value)
+	{
+		return !value.IsEmpty() && value->IsSet();
+	}
+
+	static from_type from_v8(v8::Isolate* isolate, v8::Local<v8::Value> value)
+	{
+		if (!is_valid(isolate, value))
+		{
+			throw invalid_argument(isolate, value, "Set");
+		}
+
+		v8::HandleScope scope(isolate);
+		v8::Local<v8::Context> context = isolate->GetCurrentContext();
+		v8::Local<v8::Set> set = value.As<v8::Set>();
+
+		from_type result{};
+		for (auto const& item : set)
+		{
+			result.emplace(convert<T>::from_v8(isolate, item));
+		}
+		return result;
+	}
+
+	static to_type to_v8(v8::Isolate* isolate, from_type const& value)
+	{
+		v8::EscapableHandleScope scope(isolate);
+		v8::Local<v8::Context> context = isolate->GetCurrentContext();
+		v8::Local<v8::Set> result = v8::Set::New(isolate);
+		for (auto const& item : value)
+		{
+			result->Add(context, convert<T>::to_v8(isolate, item));
+		}
+		return scope.Escape(result);
+	}
+};
+
 // convert Object <-> std::{unordered_}{multi}map
 template<typename Mapping>
 struct convert<Mapping, typename std::enable_if<detail::is_mapping<Mapping>::value>::type>
@@ -636,6 +680,7 @@ struct is_wrapped_class : std::conjunction<
 	std::negation<detail::is_mapping<T>>,
 	std::negation<detail::is_sequence<T>>,
 	std::negation<detail::is_array<T>>,
+	std::negation<detail::is_set<T>>,
 	std::negation<detail::is_tuple<T>>,
 	std::negation<detail::is_shared_ptr<T>>,
 	std::negation<detail::is_unique_ptr<T>>>

@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 #include <string_view>
+#include <set>
 #include <tuple>
 #include <type_traits>
 
@@ -128,6 +129,20 @@ template<typename T, std::size_t N>
 struct is_array<std::array<T, N>> : std::true_type
 {
 	static constexpr size_t length = N;
+};
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// is_set<T>
+//
+template<typename T>
+struct is_set : std::false_type
+{
+};
+
+template<typename T>
+struct is_set<std::set<T>> : std::true_type
+{
 };
 
 /////////////////////////////////////////////////////////////////////////////
