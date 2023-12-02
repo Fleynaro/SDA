@@ -13,6 +13,7 @@
 #include "Bind/Core/DataType.h"
 #include "Bind/Core/Symbol.h"
 #include "Bind/Core/SymbolTable.h"
+#include "Bind/Core/ConstConditionResearcher.h"
 #include "Bind/Core/DataFlowResearcher.h"
 
 using namespace sda::bind;
@@ -32,6 +33,7 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
         ImageBindInit,
         PcodeBindInit,
         IRcodeBindInit,
+        ConstConditionBindInit,
         DataFlowBindInit,
     });
 }

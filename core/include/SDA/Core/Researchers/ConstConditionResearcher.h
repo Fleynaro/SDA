@@ -136,4 +136,31 @@ namespace sda::researcher
             });
         }
     };
+
+    static std::string PrintConditionsForFunction(researcher::ConstConditionRepository* constCondRepo, ircode::Function* function) {
+        std::stringstream ss;
+        utils::AbstractPrinter printer;
+        printer.setOutput(ss);
+        for (size_t i = 0; i < 2; ++i)
+            printer.startBlock();
+        printer.newTabs();
+        auto blockInfos = function->getFunctionGraph()->getBlocks(true);
+        for (auto& [pcodeBlock, level] : blockInfos) {
+            auto block = function->toBlock(pcodeBlock);
+            auto conditions = constCondRepo->findConditions(block);
+            if (!conditions.empty()) {
+                ss << "Block " << block->getName() << ":";
+                printer.startBlock();
+                for (auto& cond : conditions) {
+                    printer.newLine();
+                    ss << cond.var->getName();
+                    ss << (cond.type == researcher::ConstantCondition::EQUAL ? " == " : " != ");
+                    ss << cond.value;
+                }
+                printer.endBlock();
+                printer.newLine();
+            }
+        }
+        return ss.str();
+    }
 };
