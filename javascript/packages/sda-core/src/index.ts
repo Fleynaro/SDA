@@ -15,3 +15,4 @@ export * from './const-condition-researcher';
 export * from './signature-researcher';
 export * from './data-flow-researcher';
 export * from './structure-researcher';
+export * from './class-researcher';

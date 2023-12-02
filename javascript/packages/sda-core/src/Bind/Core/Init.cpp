@@ -17,6 +17,7 @@
 #include "Bind/Core/SignatureResearcher.h"
 #include "Bind/Core/DataFlowResearcher.h"
 #include "Bind/Core/StructureResearcher.h"
+#include "Bind/Core/ClassResearcher.h"
 
 using namespace sda::bind;
 
@@ -39,6 +40,7 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
         SignatureBindInit,
         DataFlowBindInit,
         StructureBindInit,
+        ClassBindInit,
     });
 }
 

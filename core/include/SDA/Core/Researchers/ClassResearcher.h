@@ -176,39 +176,52 @@ namespace sda::researcher
         size_t labelOffset;
     };
 
+    struct StructureInfo {
+        Structure* structure;
+        ConstantSet conditions;
+        ConstantSet constants;
+        size_t labelOffset = size_t(-1);
+        std::set<size_t> labels;
+        FieldStructureGroup* group = nullptr;
+
+        size_t getLabelOffset() const {
+            return labelOffset;
+        }
+
+        const std::set<size_t>& getLabels() {
+            return labels;
+        }
+
+        ConstantSet getLabelSet() const {
+            ConstantSet set;
+            set.merge(conditions);
+            set.merge(constants);
+            return set;
+        }
+
+        std::set<Structure*> getInputs() {
+            return group ? group->getInputs() : structure->inputs;
+        }
+
+        std::set<Structure*> getOutputs() {
+            return group ? group->getOutputs() : structure->outputs;
+        }
+
+        std::set<Structure*> getParents() {
+            return group ? group->getParents() : structure->parents;
+        }
+
+        std::set<Structure*> getChilds() {
+            return group ? group->getChilds() : structure->childs;
+        }
+
+        FieldStructureGroup* getGroup() {
+            return group;
+        }
+    };
+
     class ClassRepository
     {
-        struct StructureInfo {
-            Structure* structure;
-            ConstantSet conditions;
-            ConstantSet constants;
-            size_t labelOffset = size_t(-1);
-            std::set<size_t> labels;
-            FieldStructureGroup* group = nullptr;
-
-            ConstantSet getLabelSet() const {
-                ConstantSet set;
-                set.merge(conditions);
-                set.merge(constants);
-                return set;
-            }
-
-            std::set<Structure*> getInputs() {
-                return group ? group->getInputs() : structure->inputs;
-            }
-
-            std::set<Structure*> getOutputs() {
-                return group ? group->getOutputs() : structure->outputs;
-            }
-
-            std::set<Structure*> getParents() {
-                return group ? group->getParents() : structure->parents;
-            }
-
-            std::set<Structure*> getChilds() {
-                return group ? group->getChilds() : structure->childs;
-            }
-        };
         std::map<Structure*, StructureInfo> m_structureToInfo;
         std::map<sda::Offset, ClassLabelInfo> m_classLabelInfos;
         std::list<FieldStructureGroup> m_fieldStructureGroups;

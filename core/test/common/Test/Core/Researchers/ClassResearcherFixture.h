@@ -24,7 +24,7 @@ protected:
 
     ::testing::AssertionResult cmpStructureInfos(const std::string& expectedCode) const {
         std::stringstream ss;
-        for (auto structure : sortByName(structureRepo->getAllStructures())) {
+        for (auto structure : SortStructuresByName(structureRepo->getAllStructures())) {
             auto info = classRepo->getStructureInfo(structure);
             auto values = info->getLabelSet().values();
             if (values.empty()) continue;
@@ -48,7 +48,7 @@ protected:
             if (group.getStructures().size() == 1) continue;
             std::string sep;
             std::stringstream ss;
-            for (auto structure : sortByName(group.getStructures())) {
+            for (auto structure : SortStructuresByName(group.getStructures())) {
                 ss << sep << structure->name;
                 sep = ", ";
             }
