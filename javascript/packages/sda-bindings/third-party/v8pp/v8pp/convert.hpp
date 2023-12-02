@@ -12,6 +12,7 @@
 #include <typeinfo>
 #include <variant>
 #include <optional>
+#include <filesystem>
 
 #include "v8pp/ptr_traits.hpp"
 #include "v8pp/utility.hpp"
@@ -103,6 +104,25 @@ struct convert<String, typename std::enable_if<detail::is_string<String>::value>
 				reinterpret_cast<uint16_t const*>(value.data()),
 				v8::NewStringType::kNormal, static_cast<int>(value.size())).ToLocalChecked();
 		}
+	}
+};
+
+// convert std::filesystem::path <-> String
+template<>
+struct convert<std::filesystem::path>
+{
+	using underlying_type = std::string;
+
+	using from_type = std::filesystem::path;
+	using to_type = typename convert<underlying_type>::to_type;
+
+	static from_type from_v8(v8::Isolate* isolate, v8::Local<v8::Value> value) {
+		underlying_type path = convert<underlying_type>::from_v8(isolate, value);
+		return path;
+	}
+
+	static to_type to_v8(v8::Isolate* isolate, const from_type& value) {
+		return convert<underlying_type>::to_v8(isolate, value.string());
 	}
 };
 
