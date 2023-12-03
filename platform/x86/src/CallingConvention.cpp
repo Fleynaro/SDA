@@ -65,9 +65,11 @@ bool FastcallCallingConvention::getStorageInfo(const Storage& storage, StorageIn
 
     if (storage.useType == Storage::Read) {
         if (storage.registerId == Register::StackPointerId) {
-            storageInfo.type = StorageInfo::Parameter;
-            storageInfo.paramIdx = storage.offset / 0x8 - 5;
-            return true;
+            if (storage.offset / 0x8 >= 5) {
+                storageInfo.type = StorageInfo::Parameter;
+                storageInfo.paramIdx = storage.offset / 0x8 - 5;
+                return true;
+            }
         }
 
         const auto it = RegToParamIdx.find(storage.registerId);
