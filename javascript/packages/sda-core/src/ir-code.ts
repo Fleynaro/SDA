@@ -208,6 +208,12 @@ export declare class IRcodePrinterJs extends IRcodePrinter {
   static New(printer: PcodePrinter): IRcodePrinterJs;
 }
 
+export declare function PrintIRcode(
+  func: IRcodeFunction,
+  tabs: number,
+  printVarAddressAlways: boolean,
+): string;
+
 module.exports = {
   ...module.exports,
   IRcodeValue: m.IRcodeValue,
@@ -224,4 +230,5 @@ module.exports = {
   IRcodePcodeSync: m.IRcodePcodeSync,
   IRcodePrinter: m.IRcodePrinter,
   IRcodePrinterJs: m.IRcodePrinterJs,
+  PrintIRcode: m.PrintIRcode,
 };

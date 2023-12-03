@@ -22,40 +22,11 @@ void IRcodeFixture::TearDown() {
     PcodeFixture::TearDown();
 }
 
-void IRcodeFixture::printIRcode(ircode::Function* function, std::ostream& out, size_t tabs) const {
-    pcode::Printer pcodePrinter(context->getPlatform()->getRegisterRepository().get());
-    ircode::Printer ircodePrinter(&pcodePrinter);
-    ircodePrinter.m_printVarAddressAlways = printVarAddressAlways;
-    ircodePrinter.setOutput(out);
-    ircodePrinter.setOperationCommentProvider([](const ircode::Operation* operation) -> std::string {
-        auto function = operation->getBlock()->getFunction();
-        auto output = operation->getOutput();
-        if (output == function->getReturnVariable()) {
-            return "return";
-        } else {
-            auto paramVars = function->getParamVariables();
-            for (size_t i = 0; i < paramVars.size(); ++i) {
-                if (output == paramVars[i]) {
-                    auto signatureDt = function->getFunctionSymbol()->getSignature();
-                    return signatureDt->getParameters()[i]->getName();
-                }
-            }
-        }
-        return "";
-    });
-    for (size_t i = 0; i < tabs; ++i)
-        ircodePrinter.startBlock();
-    ircodePrinter.newTabs();
-    ircodePrinter.printFunction(function);
-}
-
 ircode::Function* IRcodeFixture::parsePcode(const std::string& text, ircode::Program* program) const {
     auto funcGraph = PcodeFixture::parsePcode(text, program->getGraph());
     return program->toFunction(funcGraph);
 }
 
 ::testing::AssertionResult IRcodeFixture::cmp(ircode::Function* function, const std::string& expectedCode) const {
-    std::stringstream ss;
-    printIRcode(function, ss, 2);
-    return Compare(ss.str(), expectedCode);
+    return Compare(PrintIRcode(function, 2, printVarAddressAlways), expectedCode);
 }

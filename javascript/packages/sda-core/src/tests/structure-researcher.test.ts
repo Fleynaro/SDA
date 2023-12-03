@@ -2,7 +2,13 @@ import { CustomCallingConvention, PlatformMock } from '../platform';
 import { Context } from '../context';
 import { EventPipe } from '../event';
 import { PcodeGraph, PcodeParser } from '../p-code';
-import { IRcodeContextSync, IRcodeFunction, IRcodePcodeSync, IRcodeProgram } from '../ir-code';
+import {
+  IRcodeContextSync,
+  IRcodeFunction,
+  IRcodePcodeSync,
+  IRcodeProgram,
+  PrintIRcode,
+} from '../ir-code';
 import { StandartSymbolTable } from '../symbol-table';
 import { DataFlowCollector, DataFlowRepository } from '../data-flow-researcher';
 import { stripSpaces } from './helpers';
@@ -66,6 +72,19 @@ describe('Structure researcher', () => {
       graph.exploreInstructions(0, instructions);
       entryFunction = program.getFunctionAt(0);
     }
+  });
+
+  it('should print ir-code', () => {
+    const expected = `
+      Block B0(level: 1):
+        var1:8 = LOAD $U0
+        var2[$U1]:8 = INT_ADD var1, 0x10:8
+        var3:4 = LOAD $U100
+        var4[var2]:4 = COPY var3
+        var5[$U2]:4 = COPY var4
+    `;
+    const actual = PrintIRcode(entryFunction, 2, false);
+    expect(stripSpaces(actual)).toBe(stripSpaces(expected));
   });
 
   it('should print structure', () => {

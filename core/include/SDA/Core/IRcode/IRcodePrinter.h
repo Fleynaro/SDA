@@ -34,4 +34,6 @@ namespace sda::ircode
 
         pcode::StructTreePrinter::PrinterFunction getConditionPrinter(Function* function);
     };
+
+    std::string PrintIRcode(ircode::Function* function, size_t tabs, bool printVarAddressAlways);
 };

@@ -1,4 +1,5 @@
 #include "SDA/Core/IRcode/IRcodePrinter.h"
+#include "SDA/Core/IRcode/IRcodeProgram.h"
 #include "rang.hpp"
 
 using namespace sda;
@@ -167,4 +168,33 @@ pcode::StructTreePrinter::PrinterFunction Printer::getConditionPrinter(Function*
             printValue(block->getCondition());
         }
     });
+}
+
+std::string sda::ircode::PrintIRcode(ircode::Function* function, size_t tabs, bool printVarAddressAlways) {
+    std::stringstream ss;
+    pcode::Printer pcodePrinter(function->getProgram()->getPlatform()->getRegisterRepository().get());
+    ircode::Printer ircodePrinter(&pcodePrinter);
+    ircodePrinter.m_printVarAddressAlways = printVarAddressAlways;
+    ircodePrinter.setOutput(ss);
+    ircodePrinter.setOperationCommentProvider([](const ircode::Operation* operation) -> std::string {
+        auto function = operation->getBlock()->getFunction();
+        auto output = operation->getOutput();
+        if (output == function->getReturnVariable()) {
+            return "return";
+        } else {
+            auto paramVars = function->getParamVariables();
+            for (size_t i = 0; i < paramVars.size(); ++i) {
+                if (output == paramVars[i]) {
+                    auto signatureDt = function->getFunctionSymbol()->getSignature();
+                    return signatureDt->getParameters()[i]->getName();
+                }
+            }
+        }
+        return "";
+    });
+    for (size_t i = 0; i < tabs; ++i)
+        ircodePrinter.startBlock();
+    ircodePrinter.newTabs();
+    ircodePrinter.printFunction(function);
+    return ss.str();
 }

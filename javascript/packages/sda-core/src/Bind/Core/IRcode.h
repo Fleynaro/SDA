@@ -287,6 +287,10 @@ namespace sda::bind
         }
     };
 
+    static void PrintIRcodeInit(v8pp::module& module) {
+        module.function("PrintIRcode", &sda::ircode::PrintIRcode);
+    }
+
     static void IRcodeBindInit(v8pp::module& module) {
         IRcodeValueBind::Init(module);
         IRcodeOperationBind::Init(module);
@@ -296,5 +300,6 @@ namespace sda::bind
         IRcodeContextSyncBind::Init(module);
         IRcodePcodeSyncBind::Init(module);
         IRcodePrinterBind::Init(module);
+        PrintIRcodeInit(module);
     }
 };
