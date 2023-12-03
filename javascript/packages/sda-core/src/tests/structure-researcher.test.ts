@@ -10,7 +10,7 @@ import { SignatureRepository, SignatureResearcher } from '../signature-researche
 import { ConstConditionRepository } from '../const-condition-researcher';
 import { PrintStructure, StructureRepository, StructureResearcher } from '../structure-researcher';
 
-describe('IR-code', () => {
+describe('Structure researcher', () => {
   let context: Context;
   let graph: PcodeGraph;
   let program: IRcodeProgram;

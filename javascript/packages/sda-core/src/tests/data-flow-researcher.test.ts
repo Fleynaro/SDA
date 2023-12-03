@@ -12,7 +12,7 @@ import {
 } from '../data-flow-researcher';
 import { stripSpaces } from './helpers';
 
-describe('IR-code', () => {
+describe('Data flow researcher', () => {
   let context: Context;
   let graph: PcodeGraph;
   let program: IRcodeProgram;
