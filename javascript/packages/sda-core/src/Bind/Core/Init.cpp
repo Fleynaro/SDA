@@ -18,6 +18,7 @@
 #include "Bind/Core/DataFlowResearcher.h"
 #include "Bind/Core/StructureResearcher.h"
 #include "Bind/Core/ClassResearcher.h"
+#include "Bind/Core/SemanticsResearcher.h"
 
 using namespace sda::bind;
 
@@ -41,6 +42,7 @@ void Init(v8::Local<v8::Object> exports, v8::Local<v8::Object> module) {
         DataFlowBindInit,
         StructureBindInit,
         ClassBindInit,
+        SemanticsBindInit,
     });
 }
 
