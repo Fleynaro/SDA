@@ -383,7 +383,7 @@ public:
     template<typename R, typename... Args>
     class_& method(std::string_view name, R(T::*func)(Args...), v8::PropertyAttribute attr = v8::None) {
         return method(name, std::function([func](T* thisObject, Args... args) {
-            return (thisObject->*func)(args...);
+            return (thisObject->*func)(std::move(args)...);
         }), attr);
     }
 
@@ -391,7 +391,7 @@ public:
     template<typename R, typename... Args>
     class_& method(std::string_view name, R(T::*func)(Args...) const, v8::PropertyAttribute attr = v8::None) {
         return method(name, std::function([func](T* thisObject, Args... args) {
-            return (thisObject->*func)(args...);
+            return (thisObject->*func)(std::move(args)...);
         }), attr);
     }
 	
