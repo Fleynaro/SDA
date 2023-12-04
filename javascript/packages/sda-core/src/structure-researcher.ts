@@ -5,7 +5,7 @@ import { DataFlowNode, DataFlowRepository } from './data-flow-researcher';
 import { ConstConditionRepository } from './const-condition-researcher';
 
 export declare class ConstantSet {
-  readonly values: { [offset: number]: number };
+  readonly values: { [offset: number]: Set<number> };
 }
 
 export declare class Structure {
