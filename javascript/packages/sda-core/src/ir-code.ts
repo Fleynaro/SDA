@@ -37,6 +37,7 @@ export declare class IRcodeRegister extends IRcodeValue {
 }
 
 export declare class IRcodeVariable extends IRcodeValue {
+  readonly id: number;
   readonly name: string;
   readonly fullName: string;
   readonly isUsed: boolean;
