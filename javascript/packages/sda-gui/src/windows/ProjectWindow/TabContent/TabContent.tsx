@@ -34,6 +34,7 @@ import { withCrash_ } from 'providers/CrashProvider';
 import { HtmlTextSelectionBridgeConsumer, HtmlTextSelectionBridgeProvider } from 'components/Text';
 import { PcodeView } from './PcodeView';
 import { IRcodeView } from './IRcodeView';
+import { getResearcherApi } from 'sda-electron/api/researcher';
 
 const DecompilerComponent = () => {
   const {
@@ -46,6 +47,8 @@ const DecompilerComponent = () => {
   const [curFuncGraph, setCurFuncGraph] = useState<PcodeFunctionGraph | null>(null);
   const [curFunction, setCurFunction] = useState<IRcodeFunction | null>(null);
   const [showIRcode, setShowIRcode] = useState<boolean>(false);
+  const [dataFlowText, setDataFlowText] = useState<string>('');
+  const [showDataFlowText, setShowDataFlowText] = useState<boolean>(false);
   useEffect(
     withCrash_(async () => {
       if (!image || !selectedFirstRow) return;
@@ -66,6 +69,14 @@ const DecompilerComponent = () => {
     }),
     [image, curFuncGraph],
   );
+  useEffect(
+    withCrash_(async () => {
+      if (!curFunction) return;
+      const dataFlowText = await getResearcherApi().printDataFlowForFunction(curFunction.id);
+      setDataFlowText(dataFlowText);
+    }),
+    [curFunction],
+  );
   if (!image) return null;
   return (
     <Grid container direction="column" wrap="nowrap" height="100%">
@@ -82,8 +93,20 @@ const DecompilerComponent = () => {
         >
           {showIRcode ? 'Show Pcode' : 'Show IRcode'}
         </Button>
+        <Button
+          variant="contained"
+          onClick={() => setShowDataFlowText(!showDataFlowText)}
+          disabled={!curFunction}
+        >
+          {showDataFlowText ? 'Hide Data Flow' : 'Show Data Flow'}
+        </Button>
       </Grid>
       <Grid item container flex={1} overflow="auto">
+        {showDataFlowText && (
+          <Grid item container sx={{ whiteSpace: 'pre-line', userSelect: 'text' }}>
+            {dataFlowText}
+          </Grid>
+        )}
         {showIRcode
           ? curFunction && <IRcodeView image={image} func={curFunction} />
           : curFuncGraph && <PcodeView image={image} funcGraph={curFuncGraph} />}
