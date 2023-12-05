@@ -7,7 +7,7 @@ import { Offset } from './utils';
 export type SymbolInfo = {
   symbolTable: SymbolTable;
   requestedOffset: Offset;
-  symbol: SdaSymbol;
+  symbol: SdaSymbol | undefined;
 };
 
 export declare abstract class SymbolTable extends ContextObject {

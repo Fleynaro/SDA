@@ -75,9 +75,9 @@ describe('P-code', () => {
     const instructions = PcodeParser.Parse(source, null);
     const pcodeGraph = PcodeGraph.New(context.eventPipe, context.platform);
     pcodeGraph.exploreInstructions(0, instructions);
-    expect(pcodeGraph.getFunctionGraphAt(toInstructionOffset(0x0)).name).toBe('B0');
-    expect(pcodeGraph.getBlockAt(toInstructionOffset(0x5), false).name).toBe('B5');
-    expect(pcodeGraph.getInstructionAt(toInstructionOffset(0x5)).id).toBe(
+    expect(pcodeGraph.getFunctionGraphAt(toInstructionOffset(0x0))!.name).toBe('B0');
+    expect(pcodeGraph.getBlockAt(toInstructionOffset(0x5), false)!.name).toBe('B5');
+    expect(pcodeGraph.getInstructionAt(toInstructionOffset(0x5))!.id).toBe(
       PcodeInstructionId.INT_2COMP,
     );
   });
@@ -104,7 +104,7 @@ describe('P-code', () => {
     const instructions = PcodeParser.Parse(source, null);
     const pcodeGraph = PcodeGraph.New(context.eventPipe, context.platform);
     pcodeGraph.exploreInstructions(0, instructions);
-    const funcGraph = pcodeGraph.getFunctionGraphAt(toInstructionOffset(0x0));
+    const funcGraph = pcodeGraph.getFunctionGraphAt(toInstructionOffset(0x0))!;
 
     const structTree = PcodeStructTree.New();
     structTree.init(funcGraph);

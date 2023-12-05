@@ -35,9 +35,9 @@ export declare class BaseSemanticsPropagator extends SemanticsPropagator {
 export declare class SemanticsRepository {
   readonly allObjects: SemanticsObject[];
 
-  getObject(variable: IRcodeVariable): SemanticsObject;
+  getObject(variable: IRcodeVariable): SemanticsObject | undefined;
 
-  getSemantics(hash: Hash): Semantics;
+  getSemantics(hash: Hash): Semantics | undefined;
 
   static New(eventPipe: EventPipe): SemanticsRepository;
 }

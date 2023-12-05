@@ -17,6 +17,7 @@ import { getImageInfo } from 'repo/image';
 import { toId } from 'utils/common';
 import { PcodeStructTree } from 'sda-core';
 import { toContext } from './dto/context';
+import assert from 'assert';
 
 class PcodeControllerImpl extends BaseController implements PcodeController {
   constructor() {
@@ -61,6 +62,7 @@ class PcodeControllerImpl extends BaseController implements PcodeController {
     const context = toContext(contextId);
     const pcodeGraph = toPcodeGraph(funcGraphId.graphId);
     const funcGraph = pcodeGraph.getFunctionGraphAt(funcGraphId.offset);
+    assert(funcGraph, `Function graph ${funcGraphId.offset} does not exist`);
     const structTree = PcodeStructTree.New();
     structTree.init(funcGraph);
     const text = pcodeStructTreeToTokenizedText(structTree, context.platform.registerRepository);

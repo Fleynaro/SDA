@@ -28,7 +28,7 @@ export declare class DataFlowNode {
 export declare class DataFlowRepository {
   readonly globalStartNode: DataFlowNode;
 
-  getNode(value: IRcodeValue): DataFlowNode;
+  getNode(value: IRcodeValue): DataFlowNode | undefined;
 
   static New(eventPipe: EventPipe): DataFlowRepository;
 }

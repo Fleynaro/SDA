@@ -54,7 +54,7 @@ describe('Data flow researcher', () => {
       `;
       const instructions = PcodeParser.Parse(source, null);
       graph.exploreInstructions(0, instructions);
-      entryFunction = program.getFunctionAt(0);
+      entryFunction = program.getFunctionAt(0)!;
     }
   });
 
@@ -86,14 +86,14 @@ describe('Data flow researcher', () => {
 
   it('should access nodes', () => {
     expect(dataFlowRepo.globalStartNode.type).toBe(DataFlowNodeType.Start);
-    const var2 = entryFunction.findVariableById(2);
-    const nodeOfVar2 = dataFlowRepo.getNode(var2);
+    const var2 = entryFunction.findVariableById(2)!;
+    const nodeOfVar2 = dataFlowRepo.getNode(var2)!;
     expect(nodeOfVar2.type).toBe(DataFlowNodeType.Copy);
     expect(nodeOfVar2.name).toBe('B0:var2');
     expect(nodeOfVar2.predecessors.length).toBe(1);
     expect(nodeOfVar2.successors.length).toBe(1);
-    const var4 = entryFunction.findVariableById(4);
-    const nodeOfVar4 = dataFlowRepo.getNode(var4);
+    const var4 = entryFunction.findVariableById(4)!;
+    const nodeOfVar4 = dataFlowRepo.getNode(var4)!;
     expect(nodeOfVar4.type).toBe(DataFlowNodeType.Write);
     expect(nodeOfVar4.name).toBe('B0:var4');
     expect(nodeOfVar4.predecessors.length).toBe(2);

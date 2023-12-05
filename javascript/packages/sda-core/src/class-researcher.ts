@@ -29,7 +29,7 @@ export interface ClassLabelInfo {
 export declare class ClassRepository {
   readonly eventPipe: EventPipe;
 
-  getStructureInfo(structure: Structure): StructureInfo;
+  getStructureInfo(structure: Structure): StructureInfo | undefined;
 
   addUserDefinedLabelOffset(structure: Structure, info: ClassLabelInfo): void;
 

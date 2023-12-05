@@ -70,7 +70,7 @@ describe('Structure researcher', () => {
       `;
       const instructions = PcodeParser.Parse(source, null);
       graph.exploreInstructions(0, instructions);
-      entryFunction = program.getFunctionAt(0);
+      entryFunction = program.getFunctionAt(0)!;
     }
   });
 
@@ -93,17 +93,17 @@ describe('Structure researcher', () => {
         0x10: B0:var3
       }
     `;
-    const var1 = entryFunction.findVariableById(1);
-    const node = dataFlowRepo.getNode(var1);
-    const structure = structureRepo.getStructure(node);
+    const var1 = entryFunction.findVariableById(1)!;
+    const node = dataFlowRepo.getNode(var1)!;
+    const structure = structureRepo.getStructure(node)!;
     const actual = PrintStructure(structure);
     expect(stripSpaces(actual)).toBe(stripSpaces(expected));
   });
 
   it('should access fields', () => {
-    const var1 = entryFunction.findVariableById(1);
-    const node = dataFlowRepo.getNode(var1);
-    const structure = structureRepo.getStructure(node);
+    const var1 = entryFunction.findVariableById(1)!;
+    const node = dataFlowRepo.getNode(var1)!;
+    const structure = structureRepo.getStructure(node)!;
     expect(structure.name).toBe('B0:var1');
     const fieldStructure = structure.fields[0x10];
     expect(fieldStructure).toBeDefined();

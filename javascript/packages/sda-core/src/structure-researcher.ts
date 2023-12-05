@@ -25,9 +25,9 @@ export declare class StructureRepository {
   readonly allStructures: Structure[];
   readonly rootStructures: Structure[];
 
-  getStructure(node: DataFlowNode): Structure;
+  getStructure(node: DataFlowNode): Structure | undefined;
 
-  getStructureByName(name: string): Structure;
+  getStructureByName(name: string): Structure | undefined;
 
   static New(eventPipe: EventPipe): StructureRepository;
 }

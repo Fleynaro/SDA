@@ -51,7 +51,7 @@ describe('IR-code', () => {
       `;
       const instructions = PcodeParser.Parse(source, null);
       graph.exploreInstructions(0, instructions);
-      entryFunction = program.getFunctionAt(0);
+      entryFunction = program.getFunctionAt(0)!;
     }
   });
 

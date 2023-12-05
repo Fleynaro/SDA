@@ -88,7 +88,7 @@ describe('Semantics researcher', () => {
       `;
       const instructions = PcodeParser.Parse(source, null);
       graph.exploreInstructions(0, instructions);
-      entryFunction = program.getFunctionAt(0);
+      entryFunction = program.getFunctionAt(0)!;
     }
   });
 
@@ -105,8 +105,8 @@ describe('Semantics researcher', () => {
   });
 
   it('should access fields', () => {
-    const var3 = entryFunction.findVariableById(3);
-    const semObj = semanticsRepo.getObject(var3);
+    const var3 = entryFunction.findVariableById(3)!;
+    const semObj = semanticsRepo.getObject(var3)!;
     expect(semObj.variables).toHaveLength(2);
     expect([semObj.variables[0].name, semObj.variables[1].name].sort()).toEqual(['var3', 'var4']);
     expect(semObj.semantics.length).toBeGreaterThan(0);

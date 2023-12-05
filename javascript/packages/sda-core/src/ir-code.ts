@@ -151,7 +151,7 @@ export declare class IRcodeFunction {
   readonly paramVariables: IRcodeVariable[];
   readonly returnVariable: IRcodeVariable;
 
-  findVariableById(id: number): IRcodeVariable;
+  findVariableById(id: number): IRcodeVariable | undefined;
 }
 
 export declare class IRcodeProgram implements IIdentifiable {
@@ -161,7 +161,7 @@ export declare class IRcodeProgram implements IIdentifiable {
   readonly graph: PcodeGraph;
   readonly globalSymbolTable: SymbolTable;
 
-  getFunctionAt(offset: InstructionOffset): IRcodeFunction;
+  getFunctionAt(offset: InstructionOffset): IRcodeFunction | undefined;
 
   getFunctionsByCallInstruction(instr: PcodeInstruction): IRcodeFunction[];
 

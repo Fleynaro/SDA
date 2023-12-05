@@ -162,7 +162,7 @@ export declare class PcodeGraph implements IIdentifiable {
 
   removeInstruction(instruction: PcodeInstruction): void;
 
-  getInstructionAt(offset: InstructionOffset): PcodeInstruction;
+  getInstructionAt(offset: InstructionOffset): PcodeInstruction | undefined;
 
   getInstructionsAt(byteOffset: Offset): PcodeInstruction[];
 
@@ -170,13 +170,13 @@ export declare class PcodeGraph implements IIdentifiable {
 
   removeBlock(block: PcodeBlock): void;
 
-  getBlockAt(offset: InstructionOffset, halfInterval: boolean): PcodeBlock;
+  getBlockAt(offset: InstructionOffset, halfInterval: boolean): PcodeBlock | undefined;
 
   createFunctionGraph(entryBlock: PcodeBlock): PcodeFunctionGraph;
 
   removeFunctionGraph(graph: PcodeFunctionGraph): void;
 
-  getFunctionGraphAt(offset: InstructionOffset): PcodeFunctionGraph;
+  getFunctionGraphAt(offset: InstructionOffset): PcodeFunctionGraph | undefined;
 
   static New(eventPipe: EventPipe, platform: Platform): PcodeGraph;
 
