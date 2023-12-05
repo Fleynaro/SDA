@@ -54,6 +54,7 @@ namespace sda::bind
                 .property("allStructures", &StructureRepository::getAllStructures)
                 .property("rootStructures", &StructureRepository::getRootStructures)
                 .method("getStructure", &StructureRepository::getOrCreateStructure)
+                .method("getStructureByName", &StructureRepository::getStructureByName)
                 .static_method("New", &New);
             RegisterClassName(cl, "StructureRepository");
             module.class_("StructureRepository", cl);

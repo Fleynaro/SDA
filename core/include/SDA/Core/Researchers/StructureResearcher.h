@@ -195,12 +195,22 @@ namespace sda::researcher
         };
         std::list<Structure> m_structures;
         std::map<DataFlowNode*, Link> m_nodeToStructure;
+        std::map<size_t, Structure*> m_nameToStructure;
         std::map<DataFlowNode*, size_t> m_nodeToConstant;
         std::map<DataFlowNode*, size_t> m_nodeToHash;
         size_t m_idCounter = 0;
         std::shared_ptr<EventPipe> m_eventPipe;
     public:
         StructureRepository(std::shared_ptr<EventPipe> eventPipe);
+
+        Structure* getStructureByName(const std::string& name) {
+            auto hash = std::hash<std::string>()(name);
+            auto it = m_nameToStructure.find(hash);
+            if (it == m_nameToStructure.end()) {
+                return nullptr;
+            }
+            return it->second;
+        }
 
         void setConstant(DataFlowNode* node, size_t value) {
             m_nodeToConstant[node] = value;
@@ -235,6 +245,7 @@ namespace sda::researcher
         Structure* createStructure(const std::string& name) {
             m_structures.emplace_back(Structure { m_idCounter++, name });
             auto structure = &m_structures.back();
+            m_nameToStructure[std::hash<std::string>()(structure->name)] = structure;
             m_eventPipe->send(StructureCreatedEvent(structure));
             return structure;
         }
@@ -263,6 +274,7 @@ namespace sda::researcher
                 m_nodeToStructure.erase(node);
             }
             // remove structure
+            m_nameToStructure.erase(std::hash<std::string>()(structure->name));
             m_structures.remove_if([structure](const Structure& s) {
                 return &s == structure;
             });

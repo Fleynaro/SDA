@@ -27,6 +27,8 @@ export declare class StructureRepository {
 
   getStructure(node: DataFlowNode): Structure;
 
+  getStructureByName(name: string): Structure;
+
   static New(eventPipe: EventPipe): StructureRepository;
 }
 
