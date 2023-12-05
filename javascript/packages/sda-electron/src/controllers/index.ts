@@ -5,6 +5,7 @@ import AddressSpaceController from './address-space-controller';
 import ImageController from './image-controller';
 import PcodeController from './p-code-controller';
 import IRcodeController from './ir-code-controller';
+import ResearcherController from './researcher-controller';
 
 export let windowController: WindowController;
 export let projectController: ProjectController;
@@ -13,6 +14,7 @@ export let addressSpaceController: AddressSpaceController;
 export let imageController: ImageController;
 export let pcodeController: PcodeController;
 export let ircodeController: IRcodeController;
+export let researcherController: ResearcherController;
 
 export const initControllers = () => {
   windowController = new WindowController();
@@ -22,4 +24,5 @@ export const initControllers = () => {
   imageController = new ImageController();
   pcodeController = new PcodeController();
   ircodeController = new IRcodeController();
+  researcherController = new ResearcherController();
 };

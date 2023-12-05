@@ -7,6 +7,7 @@ import AddressSpaceController from './address-space-controller';
 import ImageController from './image-controller';
 import PcodeController from './p-code-controller';
 import IRcodeController from './ir-code-controller';
+import ResearcherController from './researcher-controller';
 
 const initControllers = () => {
   contextBridge.exposeInMainWorld('eventApi', EventController);
@@ -17,6 +18,7 @@ const initControllers = () => {
   contextBridge.exposeInMainWorld('imageApi', ImageController);
   contextBridge.exposeInMainWorld('pcodeApi', PcodeController);
   contextBridge.exposeInMainWorld('ircodeApi', IRcodeController);
+  contextBridge.exposeInMainWorld('researcherApi', ResearcherController);
 };
 
 export default initControllers;
