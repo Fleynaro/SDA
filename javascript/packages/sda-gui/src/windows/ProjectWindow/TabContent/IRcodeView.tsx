@@ -1,13 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Token, TokenizedText } from 'sda-electron/api/common';
 import { Image } from 'sda-electron/api/image';
-import { IRcodeFunction, getIRcodeApi } from 'sda-electron/api/ir-code';
+import { PcodeTokenGroupAction, PcodeVarnodeTokenGroupAction } from 'sda-electron/api/p-code';
+import {
+  IRcodeFunction,
+  IRcodeTokenGroupAction,
+  IRcodeValueTokenGroupAction,
+  getIRcodeApi,
+} from 'sda-electron/api/ir-code';
+import { getResearcherApi } from 'sda-electron/api/researcher';
 import { withCrash_ } from 'providers/CrashProvider';
 import { TokenizedTextView } from 'components/TokenizedTextView';
 import { useHighlightedGroupIndexes } from './helpers';
 import { usePopperFromContext } from 'components/Popper';
 import { ConstantValuePopper } from './ConstantValuePopper';
-import { PcodeTokenGroupAction, PcodeVarnodeTokenGroupAction } from 'sda-electron/api/p-code';
+import { StructurePopper } from './StructurePopper';
 
 const TokenTypeToColor = {
   ['Operation']: '#eddaa4',
@@ -50,6 +57,20 @@ export const IRcodeView = ({ image, func }: IRcodeViewProps) => {
           popper.withTimer(() => {
             popper.openAtPos(e.clientX, e.clientY + 10);
             popper.setContent(<ConstantValuePopper value={varnode.value} />);
+            popper.setCloseCallback(() => {
+              setSelectedToken(null);
+            });
+            setSelectedToken(token);
+          }, 500);
+        }
+      } else if (action.name === IRcodeTokenGroupAction.Value) {
+        const { value } = action as IRcodeValueTokenGroupAction;
+        if (value.type === 'variable') {
+          popper.withTimer(async () => {
+            const structure = await getResearcherApi().findStructureByVariableId(value.id);
+            if (!structure) return;
+            popper.openAtPos(e.clientX, e.clientY + 10);
+            popper.setContent(<StructurePopper structure={structure} />);
             popper.setCloseCallback(() => {
               setSelectedToken(null);
             });
