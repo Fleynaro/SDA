@@ -7,6 +7,8 @@ import {
   IRcodeObjectId,
   IRcodeValueTokenGroupAction,
   IRcodeValueDto,
+  IRcodeFunctionId,
+  IRcodeVariableId,
 } from 'api/ir-code';
 import {
   IRcodePrinterJs,
@@ -25,6 +27,7 @@ import {
 import { toHash, toId } from 'utils/common';
 import { TokenWriter } from './common';
 import { addPcodePrinterToWriter, addPcodeStructTreePrinterToWriter } from './p-code';
+import assert from 'assert';
 
 export const toIRcodeProgram = (id: ObjectId): IRcodeProgram => {
   const program = IRcodeProgram.Get(toHash(id));
@@ -34,6 +37,22 @@ export const toIRcodeProgram = (id: ObjectId): IRcodeProgram => {
   return program;
 };
 
+export const toIRcodeFunction = (functionId: IRcodeFunctionId): IRcodeFunction => {
+  const program = toIRcodeProgram(functionId.programId);
+  const func = program.getFunctionAt(functionId.offset);
+  assert(func, `Function ${functionId.offset} does not exist`);
+  return func;
+};
+
+export const toIRcodeVariable = (variableId: IRcodeVariableId): IRcodeVariable => {
+  const func = toIRcodeFunction(variableId.functionId);
+  const variable = func.findVariableById(variableId.variableId);
+  assert(variable, `Variable ${variableId.variableId} does not exist`);
+  return variable;
+};
+
+export const toIRcodeProgramId = toId;
+
 export const toIRcodeObjectId = (programId: ObjectId, offset: Offset): IRcodeObjectId => {
   return {
     programId,
@@ -41,10 +60,22 @@ export const toIRcodeObjectId = (programId: ObjectId, offset: Offset): IRcodeObj
   };
 };
 
-export const toIRcodeFunctionDto = (func: IRcodeFunction): IRcodeFunctionDto => {
-  const programId = toId(func.program);
+export const toIRcodeFunctionId = (func: IRcodeFunction): IRcodeFunctionId => {
+  const programId = toIRcodeProgramId(func.program);
+  return toIRcodeObjectId(programId, func.entryOffset);
+};
+
+export const toIRcodeVariableId = (variable: IRcodeVariable): IRcodeVariableId => {
+  const func = variable.sourceOperation.block.function;
   return {
-    id: toIRcodeObjectId(programId, func.entryOffset),
+    functionId: toIRcodeFunctionId(func),
+    variableId: variable.id,
+  };
+};
+
+export const toIRcodeFunctionDto = (func: IRcodeFunction): IRcodeFunctionDto => {
+  return {
+    id: toIRcodeFunctionId(func),
   };
 };
 
@@ -67,6 +98,7 @@ export const addIRcodePrinterToWriter = (printer: IRcodePrinterJs, writer: Token
     if (instance_of(value, IRcodeVariable)) {
       dto = {
         type: 'variable',
+        id: toIRcodeVariableId(value as IRcodeVariable),
         name: (value as IRcodeVariable).name,
       };
     } else if (instance_of(value, IRcodeConstant)) {

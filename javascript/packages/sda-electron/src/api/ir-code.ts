@@ -20,9 +20,17 @@ export type IRcodeObjectId = {
   offset: Offset;
 };
 
+export type IRcodeFunctionId = IRcodeObjectId;
+
+export type IRcodeVariableId = {
+  functionId: IRcodeObjectId;
+  variableId: number;
+};
+
 export type IRcodeValueDto =
   | {
       type: 'variable';
+      id: IRcodeVariableId;
       name: string;
     }
   | {
@@ -35,7 +43,7 @@ export type IRcodeValueDto =
     };
 
 export type IRcodeFunction = {
-  id: IRcodeObjectId;
+  id: IRcodeFunctionId;
 };
 
 export interface IRcodeController {
@@ -43,7 +51,7 @@ export interface IRcodeController {
 
   getFunctionAt(programId: ObjectId, entryOffset: Offset): Promise<IRcodeFunction | null>;
 
-  getIRcodeTokenizedText(contextId: ObjectId, functionId: IRcodeObjectId): Promise<TokenizedText>;
+  getIRcodeTokenizedText(contextId: ObjectId, functionId: IRcodeFunctionId): Promise<TokenizedText>;
 }
 
 export const getIRcodeApi = () => {

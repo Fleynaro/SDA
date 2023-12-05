@@ -1,10 +1,15 @@
 import BaseController from './base-controller';
 import { ObjectId, Offset, TokenizedText } from 'api/common';
-import { IRcodeController, IRcodeFunction as IRcodeFunctionDto, IRcodeObjectId } from 'api/ir-code';
+import {
+  IRcodeController,
+  IRcodeFunction as IRcodeFunctionDto,
+  IRcodeFunctionId,
+} from 'api/ir-code';
 import { toImage } from './dto/image';
 import { toContext } from './dto/context';
 import {
   ircodeStructTreeToTokenizedText,
+  toIRcodeFunction,
   toIRcodeFunctionDto,
   toIRcodeProgram,
 } from './dto/ir-code';
@@ -38,11 +43,10 @@ class IRcodeControllerImpl extends BaseController implements IRcodeController {
 
   public async getIRcodeTokenizedText(
     contextId: ObjectId,
-    functionId: IRcodeObjectId,
+    functionId: IRcodeFunctionId,
   ): Promise<TokenizedText> {
     const context = toContext(contextId);
-    const program = toIRcodeProgram(functionId.programId);
-    const func = program.getFunctionAt(functionId.offset);
+    const func = toIRcodeFunction(functionId);
     const structTree = PcodeStructTree.New();
     structTree.init(func.funcGraph);
     const text = ircodeStructTreeToTokenizedText(
