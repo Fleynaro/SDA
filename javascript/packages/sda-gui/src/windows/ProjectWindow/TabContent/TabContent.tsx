@@ -49,6 +49,7 @@ const DecompilerComponent = () => {
   const [showIRcode, setShowIRcode] = useState<boolean>(false);
   const [dataFlowText, setDataFlowText] = useState<string>('');
   const [showDataFlowText, setShowDataFlowText] = useState<boolean>(false);
+  const [splitIntoColumns, setSplitIntoColumns] = useState<boolean>(true);
   useEffect(
     withCrash_(async () => {
       if (!image || !selectedFirstRow) return;
@@ -95,6 +96,13 @@ const DecompilerComponent = () => {
         </Button>
         <Button
           variant="contained"
+          onClick={() => setSplitIntoColumns(!splitIntoColumns)}
+          disabled={!curFunction}
+        >
+          {splitIntoColumns ? 'Columns Yes' : 'Columns No'}
+        </Button>
+        <Button
+          variant="contained"
           onClick={() => setShowDataFlowText(!showDataFlowText)}
           disabled={!curFunction}
         >
@@ -108,8 +116,16 @@ const DecompilerComponent = () => {
           </Grid>
         )}
         {showIRcode
-          ? curFunction && <IRcodeView image={image} func={curFunction} />
-          : curFuncGraph && <PcodeView image={image} funcGraph={curFuncGraph} />}
+          ? curFunction && (
+              <IRcodeView image={image} func={curFunction} splitIntoColumns={splitIntoColumns} />
+            )
+          : curFuncGraph && (
+              <PcodeView
+                image={image}
+                funcGraph={curFuncGraph}
+                splitIntoColumns={splitIntoColumns}
+              />
+            )}
       </Grid>
     </Grid>
   );

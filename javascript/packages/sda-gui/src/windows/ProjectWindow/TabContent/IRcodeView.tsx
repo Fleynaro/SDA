@@ -10,7 +10,7 @@ import {
 } from 'sda-electron/api/ir-code';
 import { getResearcherApi } from 'sda-electron/api/researcher';
 import { withCrash_ } from 'providers/CrashProvider';
-import { TokenizedTextView } from 'components/TokenizedTextView';
+import { Line, LineColumn, TokenizedTextView } from 'components/TokenizedTextView';
 import { useHighlightedGroupIndexes } from './helpers';
 import { usePopperFromContext } from 'components/Popper';
 import { ConstantValuePopper } from './ConstantValuePopper';
@@ -30,9 +30,10 @@ const TokenTypeToColor = {
 export interface IRcodeViewProps {
   image: Image;
   func: IRcodeFunction;
+  splitIntoColumns?: boolean;
 }
 
-export const IRcodeView = ({ image, func }: IRcodeViewProps) => {
+export const IRcodeView = ({ image, func, splitIntoColumns = true }: IRcodeViewProps) => {
   const [text, setText] = useState<TokenizedText | null>(null);
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const highlightedGroupIdxs = useHighlightedGroupIndexes(text);
@@ -46,6 +47,29 @@ export const IRcodeView = ({ image, func }: IRcodeViewProps) => {
     }),
     [image, func],
   );
+
+  const columns = useCallback((line: Line) => {
+    const columns: LineColumn[] = [];
+    for (let i = 0; i < line.tokens.length; i++) {
+      const token = line.tokens[i];
+      if (columns.length === 0) {
+        if (token.text !== ' ') {
+          if (i > 0) {
+            // tabs
+            columns.push({ width: 2 * (i + 1), tokens: [] });
+          }
+          // output ir-code variable
+          columns.push({ width: 120, tokens: [] });
+        } else {
+          continue;
+        }
+      } else if (token.text === ' = ') {
+        columns.push({ tokens: [] });
+      }
+      columns[columns.length - 1].tokens.push(token);
+    }
+    return columns;
+  }, []);
 
   const onTokenMouseEnter = useCallback(
     (e: React.MouseEvent<HTMLSpanElement, MouseEvent>, token: Token) => {
@@ -96,6 +120,7 @@ export const IRcodeView = ({ image, func }: IRcodeViewProps) => {
       tokenTypeToColor={TokenTypeToColor}
       highlightedGroupIdxs={highlightedGroupIdxs}
       highlightedToken={selectedToken}
+      columns={splitIntoColumns ? columns : undefined}
       onTokenMouseEnter={onTokenMouseEnter}
       onTokenMouseLeave={onTokenMouseLeave}
     />

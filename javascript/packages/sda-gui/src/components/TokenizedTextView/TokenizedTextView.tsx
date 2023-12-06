@@ -7,6 +7,11 @@ import { Token, TokenizedText } from 'sda-electron/api/common';
 import { PcodeStructBlockTokenGroupAction, PcodeTokenGroupAction } from 'sda-electron/api/p-code';
 import { useHtmlTextSelection } from 'components/Text';
 
+const toHtmlText = (text: string) => {
+  // TODO: replace on backend? Or move to utils
+  return text.replaceAll(' ', '\u00a0');
+};
+
 const row = {
   height: 20,
 };
@@ -53,11 +58,12 @@ interface TokenizedTextViewProps {
   tokenTypeToColor?: { [type: string]: string };
   highlightedGroupIdxs?: number[];
   highlightedToken?: Token | null;
+  columns?: (line: Line) => LineColumn[];
   onTokenMouseEnter?: (e: React.MouseEvent<HTMLSpanElement, MouseEvent>, token: Token) => void;
   onTokenMouseLeave?: (e: React.MouseEvent<HTMLSpanElement, MouseEvent>, token: Token) => void;
 }
 
-interface Line {
+export interface Line {
   index: number;
   tokens: Token[];
   collapse?: {
@@ -66,12 +72,18 @@ interface Line {
   };
 }
 
+export interface LineColumn {
+  width?: number;
+  tokens: Token[];
+}
+
 export const TokenizedTextView = ({
   name,
   text,
   tokenTypeToColor = {},
   highlightedGroupIdxs = [],
   highlightedToken,
+  columns = (line) => [{ tokens: line.tokens }],
   onTokenMouseEnter,
   onTokenMouseLeave,
 }: TokenizedTextViewProps) => {
@@ -138,6 +150,10 @@ export const TokenizedTextView = ({
     return allLines.filter((l) => !hiddenIndexes.has(l.index));
   }, [collapsedLineIds, allLines]);
 
+  const lineColumns = useMemo(() => {
+    return lines.map((line) => columns(line));
+  }, [lines, columns]);
+
   const lineHighlightColor = useMemo(() => {
     const lineHighlightColor = new Map<number, string>();
     for (const line of allLines) {
@@ -165,6 +181,48 @@ export const TokenizedTextView = ({
     (line: Line) => (line.collapse ? collapsedLineIds.includes(line.collapse.id) : false),
     [collapsedLineIds],
   );
+
+  const renderToken = (token: Token, index: number) => {
+    return (
+      <span
+        key={index}
+        onMouseUp={() => setSelectedTokenText(token.text !== ' ' ? token.text : null)}
+        onMouseEnter={(e) => onTokenMouseEnter?.(e, token)}
+        onMouseLeave={(e) => onTokenMouseLeave?.(e, token)}
+        style={{
+          color: tokenTypeToColor[token.type],
+          backgroundColor:
+            highlightedToken === token || selectedTokenText === token.text ? '#304559' : undefined,
+        }}
+        aria-label={token.type}
+        data-group-idx={token.groupIdx}
+        data-area={name}
+      >
+        {toHtmlText(token.text)}
+      </span>
+    );
+  };
+
+  const renderCollapsingEllipsis = (line: Line) => {
+    return (
+      isLineCollapsed(line) && (
+        <>
+          <span className={classes.collapseEllipsis} onClick={() => onCollapseCode(line)}>
+            {toHtmlText(' ...')}
+          </span>
+        </>
+      )
+    );
+  };
+
+  const renderTokensAtLine = (line: Line, lineColumns: LineColumn[]) => {
+    return lineColumns.map(({ tokens, width }, i) => (
+      <Grid item key={i} container width={width} wrap="nowrap">
+        {tokens.map((token, j) => renderToken(token, j))}
+        {lineColumns.length - 1 === i && renderCollapsingEllipsis(line)}
+      </Grid>
+    ));
+  };
 
   const content = useMemo(() => {
     return (
@@ -196,7 +254,7 @@ export const TokenizedTextView = ({
           </Grid>
         </Grid>
         <Grid item container direction="column">
-          {lines.map((line) => (
+          {lines.map((line, i) => (
             <Grid
               item
               direction="row"
@@ -204,34 +262,9 @@ export const TokenizedTextView = ({
               key={line.index}
               style={{ backgroundColor: lineHighlightColor.get(line.index) }}
             >
-              {line.tokens.map((token, j) => (
-                <span
-                  key={j}
-                  onMouseUp={() => setSelectedTokenText(token.text !== ' ' ? token.text : null)}
-                  onMouseEnter={(e) => onTokenMouseEnter?.(e, token)}
-                  onMouseLeave={(e) => onTokenMouseLeave?.(e, token)}
-                  style={{
-                    color: tokenTypeToColor[token.type],
-                    backgroundColor:
-                      highlightedToken === token || selectedTokenText === token.text
-                        ? '#304559'
-                        : undefined,
-                  }}
-                  aria-label={token.type}
-                  data-group-idx={token.groupIdx}
-                  data-area={name}
-                >
-                  {token.text === ' ' ? '\u00A0' : token.text}
-                </span>
-              ))}
-              {isLineCollapsed(line) && (
-                <>
-                  {' '}
-                  <span className={classes.collapseEllipsis} onClick={() => onCollapseCode(line)}>
-                    ...
-                  </span>
-                </>
-              )}
+              <Grid container direction="row" wrap="nowrap">
+                {renderTokensAtLine(line, lineColumns[i])}
+              </Grid>
             </Grid>
           ))}
           <Grid item direction="row" style={{ height: 100 }} aria-label="empty-space"></Grid>
@@ -240,6 +273,7 @@ export const TokenizedTextView = ({
     );
   }, [
     lines,
+    lineColumns,
     lineHighlightColor,
     highlightedToken,
     selectedTokenText,

@@ -8,7 +8,7 @@ import {
   getPcodeApi,
 } from 'sda-electron/api/p-code';
 import { withCrash_ } from 'providers/CrashProvider';
-import { TokenizedTextView } from 'components/TokenizedTextView';
+import { Line, LineColumn, TokenizedTextView } from 'components/TokenizedTextView';
 import { useHighlightedGroupIndexes } from './helpers';
 import { usePopperFromContext } from 'components/Popper';
 import { ConstantValuePopper } from './ConstantValuePopper';
@@ -26,9 +26,10 @@ const TokenTypeToColor = {
 export interface PcodeViewProps {
   image: Image;
   funcGraph: PcodeFunctionGraph;
+  splitIntoColumns?: boolean;
 }
 
-export const PcodeView = ({ image, funcGraph }: PcodeViewProps) => {
+export const PcodeView = ({ image, funcGraph, splitIntoColumns = true }: PcodeViewProps) => {
   const [text, setText] = useState<TokenizedText | null>(null);
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const highlightedGroupIdxs = useHighlightedGroupIndexes(text);
@@ -45,6 +46,29 @@ export const PcodeView = ({ image, funcGraph }: PcodeViewProps) => {
     }),
     [image, funcGraph],
   );
+
+  const columns = useCallback((line: Line) => {
+    const columns: LineColumn[] = [];
+    for (let i = 0; i < line.tokens.length; i++) {
+      const token = line.tokens[i];
+      if (columns.length === 0) {
+        if (token.text !== ' ') {
+          if (i > 0) {
+            // tabs
+            columns.push({ width: 2 * (i + 1), tokens: [] });
+          }
+          // output p-code variable
+          columns.push({ width: 90, tokens: [] });
+        } else {
+          continue;
+        }
+      } else if (token.text === ' = ') {
+        columns.push({ tokens: [] });
+      }
+      columns[columns.length - 1].tokens.push(token);
+    }
+    return columns;
+  }, []);
 
   const onTokenMouseEnter = useCallback(
     (e: React.MouseEvent<HTMLSpanElement, MouseEvent>, token: Token) => {
@@ -81,6 +105,7 @@ export const PcodeView = ({ image, funcGraph }: PcodeViewProps) => {
       tokenTypeToColor={TokenTypeToColor}
       highlightedGroupIdxs={highlightedGroupIdxs}
       highlightedToken={selectedToken}
+      columns={splitIntoColumns ? columns : undefined}
       onTokenMouseEnter={onTokenMouseEnter}
       onTokenMouseLeave={onTokenMouseLeave}
     />
