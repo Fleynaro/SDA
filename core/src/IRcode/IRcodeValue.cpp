@@ -124,6 +124,7 @@ void Variable::Remove(const std::shared_ptr<Variable>& variable) {
     }
     auto block = variable->getSourceOperation()->getBlock();
     block->getMemorySpace()->removeVariable(variable);
-    block->m_varIds.set(variable->getId(), false);
-    block->getFunction()->m_varIds.set(variable->getId(), false);
+    auto idx = variable->getId() - 1;
+    block->m_varIds.set(idx, false);
+    block->getFunction()->m_varIds.set(idx, false);
 }
