@@ -83,7 +83,10 @@ export const StructurePopper = ({
           {Object.entries(fields).map(([offset, fieldStructure]) => (
             <>
               <br />
-              &nbsp;&nbsp;<span style={{ color: '#d9d59c' }}>0x{Number(offset).toString(16)}</span>
+              &nbsp;&nbsp;
+              <span style={{ color: info?.offset === Number(offset) ? '#faee23' : '#d9d59c' }}>
+                0x{Number(offset).toString(16)}
+              </span>
               {': '}
               {renderStructureName(fieldStructure)}
             </>
