@@ -307,13 +307,13 @@ TEST_F(IRcodeTest, TwoSequenceConditions) {
             var18[$U6]:4 = COPY var17 \n\
             var19[$U7]:1 = INT_NOTEQUAL var18, 0x1:4 \n\
         Block Bb(level: 4, near: Bf): \n\
-            var15:8 = REF var16 \n\
-            var16[$U8]:8 = INT_ADD var15, 0x8:8 \n\
+            var14:8 = REF var16 \n\
+            var15[$U8]:8 = INT_ADD var14, 0x8:8 \n\
             var22:8 = REF var1 \n\
             var23[$U9]:8 = INT_ADD var22, 0x2000:8 \n\
             var24:8 = LOAD var23 \n\
             var25[$U10]:8 = COPY var24 \n\
-            var26[var16]:8 = COPY var25 \n\
+            var26[var15]:8 = COPY var25 \n\
         Block Bf(level: 5): \n\
             empty \
     ";

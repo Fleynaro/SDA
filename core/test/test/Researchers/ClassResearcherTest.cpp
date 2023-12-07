@@ -847,17 +847,17 @@ TEST_F(ClassResearcherTest, TwoClassHierarchies) {
             var19[$U6]:4 = COPY var18 \n\
             var20[$U7]:1 = INT_NOTEQUAL var19, 0x1:4 \n\
         Block Bc(level: 4, far: B1d): \n\
-            var16:8 = REF var17 \n\
-            var17[$U8]:8 = INT_ADD var16, 0x8:8 \n\
+            var15:8 = REF var17 \n\
+            var16[$U8]:8 = INT_ADD var15, 0x8:8 \n\
             var23:8 = REF var1 \n\
             var24[$U9]:8 = INT_ADD var23, 0x2000:8 \n\
             var25:8 = LOAD var24 \n\
             var26[$U10]:8 = COPY var25 \n\
             var27[var26]:4 = COPY 0x2:4 \n\
-            var28[var17]:8 = COPY var26 \n\
-        Block B12(level: 4, near: B14, far: B1d, cond: var23): \n\
-            var22:4 = REF var19 \n\
-            var23[$U12]:1 = INT_NOTEQUAL var22, 0x2:4 \n\
+            var28[var16]:8 = COPY var26 \n\
+        Block B12(level: 4, near: B14, far: B1d, cond: var22): \n\
+            var21:4 = REF var19 \n\
+            var22[$U12]:1 = INT_NOTEQUAL var21, 0x2:4 \n\
         Block B14(level: 5, near: B1b, far: B1d, cond: var39): \n\
             var29:8 = REF var17 \n\
             var30[$U13]:8 = INT_ADD var29, 0x8:8 \n\
@@ -878,7 +878,7 @@ TEST_F(ClassResearcherTest, TwoClassHierarchies) {
             empty \
     ";
     auto expectedStructures = "\
-        struct B0:var25 : B0:var16_0x8, root_0x2000 { \n\
+        struct B0:var25 : B0:var15_0x8, root_0x2000 { \n\
             0x0: 0x2 \n\
         } \n\
         \n\
@@ -911,7 +911,7 @@ TEST_F(ClassResearcherTest, TwoClassHierarchies) {
             0x8: B0:var9 \n\
         } \n\
         \n\
-        struct B0:var16 : B0:var3 { \n\
+        struct B0:var15 : B0:var3 { \n\
             0x0: 0x1 \n\
             0x8: B0:var25 \n\
         } \n\
@@ -922,9 +922,9 @@ TEST_F(ClassResearcherTest, TwoClassHierarchies) {
         } \
     ";
     auto expectedStructureInfos = "\
-        B0:var16 \n\
+        B0:var15 \n\
             0x0: 0x1 \n\
-        B0:var16_0x8 \n\
+        B0:var15_0x8 \n\
             0x0: 0x1, 0x2 \n\
         B0:var25 \n\
             0x0: 0x2 \n\
@@ -951,7 +951,7 @@ TEST_F(ClassResearcherTest, TwoClassHierarchies) {
             0x0: 0x1, 0x2 \
     ";
     auto expectedFieldStructureGroups = "\
-        { B0:var16_0x8, B0:var29_0x8, B0:var3_0x8 } \
+        { B0:var15_0x8, B0:var29_0x8, B0:var3_0x8 } \
     ";
     showHiddenStructures = { "B0:var31" };
     auto mainFunction = parsePcode(sourcePCode, program);
