@@ -8,6 +8,12 @@ export declare class ConstantSet {
   readonly values: { [offset: number]: Set<number> };
 }
 
+interface Link {
+  structure: Structure;
+  offset: number;
+  own: boolean;
+}
+
 export declare class Structure {
   readonly name: string;
   readonly sourceNode: DataFlowNode;
@@ -28,6 +34,8 @@ export declare class StructureRepository {
   getStructure(node: DataFlowNode): Structure | undefined;
 
   getStructureByName(name: string): Structure | undefined;
+
+  getLink(node: DataFlowNode): Link | undefined;
 
   static New(eventPipe: EventPipe): StructureRepository;
 }

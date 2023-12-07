@@ -91,10 +91,10 @@ export const IRcodeView = ({ image, func, splitIntoColumns = true }: IRcodeViewP
         const { value } = action as IRcodeValueTokenGroupAction;
         if (value.type === 'variable') {
           popper.withTimer(async () => {
-            const structure = await getResearcherApi().findStructureByVariableId(value.id);
-            if (!structure) return;
+            const info = await getResearcherApi().findStructureByVariableId(value.id);
+            if (!info) return;
             popper.openAtPos(e.clientX, e.clientY + 10);
-            popper.setContent(<StructurePopper structure={structure} />);
+            popper.setContent(<StructurePopper structure={info.structure} info={info} />);
             popper.setCloseCallback(() => {
               setSelectedToken(null);
             });

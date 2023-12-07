@@ -1,5 +1,10 @@
 import BaseController from './base-controller';
-import { ResearcherController, Structure as StructureDto, StructureId } from 'api/researcher';
+import {
+  ResearcherController,
+  Structure as StructureDto,
+  StructureId,
+  StructureInfo,
+} from 'api/researcher';
 import { IRcodeFunctionId, IRcodeVariableId } from 'api/ir-code';
 import { getImageInfoByProgram } from 'repo/image';
 import { PrintDataFlowForFunction, PrintStructure } from 'sda-core';
@@ -17,15 +22,19 @@ class ResearcherControllerImpl extends BaseController implements ResearcherContr
 
   public async findStructureByVariableId(
     variableId: IRcodeVariableId,
-  ): Promise<StructureDto | undefined> {
+  ): Promise<StructureInfo | undefined> {
     const variable = toIRcodeVariable(variableId);
     const program = variable.sourceOperation.block.function.program;
     const { researchers } = getImageInfoByProgram(program);
     const dataFlowNode = researchers.dataFlowRepo.getNode(variable);
     if (!dataFlowNode) return undefined;
-    const structure = researchers.structureRepo.getStructure(dataFlowNode);
-    if (!structure) return undefined;
-    return toStructureDto(program, structure);
+    const link = researchers.structureRepo.getLink(dataFlowNode);
+    if (!link) return undefined;
+    return {
+      structure: toStructureDto(program, link.structure),
+      offset: link.offset,
+      own: link.own,
+    };
   }
 
   public async getStructureById(structureId: StructureId): Promise<StructureDto> {

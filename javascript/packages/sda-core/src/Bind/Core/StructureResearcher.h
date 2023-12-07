@@ -53,8 +53,20 @@ namespace sda::bind
                 .auto_wrap_object_ptrs(true)
                 .property("allStructures", &StructureRepository::getAllStructures)
                 .property("rootStructures", &StructureRepository::getRootStructures)
-                .method("getStructure", &StructureRepository::getOrCreateStructure)
+                .method("getStructure", &StructureRepository::getStructure)
                 .method("getStructureByName", &StructureRepository::getStructureByName)
+                .method("getLink", std::function([](StructureRepository* repo, DataFlowNode* node) -> v8::Local<v8::Value> {
+                    auto isolate = v8::Isolate::GetCurrent();
+                    auto link = repo->getLink(node);
+                    if (!link) {
+                        return v8::Undefined(isolate);
+                    }
+                    auto linkObj = v8::Object::New(isolate);
+                    v8pp::set_option(isolate, linkObj, "structure", link->structure);
+                    v8pp::set_option(isolate, linkObj, "offset", link->offset);
+                    v8pp::set_option(isolate, linkObj, "own", link->own);
+                    return linkObj;
+                }))
                 .static_method("New", &New);
             RegisterClassName(cl, "StructureRepository");
             module.class_("StructureRepository", cl);

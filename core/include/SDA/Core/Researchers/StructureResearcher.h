@@ -266,6 +266,14 @@ namespace sda::researcher
             return link->structure;
         }
 
+        Structure* getStructure(DataFlowNode* node) {
+            auto link = getLink(node);
+            if (link == nullptr) {
+                return nullptr;
+            }
+            return link->structure;
+        }
+
         void removeStructure(Structure* structure) {
             clearStructure(structure);
             m_eventPipe->send(StructureRemovedEvent(structure));

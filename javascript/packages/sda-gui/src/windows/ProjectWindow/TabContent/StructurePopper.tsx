@@ -2,9 +2,15 @@ import { Paper } from '@mui/material';
 import { Popper, usePopper } from 'components/Popper';
 import { withCrash_ } from 'providers/CrashProvider';
 import { useCallback, useEffect, useState } from 'react';
-import { Structure, getResearcherApi } from 'sda-electron/api/researcher';
+import { Structure, StructureInfo, getResearcherApi } from 'sda-electron/api/researcher';
 
-export const StructurePopper = ({ structure }: { structure: Structure }) => {
+export const StructurePopper = ({
+  structure,
+  info,
+}: {
+  structure: Structure;
+  info?: StructureInfo;
+}) => {
   const [parents, setParents] = useState<Structure[]>([]);
   const [children, setChildren] = useState<Structure[]>([]);
   const [fields, setFields] = useState<{
@@ -62,6 +68,15 @@ export const StructurePopper = ({ structure }: { structure: Structure }) => {
 
   return (
     <Paper sx={{ p: 5 }}>
+      {info && (
+        <>
+          <span style={{ color: '#bfbfbf' }}>
+            At offset: 0x{info.offset.toString(16)}
+            {info.own && ' (own)'}
+          </span>
+          <br />
+        </>
+      )}
       <span style={{ color: '#93bbd9' }}>struct</span> {structure.name} {'{'}
       {Object.keys(fields).length > 0 && (
         <>

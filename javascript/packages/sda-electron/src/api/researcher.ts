@@ -18,8 +18,14 @@ export type Structure = {
   constants: { [offset: number]: number[] };
 };
 
+export type StructureInfo = {
+  structure: Structure;
+  offset: number;
+  own: boolean;
+};
+
 export interface ResearcherController {
-  findStructureByVariableId(variableId: IRcodeVariableId): Promise<Structure | undefined>;
+  findStructureByVariableId(variableId: IRcodeVariableId): Promise<StructureInfo | undefined>;
 
   getStructureById(structureId: StructureId): Promise<Structure>;
 
