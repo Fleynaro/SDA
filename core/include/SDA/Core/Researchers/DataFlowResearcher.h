@@ -298,6 +298,10 @@ namespace sda::researcher
                         if (auto inputNode = m_dataFlowRepo->getOrCreateNode(input)) {
                             if (auto readNode = m_dataFlowRepo->getOrCreateNode(output, DataFlowNode::Read)) {
                                 m_dataFlowRepo->addSuccessor(inputNode, readNode);
+                                if (auto inputVar = std::dynamic_pointer_cast<ircode::Variable>(input)) {
+                                    // revise outputAddrVar because it's already known its type is address
+                                    ctx.markValueAsAffected(inputVar);
+                                }
                             }
                         }
                     }

@@ -6,6 +6,34 @@ using namespace ::testing;
 
 class DataFlowResearcherTest : public DataFlowResearcherFixture {};
 
+TEST_F(DataFlowResearcherTest, LoadStructureField) {
+    /*
+        void func(Object* param1) {
+            return param1->field_0x10;
+        }
+    */
+    auto sourcePCode = "\
+        $0:8 = INT_ADD rcx:8, 0x10:8 \n\
+        rax:4 = LOAD $0:8, 4:8 \n\
+    ";
+    auto expectedIRCode = "\
+        Block B0(level: 1): \n\
+            var1:8 = LOAD rcx \n\
+            var2[$U0]:8 = INT_ADD var1, 0x10:8 \n\
+            var3:4 = LOAD var2 \n\
+            var4[rax]:4 = COPY var3 \
+    ";
+    auto expectedDataFlow = "\
+        var1 <- Unknown \n\
+        var2 <- Copy var1 + 0x10 \n\
+        var3 <- Read var2 \n\
+        var4 <- Copy var3 \
+    ";
+    auto function = parsePcode(sourcePCode, program);
+    ASSERT_TRUE(cmp(function, expectedIRCode));
+    ASSERT_TRUE(cmpDataFlow(function, expectedDataFlow));
+}
+
 TEST_F(DataFlowResearcherTest, GlobalVarAssignment) {
     /*
         float func(float param1) {
