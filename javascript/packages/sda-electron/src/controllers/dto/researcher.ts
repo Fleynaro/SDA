@@ -30,19 +30,35 @@ export const toStructureId = (program: IRcodeProgram, structure: Structure): Str
   };
 };
 
-export const toStructureDto = (program: IRcodeProgram, structure: Structure): StructureDto => {
+export const toStructureDto = (
+  program: IRcodeProgram,
+  structure: Structure,
+  info?: StructureInfo,
+): StructureDto => {
+  const parents = info ? info.parents : structure.parents;
+  const childs = info ? info.childs : structure.childs;
+  const inputs = info ? info.inputs : structure.inputs;
+  const outputs = info ? info.outputs : structure.outputs;
   return {
     id: toStructureId(program, structure),
     name: structure.name,
-    parents: [...structure.parents].map((s) => toStructureId(program, s)),
-    children: [...structure.childs].map((s) => toStructureId(program, s)),
-    inputs: [...structure.inputs].map((s) => toStructureId(program, s)),
-    outputs: [...structure.outputs].map((s) => toStructureId(program, s)),
+    parents: [...parents].map((s) => toStructureId(program, s)),
+    children: [...childs].map((s) => toStructureId(program, s)),
+    inputs: [...inputs].map((s) => toStructureId(program, s)),
+    outputs: [...outputs].map((s) => toStructureId(program, s)),
     fields: Object.entries(structure.fields).reduce((acc, [offset, fieldStructure]) => {
       acc[offset] = toStructureId(program, fieldStructure);
       return acc;
     }, {}),
     conditions: toConstantSet(structure.conditions),
     constants: toConstantSet(structure.constants),
+    classInfo: info && {
+      labels: [...info.labels],
+      labelOffset: info.labelOffset,
+      labelSet: toConstantSet(info.labelSet),
+      structuresInGroup: (info.group ? [...info.group.structures] : []).map((s) =>
+        toStructureId(program, s),
+      ),
+    },
   };
 };

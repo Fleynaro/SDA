@@ -15,18 +15,25 @@ export type Structure = {
   children: StructureId[];
   inputs: StructureId[];
   outputs: StructureId[];
+  fields: { [offset: Offset]: StructureId };
   conditions: ConstantSet;
   constants: ConstantSet;
+  classInfo?: {
+    labels: number[];
+    labelOffset: Offset;
+    labelSet: ConstantSet;
+    structuresInGroup: StructureId[];
+  };
 };
 
-export type StructureInfo = {
+export type StructureLink = {
   structure: Structure;
-  offset: number;
+  offset: Offset;
   own: boolean;
 };
 
 export interface ResearcherController {
-  findStructureByVariableId(variableId: IRcodeVariableId): Promise<StructureInfo | undefined>;
+  findStructureByVariableId(variableId: IRcodeVariableId): Promise<StructureLink | undefined>;
 
   getStructureById(structureId: StructureId): Promise<Structure>;
 

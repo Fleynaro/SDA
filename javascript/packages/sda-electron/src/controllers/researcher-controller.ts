@@ -3,7 +3,7 @@ import {
   ResearcherController,
   Structure as StructureDto,
   StructureId,
-  StructureInfo,
+  StructureLink,
 } from 'api/researcher';
 import { IRcodeFunctionId, IRcodeVariableId } from 'api/ir-code';
 import { getImageInfoByProgram } from 'repo/image';
@@ -22,7 +22,7 @@ class ResearcherControllerImpl extends BaseController implements ResearcherContr
 
   public async findStructureByVariableId(
     variableId: IRcodeVariableId,
-  ): Promise<StructureInfo | undefined> {
+  ): Promise<StructureLink | undefined> {
     const variable = toIRcodeVariable(variableId);
     const program = variable.sourceOperation.block.function.program;
     const { researchers } = getImageInfoByProgram(program);
@@ -30,8 +30,9 @@ class ResearcherControllerImpl extends BaseController implements ResearcherContr
     if (!dataFlowNode) return undefined;
     const link = researchers.structureRepo.getLink(dataFlowNode);
     if (!link) return undefined;
+    const info = researchers.classRepo.getStructureInfo(link.structure);
     return {
-      structure: toStructureDto(program, link.structure),
+      structure: toStructureDto(program, link.structure, info),
       offset: link.offset,
       own: link.own,
     };
@@ -40,7 +41,9 @@ class ResearcherControllerImpl extends BaseController implements ResearcherContr
   public async getStructureById(structureId: StructureId): Promise<StructureDto> {
     const structure = toStructure(structureId);
     const program = toIRcodeProgram(structureId.programId);
-    return toStructureDto(program, structure);
+    const { researchers } = getImageInfoByProgram(program);
+    const info = researchers.classRepo.getStructureInfo(structure);
+    return toStructureDto(program, structure, info);
   }
 
   public async printStructure(structureId: StructureId): Promise<string> {
