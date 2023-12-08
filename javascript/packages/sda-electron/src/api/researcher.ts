@@ -1,5 +1,7 @@
-import { ObjectId, window_ } from './common';
+import { ObjectId, Offset, window_ } from './common';
 import { IRcodeFunctionId, IRcodeVariableId } from './ir-code';
+
+export type ConstantSet = { [offset: Offset]: number[] };
 
 export type StructureId = {
   programId: ObjectId;
@@ -13,9 +15,8 @@ export type Structure = {
   children: StructureId[];
   inputs: StructureId[];
   outputs: StructureId[];
-  fields: { [offset: number]: StructureId };
-  conditions: { [offset: number]: number[] };
-  constants: { [offset: number]: number[] };
+  conditions: ConstantSet;
+  constants: ConstantSet;
 };
 
 export type StructureInfo = {

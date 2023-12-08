@@ -1,8 +1,19 @@
-import { IRcodeProgram, Structure } from 'sda-core';
-import { Structure as StructureDto, StructureId } from 'api/researcher';
+import { ConstantSet, IRcodeProgram, Structure, StructureInfo } from 'sda-core';
+import {
+  ConstantSet as ConstantSetDto,
+  Structure as StructureDto,
+  StructureId,
+} from 'api/researcher';
 import { getImageInfoByProgram } from 'repo/image';
 import { toIRcodeProgram, toIRcodeProgramId } from './ir-code';
 import assert from 'assert';
+
+export const toConstantSet = (set: ConstantSet) => {
+  return Object.entries(set.values).reduce((acc, [offset, values]) => {
+    acc[offset] = [...values];
+    return acc;
+  }, {} as ConstantSetDto);
+};
 
 export const toStructure = (structureId: StructureId): Structure => {
   const program = toIRcodeProgram(structureId.programId);
@@ -31,7 +42,7 @@ export const toStructureDto = (program: IRcodeProgram, structure: Structure): St
       acc[offset] = toStructureId(program, fieldStructure);
       return acc;
     }, {}),
-    conditions: {},
-    constants: {},
+    conditions: toConstantSet(structure.conditions),
+    constants: toConstantSet(structure.constants),
   };
 };
