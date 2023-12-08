@@ -6,7 +6,7 @@ import { InstructionOffset } from './p-code';
 import { Offset } from './utils';
 
 export declare class FieldStructureGroup {
-  readonly structures: Structure[];
+  readonly structures: Set<Structure>;
 }
 
 export declare class StructureInfo {
@@ -17,7 +17,7 @@ export declare class StructureInfo {
   readonly childs: Set<Structure>;
   readonly inputs: Set<Structure>;
   readonly outputs: Set<Structure>;
-  readonly group: FieldStructureGroup;
+  readonly group?: FieldStructureGroup;
 }
 
 export interface ClassLabelInfo {

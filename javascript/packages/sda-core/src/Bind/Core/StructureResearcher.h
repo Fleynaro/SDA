@@ -11,6 +11,7 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<ConstantSet>(module);
             cl
+                .auto_wrap_objects(true)
                 .auto_wrap_object_ptrs(true)
                 .property("values", &ConstantSet::values);
             RegisterClassName(cl, "ConstantSet");

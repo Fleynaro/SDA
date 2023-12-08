@@ -11,6 +11,7 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<FieldStructureGroup>(module);
             cl
+                .auto_wrap_objects(true)
                 .auto_wrap_object_ptrs(true)
                 .property("structures", &FieldStructureGroup::getStructures);
             RegisterClassName(cl, "FieldStructureGroup");
