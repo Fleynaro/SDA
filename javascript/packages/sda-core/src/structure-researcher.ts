@@ -3,14 +3,15 @@ import { EventPipe } from './event';
 import { IRcodeProgram } from './ir-code';
 import { DataFlowNode, DataFlowRepository } from './data-flow-researcher';
 import { ConstConditionRepository } from './const-condition-researcher';
+import { Offset } from './utils';
 
 export declare class ConstantSet {
-  readonly values: { [offset: number]: Set<number> };
+  readonly values: { [offset: Offset]: Set<number> };
 }
 
 interface Link {
   structure: Structure;
-  offset: number;
+  offset: Offset;
   own: boolean;
 }
 
@@ -22,7 +23,7 @@ export declare class Structure {
   readonly childs: Set<Structure>;
   readonly inputs: Set<Structure>;
   readonly outputs: Set<Structure>;
-  readonly fields: { [offset: number]: Structure };
+  readonly fields: { [offset: Offset]: Structure };
   readonly conditions: ConstantSet;
   readonly constants: ConstantSet;
 }
