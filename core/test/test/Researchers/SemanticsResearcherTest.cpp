@@ -337,6 +337,55 @@ TEST_F(SemanticsResearcherTest, GlobalVarAssignmentObject) {
     ASSERT_TRUE(cmpSemantics(expectedSemantics));
 }
 
+TEST_F(SemanticsResearcherTest, IfElseCondition) {
+    /*
+        void func(int32_t param1, int32_t param2) {
+            if (0) {
+                return param2;
+            }
+            else {
+                return param1;
+            }
+        }
+    */
+    auto sourcePCode = "\
+        CBRANCH <labelElse>, 0:1 // if-else condition \n\
+        $0:4  = COPY rdx:4 // then block \n\
+        BRANCH <labelEnd> \n\
+        <labelElse>: \n\
+        $0:4  = COPY rcx:4 // else block \n\
+        <labelEnd>: \n\
+        rax:4 = COPY $0:4 // return \
+    ";
+    auto funcSig = "\
+        funcSig = signature fastcall void(int32_t param1, int32_t param2) \
+    ";
+    auto expectedIRCodeOfFunc = "\
+        Block B0(level: 1, near: B1, far: B3, cond: 0x0:1): \n\
+            empty \n\
+        Block B1(level: 2, far: B4): \n\
+            var1:4 = LOAD rdx // param2 \n\
+            var2[$U0]:4 = COPY var1 \n\
+        Block B3(level: 2, near: B4): \n\
+            var3:4 = LOAD rcx // param1 \n\
+            var4[$U0]:4 = COPY var3 \n\
+        Block B4(level: 3): \n\
+            var5:4 = REF var2 \n\
+            var6:4 = REF var4 \n\
+            var7:4 = PHI var5, var6 \n\
+            var8[rax]:4 = COPY var7 \
+    ";
+    auto expectedSemantics = "\
+        B0:var1, B0:var2, B0:var3, B0:var4, B0:var5, B0:var6, B0:var7, B0:var8 -> int32_t x 2, param1, param2 \
+    ";
+    auto func = parsePcode(sourcePCode, program);
+    auto funcSigDt = dynamic_cast<SignatureDataType*>(
+        parseDataType(funcSig));
+    func->getFunctionSymbol()->getSignature()->copyFrom(funcSigDt);
+    ASSERT_TRUE(cmp(func, expectedIRCodeOfFunc));
+    ASSERT_TRUE(cmpSemantics(expectedSemantics));
+}
+
 TEST_F(SemanticsResearcherTest, CopyObjectInParts) {
     /*
         // Description: we set TestStruct for globalVar_0x100 and should get TestStruct* for param1
@@ -506,5 +555,46 @@ TEST_F(SemanticsResearcherTest, MutualFunction) {
     mutualFunc->getFunctionSymbol()->getSignature()->copyFrom(mutualSigDt);
     ASSERT_TRUE(cmp(mainFunction, expectedIRCodeOfMainFunc));
     ASSERT_TRUE(cmp(mutualFunc, expectedIRCodeOfMutualFunc));
+    ASSERT_TRUE(cmpSemantics(expectedSemantics));
+}
+
+TEST_F(SemanticsResearcherTest, CyclicPropagation) {
+    /*
+        // Description: int32_t data type should not be propagated cyclically (see INT_MULT)
+
+        void func(int param1) {
+            stack_0x0 = param1;
+            stack_0x0 = param1 * 50;
+        }
+    */
+   auto sourcePCode = "\
+        // int func(int param1) \n\
+        $0:4 = COPY rcx:4 \n\
+        STORE rsp:8, $0:4 \n\
+        $1:4 = INT_MULT $0:4, 50:4 \n\
+        STORE rsp:8, $1:4 \n\
+        RETURN \n\
+    ";
+    auto funcSig = "\
+        funcSig = signature fastcall void(int32_t param1) \
+    ";
+    auto expectedIRCodeOfFunc = "\
+        Block B0(level: 1): \n\
+            var1:4 = LOAD rcx // param1 \n\
+            var2[$U0]:4 = COPY var1 \n\
+            var3:8 = LOAD rsp \n\
+            var4[var3]:4 = COPY var2 \n\
+            var5[$U1]:4 = INT_MULT var2, 0x32:4 \n\
+            var6[var3]:4 = COPY var5 \
+    ";
+    auto expectedSemantics = "\
+        B0:var1, B0:var2, B0:var4, B0:var5, B0:var6 -> int32_t, param1, symbol_load(0x0:4) \n\
+        B0:var3 -> symbol_pointer(0x0) \
+    ";
+    auto func = parsePcode(sourcePCode, program);
+    auto funcSigDt = dynamic_cast<SignatureDataType*>(
+        parseDataType(funcSig));
+    func->getFunctionSymbol()->getSignature()->copyFrom(funcSigDt);
+    ASSERT_TRUE(cmp(func, expectedIRCodeOfFunc));
     ASSERT_TRUE(cmpSemantics(expectedSemantics));
 }

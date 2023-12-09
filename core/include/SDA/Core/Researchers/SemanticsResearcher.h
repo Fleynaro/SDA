@@ -198,6 +198,7 @@ namespace sda::researcher
         std::list<Semantics*> m_predecessors;
         Semantics* m_semantics;
         SemanticsObject* m_holder = nullptr;
+        size_t m_cycleHash = 0; // need for cyclic propagation check
     public:
         HolderSemantics(Semantics* semantics, const std::list<Semantics*>& predecessors, SemanticsObject* holder)
             : m_semantics(semantics)
@@ -207,9 +208,12 @@ namespace sda::researcher
             m_predecessors.push_back(semantics);
             addToHash("holder");
             for (auto pred : m_predecessors) {
-                addToHash(pred);
+                addToHash(pred->getHash());
             }
             addToHash(holder);
+            // cycle hash
+            boost::hash_combine(m_cycleHash, semantics->getHash());
+            boost::hash_combine(m_cycleHash, holder);
         }
 
         Semantics* getSemantics() const {
@@ -222,6 +226,10 @@ namespace sda::researcher
 
         SemanticsObject* getHolder() const {
             return m_holder;
+        }
+
+        size_t getCycleHash() const {
+            return m_cycleHash;
         }
 
         std::string toString() const override {
@@ -360,6 +368,11 @@ namespace sda::researcher
                     return static_cast<T*>(semPtr);
                 }
                 return nullptr;
+            }
+            if constexpr (std::is_same_v<T, HolderSemantics>) {
+                if (doesCycleExist(&sem)) {
+                    return nullptr;
+                }
             }
             return static_cast<T*>(addNewSemantics(std::make_unique<T>(sem)));
         }
@@ -501,6 +514,23 @@ namespace sda::researcher
 
         void removeSemantics(Semantics* sem) {
             m_semantics.erase(sem->getHash());
+        }
+
+        bool doesCycleExist(const HolderSemantics* sem, size_t cycleHash = 0) {
+            if (cycleHash == sem->getCycleHash()) {
+                return true;
+            }
+            if (cycleHash == 0) {
+                cycleHash = sem->getCycleHash();
+            }
+            for (auto pred : sem->getPredecessors()) {
+                if (auto holderPred = dynamic_cast<HolderSemantics*>(pred)) {
+                    if (doesCycleExist(holderPred, cycleHash)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
     };
 
