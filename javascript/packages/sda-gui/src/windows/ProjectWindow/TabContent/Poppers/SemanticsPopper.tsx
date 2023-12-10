@@ -100,7 +100,7 @@ export const SemanticsPopper = ({ semantics }: { semantics: Semantics }) => {
         </>
       )}
       {successors.length > 0 && <>Successors: {renderSemanticsList(successors)}</>}
-      <Popper {...popper.props} />
+      <Popper {...popper.props} closeOnMouseLeave />
     </Paper>
   );
 };

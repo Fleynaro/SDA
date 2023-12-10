@@ -229,8 +229,8 @@ export const StructurePopper = ({
           ))}
         </>
       )}
-      <Popper {...popper.props} />
-      <Popper {...popperGroup.props} />
+      <Popper {...popper.props} closeOnMouseLeave />
+      <Popper {...popperGroup.props} closeOnMouseLeave />
     </Paper>
   );
 };

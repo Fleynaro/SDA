@@ -70,7 +70,7 @@ export const IRcodeVariablePopper = ({ variableId }: { variableId: IRcodeVariabl
           Structure
         </span>
       )}
-      <Popper {...popper.props} />
+      <Popper {...popper.props} closeOnMouseLeave />
     </Paper>
   );
 };

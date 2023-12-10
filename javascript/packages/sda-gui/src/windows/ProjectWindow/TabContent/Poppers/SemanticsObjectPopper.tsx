@@ -79,7 +79,7 @@ export const SemanticsObjectPopper = ({ object }: { object: SemanticsObject }) =
             </span>
           </>
         ))}
-      <Popper {...popper.props} />
+      <Popper {...popper.props} closeOnMouseLeave />
     </Paper>
   );
 };
