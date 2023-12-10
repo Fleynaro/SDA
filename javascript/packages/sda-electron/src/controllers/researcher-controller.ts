@@ -1,6 +1,9 @@
 import BaseController from './base-controller';
 import {
   ResearcherController,
+  Semantics as SemanticsDto,
+  SemanticsId,
+  SemanticsObject as SemanticsObjectDto,
   Structure as StructureDto,
   StructureId,
   StructureLink,
@@ -9,7 +12,13 @@ import { IRcodeFunctionId, IRcodeVariableId } from 'api/ir-code';
 import { getImageInfoByProgram } from 'repo/image';
 import { PrintDataFlowForFunction, PrintStructure } from 'sda-core';
 import { toIRcodeFunction, toIRcodeProgram, toIRcodeVariable } from './dto/ir-code';
-import { toStructure, toStructureDto } from './dto/researcher';
+import {
+  toSemantics,
+  toSemanticsDto,
+  toSemanticsObjectDto,
+  toStructure,
+  toStructureDto,
+} from './dto/researcher';
 
 class ResearcherControllerImpl extends BaseController implements ResearcherController {
   constructor() {
@@ -17,6 +26,8 @@ class ResearcherControllerImpl extends BaseController implements ResearcherContr
     this.register('findStructureByVariableId', this.findStructureByVariableId);
     this.register('getStructureById', this.getStructureById);
     this.register('printStructure', this.printStructure);
+    this.register('findSemanticsObjectByVariableId', this.findSemanticsObjectByVariableId);
+    this.register('getSemanticsById', this.getSemanticsById);
     this.register('printDataFlowForFunction', this.printDataFlowForFunction);
   }
 
@@ -49,6 +60,23 @@ class ResearcherControllerImpl extends BaseController implements ResearcherContr
   public async printStructure(structureId: StructureId): Promise<string> {
     const structure = toStructure(structureId);
     return PrintStructure(structure);
+  }
+
+  public async findSemanticsObjectByVariableId(
+    variableId: IRcodeVariableId,
+  ): Promise<SemanticsObjectDto | undefined> {
+    const variable = toIRcodeVariable(variableId);
+    const program = variable.sourceOperation.block.function.program;
+    const { researchers } = getImageInfoByProgram(program);
+    const object = researchers.semanticsRepo.getObject(variable);
+    if (!object) return undefined;
+    return toSemanticsObjectDto(program, object);
+  }
+
+  public async getSemanticsById(semanticsId: SemanticsId): Promise<SemanticsDto> {
+    const semantics = toSemantics(semanticsId);
+    const program = toIRcodeProgram(semanticsId.programId);
+    return toSemanticsDto(program, semantics);
   }
 
   public async printDataFlowForFunction(functionId: IRcodeFunctionId): Promise<string> {

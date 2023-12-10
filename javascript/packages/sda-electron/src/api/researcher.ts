@@ -32,12 +32,38 @@ export type StructureLink = {
   own: boolean;
 };
 
+export type SemanticsId = {
+  programId: ObjectId;
+  hash: string;
+};
+
+export type Semantics = {
+  name: string;
+  predecessors: SemanticsId[];
+  successors: SemanticsId[];
+  holder?: {
+    semantics: Semantics;
+    object: SemanticsObject;
+  };
+};
+
+export type SemanticsObject = {
+  semantics: SemanticsId[];
+  variables: IRcodeVariableId[];
+};
+
 export interface ResearcherController {
   findStructureByVariableId(variableId: IRcodeVariableId): Promise<StructureLink | undefined>;
 
   getStructureById(structureId: StructureId): Promise<Structure>;
 
   printStructure(structureId: StructureId): Promise<string>;
+
+  findSemanticsObjectByVariableId(
+    variableId: IRcodeVariableId,
+  ): Promise<SemanticsObject | undefined>;
+
+  getSemanticsById(semanticsId: SemanticsId): Promise<Semantics>;
 
   printDataFlowForFunction(functionId: IRcodeFunctionId): Promise<string>;
 }

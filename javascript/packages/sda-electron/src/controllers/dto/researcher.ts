@@ -1,12 +1,24 @@
-import { ConstantSet, IRcodeProgram, Structure, StructureInfo } from 'sda-core';
+import {
+  ConstantSet,
+  IRcodeProgram,
+  Semantics,
+  HolderSemantics,
+  SemanticsObject,
+  Structure,
+  StructureInfo,
+} from 'sda-core';
 import {
   ConstantSet as ConstantSetDto,
   Structure as StructureDto,
   StructureId,
+  Semantics as SemanticsDto,
+  SemanticsObject as SemanticsObjectDto,
+  SemanticsId,
 } from 'api/researcher';
 import { getImageInfoByProgram } from 'repo/image';
-import { toIRcodeProgram, toIRcodeProgramId } from './ir-code';
+import { toIRcodeProgram, toIRcodeProgramId, toIRcodeVariableId } from './ir-code';
 import assert from 'assert';
+import { instance_of } from 'sda-bindings';
 
 export const toConstantSet = (set: ConstantSet) => {
   return Object.entries(set.values).reduce((acc, [offset, values]) => {
@@ -60,5 +72,44 @@ export const toStructureDto = (
         toStructureId(program, s),
       ),
     },
+  };
+};
+
+export const toSemantics = (semanticsId: SemanticsId): Semantics => {
+  const program = toIRcodeProgram(semanticsId.programId);
+  const { researchers } = getImageInfoByProgram(program);
+  const semantics = researchers.semanticsRepo.getSemantics(semanticsId.hash);
+  assert(semantics, `Semantics ${semanticsId.hash} does not exist`);
+  return semantics;
+};
+
+export const toSemanticsId = (program: IRcodeProgram, semantics: Semantics): SemanticsId => {
+  return {
+    programId: toIRcodeProgramId(program),
+    hash: semantics.hash,
+  };
+};
+
+export const toSemanticsDto = (program: IRcodeProgram, semantics: Semantics): SemanticsDto => {
+  return {
+    name: semantics.name,
+    predecessors: semantics.predecessors.map((s) => toSemanticsId(program, s)),
+    successors: semantics.successors.map((s) => toSemanticsId(program, s)),
+    holder: instance_of(semantics, HolderSemantics)
+      ? {
+          semantics: toSemanticsDto(program, (semantics as HolderSemantics).semantics),
+          object: toSemanticsObjectDto(program, (semantics as HolderSemantics).holder),
+        }
+      : undefined,
+  };
+};
+
+export const toSemanticsObjectDto = (
+  program: IRcodeProgram,
+  object: SemanticsObject,
+): SemanticsObjectDto => {
+  return {
+    variables: object.variables.map((v) => toIRcodeVariableId(v)),
+    semantics: object.semantics.map((s) => toSemanticsId(program, s)),
   };
 };
