@@ -64,7 +64,7 @@ namespace sda::bind
         template<typename T>
         static void Register(v8pp::class_<T, Traits>& cl) {
             cl
-                .property("hashId", [](T& self) { return GetHash(&self); })
+                .property("hashId", [](T& self) { return std::to_string(GetHash(&self)); })
                 .static_method("Get", &GetObject<T>);
         }
         
@@ -83,9 +83,9 @@ namespace sda::bind
         }
 
         template<typename T>
-        static object_pointer_type<T> GetObject(Hash hash) {
+        static object_pointer_type<T> GetObject(std::string hash) {
             auto table = getTable();
-            auto it = table->find(hash);
+            auto it = table->find(std::stoull(hash));
             if (it != table->end()) {
                 return ObjectLookupTableInfo<Traits>::to_result_type<T>(it->second);
             }

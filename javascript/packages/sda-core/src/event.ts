@@ -1,16 +1,16 @@
 import m from './module';
-import { StringToHash } from './utils';
+import { Hash, StringToHash } from './utils';
 
 export interface IEvent {
-  readonly topic: number;
+  readonly topic: Hash;
 }
 
 export declare abstract class SdaEvent implements IEvent {
-  readonly topic: number;
+  readonly topic: Hash;
 }
 
 export abstract class JsEvent implements IEvent {
-  readonly topic: number;
+  readonly topic: Hash;
 
   constructor(topic: string) {
     this.topic = StringToHash(topic);

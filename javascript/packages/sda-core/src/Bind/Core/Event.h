@@ -68,7 +68,7 @@ namespace sda::bind
         static void Init(v8pp::module& module) {
             auto cl = NewClass<Event>(module);
             cl
-                .property("topic", [](const Event& self) { return self.topic; });
+                .property("topic", [](const Event& self) { return std::to_string(self.topic); });
             module.class_("SdaEvent", cl);
             UnknownEventInit(module);
         }
@@ -88,10 +88,10 @@ namespace sda::bind
 
         static JsEvent ToJsEvent(v8::Local<v8::Object> event) {
             auto isolate = v8::Isolate::GetCurrent();
-            size_t topic;
+            std::string topic;
             if (!v8pp::get_option(isolate, event, "topic", topic))
                 throw std::runtime_error("Event has no topic");
-            return JsEvent(topic, event);
+            return JsEvent(std::stoull(topic), event);
         }
 
         static auto Process(EventPipe* pipe, v8::Local<v8::Value> value) {

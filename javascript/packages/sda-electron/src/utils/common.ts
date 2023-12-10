@@ -2,7 +2,7 @@ import { Hash, IIdentifiable } from 'sda-core';
 import { ObjectId } from 'api/common';
 
 export const toHash = (id: ObjectId): Hash => {
-  return Number(id.key);
+  return id.key;
 };
 
 export const toId = (object: IIdentifiable): ObjectId => {

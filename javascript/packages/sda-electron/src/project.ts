@@ -26,7 +26,7 @@ export class Project implements IIdentifiable {
     this.path = path;
     this.context = context;
     this.className = 'Project';
-    this.hashId = ProjectId++;
+    this.hashId = (ProjectId++).toString();
     this.eventPipe = EventPipe.New('project');
     this.database = new Database(path + '/database.sqlite');
     this.transaction = new Transaction(this.database);

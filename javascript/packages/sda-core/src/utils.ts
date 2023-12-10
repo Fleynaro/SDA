@@ -1,4 +1,4 @@
-export type Hash = number;
+export type Hash = string;
 
 export type Offset = number;
 
@@ -56,5 +56,5 @@ export const StringToHash = (str: string): Hash => {
     hash = (hash << 5) - hash + char;
     hash |= 0;
   }
-  return hash;
+  return hash.toString();
 };

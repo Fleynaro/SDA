@@ -14,7 +14,9 @@ namespace sda::bind
                 .auto_wrap_object_ptrs(true)
                 .property("type", &ircode::Value::getType)
                 .property("size", &ircode::Value::getSize)
-                .property("hash", &ircode::Value::getHash);
+                .property("hash", std::function([](ircode::Value& self) {
+                    return std::to_string(self.getHash());
+                }));
             module.class_("IRcodeValue", cl);
         }
 
@@ -69,7 +71,9 @@ namespace sda::bind
                 .auto_wrap_objects(true)
                 .auto_wrap_object_ptrs(true)
                 .property("id", &ircode::Operation::getId)
-                .property("hash", &ircode::Operation::getHash)
+                .property("hash", std::function([](ircode::Operation& self) {
+                    return std::to_string(self.getHash());
+                }))
                 .property("output", &ircode::Operation::getOutput)
                 .property("block", &ircode::Operation::getBlock)
                 .property("pcodeInstruction", &ircode::Operation::getPcodeInstruction);
@@ -112,7 +116,9 @@ namespace sda::bind
             cl
                 .auto_wrap_object_ptrs(true)
                 .property("name", &ircode::Block::getName)
-                .property("hash", &ircode::Block::getHash)
+                .property("hash", std::function([](ircode::Block& self) {
+                    return std::to_string(self.getHash());
+                }))
                 .property("pcodeBlock", &ircode::Block::getPcodeBlock)
                 .property("function", &ircode::Block::getFunction)
                 .property("nearNextBlock", &ircode::Block::getNearNextBlock)

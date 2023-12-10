@@ -12,7 +12,9 @@ namespace sda::bind
             cl
                 .auto_wrap_object_ptrs(true)
                 .property("name", &Semantics::toString)
-                .property("hash", &Semantics::getHash)
+                .property("hash", std::function([](Semantics& self) {
+                    return std::to_string(self.getHash());
+                }))
                 .property("successors", &Semantics::getSuccessors)
                 .property("predecessors", &Semantics::getPredecessors);
             RegisterClassName(cl, "Semantics");
@@ -95,7 +97,9 @@ namespace sda::bind
                 .auto_wrap_object_ptrs(true)
                 .property("allObjects", &SemanticsRepository::getObjects)
                 .method("getObject", &SemanticsRepository::getObject)
-                .method("getSemantics", &SemanticsRepository::getSemantics)
+                .method("getSemantics", std::function([](SemanticsRepository* repo, std::string hash) {
+                    return repo->getSemantics(std::stoull(hash));
+                }))
                 .static_method("New", &New);
             RegisterClassName(cl, "SemanticsRepository");
             module.class_("SemanticsRepository", cl);
