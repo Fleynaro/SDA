@@ -8,13 +8,12 @@ import {
   IRcodeValueTokenGroupAction,
   getIRcodeApi,
 } from 'sda-electron/api/ir-code';
-import { getResearcherApi } from 'sda-electron/api/researcher';
 import { withCrash_ } from 'providers/CrashProvider';
 import { Line, LineColumn, TokenizedTextView } from 'components/TokenizedTextView';
 import { useHighlightedGroupIndexes } from './helpers';
 import { usePopperFromContext } from 'components/Popper';
 import { ConstantValuePopper } from './ConstantValuePopper';
-import { StructurePopper } from './StructurePopper';
+import { IRcodeVariablePopper } from './IRcodeVariablePopper';
 
 const TokenTypeToColor = {
   ['Operation']: '#eddaa4',
@@ -91,10 +90,8 @@ export const IRcodeView = ({ image, func, splitIntoColumns = true }: IRcodeViewP
         const { value } = action as IRcodeValueTokenGroupAction;
         if (value.type === 'variable') {
           popper.withTimer(async () => {
-            const link = await getResearcherApi().findStructureByVariableId(value.id);
-            if (!link) return;
             popper.openAtPos(e.clientX, e.clientY + 10);
-            popper.setContent(<StructurePopper structure={link.structure} link={link} />);
+            popper.setContent(<IRcodeVariablePopper variableId={value.id} />);
             popper.setCloseCallback(() => {
               setSelectedToken(null);
             });
