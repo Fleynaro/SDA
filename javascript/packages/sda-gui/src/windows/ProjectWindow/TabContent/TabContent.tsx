@@ -32,8 +32,8 @@ import { Test2 } from 'components/Konva/Block/Test';
 import { useEffect, useState } from 'react';
 import { withCrash_ } from 'providers/CrashProvider';
 import { HtmlTextSelectionBridgeConsumer, HtmlTextSelectionBridgeProvider } from 'components/Text';
-import { PcodeView } from './PcodeView';
-import { IRcodeView } from './IRcodeView';
+import { PcodeView } from './CodeView/PcodeView';
+import { IRcodeView } from './CodeView/IRcodeView';
 import { getResearcherApi } from 'sda-electron/api/researcher';
 
 const DecompilerComponent = () => {

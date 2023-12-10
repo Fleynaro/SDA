@@ -1,20 +1,23 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Token, TokenizedText } from 'sda-electron/api/common';
 import { Image } from 'sda-electron/api/image';
+import { PcodeTokenGroupAction, PcodeVarnodeTokenGroupAction } from 'sda-electron/api/p-code';
 import {
-  PcodeFunctionGraph,
-  PcodeTokenGroupAction,
-  PcodeVarnodeTokenGroupAction,
-  getPcodeApi,
-} from 'sda-electron/api/p-code';
+  IRcodeFunction,
+  IRcodeTokenGroupAction,
+  IRcodeValueTokenGroupAction,
+  getIRcodeApi,
+} from 'sda-electron/api/ir-code';
 import { withCrash_ } from 'providers/CrashProvider';
 import { Line, LineColumn, TokenizedTextView } from 'components/TokenizedTextView';
 import { useHighlightedGroupIndexes } from './helpers';
 import { usePopperFromContext } from 'components/Popper';
-import { ConstantValuePopper } from './ConstantValuePopper';
+import { ConstantValuePopper } from '../Poppers/ConstantValuePopper';
+import { IRcodeVariablePopper } from '../Poppers/IRcodeVariablePopper';
 
 const TokenTypeToColor = {
-  ['Mneumonic']: '#eddaa4',
+  ['Operation']: '#eddaa4',
+  ['Variable']: '#6c83b8',
   ['Register']: '#93c5db',
   ['VirtRegister']: '#93c5db',
   ['Symbol']: '#bfbfbf',
@@ -23,13 +26,13 @@ const TokenTypeToColor = {
   ['Comment']: 'green',
 } as { [type: string]: string };
 
-export interface PcodeViewProps {
+export interface IRcodeViewProps {
   image: Image;
-  funcGraph: PcodeFunctionGraph;
+  func: IRcodeFunction;
   splitIntoColumns?: boolean;
 }
 
-export const PcodeView = ({ image, funcGraph, splitIntoColumns = true }: PcodeViewProps) => {
+export const IRcodeView = ({ image, func, splitIntoColumns = true }: IRcodeViewProps) => {
   const [text, setText] = useState<TokenizedText | null>(null);
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const highlightedGroupIdxs = useHighlightedGroupIndexes(text);
@@ -37,14 +40,11 @@ export const PcodeView = ({ image, funcGraph, splitIntoColumns = true }: PcodeVi
 
   useEffect(
     withCrash_(async () => {
-      if (!image || !funcGraph) return;
-      const tokenizedText = await getPcodeApi().getPcodeTokenizedText(
-        image.contextId,
-        funcGraph.id,
-      );
+      if (!image || !func) return;
+      const tokenizedText = await getIRcodeApi().getIRcodeTokenizedText(image.contextId, func.id);
       setText(tokenizedText);
     }),
-    [image, funcGraph],
+    [image, func],
   );
 
   const columns = useCallback((line: Line) => {
@@ -57,8 +57,8 @@ export const PcodeView = ({ image, funcGraph, splitIntoColumns = true }: PcodeVi
             // tabs
             columns.push({ width: 2 * (i + 1), tokens: [] });
           }
-          // output p-code variable
-          columns.push({ width: 90, tokens: [] });
+          // output ir-code variable
+          columns.push({ width: 120, tokens: [] });
         } else {
           continue;
         }
@@ -86,6 +86,18 @@ export const PcodeView = ({ image, funcGraph, splitIntoColumns = true }: PcodeVi
             setSelectedToken(token);
           }, 500);
         }
+      } else if (action.name === IRcodeTokenGroupAction.Value) {
+        const { value } = action as IRcodeValueTokenGroupAction;
+        if (value.type === 'variable') {
+          popper.withTimer(async () => {
+            popper.openAtPos(e.clientX, e.clientY + 10);
+            popper.setContent(<IRcodeVariablePopper variableId={value.id} />);
+            popper.setCloseCallback(() => {
+              setSelectedToken(null);
+            });
+            setSelectedToken(token);
+          }, 500);
+        }
       }
     },
     [text, popper, setSelectedToken],
@@ -100,7 +112,7 @@ export const PcodeView = ({ image, funcGraph, splitIntoColumns = true }: PcodeVi
   if (!text) return null;
   return (
     <TokenizedTextView
-      name={`${image.id.key}-pcode-view`}
+      name={`${image.id.key}-ircode-view`}
       text={text}
       tokenTypeToColor={TokenTypeToColor}
       highlightedGroupIdxs={highlightedGroupIdxs}
