@@ -11,9 +11,10 @@ import {
 import { withCrash_ } from 'providers/CrashProvider';
 import { Line, LineColumn, TokenizedTextView } from 'components/TokenizedTextView';
 import { useHighlightedGroupIndexes } from './helpers';
-import { usePopperFromContext } from 'components/Popper';
+import { Popper, usePopper } from 'components/Popper';
 import { ConstantValuePopper } from '../Poppers/ConstantValuePopper';
 import { IRcodeVariablePopper } from '../Poppers/IRcodeVariablePopper';
+import { SemanticsObject } from 'sda-electron/api/researcher';
 
 const TokenTypeToColor = {
   ['Operation']: '#eddaa4',
@@ -34,9 +35,9 @@ export interface IRcodeViewProps {
 
 export const IRcodeView = ({ image, func, splitIntoColumns = true }: IRcodeViewProps) => {
   const [text, setText] = useState<TokenizedText | null>(null);
-  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [selectedTokens, setSelectedTokens] = useState<Token[]>([]);
   const highlightedGroupIdxs = useHighlightedGroupIndexes(text);
-  const popper = usePopperFromContext();
+  const popper = usePopper();
 
   useEffect(
     withCrash_(async () => {
@@ -70,6 +71,39 @@ export const IRcodeView = ({ image, func, splitIntoColumns = true }: IRcodeViewP
     return columns;
   }, []);
 
+  const onClickHighlightBySemantics = useCallback(
+    (object: SemanticsObject) => {
+      if (!text) return;
+      const selectedGroupIdx = new Set<number>();
+      for (const { idx, action } of text.groups) {
+        if (action.name === IRcodeTokenGroupAction.Value) {
+          const { value } = action as IRcodeValueTokenGroupAction;
+          if (value.type === 'variable') {
+            if (
+              object.variables.find(
+                (variable) =>
+                  variable.functionId.programId.key === value.id.functionId.programId.key &&
+                  variable.functionId.offset === value.id.functionId.offset &&
+                  variable.variableId === value.id.variableId,
+              )
+            ) {
+              selectedGroupIdx.add(idx);
+            }
+          }
+        }
+      }
+      setSelectedTokens(text.tokens.filter((token) => selectedGroupIdx.has(token.groupIdx)));
+    },
+    [text, setSelectedTokens],
+  );
+
+  const onClosePopper = useCallback(() => {
+    popper.close();
+    if (selectedTokens.length === 1) {
+      setSelectedTokens([]);
+    }
+  }, [popper.close, selectedTokens, setSelectedTokens]);
+
   const onTokenMouseEnter = useCallback(
     (e: React.MouseEvent<HTMLSpanElement, MouseEvent>, token: Token) => {
       if (!text) return;
@@ -80,10 +114,7 @@ export const IRcodeView = ({ image, func, splitIntoColumns = true }: IRcodeViewP
           popper.withTimer(() => {
             popper.openAtPos(e.clientX, e.clientY + 10);
             popper.setContent(<ConstantValuePopper value={varnode.value} />);
-            popper.setCloseCallback(() => {
-              setSelectedToken(null);
-            });
-            setSelectedToken(token);
+            setSelectedTokens([token]);
           }, 500);
         }
       } else if (action.name === IRcodeTokenGroupAction.Value) {
@@ -91,35 +122,40 @@ export const IRcodeView = ({ image, func, splitIntoColumns = true }: IRcodeViewP
         if (value.type === 'variable') {
           popper.withTimer(async () => {
             popper.openAtPos(e.clientX, e.clientY + 10);
-            popper.setContent(<IRcodeVariablePopper variableId={value.id} />);
-            popper.setCloseCallback(() => {
-              setSelectedToken(null);
-            });
-            setSelectedToken(token);
+            popper.setContent(
+              <IRcodeVariablePopper
+                variableId={value.id}
+                onClickHighlightBySemantics={onClickHighlightBySemantics}
+              />,
+            );
+            setSelectedTokens([token]);
           }, 500);
         }
       }
     },
-    [text, popper, setSelectedToken],
+    [text, popper, setSelectedTokens, onClickHighlightBySemantics],
   );
 
   const onTokenMouseLeave = useCallback(() => {
     popper.withTimer(() => {
-      popper.close();
+      onClosePopper();
     }, 500);
-  }, [popper]);
+  }, [popper, onClosePopper]);
 
   if (!text) return null;
   return (
-    <TokenizedTextView
-      name={`${image.id.key}-ircode-view`}
-      text={text}
-      tokenTypeToColor={TokenTypeToColor}
-      highlightedGroupIdxs={highlightedGroupIdxs}
-      highlightedToken={selectedToken}
-      columns={splitIntoColumns ? columns : undefined}
-      onTokenMouseEnter={onTokenMouseEnter}
-      onTokenMouseLeave={onTokenMouseLeave}
-    />
+    <>
+      <TokenizedTextView
+        name={`${image.id.key}-ircode-view`}
+        text={text}
+        tokenTypeToColor={TokenTypeToColor}
+        highlightedGroupIdxs={highlightedGroupIdxs}
+        highlightedTokens={selectedTokens}
+        columns={splitIntoColumns ? columns : undefined}
+        onTokenMouseEnter={onTokenMouseEnter}
+        onTokenMouseLeave={onTokenMouseLeave}
+      />
+      <Popper {...popper.props} onClose={onClosePopper} closeOnMouseLeave />
+    </>
   );
 };

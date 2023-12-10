@@ -31,7 +31,7 @@ export interface PcodeViewProps {
 
 export const PcodeView = ({ image, funcGraph, splitIntoColumns = true }: PcodeViewProps) => {
   const [text, setText] = useState<TokenizedText | null>(null);
-  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [selectedTokens, setSelectedTokens] = useState<Token[]>([]);
   const highlightedGroupIdxs = useHighlightedGroupIndexes(text);
   const popper = usePopperFromContext();
 
@@ -81,14 +81,14 @@ export const PcodeView = ({ image, funcGraph, splitIntoColumns = true }: PcodeVi
             popper.openAtPos(e.clientX, e.clientY + 10);
             popper.setContent(<ConstantValuePopper value={varnode.value} />);
             popper.setCloseCallback(() => {
-              setSelectedToken(null);
+              setSelectedTokens([]);
             });
-            setSelectedToken(token);
+            setSelectedTokens([token]);
           }, 500);
         }
       }
     },
-    [text, popper, setSelectedToken],
+    [text, popper, setSelectedTokens],
   );
 
   const onTokenMouseLeave = useCallback(() => {
@@ -104,7 +104,7 @@ export const PcodeView = ({ image, funcGraph, splitIntoColumns = true }: PcodeVi
       text={text}
       tokenTypeToColor={TokenTypeToColor}
       highlightedGroupIdxs={highlightedGroupIdxs}
-      highlightedToken={selectedToken}
+      highlightedTokens={selectedTokens}
       columns={splitIntoColumns ? columns : undefined}
       onTokenMouseEnter={onTokenMouseEnter}
       onTokenMouseLeave={onTokenMouseLeave}

@@ -1,4 +1,4 @@
-import { Paper } from '@mui/material';
+import { Button, Paper } from '@mui/material';
 import { Popper, usePopper } from 'components/Popper';
 import { withCrash_ } from 'providers/CrashProvider';
 import { useCallback, useEffect, useState } from 'react';
@@ -7,7 +7,13 @@ import { SemanticsObject, StructureLink, getResearcherApi } from 'sda-electron/a
 import { StructurePopper } from './StructurePopper';
 import { SemanticsObjectPopper } from './SemanticsObjectPopper';
 
-export const IRcodeVariablePopper = ({ variableId }: { variableId: IRcodeVariableId }) => {
+export const IRcodeVariablePopper = ({
+  variableId,
+  onClickHighlightBySemantics,
+}: {
+  variableId: IRcodeVariableId;
+  onClickHighlightBySemantics?: (object: SemanticsObject) => void;
+}) => {
   const [link, setLink] = useState<StructureLink | undefined>();
   const [semanticsObject, setSemanticsObject] = useState<SemanticsObject | undefined>();
   const popper = usePopper();
@@ -69,6 +75,15 @@ export const IRcodeVariablePopper = ({ variableId }: { variableId: IRcodeVariabl
         >
           Structure
         </span>
+      )}
+      {semanticsObject && onClickHighlightBySemantics && (
+        <>
+          <br />
+          <br />
+          <Button variant="contained" onClick={() => onClickHighlightBySemantics(semanticsObject)}>
+            Highlight similar variables
+          </Button>
+        </>
       )}
       <Popper {...popper.props} closeOnMouseLeave />
     </Paper>

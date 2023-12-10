@@ -57,7 +57,7 @@ interface TokenizedTextViewProps {
   text: TokenizedText;
   tokenTypeToColor?: { [type: string]: string };
   highlightedGroupIdxs?: number[];
-  highlightedToken?: Token | null;
+  highlightedTokens?: Token[];
   columns?: (line: Line) => LineColumn[];
   onTokenMouseEnter?: (e: React.MouseEvent<HTMLSpanElement, MouseEvent>, token: Token) => void;
   onTokenMouseLeave?: (e: React.MouseEvent<HTMLSpanElement, MouseEvent>, token: Token) => void;
@@ -82,7 +82,7 @@ export const TokenizedTextView = ({
   text,
   tokenTypeToColor = {},
   highlightedGroupIdxs = [],
-  highlightedToken,
+  highlightedTokens = [],
   columns = (line) => [{ tokens: line.tokens }],
   onTokenMouseEnter,
   onTokenMouseLeave,
@@ -186,13 +186,19 @@ export const TokenizedTextView = ({
     return (
       <span
         key={index}
-        onMouseUp={() => setSelectedTokenText(token.text !== ' ' ? token.text : null)}
+        onMouseUp={(e) => {
+          if (e.button === 0) {
+            setSelectedTokenText(token.text !== ' ' ? token.text : null);
+          }
+        }}
         onMouseEnter={(e) => onTokenMouseEnter?.(e, token)}
         onMouseLeave={(e) => onTokenMouseLeave?.(e, token)}
         style={{
           color: tokenTypeToColor[token.type],
           backgroundColor:
-            highlightedToken === token || selectedTokenText === token.text ? '#304559' : undefined,
+            highlightedTokens.includes(token) || selectedTokenText === token.text
+              ? '#304559'
+              : undefined,
         }}
         aria-label={token.type}
         data-group-idx={token.groupIdx}
@@ -275,7 +281,7 @@ export const TokenizedTextView = ({
     lines,
     lineColumns,
     lineHighlightColor,
-    highlightedToken,
+    highlightedTokens,
     selectedTokenText,
     setSelectedTokenText,
     isLineCollapsed,
