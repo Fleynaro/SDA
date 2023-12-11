@@ -10,8 +10,8 @@ const IRcodeControllerImpl: IRcodeController = {
   getFunctionAt: (programId: ObjectId, entryOffset: Offset) =>
     invoke('getFunctionAt', programId, entryOffset),
 
-  getIRcodeTokenizedText: (contextId: ObjectId, functionId: IRcodeObjectId) =>
-    invoke('getIRcodeTokenizedText', contextId, functionId),
+  getIRcodeTokenizedText: (imageId: ObjectId, functionId: IRcodeObjectId) =>
+    invoke('getIRcodeTokenizedText', imageId, functionId),
 };
 
 export default IRcodeControllerImpl;

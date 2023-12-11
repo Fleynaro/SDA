@@ -42,7 +42,7 @@ export const IRcodeView = ({ image, func, splitIntoColumns = true }: IRcodeViewP
   useEffect(
     withCrash_(async () => {
       if (!image || !func) return;
-      const tokenizedText = await getIRcodeApi().getIRcodeTokenizedText(image.contextId, func.id);
+      const tokenizedText = await getIRcodeApi().getIRcodeTokenizedText(image.id, func.id);
       setText(tokenizedText);
     }),
     [image, func],

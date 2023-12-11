@@ -51,7 +51,7 @@ export interface IRcodeController {
 
   getFunctionAt(programId: ObjectId, entryOffset: Offset): Promise<IRcodeFunction | null>;
 
-  getIRcodeTokenizedText(contextId: ObjectId, functionId: IRcodeFunctionId): Promise<TokenizedText>;
+  getIRcodeTokenizedText(imageId: ObjectId, functionId: IRcodeFunctionId): Promise<TokenizedText>;
 }
 
 export const getIRcodeApi = () => {

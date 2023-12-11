@@ -114,27 +114,38 @@ export const addPcodePrinterToWriter = (printer: PcodePrinterJs, writer: TokenWr
 export const pcodeStructTreeToTokenizedText = (
   tree: PcodeStructTree,
   regRepo: RegisterRepository | null,
-): TokenizedText => {
+) => {
   const writer = new TokenWriter();
-  const printer = PcodeStructTreePrinterJs.New();
+  const structPrinter = PcodeStructTreePrinterJs.New();
   const pcodePrinter = PcodePrinterJs.New(regRepo);
-  pcodePrinter.combineWithStructPrinter(printer);
-  addPcodeStructTreePrinterToWriter(printer, writer);
+  pcodePrinter.combineWithStructPrinter(structPrinter);
+  addPcodeStructTreePrinterToWriter(structPrinter, writer);
   addPcodePrinterToWriter(pcodePrinter, writer);
-  printer.printStructTree(tree);
-  return writer.result;
+  return {
+    structPrinter,
+    pcodePrinter,
+    print: () => {
+      structPrinter.printStructTree(tree);
+      return writer.result;
+    },
+  };
 };
 
 export const instructionsToTokenizedText = (
   instructions: PcodeInstruction[],
   regRepo: RegisterRepository | null,
-): TokenizedText => {
+) => {
   const writer = new TokenWriter();
-  const printer = PcodePrinterJs.New(regRepo);
-  addPcodePrinterToWriter(printer, writer);
-  for (const instr of instructions) {
-    printer.printInstructionImpl(instr);
-    printer.newLine();
-  }
-  return writer.result;
+  const pcodePrinter = PcodePrinterJs.New(regRepo);
+  addPcodePrinterToWriter(pcodePrinter, writer);
+  return {
+    pcodePrinter,
+    print: () => {
+      for (const instr of instructions) {
+        pcodePrinter.printInstructionImpl(instr);
+        pcodePrinter.newLine();
+      }
+      return writer.result;
+    },
+  };
 };

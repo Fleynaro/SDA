@@ -65,8 +65,11 @@ class PcodeControllerImpl extends BaseController implements PcodeController {
     assert(funcGraph, `Function graph ${funcGraphId.offset} does not exist`);
     const structTree = PcodeStructTree.New();
     structTree.init(funcGraph);
-    const text = pcodeStructTreeToTokenizedText(structTree, context.platform.registerRepository);
-    return text;
+    const { print } = pcodeStructTreeToTokenizedText(
+      structTree,
+      context.platform.registerRepository,
+    );
+    return print();
   }
 }
 

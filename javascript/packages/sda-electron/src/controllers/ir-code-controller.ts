@@ -6,7 +6,6 @@ import {
   IRcodeFunctionId,
 } from 'api/ir-code';
 import { toImage } from './dto/image';
-import { toContext } from './dto/context';
 import {
   ircodeStructTreeToTokenizedText,
   toIRcodeFunction,
@@ -15,7 +14,8 @@ import {
 } from './dto/ir-code';
 import { getImageInfo } from 'repo/image';
 import { toId } from 'utils/common';
-import { PcodeStructTree } from 'sda-core';
+import { HolderSemantics, PcodeStructTree } from 'sda-core';
+import { instance_of } from 'sda-bindings';
 
 class IRcodeControllerImpl extends BaseController implements IRcodeController {
   constructor() {
@@ -42,19 +42,25 @@ class IRcodeControllerImpl extends BaseController implements IRcodeController {
   }
 
   public async getIRcodeTokenizedText(
-    contextId: ObjectId,
+    imageId: ObjectId,
     functionId: IRcodeFunctionId,
   ): Promise<TokenizedText> {
-    const context = toContext(contextId);
+    const image = toImage(imageId);
+    const { researchers } = getImageInfo(image);
     const func = toIRcodeFunction(functionId);
     const structTree = PcodeStructTree.New();
     structTree.init(func.funcGraph);
-    const text = ircodeStructTreeToTokenizedText(
+    const { ircodePrinter, print } = ircodeStructTreeToTokenizedText(
       structTree,
       func,
-      context.platform.registerRepository,
+      image.context.platform.registerRepository,
     );
-    return text;
+    ircodePrinter.setOperationCommentProvider((operation) => {
+      const semObj = researchers.semanticsRepo.getObject(operation.output);
+      if (!semObj) return '';
+      return semObj.semantics.map((s) => s.semantics.name).join(', ');
+    });
+    return print();
   }
 }
 

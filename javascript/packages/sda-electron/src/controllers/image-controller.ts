@@ -176,7 +176,8 @@ class ImageControllerImpl extends BaseController implements ImageController {
         const { pcodeGraph } = getImageInfo(image);
         const pcodeInstructions = pcodeGraph.getInstructionsAt(offset);
         if (pcodeInstructions.length > 0) {
-          row.pcode = instructionsToTokenizedText(pcodeInstructions, regRepo);
+          const { print } = instructionsToTokenizedText(pcodeInstructions, regRepo);
+          row.pcode = print();
         }
       }
       return row;

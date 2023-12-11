@@ -124,15 +124,22 @@ export const ircodeStructTreeToTokenizedText = (
   tree: PcodeStructTree,
   func: IRcodeFunction,
   regRepo: RegisterRepository | null,
-): TokenizedText => {
+) => {
   const writer = new TokenWriter();
-  const printer = PcodeStructTreePrinterJs.New();
+  const structPrinter = PcodeStructTreePrinterJs.New();
   const pcodePrinter = PcodePrinterJs.New(regRepo);
   const ircodePrinter = IRcodePrinterJs.New(pcodePrinter);
-  ircodePrinter.combineWithStructPrinter(printer, func);
-  addPcodeStructTreePrinterToWriter(printer, writer);
+  ircodePrinter.combineWithStructPrinter(structPrinter, func);
+  addPcodeStructTreePrinterToWriter(structPrinter, writer);
   addPcodePrinterToWriter(pcodePrinter, writer);
   addIRcodePrinterToWriter(ircodePrinter, writer);
-  printer.printStructTree(tree);
-  return writer.result;
+  return {
+    structPrinter,
+    pcodePrinter,
+    ircodePrinter,
+    print: () => {
+      structPrinter.printStructTree(tree);
+      return writer.result;
+    },
+  };
 };
