@@ -200,6 +200,8 @@ export declare class IRcodePrinter extends AbstractPrinter {
   printOperation(operation: IRcodeOperation): void;
 
   printValue(value: IRcodeValue, extended: boolean): void;
+
+  setOperationCommentProvider(provider: (operation: IRcodeOperation) => string): void;
 }
 
 export declare class IRcodePrinterJs extends IRcodePrinter {

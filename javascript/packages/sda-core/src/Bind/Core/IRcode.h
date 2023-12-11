@@ -289,6 +289,16 @@ namespace sda::bind
                 }))
                 .method("printValue", std::function([](ircode::Printer* printer, std::shared_ptr<ircode::Value> value, bool extended) {
                     printer->ircode::Printer::printValue(value, extended);
+                }))
+                .method("setOperationCommentProvider", std::function([](ircode::Printer* printer, v8::Local<v8::Value> value) {
+                    auto function = ToFunctionSharedPtr(value);
+                    printer->setOperationCommentProvider([function](const ircode::Operation* operation) {
+                        auto isolate = v8::Isolate::GetCurrent();
+                        auto func = function->Get(isolate);
+                        auto context = isolate->GetCurrentContext();
+                        auto result = v8pp::call_v8(isolate, func, context->Global(), operation);
+                        return v8pp::from_v8<std::string>(isolate, result);
+                    });
                 }));
             module.class_("IRcodePrinter", cl);
             PrinterJs::Init(module);
