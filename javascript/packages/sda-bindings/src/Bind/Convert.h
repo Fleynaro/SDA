@@ -12,4 +12,14 @@ namespace sda::bind
         });
         return result;
     }
+
+    static std::shared_ptr<v8::Global<v8::Function>> ToFunctionSharedPtr(v8::Local<v8::Value> value) {
+        auto isolate = v8::Isolate::GetCurrent();
+        if (!value->IsFunction()) {
+            throw std::runtime_error("Argument is not a function");
+        }
+        auto function = std::make_shared<v8::Global<v8::Function>>();
+        function->Reset(isolate, value.As<v8::Function>());
+        return function;
+    }
 };

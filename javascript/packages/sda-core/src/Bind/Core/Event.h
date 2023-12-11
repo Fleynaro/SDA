@@ -76,16 +76,6 @@ namespace sda::bind
 
     class EventPipeBind
     {
-        static std::shared_ptr<v8::Global<v8::Function>> ToFunction(v8::Local<v8::Value> value) {
-            auto isolate = v8::Isolate::GetCurrent();
-            if (!value->IsFunction()) {
-                throw std::runtime_error("Argument is not a function");
-            }
-            auto function = std::make_shared<v8::Global<v8::Function>>();
-            function->Reset(isolate, value.As<v8::Function>());
-            return function;
-        }
-
         static JsEvent ToJsEvent(v8::Local<v8::Object> event) {
             auto isolate = v8::Isolate::GetCurrent();
             std::string topic;
@@ -95,7 +85,7 @@ namespace sda::bind
         }
 
         static auto Process(EventPipe* pipe, v8::Local<v8::Value> value) {
-            auto function = ToFunction(value);
+            auto function = ToFunctionSharedPtr(value);
             return pipe->process([function](const Event& event, const EventNext& next) {
                 auto isolate = v8::Isolate::GetCurrent();
                 auto func = function->Get(isolate);
@@ -109,7 +99,7 @@ namespace sda::bind
         }
 
         static auto Filter(EventPipe* pipe, v8::Local<v8::Value> value) {
-            auto function = ToFunction(value);
+            auto function = ToFunctionSharedPtr(value);
             return pipe->filter([function](const Event& event) {
                 auto isolate = v8::Isolate::GetCurrent();
                 auto func = function->Get(isolate);
@@ -125,7 +115,7 @@ namespace sda::bind
 
         static auto Subscribe(EventPipe* pipe, v8::Local<v8::Value> value) {
             auto isolate = v8::Isolate::GetCurrent();
-            auto function = ToFunction(value);
+            auto function = ToFunctionSharedPtr(value);
             auto unsubscribe = pipe->subscribe([function](const Event& event) {
                 auto isolate = v8::Isolate::GetCurrent();
                 auto func = function->Get(isolate);
@@ -136,7 +126,7 @@ namespace sda::bind
         }
 
         static auto If(v8::Local<v8::Value> value, std::shared_ptr<EventPipe> pipeThen, std::shared_ptr<EventPipe> pipeElse) {
-            auto function = ToFunction(value);
+            auto function = ToFunctionSharedPtr(value);
             return EventPipe::If([function](const Event& event) {
                 auto isolate = v8::Isolate::GetCurrent();
                 auto func = function->Get(isolate);
