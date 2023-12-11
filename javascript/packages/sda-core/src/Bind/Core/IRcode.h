@@ -165,6 +165,7 @@ namespace sda::bind
             auto cl = NewClass<ircode::Program>(module);
             cl
                 .auto_wrap_object_ptrs(true)
+                .property("platform", &ircode::Program::getPlatform)
                 .property("eventPipe", &ircode::Program::getEventPipe)
                 .property("graph", &ircode::Program::getGraph)
                 .property("globalSymbolTable", &ircode::Program::getGlobalSymbolTable)

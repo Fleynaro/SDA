@@ -125,6 +125,7 @@ namespace sda::bind
             auto cl = NewClass<pcode::Graph>(module);
             cl
                 .auto_wrap_object_ptrs(true)
+                .property("platform", &pcode::Graph::getPlatform)
                 .method("exploreImage", &ExploreImage)
                 .method("exploreInstructions", &ExploreInstructions)
                 .method("addInstruction", &pcode::Graph::addInstruction)

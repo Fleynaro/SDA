@@ -11,7 +11,7 @@ import {
   PcodeRegisterVarnode,
   PcodeStructTreePrinter,
 } from './p-code';
-import { CallingConvention } from './platform';
+import { CallingConvention, Platform } from './platform';
 import { SymbolTable } from './symbol-table';
 import { FunctionSymbol } from './symbol';
 import { AbstractPrinter, AbstractPrinterToken, Hash, IIdentifiable } from './utils';
@@ -160,6 +160,7 @@ export declare class IRcodeProgram implements IIdentifiable {
   readonly eventPipe: EventPipe;
   readonly graph: PcodeGraph;
   readonly globalSymbolTable: SymbolTable;
+  readonly platform: Platform;
 
   getFunctionAt(offset: InstructionOffset): IRcodeFunction | undefined;
 

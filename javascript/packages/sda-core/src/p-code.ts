@@ -153,6 +153,7 @@ export declare class PcodeFunctionGraph {
 export declare class PcodeGraph implements IIdentifiable {
   readonly hashId: Hash;
   readonly className: string;
+  readonly platform: Platform;
 
   exploreImage(startOffset: InstructionOffset, image: Image): void;
 
