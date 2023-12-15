@@ -24,7 +24,7 @@ namespace sda::test
 
         DataType* findDataType(const std::string& name) const;
 
-        DataType* parseDataType(const std::string& text, bool withName = true) const;
+        DataType* parseDataType(const std::string& text) const;
 
         DataType* newTestStruct() const;
 

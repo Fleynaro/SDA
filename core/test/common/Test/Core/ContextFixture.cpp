@@ -37,8 +37,8 @@ DataType* ContextFixture::findDataType(const std::string& name) const {
     return context->getDataTypes()->getByName(name);
 }
 
-DataType* ContextFixture::parseDataType(const std::string& text, bool withName) const {
-    return DataTypeParser::Parse(text, context, withName);
+DataType* ContextFixture::parseDataType(const std::string& text) const {
+    return DataTypeParser::Parse(text, context).back();
 }
 
 DataType* ContextFixture::newTestStruct() const {

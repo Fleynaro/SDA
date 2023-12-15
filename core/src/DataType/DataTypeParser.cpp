@@ -12,20 +12,34 @@
 using namespace sda;
 using namespace utils::lexer;
 
-DataTypeParser::DataTypeParser(utils::lexer::Lexer* lexer, Context* context)
-    : AbstractParser(lexer, 1), m_context(context)
+DataTypeParser::DataTypeParser(utils::lexer::Lexer* lexer, Context* context, ParserContext* parserContext)
+    : AbstractParser(lexer, 1)
+    , m_context(context)
+    , m_parserContext(parserContext)
 {}
 
-DataType* DataTypeParser::Parse(const std::string& text, Context* context, bool withName) {
+std::list<DataType*> DataTypeParser::Parse(const std::string& text, Context* context) {
     std::stringstream ss(text);
     IO io(ss, std::cout);
     Lexer lexer(&io);
-    DataTypeParser parser(&lexer, context);
+    ParserContext parserContext;
+    DataTypeParser parser(&lexer, context, &parserContext);
     parser.init();
-    return parser.parseDef(withName);
+    while (!parser.getToken()->isSymbol('\0')) {
+        auto dataTypeInfo = parser.parseDef();
+        parserContext.dataTypes.emplace_back(dataTypeInfo);
+    }
+    std::list<DataType*> dataTypes;
+    for (auto& dataTypeInfo : parserContext.dataTypes) {
+        auto dataType = dataTypeInfo.create();
+        dataType->setName(dataTypeInfo.name);
+        dataType->setComment(dataTypeInfo.comment);
+        dataTypes.push_back(dataType);
+    }
+    return dataTypes;
 }
 
-DataType* DataTypeParser::parseDef(bool withName) {
+DataTypeParser::DataTypeInfo DataTypeParser::parseDef(bool withName) {
     // comment
     auto comment = parseCommentIfExists();
 
@@ -40,40 +54,48 @@ DataType* DataTypeParser::parseDef(bool withName) {
     }
 
     // definition
-    DataType* dataType = parseTypeDef();
-    if (!dataType)
-        dataType = parseEnumDef();
-    if (!dataType)
-        dataType = parseStructureDef();
-    if (!dataType)
-        dataType = parseSignatureDef();
-    if (!dataType)
+    auto dataTypeInfo = parseTypeDef();
+    if (!dataTypeInfo.create)
+        dataTypeInfo = parseEnumDef();
+    if (!dataTypeInfo.create)
+        dataTypeInfo = parseStructureDef();
+    if (!dataTypeInfo.create)
+        dataTypeInfo = parseSignatureDef();
+    if (!dataTypeInfo.create)
         throw error(101, "Data type definition not recognized");
     
-    if (dataType) {
+    if (dataTypeInfo.create) {
         if (withName)
-            dataType->setName(name);
-        dataType->setComment(comment);
+            dataTypeInfo.name = name;
+        dataTypeInfo.comment = comment;
     }
-    return dataType;
+    return dataTypeInfo;
 }
 
-TypedefDataType* DataTypeParser::parseTypeDef() {
+DataTypeParser::DataTypeInfo DataTypeParser::parseTypeDef() {
     if (!getToken()->isKeyword("typedef"))
-        return nullptr;
+        return DataTypeInfo();
     nextToken();
         
-    auto refDt = parseDataType();
-    return new TypedefDataType(
-        m_context,
-        nullptr,
-        "",
-        refDt);
+    auto refDtInfo = parseDataType();
+    auto context = m_context;
+    DataTypeInfo info;
+    info.size = refDtInfo.size;
+    info.create = [context, refDtInfo]() {
+        auto refDt = refDtInfo.create();
+        auto dataType = new TypedefDataType(
+            context,
+            nullptr,
+            "",
+            refDt);
+        return dataType;
+    };
+    return info;
 }
 
-EnumDataType* DataTypeParser::parseEnumDef() {
+DataTypeParser::DataTypeInfo DataTypeParser::parseEnumDef() {
     if (!getToken()->isKeyword("enum"))
-        return nullptr;
+        return DataTypeInfo();
     nextToken();
 
     accept('{');
@@ -105,34 +127,47 @@ EnumDataType* DataTypeParser::parseEnumDef() {
         nextToken();
     }
     accept('}');
-    return new EnumDataType(
-        m_context,
-        nullptr,
-        "",
-        fields);
+    auto context = m_context;
+    DataTypeInfo info;
+    info.size = sizeof(EnumDataType::Key);
+    info.create = [context, fields]() {
+        auto dataType = new EnumDataType(
+            context,
+            nullptr,
+            "",
+            fields);
+        return dataType;
+    };
+    return info;
 }
 
-StructureDataType* DataTypeParser::parseStructureDef() {
+DataTypeParser::DataTypeInfo DataTypeParser::parseStructureDef() {
     if (!getToken()->isKeyword("struct"))
-        return nullptr;
+        return DataTypeInfo();
     nextToken();
 
-    SymbolTableParser symbolTableParser(getLexer(), m_context, true);
+    SymbolTableParser symbolTableParser(getLexer(), m_context, this, true);
     symbolTableParser.init(std::move(getToken()));
-    auto symbolTable = dynamic_cast<StandartSymbolTable*>(symbolTableParser.parse());
-    assert(symbolTable);
+    auto symbolTableInfo = symbolTableParser.parse();
     init(std::move(symbolTableParser.getToken()));
-    return new StructureDataType(
-        m_context,
-        nullptr,
-        "",
-        symbolTable->getUsedSize(),
-        symbolTable);
+    auto context = m_context;
+    DataTypeInfo info;
+    info.size = symbolTableInfo.size;
+    info.create = [context, symbolTableInfo]() {
+        auto dataType = new StructureDataType(
+            context,
+            nullptr,
+            "",
+            symbolTableInfo.size,
+            dynamic_cast<StandartSymbolTable*>(symbolTableInfo.create()));
+        return dataType;
+    };
+    return info;
 }
 
-SignatureDataType* DataTypeParser::parseSignatureDef() {
+DataTypeParser::DataTypeInfo DataTypeParser::parseSignatureDef() {
     if (!getToken()->isKeyword("signature"))
-        return nullptr;
+        return DataTypeInfo();
     nextToken();
 
     // calling convention
@@ -147,23 +182,22 @@ SignatureDataType* DataTypeParser::parseSignatureDef() {
         throw error(500, "Expected calling convention");
     
     // return type
-    auto returnDt = parseDataType();
+    auto returnDtInfo = parseDataType();
 
     // parameters
     accept('(');
-    std::vector<FunctionParameterSymbol*> parameters;
+    struct ParamSymbol {
+        std::string name;
+        DataTypeInfo dataTypeInfo;
+    };
+    std::vector<ParamSymbol> parameters;
     while (!getToken()->isSymbol(')')) {
-        auto paramDt = parseDataType();
+        auto paramDtInfo = parseDataType();
         std::string paramName;
         if (!getToken()->isIdent(paramName))
             throw error(501, "Expected parameter name");
         nextToken();
-        auto paramSymbol = new FunctionParameterSymbol(
-            m_context,
-            nullptr,
-            paramName,
-            paramDt);
-        parameters.push_back(paramSymbol);
+        parameters.push_back({ paramName, paramDtInfo });
 
         if (!getToken()->isSymbol(','))
             break;
@@ -171,33 +205,66 @@ SignatureDataType* DataTypeParser::parseSignatureDef() {
     }
     accept(')');
 
-    return new SignatureDataType(
-        m_context,
-        callingConvention,
-        nullptr,
-        "",
-        returnDt,
-        parameters);
+    auto context = m_context;
+    DataTypeInfo info;
+    info.size = 1;
+    info.create = [context, callingConvention, parameters, returnDtInfo]() {
+        std::vector<FunctionParameterSymbol*> parameterSymbols;
+        for (auto& param : parameters) {
+            auto paramSymbol = new FunctionParameterSymbol(
+                context,
+                nullptr,
+                param.name,
+                param.dataTypeInfo.create());
+            parameterSymbols.push_back(paramSymbol);
+        }
+        return new SignatureDataType(
+            context,
+            callingConvention,
+            nullptr,
+            "",
+            returnDtInfo.create(),
+            parameterSymbols);
+    };
+    return info;
 }
 
-DataType* DataTypeParser::parseDataType() {
+DataTypeParser::DataTypeInfo DataTypeParser::parseDataType() {
     // find data type with name
     std::string dataTypeName;
     if (!getToken()->isIdent(dataTypeName))
         throw error(200, "Expected data type name");
-    auto dataType = m_context->getDataTypes()->getByName(dataTypeName);
-    if (!dataType)
+    size_t size = -1;
+    if (auto dataType = m_context->getDataTypes()->getByName(dataTypeName)) {
+        size = dataType->getSize();
+    } else {
+        if (m_parserContext) {
+            auto dataTypes = m_parserContext->dataTypes;
+            auto it = std::find_if(dataTypes.begin(), dataTypes.end(), [&dataTypeName](const DataTypeInfo& info) {
+                return info.name == dataTypeName;
+            });
+            if (it != dataTypes.end()) {
+                size = it->size;
+            }
+        }
+    }
+    if (size == -1) {
         throw error(201, "Unknown data type '" + dataTypeName + "'");
+    }
     nextToken();
 
     // pointer
+    size_t pointerCount = 0;
     while (getToken()->isSymbol('*')) {
-        dataType = dataType->getPointerTo();
+        pointerCount ++;
         nextToken();
+    }
+    if (pointerCount > 0) {
+        size = m_context->getPlatform()->getPointerSize();
     }
 
     // array
-    std::list<size_t> dimensions;
+    std::list<size_t> arrDimensions;
     while (getToken()->isSymbol('[')) {
         nextToken();
         size_t arraySize = -1;
@@ -212,11 +279,22 @@ DataType* DataTypeParser::parseDataType() {
         } else {
             throw error(202, "Expected constant array size");
         }
-        dimensions.push_back(arraySize);
+        arrDimensions.push_back(arraySize);
+        size *= arraySize;
         accept(']');
     }
-    if (!dimensions.empty())
-        dataType = dataType->getArrayOf(dimensions);
 
-    return dataType;
+    auto context = m_context;
+    DataTypeInfo info;
+    info.size = size;
+    info.create = [context, dataTypeName, pointerCount, arrDimensions]() {
+        auto resultDataType = context->getDataTypes()->getByName(dataTypeName);
+        for (size_t i = 0; i < pointerCount; i ++) {
+            resultDataType = resultDataType->getPointerTo();
+        }
+        if (!arrDimensions.empty())
+            resultDataType = resultDataType->getArrayOf(arrDimensions);
+        return resultDataType;
+    };
+    return info;
 }

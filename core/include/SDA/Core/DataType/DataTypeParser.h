@@ -15,24 +15,38 @@ namespace sda
 
     class DataTypeParser : public utils::AbstractParser
     {
+    public:
+        struct DataTypeInfo {
+            size_t size = 0;
+            std::string name;
+            std::string comment;
+            std::function<DataType*()> create;
+        };
+
+        struct ParserContext {
+            std::list<DataTypeInfo> dataTypes;
+        };
+    private:
         friend class SymbolTableParser;
         Context* m_context;
+        ParserContext* m_parserContext;
     public:
-        DataTypeParser(utils::lexer::Lexer* lexer, Context* context);
 
-        static DataType* Parse(const std::string& text, Context* context, bool withName = true);
+        DataTypeParser(utils::lexer::Lexer* lexer, Context* context, ParserContext* parserContext = nullptr);
 
-        DataType* parseDef(bool withName = true);
+        static std::list<DataType*> Parse(const std::string& text, Context* context);
+
+        DataTypeInfo parseDef(bool withName = true);
 
     private:
-        TypedefDataType* parseTypeDef();
+        DataTypeInfo parseTypeDef();
 
-        EnumDataType* parseEnumDef();
+        DataTypeInfo parseEnumDef();
 
-        StructureDataType* parseStructureDef();
+        DataTypeInfo parseStructureDef();
 
-        SignatureDataType* parseSignatureDef();
+        DataTypeInfo parseSignatureDef();
 
-        DataType* parseDataType();
+        DataTypeInfo parseDataType();
     };
 };
