@@ -26,6 +26,8 @@ namespace sda::test
 
         DataType* parseDataType(const std::string& text) const;
 
+        std::list<DataType*> parseDataTypes(const std::string& text) const;
+
         DataType* newTestStruct() const;
 
         SymbolTable* parseSymbolTable(const std::string& text, bool withName = true, SymbolTable* symbolTable = nullptr) const;
@@ -38,5 +40,7 @@ namespace sda::test
             SymbolTable* instrSymbolTable = nullptr);
 
         ::testing::AssertionResult cmpDataType(DataType* dataType, const std::string& expectedCode, bool withName = false) const;
+
+        ::testing::AssertionResult cmpDataTypes(const std::list<DataType*>& dataTypes, const std::string& expectedCode, bool withName = true) const;
     };
 };

@@ -46,6 +46,24 @@ TEST_F(DataTypeParserTest, StructureSample1) {
     ASSERT_TRUE(cmpDataType(structDt, expectedCode, true));
 }
 
+TEST_F(DataTypeParserTest, StructureSample2) {
+    auto expectedCode = "\
+        Scalar = typedef float \
+        \
+        Vector3D = struct { \
+            Scalar x, \
+            Scalar y, \
+            Scalar z \
+        } \
+        \
+        Player = struct { \
+            Vector3D pos \
+        } \
+    ";
+    auto dataTypes = parseDataTypes(expectedCode);
+    ASSERT_TRUE(cmpDataTypes(dataTypes, expectedCode));
+}
+
 TEST_F(DataTypeParserTest, SignatureSample1) {
     auto expectedCode = "\
         ['test data type'] \

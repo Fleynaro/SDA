@@ -16,12 +16,15 @@ DataTypePrinter::DataTypePrinter(Context* context, SymbolTablePrinter* symbolTab
     : m_context(context), m_symbolTablePrinter(symbolTablePrinter)
 {}
 
-std::string DataTypePrinter::Print(DataType* dataType, Context* context, bool withName) {
+std::string DataTypePrinter::Print(const std::list<DataType*>& dataTypes, Context* context, bool withName) {
     SymbolTablePrinter symbolTablePrinter(context);
     DataTypePrinter printer(context, &symbolTablePrinter);
     std::stringstream ss;
     printer.setOutput(ss);
-    printer.printDef(dataType, withName);
+    for (auto dataType : dataTypes) {
+        printer.printDef(dataType, withName);
+        printer.newLine();
+    }
     return ss.str();
 }
 

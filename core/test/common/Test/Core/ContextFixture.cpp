@@ -38,7 +38,11 @@ DataType* ContextFixture::findDataType(const std::string& name) const {
 }
 
 DataType* ContextFixture::parseDataType(const std::string& text) const {
-    return DataTypeParser::Parse(text, context).back();
+    return parseDataTypes(text).back();
+}
+
+std::list<DataType*> ContextFixture::parseDataTypes(const std::string& text) const {
+    return DataTypeParser::Parse(text, context);
 }
 
 DataType* ContextFixture::newTestStruct() const {
@@ -81,6 +85,10 @@ FunctionSymbol* ContextFixture::newFunction(
 }
 
 ::testing::AssertionResult ContextFixture::cmpDataType(DataType* dataType, const std::string& expectedCode, bool withName) const {
-    auto actualCode = DataTypePrinter::Print(dataType, context, withName);
+    return cmpDataTypes({ dataType }, expectedCode, withName);
+}
+
+::testing::AssertionResult ContextFixture::cmpDataTypes(const std::list<DataType*>& dataTypes, const std::string& expectedCode, bool withName) const {
+    auto actualCode = DataTypePrinter::Print(dataTypes, context, withName);
     return Compare(actualCode, expectedCode);
 }

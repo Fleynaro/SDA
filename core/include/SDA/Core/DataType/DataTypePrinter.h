@@ -22,7 +22,7 @@ namespace sda
 
         DataTypePrinter(Context* context, SymbolTablePrinter* symbolTablePrinter = nullptr);
         
-        static std::string Print(DataType* dataType, Context* context, bool withName = true);
+        static std::string Print(const std::list<DataType*>& dataTypes, Context* context, bool withName = true);
 
         void printDef(DataType* dataType, bool withName = true);
 

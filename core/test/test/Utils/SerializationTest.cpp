@@ -35,12 +35,11 @@ protected:
     }
 
     ::testing::AssertionResult cmp(DataType* dataType, const std::string& expectedCode) const {
-        auto actualCode = DataTypePrinter::Print(dataType, context, true);
-        return Compare(actualCode, expectedCode);
+        return cmpDataType(dataType, expectedCode, true);
     }
 
     ::testing::AssertionResult cmp(SymbolTable* symbolTable, const std::string& expectedCode) const {
-        auto actualCode = SymbolTablePrinter::Print(symbolTable, context, true);
+        auto actualCode = SymbolTablePrinter::Print(symbolTable, context);
         return Compare(actualCode, expectedCode);
     }
 };
