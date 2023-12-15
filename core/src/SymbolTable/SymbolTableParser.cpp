@@ -7,8 +7,16 @@
 using namespace sda;
 using namespace utils::lexer;
 
-SymbolTableParser::SymbolTableParser(utils::lexer::Lexer* lexer, Context* context, bool isStruct)
-    : AbstractParser(lexer, 2), m_context(context), m_isStruct(isStruct)
+SymbolTableParser::SymbolTableParser(
+    utils::lexer::Lexer* lexer,
+    Context* context,
+    DataTypeParser* dataTypeParser,
+    bool isStruct
+)
+    : AbstractParser(lexer, 2)
+    , m_context(context)
+    , m_isStruct(isStruct)
+    , m_dataTypeParser(dataTypeParser)
 {}
 
 SymbolTable* SymbolTableParser::Parse(
@@ -21,35 +29,32 @@ SymbolTable* SymbolTableParser::Parse(
     std::stringstream ss(text);
     IO io(ss, std::cout);
     Lexer lexer(&io);
-    SymbolTableParser parser(&lexer, context, isStruct);
+    DataTypeParser dataTypeParser(&lexer, context);
+    SymbolTableParser parser(&lexer, context, &dataTypeParser, isStruct);
     parser.init();
-    return parser.parse(withName, symbolTable);
+    auto symbolTableInfo = parser.parse(withName, symbolTable);
+    return symbolTableInfo.create();
 }
 
-SymbolTable* SymbolTableParser::parse(bool withName, SymbolTable* symbolTable) {
-    if (!symbolTable) {
-        symbolTable = new StandartSymbolTable(m_context);
-    }
-    Offset offset = 0;
-
+SymbolTableParser::SymbolTableInfo SymbolTableParser::parse(bool withName, SymbolTable* symbolTable) {
+    std::string comment;
+    std::string name;
     if (withName && !m_isStruct) {
-        auto comment = parseCommentIfExists();
+        comment = parseCommentIfExists();
         
-        std::string name;
         if (!getToken()->isIdent(name))
             throw error(100, "Expected symbol table name");
         nextToken();
-
-        symbolTable->setName(name);
-        symbolTable->setComment(comment);
 
         accept('=');
     }
 
     accept('{');
+    std::list<SymbolInfo> symbols;
+    Offset offset = 0;
     while (!getToken()->isSymbol('}')) {
         // parse symbol
-        auto symbol = parseSymbolDef();
+        auto symbolInfo = parseSymbolDef();
         // parse offset if exists
         if (getToken()->isSymbol('=')) {
             nextToken();
@@ -66,38 +71,64 @@ SymbolTable* SymbolTableParser::parse(bool withName, SymbolTable* symbolTable) {
             }
         }
 
-        symbolTable->addSymbol(offset, symbol);
-        offset += symbol->getDataType()->getSize();
+        symbolInfo.offset = offset;
+        symbols.push_back(symbolInfo);
+        offset += symbolInfo.size;
 
         if (!getToken()->isSymbol(','))
             break;
         nextToken();
     }
     accept('}');
-    return symbolTable;
+    auto context = m_context;
+    SymbolTableInfo info;
+    info.size = offset;
+    info.create = [context, symbolTable, name, comment, symbols]() {
+        auto resultSymbolTable = symbolTable;
+        if (!resultSymbolTable) {
+            resultSymbolTable = new StandartSymbolTable(context);
+        }
+        if (!name.empty()) {
+            resultSymbolTable->setName(name);
+        }
+        if (!comment.empty()) {
+            resultSymbolTable->setComment(comment);
+        }
+        for (auto& symbol : symbols) {
+            resultSymbolTable->addSymbol(symbol.offset, symbol.create());
+        }
+        return resultSymbolTable;
+    };
+    return info;
 }
 
-Symbol* SymbolTableParser::parseSymbolDef() {
-    DataTypeParser dataTypeParser(getLexer(), m_context);
-    dataTypeParser.init(std::move(getToken()));
-    auto symbolDt = dataTypeParser.parseDataType();
-    init(std::move(dataTypeParser.getToken()));
+SymbolTableParser::SymbolInfo SymbolTableParser::parseSymbolDef() {
+    m_dataTypeParser->init(std::move(getToken()));
+    auto symbolDtInfo = m_dataTypeParser->parseDataType();
+    init(std::move(m_dataTypeParser->getToken()));
 
     std::string symbolName;
     if (!getToken()->isIdent(symbolName))
         throw error(200, "Expected field name");
     nextToken();
 
-    if (m_isStruct) {
-        return new StructureFieldSymbol(
-            m_context,
+    auto context = m_context;
+    auto isStruct = m_isStruct;
+    SymbolInfo info;
+    info.size = symbolDtInfo.size;
+    info.create = [context, isStruct, symbolName, symbolDtInfo]() -> Symbol* {
+        if (isStruct) {
+            return new StructureFieldSymbol(
+                context,
+                nullptr,
+                symbolName,
+                symbolDtInfo.create());
+        }
+        return new VariableSymbol(
+            context,
             nullptr,
             symbolName,
-            symbolDt);
-    }
-    return new VariableSymbol(
-        m_context,
-        nullptr,
-        symbolName,
-        symbolDt);
+            symbolDtInfo.create());
+    };
+    return info;
 }
