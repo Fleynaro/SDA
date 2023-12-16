@@ -40,7 +40,7 @@ void IO::error(const ErrorCode errorCode, const std::string& text, size_t colPos
         if (m_errorsCountOnLine < MAX_ERRORS_ON_LINE) {
             m_streamOut << rang::fg::red;
             m_streamOut << "**" << std::setfill('0') << std::setw(2) << (m_errorsCount + 1) << "**";
-            for (int i = 0; i < colPos - 2; ++i)
+            for (int i = 0; i < int(colPos) - 2; ++i)
                 m_streamOut << " ";
 
             m_streamOut << rang::fg::red;
@@ -79,7 +79,11 @@ void IO::listCurLineOnce() {
     if (m_curLineShown)
         return;
     auto line = m_curLine;
-    line.pop_back();
+    if (line.empty()) {
+        line = "<Empty line>";
+    } else {
+        line.pop_back();
+    }
 
     m_streamOut << "  " << std::setfill(' ') << std::setw(2) << m_letterPos.m_line << "  ";
     m_streamOut << line << std::endl;
