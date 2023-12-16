@@ -23,6 +23,10 @@ bool Token::isSymbol(char symbol) const {
     return false;
 }
 
+bool Token::isComment(std::string& comment) const {
+    return false;
+}
+
 bool IdentToken::isIdent(std::string& name) const {
     name = this->name;
     return !name.empty();
@@ -54,4 +58,13 @@ std::string ConstToken::toString() const {
         return value.string;
     }
     return "";
+}
+
+bool CommentToken::isComment(std::string& comment) const {
+    comment = this->comment;
+    return !comment.empty();
+}
+
+std::string CommentToken::toString() const {
+    return comment;
 }

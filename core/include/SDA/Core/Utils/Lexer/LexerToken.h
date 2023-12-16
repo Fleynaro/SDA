@@ -11,7 +11,8 @@ namespace utils::lexer
             Ident,
             Keyword,
             Symbol,
-            Const
+            Const,
+            Comment
         };
 
         Type type;
@@ -23,6 +24,8 @@ namespace utils::lexer
         bool isOneOfKeyword(const std::initializer_list<std::string>& keywords) const;
 
         virtual bool isSymbol(char symbol) const;
+
+        virtual bool isComment(std::string& comment) const;
         
         virtual std::string toString() const = 0;
     };
@@ -62,6 +65,15 @@ namespace utils::lexer
             double real = 0.0;
             std::string string;
         } value;
+
+        std::string toString() const override;
+    };
+
+    // Comment
+    struct CommentToken : Token {
+        std::string comment;
+
+        bool isComment(std::string& comment) const override;
 
         std::string toString() const override;
     };

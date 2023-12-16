@@ -9,8 +9,9 @@ namespace utils::lexer
     {
         IO* m_io;
         char m_letter;
+        bool m_skipComment;
     public:
-        Lexer(IO* io);
+        Lexer(IO* io, bool skipComment = true);
         
         std::unique_ptr<Token> nextToken();
 

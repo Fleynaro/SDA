@@ -2,8 +2,9 @@
 
 using namespace utils::lexer;
 
-Lexer::Lexer(IO* io)
+Lexer::Lexer(IO* io, bool skipComment)
     : m_io(io)
+    , m_skipComment(skipComment)
 {
     nextLetter();
 }
@@ -105,26 +106,38 @@ std::unique_ptr<Token> Lexer::nextOtherToken() {
 
     switch (startLetter) {
     // comment
-    case '/':
+    case '/': {
+        std::string comment;
         if (m_letter == '/') {
-            // skip a comment
             nextLetter();
-            while (m_letter != '\n')
+            while (m_letter != '\n') {
                 nextLetter();
-            return nullptr;
+                comment += m_letter;
+            }
+            comment.pop_back();
         } else if (m_letter == '*') {
-            // skip a multiline comment
             while (true) {
                 nextLetter();
+                comment += m_letter;
                 if (m_letter == '*') {
                     nextLetter();
                     if (m_letter == '/') {
                         nextLetter();
-                        return nullptr;
+                        comment.pop_back();
+                        comment.pop_back();
+                        break;
                     }
                 }
             }
         }
+        if (m_skipComment) {
+            return nullptr;
+        }
+        CommentToken token;
+        token.type = Token::Comment;
+        token.comment = comment;
+        return std::make_unique<CommentToken>(token);
+    }
     
     // string constant
     case '\'':
