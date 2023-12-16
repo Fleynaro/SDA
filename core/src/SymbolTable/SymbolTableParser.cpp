@@ -29,14 +29,15 @@ SymbolTable* SymbolTableParser::Parse(
     std::stringstream ss(text);
     IO io(ss, std::cout);
     Lexer lexer(&io);
-    DataTypeParser dataTypeParser(&lexer, context);
+    DataTypeParser::ParserContext parserCtx;
+    DataTypeParser dataTypeParser(&lexer, context, &parserCtx);
     SymbolTableParser parser(&lexer, context, &dataTypeParser, isStruct);
     parser.init();
-    auto symbolTableInfo = parser.parse(withName, symbolTable);
-    return symbolTableInfo.create();
+    auto symbolTableInfo = parser.parse(withName);
+    return symbolTableInfo.create(symbolTable);
 }
 
-SymbolTableParser::SymbolTableInfo SymbolTableParser::parse(bool withName, SymbolTable* symbolTable) {
+SymbolTableParser::SymbolTableInfo SymbolTableParser::parse(bool withName) {
     std::string comment;
     std::string name;
     if (withName && !m_isStruct) {
@@ -83,7 +84,7 @@ SymbolTableParser::SymbolTableInfo SymbolTableParser::parse(bool withName, Symbo
     auto context = m_context;
     SymbolTableInfo info;
     info.size = offset;
-    info.create = [context, symbolTable, name, comment, symbols]() {
+    info.create = [context, name, comment, symbols](SymbolTable* symbolTable) {
         auto resultSymbolTable = symbolTable;
         if (!resultSymbolTable) {
             resultSymbolTable = new StandartSymbolTable(context);

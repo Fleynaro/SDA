@@ -9,7 +9,7 @@ namespace sda
     {
         struct SymbolTableInfo {
             size_t size = 0;
-            std::function<SymbolTable*()> create;
+            std::function<SymbolTable*(SymbolTable*)> create;
         };
         struct SymbolInfo {
             size_t size = 0;
@@ -33,7 +33,7 @@ namespace sda
             bool withName = true,
             SymbolTable* symbolTable = nullptr);
 
-        SymbolTableInfo parse(bool withName = true, SymbolTable* symbolTable = nullptr);
+        SymbolTableInfo parse(bool withName = true);
 
     private:
         SymbolInfo parseSymbolDef();

@@ -24,19 +24,21 @@ namespace sda
         };
 
         struct ParserContext {
+            std::string currentDtName;
             std::list<DataTypeInfo> dataTypes;
         };
+        
     private:
         friend class SymbolTableParser;
         Context* m_context;
         ParserContext* m_parserContext;
-    public:
 
-        DataTypeParser(utils::lexer::Lexer* lexer, Context* context, ParserContext* parserContext = nullptr);
+    public:
+        DataTypeParser(utils::lexer::Lexer* lexer, Context* context, ParserContext* parserContext);
 
         static std::list<DataType*> Parse(const std::string& text, Context* context);
 
-        DataTypeInfo parseDef(bool withName = true);
+        const DataTypeInfo& parseDef(bool withName = true);
 
     private:
         DataTypeInfo parseTypeDef();
@@ -47,6 +49,6 @@ namespace sda
 
         DataTypeInfo parseSignatureDef();
 
-        DataTypeInfo parseDataType();
+        DataTypeInfo parseDataType(bool allowVoid = false);
     };
 };

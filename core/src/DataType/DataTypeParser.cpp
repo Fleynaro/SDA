@@ -26,8 +26,7 @@ std::list<DataType*> DataTypeParser::Parse(const std::string& text, Context* con
     DataTypeParser parser(&lexer, context, &parserContext);
     parser.init();
     while (!parser.getToken()->isSymbol('\0')) {
-        auto dataTypeInfo = parser.parseDef();
-        parserContext.dataTypes.emplace_back(dataTypeInfo);
+        parser.parseDef();
     }
     std::list<DataType*> dataTypes;
     for (auto& dataTypeInfo : parserContext.dataTypes) {
@@ -39,7 +38,7 @@ std::list<DataType*> DataTypeParser::Parse(const std::string& text, Context* con
     return dataTypes;
 }
 
-DataTypeParser::DataTypeInfo DataTypeParser::parseDef(bool withName) {
+const DataTypeParser::DataTypeInfo& DataTypeParser::parseDef(bool withName) {
     // comment
     auto comment = parseCommentIfExists();
 
@@ -53,6 +52,8 @@ DataTypeParser::DataTypeInfo DataTypeParser::parseDef(bool withName) {
         accept('=');
     }
 
+    m_parserContext->currentDtName = name;
+
     // definition
     auto dataTypeInfo = parseTypeDef();
     if (!dataTypeInfo.create)
@@ -64,12 +65,11 @@ DataTypeParser::DataTypeInfo DataTypeParser::parseDef(bool withName) {
     if (!dataTypeInfo.create)
         throw error(101, "Data type definition not recognized");
     
-    if (dataTypeInfo.create) {
-        if (withName)
-            dataTypeInfo.name = name;
-        dataTypeInfo.comment = comment;
-    }
-    return dataTypeInfo;
+    if (withName)
+        dataTypeInfo.name = name;
+    dataTypeInfo.comment = comment;
+    m_parserContext->dataTypes.emplace_back(dataTypeInfo);
+    return m_parserContext->dataTypes.back();
 }
 
 DataTypeParser::DataTypeInfo DataTypeParser::parseTypeDef() {
@@ -151,15 +151,18 @@ DataTypeParser::DataTypeInfo DataTypeParser::parseStructureDef() {
     auto symbolTableInfo = symbolTableParser.parse();
     init(std::move(symbolTableParser.getToken()));
     auto context = m_context;
+    auto dtName = m_parserContext->currentDtName;
     DataTypeInfo info;
     info.size = symbolTableInfo.size;
-    info.create = [context, symbolTableInfo]() {
+    info.create = [context, dtName, symbolTableInfo]() {
+        auto symbolTable = new StandartSymbolTable(context);
         auto dataType = new StructureDataType(
             context,
             nullptr,
-            "",
+            dtName,
             symbolTableInfo.size,
-            dynamic_cast<StandartSymbolTable*>(symbolTableInfo.create()));
+            symbolTable);
+        symbolTableInfo.create(symbolTable);
         return dataType;
     };
     return info;
@@ -182,7 +185,7 @@ DataTypeParser::DataTypeInfo DataTypeParser::parseSignatureDef() {
         throw error(500, "Expected calling convention");
     
     // return type
-    auto returnDtInfo = parseDataType();
+    auto returnDtInfo = parseDataType(true);
 
     // parameters
     accept('(');
@@ -229,7 +232,7 @@ DataTypeParser::DataTypeInfo DataTypeParser::parseSignatureDef() {
     return info;
 }
 
-DataTypeParser::DataTypeInfo DataTypeParser::parseDataType() {
+DataTypeParser::DataTypeInfo DataTypeParser::parseDataType(bool allowVoid) {
     // find data type with name
     std::string dataTypeName;
     if (!getToken()->isIdent(dataTypeName))
@@ -237,19 +240,18 @@ DataTypeParser::DataTypeInfo DataTypeParser::parseDataType() {
     size_t size = -1;
     if (auto dataType = m_context->getDataTypes()->getByName(dataTypeName)) {
         size = dataType->getSize();
+    } else if (dataTypeName == m_parserContext->currentDtName) {
+        size = 0;
     } else {
-        if (m_parserContext) {
-            auto dataTypes = m_parserContext->dataTypes;
-            auto it = std::find_if(dataTypes.begin(), dataTypes.end(), [&dataTypeName](const DataTypeInfo& info) {
-                return info.name == dataTypeName;
-            });
-            if (it != dataTypes.end()) {
-                size = it->size;
-            }
+        auto dataTypes = m_parserContext->dataTypes;
+        auto it = std::find_if(dataTypes.begin(), dataTypes.end(), [&dataTypeName](const DataTypeInfo& info) {
+            return info.name == dataTypeName;
+        });
+        if (it != dataTypes.end()) {
+            size = it->size;
+        } else {
+            throw error(201, "Unknown data type '" + dataTypeName + "'");
         }
-    }
-    if (size == -1) {
-        throw error(201, "Unknown data type '" + dataTypeName + "'");
     }
     nextToken();
 
@@ -263,6 +265,9 @@ DataTypeParser::DataTypeInfo DataTypeParser::parseDataType() {
         size = m_context->getPlatform()->getPointerSize();
     }
 
+    if (pointerCount == 0 && size == 0 && !(allowVoid && dataTypeName == "void"))
+        throw error(202, "Cannot use data type '" + dataTypeName + "' without pointer");
+
     // array
     std::list<size_t> arrDimensions;
     while (getToken()->isSymbol('[')) {
@@ -270,14 +275,14 @@ DataTypeParser::DataTypeInfo DataTypeParser::parseDataType() {
         size_t arraySize = -1;
         if (auto constToken = dynamic_cast<const ConstToken*>(getToken().get())) {
             if (constToken->valueType != ConstToken::Integer)
-                throw error(202, "Expected integer value");
+                throw error(203, "Expected integer value");
             auto value = constToken->value.integer;
             if (value == 0)
-                throw error(203, "Array size cannot be zero");
+                throw error(204, "Array size cannot be zero");
             arraySize = value;
             nextToken();
         } else {
-            throw error(202, "Expected constant array size");
+            throw error(205, "Expected constant array size");
         }
         arrDimensions.push_back(arraySize);
         size *= arraySize;
