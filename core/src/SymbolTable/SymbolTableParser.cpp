@@ -28,7 +28,7 @@ SymbolTable* SymbolTableParser::Parse(
 {
     std::stringstream ss(text);
     IO io(ss, std::cout);
-    Lexer lexer(&io);
+    Lexer lexer(&io, false);
     DataTypeParser::ParserContext parserCtx;
     DataTypeParser dataTypeParser(&lexer, context, &parserCtx);
     SymbolTableParser parser(&lexer, context, &dataTypeParser, isStruct);

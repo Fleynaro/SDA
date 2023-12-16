@@ -1,4 +1,5 @@
 #include "SDA/Core/Utils/AbstractPrinter.h"
+#include <boost/algorithm/string.hpp>
 #include "rang.hpp"
 
 using namespace utils;
@@ -69,11 +70,13 @@ void AbstractPrinter::newTabs() const {
 }
 
 void AbstractPrinter::printComment(const std::string& text) const {
-    printToken("[", SYMBOL);
-    printToken("'", STRING);
-    printToken(text, STRING);
-    printToken("'", STRING);
-    printToken("]", SYMBOL);
+    std::vector<std::string> lines;
+    boost::split(lines, text, boost::is_any_of("\n"));
+    for (size_t i = 0; i < lines.size(); i++) {
+        if (i > 0) newLine();
+        printToken("// ", COMMENT);
+        printToken(lines[i], COMMENT);
+    }
 }
 
 void AbstractPrinter::printToken(const std::string& text, Token token) const {

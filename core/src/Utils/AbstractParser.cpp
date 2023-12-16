@@ -1,4 +1,5 @@
 #include "SDA/Core/Utils/AbstractParser.h"
+#include <boost/algorithm/string.hpp>
 
 using namespace utils;
 using namespace utils::lexer;
@@ -28,18 +29,18 @@ utils::lexer::Lexer* AbstractParser::getLexer() const {
 }
 
 std::string AbstractParser::parseCommentIfExists() {
-    std::string comment;
-    if (getToken()->isSymbol('[')) {
+    std::string fullComment;
+    while (true) {
+        std::string comment;
+        if (!getToken()->isComment(comment))
+            break;
+        boost::trim(comment);
+        fullComment += comment + "\n";
         nextToken();
-        if (auto constToken = dynamic_cast<const ConstToken*>(getToken().get())) {
-            if (constToken->valueType == ConstToken::ValueType::String) {
-                comment = constToken->value.string;
-                nextToken();
-            }
-        }
-        accept(']');
     }
-    return comment;
+    if (!fullComment.empty())
+        fullComment.pop_back();
+    return fullComment;
 }
 
 void AbstractParser::accept(const std::string& keyword) {

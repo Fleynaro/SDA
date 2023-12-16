@@ -12,7 +12,7 @@ class DataTypeParserTest : public ContextFixture
 
 TEST_F(DataTypeParserTest, TypedefSample1) {
     auto expectedCode = "\
-        ['test data type'] \
+        // test data type \n\
         dataType = typedef uint32_t \
     ";
     auto typedefDt = parseDataType(expectedCode);
@@ -21,7 +21,8 @@ TEST_F(DataTypeParserTest, TypedefSample1) {
 
 TEST_F(DataTypeParserTest, EnumSample1) {
     auto expectedCode = "\
-        ['test data type'] \
+        // test data type \n\
+        // this contains A, B, C values \n\
         dataType = enum { \
             A, \
             B = 10, \
@@ -34,7 +35,6 @@ TEST_F(DataTypeParserTest, EnumSample1) {
 
 TEST_F(DataTypeParserTest, StructureSample1) {
     auto expectedCode = "\
-        ['test data type'] \
         dataType = struct { \
             uint32_t a, \
             float b, \
@@ -92,7 +92,6 @@ TEST_F(DataTypeParserTest, StructureSample4) {
 
 TEST_F(DataTypeParserTest, SignatureSample1) {
     auto expectedCode = "\
-        ['test data type'] \
         dataType = signature fastcall void( \
             uint32_t param1, \
             float param2 \

@@ -21,7 +21,7 @@ DataTypeParser::DataTypeParser(utils::lexer::Lexer* lexer, Context* context, Par
 std::list<ParsedDataType> DataTypeParser::Parse(const std::string& text, Context* context) {
     std::stringstream ss(text);
     IO io(ss, std::cout);
-    Lexer lexer(&io);
+    Lexer lexer(&io, false);
     ParserContext parserContext;
     DataTypeParser parser(&lexer, context, &parserContext);
     parser.init();

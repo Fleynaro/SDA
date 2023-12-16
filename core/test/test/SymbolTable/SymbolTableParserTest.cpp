@@ -20,7 +20,7 @@ protected:
 
 TEST_F(SymbolTableParserTest, Sample1) {
     auto expectedCode = "\
-        ['test symbol table'] \
+        // test symbol table \n\
         symbolTable = { \
             uint32_t a, \
             float b, \
