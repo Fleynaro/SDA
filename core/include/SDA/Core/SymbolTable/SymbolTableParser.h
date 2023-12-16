@@ -7,18 +7,23 @@ namespace sda
     class DataTypeParser;
     class SymbolTableParser : public utils::AbstractParser
     {
+    public:
         struct SymbolTableInfo {
             size_t size = 0;
             std::function<SymbolTable*(SymbolTable*)> create;
         };
+        
         struct SymbolInfo {
             size_t size = 0;
             Offset offset = -1;
             std::function<Symbol*()> create;
         };
+
+    private:
         DataTypeParser* m_dataTypeParser;
         Context* m_context;
         bool m_isStruct;
+
     public:
         SymbolTableParser(
             utils::lexer::Lexer* lexer,

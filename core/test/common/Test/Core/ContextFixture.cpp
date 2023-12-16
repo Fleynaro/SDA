@@ -1,5 +1,4 @@
 #include "ContextFixture.h"
-#include "SDA/Core/DataType/DataTypeParser.h"
 #include "SDA/Core/DataType/DataTypePrinter.h"
 #include "SDA/Core/SymbolTable/SymbolTableParser.h"
 #include "SDA/Core/Utils/Logger.h"
@@ -38,10 +37,10 @@ DataType* ContextFixture::findDataType(const std::string& name) const {
 }
 
 DataType* ContextFixture::parseDataType(const std::string& text) const {
-    return parseDataTypes(text).back();
+    return parseDataTypes(text).back().dataType;
 }
 
-std::list<DataType*> ContextFixture::parseDataTypes(const std::string& text) const {
+std::list<ParsedDataType> ContextFixture::parseDataTypes(const std::string& text) const {
     return DataTypeParser::Parse(text, context);
 }
 
@@ -85,10 +84,10 @@ FunctionSymbol* ContextFixture::newFunction(
 }
 
 ::testing::AssertionResult ContextFixture::cmpDataType(DataType* dataType, const std::string& expectedCode, bool withName) const {
-    return cmpDataTypes({ dataType }, expectedCode, withName);
+    return cmpDataTypes({ { dataType, false } }, expectedCode, withName);
 }
 
-::testing::AssertionResult ContextFixture::cmpDataTypes(const std::list<DataType*>& dataTypes, const std::string& expectedCode, bool withName) const {
-    auto actualCode = DataTypePrinter::Print(dataTypes, context, withName);
+::testing::AssertionResult ContextFixture::cmpDataTypes(const std::list<ParsedDataType>& parsedDataTypes, const std::string& expectedCode, bool withName) const {
+    auto actualCode = DataTypePrinter::Print(parsedDataTypes, context, withName);
     return Compare(actualCode, expectedCode);
 }

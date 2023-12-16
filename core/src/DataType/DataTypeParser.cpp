@@ -18,7 +18,7 @@ DataTypeParser::DataTypeParser(utils::lexer::Lexer* lexer, Context* context, Par
     , m_parserContext(parserContext)
 {}
 
-std::list<DataType*> DataTypeParser::Parse(const std::string& text, Context* context) {
+std::list<ParsedDataType> DataTypeParser::Parse(const std::string& text, Context* context) {
     std::stringstream ss(text);
     IO io(ss, std::cout);
     Lexer lexer(&io);
@@ -28,14 +28,18 @@ std::list<DataType*> DataTypeParser::Parse(const std::string& text, Context* con
     while (!parser.getToken()->isSymbol('\0')) {
         parser.parseDef();
     }
-    std::list<DataType*> dataTypes;
+    std::list<ParsedDataType> parsedDataTypes;
     for (auto& dataTypeInfo : parserContext.dataTypes) {
         auto dataType = dataTypeInfo.create();
         dataType->setName(dataTypeInfo.name);
         dataType->setComment(dataTypeInfo.comment);
-        dataTypes.push_back(dataType);
+        bool isDeclared = false;
+        if (dynamic_cast<StructureDataType*>(dataType)) {
+            isDeclared = dataTypeInfo.size == 0;
+        }
+        parsedDataTypes.push_back({ dataType, isDeclared });
     }
-    return dataTypes;
+    return parsedDataTypes;
 }
 
 const DataTypeParser::DataTypeInfo& DataTypeParser::parseDef(bool withName) {
@@ -145,24 +149,33 @@ DataTypeParser::DataTypeInfo DataTypeParser::parseStructureDef() {
     if (!getToken()->isKeyword("struct"))
         return DataTypeInfo();
     nextToken();
-
-    SymbolTableParser symbolTableParser(getLexer(), m_context, this, true);
-    symbolTableParser.init(std::move(getToken()));
-    auto symbolTableInfo = symbolTableParser.parse();
-    init(std::move(symbolTableParser.getToken()));
+    
+    SymbolTableParser::SymbolTableInfo symbolTableInfo;
+    if (getToken()->isSymbol('{')) {
+        SymbolTableParser symbolTableParser(getLexer(), m_context, this, true);
+        symbolTableParser.init(std::move(getToken()));
+        symbolTableInfo = symbolTableParser.parse();
+        init(std::move(symbolTableParser.getToken()));
+    }
     auto context = m_context;
     auto dtName = m_parserContext->currentDtName;
     DataTypeInfo info;
     info.size = symbolTableInfo.size;
     info.create = [context, dtName, symbolTableInfo]() {
-        auto symbolTable = new StandartSymbolTable(context);
-        auto dataType = new StructureDataType(
-            context,
-            nullptr,
-            dtName,
-            symbolTableInfo.size,
-            symbolTable);
-        symbolTableInfo.create(symbolTable);
+        auto dataType = dynamic_cast<StructureDataType*>(context->getDataTypes()->getByName(dtName));
+        if (!dataType) {
+            auto symbolTable = new StandartSymbolTable(context);
+            dataType = new StructureDataType(
+                context,
+                nullptr,
+                dtName,
+                0,
+                symbolTable);
+        }
+        if (symbolTableInfo.create) {
+            dataType->setSize(symbolTableInfo.size);
+            symbolTableInfo.create(dataType->getSymbolTable());
+        }
         return dataType;
     };
     return info;

@@ -1,5 +1,6 @@
 #pragma once
 #include "SDA/Core/DataType/DataType.h"
+#include "SDA/Core/DataType/DataTypeParser.h"
 #include "SDA/Core/SymbolTable/SymbolTablePrinter.h"
 
 namespace sda
@@ -22,16 +23,16 @@ namespace sda
 
         DataTypePrinter(Context* context, SymbolTablePrinter* symbolTablePrinter = nullptr);
         
-        static std::string Print(const std::list<DataType*>& dataTypes, Context* context, bool withName = true);
+        static std::string Print(const std::list<ParsedDataType>& parsedDataTypes, Context* context, bool withName = true);
 
-        void printDef(DataType* dataType, bool withName = true);
+        void printDef(DataType* dataType, bool withName = true, bool withBody = true);
 
     protected:
         void printTypeDef(TypedefDataType* typedefDt);
 
         void printEnumDef(EnumDataType* enumDt);
 
-        void printStructureDef(StructureDataType* structDt);
+        void printStructureDef(StructureDataType* structDt, bool withBody);
 
         void printSignatureDef(SignatureDataType* signatureDt);
 

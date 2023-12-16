@@ -13,6 +13,11 @@ namespace sda
     class SignatureDataType;
     class StructureDataType;
 
+    struct ParsedDataType {
+        DataType* dataType;
+        bool isDeclared;
+    };
+
     class DataTypeParser : public utils::AbstractParser
     {
     public:
@@ -36,7 +41,7 @@ namespace sda
     public:
         DataTypeParser(utils::lexer::Lexer* lexer, Context* context, ParserContext* parserContext);
 
-        static std::list<DataType*> Parse(const std::string& text, Context* context);
+        static std::list<ParsedDataType> Parse(const std::string& text, Context* context);
 
         const DataTypeInfo& parseDef(bool withName = true);
 

@@ -74,6 +74,22 @@ TEST_F(DataTypeParserTest, StructureSample3) {
     ASSERT_TRUE(cmpDataTypes(dataTypes, expectedCode));
 }
 
+TEST_F(DataTypeParserTest, StructureSample4) {
+    auto expectedCode = "\
+        Player = struct \
+        \
+        Vehicle = struct { \
+            Player* driver \
+        } \
+        \
+        Player = struct { \
+            Vehicle* sitInVehicle \
+        } \
+    ";
+    auto dataTypes = parseDataTypes(expectedCode);
+    ASSERT_TRUE(cmpDataTypes(dataTypes, expectedCode));
+}
+
 TEST_F(DataTypeParserTest, SignatureSample1) {
     auto expectedCode = "\
         ['test data type'] \

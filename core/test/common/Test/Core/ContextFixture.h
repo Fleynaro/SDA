@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include "SDA/Core/ContextInclude.h"
 #include "SDA/Core/DataType/DataType.h"
+#include "SDA/Core/DataType/DataTypeParser.h"
 #include "SDA/Core/SymbolTable/SymbolTable.h"
 #include "SDA/Core/Symbol/FunctionSymbol.h"
 
@@ -26,7 +27,7 @@ namespace sda::test
 
         DataType* parseDataType(const std::string& text) const;
 
-        std::list<DataType*> parseDataTypes(const std::string& text) const;
+        std::list<ParsedDataType> parseDataTypes(const std::string& text) const;
 
         DataType* newTestStruct() const;
 
@@ -41,6 +42,6 @@ namespace sda::test
 
         ::testing::AssertionResult cmpDataType(DataType* dataType, const std::string& expectedCode, bool withName = false) const;
 
-        ::testing::AssertionResult cmpDataTypes(const std::list<DataType*>& dataTypes, const std::string& expectedCode, bool withName = true) const;
+        ::testing::AssertionResult cmpDataTypes(const std::list<ParsedDataType>& parsedDataTypes, const std::string& expectedCode, bool withName = true) const;
     };
 };

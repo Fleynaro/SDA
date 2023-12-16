@@ -16,19 +16,19 @@ DataTypePrinter::DataTypePrinter(Context* context, SymbolTablePrinter* symbolTab
     : m_context(context), m_symbolTablePrinter(symbolTablePrinter)
 {}
 
-std::string DataTypePrinter::Print(const std::list<DataType*>& dataTypes, Context* context, bool withName) {
+std::string DataTypePrinter::Print(const std::list<ParsedDataType>& parsedDataTypes, Context* context, bool withName) {
     SymbolTablePrinter symbolTablePrinter(context);
     DataTypePrinter printer(context, &symbolTablePrinter);
     std::stringstream ss;
     printer.setOutput(ss);
-    for (auto dataType : dataTypes) {
-        printer.printDef(dataType, withName);
+    for (auto& [dataType, isDeclared] : parsedDataTypes) {
+        printer.printDef(dataType, withName, !isDeclared);
         printer.newLine();
     }
     return ss.str();
 }
 
-void DataTypePrinter::printDef(DataType* dataType, bool withName) {
+void DataTypePrinter::printDef(DataType* dataType, bool withName, bool withBody) {
     if (withName) {
         if (!dataType->getComment().empty()) {
             printComment(dataType->getComment());
@@ -42,7 +42,7 @@ void DataTypePrinter::printDef(DataType* dataType, bool withName) {
     } else if (auto enumDt = dynamic_cast<EnumDataType*>(dataType)) {
         printEnumDef(enumDt);
     } else if (auto structDt = dynamic_cast<StructureDataType*>(dataType)) {
-        printStructureDef(structDt);
+        printStructureDef(structDt, withBody);
     } else if (auto signatureDt = dynamic_cast<SignatureDataType*>(dataType)) {
         printSignatureDef(signatureDt);
     } else {
@@ -78,10 +78,13 @@ void DataTypePrinter::printEnumDef(EnumDataType* enumDt) {
     printToken("}", SYMBOL);
 }
 
-void DataTypePrinter::printStructureDef(StructureDataType* structDt) {
-    printToken("struct " , KEYWORD);
-    m_symbolTablePrinter->setParentPrinter(this);
-    m_symbolTablePrinter->printDef(structDt->getSymbolTable(), false);
+void DataTypePrinter::printStructureDef(StructureDataType* structDt, bool withBody) {
+    printToken("struct" , KEYWORD);
+    if (withBody) {
+        printToken(" " , SYMBOL);
+        m_symbolTablePrinter->setParentPrinter(this);
+        m_symbolTablePrinter->printDef(structDt->getSymbolTable(), false);
+    }
 }
 
 void DataTypePrinter::printSignatureDef(SignatureDataType* signatureDt) {
