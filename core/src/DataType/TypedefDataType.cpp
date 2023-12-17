@@ -14,6 +14,8 @@ TypedefDataType::TypedefDataType(
 }
 
 void TypedefDataType::setReferenceType(DataType* refType) {
+    if (m_refType == refType)
+        return;
     notifyModified(Object::ModState::Before);
     m_refType = refType;
     notifyModified(Object::ModState::After);

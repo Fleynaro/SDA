@@ -59,6 +59,9 @@ DataType* Symbol::getDataType() const {
 }
 
 void Symbol::setDataType(DataType* dataType) {
+    if (m_dataType == dataType) {
+        return;
+    }
     notifyModified(Object::ModState::Before);
     m_dataType = dataType;
     notifyModified(Object::ModState::After);

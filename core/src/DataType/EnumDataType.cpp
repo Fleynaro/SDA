@@ -14,6 +14,9 @@ EnumDataType::EnumDataType(
 }
 
 void EnumDataType::setFields(const std::map<Key, std::string>& fields) {
+    if (m_fields == fields) {
+        return;
+    }
     notifyModified(Object::ModState::Before);
     m_fields = fields;
     notifyModified(Object::ModState::After);

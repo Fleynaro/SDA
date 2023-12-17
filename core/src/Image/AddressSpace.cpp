@@ -11,6 +11,8 @@ AddressSpace::AddressSpace(Context* context, Object::Id* id, const std::string& 
 }
 
 void AddressSpace::setImages(const std::list<Image*>& images) {
+    if (m_images == images)
+        return;
     notifyModified(Object::ModState::Before);
     m_images = images;
     notifyModified(Object::ModState::After);

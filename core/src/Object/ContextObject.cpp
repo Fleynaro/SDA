@@ -20,6 +20,8 @@ const std::string& ContextObject::getName() const {
 }
 
 void ContextObject::setName(const std::string& name) {
+    if (m_name == name)
+        return;
     notifyModified(Object::ModState::Before);
     m_name = name;
     notifyModified(Object::ModState::After);
@@ -30,6 +32,8 @@ const std::string& ContextObject::getComment() const {
 }
 
 void ContextObject::setComment(const std::string& comment) {
+    if (m_comment == comment)
+        return;
     notifyModified(Object::ModState::Before);
     m_comment = comment;
     notifyModified(Object::ModState::After);

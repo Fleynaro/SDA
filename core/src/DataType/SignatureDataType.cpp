@@ -52,6 +52,9 @@ const CallingConvention::StorageInfo* SignatureDataType::findStorageInfo(const C
 }
 
 void SignatureDataType::setParameters(const std::vector<FunctionParameterSymbol*>& parameters) {
+    if (m_parameters == parameters) {
+        return;
+    }
     notifyModified(Object::ModState::Before);
     m_parameters = parameters;
     m_updateStorages = true;
@@ -63,6 +66,9 @@ const std::vector<FunctionParameterSymbol*>& SignatureDataType::getParameters() 
 }
 
 void SignatureDataType::setReturnType(DataType* returnType) {
+    if (m_returnType == returnType) {
+        return;
+    }
     notifyModified(Object::ModState::Before);
     m_returnType = returnType;
     m_updateStorages = true;

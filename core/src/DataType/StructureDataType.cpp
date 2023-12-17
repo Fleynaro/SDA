@@ -22,6 +22,9 @@ StandartSymbolTable* StructureDataType::getSymbolTable() const {
 }
 
 void StructureDataType::setSize(size_t size) {
+    if (m_size == size) {
+        return;
+    }
     notifyModified(Object::ModState::Before);
     m_size = size;
     notifyModified(Object::ModState::After);
