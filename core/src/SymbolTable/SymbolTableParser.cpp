@@ -104,6 +104,8 @@ SymbolTableParser::SymbolTableInfo SymbolTableParser::parse(bool withName) {
 }
 
 SymbolTableParser::SymbolInfo SymbolTableParser::parseSymbolDef() {
+    auto comment = parseCommentIfExists();
+
     m_dataTypeParser->init(std::move(getToken()));
     auto symbolDtInfo = m_dataTypeParser->parseDataType();
     init(std::move(m_dataTypeParser->getToken()));

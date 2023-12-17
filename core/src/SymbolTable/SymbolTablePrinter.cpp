@@ -34,6 +34,10 @@ void SymbolTablePrinter::printDef(SymbolTable* symbolTable, bool withName) {
     for (auto& symbolInfo : symbols) {
         newLine();
         auto symbol = symbolInfo.symbol;
+        if (!symbol->getComment().empty()) {
+            printComment(symbol->getComment());
+            newLine();
+        }
         printDataType(symbol->getDataType());
         printToken(" ", SYMBOL);
         printToken(symbol->getName(), IDENTIFIER);

@@ -24,6 +24,7 @@ TEST_F(SymbolTableParserTest, Sample1) {
         symbolTable = { \
             uint32_t a, \
             float b, \
+            // some comment \n\
             uint64_t c = 0x100, \
             int64_t d = 0x200 \
         } \

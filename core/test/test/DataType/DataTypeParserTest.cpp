@@ -37,6 +37,7 @@ TEST_F(DataTypeParserTest, StructureSample1) {
     auto expectedCode = "\
         dataType = struct { \
             uint32_t a, \
+            // some comment \n\
             float b, \
             uint64_t c = 0x100, \
             int64_t d \
