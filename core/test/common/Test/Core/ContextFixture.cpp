@@ -56,7 +56,7 @@ DataType* ContextFixture::newTestStruct() const {
 }
 
 SymbolTable* ContextFixture::parseSymbolTable(const std::string& text, bool withName, SymbolTable* symbolTable) const {
-    return SymbolTableParser::Parse(text, context, false, withName, symbolTable);
+    return SymbolTableParser::Parse(text, context, false, withName, symbolTable, false);
 }
 
 FunctionSymbol* ContextFixture::newFunction(

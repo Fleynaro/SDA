@@ -9,8 +9,8 @@ using namespace sda::test;
 class SymbolTableParserTest : public ContextFixture
 {
 protected:
-    SymbolTable* parse(const std::string& text, bool isStruct = false) {
-        return SymbolTableParser::Parse(text, context, isStruct, true);
+    SymbolTable* parse(const std::string& text, bool isStruct = false, sda::SymbolTable *symbolTable = nullptr) {
+        return SymbolTableParser::Parse(text, context, isStruct, true, symbolTable);
     }
 
     std::string print(SymbolTable* symbolTable) const {
@@ -32,4 +32,31 @@ TEST_F(SymbolTableParserTest, Sample1) {
     auto symbolTable = parse(expectedCode);
     auto actualCode = print(symbolTable);
     ASSERT_TRUE(Compare(actualCode, expectedCode));
+}
+
+TEST_F(SymbolTableParserTest, Sample2) {
+    auto expectedCode = "\
+        symbolTable = { \
+            uint32_t a \
+        } \
+    ";
+    auto symbolTable = parse(expectedCode);
+    ASSERT_TRUE(Compare(print(symbolTable), expectedCode));
+    // add field b to the symbol table
+    auto expectedCode2 = "\
+        symbolTable = { \
+            uint32_t a, \
+            float b \
+        } \
+    ";
+    parse(expectedCode2, false, symbolTable);
+    ASSERT_TRUE(Compare(print(symbolTable), expectedCode2));
+    // remove field a from the symbol table
+    auto expectedCode3 = "\
+        symbolTable = { \
+            float b = 0x4 \
+        } \
+    ";
+    parse(expectedCode3, false, symbolTable);
+    ASSERT_TRUE(Compare(print(symbolTable), expectedCode3));
 }

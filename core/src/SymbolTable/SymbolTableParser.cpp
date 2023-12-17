@@ -11,12 +11,14 @@ SymbolTableParser::SymbolTableParser(
     utils::lexer::Lexer* lexer,
     Context* context,
     DataTypeParser* dataTypeParser,
-    bool isStruct
+    bool isStruct,
+    bool removeSymbols
 )
     : AbstractParser(lexer, 2)
     , m_context(context)
     , m_isStruct(isStruct)
     , m_dataTypeParser(dataTypeParser)
+    , m_removeSymbols(removeSymbols)
 {}
 
 SymbolTable* SymbolTableParser::Parse(
@@ -24,14 +26,15 @@ SymbolTable* SymbolTableParser::Parse(
     Context* context,
     bool isStruct,
     bool withName,
-    SymbolTable* symbolTable)
+    SymbolTable* symbolTable,
+    bool removeSymbols)
 {
     std::stringstream ss(text);
     IO io(ss, std::cout);
     Lexer lexer(&io, false);
     DataTypeParser::ParserContext parserCtx;
     DataTypeParser dataTypeParser(&lexer, context, &parserCtx);
-    SymbolTableParser parser(&lexer, context, &dataTypeParser, isStruct);
+    SymbolTableParser parser(&lexer, context, &dataTypeParser, isStruct, removeSymbols);
     parser.init();
     auto symbolTableInfo = parser.parse(withName);
     return symbolTableInfo.create(symbolTable);
@@ -82,9 +85,11 @@ SymbolTableParser::SymbolTableInfo SymbolTableParser::parse(bool withName) {
     }
     accept('}');
     auto context = m_context;
+    auto isStruct = m_isStruct;
+    auto removeSymbols = m_removeSymbols;
     SymbolTableInfo info;
     info.size = offset;
-    info.create = [context, name, comment, symbols](SymbolTable* symbolTable) {
+    info.create = [context, name, comment, symbols, isStruct, removeSymbols](SymbolTable* symbolTable) {
         auto resultSymbolTable = symbolTable;
         if (!resultSymbolTable) {
             resultSymbolTable = new StandartSymbolTable(context);
@@ -95,8 +100,33 @@ SymbolTableParser::SymbolTableInfo SymbolTableParser::parse(bool withName) {
         if (!comment.empty()) {
             resultSymbolTable->setComment(comment);
         }
-        for (auto& symbol : symbols) {
-            resultSymbolTable->addSymbol(symbol.offset, symbol.create());
+        // add new symbols or change existing symbols
+        auto symbolsToRemove = resultSymbolTable->getAllSymbols();
+        for (auto& info : symbols) {
+            auto symbol = resultSymbolTable->getSymbolAt(info.offset).symbol;
+            auto dataType = info.createDataType();
+            if (symbol) {
+                symbolsToRemove.remove_if([&symbol](const SymbolTable::SymbolInfo& symbolInfo) {
+                    return symbolInfo.symbol == symbol;
+                });
+            } else {
+                if (isStruct) {
+                    symbol = new StructureFieldSymbol(context);
+                } else {
+                    symbol = new VariableSymbol(context);
+                }
+                resultSymbolTable->addSymbol(info.offset, symbol);
+            }
+            symbol->setName(info.name);
+            symbol->setComment(info.comment);
+            symbol->setDataType(dataType);
+        }
+        // remove symbols
+        if (removeSymbols) {
+            for (auto& info : symbolsToRemove) {
+                resultSymbolTable->removeSymbol(info.symbol->getOffset());
+                info.symbol->destroy();
+            }
         }
         return resultSymbolTable;
     };
@@ -116,22 +146,10 @@ SymbolTableParser::SymbolInfo SymbolTableParser::parseSymbolDef() {
     nextToken();
 
     auto context = m_context;
-    auto isStruct = m_isStruct;
     SymbolInfo info;
+    info.name = symbolName;
+    info.comment = comment;
     info.size = symbolDtInfo.size;
-    info.create = [context, isStruct, symbolName, symbolDtInfo]() -> Symbol* {
-        if (isStruct) {
-            return new StructureFieldSymbol(
-                context,
-                nullptr,
-                symbolName,
-                symbolDtInfo.create());
-        }
-        return new VariableSymbol(
-            context,
-            nullptr,
-            symbolName,
-            symbolDtInfo.create());
-    };
+    info.createDataType = symbolDtInfo.create;
     return info;
 }
