@@ -29,6 +29,7 @@ namespace sda
         };
 
         struct ParserContext {
+            sda::Object::Id currentDtId;
             std::string currentDtName;
             std::list<DataTypeInfo> dataTypes;
         };
@@ -55,5 +56,7 @@ namespace sda
         DataTypeInfo parseSignatureDef();
 
         DataTypeInfo parseDataType(bool allowVoid = false);
+
+        const DataTypeInfo* findDataTypeInfo(const std::string& name);
     };
 };

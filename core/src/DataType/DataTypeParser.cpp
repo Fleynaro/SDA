@@ -31,7 +31,6 @@ std::list<ParsedDataType> DataTypeParser::Parse(const std::string& text, Context
     std::list<ParsedDataType> parsedDataTypes;
     for (auto& dataTypeInfo : parserContext.dataTypes) {
         auto dataType = dataTypeInfo.create();
-        dataType->setName(dataTypeInfo.name);
         dataType->setComment(dataTypeInfo.comment);
         bool isDeclared = false;
         if (dynamic_cast<StructureDataType*>(dataType)) {
@@ -46,14 +45,41 @@ const DataTypeParser::DataTypeInfo& DataTypeParser::parseDef(bool withName) {
     // comment
     auto comment = parseCommentIfExists();
 
+    // id
+    m_parserContext->currentDtId = sda::Object::Id();
+    if (getToken()->isSymbol('@')) {
+        nextToken();
+        if (!getToken()->isKeyword("id"))
+            throw error(102, "Expected @id");
+        nextToken();
+        if (auto constToken = dynamic_cast<const ConstToken*>(getToken().get())) {
+            if (constToken->valueType != ConstToken::String)
+                throw error(103, "Expected string value");
+            auto id = constToken->value.string;
+            m_parserContext->currentDtId = boost::uuids::string_generator()(id);
+            nextToken();
+        } else {
+            throw error(103, "Expected string value");
+        }
+    }
+
     // name
     std::string name;
     if (withName) {
         if (!getToken()->isIdent(name))
             throw error(100, "Expected data type name");
         nextToken();
-
         accept('=');
+        bool isAlreadyDefined = false;
+        if (auto dataType = m_context->getDataTypes()->getByName(name)) {
+            isAlreadyDefined = dataType->getId() != m_parserContext->currentDtId;
+        }
+        if (auto dataTypeInfo = findDataTypeInfo(name)) {
+            isAlreadyDefined = isAlreadyDefined || dataTypeInfo->size > 0;
+        }
+        if (isAlreadyDefined) {
+            throw error(104, "Data type '" + name + "' already defined");
+        }
     }
 
     m_parserContext->currentDtName = name;
@@ -69,8 +95,7 @@ const DataTypeParser::DataTypeInfo& DataTypeParser::parseDef(bool withName) {
     if (!dataTypeInfo.create)
         throw error(101, "Data type definition not recognized");
     
-    if (withName)
-        dataTypeInfo.name = name;
+    dataTypeInfo.name = name;
     dataTypeInfo.comment = comment;
     m_parserContext->dataTypes.emplace_back(dataTypeInfo);
     return m_parserContext->dataTypes.back();
@@ -83,15 +108,18 @@ DataTypeParser::DataTypeInfo DataTypeParser::parseTypeDef() {
         
     auto refDtInfo = parseDataType();
     auto context = m_context;
+    auto dtId = m_parserContext->currentDtId;
+    auto dtName = m_parserContext->currentDtName;
     DataTypeInfo info;
     info.size = refDtInfo.size;
-    info.create = [context, refDtInfo]() {
+    info.create = [context, dtId, dtName, refDtInfo]() {
         auto refDt = refDtInfo.create();
-        auto dataType = new TypedefDataType(
-            context,
-            nullptr,
-            "",
-            refDt);
+        auto dataType = dynamic_cast<TypedefDataType*>(context->getDataTypes()->get(dtId));
+        if (!dataType) {
+            dataType = new TypedefDataType(context);
+        }
+        dataType->setName(dtName);
+        dataType->setReferenceType(refDt);
         return dataType;
     };
     return info;
@@ -132,14 +160,17 @@ DataTypeParser::DataTypeInfo DataTypeParser::parseEnumDef() {
     }
     accept('}');
     auto context = m_context;
+    auto dtId = m_parserContext->currentDtId;
+    auto dtName = m_parserContext->currentDtName;
     DataTypeInfo info;
     info.size = sizeof(EnumDataType::Key);
-    info.create = [context, fields]() {
-        auto dataType = new EnumDataType(
-            context,
-            nullptr,
-            "",
-            fields);
+    info.create = [context, dtId, dtName, fields]() {
+        auto dataType = dynamic_cast<EnumDataType*>(context->getDataTypes()->get(dtId));
+        if (!dataType) {
+            dataType = new EnumDataType(context);
+        }
+        dataType->setName(dtName);
+        dataType->setFields(fields);
         return dataType;
     };
     return info;
@@ -158,11 +189,12 @@ DataTypeParser::DataTypeInfo DataTypeParser::parseStructureDef() {
         init(std::move(symbolTableParser.getToken()));
     }
     auto context = m_context;
+    auto dtId = m_parserContext->currentDtId;
     auto dtName = m_parserContext->currentDtName;
     DataTypeInfo info;
     info.size = symbolTableInfo.size;
-    info.create = [context, dtName, symbolTableInfo]() {
-        auto dataType = dynamic_cast<StructureDataType*>(context->getDataTypes()->getByName(dtName));
+    info.create = [context, dtId, dtName, symbolTableInfo]() {
+        auto dataType = dynamic_cast<StructureDataType*>(dtId.is_nil() ? context->getDataTypes()->getByName(dtName) : context->getDataTypes()->get(dtId));
         if (!dataType) {
             auto symbolTable = new StandartSymbolTable(context);
             dataType = new StructureDataType(
@@ -173,6 +205,7 @@ DataTypeParser::DataTypeInfo DataTypeParser::parseStructureDef() {
                 symbolTable);
         }
         if (symbolTableInfo.create) {
+            dataType->setName(dtName);
             dataType->setSize(symbolTableInfo.size);
             symbolTableInfo.create(dataType->getSymbolTable());
         }
@@ -206,14 +239,14 @@ DataTypeParser::DataTypeInfo DataTypeParser::parseSignatureDef() {
         std::string name;
         DataTypeInfo dataTypeInfo;
     };
-    std::vector<ParamSymbol> parameters;
+    std::vector<ParamSymbol> parsedParameters;
     while (!getToken()->isSymbol(')')) {
         auto paramDtInfo = parseDataType();
         std::string paramName;
         if (!getToken()->isIdent(paramName))
             throw error(501, "Expected parameter name");
         nextToken();
-        parameters.push_back({ paramName, paramDtInfo });
+        parsedParameters.push_back({ paramName, paramDtInfo });
 
         if (!getToken()->isSymbol(','))
             break;
@@ -222,25 +255,32 @@ DataTypeParser::DataTypeInfo DataTypeParser::parseSignatureDef() {
     accept(')');
 
     auto context = m_context;
+    auto dtId = m_parserContext->currentDtId;
+    auto dtName = m_parserContext->currentDtName;
     DataTypeInfo info;
     info.size = 1;
-    info.create = [context, callingConvention, parameters, returnDtInfo]() {
-        std::vector<FunctionParameterSymbol*> parameterSymbols;
-        for (auto& param : parameters) {
-            auto paramSymbol = new FunctionParameterSymbol(
-                context,
-                nullptr,
-                param.name,
-                param.dataTypeInfo.create());
-            parameterSymbols.push_back(paramSymbol);
+    info.create = [context, dtId, dtName, callingConvention, parsedParameters, returnDtInfo]() {
+        auto dataType = dynamic_cast<SignatureDataType*>(context->getDataTypes()->get(dtId));
+        if (!dataType) {
+            dataType = new SignatureDataType(context, callingConvention, nullptr, dtName);
         }
-        return new SignatureDataType(
-            context,
-            callingConvention,
-            nullptr,
-            "",
-            returnDtInfo.create(),
-            parameterSymbols);
+        dataType->setName(dtName);
+        auto parameters = dataType->getParameters();
+        for (auto i = parameters.size(); i < parsedParameters.size(); i ++) {
+            parameters.push_back(new FunctionParameterSymbol(context));
+        }
+        for (auto i = int(parameters.size()) - 1; i >= int(parsedParameters.size()); i --) {
+            parameters[i]->destroy();
+            parameters.pop_back();
+        }
+        for (size_t i = 0; i < parsedParameters.size(); i ++) {
+            auto& param = parsedParameters[i];
+            parameters[i]->setName(param.name);
+            parameters[i]->setDataType(param.dataTypeInfo.create());
+        }
+        dataType->setParameters(parameters);
+        dataType->setReturnType(returnDtInfo.create());
+        return dataType;
     };
     return info;
 }
@@ -256,12 +296,8 @@ DataTypeParser::DataTypeInfo DataTypeParser::parseDataType(bool allowVoid) {
     } else if (dataTypeName == m_parserContext->currentDtName) {
         size = 0;
     } else {
-        auto dataTypes = m_parserContext->dataTypes;
-        auto it = std::find_if(dataTypes.begin(), dataTypes.end(), [&dataTypeName](const DataTypeInfo& info) {
-            return info.name == dataTypeName;
-        });
-        if (it != dataTypes.end()) {
-            size = it->size;
+        if (auto dataTypeInfo = findDataTypeInfo(dataTypeName)) {
+            size = dataTypeInfo->size;
         } else {
             throw error(201, "Unknown data type '" + dataTypeName + "'");
         }
@@ -315,4 +351,12 @@ DataTypeParser::DataTypeInfo DataTypeParser::parseDataType(bool allowVoid) {
         return resultDataType;
     };
     return info;
+}
+
+const DataTypeParser::DataTypeInfo* DataTypeParser::findDataTypeInfo(const std::string& name) {
+    for (auto& dataTypeInfo : m_parserContext->dataTypes) {
+        if (dataTypeInfo.name == name)
+            return &dataTypeInfo;
+    }
+    return nullptr;
 }

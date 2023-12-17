@@ -40,8 +40,8 @@ namespace sda::test
             SymbolTable* stackSymbolTable = nullptr,
             SymbolTable* instrSymbolTable = nullptr);
 
-        ::testing::AssertionResult cmpDataType(DataType* dataType, const std::string& expectedCode, bool withName = false) const;
+        ::testing::AssertionResult cmpDataType(DataType* dataType, const std::string& expectedCode, bool withName = false, bool withId = false) const;
 
-        ::testing::AssertionResult cmpDataTypes(const std::list<ParsedDataType>& parsedDataTypes, const std::string& expectedCode, bool withName = true) const;
+        ::testing::AssertionResult cmpDataTypes(const std::list<ParsedDataType>& parsedDataTypes, const std::string& expectedCode, bool withName = true, bool withId = false) const;
     };
 };

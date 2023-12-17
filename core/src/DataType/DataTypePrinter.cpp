@@ -8,6 +8,7 @@
 #include "SDA/Core/DataType/StructureDataType.h"
 #include "SDA/Core/DataType/SignatureDataType.h"
 #include "SDA/Core/SymbolTable/SymbolTablePrinter.h"
+#include <boost/uuid/uuid_io.hpp>
 #include "rang.hpp"
 
 using namespace sda;
@@ -16,22 +17,27 @@ DataTypePrinter::DataTypePrinter(Context* context, SymbolTablePrinter* symbolTab
     : m_context(context), m_symbolTablePrinter(symbolTablePrinter)
 {}
 
-std::string DataTypePrinter::Print(const std::list<ParsedDataType>& parsedDataTypes, Context* context, bool withName) {
+std::string DataTypePrinter::Print(const std::list<ParsedDataType>& parsedDataTypes, Context* context, bool withName, bool withId) {
     SymbolTablePrinter symbolTablePrinter(context);
     DataTypePrinter printer(context, &symbolTablePrinter);
     std::stringstream ss;
     printer.setOutput(ss);
     for (auto& [dataType, isDeclared] : parsedDataTypes) {
-        printer.printDef(dataType, withName, !isDeclared);
+        printer.printDef(dataType, withName, withId, !isDeclared);
         printer.newLine();
     }
     return ss.str();
 }
 
-void DataTypePrinter::printDef(DataType* dataType, bool withName, bool withBody) {
+void DataTypePrinter::printDef(DataType* dataType, bool withName, bool withId, bool withBody) {
     if (withName) {
         if (!dataType->getComment().empty()) {
             printComment(dataType->getComment());
+            newLine();
+        }
+        if (withId && withBody) {
+            printToken("@id ", SYMBOL);
+            printToken("'" + boost::uuids::to_string(dataType->getId()) + "'", STRING);
             newLine();
         }
         printToken(dataType->getName(), IDENTIFIER);

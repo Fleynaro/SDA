@@ -83,11 +83,11 @@ FunctionSymbol* ContextFixture::newFunction(
     return functionSymbol;
 }
 
-::testing::AssertionResult ContextFixture::cmpDataType(DataType* dataType, const std::string& expectedCode, bool withName) const {
-    return cmpDataTypes({ { dataType, false } }, expectedCode, withName);
+::testing::AssertionResult ContextFixture::cmpDataType(DataType* dataType, const std::string& expectedCode, bool withName, bool withId) const {
+    return cmpDataTypes({ { dataType, false } }, expectedCode, withName, withId);
 }
 
-::testing::AssertionResult ContextFixture::cmpDataTypes(const std::list<ParsedDataType>& parsedDataTypes, const std::string& expectedCode, bool withName) const {
-    auto actualCode = DataTypePrinter::Print(parsedDataTypes, context, withName);
+::testing::AssertionResult ContextFixture::cmpDataTypes(const std::list<ParsedDataType>& parsedDataTypes, const std::string& expectedCode, bool withName, bool withId) const {
+    auto actualCode = DataTypePrinter::Print(parsedDataTypes, context, withName, withId);
     return Compare(actualCode, expectedCode);
 }

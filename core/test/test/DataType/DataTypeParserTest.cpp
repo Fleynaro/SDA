@@ -2,6 +2,7 @@
 #include "SDA/Core/DataType/DataTypePrinter.h"
 #include "Test/Core/ContextFixture.h"
 #include "Test/Core/Plaftorm/CallingConventionMock.h"
+#include <boost/uuid/uuid_io.hpp>
 
 using namespace sda;
 using namespace sda::test;
@@ -17,6 +18,21 @@ TEST_F(DataTypeParserTest, TypedefSample1) {
     ";
     auto typedefDt = parseDataType(expectedCode);
     ASSERT_TRUE(cmpDataType(typedefDt, expectedCode, true));
+}
+
+TEST_F(DataTypeParserTest, TypedefSample2) {
+    auto expectedCode = "\
+        dataType = typedef uint32_t \
+    ";
+    auto typedefDt = parseDataType(expectedCode);
+    ASSERT_TRUE(cmpDataType(typedefDt, expectedCode, true));
+    // rename to myTypeDef and change reference type to uint64_t
+    auto expectedCode2 = "\
+        @id '" + boost::uuids::to_string(typedefDt->getId()) + "' \n\
+        myTypeDef = typedef uint64_t \
+    ";
+    parseDataType(expectedCode2);
+    ASSERT_TRUE(cmpDataType(typedefDt, expectedCode2, true, true));
 }
 
 TEST_F(DataTypeParserTest, EnumSample1) {
@@ -100,4 +116,33 @@ TEST_F(DataTypeParserTest, SignatureSample1) {
     ";
     auto signatureDt = parseDataType(expectedCode);
     ASSERT_TRUE(cmpDataType(signatureDt, expectedCode, true));
+}
+
+TEST_F(DataTypeParserTest, SignatureSample2) {
+    auto expectedCode = "\
+        dataType = signature fastcall void( \
+            uint32_t param1 \
+        ) \
+    ";
+    auto signatureDt = parseDataType(expectedCode);
+    ASSERT_TRUE(cmpDataType(signatureDt, expectedCode, true));
+    // add param2 to the signature
+    auto expectedCode2 = "\
+        @id '" + boost::uuids::to_string(signatureDt->getId()) + "' \n\
+        dataType = signature fastcall void( \
+            uint32_t param1, \
+            float param2 \
+        ) \
+    ";
+    parseDataType(expectedCode2);
+    ASSERT_TRUE(cmpDataType(signatureDt, expectedCode2, true, true));
+    // remove param1 from the signature
+    auto expectedCode3 = "\
+        @id '" + boost::uuids::to_string(signatureDt->getId()) + "' \n\
+        dataType = signature fastcall void( \
+            float param2 \
+        ) \
+    ";
+    parseDataType(expectedCode3);
+    ASSERT_TRUE(cmpDataType(signatureDt, expectedCode3, true, true));
 }
