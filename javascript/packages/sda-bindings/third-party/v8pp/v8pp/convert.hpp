@@ -514,7 +514,8 @@ struct convert<Sequence, typename std::enable_if<detail::is_sequence<Sequence>::
 			throw invalid_argument(isolate, value, "Array");
 		}
 
-		v8::HandleScope scope(isolate);
+		// TODO: remove comment
+		//v8::HandleScope scope(isolate);
 		v8::Local<v8::Context> context = isolate->GetCurrentContext();
 		v8::Local<v8::Array> array = value.As<v8::Array>();
 

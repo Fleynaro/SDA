@@ -7,11 +7,36 @@
 #include "SDA/Core/DataType/EnumDataType.h"
 #include "SDA/Core/DataType/StructureDataType.h"
 #include "SDA/Core/DataType/SignatureDataType.h"
+#include "SDA/Core/DataType/DataTypePrinter.h"
 
 namespace sda::bind
 {
     class DataTypeBind : public ContextObjectBind
     {
+        static auto Print(Context* ctx, const std::list<v8::Local<v8::Object>>& jsParsedDataTypes) {
+            auto isolate = v8::Isolate::GetCurrent();
+            std::list<ParsedDataType> parsedDataTypes;
+            for (auto& jsParsedDataType : jsParsedDataTypes) {
+                ParsedDataType parsedDataType;
+                v8pp::get_option(isolate, jsParsedDataType, "dataType", parsedDataType.dataType);
+                v8pp::get_option(isolate, jsParsedDataType, "isDeclared", parsedDataType.isDeclared);
+                parsedDataTypes.push_back(parsedDataType);
+            }
+            return DataTypePrinter::Print(parsedDataTypes, ctx);
+        }
+
+        static auto Parse(Context* ctx, const std::string& text) {
+            auto isolate = v8::Isolate::GetCurrent();
+            std::list<v8::Local<v8::Object>> jsParsedDataTypes;
+            auto parsedDataTypes = DataTypeParser::Parse(text, ctx);
+            for (auto& parsedDataType : parsedDataTypes) {
+                v8::Local<v8::Object> jsParsedDataType = v8::Object::New(isolate);
+                v8pp::set_option(isolate, jsParsedDataType, "dataType", parsedDataType.dataType);
+                v8pp::set_option(isolate, jsParsedDataType, "isDeclared", parsedDataType.isDeclared);
+                jsParsedDataTypes.push_back(jsParsedDataType);
+            }
+            return jsParsedDataTypes;
+        }
     public:
         static void Init(v8pp::module& module) {
             auto cl = NewClass<DataType>(module);
@@ -25,7 +50,9 @@ namespace sda::bind
                 .property("isUnsigned", [](DataType& self) { return self.isScalar(ScalarType::UnsignedInt); })
                 .property("size", &DataType::getSize)
                 .method("getPointerTo", &DataType::getPointerTo)
-                .method("getArrayOf", &DataType::getArrayOf);
+                .method("getArrayOf", &DataType::getArrayOf)
+                .static_method("Print", &Print)
+                .static_method("Parse", &Parse);
             RegisterClassName(cl, "DataType");
             module.class_("DataType", cl);
         }

@@ -5,6 +5,11 @@ import { FunctionParameterSymbol } from './symbol';
 import { SymbolTable } from './symbol-table';
 import { CallingConvention } from './platform';
 
+export interface ParsedDataType {
+  readonly dataType: DataType;
+  readonly isDeclared: boolean;
+}
+
 export declare abstract class DataType extends ContextObject {
   readonly baseType: DataType;
   readonly isVoid: boolean;
@@ -17,6 +22,10 @@ export declare abstract class DataType extends ContextObject {
   getPointerTo(): DataType;
 
   getArrayOf(dimensions: number[]): DataType;
+
+  static Print(context: Context, parsedDataTypes: ParsedDataType[]): string;
+
+  static Parse(context: Context, text: string): ParsedDataType[];
 }
 
 export declare class VoidDataType extends DataType {

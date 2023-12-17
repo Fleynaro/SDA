@@ -1,7 +1,8 @@
 import { PlatformMock } from '../platform';
 import { Context } from '../context';
 import { EventPipe } from '../event';
-import { ScalarDataType, ScalarType } from '../data-type';
+import { DataType, ScalarDataType, ScalarType } from '../data-type';
+import { stripSpaces } from './helpers';
 
 describe('DataType', () => {
   let context: Context;
@@ -22,5 +23,21 @@ describe('DataType', () => {
       false,
       false,
     ]);
+  });
+
+  it('printer/parser', () => {
+    const codeToParse = `
+      myDefType = typedef bool
+      myDefType2 = typedef myDefType
+    `;
+    const parsedDataTypes = DataType.Parse(context, codeToParse);
+    const codeToPrint = `
+      @id '${parsedDataTypes[0].dataType.id}'
+      myDefType = typedef bool
+      @id '${parsedDataTypes[1].dataType.id}'
+      myDefType2 = typedef myDefType
+    `;
+    const printed = DataType.Print(context, parsedDataTypes);
+    expect(stripSpaces(printed)).toBe(stripSpaces(codeToPrint));
   });
 });
