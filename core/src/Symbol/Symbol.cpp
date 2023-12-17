@@ -12,9 +12,10 @@ Symbol::Symbol(
     : ContextObject(context, id, name)
     , m_dataType(dataType)
 {
-    if (m_dataType) {
-        m_dataType->addParent(this);
+    if (!m_dataType) {
+        m_dataType = m_context->getDataTypes()->getByName("uint8_t");
     }
+    m_dataType->addParent(this);
 }
 
 Symbol::~Symbol() {
