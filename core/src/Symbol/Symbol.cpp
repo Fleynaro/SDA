@@ -64,7 +64,9 @@ void Symbol::setDataType(DataType* dataType) {
         return;
     }
     notifyModified(Object::ModState::Before);
+    m_dataType->removeParent(this);
     m_dataType = dataType;
+    m_dataType->addParent(this);
     notifyModified(Object::ModState::After);
 }
 
