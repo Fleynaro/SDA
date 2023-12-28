@@ -19,6 +19,7 @@ import { HtmlTextSelectionProvider } from 'components/Text';
 import { ImageContentStyleProvider } from 'components/ImageContent';
 import { useProjectWindowStyles } from './style';
 import { TabContent } from './TabContent';
+import { VFileSystem } from 'components/VFileSystem';
 
 const ImageLabel = ({ imageId }: { imageId: ObjectId }) => {
   const image = useObject(() => getImageApi().getImage(imageId));
@@ -99,6 +100,7 @@ function ProjectPanel({ project }: { project: Project }) {
                       })
                     }
                   />
+                  <VFileSystem />
                 </BoxSwitchCase>
                 <BoxSwitchCase value="search">
                   <Box sx={{ p: 2 }}>Search</Box>

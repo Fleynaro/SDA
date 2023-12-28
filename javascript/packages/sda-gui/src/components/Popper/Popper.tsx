@@ -146,6 +146,7 @@ export const Popper = (props: PopperProps) => {
             }}
             onClick={() => {
               if (props.closeOnContentClick) {
+                props.hovered.current = false;
                 props.onClose();
               }
             }}

@@ -16,6 +16,9 @@ export default createTheme({
       styleOverrides: {
         body: {
           userSelect: 'none',
+          ul: {
+            listStyle: 'none',
+          },
           '*::-webkit-scrollbar': {
             width: '8px',
             height: '8px',
