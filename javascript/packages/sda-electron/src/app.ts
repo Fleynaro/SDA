@@ -14,6 +14,7 @@ import { Project } from 'project';
 
 class App {
   readonly projects: Project[] = [];
+  currentProject: Project | null = null;
   readonly eventPipe: EventPipe;
 
   constructor() {

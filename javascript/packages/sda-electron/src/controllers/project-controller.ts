@@ -110,6 +110,7 @@ class ProjectControllerImpl extends BaseController implements ProjectController 
       createTestObjects(context);
     }
     const project = app.newProject(path, context);
+    app.currentProject = project;
     await project.init();
     await project.load();
     const projectDTO = toProjectDTO(project);

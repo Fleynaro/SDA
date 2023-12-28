@@ -2,9 +2,15 @@ import sqlite3 from 'sqlite3';
 import sqlite, { open } from 'sqlite';
 import assert from 'assert';
 
-export interface DatabaseObject {
+export interface DatabaseObjectDto {
   class: string;
   uuid: string;
+}
+
+export interface IDatabaseObject {
+  readonly id: string;
+
+  serialize(): DatabaseObjectDto;
 }
 
 export class Database {
@@ -35,10 +41,10 @@ export class Database {
     );
   }
 
-  async loadAll() {
+  async loadAll(tables: string[] = this.tables) {
     assert(this.db);
-    const objects: DatabaseObject[] = [];
-    for (const table of this.tables) {
+    const objects: DatabaseObjectDto[] = [];
+    for (const table of tables) {
       const objectsInTable = await this.db.all(`SELECT * FROM ${table}`);
       for (const obj of objectsInTable) {
         const { data } = obj as { data: string };
@@ -48,13 +54,13 @@ export class Database {
     return objects;
   }
 
-  async upsert(obj: DatabaseObject) {
+  async upsert(obj: DatabaseObjectDto) {
     assert(this.db);
     const data = JSON.stringify(obj);
     return this.db.run(`REPLACE INTO ${obj.class} (uuid, data) VALUES (?, ?)`, obj.uuid, data);
   }
 
-  async delete(obj: DatabaseObject) {
+  async delete(obj: DatabaseObjectDto) {
     assert(this.db);
     return this.db.run(`DELETE FROM ${obj.class} WHERE uuid = ?`, obj.uuid);
   }

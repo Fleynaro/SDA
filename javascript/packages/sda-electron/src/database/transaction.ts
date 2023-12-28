@@ -1,5 +1,4 @@
-import { SdaObject } from 'sda-core';
-import { Database, DatabaseObject } from './database';
+import { Database, IDatabaseObject } from './database';
 
 enum ChangeType {
   New,
@@ -9,7 +8,7 @@ enum ChangeType {
 
 type Change = {
   type: ChangeType;
-  obj: SdaObject;
+  obj: IDatabaseObject;
 };
 
 export class Transaction {
@@ -20,22 +19,25 @@ export class Transaction {
     this.db = db;
   }
 
-  markAsNew(obj: SdaObject) {
+  markAsNew(obj: IDatabaseObject) {
     if (this.changes[obj.id]) {
       throw new Error(`Object ${obj.id} is already marked as new`);
     }
     this.changes[obj.id] = { type: ChangeType.New, obj };
   }
 
-  markAsModified(obj: SdaObject) {
+  markAsModified(obj: IDatabaseObject) {
     const change = this.changes[obj.id];
-    if (change && change.type === ChangeType.Removed) {
-      throw new Error(`Object ${obj.id} is marked as removed`);
+    if (change) {
+      if (change.type === ChangeType.Removed) {
+        throw new Error(`Object ${obj.id} is marked as removed`);
+      }
+    } else {
+      this.changes[obj.id] = { type: ChangeType.Modified, obj };
     }
-    this.changes[obj.id] = { type: ChangeType.Modified, obj };
   }
 
-  markAsRemoved(obj: SdaObject) {
+  markAsRemoved(obj: IDatabaseObject) {
     const change = this.changes[obj.id];
     if (change) {
       if (change.type === ChangeType.Removed) {
@@ -50,7 +52,7 @@ export class Transaction {
 
   async commit() {
     for (const [_, change] of Object.entries(this.changes)) {
-      const data = change.obj.serialize() as DatabaseObject;
+      const data = change.obj.serialize();
       if (change.type === ChangeType.New || change.type === ChangeType.Modified) {
         await this.db.upsert(data);
       } else if (change.type === ChangeType.Removed) {

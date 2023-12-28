@@ -1,15 +1,9 @@
-import { instance_of } from 'sda-bindings';
-import {
-  Context,
-  CreateContextObject,
-  EventPipe,
-  Hash,
-  IIdentifiable,
-  ObjectAddedEvent,
-  ObjectModifiedEvent,
-  ObjectRemovedEvent,
-} from 'sda-core';
+import { Context, CreateContextObject, EventPipe, Hash, IIdentifiable } from 'sda-core';
 import { Database, Transaction } from 'database';
+import { CreateFileSystemDataBasePipe, FILESYSTEM_DATABASE_TABLE, FileSystem } from 'file-system';
+import { CreateSdaDataBasePipe, SDA_DATABASE_TABLES } from 'sda-database';
+import { FileDto } from 'file-system/file';
+import { CreateGuiEventEmitterPipe } from 'file-system/event-emitter';
 
 let ProjectId = 0;
 
@@ -21,6 +15,7 @@ export class Project implements IIdentifiable {
   private readonly eventPipe: EventPipe;
   private readonly database: Database;
   private readonly transaction: Transaction;
+  public readonly fileSystem: FileSystem;
 
   constructor(path: string, context: Context) {
     this.path = path;
@@ -30,6 +25,7 @@ export class Project implements IIdentifiable {
     this.eventPipe = EventPipe.New('project');
     this.database = new Database(path + '/database.sqlite');
     this.transaction = new Transaction(this.database);
+    this.fileSystem = new FileSystem('main', this, this.eventPipe);
   }
 
   async init() {
@@ -40,38 +36,44 @@ export class Project implements IIdentifiable {
 
   initEventPipe() {
     this.context.eventPipe.connect(this.eventPipe);
-    this.eventPipe.subscribe((event) => {
-      if (instance_of(event, ObjectAddedEvent)) {
-        const e = event as ObjectAddedEvent;
-        this.transaction.markAsNew(e.object);
-      } else if (instance_of(event, ObjectModifiedEvent)) {
-        const e = event as ObjectModifiedEvent;
-        this.transaction.markAsModified(e.object);
-      } else if (instance_of(event, ObjectRemovedEvent)) {
-        const e = event as ObjectRemovedEvent;
-        this.transaction.markAsRemoved(e.object);
-      }
-    });
+    this.eventPipe.connect(CreateSdaDataBasePipe(this.transaction));
+    this.eventPipe.connect(CreateFileSystemDataBasePipe(this.transaction));
+    this.eventPipe.connect(CreateGuiEventEmitterPipe());
   }
 
   private initDatabase() {
-    this.database.addTable('address_space');
-    this.database.addTable('image');
-    this.database.addTable('data_type');
-    this.database.addTable('symbol');
-    this.database.addTable('symbol_table');
+    SDA_DATABASE_TABLES.map((table) => this.database.addTable(table));
+    this.database.addTable(FILESYSTEM_DATABASE_TABLE);
   }
 
   async load() {
+    await this.loadSdaObjects();
+    await this.loadFileSystem();
+  }
+
+  private async loadSdaObjects() {
     this.context.eventPipe.disconnect(this.eventPipe);
-    const objects = (await this.database.loadAll()).map((data) => ({
-      data,
-      ctxObj: CreateContextObject(this.context, data),
+    const objects = (await this.database.loadAll(SDA_DATABASE_TABLES)).map((dto) => ({
+      dto,
+      ctxObj: CreateContextObject(this.context, dto),
     }));
-    for (const { data, ctxObj } of objects) {
-      ctxObj.deserialize(data);
+    for (const { dto, ctxObj } of objects) {
+      ctxObj.deserialize(dto);
     }
     this.context.eventPipe.connect(this.eventPipe);
+  }
+
+  private async loadFileSystem() {
+    const prevPipe = this.fileSystem.pipe;
+    this.fileSystem.pipe = EventPipe.New('temp');
+    const files = (await this.database.loadAll([FILESYSTEM_DATABASE_TABLE])).map((dto) => ({
+      dto: dto as FileDto,
+      file: this.fileSystem.createFileObject(dto as FileDto),
+    }));
+    for (const { dto, file } of files) {
+      file.deserialize(dto);
+    }
+    this.fileSystem.pipe = prevPipe;
   }
 
   async save() {
