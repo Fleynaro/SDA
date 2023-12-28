@@ -104,6 +104,9 @@ namespace sda::bind
                         list.push_back(addressSpace);
                     return list;
                 })
+                .method("getDataType", std::function([](Context* ctx, const std::string& id) {
+                    return ctx->getDataTypes()->get(boost::uuids::string_generator()(id));
+                }))
                 .static_method("New", &New);
             ObjectLookupTableRaw::Register(cl);
             RegisterClassName(cl, "Context");

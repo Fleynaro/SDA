@@ -4,6 +4,7 @@ import { Platform } from './platform';
 import { ContextObject } from './object';
 import { AddressSpace } from './address-space';
 import { Hash, IIdentifiable } from './utils';
+import { DataType } from './data-type';
 
 export declare abstract class ObjectActionEvent extends SdaEvent {
   object: ContextObject;
@@ -25,6 +26,8 @@ export declare class Context implements IIdentifiable {
   readonly eventPipe: EventPipe;
   readonly platform: Platform;
   addressSpaces: AddressSpace[];
+
+  getDataType(id: string): DataType;
 
   static New(pipe: EventPipe, platform: Platform): Context;
 
